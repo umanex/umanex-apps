@@ -1,6 +1,4 @@
-// Custom 404 pagina — overschrijft Next.js ingebouwde error page
-// die styled-jsx gebruikt en conflicteert met de monorepo React versie
-export default function Custom404() {
+export default function NotFound() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
       <div style={{ textAlign: 'center' }}>

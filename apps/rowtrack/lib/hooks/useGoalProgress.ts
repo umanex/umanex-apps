@@ -172,7 +172,12 @@ export function useGoalProgress(
     const nextMilestone = lastSplitDistance.current + 500;
     if (distanceMeters >= nextMilestone) {
       const splitTime = seconds - splitStartSeconds.current;
-      setSplits((prev) => [...prev, { distance: nextMilestone, split: splitTime }]);
+      const avgSplitWatts = refs.splitIntervalWattsCount.current > 0
+        ? Math.round(refs.splitIntervalWattsSum.current / refs.splitIntervalWattsCount.current)
+        : undefined;
+      refs.splitIntervalWattsSum.current = 0;
+      refs.splitIntervalWattsCount.current = 0;
+      setSplits((prev) => [...prev, { distance: nextMilestone, split: splitTime, watts: avgSplitWatts }]);
 
       const key = `dist_${nextMilestone}`;
       if (!milestonesHit.current.has(key)) {

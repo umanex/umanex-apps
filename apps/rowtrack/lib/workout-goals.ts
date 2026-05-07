@@ -70,6 +70,49 @@ export const GOAL_TYPES: Record<GoalType, GoalTypeConfig> = {
 
 export const GOAL_TYPE_ORDER: GoalType[] = ['duration', 'distance', 'split', 'watts'];
 
+// --- Nudge buttons ---
+
+/** Index delta in the WheelPicker array per nudge tap. */
+export const NUDGE_STEP_IDX: Record<GoalType, number> = {
+  duration: 5,  // 5 min  (1 index = 1 min)
+  distance: 1,  // 500 m  (1 index = 500 m)
+  split:    5,  // 5 s    (1 index = 1 s)
+  watts:    2,  // 10 W   (1 index = 5 W)
+};
+
+/** Label shown on the nudge button below the icon. */
+export const NUDGE_LABEL: Record<GoalType, string> = {
+  duration: '5 min',
+  distance: '0,5 km',
+  split:    '5s',
+  watts:    '10 W',
+};
+
+/**
+ * Converts a saved goal_target value (raw Supabase units) back to its
+ * index in the matching WheelPicker array. Returns null when out of range.
+ */
+export function goalTargetToWheelIndex(type: GoalType, target: number): number | null {
+  switch (type) {
+    case 'duration': {
+      const idx = Math.round(target / 60) - 1;        // 1–180 min → 0–179
+      return idx >= 0 && idx <= 179 ? idx : null;
+    }
+    case 'distance': {
+      const idx = Math.round(target / 500) - 1;       // 500–42000 m → 0–83
+      return idx >= 0 && idx <= 83 ? idx : null;
+    }
+    case 'split': {
+      const idx = Math.round(target) - 90;            // 90–180 s → 0–90
+      return idx >= 0 && idx <= 90 ? idx : null;
+    }
+    case 'watts': {
+      const idx = Math.round((target - 50) / 5);      // 50–500 W → 0–90
+      return idx >= 0 && idx <= 90 ? idx : null;
+    }
+  }
+}
+
 // --- Input conversie ---
 
 export function userInputToTarget(type: GoalType, input: number): number {

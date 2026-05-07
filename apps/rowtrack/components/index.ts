@@ -32,5 +32,13 @@ export { GoalSegments } from './GoalSegments';
 export type { GoalSegmentType } from './GoalSegments';
 export { GoalInput } from './GoalInput';
 
+export { WheelPicker } from './WheelPicker';
+
 export { WorkoutCard } from './WorkoutCard';
 export type { WorkoutCardProps } from './WorkoutCard';
+
+export { KPI } from './KPI';
+
+export { PeriodGoalCard } from './PeriodGoalCard';
+export { BottomSheet } from './BottomSheet';
+export type { BottomSheetProps } from './BottomSheet';

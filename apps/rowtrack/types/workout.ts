@@ -11,11 +11,12 @@ export type WorkoutBase = {
 
 export type WorkoutSummary = WorkoutBase & {
   avg_split_seconds: number | null;
+  calories: number | null;
 };
 
 export type WorkoutDetail = WorkoutSummary & {
-  calories: number | null;
   max_watts: number | null;
+  max_spm: number | null;
   best_split: number | null;
   avg_heart_rate: number | null;
   max_heart_rate: number | null;
@@ -25,4 +26,5 @@ export type WorkoutDetail = WorkoutSummary & {
   goal_target: number | null;
   goal_reached: boolean | null;
   splits: SplitEntry[] | null;
+  is_pr: boolean | null;
 };

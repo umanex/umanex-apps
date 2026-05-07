@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,24 +12,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { Button, Card, MetricDisplay, SectionHeader, SummaryRow, EmptyState } from '@/components';
-import { SplitsList } from '@/components/workout';
+import { Button, EmptyState, Segment } from '@/components';
 import { formatDuration, formatDistanceDynamic, formatSplit, formatDateLong } from '@/lib/formatters';
-import { GOAL_TYPES, type GoalType } from '@/lib/workout-goals';
 import {
   background,
   brand,
-  status,
   text as textColors,
-  display,
-  body,
   fontFamily,
   fontSize,
   space,
-  layout,
   radii,
 } from '@/constants';
 import type { WorkoutDetail } from '@/types/workout';
+
+type DetailTab = 'Overzicht' | 'Splits' | 'Hartslag';
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,6 +35,7 @@ export default function WorkoutDetailScreen() {
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<DetailTab>('Overzicht');
 
   useEffect(() => {
     let cancelled = false;
@@ -46,12 +43,12 @@ export default function WorkoutDetailScreen() {
     async function load() {
       const { data } = await supabase
         .from('workouts')
-        .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, max_watts, best_split, avg_heart_rate, max_heart_rate, resistance_level, notes, goal_type, goal_target, goal_reached, splits')
+        .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, max_watts, max_spm, best_split, avg_heart_rate, max_heart_rate, resistance_level, notes, goal_type, goal_target, goal_reached, splits, is_pr')
         .eq('id', id)
         .single();
 
       if (!cancelled) {
-        setWorkout(data);
+        setWorkout(data as WorkoutDetail | null);
         setLoading(false);
       }
     }
@@ -59,6 +56,14 @@ export default function WorkoutDetailScreen() {
     load();
     return () => { cancelled = true; };
   }, [id]);
+
+  const tabs = useMemo<DetailTab[]>(() => {
+    const t: DetailTab[] = ['Overzicht', 'Splits'];
+    if (workout?.avg_heart_rate != null || workout?.max_heart_rate != null) {
+      t.push('Hartslag');
+    }
+    return t;
+  }, [workout?.avg_heart_rate, workout?.max_heart_rate]);
 
   const handleDelete = useCallback(async () => {
     setDeleting(true);
@@ -107,188 +112,117 @@ export default function WorkoutDetailScreen() {
     );
   }
 
-  const hasMetrics =
-    workout.avg_watts != null ||
-    workout.avg_spm != null ||
-    workout.avg_split_seconds != null ||
-    workout.calories != null ||
-    workout.max_watts != null ||
-    workout.best_split != null;
-
-  const hasHeartRate = workout.avg_heart_rate != null || workout.max_heart_rate != null;
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={textColors.primary} />
+          <Ionicons name="chevron-back" size={24} color={brand.primary} />
         </TouchableOpacity>
-        <View style={styles.headerText}>
-          <Text style={styles.headerDate}>{formatDateLong(workout.started_at)}</Text>
-        </View>
-        <View style={styles.backButton} />
+        <Text style={styles.headerDate}>{formatDateLong(workout.started_at)}</Text>
+        {workout.is_pr && (
+          <View style={styles.prBadge}>
+            <Text style={styles.prBadgeText}>PR</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Tab bar */}
+      <View style={styles.tabBar}>
+        {tabs.map(tab => (
+          <Segment
+            key={tab}
+            label={tab}
+            active={activeTab === tab}
+            onPress={() => setActiveTab(tab)}
+          />
+        ))}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Hero */}
-        <Card padding={space[6]} style={styles.heroCard}>
-          <View style={styles.heroRow}>
-            <MetricDisplay
-              value={formatDuration(workout.duration_seconds)}
-              label="DUUR"
-              size="lg"
-            />
-            <MetricDisplay
-              value={formatDistanceDynamic(workout.distance_meters).value}
-              label="AFSTAND"
-              unit={formatDistanceDynamic(workout.distance_meters).unit}
-              size="lg"
-            />
-          </View>
-        </Card>
-
-        {/* Goal */}
-        {workout.goal_type && workout.goal_target != null && (
+        {/* Overzicht tab */}
+        {activeTab === 'Overzicht' && (
           <>
-            <SectionHeader title="DOEL" />
-            <Card>
-              <View style={styles.goalRow}>
-                <View style={styles.goalInfo}>
-                  <Ionicons
-                    name={GOAL_TYPES[workout.goal_type as GoalType].icon}
-                    size={24}
-                    color={workout.goal_reached ? status.success : status.error}
-                  />
-                  <View>
-                    <Text style={styles.goalLabel}>
-                      {GOAL_TYPES[workout.goal_type as GoalType].label}
-                    </Text>
-                    <Text style={styles.goalTarget}>
-                      {GOAL_TYPES[workout.goal_type as GoalType].formatTarget(workout.goal_target)}
-                    </Text>
-                  </View>
-                </View>
-                <View style={[
-                  styles.goalBadge,
-                  { backgroundColor: workout.goal_reached ? status.success : status.error },
-                ]}>
-                  <Ionicons
-                    name={workout.goal_reached ? 'checkmark' : 'close'}
-                    size={16}
-                    color={textColors.inverse}
-                  />
-                  <Text style={styles.goalBadgeText}>
-                    {workout.goal_reached ? 'Bereikt' : 'Niet bereikt'}
-                  </Text>
-                </View>
+            <View style={styles.kpiTilesRow}>
+              <View style={styles.kpiTile}>
+                <Text style={styles.kpiTileLabel}>TIJD</Text>
+                <Text style={styles.kpiTileValue}>{formatDuration(workout.duration_seconds)}</Text>
               </View>
-            </Card>
-          </>
-        )}
-
-        {/* Details grid */}
-        {hasMetrics && (
-          <>
-            <SectionHeader title="DETAILS" />
-            <View style={styles.grid}>
-              {workout.avg_watts != null && (
-                <Card style={styles.tile}>
-                  <MetricDisplay value={workout.avg_watts} label="GEM. WATT" unit="W" size="md" />
-                </Card>
-              )}
-              {workout.avg_spm != null && (
-                <Card style={styles.tile}>
-                  <MetricDisplay value={workout.avg_spm} label="GEM. SPM" size="md" />
-                </Card>
-              )}
-              {workout.avg_split_seconds != null && (
-                <Card style={styles.tile}>
-                  <MetricDisplay
-                    value={formatSplit(workout.avg_split_seconds)}
-                    label="GEM. SPLIT"
-                    unit="/500m"
-                    size="md"
-                  />
-                </Card>
-              )}
-              {workout.calories != null && (
-                <Card style={styles.tile}>
-                  <MetricDisplay value={workout.calories} label="CALORIEEN" unit="kcal" size="md" />
-                </Card>
-              )}
-              {workout.max_watts != null && (
-                <Card style={styles.tile}>
-                  <MetricDisplay value={workout.max_watts} label="MAX WATT" unit="W" size="md" />
-                </Card>
-              )}
-              {workout.best_split != null && (
-                <Card style={styles.tile}>
-                  <MetricDisplay
-                    value={formatSplit(workout.best_split)}
-                    label="BESTE SPLIT"
-                    unit="/500m"
-                    size="md"
-                  />
-                </Card>
-              )}
+              <View style={styles.kpiTile}>
+                <Text style={styles.kpiTileLabel}>AFSTAND</Text>
+                <Text style={styles.kpiTileValue}>{formatDistanceDynamic(workout.distance_meters).value}</Text>
+                <Text style={styles.kpiTileUnit}>{formatDistanceDynamic(workout.distance_meters).unit === 'm' ? 'meter' : 'km'}</Text>
+              </View>
+              <View style={styles.kpiTile}>
+                <Text style={styles.kpiTileLabel}>KCAL</Text>
+                <Text style={styles.kpiTileValue}>{workout.calories != null ? `${workout.calories}` : '—'}</Text>
+              </View>
+            </View>
+            <View style={styles.statsDivider} />
+            <View style={styles.statsSection}>
+              <View style={styles.statsHeader}>
+                <View style={styles.statsLabelCol} />
+                <Text style={styles.statsColLabel}>GEM</Text>
+                <Text style={styles.statsColLabel}>PIEK</Text>
+              </View>
+              <View style={styles.statsTable}>
+                {[
+                  { label: 'SPLIT 500/M', gem: workout.avg_split_seconds != null ? formatSplit(workout.avg_split_seconds) : '—', piek: workout.best_split != null ? formatSplit(workout.best_split) : '—' },
+                  { label: 'WATT', gem: workout.avg_watts != null ? `${workout.avg_watts}` : '—', piek: workout.max_watts != null ? `${workout.max_watts}` : '—' },
+                  { label: 'SPM', gem: workout.avg_spm != null ? `${workout.avg_spm}` : '—', piek: workout.max_spm != null ? `${workout.max_spm}` : '—' },
+                  { label: 'BPM', gem: workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—', piek: workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—' },
+                ].map((row, i, arr) => (
+                  <View key={row.label}>
+                    <View style={styles.statsRow}>
+                      <Text style={styles.statsRowLabel}>{row.label}</Text>
+                      <Text style={styles.statsRowValue}>{row.gem}</Text>
+                      <Text style={styles.statsRowValue}>{row.piek}</Text>
+                    </View>
+                    {i < arr.length - 1 && <View style={styles.statsRowDivider} />}
+                  </View>
+                ))}
+              </View>
             </View>
           </>
         )}
 
-        {/* Heart rate */}
-        {hasHeartRate && (
-          <>
-            <SectionHeader title="HARTSLAG" />
-            <View style={styles.grid}>
-              {workout.avg_heart_rate != null && (
-                <Card style={styles.tile}>
-                  <MetricDisplay value={workout.avg_heart_rate} label="GEM. BPM" unit="bpm" size="md" />
-                </Card>
-              )}
-              {workout.max_heart_rate != null && (
-                <Card style={styles.tile}>
-                  <MetricDisplay value={workout.max_heart_rate} label="MAX BPM" unit="bpm" size="md" />
-                </Card>
-              )}
-            </View>
-          </>
-        )}
-
-        {/* Resistance */}
-        {workout.resistance_level != null && (
-          <>
-            <SectionHeader title="APPARAAT" />
-            <Card>
-              <SummaryRow label="Weerstandsniveau" value={`${workout.resistance_level}`} />
-            </Card>
-          </>
-        )}
-
-        {/* 500m Splits */}
-        {workout.splits && workout.splits.length > 0 && (
-          <>
-            <SectionHeader title="500M SPLITS" />
-            <Card>
+        {/* Splits tab */}
+        {activeTab === 'Splits' && (
+          workout.splits && workout.splits.length > 0 ? (
+            <View style={styles.splitsTable}>
+              <View style={styles.splitsHeaderRow}>
+                <View style={styles.splitsLabelCol} />
+                <Text style={styles.splitsColHeader}>SPLIT</Text>
+                <Text style={styles.splitsColHeader}>WATT</Text>
+              </View>
               {workout.splits.map((s, i) => (
-                <SummaryRow
-                  key={i}
-                  label={`${formatDistanceDynamic(s.distance).value} ${formatDistanceDynamic(s.distance).unit}`}
-                  value={formatSplit(s.split)}
-                />
+                <View key={i}>
+                  <View style={styles.splitsDataRow}>
+                    <Text style={styles.splitsDistLabel}>{`${s.distance}M`}</Text>
+                    <Text style={styles.splitsValue}>{formatSplit(s.split)}</Text>
+                    <Text style={styles.splitsValue}>{s.watts != null ? `${s.watts}` : '—'}</Text>
+                  </View>
+                  {i < (workout.splits?.length ?? 0) - 1 && <View style={styles.splitsRowDivider} />}
+                </View>
               ))}
-            </Card>
-          </>
+            </View>
+          ) : (
+            <EmptyState icon="time-outline" title="Geen splits beschikbaar." />
+          )
         )}
 
-        {/* Notes */}
-        {workout.notes != null && workout.notes.length > 0 && (
-          <>
-            <SectionHeader title="NOTITIES" />
-            <Card>
-              <Text style={styles.notes}>{workout.notes}</Text>
-            </Card>
-          </>
+        {/* Hartslag tab */}
+        {activeTab === 'Hartslag' && (
+          <View style={styles.kpiTilesRow}>
+            <View style={styles.kpiTile}>
+              <Text style={styles.kpiTileLabel}>GEM</Text>
+              <Text style={styles.kpiTileValue}>{workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—'}</Text>
+            </View>
+            <View style={styles.kpiTile}>
+              <Text style={styles.kpiTileLabel}>PIEK</Text>
+              <Text style={styles.kpiTileValue}>{workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—'}</Text>
+            </View>
+          </View>
         )}
 
         <Button
@@ -317,8 +251,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: layout.screenHorizontal,
-    paddingVertical: space[3],
+    paddingHorizontal: space['5'],
+    paddingVertical: space['3'],
   },
   backButton: {
     width: 40,
@@ -326,76 +260,176 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerText: {
-    flex: 1,
-    alignItems: 'center',
-  },
   headerDate: {
-    ...body.sm,
-    fontFamily: fontFamily.bodySemiBold,
-    color: textColors.secondary,
-  },
-  content: {
-    paddingHorizontal: layout.screenHorizontal,
-    paddingBottom: space[10],
-    gap: space[6],
-  },
-  heroCard: {
-    alignItems: 'center',
-  },
-  heroRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    width: '100%',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space[3],
-  },
-  tile: {
-    flexBasis: '45%',
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notes: {
-    ...body.md,
+    flex: 1,
+    fontFamily: fontFamily.bodyBold,
+    fontSize: fontSize['28'],
     color: textColors.primary,
   },
-  goalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  prBadge: {
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    borderRadius: radii.sm,
+    paddingHorizontal: space['2'],
+    paddingVertical: 4,
   },
-  goalInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space[3],
-  },
-  goalLabel: {
+  prBadgeText: {
     fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['12'],
-    color: textColors.muted,
-    textTransform: 'uppercase',
+    fontSize: fontSize['13'],
+    color: '#FFD700',
     letterSpacing: 0.5,
   },
-  goalTarget: {
-    fontFamily: fontFamily.monoMedium,
-    fontSize: fontSize['18'],
-    color: textColors.primary,
+
+  // Tab bar
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: background.elevated,
+    borderRadius: 12,
+    padding: 4,
+    marginHorizontal: space['5'],
+    marginBottom: 16,
   },
-  goalBadge: {
+
+  // Scroll content
+  content: {
+    paddingHorizontal: space['5'],
+    paddingBottom: space['10'],
+    gap: space['4'],
+  },
+
+  // KPI tiles (3-up row)
+  kpiTilesRow: {
+    flexDirection: 'row',
+    gap: space['5'],
+  },
+  kpiTile: {
+    flex: 1,
+    backgroundColor: background.elevated,
+    borderRadius: radii.lg,
+    height: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: space['6'],
+    paddingBottom: space['4'],
+    paddingHorizontal: space['4'],
+    gap: space['2'],
+  },
+  kpiTileLabel: {
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize['16'],
+    color: textColors.secondary,
+    letterSpacing: 1.28,
+    textTransform: 'uppercase',
+  },
+  kpiTileValue: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 22,
+    color: textColors.primary,
+    textAlign: 'center',
+  },
+  kpiTileUnit: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['13'],
+    color: textColors.secondary,
+  },
+
+  // Divider
+  statsDivider: {
+    height: 1,
+    backgroundColor: textColors.muted,
+  },
+
+  // Stats table (GEM/PIEK)
+  statsSection: {
+    gap: space['2'],
+  },
+  statsHeader: {
+    flexDirection: 'row',
+    paddingLeft: space['4'],
+  },
+  statsLabelCol: {
+    width: 165,
+  },
+  statsColLabel: {
+    flex: 1,
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize['14'],
+    color: textColors.secondary,
+    letterSpacing: 1.12,
+    textTransform: 'uppercase',
+  },
+  statsTable: {
+    backgroundColor: background.elevated,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+  },
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space[1],
-    paddingHorizontal: space[3],
-    paddingVertical: space[1],
-    borderRadius: radii.full,
+    paddingLeft: space['4'],
+    paddingVertical: space['4'],
   },
-  goalBadgeText: {
+  statsRowLabel: {
+    width: 165,
     fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['12'],
-    color: textColors.inverse,
+    fontSize: fontSize['14'],
+    color: textColors.secondary,
+    letterSpacing: 1.12,
+    textTransform: 'uppercase',
+  },
+  statsRowValue: {
+    flex: 1,
+    fontFamily: fontFamily.bodyBold,
+    fontSize: fontSize['16'],
+    color: textColors.primary,
+  },
+  statsRowDivider: {
+    height: 1,
+    backgroundColor: textColors.muted,
+  },
+
+  // Splits table
+  splitsTable: {
+    backgroundColor: background.elevated,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+  },
+  splitsHeaderRow: {
+    flexDirection: 'row',
+    paddingLeft: space['4'],
+    paddingVertical: space['2'],
+  },
+  splitsLabelCol: {
+    width: 165,
+  },
+  splitsColHeader: {
+    flex: 1,
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize['14'],
+    color: textColors.secondary,
+    letterSpacing: 1.12,
+    textTransform: 'uppercase',
+  },
+  splitsDataRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: space['4'],
+    paddingVertical: space['4'],
+  },
+  splitsDistLabel: {
+    width: 165,
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize['14'],
+    color: textColors.secondary,
+    textTransform: 'uppercase',
+  },
+  splitsValue: {
+    flex: 1,
+    fontFamily: fontFamily.bodyBold,
+    fontSize: fontSize['16'],
+    color: textColors.primary,
+  },
+  splitsRowDivider: {
+    height: 1,
+    backgroundColor: textColors.muted,
   },
 });

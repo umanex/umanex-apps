@@ -52,11 +52,14 @@ export interface AccumulatorRefs {
   tickCount: React.MutableRefObject<number>;
   splitTickCount: React.MutableRefObject<number>;
   maxWattsRef: React.MutableRefObject<number>;
+  maxSpmRef: React.MutableRefObject<number>;
   bestSplitRef: React.MutableRefObject<number>;
   heartRateSum: React.MutableRefObject<number>;
   heartRateCount: React.MutableRefObject<number>;
   maxHeartRateRef: React.MutableRefObject<number>;
   startedAtRef: React.MutableRefObject<Date | null>;
+  splitIntervalWattsSum: React.MutableRefObject<number>;
+  splitIntervalWattsCount: React.MutableRefObject<number>;
 }
 
 // --- Hook ---
@@ -76,6 +79,7 @@ export function useWorkoutMetrics(
   const tickCount = useRef(0);
   const splitTickCount = useRef(0);
   const maxWattsRef = useRef(0);
+  const maxSpmRef = useRef(0);
   const bestSplitRef = useRef(Infinity);
   const heartRateSum = useRef(0);
   const heartRateCount = useRef(0);
@@ -88,6 +92,8 @@ export function useWorkoutMetrics(
   const lastKcalElapsed = useRef(0);
   const currentWattsRef = useRef(0);
   const currentSecondsRef = useRef(0);
+  const splitIntervalWattsSum = useRef(0);
+  const splitIntervalWattsCount = useRef(0);
 
   // --- Load profile weight ---
   const { user } = useAuth();
@@ -112,6 +118,8 @@ export function useWorkoutMetrics(
     if (bleMetrics.instantaneousPower != null) {
       partial.watts = bleMetrics.instantaneousPower;
       wattsSum.current += bleMetrics.instantaneousPower;
+      splitIntervalWattsSum.current += bleMetrics.instantaneousPower;
+      splitIntervalWattsCount.current += 1;
       if (bleMetrics.instantaneousPower > maxWattsRef.current) {
         maxWattsRef.current = bleMetrics.instantaneousPower;
       }
@@ -119,6 +127,9 @@ export function useWorkoutMetrics(
     if (bleMetrics.strokeRate != null) {
       partial.spm = bleMetrics.strokeRate;
       spmSum.current += bleMetrics.strokeRate;
+      if (bleMetrics.strokeRate > maxSpmRef.current) {
+        maxSpmRef.current = bleMetrics.strokeRate;
+      }
     }
     if (bleMetrics.instantaneousPace != null && bleMetrics.instantaneousPace > 0) {
       partial.splitSeconds = bleMetrics.instantaneousPace;
@@ -181,6 +192,7 @@ export function useWorkoutMetrics(
     tickCount.current = 0;
     splitTickCount.current = 0;
     maxWattsRef.current = 0;
+    maxSpmRef.current = 0;
     bestSplitRef.current = Infinity;
     heartRateSum.current = 0;
     heartRateCount.current = 0;
@@ -191,6 +203,8 @@ export function useWorkoutMetrics(
     lastKcalElapsed.current = 0;
     currentWattsRef.current = 0;
     currentSecondsRef.current = 0;
+    splitIntervalWattsSum.current = 0;
+    splitIntervalWattsCount.current = 0;
     startedAtRef.current = new Date();
   }, []);
 
@@ -201,11 +215,14 @@ export function useWorkoutMetrics(
     tickCount,
     splitTickCount,
     maxWattsRef,
+    maxSpmRef,
     bestSplitRef,
     heartRateSum,
     heartRateCount,
     maxHeartRateRef,
     startedAtRef,
+    splitIntervalWattsSum,
+    splitIntervalWattsCount,
   };
 
   return { state, refs, resetAll, hasProfileWeight: weightKgRef.current !== null };

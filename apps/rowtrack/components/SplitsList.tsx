@@ -14,6 +14,7 @@ import {
 export interface SplitEntry {
   distance: number;
   split: number;
+  watts?: number;
 }
 
 export interface SplitsListProps {

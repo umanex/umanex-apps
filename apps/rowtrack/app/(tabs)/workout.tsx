@@ -116,6 +116,7 @@ export default function WorkoutScreen() {
         : null,
       calories: Math.round(metricsState.calories),
       max_watts: refs.maxWattsRef.current > 0 ? refs.maxWattsRef.current : null,
+      max_spm: refs.maxSpmRef.current > 0 ? refs.maxSpmRef.current : null,
       best_split: refs.bestSplitRef.current < Infinity ? Math.round(refs.bestSplitRef.current) : null,
       avg_heart_rate: refs.heartRateCount.current > 0
         ? Math.round(refs.heartRateSum.current / refs.heartRateCount.current)
@@ -126,6 +127,7 @@ export default function WorkoutScreen() {
       goal_target: goal?.target ?? null,
       goal_reached: goal ? goalReached : null,
       splits: splits.length > 0 ? splits : null,
+      is_pr: hasPR || null,
     });
 
     setSaving(false);
@@ -133,7 +135,7 @@ export default function WorkoutScreen() {
       setPhase('idle');
       router.replace('/(tabs)');
     }
-  }, [user, metricsState, router, goal, goalReached, splits, refs]);
+  }, [user, metricsState, router, goal, goalReached, splits, refs, hasPR]);
 
   const handleSetGoal = useCallback((g: WorkoutGoal) => {
     setGoal(g);
@@ -151,6 +153,8 @@ export default function WorkoutScreen() {
   const summaryAvgHr = refs.heartRateCount.current > 0
     ? Math.round(refs.heartRateSum.current / refs.heartRateCount.current)
     : null;
+  const summaryMaxSpm = refs.maxSpmRef.current > 0 ? refs.maxSpmRef.current : null;
+  const summaryMaxHr = refs.maxHeartRateRef.current > 0 ? refs.maxHeartRateRef.current : null;
 
   // --- Render ---
 
@@ -211,6 +215,8 @@ export default function WorkoutScreen() {
       summaryMaxWatts={summaryMaxWatts}
       summaryBestSplit={summaryBestSplit}
       summaryAvgHr={summaryAvgHr}
+      summaryMaxSpm={summaryMaxSpm}
+      summaryMaxHr={summaryMaxHr}
       onStop={handleStop}
       onSave={handleSave}
       onDiscard={handleDiscard}

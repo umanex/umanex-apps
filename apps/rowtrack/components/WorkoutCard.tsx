@@ -1,66 +1,97 @@
 import { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Card } from './Card';
-import { MetricDisplay } from './MetricDisplay';
-import { formatDate, formatDuration, formatDistanceDynamic, formatSplit } from '@/lib/formatters';
-import { body, fontFamily, space, text as textColors } from '@/constants';
+import { formatDuration } from '@/lib/formatters';
+import { background, brand, text as textColors, fontFamily } from '@/constants';
 import type { WorkoutSummary } from '@/types/workout';
+
+const NL_MONTHS = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'] as const;
+
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getDate()} ${NL_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function fmtMeters(m: number): string {
+  if (m >= 1000) {
+    const t = Math.floor(m / 1000);
+    const r = m % 1000;
+    return `${t}.${String(r).padStart(3, '0')} m`;
+  }
+  return `${m} m`;
+}
 
 export interface WorkoutCardProps {
   workout: WorkoutSummary;
   onPress: (id: string) => void;
-  showExtras?: boolean;
 }
 
 export const WorkoutCard = memo(function WorkoutCard({
   workout: w,
   onPress,
-  showExtras = false,
 }: WorkoutCardProps) {
+  const subtitle = [
+    formatDuration(w.duration_seconds),
+    w.calories != null ? `${w.calories} kcal` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
-    <TouchableOpacity activeOpacity={0.7} onPress={() => onPress(w.id)}>
-      <Card>
-        <Text style={styles.date}>{formatDate(w.started_at)}</Text>
-        <View style={styles.metrics}>
-          <MetricDisplay
-            value={formatDuration(w.duration_seconds)}
-            label="DUUR"
-          />
-          <MetricDisplay
-            value={formatDistanceDynamic(w.distance_meters).value}
-            label="AFSTAND"
-            unit={formatDistanceDynamic(w.distance_meters).unit}
-          />
-          {w.avg_watts != null && (
-            <MetricDisplay value={`${w.avg_watts} W`} label="WATT" />
-          )}
-        </View>
-        {showExtras && (w.avg_spm != null || w.avg_split_seconds != null) && (
-          <View style={styles.metrics}>
-            {w.avg_spm != null && (
-              <MetricDisplay value={w.avg_spm} label="SPM" />
-            )}
-            {w.avg_split_seconds != null && (
-              <MetricDisplay
-                value={formatSplit(w.avg_split_seconds)}
-                label="SPLIT /500M"
-              />
-            )}
-          </View>
-        )}
-      </Card>
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => onPress(w.id)}
+      style={styles.card}
+    >
+      <View style={styles.left}>
+        <Text style={styles.date}>{fmtDate(w.started_at)}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+      </View>
+      <View style={styles.right}>
+        <Text style={styles.distance}>{fmtMeters(w.distance_meters)}</Text>
+        <Text style={styles.chevron}>›</Text>
+      </View>
     </TouchableOpacity>
   );
 });
 
 const styles = StyleSheet.create({
+  card: {
+    height: 68,
+    backgroundColor: background.surface,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  left: {
+    flex: 1,
+    gap: 2,
+  },
   date: {
-    ...body.sm,
     fontFamily: fontFamily.bodySemiBold,
+    fontSize: 15,
+    color: textColors.primary,
+  },
+  subtitle: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: 13,
     color: textColors.secondary,
   },
-  metrics: {
+  right: {
     flexDirection: 'row',
-    gap: space[6],
+    alignItems: 'center',
+    gap: 8,
+  },
+  distance: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 16,
+    color: brand.primary,
+  },
+  chevron: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: 20,
+    color: '#47556E',
   },
 });

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -12,30 +13,33 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import {
-  Button,
-  Card,
-  EmptyState,
-  MetricDisplay,
-  SectionHeader,
-  WorkoutCard,
-} from '@/components';
-import {
-  background,
-  brand,
-  text as textColors,
-  status as statusColors,
-  display,
-  body,
-  label,
-  space,
-  layout,
-  fontFamily,
-  fontSize,
-  radii,
-} from '@/constants';
-import type { WorkoutSummary } from '@/types/workout';
+import { EmptyState } from '@/components';
+import { PeriodGoalCard } from '@/components/PeriodGoalCard';
+import { fontFamily } from '@/constants';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
+
+const C_BG = '#0A0E1A';
+const C_SURFACE = '#1A1F2E';
+const C_CYAN = '#00E5FF';
+const C_TEXT_ON_CYAN = '#0A0A0F';
+const C_TEXT_WHITE = '#F8FAFC';
+const C_TEXT_MUTED = '#94A3B8';
+const C_GREETING = '#D2D2D2';
+const C_SECTION_LABEL = '#AAAAAA';
+const C_DIVIDER = '#47556E';
+
+type HomeWorkout = {
+  id: string;
+  started_at: string;
+  duration_seconds: number | null;
+  distance_meters: number | null;
+  avg_watts: number | null;
+  avg_spm: number | null;
+  avg_split_seconds: number | null;
+  calories: number | null;
+};
+
+const NL_MONTHS = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'] as const;
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -44,17 +48,53 @@ function getGreeting(): string {
   return 'Goedenavond';
 }
 
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getDate()} ${NL_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function fmtStartTime(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// nl-BE: always show meters with dot-thousands separator
+function fmtMeters(m: number): string {
+  if (m >= 1000) {
+    const t = Math.floor(m / 1000);
+    const r = m % 1000;
+    return `${t}.${String(r).padStart(3, '0')} m`;
+  }
+  return `${m} m`;
+}
+
 function fmtTime(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = Math.round(sec % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function fmtDuration(sec: number): string {
+// PR card value + unit helpers (split for baseline-row display)
+function fmtPrDistance(m: number): { value: string; unit: string } {
+  if (m >= 1000) {
+    const t = Math.floor(m / 1000);
+    const r = m % 1000;
+    return { value: `${t}.${String(r).padStart(3, '0')}`, unit: 'm' };
+  }
+  return { value: `${m}`, unit: 'm' };
+}
+
+function fmtPrDuration(sec: number): { value: string; unit: string } {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
-  if (h > 0) return `${h}u ${m}min`;
-  return `${m} min`;
+  if (h > 0) return { value: `${h}u${m > 0 ? ` ${m}` : ''}`, unit: 'min' };
+  return { value: `${m}`, unit: 'min' };
+}
+
+function fmtPrSplit(sec: number): { value: string; unit: string } {
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: '/500m' };
 }
 
 export default function HomeScreen() {
@@ -63,7 +103,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const [displayName, setDisplayName] = useState('');
-  const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
+  const [workouts, setWorkouts] = useState<HomeWorkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -80,7 +120,7 @@ export default function HomeScreen() {
         .single(),
       supabase
         .from('workouts')
-        .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds')
+        .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories')
         .order('started_at', { ascending: false })
         .limit(3),
     ]);
@@ -88,7 +128,7 @@ export default function HomeScreen() {
     if (profileRes.data?.display_name) {
       setDisplayName(profileRes.data.display_name);
     }
-    setWorkouts(workoutsRes.data ?? []);
+    setWorkouts((workoutsRes.data ?? []) as HomeWorkout[]);
     setLoading(false);
   }, [user]);
 
@@ -111,17 +151,10 @@ export default function HomeScreen() {
   const greeting = getGreeting();
   const name = displayName || 'roeier';
 
-  // Format goal progress for display
-  const goalLabel = goalProgress
-    ? goalProgress.goal.period === 'week' ? 'Deze week' : 'Deze maand'
-    : null;
-  const goalMetricLabel = goalProgress
-    ? goalProgress.goal.metric === 'distance'
-      ? `${(goalProgress.current / 1000).toFixed(1)} / ${(goalProgress.goal.target / 1000).toFixed(0)} km`
-      : goalProgress.goal.metric === 'duration'
-        ? `${fmtDuration(goalProgress.current)} / ${fmtDuration(goalProgress.goal.target)}`
-        : `${goalProgress.current} / ${goalProgress.goal.target} sessies`
-    : null;
+  const hasPrRecords =
+    records.longestDistance != null ||
+    records.longestDuration != null ||
+    records.fastestSplit != null;
 
   return (
     <ScrollView
@@ -131,90 +164,87 @@ export default function HomeScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={brand.primary}
+          tintColor={C_CYAN}
         />
       }
     >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.greeting}>{greeting},</Text>
-        <Text style={styles.name}>{name}</Text>
+      <View style={styles.headerSection}>
+        <View>
+          <Text style={styles.greetingText}>{greeting},</Text>
+          <Text style={styles.nameText}>{name}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.ctaButton}
+          onPress={() => router.push('/(tabs)/workout')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="barbell-outline" size={22} color={C_TEXT_ON_CYAN} />
+          <Text style={styles.ctaText}>Start</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* CTA */}
-      <Button
-        title="Nieuwe training"
-        icon="play"
-        onPress={() => router.push('/(tabs)/workout')}
-      />
+      <View style={styles.divider} />
 
-      {/* Period goal progress */}
+      {/* Period goal */}
       {goalProgress && (
-        <View style={styles.section}>
-          <SectionHeader title={goalLabel!.toUpperCase()} />
-          <Card padding={space[4]}>
-            <Text style={styles.goalMetricText}>{goalMetricLabel}</Text>
-            <View style={styles.progressBarBg}>
-              <View
-                style={[
-                  styles.progressBarFill,
-                  {
-                    width: `${Math.min(goalProgress.percentage, 100)}%`,
-                    backgroundColor: goalProgress.percentage >= 100
-                      ? statusColors.success
-                      : brand.primary,
-                  },
-                ]}
-              />
-            </View>
-            <Text style={styles.goalPercentText}>
-              {Math.round(goalProgress.percentage)}% {goalProgress.percentage >= 100 ? 'behaald!' : 'voldaan'}
-            </Text>
-          </Card>
-        </View>
+        <>
+          <PeriodGoalCard progress={goalProgress} />
+          <View style={styles.divider} />
+        </>
       )}
 
       {/* Personal records */}
-      {(records.longestDistance || records.longestDuration || records.fastestSplit) && (
-        <View style={styles.section}>
-          <SectionHeader title="PERSOONLIJKE RECORDS" />
-          <View style={styles.prRow}>
-            {records.longestDistance != null && (
-              <Card padding={space[3]} style={styles.prCard}>
-                <MetricDisplay
-                  value={(records.longestDistance / 1000).toFixed(1)}
-                  label="LANGSTE AFSTAND"
-                  unit="km"
-                  size="sm"
-                />
-              </Card>
-            )}
-            {records.longestDuration != null && (
-              <Card padding={space[3]} style={styles.prCard}>
-                <MetricDisplay
-                  value={fmtDuration(records.longestDuration)}
-                  label="LANGSTE DUUR"
-                  size="sm"
-                />
-              </Card>
-            )}
-            {records.fastestSplit != null && (
-              <Card padding={space[3]} style={styles.prCard}>
-                <MetricDisplay
-                  value={fmtTime(records.fastestSplit)}
-                  label="SNELSTE SPLIT"
-                  unit="/500m"
-                  size="sm"
-                />
-              </Card>
-            )}
+      {hasPrRecords && (
+        <>
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>PERSOONLIJKE RECORDS</Text>
+            <View style={styles.prRow}>
+              {records.longestDistance != null && (() => {
+                const { value, unit } = fmtPrDistance(records.longestDistance!);
+                return (
+                  <View style={styles.prCard}>
+                    <View style={styles.prValueRow}>
+                      <Text style={styles.prValue}>{value}</Text>
+                      <Text style={styles.prUnit}>{unit}</Text>
+                    </View>
+                    <Text style={styles.prLabel}>MAX. AFSTAND</Text>
+                  </View>
+                );
+              })()}
+              {records.longestDuration != null && (() => {
+                const { value, unit } = fmtPrDuration(records.longestDuration!);
+                return (
+                  <View style={styles.prCard}>
+                    <View style={styles.prValueRow}>
+                      <Text style={styles.prValue}>{value}</Text>
+                      <Text style={styles.prUnit}>{unit}</Text>
+                    </View>
+                    <Text style={styles.prLabel}>LANGSTE DUUR</Text>
+                  </View>
+                );
+              })()}
+              {records.fastestSplit != null && (() => {
+                const { value, unit } = fmtPrSplit(records.fastestSplit!);
+                return (
+                  <View style={styles.prCard}>
+                    <View style={styles.prValueRow}>
+                      <Text style={styles.prValue}>{value}</Text>
+                      <Text style={styles.prUnit}>{unit}</Text>
+                    </View>
+                    <Text style={styles.prLabel}>SNELSTE SPLIT</Text>
+                  </View>
+                );
+              })()}
+            </View>
           </View>
-        </View>
+          <View style={styles.divider} />
+        </>
       )}
 
-      {/* Recente workouts */}
+      {/* Recent workouts */}
       <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
+        <View style={styles.recentHeader}>
           <Text style={styles.sectionLabel}>RECENTE WORKOUTS</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/history')}>
             <Text style={styles.sectionLink}>Bekijk alle →</Text>
@@ -222,10 +252,7 @@ export default function HomeScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator
-            color={brand.primary}
-            style={styles.loader}
-          />
+          <ActivityIndicator color={C_CYAN} style={styles.loader} />
         ) : workouts.length === 0 ? (
           <EmptyState
             icon="water-outline"
@@ -233,9 +260,36 @@ export default function HomeScreen() {
           />
         ) : (
           <View style={styles.workoutList}>
-            {workouts.map((w) => (
-              <WorkoutCard key={w.id} workout={w} onPress={handleWorkoutPress} />
-            ))}
+            {workouts.map((w) => {
+              const subtitle = [
+                fmtStartTime(w.started_at),
+                w.calories != null ? `${w.calories} kcal` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ');
+
+              return (
+                <TouchableOpacity
+                  key={w.id}
+                  style={styles.workoutCard}
+                  onPress={() => handleWorkoutPress(w.id)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.workoutLeft}>
+                    <Text style={styles.workoutDate}>{fmtDate(w.started_at)}</Text>
+                    <Text style={styles.workoutSubtitle}>{subtitle}</Text>
+                  </View>
+                  <View style={styles.workoutRight}>
+                    {w.distance_meters != null && (
+                      <Text style={styles.workoutDistance}>
+                        {fmtMeters(w.distance_meters)}
+                      </Text>
+                    )}
+                    <Text style={styles.workoutChevron}>›</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
       </View>
@@ -246,77 +300,155 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: background.base,
+    backgroundColor: C_BG,
   },
   content: {
-    paddingHorizontal: layout.screenHorizontal,
-    paddingBottom: space[10],
-    gap: space[8],
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    gap: 16,
   },
-  header: {
-    paddingTop: space[6],
-    gap: space[1],
+  divider: {
+    height: 1,
+    backgroundColor: C_DIVIDER,
+    marginVertical: 8,
   },
-  greeting: {
-    ...body.lg,
-    color: textColors.secondary,
+
+  // Header
+  headerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  name: {
-    ...display.sm,
-    color: textColors.primary,
+  greetingText: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: 16,
+    color: C_GREETING,
   },
-  section: {
-    gap: space[4],
+  nameText: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 28,
+    color: C_TEXT_WHITE,
   },
-  loader: {
-    paddingVertical: space[10],
+  ctaButton: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: C_CYAN,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    gap: 8,
   },
-  workoutList: {
-    gap: space[3],
-  },
-  goalMetricText: {
+  ctaText: {
     fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['16'],
-    color: textColors.primary,
-    marginBottom: space[2],
+    fontSize: 16,
+    color: C_TEXT_ON_CYAN,
   },
-  progressBarBg: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: background.elevated,
-    overflow: 'hidden',
+
+  // Sections
+  section: {
+    gap: 16,
   },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 4,
+  sectionLabel: {
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: 12,
+    color: C_SECTION_LABEL,
+    letterSpacing: 0.96,
   },
-  goalPercentText: {
-    ...body.sm,
-    color: textColors.secondary,
-    marginTop: space[1],
-  },
+
+  // PR row
   prRow: {
     flexDirection: 'row',
-    gap: space[3],
+    gap: 12,
   },
   prCard: {
     flex: 1,
+    backgroundColor: C_SURFACE,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    gap: 4,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionHeaderRow: {
+  prValueRow: {
+    flexDirection: 'row',
+    gap: 3,
+    alignItems: 'baseline',
+  },
+  prValue: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 18,
+    color: C_TEXT_WHITE,
+  },
+  prUnit: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 12,
+    color: C_TEXT_MUTED,
+  },
+  prLabel: {
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: 10,
+    color: C_DIVIDER,
+    letterSpacing: 0.5,
+  },
+
+  // Recent workouts
+  recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  sectionLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['12'],
-    color: textColors.muted,
-    letterSpacing: 0.8,
-  },
   sectionLink: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: fontSize['12'],
-    color: brand.primary,
+    fontSize: 12,
+    color: C_CYAN,
+  },
+  loader: {
+    paddingVertical: 40,
+  },
+  workoutList: {
+    gap: 8,
+  },
+  workoutCard: {
+    height: 68,
+    backgroundColor: C_SURFACE,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  workoutLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  workoutDate: {
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: 15,
+    color: C_TEXT_WHITE,
+  },
+  workoutSubtitle: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: 13,
+    color: C_TEXT_MUTED,
+  },
+  workoutRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  workoutDistance: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 16,
+    color: C_CYAN,
+  },
+  workoutChevron: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: 20,
+    color: C_DIVIDER,
   },
 });

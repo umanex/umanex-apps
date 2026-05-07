@@ -1,93 +1,166 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
   Alert,
   TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { signOut } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { Button, FormField, SectionHeader } from '@/components';
+import { Button, WheelPicker } from '@/components';
+import { PeriodGoalCard } from '@/components/PeriodGoalCard';
+import { BottomSheet } from '@/components/BottomSheet';
+import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
 import type { PeriodGoalPeriod, PeriodGoalMetric } from '@/lib/hooks/usePeriodGoal';
 import {
   background,
   brand,
   text as textColors,
-  display,
-  body,
-  label,
-  space,
-  layout,
   fontFamily,
   fontSize,
+  space,
   radii,
+  border,
+  body,
+  status,
 } from '@/constants';
+import type { WheelItem } from '@/lib/formatters';
+
+// --- Date of birth helpers ---
+
+const BIRTH_YEAR_MIN = 1930;
+const BIRTH_YEAR_MAX = new Date().getFullYear() - 5;
+const BIRTH_YEARS = Array.from(
+  { length: BIRTH_YEAR_MAX - BIRTH_YEAR_MIN + 1 },
+  (_, i) => BIRTH_YEAR_MIN + i,
+);
+
+const NL_MONTHS_SHORT = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+
+const DAY_ITEMS: WheelItem[] = Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), value: i + 1 }));
+const MONTH_ITEMS: WheelItem[] = NL_MONTHS_SHORT.map((m, i) => ({ label: m, value: i + 1 }));
+const YEAR_ITEMS: WheelItem[] = BIRTH_YEARS.map(y => ({ label: String(y), value: y }));
+
+const DEFAULT_YEAR_IDX = Math.max(0, BIRTH_YEARS.indexOf(1990));
+
+function parseBirthDate(date: string | null): { dayIdx: number; monthIdx: number; yearIdx: number } {
+  if (!date) return { dayIdx: 0, monthIdx: 0, yearIdx: DEFAULT_YEAR_IDX };
+  const [y, m, d] = date.split('-').map(Number);
+  return {
+    dayIdx: Math.max(0, d - 1),
+    monthIdx: Math.max(0, m - 1),
+    yearIdx: Math.max(0, BIRTH_YEARS.indexOf(y)),
+  };
+}
+
+function indicesToDate(dayIdx: number, monthIdx: number, yearIdx: number): string {
+  const d = String(dayIdx + 1).padStart(2, '0');
+  const m = String(monthIdx + 1).padStart(2, '0');
+  const y = BIRTH_YEARS[yearIdx];
+  return `${y}-${m}-${d}`;
+}
+
+function formatBirthDate(date: string | null): string {
+  if (!date) return '—';
+  const [y, m, d] = date.split('-').map(Number);
+  return `${d} ${NL_MONTHS_SHORT[m - 1]} ${y}`;
+}
+
+function genderLabel(g: string | null): string {
+  if (g === 'male') return 'Man';
+  if (g === 'female') return 'Vrouw';
+  if (g === 'other') return 'Anders';
+  return '—';
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type SheetType = 'none' | 'voornaam' | 'email' | 'geslacht' | 'lengte' | 'gewicht' | 'geboortedatum' | 'doel';
 
 export default function ProfileScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
+  const { goalProgress, refetch: refetchGoal } = usePeriodGoal(user?.id);
+
+  // --- Profile state ---
   const [displayName, setDisplayName] = useState('');
-  const [originalName, setOriginalName] = useState('');
   const [gender, setGender] = useState<string | null>(null);
-  const [origGender, setOrigGender] = useState<string | null>(null);
-  const [age, setAge] = useState('');
-  const [origAge, setOrigAge] = useState('');
-  const [weightKg, setWeightKg] = useState('');
-  const [origWeightKg, setOrigWeightKg] = useState('');
-  const [heightCm, setHeightCm] = useState('');
-  const [origHeightCm, setOrigHeightCm] = useState('');
+  const [heightCm, setHeightCm] = useState<number | null>(null);
+  const [weightKg, setWeightKg] = useState<number | null>(null);
+  const [birthDate, setBirthDate] = useState<string | null>(null);
   const [goalPeriod, setGoalPeriod] = useState<PeriodGoalPeriod | null>(null);
-  const [origGoalPeriod, setOrigGoalPeriod] = useState<PeriodGoalPeriod | null>(null);
   const [goalMetric, setGoalMetric] = useState<PeriodGoalMetric | null>(null);
-  const [origGoalMetric, setOrigGoalMetric] = useState<PeriodGoalMetric | null>(null);
   const [goalTarget, setGoalTarget] = useState('');
-  const [origGoalTarget, setOrigGoalTarget] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // --- Sheet state ---
+  const [sheetOpen, setSheetOpen] = useState<SheetType>('none');
+
+  // Voornaam draft
+  const [draftName, setDraftName] = useState('');
+
+  // Email draft
+  const [draftEmail, setDraftEmail] = useState('');
+  const [draftEmailRepeat, setDraftEmailRepeat] = useState('');
+  const [draftPassword, setDraftPassword] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailChanging, setEmailChanging] = useState(false);
+
+  // Body data drafts
+  const [draftGender, setDraftGender] = useState<string | null>(null);
+  const [draftHeight, setDraftHeight] = useState(170);
+  const [draftWeight, setDraftWeight] = useState(70);
+  const [draftDayIdx, setDraftDayIdx] = useState(0);
+  const [draftMonthIdx, setDraftMonthIdx] = useState(0);
+  const [draftYearIdx, setDraftYearIdx] = useState(DEFAULT_YEAR_IDX);
+
+  // Goal draft
+  const [draftGoalPeriod, setDraftGoalPeriod] = useState<PeriodGoalPeriod | null>(null);
+  const [draftGoalMetric, setDraftGoalMetric] = useState<PeriodGoalMetric | null>(null);
+  const [draftGoalTarget, setDraftGoalTarget] = useState('');
+
+  // --- Input refs for autofocus and field chaining ---
+  const nameInputRef = useRef<TextInput>(null);
+  const newEmailRef = useRef<TextInput>(null);
+  const repeatEmailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+
+  // Autofocus after sheet open animation (ANIM_MS = 220ms → wait 250ms)
+  useEffect(() => {
+    if (sheetOpen === 'voornaam') {
+      const t = setTimeout(() => nameInputRef.current?.focus(), 250);
+      return () => clearTimeout(t);
+    }
+    if (sheetOpen === 'email') {
+      const t = setTimeout(() => newEmailRef.current?.focus(), 250);
+      return () => clearTimeout(t);
+    }
+  }, [sheetOpen]);
+
+  // --- Fetch profile ---
   const fetchProfile = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
       .from('profiles')
-      .select('display_name, gender, age, weight_kg, height_cm, period_goal_period, period_goal_metric, period_goal_target')
+      .select('display_name, gender, height_cm, weight_kg, birth_date')
       .eq('id', user.id)
       .single();
-    const name = data?.display_name ?? '';
-    setDisplayName(name);
-    setOriginalName(name);
+
+    setDisplayName(data?.display_name ?? '');
     setGender(data?.gender ?? null);
-    setOrigGender(data?.gender ?? null);
-    const a = data?.age != null ? String(data.age) : '';
-    setAge(a);
-    setOrigAge(a);
-    const w = data?.weight_kg != null ? String(data.weight_kg) : '';
-    setWeightKg(w);
-    setOrigWeightKg(w);
-    const h = data?.height_cm != null ? String(data.height_cm) : '';
-    setHeightCm(h);
-    setOrigHeightCm(h);
-    const gp = (data?.period_goal_period as PeriodGoalPeriod) ?? null;
-    setGoalPeriod(gp);
-    setOrigGoalPeriod(gp);
-    const gm = (data?.period_goal_metric as PeriodGoalMetric) ?? null;
-    setGoalMetric(gm);
-    setOrigGoalMetric(gm);
-    // Convert stored value to user-friendly units (meters→km, seconds→min)
-    let gt = '';
-    if (data?.period_goal_target != null && gm) {
-      if (gm === 'distance') gt = String(data.period_goal_target / 1000);
-      else if (gm === 'duration') gt = String(data.period_goal_target / 60);
-      else gt = String(data.period_goal_target);
-    }
-    setGoalTarget(gt);
-    setOrigGoalTarget(gt);
+    setHeightCm(data?.height_cm ?? null);
+    setWeightKg(data?.weight_kg ?? null);
+    setBirthDate(data?.birth_date ?? null);
     setLoading(false);
   }, [user]);
 
@@ -97,60 +170,177 @@ export default function ProfileScreen() {
     }, [fetchProfile]),
   );
 
-  const hasChanges =
-    displayName !== originalName ||
-    gender !== origGender ||
-    age !== origAge ||
-    weightKg !== origWeightKg ||
-    heightCm !== origHeightCm ||
-    goalPeriod !== origGoalPeriod ||
-    goalMetric !== origGoalMetric ||
-    goalTarget !== origGoalTarget;
+  // Sync goal editable state from usePeriodGoal
+  useFocusEffect(
+    useCallback(() => {
+      if (goalProgress) {
+        setGoalPeriod(goalProgress.goal.period);
+        setGoalMetric(goalProgress.goal.metric);
+        const m = goalProgress.goal.metric;
+        const raw = goalProgress.goal.target;
+        if (m === 'distance') setGoalTarget(String(raw / 1000));
+        else if (m === 'duration') setGoalTarget(String(raw / 60));
+        else setGoalTarget(String(raw));
+      } else {
+        setGoalPeriod(null);
+        setGoalMetric(null);
+        setGoalTarget('');
+      }
+    }, [goalProgress]),
+  );
 
+  // --- Sheet openers ---
+  function openVoornaam() {
+    setDraftName(displayName);
+    setSheetOpen('voornaam');
+  }
+
+  function openEmail() {
+    setDraftEmail('');
+    setDraftEmailRepeat('');
+    setDraftPassword('');
+    setEmailError(null);
+    setSheetOpen('email');
+  }
+
+  function openGeslacht() {
+    setDraftGender(gender);
+    setSheetOpen('geslacht');
+  }
+
+  function openLengte() {
+    setDraftHeight(heightCm ?? 170);
+    setSheetOpen('lengte');
+  }
+
+  function openGewicht() {
+    setDraftWeight(weightKg ?? 70);
+    setSheetOpen('gewicht');
+  }
+
+  function openGeboortedatum() {
+    const { dayIdx, monthIdx, yearIdx } = parseBirthDate(birthDate);
+    setDraftDayIdx(dayIdx);
+    setDraftMonthIdx(monthIdx);
+    setDraftYearIdx(yearIdx);
+    setSheetOpen('geboortedatum');
+  }
+
+  function openDoel() {
+    setDraftGoalPeriod(goalPeriod);
+    setDraftGoalMetric(goalMetric);
+    setDraftGoalTarget(goalTarget);
+    setSheetOpen('doel');
+  }
+
+  function closeSheet() {
+    setSheetOpen('none');
+  }
+
+  // --- Sheet savers (stage to profile state) ---
+  function saveVoornaam() {
+    setDisplayName(draftName.trim());
+    setSheetOpen('none');
+  }
+
+  function saveGeslacht() {
+    setGender(draftGender);
+    setSheetOpen('none');
+  }
+
+  function saveLengte() {
+    setHeightCm(draftHeight);
+    setSheetOpen('none');
+  }
+
+  function saveGewicht() {
+    setWeightKg(draftWeight);
+    setSheetOpen('none');
+  }
+
+  function saveGeboortedatum() {
+    setBirthDate(indicesToDate(draftDayIdx, draftMonthIdx, draftYearIdx));
+    setSheetOpen('none');
+  }
+
+  function saveDoel() {
+    setGoalPeriod(draftGoalPeriod);
+    setGoalMetric(draftGoalMetric);
+    setGoalTarget(draftGoalTarget);
+    setSheetOpen('none');
+  }
+
+  // --- Email change (direct Supabase auth write, not staged) ---
+  const emailFormValid =
+    EMAIL_RE.test(draftEmail) &&
+    draftEmail === draftEmailRepeat &&
+    draftPassword.length > 0;
+
+  async function handleEmailChange() {
+    if (!emailFormValid || !user?.email) return;
+    setEmailError(null);
+    setEmailChanging(true);
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: draftPassword,
+    });
+
+    if (signInError) {
+      setEmailError('Wachtwoord klopt niet.');
+      setEmailChanging(false);
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({ email: draftEmail });
+    setEmailChanging(false);
+
+    if (updateError) {
+      setEmailError(updateError.message);
+      return;
+    }
+
+    setSheetOpen('none');
+    Alert.alert(
+      'Bevestiging verstuurd',
+      `Controleer je inbox op ${draftEmail} om de wijziging te bevestigen.`,
+    );
+  }
+
+  // --- Main profile save ---
   async function handleSave() {
-    if (!user || !hasChanges) return;
+    if (!user) return;
     setSaving(true);
 
     const hasGoal = goalPeriod && goalMetric && goalTarget;
     let goalTargetStored: number | null = null;
     if (hasGoal) {
       const raw = parseFloat(goalTarget);
-      if (goalMetric === 'distance') goalTargetStored = raw * 1000; // km → meters
-      else if (goalMetric === 'duration') goalTargetStored = raw * 60; // min → seconds
-      else goalTargetStored = raw; // workouts count
+      if (goalMetric === 'distance') goalTargetStored = Math.round(raw * 1000);
+      else if (goalMetric === 'duration') goalTargetStored = Math.round(raw * 60);
+      else goalTargetStored = Math.round(raw);
     }
-    const payload = {
-      display_name: displayName.trim(),
-      gender: gender || null,
-      age: age ? parseInt(age, 10) : null,
-      weight_kg: weightKg ? parseFloat(weightKg) : null,
-      height_cm: heightCm ? parseInt(heightCm, 10) : null,
-      period_goal_period: hasGoal ? goalPeriod : null,
-      period_goal_metric: hasGoal ? goalMetric : null,
-      period_goal_target: goalTargetStored,
-    };
-
-    if (__DEV__) console.log('[Profile] saving:', payload);
 
     const { error } = await supabase
       .from('profiles')
-      .update(payload)
+      .update({
+        display_name: displayName || null,
+        gender: gender || null,
+        height_cm: heightCm,
+        weight_kg: weightKg,
+        birth_date: birthDate,
+        period_goal_period: hasGoal ? goalPeriod : null,
+        period_goal_metric: hasGoal ? goalMetric : null,
+        period_goal_target: goalTargetStored,
+      })
       .eq('id', user.id);
+
     setSaving(false);
 
     if (error) {
-      if (__DEV__) console.log('[Profile] save error:', JSON.stringify(error));
       Alert.alert('Fout', `Opslaan mislukt: ${error.message}`);
     } else {
-      setOriginalName(displayName.trim());
-      setDisplayName(displayName.trim());
-      setOrigGender(gender);
-      setOrigAge(age);
-      setOrigWeightKg(weightKg);
-      setOrigHeightCm(heightCm);
-      setOrigGoalPeriod(goalPeriod);
-      setOrigGoalMetric(goalMetric);
-      setOrigGoalTarget(goalTarget);
+      await refetchGoal();
     }
   }
 
@@ -169,150 +359,356 @@ export default function ProfileScreen() {
     );
   }
 
+  const nameLabel = displayName || '—';
+  const heightLabel = heightCm != null ? `${heightCm} cm` : '—';
+  const weightLabel = weightKg != null ? `${weightKg} kg` : '—';
+
   return (
-    <ScrollView
-      style={[styles.container, { paddingTop: insets.top }]}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.title}>Profiel</Text>
+    <>
+      <ScrollView
+        style={[styles.container, { paddingTop: insets.top }]}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>Profiel</Text>
 
-      <FormField
-        label="E-MAIL"
-        value={user?.email ?? ''}
-        readOnly
-      />
-
-      <FormField
-        label="NAAM"
-        value={displayName}
-        onChangeText={setDisplayName}
-        placeholder="Je weergavenaam"
-        autoCapitalize="words"
-        autoCorrect={false}
-      />
-
-      <SectionHeader title="Lichaamsgegevens" />
-
-      {/* Gender segmented control */}
-      <View style={styles.fieldWithLabel}>
-        <Text style={styles.fieldLabel}>GESLACHT</Text>
-        <View style={styles.segmented}>
-          <TouchableOpacity
-            style={[styles.segment, gender === 'male' && styles.segmentActive]}
-            onPress={() => setGender('male')}
-          >
-            <Text style={[styles.segmentText, gender === 'male' && styles.segmentTextActive]}>Man</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segment, gender === 'female' && styles.segmentActive]}
-            onPress={() => setGender('female')}
-          >
-            <Text style={[styles.segmentText, gender === 'female' && styles.segmentTextActive]}>Vrouw</Text>
-          </TouchableOpacity>
+        {/* MIJN DOEL */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>MIJN DOEL</Text>
+          {goalProgress ? (
+            <PeriodGoalCard progress={goalProgress} onEdit={openDoel} />
+          ) : (
+            <TouchableOpacity style={styles.listRow} onPress={openDoel} activeOpacity={0.8}>
+              <Text style={styles.listLabel}>Geen doel ingesteld</Text>
+              <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+            </TouchableOpacity>
+          )}
         </View>
-      </View>
 
-      <FormField
-        label="LEEFTIJD"
-        value={age}
-        onChangeText={setAge}
-        placeholder="jaar"
-        keyboardType="numeric"
-      />
-
-      <FormField
-        label="GEWICHT"
-        value={weightKg}
-        onChangeText={setWeightKg}
-        placeholder="kg"
-        keyboardType="decimal-pad"
-      />
-
-      <FormField
-        label="LENGTE"
-        value={heightCm}
-        onChangeText={setHeightCm}
-        placeholder="cm"
-        keyboardType="numeric"
-      />
-
-      <SectionHeader title="Periodedoel" />
-
-      {/* Period: week / maand */}
-      <View style={styles.fieldWithLabel}>
-        <Text style={styles.fieldLabel}>PERIODE</Text>
-        <View style={styles.segmented}>
-          <TouchableOpacity
-            style={[styles.segment, goalPeriod === 'week' && styles.segmentActive]}
-            onPress={() => setGoalPeriod('week')}
-          >
-            <Text style={[styles.segmentText, goalPeriod === 'week' && styles.segmentTextActive]}>Week</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segment, goalPeriod === 'month' && styles.segmentActive]}
-            onPress={() => setGoalPeriod('month')}
-          >
-            <Text style={[styles.segmentText, goalPeriod === 'month' && styles.segmentTextActive]}>Maand</Text>
-          </TouchableOpacity>
+        {/* ACCOUNT */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>ACCOUNT</Text>
+          <View style={styles.listCard}>
+            <TouchableOpacity style={styles.listRow} onPress={openVoornaam} activeOpacity={0.8}>
+              <Text style={styles.listLabel}>Voornaam</Text>
+              <View style={styles.listRight}>
+                <Text style={styles.listValue}>{nameLabel}</Text>
+                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+              </View>
+            </TouchableOpacity>
+            <View style={styles.listDivider} />
+            <TouchableOpacity style={styles.listRow} onPress={openEmail} activeOpacity={0.8}>
+              <Text style={styles.listLabel}>E-mailadres</Text>
+              <View style={styles.listRight}>
+                <Text style={styles.listValue}>{user?.email ?? '—'}</Text>
+                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {/* Metric: afstand / duur / workouts */}
-      <View style={styles.fieldWithLabel}>
-        <Text style={styles.fieldLabel}>DOEL TYPE</Text>
-        <View style={styles.segmented}>
-          <TouchableOpacity
-            style={[styles.segment, goalMetric === 'distance' && styles.segmentActive]}
-            onPress={() => setGoalMetric('distance')}
-          >
-            <Text style={[styles.segmentText, goalMetric === 'distance' && styles.segmentTextActive]}>Afstand</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segment, goalMetric === 'duration' && styles.segmentActive]}
-            onPress={() => setGoalMetric('duration')}
-          >
-            <Text style={[styles.segmentText, goalMetric === 'duration' && styles.segmentTextActive]}>Duur</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segment, goalMetric === 'workouts' && styles.segmentActive]}
-            onPress={() => setGoalMetric('workouts')}
-          >
-            <Text style={[styles.segmentText, goalMetric === 'workouts' && styles.segmentTextActive]}>Sessies</Text>
-          </TouchableOpacity>
+        {/* LICHAAMSGEGEVENS */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>LICHAAMSGEGEVENS</Text>
+          <View style={styles.listCard}>
+            <TouchableOpacity style={styles.listRow} onPress={openGeslacht} activeOpacity={0.8}>
+              <Text style={styles.listLabel}>Geslacht</Text>
+              <View style={styles.listRight}>
+                <Text style={styles.listValue}>{genderLabel(gender)}</Text>
+                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+              </View>
+            </TouchableOpacity>
+            <View style={styles.listDivider} />
+            <TouchableOpacity style={styles.listRow} onPress={openLengte} activeOpacity={0.8}>
+              <Text style={styles.listLabel}>Lengte</Text>
+              <View style={styles.listRight}>
+                <Text style={styles.listValue}>{heightLabel}</Text>
+                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+              </View>
+            </TouchableOpacity>
+            <View style={styles.listDivider} />
+            <TouchableOpacity style={styles.listRow} onPress={openGewicht} activeOpacity={0.8}>
+              <Text style={styles.listLabel}>Gewicht</Text>
+              <View style={styles.listRight}>
+                <Text style={styles.listValue}>{weightLabel}</Text>
+                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+              </View>
+            </TouchableOpacity>
+            <View style={styles.listDivider} />
+            <TouchableOpacity style={styles.listRow} onPress={openGeboortedatum} activeOpacity={0.8}>
+              <Text style={styles.listLabel}>Geboortedatum</Text>
+              <View style={styles.listRight}>
+                <Text style={styles.listValue}>{formatBirthDate(birthDate)}</Text>
+                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {goalMetric && (
-        <FormField
-          label="DOEL"
-          value={goalTarget}
-          onChangeText={setGoalTarget}
-          placeholder={goalMetric === 'distance' ? 'km' : goalMetric === 'duration' ? 'minuten' : 'aantal'}
-          keyboardType="numeric"
+        <Button title="Opslaan" onPress={handleSave} loading={saving} size="md" />
+
+        <Button title="Uitloggen" onPress={handleLogout} variant="destructive" size="md" />
+
+        <Text style={styles.version}>RowTrack v1.0.0</Text>
+      </ScrollView>
+
+      {/* Voornaam */}
+      <BottomSheet
+        visible={sheetOpen === 'voornaam'}
+        onClose={closeSheet}
+        title="Voornaam"
+      >
+        <TextInput
+          ref={nameInputRef}
+          style={styles.sheetInput}
+          value={draftName}
+          onChangeText={setDraftName}
+          placeholder="Je voornaam"
+          autoCapitalize="words"
+          autoCorrect={false}
+          returnKeyType="done"
+          onSubmitEditing={saveVoornaam}
+          placeholderTextColor={textColors.muted}
         />
-      )}
+        <Button title="Opslaan" onPress={saveVoornaam} size="md" />
+      </BottomSheet>
 
-      {hasChanges && (
+      {/* E-mail wijzigen */}
+      <BottomSheet
+        visible={sheetOpen === 'email'}
+        onClose={closeSheet}
+        title="E-mail wijzigen"
+      >
+        <View style={styles.sheetFieldGroup}>
+          <Text style={styles.sheetFieldLabel}>HUIDIG E-MAILADRES</Text>
+          <Text style={styles.currentEmailText}>{user?.email ?? ''}</Text>
+        </View>
+
+        <View style={styles.sheetFieldGroup}>
+          <Text style={styles.sheetFieldLabel}>NIEUW E-MAILADRES</Text>
+          <TextInput
+            ref={newEmailRef}
+            style={styles.sheetInput}
+            value={draftEmail}
+            onChangeText={text => { setDraftEmail(text); setEmailError(null); }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="next"
+            onSubmitEditing={() => repeatEmailRef.current?.focus()}
+            placeholder="nieuw@email.com"
+            placeholderTextColor={textColors.muted}
+          />
+        </View>
+
+        <View style={styles.sheetFieldGroup}>
+          <Text style={styles.sheetFieldLabel}>HERHAAL E-MAILADRES</Text>
+          <TextInput
+            ref={repeatEmailRef}
+            style={styles.sheetInput}
+            value={draftEmailRepeat}
+            onChangeText={text => { setDraftEmailRepeat(text); setEmailError(null); }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            placeholder="nieuw@email.com"
+            placeholderTextColor={textColors.muted}
+          />
+        </View>
+
+        <View style={styles.sheetFieldGroup}>
+          <Text style={styles.sheetFieldLabel}>WACHTWOORD</Text>
+          <TextInput
+            ref={passwordRef}
+            style={styles.sheetInput}
+            value={draftPassword}
+            onChangeText={text => { setDraftPassword(text); setEmailError(null); }}
+            secureTextEntry
+            returnKeyType="done"
+            onSubmitEditing={emailFormValid ? handleEmailChange : undefined}
+            placeholder="Je huidige wachtwoord"
+            placeholderTextColor={textColors.muted}
+          />
+        </View>
+
+        {emailError && <Text style={styles.emailError}>{emailError}</Text>}
+
         <Button
-          title="Opslaan"
-          onPress={handleSave}
-          loading={saving}
+          title="E-mail wijzigen"
+          onPress={handleEmailChange}
+          disabled={!emailFormValid || emailChanging}
+          loading={emailChanging}
           size="md"
         />
-      )}
+      </BottomSheet>
 
-      <View style={styles.spacer} />
+      {/* Geslacht */}
+      <BottomSheet
+        visible={sheetOpen === 'geslacht'}
+        onClose={closeSheet}
+        title="Geslacht"
+      >
+        <View style={styles.segmentedRow}>
+          {(['male', 'female', 'other'] as const).map(g => (
+            <TouchableOpacity
+              key={g}
+              style={[styles.segmentBtn, draftGender === g && styles.segmentBtnActive]}
+              onPress={() => setDraftGender(g)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.segmentBtnText, draftGender === g && styles.segmentBtnTextActive]}>
+                {g === 'male' ? 'Man' : g === 'female' ? 'Vrouw' : 'Anders'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Button title="Opslaan" onPress={saveGeslacht} size="md" />
+      </BottomSheet>
 
-      <Button
-        title="Uitloggen"
-        onPress={handleLogout}
-        variant="destructive"
-        size="md"
-      />
+      {/* Lengte */}
+      <BottomSheet
+        visible={sheetOpen === 'lengte'}
+        onClose={closeSheet}
+        title="Lengte"
+      >
+        <View style={styles.stepperRow}>
+          <TouchableOpacity
+            style={styles.stepperBtn}
+            onPress={() => setDraftHeight(h => Math.max(100, h - 1))}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="remove" size={28} color={textColors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.stepperValue}>{draftHeight} cm</Text>
+          <TouchableOpacity
+            style={styles.stepperBtn}
+            onPress={() => setDraftHeight(h => Math.min(250, h + 1))}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add" size={28} color={textColors.primary} />
+          </TouchableOpacity>
+        </View>
+        <Button title="Opslaan" onPress={saveLengte} size="md" />
+      </BottomSheet>
 
-      <Text style={styles.version}>RowTrack v1.0.0</Text>
-    </ScrollView>
+      {/* Gewicht */}
+      <BottomSheet
+        visible={sheetOpen === 'gewicht'}
+        onClose={closeSheet}
+        title="Gewicht"
+      >
+        <View style={styles.stepperRow}>
+          <TouchableOpacity
+            style={styles.stepperBtn}
+            onPress={() => setDraftWeight(w => Math.max(30, w - 1))}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="remove" size={28} color={textColors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.stepperValue}>{draftWeight} kg</Text>
+          <TouchableOpacity
+            style={styles.stepperBtn}
+            onPress={() => setDraftWeight(w => Math.min(300, w + 1))}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add" size={28} color={textColors.primary} />
+          </TouchableOpacity>
+        </View>
+        <Button title="Opslaan" onPress={saveGewicht} size="md" />
+      </BottomSheet>
+
+      {/* Geboortedatum */}
+      <BottomSheet
+        visible={sheetOpen === 'geboortedatum'}
+        onClose={closeSheet}
+        title="Geboortedatum"
+      >
+        <View style={styles.datePickerRow}>
+          <View style={styles.datePickerCol}>
+            <Text style={styles.datePickerColLabel}>DAG</Text>
+            <WheelPicker items={DAY_ITEMS} selectedIndex={draftDayIdx} onIndexChange={setDraftDayIdx} />
+          </View>
+          <View style={styles.datePickerCol}>
+            <Text style={styles.datePickerColLabel}>MAAND</Text>
+            <WheelPicker items={MONTH_ITEMS} selectedIndex={draftMonthIdx} onIndexChange={setDraftMonthIdx} />
+          </View>
+          <View style={styles.datePickerCol}>
+            <Text style={styles.datePickerColLabel}>JAAR</Text>
+            <WheelPicker items={YEAR_ITEMS} selectedIndex={draftYearIdx} onIndexChange={setDraftYearIdx} />
+          </View>
+        </View>
+        <Button title="Opslaan" onPress={saveGeboortedatum} size="md" />
+      </BottomSheet>
+
+      {/* Doel bewerken */}
+      <BottomSheet
+        visible={sheetOpen === 'doel'}
+        onClose={closeSheet}
+        title="Doel bewerken"
+      >
+        <View style={styles.sheetFieldGroup}>
+          <Text style={styles.sheetFieldLabel}>PERIODE</Text>
+          <View style={styles.segmentedRow}>
+            {(['week', 'month'] as PeriodGoalPeriod[]).map(p => (
+              <TouchableOpacity
+                key={p}
+                style={[styles.segmentBtn, draftGoalPeriod === p && styles.segmentBtnActive]}
+                onPress={() => setDraftGoalPeriod(p)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.segmentBtnText, draftGoalPeriod === p && styles.segmentBtnTextActive]}>
+                  {p === 'week' ? 'Week' : 'Maand'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.sheetFieldGroup}>
+          <Text style={styles.sheetFieldLabel}>TYPE</Text>
+          <View style={styles.segmentedRow}>
+            {(['distance', 'duration', 'workouts'] as PeriodGoalMetric[]).map(m => (
+              <TouchableOpacity
+                key={m}
+                style={[styles.segmentBtn, draftGoalMetric === m && styles.segmentBtnActive]}
+                onPress={() => setDraftGoalMetric(m)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.segmentBtnText, draftGoalMetric === m && styles.segmentBtnTextActive]}>
+                  {m === 'distance' ? 'Afstand' : m === 'duration' ? 'Duur' : 'Sessies'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {draftGoalMetric && (
+          <View style={styles.sheetFieldGroup}>
+            <Text style={styles.sheetFieldLabel}>STREEFWAARDE</Text>
+            <View style={styles.sheetInputRow}>
+              <TextInput
+                style={styles.sheetInputFlex}
+                value={draftGoalTarget}
+                onChangeText={setDraftGoalTarget}
+                keyboardType="numeric"
+                selectTextOnFocus
+                returnKeyType="done"
+                onSubmitEditing={saveDoel}
+                placeholderTextColor={textColors.muted}
+                placeholder="0"
+              />
+              <Text style={styles.sheetInputUnit}>
+                {draftGoalMetric === 'distance' ? 'km' : draftGoalMetric === 'duration' ? 'min' : 'sessies'}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        <Button title="Opslaan" onPress={saveDoel} size="md" />
+      </BottomSheet>
+    </>
   );
 }
 
@@ -326,54 +722,196 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
-    paddingHorizontal: layout.screenHorizontal,
-    paddingBottom: space[10],
-    gap: space[5],
+    paddingHorizontal: space['5'],
+    paddingBottom: space['10'],
+    paddingTop: space['4'],
+    gap: space['5'],
   },
   title: {
-    ...display.sm,
+    fontFamily: 'BarlowCondensed_600SemiBold',
+    fontSize: 24,
+    lineHeight: 30,
     color: textColors.primary,
-    paddingTop: space[6],
   },
-  fieldWithLabel: {
-    gap: space[2],
+
+  // Sections
+  section: {
+    gap: space['2'],
   },
-  fieldLabel: {
-    ...label.caps,
-    color: textColors.muted,
+  sectionLabel: {
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize['12'],
+    color: textColors.secondary,
+    letterSpacing: 0.96,
+    textTransform: 'uppercase',
   },
-  segmented: {
+
+  // List card (grouped rows)
+  listCard: {
+    backgroundColor: background.elevated,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+  },
+  listRow: {
     flexDirection: 'row',
-    backgroundColor: background.surface,
-    borderRadius: radii.md,
-    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: space['4'],
+    paddingVertical: space['4'],
+    minHeight: 52,
   },
-  segment: {
+  listDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: border.default,
+    marginLeft: space['4'],
+  },
+  listLabel: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['16'],
+    color: textColors.primary,
+  },
+  listRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['2'],
+  },
+  listValue: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['16'],
+    color: textColors.secondary,
+  },
+
+  // Sheet: text input
+  sheetInput: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['16'],
+    color: textColors.primary,
+    backgroundColor: background.elevated,
+    borderWidth: 1,
+    borderColor: border.default,
+    borderRadius: radii.md,
+    paddingHorizontal: space['4'],
+    paddingVertical: space['3'],
+  },
+
+  // Sheet: current email display
+  currentEmailText: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['16'],
+    color: textColors.secondary,
+  },
+
+  // Sheet: error message
+  emailError: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['14'],
+    color: status.error,
+  },
+
+  // Sheet: segmented control
+  segmentedRow: {
+    flexDirection: 'row',
+    backgroundColor: background.elevated,
+    borderRadius: radii.md,
+    padding: 3,
+    gap: 2,
+  },
+  segmentBtn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: space[2],
+    paddingVertical: space['3'],
     borderRadius: radii.sm,
   },
-  segmentActive: {
+  segmentBtnActive: {
     backgroundColor: brand.primary,
   },
-  segmentText: {
+  segmentBtnText: {
     fontFamily: fontFamily.bodySemiBold,
     fontSize: fontSize['14'],
-    color: textColors.muted,
+    color: textColors.secondary,
   },
-  segmentTextActive: {
+  segmentBtnTextActive: {
     color: background.base,
   },
-  spacer: {
-    flex: 1,
-    minHeight: space[8],
+
+  // Sheet: stepper
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: space['2'],
   },
+  stepperBtn: {
+    width: 56,
+    height: 56,
+    backgroundColor: background.elevated,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperValue: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: fontSize['24'],
+    color: textColors.primary,
+  },
+
+  // Sheet: date picker
+  datePickerRow: {
+    flexDirection: 'row',
+    gap: space['3'],
+  },
+  datePickerCol: {
+    flex: 1,
+    gap: space['2'],
+    alignItems: 'center',
+  },
+  datePickerColLabel: {
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize['11'],
+    color: textColors.secondary,
+    letterSpacing: 0.88,
+    textTransform: 'uppercase',
+  },
+
+  // Sheet: goal fields
+  sheetFieldGroup: {
+    gap: space['2'],
+  },
+  sheetFieldLabel: {
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize['11'],
+    color: textColors.secondary,
+    letterSpacing: 0.88,
+    textTransform: 'uppercase',
+  },
+  sheetInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: background.elevated,
+    borderWidth: 1,
+    borderColor: border.default,
+    borderRadius: radii.md,
+    paddingHorizontal: space['4'],
+    paddingVertical: space['3'],
+    gap: space['2'],
+  },
+  sheetInputFlex: {
+    flex: 1,
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['16'],
+    color: textColors.primary,
+  },
+  sheetInputUnit: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['16'],
+    color: textColors.secondary,
+  },
+
   version: {
     ...body.xs,
-    color: textColors.muted,
+    color: textColors.secondary,
     textAlign: 'center',
-    paddingTop: space[4],
+    paddingTop: space['4'],
   },
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,32 +6,67 @@ import {
   LayoutAnimation,
   Modal,
   FlatList,
+  ScrollView,
   StyleSheet,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import type { ConnectionStatus, HRFoundDevice, HRStatus } from '@/lib/ble/types';
 import type { GoalType } from '@/lib/workout-goals';
+import { NUDGE_STEP_IDX, NUDGE_LABEL, goalTargetToWheelIndex } from '@/lib/workout-goals';
 import {
-  Button,
   BleStatusBar,
   HrStatusBar,
   GoalSegments,
-  GoalInput,
   Chip,
+  WheelPicker,
 } from '@/components';
 import type { GoalSegmentType } from '@/components';
+import {
+  buildDurItems,
+  buildDistItems,
+  buildSplitItems,
+  buildWattItems,
+} from '@/lib/formatters';
 import {
   background,
   brand,
   status as statusColors,
   text as textColors,
-  space,
-  layout,
   fontFamily,
-  fontSize,
-  radii,
 } from '@/constants';
+import { useAuth } from '@/lib/auth-context';
+import { useRecentGoals } from '@/lib/hooks/useRecentGoals';
+
+const C_BG = '#0A0E1A';
+const C_CYAN = '#00E5FF';
+const C_TEXT_ON_CYAN = '#0A0A0F';
+const C_TEXT_WHITE = '#F8FAFC';
+const C_SECTION_LABEL = '#AAAAAA';
+const C_DIVIDER = '#47556E';
+
+// Spring LayoutAnimation used for segment transitions and goal mode changes
+const LAYOUT_SPRING: Parameters<typeof LayoutAnimation.configureNext>[0] = {
+  duration: 320,
+  create: {
+    duration: 180,
+    type: LayoutAnimation.Types.spring,
+    springDamping: 0.78,
+    property: LayoutAnimation.Properties.opacity,
+  },
+  update: {
+    duration: 320,
+    type: LayoutAnimation.Types.spring,
+    springDamping: 0.78,
+  },
+  delete: {
+    duration: 100,
+    type: LayoutAnimation.Types.easeOut,
+    property: LayoutAnimation.Properties.opacity,
+  },
+};
 
 // --- Goal type mapping ---
 
@@ -49,6 +84,81 @@ const GOAL_TO_SEGMENT: Record<string, GoalSegmentType> = {
   'split': 'Split',
   'watts': 'Watt',
 };
+
+// --- Default picker indices (spec: 30 min, 5 km, 2:00, 180 W) ---
+
+const DEFAULT_DUR_IDX   = 29;   // 30 min
+const DEFAULT_DIST_IDX  = 9;    // 5 km
+const DEFAULT_SPLIT_IDX = 30;   // 2:00
+const DEFAULT_WATT_IDX  = 26;   // 180 W
+
+// --- NudgeButton ---
+
+interface NudgeButtonProps {
+  direction: 'increment' | 'decrement';
+  stepLabel: string;
+  disabled: boolean;
+  onPress: () => void;
+}
+
+function NudgeButton({ direction, stepLabel, disabled, onPress }: NudgeButtonProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  function handlePressIn() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  }
+
+  function handlePressOut() {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      disabled={disabled}
+      activeOpacity={1}
+      style={[nudgeStyles.btn, disabled && nudgeStyles.btnDisabled]}
+    >
+      <Animated.View style={[nudgeStyles.inner, { transform: [{ scale }] }]}>
+        <Ionicons
+          name={direction === 'increment' ? 'add' : 'remove'}
+          size={22}
+          color="#94A3B8"
+        />
+        <Text style={nudgeStyles.stepLabel}>{stepLabel}</Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+const nudgeStyles = StyleSheet.create({
+  btn: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#1A1F2E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnDisabled: {
+    opacity: 0.4,
+  },
+  inner: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  stepLabel: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 11,
+    color: '#94A3B8',
+    letterSpacing: 0.3,
+  },
+});
 
 // --- Props ---
 
@@ -140,18 +250,6 @@ const modalStyles = StyleSheet.create({
   cancelText: { color: textColors.muted, fontSize: 15, fontFamily: fontFamily.bodySemiBold },
 });
 
-// --- Distance chips ---
-
-const DISTANCE_CHIPS = [
-  { label: '500 m', km: '0', m: '500' },
-  { label: '1 km', km: '1', m: '0' },
-  { label: '2 km', km: '2', m: '0' },
-  { label: '5 km', km: '5', m: '0' },
-  { label: '10 km', km: '10', m: '0' },
-];
-
-const WATT_CHIPS = ['100 W', '150 W', '200 W', '250 W', '300 W'];
-
 // --- Component ---
 
 export function IdlePhase({
@@ -170,167 +268,253 @@ export function IdlePhase({
   onCancelHRSelection,
   idleGoalType,
   setIdleGoalType,
-  idleGoalInput,
   setIdleGoalInput,
-  idleDurMin,
   setIdleDurMin,
-  idleDurSec,
   setIdleDurSec,
   onStart,
   insets,
 }: IdlePhaseProps) {
-  // Map between GoalSegmentType and GoalType
+  const { user } = useAuth();
+  const recents = useRecentGoals(user?.id, idleGoalType);
+
   const selectedSegment: GoalSegmentType = idleGoalType
     ? GOAL_TO_SEGMENT[idleGoalType] ?? 'Geen'
     : 'Geen';
 
-  // Local state for new input fields
-  const [distKm, setDistKm] = useState('0');
-  const [distM, setDistM] = useState('0');
-  const [splitMin, setSplitMin] = useState('2');
-  const [splitSec, setSplitSec] = useState('00');
-  const [activeDistChip, setActiveDistChip] = useState<string | null>(null);
-  const [activeWattChip, setActiveWattChip] = useState<string | null>(null);
+  const durItems   = useMemo(() => buildDurItems(), []);
+  const distItems  = useMemo(() => buildDistItems(), []);
+  const splitItems = useMemo(() => buildSplitItems(), []);
+  const wattItems  = useMemo(() => buildWattItems(), []);
 
-  // Sync local state → parent state
-  useEffect(() => {
-    if (idleGoalType === 'distance') {
-      const totalMeters = parseInt(distKm || '0', 10) * 1000 + parseInt(distM || '0', 10);
-      setIdleGoalInput(String(totalMeters));
-    }
-  }, [distKm, distM, idleGoalType]);
+  const [durIdx,   setDurIdx]   = useState(DEFAULT_DUR_IDX);
+  const [distIdx,  setDistIdx]  = useState(DEFAULT_DIST_IDX);
+  const [splitIdx, setSplitIdx] = useState(DEFAULT_SPLIT_IDX);
+  const [wattIdx,  setWattIdx]  = useState(DEFAULT_WATT_IDX);
 
-  useEffect(() => {
-    if (idleGoalType === 'split') {
-      const totalSec = parseInt(splitMin || '0', 10) * 60 + parseInt(splitSec || '0', 10);
-      setIdleGoalInput(String(totalSec));
-    }
-  }, [splitMin, splitSec, idleGoalType]);
+  // --- Sync helpers (wheel index → parent goal props) ---
 
-  function handleSegmentChange(segment: GoalSegmentType) {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    const goalType = SEGMENT_TO_GOAL[segment];
-    setIdleGoalType(goalType);
-    setIdleGoalInput('');
-    setIdleDurMin('');
-    setIdleDurSec('');
-    setDistKm('0');
-    setDistM('0');
-    setSplitMin('2');
-    setSplitSec('00');
-    setActiveDistChip(null);
-    setActiveWattChip(null);
+  function syncDur(idx: number) {
+    const totalSec = durItems[idx].value;
+    setIdleDurMin(String(Math.floor(totalSec / 60)));
+    setIdleDurSec(String(totalSec % 60));
   }
 
-  function renderGoalInput() {
-    switch (selectedSegment) {
-      case 'Geen':
-        return null;
+  function syncDist(idx: number) {
+    setIdleGoalInput(String(distItems[idx].value));
+  }
 
-      case 'Duur':
-        return (
-          <View style={styles.inputRow}>
-            <GoalInput value={idleDurMin} onChangeText={setIdleDurMin} unit="minuten" placeholder="30" />
-            <GoalInput value={idleDurSec} onChangeText={setIdleDurSec} unit="seconden" placeholder="00" />
-          </View>
-        );
+  function syncSplit(idx: number) {
+    setIdleGoalInput(String(splitItems[idx].value));
+  }
 
-      case 'Afstand':
-        return (
-          <View style={styles.inputArea}>
-            <View style={styles.inputRow}>
-              <GoalInput value={distKm} onChangeText={setDistKm} unit="kilometer" placeholder="0" />
-              <GoalInput value={distM} onChangeText={setDistM} unit="meter" placeholder="0" />
-            </View>
-            <View style={styles.chipRow}>
-              {DISTANCE_CHIPS.map((chip) => (
-                <Chip
-                  key={chip.label}
-                  label={chip.label}
-                  active={activeDistChip === chip.label}
-                  onPress={() => {
-                    setActiveDistChip(chip.label);
-                    setDistKm(chip.km);
-                    setDistM(chip.m);
-                  }}
-                />
-              ))}
-            </View>
-          </View>
-        );
+  function syncWatt(idx: number) {
+    setIdleGoalInput(String(wattItems[idx].value));
+  }
 
-      case 'Split':
-        return (
-          <View style={styles.inputRow}>
-            <GoalInput value={splitMin} onChangeText={setSplitMin} unit="minuten" placeholder="2" />
-            <GoalInput value={splitSec} onChangeText={setSplitSec} unit="seconden" placeholder="00" />
-          </View>
-        );
+  // --- Mode config (unifies the 4 goal modes) ---
 
-      case 'Watt':
-        return (
-          <View style={styles.inputArea}>
-            <View style={styles.inputRow}>
-              <GoalInput value={idleGoalInput} onChangeText={setIdleGoalInput} unit="watt" placeholder="150" />
-            </View>
-            <View style={styles.chipRow}>
-              {WATT_CHIPS.map((chip) => (
-                <Chip
-                  key={chip}
-                  label={chip}
-                  active={activeWattChip === chip}
-                  onPress={() => {
-                    setActiveWattChip(chip);
-                    setIdleGoalInput(chip.replace(' W', ''));
-                  }}
-                />
-              ))}
-            </View>
-          </View>
-        );
+  function getModeConfig(goalType: GoalType) {
+    switch (goalType) {
+      case 'duration':
+        return { items: durItems, idx: durIdx, setIdx: setDurIdx, sync: syncDur,
+                 nudgeStep: NUDGE_STEP_IDX.duration, nudgeLabel: NUDGE_LABEL.duration,
+                 unit: 'minuten' as string | null,
+                 nudgeDisplayValue: (i: number) => String(Math.round(durItems[i].value / 60)) };
+      case 'distance':
+        return { items: distItems, idx: distIdx, setIdx: setDistIdx, sync: syncDist,
+                 nudgeStep: NUDGE_STEP_IDX.distance, nudgeLabel: NUDGE_LABEL.distance,
+                 unit: 'kilometer' as string | null,
+                 nudgeDisplayValue: (i: number) => (distItems[i].value / 1000).toFixed(1).replace('.', ',') };
+      case 'split':
+        return { items: splitItems, idx: splitIdx, setIdx: setSplitIdx, sync: syncSplit,
+                 nudgeStep: NUDGE_STEP_IDX.split, nudgeLabel: NUDGE_LABEL.split,
+                 unit: '/ 500m' as string | null,
+                 nudgeDisplayValue: (i: number) => splitItems[i].label };
+      case 'watts':
+        return { items: wattItems, idx: wattIdx, setIdx: setWattIdx, sync: syncWatt,
+                 nudgeStep: NUDGE_STEP_IDX.watts, nudgeLabel: NUDGE_LABEL.watts,
+                 unit: 'watt gem.' as string | null,
+                 nudgeDisplayValue: (i: number) => String(Math.round(wattItems[i].value)) };
     }
+  }
+
+  // --- Segment change ---
+
+  function handleSegmentChange(segment: GoalSegmentType) {
+    LayoutAnimation.configureNext(LAYOUT_SPRING);
+    const goalType = SEGMENT_TO_GOAL[segment];
+    setIdleGoalType(goalType);
+    setDurIdx(DEFAULT_DUR_IDX);
+    setDistIdx(DEFAULT_DIST_IDX);
+    setSplitIdx(DEFAULT_SPLIT_IDX);
+    setWattIdx(DEFAULT_WATT_IDX);
+    if (goalType === 'duration') {
+      syncDur(DEFAULT_DUR_IDX);
+      setIdleGoalInput('');
+    } else if (goalType === 'distance') {
+      syncDist(DEFAULT_DIST_IDX);
+      setIdleDurMin('');
+      setIdleDurSec('');
+    } else if (goalType === 'split') {
+      syncSplit(DEFAULT_SPLIT_IDX);
+      setIdleDurMin('');
+      setIdleDurSec('');
+    } else if (goalType === 'watts') {
+      syncWatt(DEFAULT_WATT_IDX);
+      setIdleDurMin('');
+      setIdleDurSec('');
+    } else {
+      setIdleGoalInput('');
+      setIdleDurMin('');
+      setIdleDurSec('');
+    }
+  }
+
+  // --- Goal input rendering ---
+
+  function renderGoalInput() {
+    if (selectedSegment === 'Geen') {
+      return (
+        <Text style={styles.geenText}>
+          Vrije training zonder vooraf bepaald doel.
+        </Text>
+      );
+    }
+
+    const goalType = idleGoalType!;
+    const { items, idx, setIdx, sync, nudgeStep, nudgeLabel, unit, nudgeDisplayValue } = getModeConfig(goalType);
+    const canDecrement = idx >= nudgeStep;
+    const canIncrement = idx <= items.length - 1 - nudgeStep;
+
+    function handleNudge(delta: number) {
+      const newIdx = Math.max(0, Math.min(idx + delta, items.length - 1));
+      if (newIdx !== idx) {
+        setIdx(newIdx);
+        sync(newIdx);
+      }
+    }
+
+    return (
+      <View style={styles.pickerArea}>
+        {/* Nudge row */}
+        <View style={styles.nudgeRow}>
+          <NudgeButton
+            direction="decrement"
+            stepLabel={nudgeLabel}
+            disabled={!canDecrement}
+            onPress={() => handleNudge(-nudgeStep)}
+          />
+          <View style={styles.nudgeDisplay}>
+            <Text style={styles.nudgeValue}>{nudgeDisplayValue(idx)}</Text>
+            {unit && <Text style={styles.nudgeUnit}>{unit}</Text>}
+          </View>
+          <NudgeButton
+            direction="increment"
+            stepLabel={nudgeLabel}
+            disabled={!canIncrement}
+            onPress={() => handleNudge(nudgeStep)}
+          />
+        </View>
+
+        {/* Wheel picker */}
+        <WheelPicker
+          items={items}
+          selectedIndex={idx}
+          onIndexChange={(newIdx) => {
+            setIdx(newIdx);
+            sync(newIdx);
+          }}
+        />
+
+        {/* Recents — hidden when empty */}
+        {recents.length > 0 && (
+          <View style={styles.recentsSection}>
+            <Text style={styles.recentsLabel}>RECENT</Text>
+            <View style={styles.chipRow}>
+              {(() => {
+                const seen = new Set<number>();
+                return recents.map((target) => {
+                  const chipIdx = goalTargetToWheelIndex(goalType, target);
+                  if (chipIdx === null || seen.has(chipIdx)) return null;
+                  seen.add(chipIdx);
+                  return (
+                    <Chip
+                      key={chipIdx}
+                      label={items[chipIdx]?.label ?? String(target)}
+                      active={chipIdx === idx}
+                      onPress={() => {
+                        setIdx(chipIdx);
+                        sync(chipIdx);
+                      }}
+                    />
+                  );
+                });
+              })()}
+            </View>
+          </View>
+        )}
+      </View>
+    );
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.content}>
+    <View style={styles.screen}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
-        <Text style={styles.header}>Training</Text>
+        <View>
+          <Text style={styles.header}>Nieuwe training</Text>
+        </View>
 
         {/* Toestellen */}
-        <Text style={styles.sectionLabel}>TOESTELLEN</Text>
-        <BleStatusBar
-          bleStatus={bleStatus}
-          deviceName={deviceName}
-          bleError={bleError}
-          onConnect={onConnect}
-          onDisconnect={onDisconnect}
-        />
-        <View style={{ height: 8 }} />
-        <HrStatusBar
-          hrStatus={hrStatus}
-          hrDeviceName={hrDeviceName}
-          onConnect={onHRConnect}
-          onDisconnect={onHRDisconnect}
-        />
+        <View style={styles.toestelSection}>
+          <Text style={styles.sectionLabel}>TOESTELLEN</Text>
+          <View style={styles.barsStack}>
+            <BleStatusBar
+              bleStatus={bleStatus}
+              deviceName={deviceName}
+              bleError={bleError}
+              onConnect={onConnect}
+              onDisconnect={onDisconnect}
+            />
+            <HrStatusBar
+              hrStatus={hrStatus}
+              hrDeviceName={hrDeviceName}
+              onConnect={onHRConnect}
+              onDisconnect={onHRDisconnect}
+            />
+          </View>
+        </View>
 
         {/* Divider */}
         <View style={styles.divider} />
 
         {/* Doel */}
-        <Text style={styles.sectionLabel}>DOEL</Text>
-        <GoalSegments selected={selectedSegment} onChange={handleSegmentChange} />
+        <View style={styles.doelSection}>
+          <View style={styles.doelHeader}>
+            <Text style={styles.sectionLabelWhite}>DOEL</Text>
+            <GoalSegments selected={selectedSegment} onChange={handleSegmentChange} />
+          </View>
+          {renderGoalInput()}
+        </View>
+      </ScrollView>
 
-        {/* Goal input */}
-        {renderGoalInput()}
+      {/* Fixed CTA */}
+      <View style={styles.ctaArea}>
+        <TouchableOpacity
+          style={styles.ctaButton}
+          onPress={onStart}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.ctaGlyph}>▶</Text>
+          <Text style={styles.ctaLabel}>Start training</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Start button pinned to bottom */}
-      <View style={[styles.startWrap, { paddingBottom: insets.bottom + space[4] }]}>
-        <Button title="Start training" icon="play" size="lg" onPress={onStart} />
-      </View>
-
-      {/* HR device selection modal */}
       <HRSelectionModal
         visible={hrSelecting}
         devices={hrDevices}
@@ -344,47 +528,134 @@ export function IdlePhase({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: background.base,
-    paddingHorizontal: layout.screenHorizontal,
+    backgroundColor: C_BG,
   },
-  content: {
+  scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    gap: 20,
+  },
+
   header: {
-    fontFamily: fontFamily.displayBold,
-    fontSize: fontSize['28'],
-    color: textColors.primary,
-    paddingTop: space[6],
-    marginBottom: space[4],
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 28,
+    color: C_TEXT_WHITE,
+  },
+
+  toestelSection: {
+    gap: 8,
+  },
+  barsStack: {
+    gap: 8,
   },
   sectionLabel: {
     fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['12'],
-    color: textColors.secondary,
-    letterSpacing: 0.8,
-    marginBottom: space[2],
-    marginTop: space[2],
+    fontSize: 12,
+    color: C_SECTION_LABEL,
+    letterSpacing: 0.96,
   },
+
   divider: {
     height: 1,
-    backgroundColor: textColors.secondary,
-    opacity: 0.2,
-    marginVertical: space[4],
+    backgroundColor: C_DIVIDER,
   },
-  inputArea: {
+
+  doelSection: {
     gap: 8,
-    marginTop: space[4],
   },
-  inputRow: {
+  doelHeader: {
+    gap: 8,
+  },
+  sectionLabelWhite: {
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: 12,
+    color: C_SECTION_LABEL,
+    letterSpacing: 0.96,
+  },
+
+  // Geen placeholder
+  geenText: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: 14,
+    color: '#94A3B8',
+    lineHeight: 20,
+  },
+
+  // Goal input area
+  pickerArea: {
+    gap: 8,
+  },
+
+  // Nudge row
+  nudgeRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: space[4],
+    alignItems: 'stretch',
+  },
+  nudgeDisplay: {
+    flex: 1,
+    height: 64,
+    backgroundColor: '#1A1F2E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  nudgeValue: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 28,
+    color: C_TEXT_WHITE,
+  },
+  nudgeUnit: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+
+  // Recents
+  recentsSection: {
+    gap: 8,
+  },
+  recentsLabel: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 11,
+    color: '#94A3B8',
+    letterSpacing: 1.5,
   },
   chipRow: {
     flexDirection: 'row',
     gap: 8,
   },
-  startWrap: {
-    paddingBottom: space[4],
+
+  // CTA
+  ctaArea: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 20,
+  },
+  ctaButton: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: C_CYAN,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  ctaGlyph: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 14,
+    color: C_TEXT_ON_CYAN,
+  },
+  ctaLabel: {
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: 16,
+    color: C_TEXT_ON_CYAN,
   },
 });

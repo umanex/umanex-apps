@@ -9,13 +9,9 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import {
-  fontFamily,
-  status as statusColors,
-} from '@/constants';
+import { fontFamily } from '@/constants';
 
-const GOAL_COLOR = statusColors.success; // #22C55E
-const CONFETTI_COLORS = ['#F05454', '#00E5FF', GOAL_COLOR, '#FFD700', '#FF69B4', '#FFFFFF'];
+const CONFETTI_COLORS = ['#F05454', '#00E5FF', '#22C55E', '#FFD700', '#FF69B4', '#FFFFFF'];
 const PARTICLE_COUNT = 60;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -56,7 +52,6 @@ function useConfetti(active: boolean): Particle[] {
       return;
     }
 
-    // Reset all before starting
     particles.forEach((p) => p.anim.setValue(0));
 
     const animations = particles.map((p) =>
@@ -134,10 +129,6 @@ export const MotivationalToast = memo(function MotivationalToast({
   const showConfetti = !!isGoalComplete && visible;
   const confettiParticles = useConfetti(showConfetti);
 
-  if (__DEV__) {
-    console.log('[MotivationalToast] visible:', visible, 'isGoalComplete:', isGoalComplete);
-  }
-
   useEffect(() => {
     if (!message) return;
 
@@ -149,16 +140,18 @@ export const MotivationalToast = memo(function MotivationalToast({
       Animated.timing(scale, { toValue: 1, duration: 300, useNativeDriver: true }),
     ]).start();
 
-    const timer = setTimeout(() => {
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => onDismissRef.current());
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [message]); // opacity, scale are stable refs
+    // Goal complete: no auto-dismiss, user must press button
+    if (!isGoalComplete) {
+      const timer = setTimeout(() => {
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }).start(() => onDismissRef.current());
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message, isGoalComplete]); // opacity, scale are stable refs
 
   return (
     <Modal
@@ -178,13 +171,25 @@ export const MotivationalToast = memo(function MotivationalToast({
           onPress={() => onDismissRef.current()}
         />
 
-        <Animated.View style={[styles.content, { opacity, transform: [{ scale }] }]}>
-          <Text style={styles.emoji}>
-            {isGoalComplete ? '🏆' : '💪'}
+        <Animated.View style={[styles.card, { opacity, transform: [{ scale }] }]}>
+          {isGoalComplete && (
+            <Text style={styles.trophy}>🏆</Text>
+          )}
+          <Text style={[styles.title, isGoalComplete && styles.titleGoal]}>
+            {isGoalComplete ? 'Doel bereikt!' : (message ?? '')}
           </Text>
-          <Text style={[styles.text, isGoalComplete && styles.textGoal]}>
-            {message}
-          </Text>
+          {isGoalComplete && message && (
+            <Text style={styles.body}>{message}</Text>
+          )}
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={() => onDismissRef.current()}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.closeBtnText}>
+              {isGoalComplete ? 'Training afsluiten' : 'OK'}
+            </Text>
+          </TouchableOpacity>
         </Animated.View>
       </View>
     </Modal>
@@ -198,24 +203,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  content: {
+  card: {
+    backgroundColor: '#1A1F2E',
+    borderWidth: 1,
+    borderColor: '#00E5FF',
+    borderRadius: 24,
+    padding: 32,
+    gap: 16,
     alignItems: 'center',
-    paddingHorizontal: 32,
+    width: 320,
   },
-  emoji: {
-    fontSize: 64,
-    marginBottom: 16,
+  trophy: {
+    fontSize: 48,
   },
-  text: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: 28,
+  title: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 24,
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 36,
   },
-  textGoal: {
-    color: statusColors.success,
-    fontSize: 32,
-    lineHeight: 40,
+  titleGoal: {
+    color: '#FFD700',
+  },
+  body: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: 15,
+    color: '#AAAAAA',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  closeBtn: {
+    backgroundColor: '#00E5FF',
+    height: 48,
+    width: 256,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeBtnText: {
+    fontFamily: fontFamily.bodyBold,
+    fontSize: 16,
+    color: '#0A0E1A',
   },
 });

@@ -1,5 +1,5 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { background, brand, text as textColors, fontFamily, fontSize, radii } from '@/constants';
+import { fontFamily } from '@/constants';
 
 interface ChipProps {
   label: string;
@@ -10,7 +10,7 @@ interface ChipProps {
 export function Chip({ label, active, onPress }: ChipProps) {
   return (
     <TouchableOpacity
-      style={[styles.chip, active ? styles.active : styles.default]}
+      style={[styles.chip, active ? styles.chipActive : styles.chipDefault]}
       onPress={onPress}
       activeOpacity={0.8}
     >
@@ -27,22 +27,27 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.sm,
+    borderRadius: 8,
+    paddingHorizontal: 16,
   },
-  active: {
-    backgroundColor: brand.primary,
+  chipActive: {
+    backgroundColor: 'rgba(0,229,255,0.12)',
+    borderWidth: 1,
+    borderColor: '#00E5FF',
   },
-  default: {
-    backgroundColor: background.surface,
+  chipDefault: {
+    backgroundColor: '#1A1F2E',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   label: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: fontSize['13'],
+    fontSize: 13,
   },
   labelActive: {
-    color: textColors.inverse,
+    color: '#00E5FF',
   },
   labelDefault: {
-    color: textColors.secondary,
+    color: '#94A3B8',
   },
 });

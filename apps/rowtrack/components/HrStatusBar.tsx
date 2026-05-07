@@ -58,8 +58,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: background.surface,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 8,
   },
   left: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   label: {

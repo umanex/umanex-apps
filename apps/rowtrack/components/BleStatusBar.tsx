@@ -16,7 +16,7 @@ export function BleStatusBar({ bleStatus, deviceName, bleError, onConnect, onDis
   const isError = bleStatus === 'error';
 
   let dotColor: string = textColors.muted;
-  let label = 'Niet verbonden';
+  let label = 'Rower';
 
   if (isConnecting) {
     dotColor = brand.primary;
@@ -68,8 +68,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: background.surface,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 8,
   },
   left: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 16, height: 16, borderRadius: 8 },

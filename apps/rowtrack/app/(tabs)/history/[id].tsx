@@ -13,15 +13,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { Button, EmptyState, Segment } from '@/components';
-import { formatDuration, formatDistanceDynamic, formatSplit, formatDateLong } from '@/lib/formatters';
+import { formatDuration, formatDistanceDynamic, formatSplit, formatDateTitle } from '@/lib/formatters';
 import {
-  background,
-  brand,
-  text as textColors,
+  bg,
+  fg,
+  accent,
+  border,
+  space,
+  typeStyles,
   fontFamily,
   fontSize,
-  space,
-  radii,
+  componentRadius,
 } from '@/constants';
 import type { WorkoutDetail } from '@/types/workout';
 
@@ -90,7 +92,7 @@ export default function WorkoutDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator color={brand.primary} size="large" />
+        <ActivityIndicator color={accent.default} size="large" />
       </View>
     );
   }
@@ -100,7 +102,7 @@ export default function WorkoutDetailScreen() {
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color={textColors.primary} />
+            <Ionicons name="chevron-back" size={24} color={accent.default} />
           </TouchableOpacity>
         </View>
         <EmptyState
@@ -117,11 +119,12 @@ export default function WorkoutDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={brand.primary} />
+          <Ionicons name="chevron-back" size={24} color={accent.default} />
         </TouchableOpacity>
-        <Text style={styles.headerDate}>{formatDateLong(workout.started_at)}</Text>
+        <Text style={styles.headerDate}>{formatDateTitle(workout.started_at)}</Text>
         {workout.is_pr && (
           <View style={styles.prBadge}>
+            <Text style={styles.prBadgeEmoji}>🏅</Text>
             <Text style={styles.prBadgeText}>PR</Text>
           </View>
         )}
@@ -227,12 +230,11 @@ export default function WorkoutDetailScreen() {
 
         <Button
           title="Training verwijderen"
-          icon="trash-outline"
-          variant="ghost"
+          variant="primary"
           onPress={confirmDelete}
           loading={deleting}
           disabled={deleting}
-          size="md"
+          size="lg"
         />
       </ScrollView>
     </View>
@@ -242,7 +244,7 @@ export default function WorkoutDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: background.base,
+    backgroundColor: bg.base,
   },
   centered: {
     alignItems: 'center',
@@ -251,8 +253,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: space['5'],
-    paddingVertical: space['3'],
+    paddingHorizontal: space['20'],
+    paddingVertical: space['12'],
+    gap: space['12'],
   },
   backButton: {
     width: 40,
@@ -262,174 +265,164 @@ const styles = StyleSheet.create({
   },
   headerDate: {
     flex: 1,
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['28'],
-    color: textColors.primary,
+    ...typeStyles.sectionValue,
+    color: fg.primary,
   },
   prBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['4'],
     backgroundColor: 'rgba(255, 215, 0, 0.15)',
-    borderRadius: radii.sm,
-    paddingHorizontal: space['2'],
-    paddingVertical: 4,
+    borderRadius: componentRadius.cardSm,
+    paddingHorizontal: space['10'],
+    paddingVertical: space['4'],
+  },
+  prBadgeEmoji: {
+    fontSize: fontSize['12'],
   },
   prBadgeText: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['13'],
+    fontFamily: fontFamily.bodyBold,
+    fontSize: fontSize['11'],
     color: '#FFD700',
-    letterSpacing: 0.5,
   },
 
   // Tab bar
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: background.elevated,
-    borderRadius: 12,
+    backgroundColor: bg.elevated,
+    borderWidth: 1,
+    borderColor: border.default,
+    borderRadius: 10,
     padding: 4,
-    marginHorizontal: space['5'],
-    marginBottom: 16,
+    marginHorizontal: space['20'],
+    marginBottom: space['16'],
   },
 
   // Scroll content
   content: {
-    paddingHorizontal: space['5'],
-    paddingBottom: space['10'],
-    gap: space['4'],
+    paddingHorizontal: space['20'],
+    paddingBottom: space['40'],
+    gap: space['20'],
   },
 
   // KPI tiles (3-up row)
   kpiTilesRow: {
     flexDirection: 'row',
-    gap: space['5'],
+    gap: space['20'],
   },
   kpiTile: {
     flex: 1,
-    backgroundColor: background.elevated,
-    borderRadius: radii.lg,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     height: 110,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: space['6'],
-    paddingBottom: space['4'],
-    paddingHorizontal: space['4'],
-    gap: space['2'],
+    paddingTop: space['24'],
+    paddingBottom: space['16'],
+    paddingHorizontal: space['16'],
+    gap: space['8'],
   },
   kpiTileLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['16'],
-    color: textColors.secondary,
-    letterSpacing: 1.28,
-    textTransform: 'uppercase',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   kpiTileValue: {
     fontFamily: fontFamily.bodyBold,
-    fontSize: 22,
-    color: textColors.primary,
+    fontSize: fontSize['22'],
+    color: fg.primary,
     textAlign: 'center',
   },
   kpiTileUnit: {
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['13'],
-    color: textColors.secondary,
+    color: fg.secondary,
   },
 
   // Divider
   statsDivider: {
     height: 1,
-    backgroundColor: textColors.muted,
+    backgroundColor: border.default,
   },
 
   // Stats table (GEM/PIEK)
   statsSection: {
-    gap: space['2'],
+    gap: space['8'],
   },
   statsHeader: {
     flexDirection: 'row',
-    paddingLeft: space['4'],
+    paddingLeft: space['16'],
   },
   statsLabelCol: {
     width: 165,
   },
   statsColLabel: {
     flex: 1,
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['14'],
-    color: textColors.secondary,
-    letterSpacing: 1.12,
-    textTransform: 'uppercase',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   statsTable: {
-    backgroundColor: background.elevated,
-    borderRadius: radii.lg,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     overflow: 'hidden',
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: space['4'],
-    paddingVertical: space['4'],
+    paddingLeft: space['16'],
+    paddingVertical: space['16'],
   },
   statsRowLabel: {
     width: 165,
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['14'],
-    color: textColors.secondary,
-    letterSpacing: 1.12,
-    textTransform: 'uppercase',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   statsRowValue: {
     flex: 1,
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['16'],
-    color: textColors.primary,
+    ...typeStyles.kpiValue,
+    color: fg.primary,
   },
   statsRowDivider: {
     height: 1,
-    backgroundColor: textColors.muted,
+    backgroundColor: border.default,
   },
 
   // Splits table
   splitsTable: {
-    backgroundColor: background.elevated,
-    borderRadius: radii.lg,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     overflow: 'hidden',
   },
   splitsHeaderRow: {
     flexDirection: 'row',
-    paddingLeft: space['4'],
-    paddingVertical: space['2'],
+    paddingLeft: space['16'],
+    paddingVertical: space['8'],
   },
   splitsLabelCol: {
     width: 165,
   },
   splitsColHeader: {
     flex: 1,
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['14'],
-    color: textColors.secondary,
-    letterSpacing: 1.12,
-    textTransform: 'uppercase',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   splitsDataRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: space['4'],
-    paddingVertical: space['4'],
+    paddingLeft: space['16'],
+    paddingVertical: space['16'],
   },
   splitsDistLabel: {
     width: 165,
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['14'],
-    color: textColors.secondary,
-    textTransform: 'uppercase',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   splitsValue: {
     flex: 1,
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['16'],
-    color: textColors.primary,
+    ...typeStyles.kpiValue,
+    color: fg.primary,
   },
   splitsRowDivider: {
     height: 1,
-    backgroundColor: textColors.muted,
+    backgroundColor: border.default,
   },
 });

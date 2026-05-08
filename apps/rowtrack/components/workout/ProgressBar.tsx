@@ -1,18 +1,18 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { View, Text, Animated, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import {
-  background,
-  brand,
+  bg,
+  accent,
   fontFamily,
   space,
-  status as statusColors,
+  status,
 } from '@/constants';
 import { formatDistanceDynamic } from '@/lib/formatters';
 
 const BORDER_RADIUS = 20;
 const STROKE = 8;
-const CYAN = brand.primary;
-const GOAL_COLOR = statusColors.success; // #22C55E
+const FILL_COLOR = accent.default;
+const GOAL_COLOR = status.success; // #22C55E
 
 function blendColors(c1: string, c2: string, t: number): string {
   const p = (hex: string, o: number) => parseInt(hex.slice(o, o + 2), 16);
@@ -89,10 +89,10 @@ export const ProgressBar = memo(function ProgressBar({
     }).start();
   }, [pct]); // animValue is a stable ref
 
-  // Border color: cyan → green in last 25%
+  // Border color: accent → green in last 25%
   const strokeColor = pct >= 0.75
-    ? blendColors(CYAN, GOAL_COLOR, (pct - 0.75) / 0.25)
-    : CYAN;
+    ? blendColors(FILL_COLOR, GOAL_COLOR, (pct - 0.75) / 0.25)
+    : FILL_COLOR;
 
   const { width: W, height: H } = dims;
   const topLen = Math.max(0, W - 2 * BORDER_RADIUS);
@@ -220,27 +220,27 @@ const styles = StyleSheet.create({
   },
   bg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: background.surface,
+    backgroundColor: bg.elevated,
     borderRadius: BORDER_RADIUS,
   },
   segHorizontal: {
     position: 'absolute',
-    backgroundColor: brand.primary,
+    backgroundColor: accent.default,
   },
   segVertical: {
     position: 'absolute',
-    backgroundColor: brand.primary,
+    backgroundColor: accent.default,
   },
   segCorner: {
     position: 'absolute',
-    borderColor: brand.primary,
+    borderColor: accent.default,
   },
   content: {
     ...StyleSheet.absoluteFillObject,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space[4],
+    gap: space['4'],
   },
   pctLabel: {
     fontFamily: fontFamily.bodyMedium,
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   },
   timer: {
     fontFamily: fontFamily.monoMedium,
-    color: brand.primary,
+    color: accent.default,
   },
   label: {
     fontFamily: fontFamily.bodySemiBold,

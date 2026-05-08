@@ -1,12 +1,12 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { fontFamily } from '@/constants';
+import { bg, fg, accent, typeStyles, componentRadius } from '@/constants';
 
-interface KPIProps {
+type KPIProps = {
   label: string;
   value: string;
   highlighted?: boolean;
   compact?: boolean;
-}
+};
 
 export function KPI({ label, value, highlighted = false, compact = false }: KPIProps) {
   return (
@@ -19,8 +19,8 @@ export function KPI({ label, value, highlighted = false, compact = false }: KPIP
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1A1F2E',
-    borderRadius: 12,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     height: 58,
     flexDirection: 'row',
     alignItems: 'center',
@@ -33,17 +33,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   label: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 16,
-    color: '#AAAAAA',
-    letterSpacing: 1,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   value: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: 28,
-    color: '#FFFFFF',
+    ...typeStyles.sectionValue,
+    color: fg.primary,
   },
   valueHighlighted: {
-    color: '#00E5FF',
+    color: accent.default,
   },
 });

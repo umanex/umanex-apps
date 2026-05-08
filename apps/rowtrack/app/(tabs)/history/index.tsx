@@ -6,23 +6,23 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { EmptyState, WorkoutCard } from '@/components';
+import { EmptyState, Segment, WorkoutCard } from '@/components';
 import { formatDuration } from '@/lib/formatters';
 import {
-  background,
-  brand,
-  text as textColors,
-  display,
+  bg,
+  fg,
+  accent,
+  border,
   space,
+  typeStyles,
   fontFamily,
   fontSize,
-  radii,
+  componentRadius,
 } from '@/constants';
 import type { WorkoutSummary } from '@/types/workout';
 
@@ -88,7 +88,6 @@ export default function HistoryScreen() {
     router.push(`/(tabs)/history/${id}`);
   }, [router]);
 
-  // --- KPI berekeningen ---
   const totalWorkouts = workouts.length;
   const totalKm = workouts.reduce((s, w) => s + w.distance_meters, 0) / 1000;
   const avgDurSec =
@@ -104,7 +103,7 @@ export default function HistoryScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={brand.primary}
+          tintColor={accent.default}
         />
       }
     >
@@ -112,21 +111,14 @@ export default function HistoryScreen() {
 
       {/* Segment filter */}
       <View style={styles.segmentContainer}>
-        {FILTERS.map(({ key, label }) => {
-          const active = filter === key;
-          return (
-            <TouchableOpacity
-              key={key}
-              style={[styles.segment, active && styles.segmentActive]}
-              onPress={() => setFilter(key)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        {FILTERS.map(({ key, label }) => (
+          <Segment
+            key={key}
+            label={label}
+            active={filter === key}
+            onPress={() => setFilter(key)}
+          />
+        ))}
       </View>
 
       {/* KPI row */}
@@ -149,7 +141,7 @@ export default function HistoryScreen() {
 
       {/* Workout lijst */}
       {loading ? (
-        <ActivityIndicator color={brand.primary} style={styles.loader} />
+        <ActivityIndicator color={accent.default} style={styles.loader} />
       ) : workouts.length === 0 ? (
         <EmptyState
           icon="time-outline"
@@ -157,8 +149,13 @@ export default function HistoryScreen() {
         />
       ) : (
         <View style={styles.workoutList}>
-          {workouts.map((w) => (
-            <WorkoutCard key={w.id} workout={w} onPress={handleWorkoutPress} />
+          {workouts.map((w, i) => (
+            <WorkoutCard
+              key={w.id}
+              workout={w}
+              onPress={handleWorkoutPress}
+              isLast={i === workouts.length - 1}
+            />
           ))}
         </View>
       )}
@@ -166,82 +163,62 @@ export default function HistoryScreen() {
   );
 }
 
-const C_TEXT_MUTED = '#47556E';
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: background.base,
+    backgroundColor: bg.base,
   },
   content: {
-    paddingHorizontal: space['5'],
-    paddingBottom: space[10],
-    gap: space[4],
+    paddingTop: space['20'],
+    paddingHorizontal: space['20'],
+    paddingBottom: space['40'],
+    gap: space['20'],
   },
   title: {
-    ...display.sm,
-    color: textColors.primary,
-    paddingTop: space[4],
+    ...typeStyles.sectionValue,
+    color: fg.primary,
   },
 
   // Segment filter
   segmentContainer: {
     flexDirection: 'row',
-    backgroundColor: background.surface,
+    backgroundColor: bg.elevated,
+    borderWidth: 1,
+    borderColor: border.default,
     borderRadius: 10,
     padding: 4,
     height: 52,
-  },
-  segment: {
-    flex: 1,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.md,
-  },
-  segmentActive: {
-    backgroundColor: brand.primary,
-  },
-  segmentText: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['13'],
-    color: textColors.secondary,
-  },
-  segmentTextActive: {
-    color: '#0A0A0F',
   },
 
   // KPI row
   kpiRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: space['12'],
   },
   kpiTile: {
     flex: 1,
-    backgroundColor: background.surface,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 12,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
+    paddingHorizontal: space['8'],
+    paddingVertical: space['12'],
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: space['4'],
   },
   kpiValue: {
     fontFamily: fontFamily.bodyBold,
-    fontSize: 22,
-    color: textColors.primary,
+    fontSize: fontSize['22'],
+    color: fg.primary,
   },
   kpiLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: 11,
-    color: C_TEXT_MUTED,
-    letterSpacing: 0.55,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
 
   loader: {
-    paddingVertical: space[10],
+    paddingVertical: space['40'],
   },
   workoutList: {
-    gap: space[2],
+    gap: space['12'],
   },
 });

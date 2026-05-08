@@ -37,6 +37,12 @@ export function formatDate(iso: string): string {
   return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
 }
 
+export function formatDateTitle(iso: string): string {
+  const date = new Date(iso);
+  const months = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 export function formatDateLong(iso: string): string {
   const date = new Date(iso);
   const days = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
@@ -51,7 +57,7 @@ export function formatDateLong(iso: string): string {
 
 // --- Wheel picker item builders ---
 
-export type WheelItem = { label: string; value: number };
+export type WheelItem = { label: string; value: number; unit?: string };
 
 /** 1\u2013180 minutes, step 1 min. value = total seconds. */
 export function buildDurItems(): WheelItem[] {
@@ -62,7 +68,7 @@ export function buildDurItems(): WheelItem[] {
     const label = h > 0
       ? min === 0 ? `${h} u` : `${h} u ${min} min`
       : `${m} min`;
-    items.push({ label, value: m * 60 });
+    items.push({ label, unit: 'min', value: m * 60 });
   }
   return items;
 }
@@ -73,15 +79,18 @@ export function buildDistItems(): WheelItem[] {
   for (let i = 1; i <= 84; i++) {
     const m = i * 500;
     let label: string;
+    let unit: string;
     if (m < 1000) {
       label = `${m} m`;
+      unit = 'm';
     } else {
       const km = m / 1000;
       label = Number.isInteger(km)
         ? `${km} km`
         : `${km.toFixed(1).replace('.', ',')} km`;
+      unit = 'km';
     }
-    items.push({ label, value: m });
+    items.push({ label, unit, value: m });
   }
   return items;
 }
@@ -101,7 +110,7 @@ export function buildSplitItems(): WheelItem[] {
 export function buildWattItems(): WheelItem[] {
   const items: WheelItem[] = [];
   for (let w = 50; w <= 500; w += 5) {
-    items.push({ label: `${w} W`, value: w });
+    items.push({ label: `${w} W`, unit: 'W', value: w });
   }
   return items;
 }

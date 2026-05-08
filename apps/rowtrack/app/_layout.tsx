@@ -5,6 +5,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts as useBarlowCondensed } from '@expo-google-fonts/barlow-condensed';
 import { useFonts as useInter } from '@expo-google-fonts/inter';
 import { useFonts as useJetBrainsMono } from '@expo-google-fonts/jetbrains-mono';
+import { useFonts as useNewsreader } from '@expo-google-fonts/newsreader';
+import { useFonts as useAlbertSans } from '@expo-google-fonts/albert-sans';
 import {
   BarlowCondensed_600SemiBold,
   BarlowCondensed_700Bold,
@@ -20,6 +22,18 @@ import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
+import {
+  Newsreader_300Light,
+  Newsreader_300Light_Italic,
+  Newsreader_400Regular,
+  Newsreader_400Regular_Italic,
+  Newsreader_600SemiBold,
+  Newsreader_600SemiBold_Italic,
+} from '@expo-google-fonts/newsreader';
+import {
+  AlbertSans_500Medium,
+  AlbertSans_600SemiBold,
+} from '@expo-google-fonts/albert-sans';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 
 SplashScreen.preventAutoHideAsync();
@@ -63,7 +77,21 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
   });
 
-  const fontsLoaded = barlowLoaded && interLoaded && jetbrainsLoaded;
+  const [newsreaderLoaded] = useNewsreader({
+    Newsreader_300Light,
+    Newsreader_300Light_Italic,
+    Newsreader_400Regular,
+    Newsreader_400Regular_Italic,
+    Newsreader_600SemiBold,
+    Newsreader_600SemiBold_Italic,
+  });
+
+  const [albertSansLoaded] = useAlbertSans({
+    AlbertSans_500Medium,
+    AlbertSans_600SemiBold,
+  });
+
+  const fontsLoaded = barlowLoaded && interLoaded && jetbrainsLoaded && newsreaderLoaded && albertSansLoaded;
 
   useEffect(() => {
     if (fontsLoaded) {

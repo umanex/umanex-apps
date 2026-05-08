@@ -1,11 +1,11 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { fontFamily } from '@/constants';
+import { bg, fg, accent, border, typeStyles } from '@/constants';
 
-interface ChipProps {
+type ChipProps = {
   label: string;
   active: boolean;
   onPress: () => void;
-}
+};
 
 export function Chip({ label, active, onPress }: ChipProps) {
   return (
@@ -31,23 +31,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   chipActive: {
-    backgroundColor: 'rgba(0,229,255,0.12)',
+    backgroundColor: accent.muted,
     borderWidth: 1,
-    borderColor: '#00E5FF',
+    borderColor: accent.default,
   },
   chipDefault: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: bg.elevated,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: border.default,
   },
   label: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 13,
+    ...typeStyles.kpiValue,
   },
   labelActive: {
-    color: '#00E5FF',
+    color: accent.default,
   },
   labelDefault: {
-    color: '#94A3B8',
+    color: fg.secondary,
   },
 });

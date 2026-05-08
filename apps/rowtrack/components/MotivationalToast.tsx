@@ -9,29 +9,29 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { fontFamily } from '@/constants';
+import { bg, fg, accent, typeStyles, fontFamily, fontSize, componentRadius } from '@/constants';
 
-const CONFETTI_COLORS = ['#F05454', '#00E5FF', '#22C55E', '#FFD700', '#FF69B4', '#FFFFFF'];
+const CONFETTI_COLORS = ['#F05454', '#3B82F6', '#22C55E', '#FFD700', '#FF69B4', '#FFFFFF'];
 const PARTICLE_COUNT = 60;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-export interface MotivationalToastProps {
+export type MotivationalToastProps = {
   message: string | null;
   onDismiss: () => void;
   isGoalComplete?: boolean;
-}
+};
 
 // --- Confetti ---
 
-interface Particle {
+type Particle = {
   anim: Animated.Value;
   x: number;
   color: string;
   duration: number;
   size: number;
   rotation: number;
-}
+};
 
 function useConfetti(active: boolean): Particle[] {
   const particlesRef = useRef<Particle[]>(
@@ -204,22 +204,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: bg.elevated,
     borderWidth: 1,
-    borderColor: '#00E5FF',
-    borderRadius: 24,
+    borderColor: accent.default,
+    borderRadius: componentRadius.modal,
     padding: 32,
     gap: 16,
     alignItems: 'center',
     width: 320,
   },
   trophy: {
-    fontSize: 48,
+    fontSize: fontSize['48'],
   },
   title: {
     fontFamily: fontFamily.bodyBold,
-    fontSize: 24,
-    color: '#FFFFFF',
+    fontSize: fontSize['24'],
+    color: fg.primary,
     textAlign: 'center',
   },
   titleGoal: {
@@ -227,22 +227,21 @@ const styles = StyleSheet.create({
   },
   body: {
     fontFamily: fontFamily.bodyRegular,
-    fontSize: 15,
-    color: '#AAAAAA',
+    fontSize: fontSize['15'],
+    color: fg.tertiary,
     textAlign: 'center',
     lineHeight: 22,
   },
   closeBtn: {
-    backgroundColor: '#00E5FF',
+    backgroundColor: accent.default,
     height: 48,
     width: 256,
-    borderRadius: 12,
+    borderRadius: componentRadius.cardSm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeBtnText: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: 16,
-    color: '#0A0E1A',
+    ...typeStyles.buttonPrimary,
+    color: fg.onAccent,
   },
 });

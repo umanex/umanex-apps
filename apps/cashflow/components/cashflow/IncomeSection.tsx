@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { IncomeItem, MonthKey } from '../../lib/cashflow/types';
 import { formatCurrency, generateId } from '../../lib/cashflow/recurring';
@@ -8,7 +8,9 @@ import { formatCurrency, generateId } from '../../lib/cashflow/recurring';
 interface IncomeSectionProps {
   monthKey: MonthKey;
   items: IncomeItem[];
-  prevBalance?: number;
+  startBalance: number;
+  isFirstMonth?: boolean;
+  onSetStartBalance?: (v: number) => void;
   onAdd: (item: IncomeItem) => void;
   onUpdate: (id: string, patch: Partial<IncomeItem>) => void;
   onToggleReceived: (id: string, received: boolean) => void;
@@ -134,7 +136,9 @@ function DraggableIncomeItem({
 export function IncomeSection({
   monthKey,
   items,
-  prevBalance,
+  startBalance,
+  isFirstMonth,
+  onSetStartBalance,
   onAdd,
   onUpdate,
   onToggleReceived,
@@ -143,6 +147,17 @@ export function IncomeSection({
   const [adding, setAdding] = useState(false);
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
+  const [localBalance, setLocalBalance] = useState(String(startBalance));
+
+  useEffect(() => {
+    if (isFirstMonth) setLocalBalance(String(startBalance));
+  }, [startBalance, isFirstMonth]);
+
+  function handleBalanceBlur() {
+    const parsed = parseFloat(localBalance.replace(',', '.'));
+    if (!isNaN(parsed) && onSetStartBalance) onSetStartBalance(parsed);
+    else setLocalBalance(String(startBalance));
+  }
 
   function handleAdd() {
     const parsed = parseFloat(amount.replace(',', '.'));
@@ -183,17 +198,29 @@ export function IncomeSection({
         </button>
       </div>
 
-      {prevBalance !== undefined && (
-        <div className="flex items-center gap-2 py-0.5">
-          <span className="w-[18px] flex-shrink-0" />
-          <span className="w-3.5 flex-shrink-0" />
-          <span className="flex-1 text-sm text-muted-foreground truncate italic">Vorig saldo</span>
+      <div className="flex items-center gap-2 py-0.5">
+        <span className="w-[18px] flex-shrink-0" />
+        <span className="w-3.5 flex-shrink-0" />
+        <span className={`flex-1 text-sm truncate ${!isFirstMonth ? 'text-muted-foreground italic' : ''}`}>
+          {isFirstMonth ? 'Huidig saldo' : 'Vorig saldo'}
+        </span>
+        {isFirstMonth ? (
+          <input
+            type="text"
+            inputMode="decimal"
+            value={localBalance}
+            onChange={(e) => setLocalBalance(e.target.value)}
+            onBlur={handleBalanceBlur}
+            className="w-20 h-6 px-1.5 text-xs text-right tabular-nums rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            aria-label="Huidig saldo"
+          />
+        ) : (
           <span className="text-sm font-medium text-emerald-600 tabular-nums">
-            {formatCurrency(prevBalance)}
+            {formatCurrency(startBalance)}
           </span>
-          <span className="w-3 flex-shrink-0" />
-        </div>
-      )}
+        )}
+        <span className="w-3 flex-shrink-0" />
+      </div>
 
       {items.map((item) => (
         <DraggableIncomeItem
@@ -238,7 +265,7 @@ export function IncomeSection({
         </div>
       )}
 
-      {prevBalance === undefined && items.length === 0 && !adding && (
+      {items.length === 0 && !adding && (
         <p className="text-xs text-muted-foreground italic py-0.5">Geen inkomsten deze maand</p>
       )}
     </div>

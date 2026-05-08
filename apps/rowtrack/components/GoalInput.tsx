@@ -1,12 +1,12 @@
 import { View, Text, TextInput, StyleSheet } from 'react-native';
-import { text as textColors, brand, fontFamily } from '@/constants';
+import { bg, fg, accent, componentRadius, fontFamily, fontSize } from '@/constants';
 
-interface GoalInputProps {
+type GoalInputProps = {
   value: string;
   onChangeText: (v: string) => void;
   unit: string;
   placeholder?: string;
-}
+};
 
 export function GoalInput({ value, onChangeText, unit, placeholder = '0' }: GoalInputProps) {
   return (
@@ -18,8 +18,8 @@ export function GoalInput({ value, onChangeText, unit, placeholder = '0' }: Goal
         keyboardType="numeric"
         selectTextOnFocus
         placeholder={placeholder}
-        placeholderTextColor={textColors.muted}
-        selectionColor={brand.primary}
+        placeholderTextColor={fg.tertiary}
+        selectionColor={accent.default}
       />
       <View style={styles.unitWrap}>
         <Text style={styles.unit}>{unit}</Text>
@@ -31,8 +31,8 @@ export function GoalInput({ value, onChangeText, unit, placeholder = '0' }: Goal
 const styles = StyleSheet.create({
   box: {
     flex: 1,
-    backgroundColor: '#1A1F2E',
-    borderRadius: 10,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     height: 64,
     flexDirection: 'row',
     alignItems: 'center',
@@ -43,8 +43,8 @@ const styles = StyleSheet.create({
   value: {
     flex: 1,
     fontFamily: fontFamily.bodyRegular,
-    fontSize: 36,
-    color: '#F8FAFC',
+    fontSize: fontSize['36'],
+    color: fg.primary,
     textAlign: 'center',
   },
   unitWrap: {
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   unit: {
     fontFamily: fontFamily.bodyRegular,
-    fontSize: 14,
-    color: '#94A3B8',
+    fontSize: fontSize['14'],
+    color: fg.secondary,
   },
 });

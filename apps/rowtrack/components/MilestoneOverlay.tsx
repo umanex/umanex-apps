@@ -1,18 +1,18 @@
 import { memo, useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 import {
-  background,
-  text as textColors,
+  bg,
+  fg,
   fontFamily,
   fontSize,
   space,
   radii,
 } from '@/constants';
 
-export interface MilestoneOverlayProps {
+export type MilestoneOverlayProps = {
   message: string | null;
   onDismiss: () => void;
-}
+};
 
 export const MilestoneOverlay = memo(function MilestoneOverlay({ message, onDismiss }: MilestoneOverlayProps) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -74,15 +74,15 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   card: {
-    backgroundColor: background.elevated,
-    paddingHorizontal: space[8],
-    paddingVertical: space[6],
+    backgroundColor: bg.elevated,
+    paddingHorizontal: space['32'],
+    paddingVertical: space['24'],
     borderRadius: radii.xl,
   },
   text: {
     fontFamily: fontFamily.displayBold,
     fontSize: fontSize['24'],
-    color: textColors.primary,
+    color: fg.primary,
     textAlign: 'center',
   },
 });

@@ -93,30 +93,31 @@ lib/
 
 ## Design tokens
 
+Tokens worden beheerd via Tokens Studio en gegenereerd via `pnpm tokens:build`.
+
+- **Bron (niet handmatig bewerken):** `apps/rowtrack/tokens/tokens.json`
+- **Build output (importeren in code):** `apps/rowtrack/constants/`
+
+Gebruik altijd imports uit `@/constants` — geen hardcoded kleuren, spacing, radii of font families.
+
+### Beschikbare exports
+
 ```ts
 // Kleuren
-bg:         '#0A0E1A'   // schermachtergrond
-surface:    '#1A1F2E'   // card / component achtergrond
-cyan:       '#00E5FF'   // actief / primair / CTA
-red:        '#EF4444'   // destructief / stop / Verbreek
-green:      '#22C55E'   // connected / success
-grayDot:    '#47556E'   // disconnected indicator
-textWhite:  '#F8FAFC'   // primaire tekst
-textMuted:  '#94A3B8'   // secundaire tekst / labels / uppercase headers
-textOnCyan: '#0A0A0F'   // tekst op cyaan achtergrond
-gold:       '#FFD700'   // PR badge / achievement / goal bereikt
+import { bg, fg, accent, border, buttonTokens, neutral } from '@/constants';
+// bg.base, bg.elevated, bg.raised
+// fg.primary, fg.secondary, fg.tertiary, fg.quaternary, fg.onAccent
+// accent.default, accent.subtle, accent.muted
+// border.subtle, border.default, border.strong
 
-// Border radius
-card:    12
-button:  8
-chip:    8
-segment: 8
+// Typografie
+import { fontFamily, fontSize, typeStyles, lineHeight } from '@/constants';
+// fontFamily.newsreaderRegular / newsreaderItalic / newsreaderSemiBold
+// fontFamily.albertSansMedium / albertSansSemiBold
+// typeStyles.kpiValue / italicConnector / labelSection / buttonOutline / ...
 
-// Typografie font families
-Inter_400Regular   // body, units, hints
-Inter_500Medium    // labels, chips
-Inter_600SemiBold  // knoppen, segment labels
-Inter_700Bold      // headers, KPI waarden
+// Spacing & radius
+import { space, layout, componentRadius, radii } from '@/constants';
 ```
 
 ---

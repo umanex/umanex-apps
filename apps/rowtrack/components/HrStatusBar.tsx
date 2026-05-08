@@ -1,50 +1,51 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { HRStatus } from '@/lib/ble/types';
-import { background, brand, status as statusColors, text as textColors, fontFamily, fontSize } from '@/constants';
+import { bg, fg, accent, border, status, typeStyles, componentRadius } from '@/constants';
 
-interface HrStatusBarProps {
+type HrStatusBarProps = {
   hrStatus: HRStatus;
   hrDeviceName: string | null;
   onConnect: () => void;
   onDisconnect: () => void;
-}
+};
 
 export function HrStatusBar({ hrStatus, hrDeviceName, onConnect, onDisconnect }: HrStatusBarProps) {
   const isScanning = hrStatus === 'scanning';
   const isConnected = hrStatus === 'connected';
 
-  let heartColor: string = textColors.muted;
+  let heartColor: string = fg.quaternary;
   let label = 'Hartslagmeter';
 
   if (isScanning) {
-    heartColor = brand.primary;
+    heartColor = accent.default;
     label = 'Zoeken...';
   } else if (isConnected) {
-    heartColor = statusColors.success;
+    heartColor = status.success;
     label = hrDeviceName || 'HR verbonden';
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.left}>
-        {isScanning ? (
-          <ActivityIndicator size="small" color={brand.primary} />
-        ) : (
-          <Ionicons name="heart" size={14} color={heartColor} />
-        )}
+        <View style={styles.iconContainer}>
+          {isScanning ? (
+            <ActivityIndicator size="small" color={accent.default} />
+          ) : (
+            <Text style={[styles.heart, { color: heartColor }]}>♥</Text>
+          )}
+        </View>
         <Text style={styles.label}>{label}</Text>
       </View>
 
       {!isScanning && !isConnected && (
-        <TouchableOpacity style={styles.connectBtn} onPress={onConnect} activeOpacity={0.8}>
-          <Text style={styles.connectBtnText}>Verbind</Text>
+        <TouchableOpacity style={styles.actionPanel} onPress={onConnect} activeOpacity={0.8}>
+          <Text style={styles.actionText}>Verbind</Text>
         </TouchableOpacity>
       )}
 
       {isConnected && (
-        <TouchableOpacity style={styles.disconnectBtn} onPress={onDisconnect} activeOpacity={0.8}>
-          <Text style={styles.disconnectBtnText}>Verbreek</Text>
+        <TouchableOpacity style={styles.actionPanel} onPress={onDisconnect} activeOpacity={0.8}>
+          <Text style={styles.actionMuted}>Verbreek</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -56,38 +57,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: background.surface,
-    borderRadius: 12,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
+    borderWidth: 1,
+    borderColor: border.default,
+    height: 48,
     paddingLeft: 16,
-    paddingRight: 8,
-    paddingVertical: 8,
+    overflow: 'hidden',
   },
-  left: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  left: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  iconContainer: {
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heart: {
+    fontSize: 14,
+    lineHeight: 16,
+  },
   label: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: fontSize['14'],
-    color: textColors.primary,
+    ...typeStyles.kpiValue,
+    color: fg.primary,
   },
-  connectBtn: {
-    backgroundColor: brand.primary,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  actionPanel: {
+    height: 48,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: bg.raised,
+    borderLeftWidth: 1,
+    borderLeftColor: border.strong,
   },
-  connectBtnText: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['13'],
-    color: textColors.inverse,
+  actionText: {
+    fontFamily: 'Newsreader_400Regular',
+    fontSize: 15,
+    lineHeight: 15,
+    letterSpacing: -0.075,
+    color: accent.default,
   },
-  disconnectBtn: {
-    backgroundColor: statusColors.error,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  disconnectBtnText: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['13'],
-    color: '#FFFFFF',
+  actionMuted: {
+    fontFamily: 'Newsreader_400Regular',
+    fontSize: 15,
+    lineHeight: 15,
+    letterSpacing: -0.075,
+    color: fg.tertiary,
   },
 });

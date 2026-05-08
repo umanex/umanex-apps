@@ -11,9 +11,9 @@ import { Link } from 'expo-router';
 import { signIn } from '@/lib/auth';
 import { Button, FormField, ErrorMessage } from '@/components';
 import {
-  background,
-  brand,
-  text as textColors,
+  bg,
+  fg,
+  accent,
   display,
   body,
   fontFamily,
@@ -94,38 +94,38 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: background.base,
+    backgroundColor: bg.base,
   },
   inner: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: layout.screenHorizontal,
-    gap: space[4],
+    gap: space['16'],
   },
   title: {
     ...display.md,
-    color: brand.primary,
+    color: accent.default,
     textAlign: 'center',
   },
   subtitle: {
     ...body.md,
-    color: textColors.secondary,
+    color: fg.secondary,
     textAlign: 'center',
-    marginBottom: space[4],
+    marginBottom: space['16'],
   },
   button: {
-    marginTop: space[2],
+    marginTop: space['8'],
   },
   linkContainer: {
     alignItems: 'center',
-    paddingVertical: space[2],
+    paddingVertical: space['8'],
   },
   linkText: {
     ...body.sm,
-    color: textColors.secondary,
+    color: fg.secondary,
   },
   linkAccent: {
-    color: brand.primary,
+    color: accent.default,
     fontFamily: fontFamily.bodySemiBold,
   },
 });

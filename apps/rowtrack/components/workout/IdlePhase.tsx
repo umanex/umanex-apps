@@ -18,6 +18,7 @@ import type { GoalType } from '@/lib/workout-goals';
 import { NUDGE_STEP_IDX, NUDGE_LABEL, goalTargetToWheelIndex } from '@/lib/workout-goals';
 import {
   BleStatusBar,
+  Button,
   HrStatusBar,
   GoalSegments,
   Chip,
@@ -31,21 +32,18 @@ import {
   buildWattItems,
 } from '@/lib/formatters';
 import {
-  background,
-  brand,
-  status as statusColors,
-  text as textColors,
+  bg,
+  fg,
+  accent,
+  border,
+  status,
+  typeStyles,
   fontFamily,
+  fontSize,
+  componentRadius,
 } from '@/constants';
 import { useAuth } from '@/lib/auth-context';
 import { useRecentGoals } from '@/lib/hooks/useRecentGoals';
-
-const C_BG = '#0A0E1A';
-const C_CYAN = '#00E5FF';
-const C_TEXT_ON_CYAN = '#0A0A0F';
-const C_TEXT_WHITE = '#F8FAFC';
-const C_SECTION_LABEL = '#AAAAAA';
-const C_DIVIDER = '#47556E';
 
 // Spring LayoutAnimation used for segment transitions and goal mode changes
 const LAYOUT_SPRING: Parameters<typeof LayoutAnimation.configureNext>[0] = {
@@ -87,19 +85,19 @@ const GOAL_TO_SEGMENT: Record<string, GoalSegmentType> = {
 
 // --- Default picker indices (spec: 30 min, 5 km, 2:00, 180 W) ---
 
-const DEFAULT_DUR_IDX   = 29;   // 30 min
-const DEFAULT_DIST_IDX  = 9;    // 5 km
-const DEFAULT_SPLIT_IDX = 30;   // 2:00
-const DEFAULT_WATT_IDX  = 26;   // 180 W
+const DEFAULT_DUR_IDX   = 29;
+const DEFAULT_DIST_IDX  = 9;
+const DEFAULT_SPLIT_IDX = 30;
+const DEFAULT_WATT_IDX  = 26;
 
 // --- NudgeButton ---
 
-interface NudgeButtonProps {
+type NudgeButtonProps = {
   direction: 'increment' | 'decrement';
   stepLabel: string;
   disabled: boolean;
   onPress: () => void;
-}
+};
 
 function NudgeButton({ direction, stepLabel, disabled, onPress }: NudgeButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -126,7 +124,7 @@ function NudgeButton({ direction, stepLabel, disabled, onPress }: NudgeButtonPro
         <Ionicons
           name={direction === 'increment' ? 'add' : 'remove'}
           size={22}
-          color="#94A3B8"
+          color={fg.secondary}
         />
         <Text style={nudgeStyles.stepLabel}>{stepLabel}</Text>
       </Animated.View>
@@ -138,10 +136,10 @@ const nudgeStyles = StyleSheet.create({
   btn: {
     width: 64,
     height: 64,
-    backgroundColor: '#1A1F2E',
-    borderRadius: 12,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: border.default,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -154,8 +152,8 @@ const nudgeStyles = StyleSheet.create({
   },
   stepLabel: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 11,
-    color: '#94A3B8',
+    fontSize: fontSize['11'],
+    color: fg.secondary,
     letterSpacing: 0.3,
   },
 });
@@ -191,9 +189,9 @@ interface IdlePhaseProps {
 // --- Signal strength ---
 
 function rssiLabel(rssi: number): { text: string; color: string } {
-  if (rssi > -60) return { text: 'Sterk', color: statusColors.success };
-  if (rssi >= -80) return { text: 'Goed', color: brand.primary };
-  return { text: 'Zwak', color: statusColors.error };
+  if (rssi > -60) return { text: 'Sterk', color: status.success };
+  if (rssi >= -80) return { text: 'Goed', color: accent.default };
+  return { text: 'Zwak', color: status.error };
 }
 
 // --- HR Selection Modal ---
@@ -222,7 +220,7 @@ function HRSelectionModal({
               return (
                 <TouchableOpacity onPress={() => onSelect(item.id)} style={modalStyles.deviceRow}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Ionicons name="heart" size={18} color={brand.primary} />
+                    <Ionicons name="heart" size={18} color={accent.default} />
                     <Text style={modalStyles.deviceName}>{item.name}</Text>
                   </View>
                   <Text style={[modalStyles.deviceSignal, { color: signal.color }]}>{signal.text}</Text>
@@ -241,13 +239,13 @@ function HRSelectionModal({
 
 const modalStyles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheet: { backgroundColor: background.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 24, paddingBottom: 40, paddingHorizontal: 20 },
-  title: { color: textColors.primary, fontSize: 18, fontFamily: fontFamily.displayBold, marginBottom: 16, textAlign: 'center' },
-  deviceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: background.elevated, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 8 },
-  deviceName: { color: textColors.primary, fontSize: 15, fontFamily: fontFamily.bodyMedium },
-  deviceSignal: { fontSize: 13, fontFamily: fontFamily.bodyMedium },
-  cancelBtn: { marginTop: 8, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  cancelText: { color: textColors.muted, fontSize: 15, fontFamily: fontFamily.bodySemiBold },
+  sheet: { backgroundColor: bg.elevated, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 24, paddingBottom: 40, paddingHorizontal: 20 },
+  title: { color: fg.primary, fontSize: fontSize['18'], fontFamily: fontFamily.displayBold, marginBottom: 16, textAlign: 'center' },
+  deviceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: bg.raised, borderRadius: componentRadius.cardSm, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 8 },
+  deviceName: { color: fg.primary, fontSize: fontSize['15'], fontFamily: fontFamily.bodyMedium },
+  deviceSignal: { fontSize: fontSize['13'], fontFamily: fontFamily.bodyMedium },
+  cancelBtn: { marginTop: 8, paddingVertical: 14, borderRadius: componentRadius.cardSm, alignItems: 'center' },
+  cancelText: { color: fg.tertiary, fontSize: fontSize['15'], fontFamily: fontFamily.bodySemiBold },
 });
 
 // --- Component ---
@@ -496,7 +494,7 @@ export function IdlePhase({
         {/* Doel */}
         <View style={styles.doelSection}>
           <View style={styles.doelHeader}>
-            <Text style={styles.sectionLabelWhite}>DOEL</Text>
+            <Text style={styles.sectionLabel}>DOEL</Text>
             <GoalSegments selected={selectedSegment} onChange={handleSegmentChange} />
           </View>
           {renderGoalInput()}
@@ -505,14 +503,12 @@ export function IdlePhase({
 
       {/* Fixed CTA */}
       <View style={styles.ctaArea}>
-        <TouchableOpacity
-          style={styles.ctaButton}
+        <Button
+          title="Start training"
+          variant="primary"
           onPress={onStart}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.ctaGlyph}>▶</Text>
-          <Text style={styles.ctaLabel}>Start training</Text>
-        </TouchableOpacity>
+          icon="play"
+        />
       </View>
 
       <HRSelectionModal
@@ -528,7 +524,7 @@ export function IdlePhase({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: C_BG,
+    backgroundColor: bg.base,
   },
   scrollView: {
     flex: 1,
@@ -540,9 +536,8 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: 28,
-    color: C_TEXT_WHITE,
+    ...typeStyles.sectionValue,
+    color: fg.primary,
   },
 
   toestelSection: {
@@ -552,15 +547,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: 12,
-    color: C_SECTION_LABEL,
-    letterSpacing: 0.96,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
 
   divider: {
     height: 1,
-    backgroundColor: C_DIVIDER,
+    backgroundColor: border.default,
   },
 
   doelSection: {
@@ -569,19 +562,11 @@ const styles = StyleSheet.create({
   doelHeader: {
     gap: 8,
   },
-  sectionLabelWhite: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: 12,
-    color: C_SECTION_LABEL,
-    letterSpacing: 0.96,
-  },
 
   // Geen placeholder
   geenText: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: 14,
-    color: '#94A3B8',
-    lineHeight: 20,
+    ...typeStyles.italicConnector,
+    color: fg.secondary,
   },
 
   // Goal input area
@@ -598,10 +583,10 @@ const styles = StyleSheet.create({
   nudgeDisplay: {
     flex: 1,
     height: 64,
-    backgroundColor: '#1A1F2E',
-    borderRadius: 12,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: border.default,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -609,13 +594,13 @@ const styles = StyleSheet.create({
   },
   nudgeValue: {
     fontFamily: fontFamily.bodyBold,
-    fontSize: 28,
-    color: C_TEXT_WHITE,
+    fontSize: fontSize['28'],
+    color: fg.primary,
   },
   nudgeUnit: {
     fontFamily: fontFamily.bodyRegular,
-    fontSize: 12,
-    color: '#94A3B8',
+    fontSize: fontSize['12'],
+    color: fg.secondary,
   },
 
   // Recents
@@ -623,10 +608,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   recentsLabel: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 11,
-    color: '#94A3B8',
-    letterSpacing: 1.5,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   chipRow: {
     flexDirection: 'row',
@@ -638,24 +621,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 20,
-  },
-  ctaButton: {
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: C_CYAN,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  ctaGlyph: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: 14,
-    color: C_TEXT_ON_CYAN,
-  },
-  ctaLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: 16,
-    color: C_TEXT_ON_CYAN,
   },
 });

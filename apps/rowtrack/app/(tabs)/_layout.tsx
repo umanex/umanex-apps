@@ -3,7 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BleProvider } from '@/lib/ble/ble-context';
 import { WorkoutPhaseProvider, useWorkoutPhase } from '@/lib/workout-phase-context';
-import { background, brand, text as textColors, border, layout, space, fontSize, fontFamily } from '@/constants';
+import { TabLabel } from '@/components/TabLabel';
+import { bg, fg, accent, border, space } from '@/constants';
 
 function TabsInner() {
   const insets = useSafeAreaInsets();
@@ -14,56 +15,66 @@ function TabsInner() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: brand.primary,
-        tabBarInactiveTintColor: textColors.muted,
+        tabBarActiveTintColor: accent.default,
+        tabBarInactiveTintColor: fg.quaternary,
         tabBarStyle: hideTabBar
           ? { display: 'none' }
           : {
-              backgroundColor: background.surface,
-              borderTopColor: border.subtle,
-              height: layout.navHeight + insets.bottom,
-              paddingBottom: insets.bottom,
-              paddingTop: space[2],
+              backgroundColor: bg.raised,
+              borderTopWidth: 1,
+              borderTopColor: border.default,
+              height: space['40'] + space['12'] * 2 + insets.bottom,
+              paddingTop: space['12'],
+              paddingBottom: space['12'] + insets.bottom,
             },
-        tabBarLabelStyle: {
-          fontSize: fontSize['11'],
-          fontFamily: fontFamily.bodyMedium,
+        tabBarItemStyle: {
+          gap: space['4'],
+          alignItems: 'center',
+          justifyContent: 'center',
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          tabBarLabel: ({ focused, color }) => (
+            <TabLabel label="Home" focused={focused} color={color} />
+          ),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="home-outline" size={22} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="workout"
         options={{
-          title: 'Training',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="barbell-outline" size={size} color={color} />
+          tabBarLabel: ({ focused, color }) => (
+            <TabLabel label="Training" focused={focused} color={color} />
+          ),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="barbell-outline" size={22} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
-          title: 'Historiek',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time-outline" size={size} color={color} />
+          tabBarLabel: ({ focused, color }) => (
+            <TabLabel label="Historiek" focused={focused} color={color} />
+          ),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="time-outline" size={22} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profiel',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+          tabBarLabel: ({ focused, color }) => (
+            <TabLabel label="Profiel" focused={focused} color={color} />
+          ),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="person-outline" size={22} color={color} />
           ),
         }}
       />

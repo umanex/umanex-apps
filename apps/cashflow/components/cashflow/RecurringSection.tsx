@@ -124,6 +124,16 @@ export function RecurringSection({
   onSettle,
 }: RecurringSectionProps) {
   const [showPaid, setShowPaid] = useState(false);
+  const [paidDeferIds, setPaidDeferIds] = useState<Set<string>>(new Set());
+
+  function toggleDeferPaid(deferId: string, paid: boolean) {
+    setPaidDeferIds((prev) => {
+      const next = new Set(prev);
+      if (paid) next.add(deferId);
+      else next.delete(deferId);
+      return next;
+    });
+  }
 
   const unpaidItems = items.filter(
     (item) => !settlements.find((s) => s.recurringId === item.id && s.paid),
@@ -131,8 +141,11 @@ export function RecurringSection({
   const paidItems = items.filter(
     (item) => !!settlements.find((s) => s.recurringId === item.id && s.paid),
   );
+  const paidDeferredCount = deferredItems.filter((d) => paidDeferIds.has(d.deferId)).length;
+  const visibleDeferred = showPaid ? deferredItems : deferredItems.filter((d) => !paidDeferIds.has(d.deferId));
 
-  const hasAnyPaid = paidItems.length > 0;
+  const totalPaidCount = paidItems.length + paidDeferredCount;
+  const hasAnyPaid = totalPaidCount > 0;
   const visibleItems = showPaid ? items : unpaidItems;
 
   if (items.length === 0 && deferredItems.length === 0) return null;
@@ -149,8 +162,8 @@ export function RecurringSection({
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             {showPaid
-              ? `Verberg betaald (${paidItems.length})`
-              : `Toon betaald (${paidItems.length})`}
+              ? `Verberg betaald (${totalPaidCount})`
+              : `Toon betaald (${totalPaidCount})`}
           </button>
         )}
       </div>
@@ -165,8 +178,16 @@ export function RecurringSection({
         />
       ))}
 
-      {deferredItems.map((d) => (
+      {visibleDeferred.map((d) => (
         <div key={d.deferId} className="flex items-center gap-2 py-0.5">
+          <span className="w-[18px] flex-shrink-0" />
+          <input
+            type="checkbox"
+            checked={paidDeferIds.has(d.deferId)}
+            onChange={(e) => toggleDeferPaid(d.deferId, e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-input accent-primary flex-shrink-0"
+            aria-label={`${d.label} betaald`}
+          />
           <span className="flex-1 text-sm truncate">
             <span className="text-amber-600">{d.label}</span>
             {' '}

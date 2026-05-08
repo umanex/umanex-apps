@@ -1,7 +1,7 @@
 import { type ComponentProps, memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { text as textColors, display, body, space } from '@/constants';
+import { fg, display, body, space } from '@/constants';
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
@@ -24,7 +24,7 @@ export const EmptyState = memo(function EmptyState({
 
   return (
     <View style={size === 'lg' ? styles.containerLg : styles.containerSm}>
-      <Ionicons name={icon} size={resolvedIconSize} color={textColors.muted} />
+      <Ionicons name={icon} size={resolvedIconSize} color={fg.tertiary} />
       <Text style={size === 'lg' ? styles.titleLg : styles.titleSm}>
         {title}
       </Text>
@@ -47,17 +47,17 @@ const styles = StyleSheet.create({
   },
   titleSm: {
     ...body.md,
-    color: textColors.muted,
+    color: fg.tertiary,
     textAlign: 'center',
   },
   titleLg: {
     ...display.sm,
-    color: textColors.primary,
+    color: fg.primary,
     textAlign: 'center',
   },
   subtitle: {
     ...body.md,
-    color: textColors.secondary,
+    color: fg.secondary,
     textAlign: 'center',
   },
 });

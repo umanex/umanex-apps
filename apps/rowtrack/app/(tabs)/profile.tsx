@@ -16,19 +16,21 @@ import { useAuth } from '@/lib/auth-context';
 import { signOut } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { Button, WheelPicker } from '@/components';
-import { PeriodGoalCard } from '@/components/PeriodGoalCard';
+import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { BottomSheet } from '@/components/BottomSheet';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
 import type { PeriodGoalPeriod, PeriodGoalMetric } from '@/lib/hooks/usePeriodGoal';
 import {
-  background,
-  brand,
-  text as textColors,
+  bg,
+  fg,
+  accent,
+  border,
+  space,
+  typeStyles,
   fontFamily,
   fontSize,
-  space,
   radii,
-  border,
+  componentRadius,
   body,
   status,
 } from '@/constants';
@@ -354,7 +356,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color={brand.primary} />
+        <ActivityIndicator color={accent.default} />
       </View>
     );
   }
@@ -376,11 +378,11 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>MIJN DOEL</Text>
           {goalProgress ? (
-            <PeriodGoalCard progress={goalProgress} onEdit={openDoel} />
+            <GoalProgressCard progress={goalProgress} onEdit={openDoel} />
           ) : (
             <TouchableOpacity style={styles.listRow} onPress={openDoel} activeOpacity={0.8}>
               <Text style={styles.listLabel}>Geen doel ingesteld</Text>
-              <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+              <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
             </TouchableOpacity>
           )}
         </View>
@@ -393,7 +395,7 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Voornaam</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{nameLabel}</Text>
-                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
@@ -401,7 +403,7 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>E-mailadres</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{user?.email ?? '—'}</Text>
-                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
           </View>
@@ -415,7 +417,7 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Geslacht</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{genderLabel(gender)}</Text>
-                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
@@ -423,7 +425,7 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Lengte</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{heightLabel}</Text>
-                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
@@ -431,7 +433,7 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Gewicht</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{weightLabel}</Text>
-                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
@@ -439,15 +441,15 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Geboortedatum</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{formatBirthDate(birthDate)}</Text>
-                <Ionicons name="chevron-forward" size={16} color={textColors.muted} />
+                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
           </View>
         </View>
 
-        <Button title="Opslaan" onPress={handleSave} loading={saving} size="md" />
+        <Button title="Opslaan" onPress={handleSave} loading={saving} size="lg" />
 
-        <Button title="Uitloggen" onPress={handleLogout} variant="destructive" size="md" />
+        <Button title="Uitloggen" onPress={handleLogout} variant="primary" size="lg" />
 
         <Text style={styles.version}>RowTrack v1.0.0</Text>
       </ScrollView>
@@ -468,7 +470,7 @@ export default function ProfileScreen() {
           autoCorrect={false}
           returnKeyType="done"
           onSubmitEditing={saveVoornaam}
-          placeholderTextColor={textColors.muted}
+          placeholderTextColor={fg.tertiary}
         />
         <Button title="Opslaan" onPress={saveVoornaam} size="md" />
       </BottomSheet>
@@ -497,7 +499,7 @@ export default function ProfileScreen() {
             returnKeyType="next"
             onSubmitEditing={() => repeatEmailRef.current?.focus()}
             placeholder="nieuw@email.com"
-            placeholderTextColor={textColors.muted}
+            placeholderTextColor={fg.tertiary}
           />
         </View>
 
@@ -514,7 +516,7 @@ export default function ProfileScreen() {
             returnKeyType="next"
             onSubmitEditing={() => passwordRef.current?.focus()}
             placeholder="nieuw@email.com"
-            placeholderTextColor={textColors.muted}
+            placeholderTextColor={fg.tertiary}
           />
         </View>
 
@@ -529,7 +531,7 @@ export default function ProfileScreen() {
             returnKeyType="done"
             onSubmitEditing={emailFormValid ? handleEmailChange : undefined}
             placeholder="Je huidige wachtwoord"
-            placeholderTextColor={textColors.muted}
+            placeholderTextColor={fg.tertiary}
           />
         </View>
 
@@ -579,7 +581,7 @@ export default function ProfileScreen() {
             onPress={() => setDraftHeight(h => Math.max(100, h - 1))}
             activeOpacity={0.8}
           >
-            <Ionicons name="remove" size={28} color={textColors.primary} />
+            <Ionicons name="remove" size={28} color={fg.primary} />
           </TouchableOpacity>
           <Text style={styles.stepperValue}>{draftHeight} cm</Text>
           <TouchableOpacity
@@ -587,7 +589,7 @@ export default function ProfileScreen() {
             onPress={() => setDraftHeight(h => Math.min(250, h + 1))}
             activeOpacity={0.8}
           >
-            <Ionicons name="add" size={28} color={textColors.primary} />
+            <Ionicons name="add" size={28} color={fg.primary} />
           </TouchableOpacity>
         </View>
         <Button title="Opslaan" onPress={saveLengte} size="md" />
@@ -605,7 +607,7 @@ export default function ProfileScreen() {
             onPress={() => setDraftWeight(w => Math.max(30, w - 1))}
             activeOpacity={0.8}
           >
-            <Ionicons name="remove" size={28} color={textColors.primary} />
+            <Ionicons name="remove" size={28} color={fg.primary} />
           </TouchableOpacity>
           <Text style={styles.stepperValue}>{draftWeight} kg</Text>
           <TouchableOpacity
@@ -613,7 +615,7 @@ export default function ProfileScreen() {
             onPress={() => setDraftWeight(w => Math.min(300, w + 1))}
             activeOpacity={0.8}
           >
-            <Ionicons name="add" size={28} color={textColors.primary} />
+            <Ionicons name="add" size={28} color={fg.primary} />
           </TouchableOpacity>
         </View>
         <Button title="Opslaan" onPress={saveGewicht} size="md" />
@@ -696,7 +698,7 @@ export default function ProfileScreen() {
                 selectTextOnFocus
                 returnKeyType="done"
                 onSubmitEditing={saveDoel}
-                placeholderTextColor={textColors.muted}
+                placeholderTextColor={fg.tertiary}
                 placeholder="0"
               />
               <Text style={styles.sheetInputUnit}>
@@ -715,90 +717,84 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: background.base,
+    backgroundColor: bg.base,
   },
   centered: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   content: {
-    paddingHorizontal: space['5'],
-    paddingBottom: space['10'],
-    paddingTop: space['4'],
-    gap: space['5'],
+    paddingHorizontal: space['20'],
+    paddingBottom: space['40'],
+    paddingTop: space['20'],
+    gap: space['20'],
   },
   title: {
-    fontFamily: 'BarlowCondensed_600SemiBold',
-    fontSize: 24,
-    lineHeight: 30,
-    color: textColors.primary,
+    ...typeStyles.sectionValue,
+    color: fg.primary,
   },
 
   // Sections
   section: {
-    gap: space['2'],
+    gap: space['8'],
   },
   sectionLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['12'],
-    color: textColors.secondary,
-    letterSpacing: 0.96,
-    textTransform: 'uppercase',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
 
   // List card (grouped rows)
   listCard: {
-    backgroundColor: background.elevated,
-    borderRadius: radii.lg,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     overflow: 'hidden',
   },
   listRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: space['4'],
-    paddingVertical: space['4'],
-    minHeight: 52,
+    paddingHorizontal: space['16'],
+    paddingVertical: 14,
+    minHeight: 48,
   },
   listDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: border.default,
-    marginLeft: space['4'],
+    height: 1,
+    backgroundColor: fg.quaternary,
+    marginLeft: space['16'],
   },
   listLabel: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
-    color: textColors.primary,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   listRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space['2'],
+    gap: space['8'],
   },
   listValue: {
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['16'],
-    color: textColors.secondary,
+    color: fg.primary,
   },
 
   // Sheet: text input
   sheetInput: {
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['16'],
-    color: textColors.primary,
-    backgroundColor: background.elevated,
+    color: fg.primary,
+    backgroundColor: bg.elevated,
     borderWidth: 1,
     borderColor: border.default,
     borderRadius: radii.md,
-    paddingHorizontal: space['4'],
-    paddingVertical: space['3'],
+    paddingHorizontal: space['16'],
+    paddingVertical: space['12'],
   },
 
   // Sheet: current email display
   currentEmailText: {
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['16'],
-    color: textColors.secondary,
+    color: fg.secondary,
   },
 
   // Sheet: error message
@@ -811,8 +807,8 @@ const styles = StyleSheet.create({
   // Sheet: segmented control
   segmentedRow: {
     flexDirection: 'row',
-    backgroundColor: background.elevated,
-    borderRadius: radii.md,
+    backgroundColor: bg.elevated,
+    borderRadius: radii.sm,
     padding: 3,
     gap: 2,
   },
@@ -820,19 +816,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: space['3'],
+    paddingVertical: space['12'],
     borderRadius: radii.sm,
   },
   segmentBtnActive: {
-    backgroundColor: brand.primary,
+    backgroundColor: accent.default,
   },
   segmentBtnText: {
     fontFamily: fontFamily.bodySemiBold,
     fontSize: fontSize['14'],
-    color: textColors.secondary,
+    color: fg.secondary,
   },
   segmentBtnTextActive: {
-    color: background.base,
+    color: bg.base,
   },
 
   // Sheet: stepper
@@ -840,12 +836,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: space['2'],
+    paddingVertical: space['8'],
   },
   stepperBtn: {
     width: 56,
     height: 56,
-    backgroundColor: background.elevated,
+    backgroundColor: bg.elevated,
     borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -853,65 +849,65 @@ const styles = StyleSheet.create({
   stepperValue: {
     fontFamily: fontFamily.bodyBold,
     fontSize: fontSize['24'],
-    color: textColors.primary,
+    color: fg.primary,
   },
 
   // Sheet: date picker
   datePickerRow: {
     flexDirection: 'row',
-    gap: space['3'],
+    gap: space['12'],
   },
   datePickerCol: {
     flex: 1,
-    gap: space['2'],
+    gap: space['8'],
     alignItems: 'center',
   },
   datePickerColLabel: {
     fontFamily: fontFamily.bodySemiBold,
     fontSize: fontSize['11'],
-    color: textColors.secondary,
+    color: fg.secondary,
     letterSpacing: 0.88,
     textTransform: 'uppercase',
   },
 
   // Sheet: goal fields
   sheetFieldGroup: {
-    gap: space['2'],
+    gap: space['8'],
   },
   sheetFieldLabel: {
     fontFamily: fontFamily.bodySemiBold,
     fontSize: fontSize['11'],
-    color: textColors.secondary,
+    color: fg.secondary,
     letterSpacing: 0.88,
     textTransform: 'uppercase',
   },
   sheetInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: background.elevated,
+    backgroundColor: bg.elevated,
     borderWidth: 1,
     borderColor: border.default,
     borderRadius: radii.md,
-    paddingHorizontal: space['4'],
-    paddingVertical: space['3'],
-    gap: space['2'],
+    paddingHorizontal: space['16'],
+    paddingVertical: space['12'],
+    gap: space['8'],
   },
   sheetInputFlex: {
     flex: 1,
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['16'],
-    color: textColors.primary,
+    color: fg.primary,
   },
   sheetInputUnit: {
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['16'],
-    color: textColors.secondary,
+    color: fg.secondary,
   },
 
   version: {
     ...body.xs,
-    color: textColors.secondary,
+    color: fg.secondary,
     textAlign: 'center',
-    paddingTop: space['4'],
+    paddingTop: space['16'],
   },
 });

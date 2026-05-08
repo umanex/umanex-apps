@@ -37,3 +37,4 @@ packages/tokens/build/_merged.json
 apps/watermark-remover/.iopaint.log
 apps/watermark-remover/start.sh
 apps/rowtrack/package-lock.json
+.expo/

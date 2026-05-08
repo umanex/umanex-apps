@@ -10,8 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import {
   buttonTokens,
-  text as textColors,
-  label,
+  fg,
+  typeStyles,
   body,
   space,
 } from '@/constants';
@@ -21,7 +21,7 @@ type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 export interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'destructive' | 'ghost';
+  variant?: 'primary' | 'destructive' | 'ghost' | 'outline';
   size?: 'md' | 'lg';
   icon?: IoniconsName;
   loading?: boolean;
@@ -40,7 +40,11 @@ const variantStyles = {
   },
   ghost: {
     bg: 'transparent',
-    text: textColors.muted,
+    text: fg.tertiary,
+  },
+  outline: {
+    bg: buttonTokens.outline.background,
+    text: buttonTokens.outline.text,
   },
 } as const;
 
@@ -62,7 +66,8 @@ export const Button = memo(function Button({
       style={[
         styles.base,
         size === 'lg' ? styles.sizeLg : styles.sizeMd,
-        variant !== 'ghost' && { backgroundColor: colors.bg },
+        variant !== 'ghost' && variant !== 'outline' && { backgroundColor: colors.bg },
+        variant === 'outline' && { borderWidth: buttonTokens.outline.borderWidth, borderColor: buttonTokens.outline.border },
         isDisabled && styles.disabled,
         style,
       ]}
@@ -100,22 +105,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space[2],
+    gap: space['8'],
     borderRadius: buttonTokens.radius,
   },
   sizeLg: {
-    paddingVertical: space[4],
+    height: buttonTokens.primary.height,
+    paddingHorizontal: buttonTokens.primary.paddingX,
   },
   sizeMd: {
-    paddingVertical: space[3],
+    paddingVertical: space['12'],
+    paddingHorizontal: space['24'],
   },
   disabled: {
     opacity: 0.6,
   },
   text: {
-    ...label.lg,
+    ...typeStyles.buttonPrimary,
   },
   ghostText: {
     ...body.md,
+    color: fg.tertiary,
   },
 });

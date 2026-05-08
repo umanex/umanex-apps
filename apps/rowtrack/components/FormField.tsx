@@ -7,8 +7,8 @@ import {
   type TextInputProps as RNTextInputProps,
 } from 'react-native';
 import {
-  background,
-  text as textColors,
+  bg,
+  fg,
   border,
   label,
   fontFamily,
@@ -56,7 +56,7 @@ export const FormField = memo(function FormField({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={textColors.muted}
+          placeholderTextColor={fg.tertiary}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -70,32 +70,32 @@ export const FormField = memo(function FormField({
 
 const styles = StyleSheet.create({
   fieldWithLabel: {
-    gap: space[2],
+    gap: space['8'],
   },
   label: {
     ...label.caps,
-    color: textColors.muted,
+    color: fg.tertiary,
   },
   input: {
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['16'],
-    color: textColors.primary,
-    backgroundColor: background.surface,
+    color: fg.primary,
+    backgroundColor: bg.elevated,
     borderWidth: 1,
     borderColor: border.default,
     borderRadius: componentRadius.input,
-    paddingHorizontal: space[4],
-    paddingVertical: space[3],
+    paddingHorizontal: space['16'],
+    paddingVertical: space['12'],
   },
   readOnlyInput: {
-    backgroundColor: background.surface,
+    backgroundColor: bg.elevated,
     borderRadius: componentRadius.input,
-    paddingHorizontal: space[4],
-    paddingVertical: space[3],
+    paddingHorizontal: space['16'],
+    paddingVertical: space['12'],
   },
   readOnlyText: {
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['16'],
-    color: textColors.secondary,
+    color: fg.secondary,
   },
 });

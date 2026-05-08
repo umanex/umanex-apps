@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { fontFamily } from '@/constants';
+import { bg, fg, accent, border, typeStyles } from '@/constants';
 
 export type GoalSegmentType = 'Geen' | 'Duur' | 'Afstand' | 'Split' | 'Watt';
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -35,21 +35,19 @@ const GOAL_TYPES: GoalSegmentType[] = ['Geen', 'Duur', 'Afstand', 'Split', 'Watt
 
 // --- Per-segment button with its own label animation lifecycle ---
 
-interface SegmentButtonProps {
+type SegmentButtonProps = {
   type: GoalSegmentType;
   isActive: boolean;
   onPress: () => void;
-}
+};
 
 function SegmentButton({ type, isActive, onPress }: SegmentButtonProps) {
-  // Start fully visible if active on mount, hidden otherwise
   const labelOpacity = useRef(new Animated.Value(isActive ? 1 : 0)).current;
   const labelScale   = useRef(new Animated.Value(isActive ? 1 : 0.85)).current;
   const prevActive   = useRef(isActive);
 
   useEffect(() => {
     if (isActive && !prevActive.current) {
-      // Reset to start values so the animation is visible from the beginning
       labelOpacity.setValue(0);
       labelScale.setValue(0.85);
       Animated.parallel([
@@ -82,7 +80,7 @@ function SegmentButton({ type, isActive, onPress }: SegmentButtonProps) {
       <Ionicons
         name={GOAL_ICONS[type]}
         size={16}
-        color={isActive ? '#0A0A0F' : '#94A3B8'}
+        color={isActive ? fg.onAccent : fg.secondary}
       />
       {isActive && (
         <Animated.Text
@@ -101,10 +99,10 @@ function SegmentButton({ type, isActive, onPress }: SegmentButtonProps) {
 
 // --- Segmented control ---
 
-interface GoalSegmentsProps {
+type GoalSegmentsProps = {
   selected: GoalSegmentType;
   onChange: (type: GoalSegmentType) => void;
-}
+};
 
 export function GoalSegments({ selected, onChange }: GoalSegmentsProps) {
   function handlePress(type: GoalSegmentType) {
@@ -130,7 +128,9 @@ export function GoalSegments({ selected, onChange }: GoalSegmentsProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#1A1F2E',
+    backgroundColor: bg.elevated,
+    borderWidth: 1,
+    borderColor: border.default,
     borderRadius: 10,
     padding: 4,
     alignItems: 'center',
@@ -149,11 +149,10 @@ const styles = StyleSheet.create({
   segmentActive: {
     flex: 1,
     paddingHorizontal: 10,
-    backgroundColor: '#00E5FF',
+    backgroundColor: accent.default,
   },
   activeLabel: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 13,
-    color: '#0A0A0F',
+    ...typeStyles.segmentActive,
+    color: fg.onAccent,
   },
 });

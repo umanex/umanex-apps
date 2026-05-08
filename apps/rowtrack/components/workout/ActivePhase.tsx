@@ -23,7 +23,7 @@ import {
 } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import { formatTimer, formatSplit, formatDistanceDynamic } from '@/lib/formatters';
-import { brand, status as statusColors, text as textColors, fontFamily, background, space, radii, componentRadius, fontSize } from '@/constants';
+import { bg, fg, accent, border, status, fontFamily, space, radii, componentRadius, fontSize, typeStyles } from '@/constants';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
 import { styles } from './workout.styles';
 
@@ -235,7 +235,7 @@ export function ActivePhase({
     // Hero + progress fill px + subtitle node — computed per goal type
     let heroText = formattedTimer;
     let progressFillPx = 0;
-    let progressBarColor = '#00E5FF';
+    let progressBarColor: string = accent.default;
     let subtitleNode: ReactNode = null;
 
     switch (goalType) {
@@ -421,7 +421,7 @@ export function ActivePhase({
 
         {/* Stop button */}
         <TouchableOpacity style={portraitStyles.stopButton} onPress={onStop} activeOpacity={0.8}>
-          <Text style={portraitStyles.stopButtonText}>Stop training</Text>
+          <Text style={portraitStyles.stopButtonText}>Stop training →</Text>
         </TouchableOpacity>
       </View>
     );
@@ -437,7 +437,7 @@ export function ActivePhase({
         <View style={styles.connectionOverlay}>
           {bleStatus !== 'error' ? (
             <>
-              <ActivityIndicator color={brand.primary} size="large" />
+              <ActivityIndicator color={accent.default} size="large" />
               <Text style={styles.connectionText}>
                 {(bleStatus === 'idle' || bleStatus === 'scanning') && 'Zoeken naar roeier...'}
                 {bleStatus === 'connecting' && 'Verbinden...'}
@@ -448,7 +448,7 @@ export function ActivePhase({
             </>
           ) : (
             <>
-              <Ionicons name="warning-outline" size={40} color={textColors.secondary} />
+              <Ionicons name="warning-outline" size={40} color={fg.secondary} />
               <Text style={styles.connectionText}>{bleError}</Text>
               <Button title="Opnieuw proberen" onPress={startScan} size="md" variant="ghost" />
             </>
@@ -506,20 +506,38 @@ export function ActivePhase({
                 <Text style={summaryStyles.prText}>Nieuw persoonlijk record. Proficiat!</Text>
               </View>
             )}
+            {/* KPI row: AFSTAND / DUUR / ENERGIE */}
             <View style={summaryStyles.kpiRow}>
-              <View style={summaryStyles.kpiTile}>
-                <Text style={summaryStyles.kpiLabel}>TIJD</Text>
-                <Text style={summaryStyles.kpiValue}>{formattedTimer}</Text>
-              </View>
-              <View style={summaryStyles.kpiTile}>
-                <Text style={summaryStyles.kpiLabel}>AFSTAND</Text>
-                <Text style={summaryStyles.kpiValue}>{formattedDistance.value}</Text>
-                <Text style={summaryStyles.kpiUnit}>{formattedDistance.unit === 'm' ? 'meter' : formattedDistance.unit}</Text>
-              </View>
-              <View style={summaryStyles.kpiTile}>
-                <Text style={summaryStyles.kpiLabel}>KCAL</Text>
-                <Text style={summaryStyles.kpiValue}>{`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}</Text>
-              </View>
+              {(() => {
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const durValue = h > 0 ? `${h}u${m > 0 ? ` ${m}` : ''}` : `${m}`;
+                return (
+                  <>
+                    <View style={summaryStyles.kpiCell}>
+                      <View style={summaryStyles.kpiValueRow}>
+                        <Text style={summaryStyles.kpiNumber}>{formattedDistance.value}</Text>
+                        <Text style={summaryStyles.kpiUnit}>{formattedDistance.unit}</Text>
+                      </View>
+                      <Text style={summaryStyles.kpiLabel}>AFSTAND</Text>
+                    </View>
+                    <View style={summaryStyles.kpiCell}>
+                      <View style={summaryStyles.kpiValueRow}>
+                        <Text style={summaryStyles.kpiNumber}>{durValue}</Text>
+                        <Text style={summaryStyles.kpiUnit}>min</Text>
+                      </View>
+                      <Text style={summaryStyles.kpiLabel}>DUUR</Text>
+                    </View>
+                    <View style={summaryStyles.kpiCell}>
+                      <View style={summaryStyles.kpiValueRow}>
+                        <Text style={summaryStyles.kpiNumber}>{`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}</Text>
+                        <Text style={summaryStyles.kpiUnit}>kcal</Text>
+                      </View>
+                      <Text style={summaryStyles.kpiLabel}>ENERGIE</Text>
+                    </View>
+                  </>
+                );
+              })()}
             </View>
             <View style={summaryStyles.divider} />
             <View style={summaryStyles.statsSection}>
@@ -547,8 +565,8 @@ export function ActivePhase({
               </View>
             </View>
             <View style={summaryStyles.buttonsArea}>
-              <Button title="Opslaan" onPress={onSave} loading={saving} size="md" />
-              <Button title="Annuleren" onPress={onDiscard} variant="destructive" disabled={saving} size="md" />
+              <Button title="Annuleren" onPress={onDiscard} variant="outline" disabled={saving} size="lg" />
+              <Button title="Opslaan →" onPress={onSave} loading={saving} size="lg" />
             </View>
           </View>
         </View>
@@ -562,136 +580,127 @@ export function ActivePhase({
 
 const activeStyles = StyleSheet.create({
   goalLabel: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 13,
-    color: '#AAAAAA',
-    letterSpacing: 1.5,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   timerText: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: 48,
-    color: '#FFFFFF',
+    fontFamily: fontFamily.newsreaderRegular,
+    fontSize: fontSize['48'],
+    color: fg.primary,
   },
   progressTrack: {
     alignSelf: 'stretch',
     marginHorizontal: 31,
     height: 12,
-    backgroundColor: '#1A1F2E',
+    backgroundColor: bg.elevated,
     borderRadius: 6,
     overflow: 'hidden',
   },
   progressFill: {
     height: 12,
-    backgroundColor: '#00E5FF',
+    backgroundColor: accent.default,
     borderRadius: 6,
   },
   progressPct: {
     fontFamily: fontFamily.bodyRegular,
-    fontSize: 16,
-    color: '#FFFFFF',
+    fontSize: fontSize['16'],
+    color: fg.primary,
   },
 });
 
 const portraitStyles = StyleSheet.create({
   root: {
     flex: 1,
-    gap: 20,
+    gap: space['20'],
   },
   topSection: {
     flex: 1,
     minHeight: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: space['12'],
   },
   doelPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: space['8'],
   },
   doelPillText: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: 13,
-    color: '#AAAAAA',
-    letterSpacing: 1,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   doelPillDivider: {
     width: 1,
     height: 14,
-    backgroundColor: '#AAAAAA',
+    backgroundColor: fg.tertiary,
   },
   heroText: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: 64,
-    color: '#FFFFFF',
-    lineHeight: 72,
+    fontFamily: fontFamily.newsreaderRegular,
+    fontSize: fontSize['60'],
+    color: fg.primary,
+    lineHeight: fontSize['60'] * 1.15,
   },
   progressTrack: {
     width: 300,
     height: 12,
-    backgroundColor: '#1A1F2E',
+    backgroundColor: bg.elevated,
     borderRadius: 6,
     overflow: 'hidden',
   },
   progressFill: {
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#00E5FF',
+    backgroundColor: accent.default,
   },
   subtitleText: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: 13,
-    color: '#AAAAAA',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   subtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: space['16'],
   },
   subtitleDivider: {
     width: 1,
     alignSelf: 'stretch',
-    backgroundColor: '#47556E',
+    backgroundColor: border.default,
   },
   subtitleRowText: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: 16,
-    color: '#FFFFFF',
+    ...typeStyles.kpiValue,
+    color: fg.primary,
   },
   kpiGrid: {
-    gap: 12,
+    gap: space['12'],
   },
   kpiRow: {
     height: 58,
-    backgroundColor: '#1A1F2E',
-    borderRadius: 12,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: space['16'],
   },
   kpiLabel: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 16,
-    color: '#AAAAAA',
-    letterSpacing: 1,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   kpiValue: {
     fontFamily: fontFamily.bodyBold,
-    fontSize: 28,
-    color: '#FFFFFF',
+    fontSize: fontSize['28'],
+    color: fg.primary,
   },
   stopButton: {
-    height: 52,
-    backgroundColor: '#F05454',
-    borderRadius: 12,
+    height: 56,
+    backgroundColor: accent.default,
+    borderRadius: componentRadius.buttonPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stopButtonText: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: 16,
-    color: '#FFFFFF',
+    ...typeStyles.buttonPrimary,
+    color: fg.onAccent,
   },
 });
 
@@ -722,130 +731,115 @@ const landscapeStyles = StyleSheet.create({
 const summaryStyles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: background.base,
-    padding: space['5'],
+    backgroundColor: bg.base,
+    padding: space['20'],
   },
   card: {
     flex: 1,
     borderRadius: componentRadius.modal,
     overflow: 'hidden',
-    gap: space['5'],
+    gap: space['20'],
   },
   header: {
-    gap: space['1'],
+    gap: space['4'],
   },
   title: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['28'],
-    color: textColors.primary,
+    ...typeStyles.sectionValue,
+    color: fg.primary,
   },
   dateText: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['13'],
-    color: textColors.secondary,
+    fontFamily: fontFamily.newsreaderItalic,
+    fontSize: fontSize['15'],
+    color: fg.secondary,
   },
   prBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(245, 158, 11, 0.15)',
     borderRadius: radii.md,
-    padding: space['5'],
-    gap: space['2'],
+    padding: space['20'],
+    gap: space['8'],
   },
   prText: {
     fontFamily: fontFamily.bodySemiBold,
     fontSize: fontSize['14'],
-    color: statusColors.warning,
+    color: status.warning,
     lineHeight: 20,
   },
   kpiRow: {
     flexDirection: 'row',
-    gap: space['5'],
+    gap: space['8'],
   },
-  kpiTile: {
+  kpiCell: {
     flex: 1,
-    backgroundColor: background.elevated,
-    borderRadius: radii.lg,
-    height: 110,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: space['6'],
-    paddingBottom: space['4'],
-    paddingHorizontal: space['4'],
-    gap: space['2'],
+    gap: space['8'],
   },
-  kpiLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['16'],
-    color: textColors.secondary,
-    letterSpacing: 1.28,
-    textTransform: 'uppercase',
+  kpiValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3,
   },
-  kpiValue: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: 22,
-    color: textColors.primary,
-    textAlign: 'center',
+  kpiNumber: {
+    ...typeStyles.sectionValue,
+    color: fg.primary,
   },
   kpiUnit: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['13'],
-    color: textColors.secondary,
+    fontFamily: fontFamily.newsreaderItalic,
+    fontSize: fontSize['16'],
+    lineHeight: 16,
+    color: fg.secondary,
+  },
+  kpiLabel: {
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   divider: {
     height: 1,
-    backgroundColor: textColors.muted,
+    backgroundColor: border.default,
   },
   statsSection: {
-    gap: space['2'],
+    gap: space['8'],
   },
   statsHeader: {
     flexDirection: 'row',
-    paddingLeft: space['4'],
+    paddingLeft: space['16'],
   },
   statsLabelCol: {
     width: 165,
   },
   statsColLabel: {
     flex: 1,
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['14'],
-    color: textColors.secondary,
-    letterSpacing: 1.12,
-    textTransform: 'uppercase',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   statsTable: {
-    backgroundColor: background.elevated,
-    borderRadius: radii.lg,
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
     overflow: 'hidden',
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: space['4'],
-    paddingVertical: space['4'],
+    paddingLeft: space['16'],
+    paddingVertical: space['16'],
   },
   statsRowLabel: {
     width: 165,
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['14'],
-    color: textColors.secondary,
-    letterSpacing: 1.12,
-    textTransform: 'uppercase',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   statsRowValue: {
     flex: 1,
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['16'],
-    color: textColors.primary,
+    ...typeStyles.kpiValue,
+    color: fg.primary,
   },
   statsRowDivider: {
     height: 1,
-    backgroundColor: textColors.muted,
+    backgroundColor: border.default,
   },
   buttonsArea: {
     flex: 1,
     justifyContent: 'flex-end',
-    gap: space['2'],
+    gap: space['8'],
   },
 });

@@ -15,11 +15,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  background,
-  text as textColors,
+  bg,
+  fg,
   overlay,
-  fontFamily,
-  fontSize,
+  typeStyles,
   space,
   radii,
 } from '@/constants';
@@ -96,7 +95,7 @@ export const BottomSheet = memo(function BottomSheet({
             style={[
               styles.sheet,
               {
-                paddingBottom: space['8'] + insets.bottom,
+                paddingBottom: space['20'] + insets.bottom,
                 transform: [{ translateY }],
               },
             ]}
@@ -113,7 +112,7 @@ export const BottomSheet = memo(function BottomSheet({
                 accessibilityLabel="Sluiten"
                 accessibilityRole="button"
               >
-                <Ionicons name="close" size={24} color={textColors.primary} />
+                <Ionicons name="close" size={24} color={fg.primary} />
               </Pressable>
             </View>
 
@@ -147,24 +146,23 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   sheet: {
-    backgroundColor: background.surface,
+    backgroundColor: bg.elevated,
     borderTopLeftRadius: radii['3xl'],
     borderTopRightRadius: radii['3xl'],
-    paddingHorizontal: space['8'],
-    paddingTop: space['8'],
+    paddingHorizontal: space['20'],
+    paddingTop: space['20'],
     maxHeight: '90%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space['6'],
-    marginBottom: space['6'],
+    gap: space['12'],
+    marginBottom: space['16'],
   },
   title: {
     flex: 1,
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['24'],
-    color: textColors.primary,
+    ...typeStyles.sectionValue,
+    color: fg.primary,
   },
   closeBtn: {
     width: 24,
@@ -177,7 +175,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   bodyContent: {
-    gap: space['5'],
-    paddingBottom: space['2'],
+    gap: space['16'],
+    paddingBottom: space['8'],
   },
 });

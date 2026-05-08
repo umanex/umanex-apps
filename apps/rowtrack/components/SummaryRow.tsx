@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { text as textColors, border, body, mono, space } from '@/constants';
+import { fg, border, body, mono, space } from '@/constants';
 
 export interface SummaryRowProps {
   label: string;
@@ -27,10 +27,10 @@ const styles = StyleSheet.create({
   },
   label: {
     ...body.md,
-    color: textColors.secondary,
+    color: fg.secondary,
   },
   value: {
     ...mono.lg,
-    color: textColors.primary,
+    color: fg.primary,
   },
 });

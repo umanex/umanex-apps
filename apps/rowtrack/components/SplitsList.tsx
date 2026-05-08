@@ -2,24 +2,25 @@ import { memo } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { formatSplit } from '@/lib/formatters';
 import {
-  background,
-  brand,
-  text as textColors,
+  bg,
+  fg,
+  accent,
+  typeStyles,
   fontFamily,
   fontSize,
   space,
-  radii,
+  componentRadius,
 } from '@/constants';
 
-export interface SplitEntry {
+export type SplitEntry = {
   distance: number;
   split: number;
   watts?: number;
-}
+};
 
-export interface SplitsListProps {
+export type SplitsListProps = {
   splits: SplitEntry[];
-}
+};
 
 export const SplitsList = memo(function SplitsList({ splits }: SplitsListProps) {
   if (splits.length === 0) return null;
@@ -41,33 +42,30 @@ export const SplitsList = memo(function SplitsList({ splits }: SplitsListProps) 
 
 const styles = StyleSheet.create({
   container: {
-    gap: space[2],
+    gap: space['8'],
   },
   header: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['10'],
-    color: textColors.muted,
-    letterSpacing: 0.5,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   scroll: {
-    gap: space[2],
+    gap: space['8'],
   },
   chip: {
-    backgroundColor: background.surface,
-    borderRadius: radii.md,
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.cardSm,
+    paddingHorizontal: space['12'],
+    paddingVertical: space['6'],
     alignItems: 'center',
-    gap: space.px,
+    gap: 1,
   },
   distance: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['10'],
-    color: brand.primary,
+    ...typeStyles.labelGoalPrefix,
+    color: accent.default,
   },
   split: {
     fontFamily: fontFamily.monoMedium,
     fontSize: fontSize['14'],
-    color: textColors.primary,
+    color: fg.primary,
   },
 });

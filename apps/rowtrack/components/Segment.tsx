@@ -1,11 +1,11 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { brand, text as textColors, fontFamily, fontSize } from '@/constants';
+import { fg, accent, space, typeStyles } from '@/constants';
 
-interface SegmentProps {
+type SegmentProps = {
   label: string;
   active: boolean;
   onPress: () => void;
-}
+};
 
 export function Segment({ label, active, onPress }: SegmentProps) {
   return (
@@ -14,7 +14,7 @@ export function Segment({ label, active, onPress }: SegmentProps) {
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Text style={[styles.label, active ? styles.labelActive : styles.labelDefault]}>
+      <Text style={[active ? styles.labelActive : styles.labelDefault]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -24,22 +24,21 @@ export function Segment({ label, active, onPress }: SegmentProps) {
 const styles = StyleSheet.create({
   base: {
     flex: 1,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingHorizontal: space['16'],
   },
   active: {
-    backgroundColor: brand.primary,
+    backgroundColor: accent.default,
     borderRadius: 8,
   },
-  label: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['13'],
-  },
   labelActive: {
-    color: textColors.inverse,
+    ...typeStyles.segmentActive,
+    color: fg.primary,
   },
   labelDefault: {
-    color: textColors.secondary,
+    ...typeStyles.segmentInactive,
+    color: fg.secondary,
   },
 });

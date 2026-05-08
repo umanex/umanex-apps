@@ -2,8 +2,6 @@ import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {
   status,
-  brand,
-  text as textColors,
   fontFamily,
   fontSize,
   space,
@@ -45,7 +43,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space[1],
+    gap: space['4'],
   },
   dot: {
     width: 8,

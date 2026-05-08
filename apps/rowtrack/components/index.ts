@@ -40,5 +40,9 @@ export type { WorkoutCardProps } from './WorkoutCard';
 export { KPI } from './KPI';
 
 export { PeriodGoalCard } from './PeriodGoalCard';
+export { GoalProgressCard } from './GoalProgressCard';
+export { Subtitle } from './Subtitle';
 export { BottomSheet } from './BottomSheet';
 export type { BottomSheetProps } from './BottomSheet';
+export { Dot } from './Dot';
+export { TabLabel } from './TabLabel';

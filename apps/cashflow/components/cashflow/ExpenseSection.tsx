@@ -62,7 +62,7 @@ function DraggableExpenseItem({
         className="h-3.5 w-3.5 rounded border-input accent-primary flex-shrink-0"
         title="Betaald"
       />
-      <span className={`flex-1 text-sm truncate ${item.paid ? 'line-through text-muted-foreground' : ''}`}>
+      <span className={`flex-1 text-sm truncate ${item.paid ? 'text-muted-foreground' : ''}`}>
         {item.label}
       </span>
       <input
@@ -94,8 +94,14 @@ export function ExpenseSection({
   onRemove,
 }: ExpenseSectionProps) {
   const [adding, setAdding] = useState(false);
+  const [showPaid, setShowPaid] = useState(false);
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
+
+  const unpaidItems = items.filter((i) => !i.paid);
+  const paidItems = items.filter((i) => i.paid);
+  const hasAnyPaid = paidItems.length > 0;
+  const visibleItems = showPaid ? items : unpaidItems;
 
   function handleAdd() {
     const parsed = parseFloat(amount.replace(',', '.'));
@@ -138,16 +144,28 @@ export function ExpenseSection({
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Niet recurrente kosten
         </span>
-        <button
-          onClick={() => setAdding(true)}
-          className="text-xs text-primary hover:text-primary/80 transition-colors"
-          aria-label="Kost toevoegen"
-        >
-          + Toevoegen
-        </button>
+        <div className="flex items-center gap-2">
+          {hasAnyPaid && (
+            <button
+              onClick={() => setShowPaid((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPaid
+                ? `Verberg betaald (${paidItems.length})`
+                : `Toon betaald (${paidItems.length})`}
+            </button>
+          )}
+          <button
+            onClick={() => setAdding(true)}
+            className="text-xs text-primary hover:text-primary/80 transition-colors"
+            aria-label="Kost toevoegen"
+          >
+            + Toevoegen
+          </button>
+        </div>
       </div>
 
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <DraggableExpenseItem
           key={item.id}
           item={item}

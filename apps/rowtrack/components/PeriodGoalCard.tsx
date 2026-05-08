@@ -1,11 +1,11 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { PeriodGoalProgress } from '@/lib/hooks/usePeriodGoal';
-import { background, brand, text as textColors, fontFamily, fontSize, space, radii, status } from '@/constants';
+import { bg, fg, accent, status, typeStyles, fontFamily, fontSize, componentRadius, space } from '@/constants';
 
-interface PeriodGoalCardProps {
+type PeriodGoalCardProps = {
   progress: PeriodGoalProgress;
   onEdit?: () => void;
-}
+};
 
 function fmtGoalValue(metric: string, current: number, target: number): string {
   if (metric === 'distance') {
@@ -44,7 +44,7 @@ export function PeriodGoalCard({ progress, onEdit }: PeriodGoalCardProps) {
         <View
           style={[
             styles.progressFill,
-            { width: `${pct}%`, backgroundColor: isComplete ? status.success : brand.primary },
+            { width: `${pct}%`, backgroundColor: isComplete ? status.success : accent.default },
           ]}
         />
       </View>
@@ -58,11 +58,11 @@ export function PeriodGoalCard({ progress, onEdit }: PeriodGoalCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: background.elevated,
-    borderRadius: radii.lg,
-    paddingHorizontal: space['4'],
-    paddingVertical: space['3'],
-    gap: space['2'],
+    backgroundColor: bg.elevated,
+    borderRadius: componentRadius.card,
+    paddingHorizontal: space['16'],
+    paddingVertical: space['12'],
+    gap: space['8'],
   },
   topRow: {
     flexDirection: 'row',
@@ -70,20 +70,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   periodLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['12'],
-    color: textColors.secondary,
-    letterSpacing: 0.96,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.secondary,
   },
   editLink: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: fontSize['12'],
-    color: brand.primary,
+    ...typeStyles.textLink,
+    color: accent.default,
   },
   progressTrack: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: background.base,
+    backgroundColor: bg.base,
     overflow: 'hidden',
   },
   progressFill: {
@@ -98,11 +95,11 @@ const styles = StyleSheet.create({
   valueText: {
     fontFamily: fontFamily.bodySemiBold,
     fontSize: fontSize['16'],
-    color: textColors.primary,
+    color: fg.primary,
   },
   pctText: {
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['13'],
-    color: textColors.secondary,
+    color: fg.secondary,
   },
 });

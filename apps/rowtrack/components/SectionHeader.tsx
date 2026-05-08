@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Text, StyleSheet } from 'react-native';
-import { text as textColors, label } from '@/constants';
+import { fg, label } from '@/constants';
 
 export interface SectionHeaderProps {
   title: string;
@@ -13,6 +13,6 @@ export const SectionHeader = memo(function SectionHeader({ title }: SectionHeade
 const styles = StyleSheet.create({
   title: {
     ...label.caps,
-    color: textColors.muted,
+    color: fg.tertiary,
   },
 });

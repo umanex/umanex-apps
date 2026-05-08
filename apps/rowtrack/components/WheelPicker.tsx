@@ -8,7 +8,7 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { fontFamily } from '@/constants';
+import { fg, fontFamily, fontSize } from '@/constants';
 import type { WheelItem } from '@/lib/formatters';
 
 const ITEM_H = 44;
@@ -16,6 +16,13 @@ const VISIBLE = 3;
 const HALF = 1;
 const PADDING = ITEM_H * HALF;
 const PICKER_H = ITEM_H * VISIBLE;
+
+function getDisplayValue(item: WheelItem): string {
+  if (!item.unit) return item.label;
+  const suffix = ` ${item.unit}`;
+  const idx = item.label.lastIndexOf(suffix);
+  return idx === -1 ? item.label : item.label.slice(0, idx);
+}
 
 interface WheelPickerProps {
   items: WheelItem[];
@@ -74,11 +81,24 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
       >
         {items.map((item, index) => {
           const isSelected = index === selectedIndex;
+          const displayValue = getDisplayValue(item);
           return (
             <View key={index} style={styles.item}>
-              <Text style={[styles.itemLabel, isSelected && styles.itemLabelSelected]}>
-                {item.label}
-              </Text>
+              {isSelected ? (
+                <View style={styles.valueRow}>
+                  <Text style={styles.itemLabelSelected}>{displayValue}</Text>
+                  {item.unit && (
+                    <Text style={styles.itemUnitSelected}>{item.unit}</Text>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.valueRow}>
+                  <Text style={styles.itemLabel}>{displayValue}</Text>
+                  {item.unit && (
+                    <Text style={styles.itemUnit}>{item.unit}</Text>
+                  )}
+                </View>
+              )}
             </View>
           );
         })}
@@ -100,7 +120,7 @@ const styles = StyleSheet.create({
     height: ITEM_H,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#47556E',
+    borderColor: '#2C2F37',
     zIndex: 1,
   },
   listContent: {
@@ -111,14 +131,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
   itemLabel: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: 18,
-    color: '#47556E',
+    fontFamily: fontFamily.newsreaderRegular,
+    fontSize: fontSize['16'],
+    lineHeight: fontSize['16'],
+    letterSpacing: -0.4,
+    color: fg.secondary,
+  },
+  itemUnit: {
+    fontFamily: fontFamily.newsreaderItalic,
+    fontSize: fontSize['16'],
+    lineHeight: fontSize['16'],
+    color: fg.secondary,
   },
   itemLabelSelected: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: 22,
-    color: '#F8FAFC',
+    fontFamily: fontFamily.newsreaderRegular,
+    fontSize: fontSize['34'],
+    lineHeight: fontSize['34'],
+    letterSpacing: -1.02,
+    color: fg.primary,
+  },
+  itemUnitSelected: {
+    fontFamily: fontFamily.newsreaderItalic,
+    fontSize: fontSize['16'],
+    lineHeight: fontSize['16'],
+    color: fg.secondary,
   },
 });

@@ -2,27 +2,24 @@
 
 export const radii = {
   none: 0,
-  xs: 2,
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  '2xl': 20,
-  '3xl': 24,
-  '4xl': 32,
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 18,
+  xl: 22,
   full: 9999,
+  '3xl': 32,
 } as const;
 
 export const componentRadius = {
-  buttonSm: 4,
-  buttonMd: 8,
-  cardSm: 8,
-  cardLg: 12,
-  input: 8,
-  modal: 16,
-  avatar: 9999,
-  badge: 9999,
-  tab: 4,
+  input: 16,
+  buttonOutline: 18,
+  buttonPrimary: 22,
+  card: 16,
+  highlightRow: 8,
+  pill: 9999,
+  cardSm: 12,
+  modal: 24,
 } as const;
 
 export const radius = {

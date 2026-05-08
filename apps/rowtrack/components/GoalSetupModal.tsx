@@ -19,9 +19,9 @@ import {
   targetToUserInput,
 } from '@/lib/workout-goals';
 import {
-  background,
-  brand,
-  text as textColors,
+  bg,
+  fg,
+  accent,
   border,
   overlay,
   fontFamily,
@@ -31,13 +31,13 @@ import {
   radii,
 } from '@/constants';
 
-export interface GoalSetupModalProps {
+export type GoalSetupModalProps = {
   visible: boolean;
   currentGoal: WorkoutGoal | null;
   onSetGoal: (goal: WorkoutGoal) => void;
   onClearGoal: () => void;
   onClose: () => void;
-}
+};
 
 export const GoalSetupModal = memo(function GoalSetupModal({
   visible,
@@ -84,7 +84,7 @@ export const GoalSetupModal = memo(function GoalSetupModal({
           <View style={styles.header}>
             <Text style={styles.title}>Stel doel in</Text>
             <TouchableOpacity onPress={onClose} hitSlop={8}>
-              <Ionicons name="close" size={24} color={textColors.secondary} />
+              <Ionicons name="close" size={24} color={fg.secondary} />
             </TouchableOpacity>
           </View>
 
@@ -105,7 +105,7 @@ export const GoalSetupModal = memo(function GoalSetupModal({
                   <Ionicons
                     name={typeConfig.icon}
                     size={16}
-                    color={isActive ? background.base : textColors.muted}
+                    color={isActive ? bg.base : fg.tertiary}
                   />
                   <Text
                     style={[
@@ -128,8 +128,8 @@ export const GoalSetupModal = memo(function GoalSetupModal({
               onChangeText={setInputValue}
               keyboardType="numeric"
               placeholder={config.placeholder}
-              placeholderTextColor={textColors.muted}
-              selectionColor={brand.primary}
+              placeholderTextColor={fg.tertiary}
+              selectionColor={accent.default}
               returnKeyType="done"
             />
             <Text style={styles.unitLabel}>{config.unit}</Text>
@@ -161,13 +161,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: overlay.scrim,
     justifyContent: 'center',
-    paddingHorizontal: space[4],
+    paddingHorizontal: space['16'],
   },
   content: {
-    backgroundColor: background.elevated,
+    backgroundColor: bg.elevated,
     borderRadius: componentRadius.modal,
-    padding: space[6],
-    gap: space[4],
+    padding: space['24'],
+    gap: space['16'],
   },
   header: {
     flexDirection: 'row',
@@ -177,11 +177,11 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamily.displaySemiBold,
     fontSize: fontSize['24'],
-    color: textColors.primary,
+    color: fg.primary,
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: background.surface,
+    backgroundColor: bg.raised,
     borderRadius: radii.md,
     padding: space.px,
   },
@@ -190,43 +190,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space[1],
-    paddingVertical: space[2],
+    gap: space['4'],
+    paddingVertical: space['8'],
     borderRadius: radii.sm,
   },
   segmentActive: {
-    backgroundColor: brand.primary,
+    backgroundColor: accent.default,
   },
   segmentText: {
     fontFamily: fontFamily.bodySemiBold,
     fontSize: fontSize['12'],
-    color: textColors.muted,
+    color: fg.tertiary,
   },
   segmentTextActive: {
-    color: background.base,
+    color: bg.base,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space[3],
+    gap: space['12'],
   },
   input: {
     flex: 1,
-    backgroundColor: background.surface,
+    backgroundColor: bg.raised,
     borderWidth: 1,
     borderColor: border.default,
     borderRadius: componentRadius.input,
-    paddingHorizontal: space[4],
-    paddingVertical: space[3],
+    paddingHorizontal: space['16'],
+    paddingVertical: space['12'],
     fontFamily: fontFamily.monoMedium,
     fontSize: fontSize['36'],
-    color: textColors.primary,
+    color: fg.primary,
     textAlign: 'center',
   },
   unitLabel: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: fontSize['16'],
-    color: textColors.secondary,
+    color: fg.secondary,
     minWidth: 60,
   },
 });

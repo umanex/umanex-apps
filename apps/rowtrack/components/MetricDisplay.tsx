@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {
-  brand,
-  text as textColors,
+  accent,
+  fg,
   label,
   mono,
   fontFamily,
@@ -39,36 +39,36 @@ const sizeStyles = {
     },
     value: {
       ...mono.md,
-      color: textColors.primary,
+      color: fg.primary,
     },
     unit: {
       ...mono.sm,
-      color: textColors.secondary,
+      color: fg.secondary,
     },
     label: {
       ...label.caps,
-      color: textColors.muted,
+      color: fg.tertiary,
       fontSize: fontSize['10'],
     },
   }),
   md: StyleSheet.create({
     container: {
       alignItems: 'center',
-      gap: space[1],
+      gap: space['4'],
     },
     value: {
       fontFamily: fontFamily.monoMedium,
       fontSize: fontSize['20'],
       lineHeight: fontSize['20'] * 1.1,
-      color: brand.primary,
+      color: accent.default,
     },
     unit: {
       ...mono.sm,
-      color: textColors.secondary,
+      color: fg.secondary,
     },
     label: {
       ...label.caps,
-      color: textColors.muted,
+      color: fg.tertiary,
       fontSize: fontSize['10'],
     },
   }),
@@ -81,16 +81,16 @@ const sizeStyles = {
       fontFamily: fontFamily.monoMedium,
       fontSize: fontSize['36'],
       lineHeight: fontSize['36'] * 1.1,
-      color: textColors.primary,
+      color: fg.primary,
     },
     unit: {
       ...mono.sm,
-      color: textColors.secondary,
+      color: fg.secondary,
     },
     label: {
       ...label.caps,
-      color: textColors.muted,
-      marginTop: space[1],
+      color: fg.tertiary,
+      marginTop: space['4'],
     },
   }),
 };

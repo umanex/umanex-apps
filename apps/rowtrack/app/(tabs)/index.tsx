@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   workoutLeft: {
     flex: 1,
-    gap: space['4'],
+    gap: space['6'],
   },
   workoutDay: {
     ...typeStyles.labelGoalPrefix,

@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
   left: {
     flex: 1,
-    gap: space['8'],
+    gap: space['6'],
   },
   date: {
     ...typeStyles.labelGoalPrefix,

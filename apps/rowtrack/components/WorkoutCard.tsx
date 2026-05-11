@@ -40,8 +40,8 @@ export interface WorkoutCardProps {
   isLast?: boolean;
 }
 
-const newsreaderItalic16 = {
-  fontFamily: fontFamily.newsreaderItalic,
+const serifItalic16 = {
+  fontFamily: fontFamily.sourceSerifItalic,
   fontSize: 16,
   lineHeight: 16,
 } as const;
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   unit: {
-    ...newsreaderItalic16,
+    ...serifItalic16,
     color: fg.primary,
   },
   right: {
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     color: fg.onAccent,
   },
   distUnit: {
-    ...newsreaderItalic16,
+    ...serifItalic16,
     color: fg.onAccent,
   },
   arrow: {

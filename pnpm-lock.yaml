@@ -109,9 +109,6 @@ importers:
       '@expo-google-fonts/jetbrains-mono':
         specifier: ^0.4.1
         version: 0.4.1
-      '@expo-google-fonts/newsreader':
-        specifier: ^0.4.1
-        version: 0.4.1
       '@expo-google-fonts/source-serif-4':
         specifier: ^0.4.1
         version: 0.4.1
@@ -910,9 +907,6 @@ packages:
 
   '@expo-google-fonts/jetbrains-mono@0.4.1':
     resolution: {integrity: sha512-CslACrtMOcRwoWXCO7OMEI+9w3fukWSoBtvNz46OqPoogEuuoY0tkDY1O8sFumk8t0pC6Cx0Xr95O0TOQhpkug==}
-
-  '@expo-google-fonts/newsreader@0.4.1':
-    resolution: {integrity: sha512-j96W112+mj/VYP06DCq00w+twyw42w0MY7eHB/XXioNK80BcG0cIk/zogjOENZSY7qejzIFbHE/PZYqlh/6VKQ==}
 
   '@expo-google-fonts/source-serif-4@0.4.1':
     resolution: {integrity: sha512-Ej4UXDjW1kwYPHG8YLq6fK1bqnJGb3K35J3S5atSL0ScKFAFLKvndxoTWeCls7mybtlS9x99hzwDeXCBkiI3rA==}
@@ -6681,8 +6675,6 @@ snapshots:
   '@expo-google-fonts/inter@0.4.2': {}
 
   '@expo-google-fonts/jetbrains-mono@0.4.1': {}
-
-  '@expo-google-fonts/newsreader@0.4.1': {}
 
   '@expo-google-fonts/source-serif-4@0.4.1': {}
 

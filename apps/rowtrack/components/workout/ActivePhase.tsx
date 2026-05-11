@@ -669,7 +669,6 @@ const portraitStyles = StyleSheet.create({
   },
   topSection: {
     flex: 1,
-    minHeight: 0,
     alignItems: 'center',
     justifyContent: 'center',
     gap: space['12'],

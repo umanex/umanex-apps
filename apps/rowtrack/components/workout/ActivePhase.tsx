@@ -210,9 +210,13 @@ export function ActivePhase({
                 </View>
               )}
             </View>
-            <Text style={activeStyles.progressPct}>
-              {`${formattedTimer} | ${Math.round(goalProgress.percentage)}% voltooid`}
-            </Text>
+            <View style={portraitStyles.subtitleRow}>
+              <Text style={portraitStyles.subtitleRowText}>{formattedTimer}</Text>
+              <View style={portraitStyles.subtitleDivider} />
+              <Text style={portraitStyles.subtitleRowText}>
+                {`${Math.round(goalProgress.percentage)}% voltooid`}
+              </Text>
+            </View>
           </>
         )}
       </>

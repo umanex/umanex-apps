@@ -18,12 +18,14 @@
     "turbo": "^2.0.0"
   },
   "pnpm": {
-    "overrides": {
-      "styled-jsx>react": "18.3.1"
-    },
-    "patchedDependencies": {
-      "expo-router@6.0.23": "patches/expo-router@6.0.23.patch"
-    }
+  "overrides": {
+    "styled-jsx>react": "18.3.1",
+    "@types/react": "19.1.17",
+    "@types/react-dom": "19.2.3"
   },
+  "patchedDependencies": {
+    "expo-router@6.0.23": "patches/expo-router@6.0.23.patch"
+  }
+},
   "packageManager": "pnpm@9.0.0"
 }

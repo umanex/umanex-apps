@@ -163,10 +163,37 @@ export function ActivePhase({
 
   // --- Landscape: top section (timer + progress bar) ---
   function renderTopSection() {
+    let doelTargetLabel = '';
+    if (goal) {
+      switch (goal.type) {
+        case 'duration': {
+          const m = Math.floor(goal.target / 60);
+          const s = goal.target % 60;
+          doelTargetLabel = `${m}:${String(s).padStart(2, '0')} MIN`;
+          break;
+        }
+        case 'distance':
+          doelTargetLabel = goal.target >= 1000
+            ? `${(goal.target / 1000).toFixed(1).replace('.', ',')} KM`
+            : `${goal.target} M`;
+          break;
+        case 'split':
+          doelTargetLabel = `${formatSplit(goal.target)}/500m`;
+          break;
+        case 'watts':
+          doelTargetLabel = `${goal.target} W`;
+          break;
+      }
+    }
+
     return (
       <>
         {goal && (
-          <Text style={activeStyles.goalLabel}>{buildGoalLabel(goal)}</Text>
+          <View style={portraitStyles.doelPill}>
+            <Text style={portraitStyles.doelPillText}>DOEL</Text>
+            <View style={portraitStyles.doelPillDivider} />
+            <Text style={portraitStyles.doelPillText}>{doelTargetLabel}</Text>
+          </View>
         )}
         <Text style={activeStyles.timerText}>{formattedTimer}</Text>
         {goal && goalProgress && (

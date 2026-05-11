@@ -440,7 +440,7 @@ export function ActivePhase({
 
   return (
     <View style={[styles.container, {
-      paddingTop: insets.top + 16,
+      paddingTop: insets.top,
       paddingBottom: insets.bottom + 8,
       paddingLeft: Math.max(layout.screenHorizontal, insets.left),
       paddingRight: Math.max(layout.screenHorizontal, insets.right),
@@ -600,8 +600,9 @@ const activeStyles = StyleSheet.create({
     color: fg.tertiary,
   },
   timerText: {
-    fontFamily: fontFamily.newsreaderRegular,
-    fontSize: fontSize['48'],
+    fontFamily: fontFamily.sourceSerifBold,
+    fontSize: fontSize['124'],
+    lineHeight: fontSize['124'] * 0.95,
     color: fg.primary,
   },
   progressTrack: {
@@ -645,22 +646,28 @@ const portraitStyles = StyleSheet.create({
   doelPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: 40,
+    backgroundColor: 'rgba(240,84,84,0.1)',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(240,84,84,0.3)',
+    paddingHorizontal: space['12'],
     gap: space['8'],
   },
   doelPillText: {
     ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    color: fg.secondary,
   },
   doelPillDivider: {
     width: 1,
     height: 14,
-    backgroundColor: fg.tertiary,
+    backgroundColor: 'rgba(240,84,84,0.3)',
   },
   heroText: {
-    fontFamily: fontFamily.newsreaderRegular,
-    fontSize: fontSize['60'],
+    fontFamily: fontFamily.sourceSerifBold,
+    fontSize: fontSize['124'],
     color: fg.primary,
-    lineHeight: fontSize['60'] * 1.15,
+    lineHeight: fontSize['124'] * 0.95,
   },
   progressTrack: {
     alignSelf: 'stretch',
@@ -700,24 +707,26 @@ const portraitStyles = StyleSheet.create({
     color: fg.primary,
   },
   kpiGrid: {
-    gap: space['12'],
+    gap: space['8'],
   },
   kpiRow: {
-    height: 58,
+    height: 48,
     backgroundColor: bg.elevated,
     borderRadius: componentRadius.cardSm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: space['16'],
+    paddingHorizontal: 18,
   },
   kpiLabel: {
     ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    color: fg.secondary,
   },
   kpiValue: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['28'],
+    fontFamily: fontFamily.sourceSerifSemiBold,
+    fontSize: fontSize['16'],
+    lineHeight: fontSize['16'],
+    letterSpacing: -0.4,
     color: fg.primary,
   },
   stopButton: {
@@ -777,7 +786,7 @@ const summaryStyles = StyleSheet.create({
     color: fg.primary,
   },
   dateText: {
-    fontFamily: fontFamily.newsreaderItalic,
+    fontFamily: fontFamily.sourceSerifItalic,
     fontSize: fontSize['15'],
     color: fg.secondary,
   },
@@ -790,7 +799,7 @@ const summaryStyles = StyleSheet.create({
     gap: space['8'],
   },
   prText: {
-    fontFamily: fontFamily.newsreaderItalic,
+    fontFamily: fontFamily.sourceSerifItalic,
     fontSize: fontSize['16'],
     lineHeight: 22,
     color: status.warning,
@@ -813,7 +822,7 @@ const summaryStyles = StyleSheet.create({
     color: fg.primary,
   },
   kpiUnit: {
-    fontFamily: fontFamily.newsreaderItalic,
+    fontFamily: fontFamily.sourceSerifItalic,
     fontSize: fontSize['16'],
     lineHeight: 16,
     color: fg.secondary,

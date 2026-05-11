@@ -146,20 +146,39 @@ export default function WorkoutDetailScreen() {
         {/* Overzicht tab */}
         {activeTab === 'Overzicht' && (
           <>
-            <View style={styles.kpiTilesRow}>
-              <View style={styles.kpiTile}>
-                <Text style={styles.kpiTileLabel}>TIJD</Text>
-                <Text style={styles.kpiTileValue}>{formatDuration(workout.duration_seconds)}</Text>
-              </View>
-              <View style={styles.kpiTile}>
-                <Text style={styles.kpiTileLabel}>AFSTAND</Text>
-                <Text style={styles.kpiTileValue}>{formatDistanceDynamic(workout.distance_meters).value}</Text>
-                <Text style={styles.kpiTileUnit}>{formatDistanceDynamic(workout.distance_meters).unit === 'm' ? 'meter' : 'km'}</Text>
-              </View>
-              <View style={styles.kpiTile}>
-                <Text style={styles.kpiTileLabel}>KCAL</Text>
-                <Text style={styles.kpiTileValue}>{workout.calories != null ? `${workout.calories}` : '—'}</Text>
-              </View>
+            <View style={styles.kpiRow}>
+              {(() => {
+                const dist = formatDistanceDynamic(workout.distance_meters);
+                const h = Math.floor(workout.duration_seconds / 3600);
+                const m = Math.floor((workout.duration_seconds % 3600) / 60);
+                const durVal = h > 0 ? `${h}u${m > 0 ? ` ${m}` : ''}` : `${m}`;
+                const durUnit = h > 0 ? '' : 'min';
+                return (
+                  <>
+                    <View style={styles.kpiCell}>
+                      <View style={styles.kpiValueRow}>
+                        <Text style={styles.kpiNumber}>{dist.value}</Text>
+                        <Text style={styles.kpiUnit}>{dist.unit}</Text>
+                      </View>
+                      <Text style={styles.kpiCellLabel}>{'MAX.\nAFSTAND'}</Text>
+                    </View>
+                    <View style={styles.kpiCell}>
+                      <View style={styles.kpiValueRow}>
+                        <Text style={styles.kpiNumber}>{durVal}</Text>
+                        {!!durUnit && <Text style={styles.kpiUnit}>{durUnit}</Text>}
+                      </View>
+                      <Text style={styles.kpiCellLabel}>{'LANGSTE\nDUUR'}</Text>
+                    </View>
+                    <View style={styles.kpiCell}>
+                      <View style={styles.kpiValueRow}>
+                        <Text style={styles.kpiNumber}>{workout.best_split != null ? formatSplit(workout.best_split) : '—'}</Text>
+                        {workout.best_split != null && <Text style={styles.kpiUnit}>/500m</Text>}
+                      </View>
+                      <Text style={styles.kpiCellLabel}>{'SNELSTE\nSPLIT'}</Text>
+                    </View>
+                  </>
+                );
+              })()}
             </View>
             <View style={styles.statsDivider} />
             <View style={styles.statsSection}>
@@ -305,7 +324,37 @@ const styles = StyleSheet.create({
     gap: space['20'],
   },
 
-  // KPI tiles (3-up row)
+  // KPI inline row (Overzicht tab)
+  kpiRow: {
+    flexDirection: 'row',
+    gap: space['8'],
+  },
+  kpiCell: {
+    flex: 1,
+    gap: space['8'],
+  },
+  kpiValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3,
+    overflow: 'hidden',
+  },
+  kpiNumber: {
+    ...typeStyles.sectionValue,
+    color: fg.primary,
+  },
+  kpiUnit: {
+    fontFamily: fontFamily.newsreaderItalic,
+    fontSize: fontSize['16'],
+    lineHeight: fontSize['16'] * 1.3,
+    color: fg.secondary,
+  },
+  kpiCellLabel: {
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
+  },
+
+  // KPI tiles (Hartslag tab)
   kpiTilesRow: {
     flexDirection: 'row',
     gap: space['20'],

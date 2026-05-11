@@ -98,7 +98,11 @@ export default function WorkoutScreen() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!user || refs.tickCount.current === 0) return;
+    if (!user) return;
+    if (refs.tickCount.current === 0) {
+      Alert.alert('Geen data', 'Er zijn geen roeigegevens opgeslagen. Verbind de trainer en roei een stukje voor je stopt.');
+      return;
+    }
     setSaving(true);
 
     const t = refs.tickCount.current;
@@ -106,7 +110,7 @@ export default function WorkoutScreen() {
 
     const { error } = await supabase.from('workouts').insert({
       user_id: user.id,
-      started_at: refs.startedAtRef.current?.toISOString(),
+      started_at: refs.startedAtRef.current?.toISOString() ?? new Date().toISOString(),
       duration_seconds: metricsState.seconds,
       distance_meters: Math.round(metricsState.distanceMeters),
       avg_watts: avgW,
@@ -131,7 +135,9 @@ export default function WorkoutScreen() {
     });
 
     setSaving(false);
-    if (!error) {
+    if (error) {
+      Alert.alert('Opslaan mislukt', `Probeer opnieuw. (${error.message})`);
+    } else {
       setPhase('idle');
       router.replace('/(tabs)');
     }

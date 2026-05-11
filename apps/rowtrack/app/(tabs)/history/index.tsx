@@ -125,17 +125,17 @@ export default function HistoryScreen() {
       <View style={styles.kpiRow}>
         <View style={styles.kpiTile}>
           <Text style={styles.kpiValue}>{totalWorkouts}</Text>
-          <Text style={styles.kpiLabel}>WORKOUTS</Text>
+          <Text style={styles.kpiLabel}>AANTAL{'\n'}TRAININGEN</Text>
         </View>
         <View style={styles.kpiTile}>
           <Text style={styles.kpiValue}>{totalKm.toFixed(1).replace('.', ',')}</Text>
-          <Text style={styles.kpiLabel}>KM TOTAAL</Text>
+          <Text style={styles.kpiLabel}>TOTALE{'\n'}AFSTAND</Text>
         </View>
         <View style={styles.kpiTile}>
           <Text style={styles.kpiValue}>
             {avgDurSec > 0 ? formatDuration(Math.round(avgDurSec)) : '—'}
           </Text>
-          <Text style={styles.kpiLabel}>GEM. DUUR</Text>
+          <Text style={styles.kpiLabel}>GEM.{'\n'}DUUR</Text>
         </View>
       </View>
 
@@ -213,6 +213,7 @@ const styles = StyleSheet.create({
   kpiLabel: {
     ...typeStyles.labelGoalPrefix,
     color: fg.tertiary,
+    textAlign: 'center',
   },
 
   loader: {

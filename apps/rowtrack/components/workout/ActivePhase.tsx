@@ -23,7 +23,7 @@ import {
 } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import { formatTimer, formatSplit, formatDistanceDynamic } from '@/lib/formatters';
-import { bg, fg, accent, border, status, fontFamily, space, radii, componentRadius, fontSize, typeStyles } from '@/constants';
+import { bg, fg, accent, border, status, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
 import { styles } from './workout.styles';
 
@@ -172,15 +172,19 @@ export function ActivePhase({
         {goal && goalProgress && (
           <>
             <View style={activeStyles.progressTrack}>
-              <View
-                style={[
-                  activeStyles.progressFill,
-                  { width: `${Math.min(goalProgress.percentage, 100)}%` },
-                ]}
-              />
+              {goalProgress.percentage > 0 && (
+                <View
+                  style={[
+                    activeStyles.progressFill,
+                    { width: `${Math.min(goalProgress.percentage, 100)}%` },
+                  ]}
+                >
+                  <View style={activeStyles.progressDot} />
+                </View>
+              )}
             </View>
             <Text style={activeStyles.progressPct}>
-              {Math.round(goalProgress.percentage)}% voltooid
+              {`${formattedTimer} | ${Math.round(goalProgress.percentage)}% voltooid`}
             </Text>
           </>
         )}
@@ -232,9 +236,9 @@ export function ActivePhase({
       }
     }
 
-    // Hero + progress fill px + subtitle node — computed per goal type
+    // Hero + progress fill pct (0–1) + subtitle node — computed per goal type
     let heroText = formattedTimer;
-    let progressFillPx = 0;
+    let progressFillPct = 0;
     let progressBarColor: string = accent.default;
     let subtitleNode: ReactNode = null;
 
@@ -252,7 +256,7 @@ export function ActivePhase({
         const remaining = Math.max(0, target - seconds);
         const pct = target > 0 ? Math.min(1, seconds / target) : 0;
         heroText = formatTimer(remaining);
-        progressFillPx = 300 * pct;
+        progressFillPct = pct;
         subtitleNode = (
           <View style={portraitStyles.subtitleRow}>
             <Text style={portraitStyles.subtitleRowText}>{formatTimer(seconds)}</Text>
@@ -273,7 +277,7 @@ export function ActivePhase({
         heroText = remainM >= 1000
           ? `${Math.floor(remainM / 1000)}.${String(remainM % 1000).padStart(3, '0')} m`
           : `${remainM} m`;
-        progressFillPx = 300 * pct;
+        progressFillPct = pct;
         // Subtitle elapsed: comma as decimal separator (e.g. "5,0 km")
         const elapsedStr = distanceMeters >= 1000
           ? `${(distanceMeters / 1000).toFixed(1).replace('.', ',')} km`
@@ -290,7 +294,7 @@ export function ActivePhase({
         break;
       }
       case 'split': {
-        progressFillPx = 300;
+        progressFillPct = 1;
         progressBarColor = splitSeconds > 0 && splitSeconds <= goal!.target ? '#4CAF50' : '#FE9429';
         heroText = formatSplit(splitSeconds);
         let splitSubtitle = 'Begin met roeien...';
@@ -307,7 +311,7 @@ export function ActivePhase({
         break;
       }
       case 'watts': {
-        progressFillPx = 300;
+        progressFillPct = 1;
         progressBarColor = watts >= goal!.target ? '#4CAF50' : '#FE9429';
         heroText = `${watts} W`;
         let wattsSubtitle = 'Begin met roeien...';
@@ -382,12 +386,19 @@ export function ActivePhase({
 
           {goal && (
             <View style={portraitStyles.progressTrack}>
-              <View
-                style={[
-                  portraitStyles.progressFill,
-                  { width: progressFillPx, backgroundColor: progressBarColor },
-                ]}
-              />
+              {progressFillPct > 0 && (
+                <View
+                  style={[
+                    portraitStyles.progressFill,
+                    {
+                      width: `${Math.min(progressFillPct * 100, 100)}%`,
+                      backgroundColor: progressBarColor,
+                    },
+                  ]}
+                >
+                  <View style={[portraitStyles.progressDot, { backgroundColor: progressBarColor }]} />
+                </View>
+              )}
             </View>
           )}
 
@@ -428,7 +439,12 @@ export function ActivePhase({
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 8 }]}>
+    <View style={[styles.container, {
+      paddingTop: insets.top + 16,
+      paddingBottom: insets.bottom + 8,
+      paddingLeft: Math.max(layout.screenHorizontal, insets.left),
+      paddingRight: Math.max(layout.screenHorizontal, insets.right),
+    }]}>
       {/* Milestone overlay */}
       <MilestoneOverlay message={milestoneMsg} onDismiss={dismissMilestone} />
 
@@ -590,21 +606,27 @@ const activeStyles = StyleSheet.create({
   },
   progressTrack: {
     alignSelf: 'stretch',
-    marginHorizontal: 31,
-    height: 12,
-    backgroundColor: bg.elevated,
-    borderRadius: 6,
-    overflow: 'hidden',
+    height: 2,
+    backgroundColor: '#3a3e48',
+    borderRadius: 1,
   },
   progressFill: {
-    height: 12,
+    height: 2,
     backgroundColor: accent.default,
-    borderRadius: 6,
+    borderRadius: 1,
+  },
+  progressDot: {
+    position: 'absolute',
+    right: -5,
+    top: -4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: accent.default,
   },
   progressPct: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
-    color: fg.primary,
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
 });
 
@@ -641,16 +663,23 @@ const portraitStyles = StyleSheet.create({
     lineHeight: fontSize['60'] * 1.15,
   },
   progressTrack: {
-    width: 300,
-    height: 12,
-    backgroundColor: bg.elevated,
-    borderRadius: 6,
-    overflow: 'hidden',
+    alignSelf: 'stretch',
+    height: 2,
+    backgroundColor: '#3a3e48',
+    borderRadius: 1,
   },
   progressFill: {
-    height: 12,
-    borderRadius: 6,
+    height: 2,
+    borderRadius: 1,
     backgroundColor: accent.default,
+  },
+  progressDot: {
+    position: 'absolute',
+    right: -5,
+    top: -4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   subtitleText: {
     ...typeStyles.labelGoalPrefix,
@@ -761,10 +790,10 @@ const summaryStyles = StyleSheet.create({
     gap: space['8'],
   },
   prText: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['14'],
+    fontFamily: fontFamily.newsreaderItalic,
+    fontSize: fontSize['16'],
+    lineHeight: 22,
     color: status.warning,
-    lineHeight: 20,
   },
   kpiRow: {
     flexDirection: 'row',

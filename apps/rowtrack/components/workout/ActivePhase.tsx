@@ -700,11 +700,11 @@ const portraitStyles = StyleSheet.create({
   subtitleDivider: {
     width: 1,
     alignSelf: 'stretch',
-    backgroundColor: border.default,
+    backgroundColor: fg.quaternary,
   },
   subtitleRowText: {
-    ...typeStyles.kpiValue,
-    color: fg.primary,
+    ...typeStyles.activeProgress,
+    color: fg.onAccent,
   },
   kpiGrid: {
     gap: space['8'],

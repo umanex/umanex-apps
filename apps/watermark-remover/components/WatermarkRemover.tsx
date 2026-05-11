@@ -7,7 +7,13 @@ import JSZip from 'jszip';
 // INPAINTING ALGORITHM
 // Bilinear interpolation of rectangle boundary + optional noise
 // ─────────────────────────────────────────────────────────────
-function inpaintRect(ctx, rect, opts = {}) {
+type NRect = { x: number; y: number; w: number; h: number };
+type InpaintRectOpts = { feather?: number; noise?: number };
+type FileEntry = { file: File; url: string; img: HTMLImageElement; name: string };
+type ResultEntry = { name: string; blob: Blob; url: string; origName: string };
+type DragPoint = { x: number; y: number };
+
+function inpaintRect(ctx: CanvasRenderingContext2D, rect: NRect, opts: InpaintRectOpts = {}) {
   const { feather = 4, noise = 0.04 } = opts;
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
@@ -99,11 +105,11 @@ function inpaintRect(ctx, rect, opts = {}) {
   ctx.putImageData(imageData, 0, 0);
 }
 
-function processImage(img, normalizedRect, opts) {
+function processImage(img: HTMLImageElement, normalizedRect: NRect, opts: InpaintRectOpts) {
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d')!;
   ctx.drawImage(img, 0, 0);
 
   const rect = {
@@ -118,8 +124,8 @@ function processImage(img, normalizedRect, opts) {
 }
 
 // Fast preview: inpaints directly on an already-drawn canvas (no copy)
-function previewInpaintOnCanvas(targetCanvas, sourceImg, normalizedRect, opts) {
-  const ctx = targetCanvas.getContext('2d');
+function previewInpaintOnCanvas(targetCanvas: HTMLCanvasElement, sourceImg: HTMLImageElement, normalizedRect: NRect, opts: InpaintRectOpts) {
+  const ctx = targetCanvas.getContext('2d')!;
   // Redraw source image at canvas display size
   ctx.drawImage(sourceImg, 0, 0, targetCanvas.width, targetCanvas.height);
   const rect = {
@@ -132,25 +138,25 @@ function previewInpaintOnCanvas(targetCanvas, sourceImg, normalizedRect, opts) {
   inpaintRect(ctx, rect, opts);
 }
 
-function canvasToBlob(canvas, type = 'image/jpeg', quality = 0.95) {
-  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+function canvasToBlob(canvas: HTMLCanvasElement, type = 'image/jpeg', quality = 0.95) {
+  return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
 // ─── AI helpers ──────────────────────────────────────────────
-function imageToBase64PNG(img) {
+function imageToBase64PNG(img: HTMLImageElement) {
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d')!;
   ctx.drawImage(img, 0, 0);
   return canvas.toDataURL('image/png').split(',')[1];
 }
 
-function createMaskBase64(width, height, normalizedRect, paddingPx) {
+function createMaskBase64(width: number, height: number, normalizedRect: NRect, paddingPx: number) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d')!;
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, width, height);
   // White rect = area to inpaint, met optionele padding
@@ -163,7 +169,7 @@ function createMaskBase64(width, height, normalizedRect, paddingPx) {
   return canvas.toDataURL('image/png').split(',')[1];
 }
 
-async function inpaintViaAI(img, normalizedRect, paddingPx) {
+async function inpaintViaAI(img: HTMLImageElement, normalizedRect: NRect, paddingPx: number) {
   const imageB64 = imageToBase64PNG(img);
   const maskB64 = createMaskBase64(
     img.naturalWidth,
@@ -195,21 +201,21 @@ async function inpaintViaAI(img, normalizedRect, paddingPx) {
 // UI COMPONENT
 // ─────────────────────────────────────────────────────────────
 export default function App() {
-  const [files, setFiles] = useState([]);
-  const [rect, setRect] = useState(null); // normalized 0-1
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [rect, setRect] = useState<NRect | null>(null); // normalized 0-1
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<ResultEntry[]>([]);
   const [padding, setPadding] = useState(8); // mask expand in display px
   const [dragging, setDragging] = useState(false);
   const [aiStatus, setAiStatus] = useState('checking'); // checking | ready | offline
   const [aiModel, setAiModel] = useState('');
 
-  const editCanvasRef = useRef(null);
-  const previewCanvasRef = useRef(null);
-  const dragStart = useRef(null);
-  const containerRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const editCanvasRef = useRef<HTMLCanvasElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const dragStart = useRef<DragPoint | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ─── AI health check ─────────────────────────────────────
   useEffect(() => {
@@ -238,7 +244,7 @@ export default function App() {
   }, []);
 
   // ─── file loading ────────────────────────────────────────
-  const loadFiles = async (list) => {
+  const loadFiles = async (list: FileList) => {
     const valid = Array.from(list).filter((f) => f.type.startsWith('image/'));
     if (!valid.length) {
       alert('Geen geldige afbeeldingen geselecteerd.');
@@ -248,7 +254,7 @@ export default function App() {
       const loaded = await Promise.all(
         valid.map(
           (f) =>
-            new Promise((resolve, reject) => {
+            new Promise<FileEntry>((resolve, reject) => {
               const url = URL.createObjectURL(f);
               const img = new Image();
               img.onload = () => resolve({ file: f, url, img, name: f.name });
@@ -265,11 +271,11 @@ export default function App() {
       setRect(null);
     } catch (err) {
       console.error(err);
-      alert(`Fout bij laden: ${err.message}`);
+      alert(`Fout bij laden: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
-  const onDrop = (e) => {
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files?.length) loadFiles(e.dataTransfer.files);
   };
@@ -289,7 +295,7 @@ export default function App() {
         const scale = Math.min(1, maxW / first.naturalWidth);
         canvas.width = Math.max(1, Math.round(first.naturalWidth * scale));
         canvas.height = Math.max(1, Math.round(first.naturalHeight * scale));
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d')!;
         ctx.drawImage(first, 0, 0, canvas.width, canvas.height);
       } catch (err) {
         console.error('Canvas setup error:', err);
@@ -315,7 +321,7 @@ export default function App() {
         const first = files[0].img;
 
         // Redraw edit canvas met overlay + padding-indicator
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d')!;
         ctx.drawImage(first, 0, 0, canvas.width, canvas.height);
 
         const rx = rect.x * canvas.width;
@@ -370,15 +376,15 @@ export default function App() {
   }, [rect, files, padding]);
 
   // ─── mouse handling for rectangle ────────────────────────
-  const getRel = (e) => {
-    const canvas = editCanvasRef.current;
+  const getRel = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = editCanvasRef.current!;
     const b = canvas.getBoundingClientRect();
-    const cx = (e.clientX ?? e.touches?.[0]?.clientX) - b.left;
-    const cy = (e.clientY ?? e.touches?.[0]?.clientY) - b.top;
+    const cx = e.clientX - b.left;
+    const cy = e.clientY - b.top;
     return { x: cx / b.width, y: cy / b.height };
   };
 
-  const onPointerDown = (e) => {
+  const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const p = getRel(e);
     dragStart.current = p;
@@ -386,7 +392,7 @@ export default function App() {
     setRect({ x: p.x, y: p.y, w: 0, h: 0 });
   };
 
-  const onPointerMove = (e) => {
+  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!dragging || !dragStart.current) return;
     e.preventDefault();
     const p = getRel(e);
@@ -444,10 +450,10 @@ export default function App() {
         });
       } catch (err) {
         console.error(`Fout bij verwerken ${f.name}:`, err);
-        errors.push(`${f.name}: ${err.message}`);
+        errors.push(`${f.name}: ${err instanceof Error ? err.message : String(err)}`);
       }
       setProgress({ done: i + 1, total: files.length });
-      await new Promise((r) => setTimeout(r, 0));
+      await new Promise<void>((r) => setTimeout(r, 0));
     }
     setResults(out);
     setProcessing(false);
@@ -456,7 +462,7 @@ export default function App() {
     }
   };
 
-  const downloadOne = (r) => {
+  const downloadOne = (r: ResultEntry) => {
     const a = document.createElement('a');
     a.href = r.url;
     a.download = r.name;
@@ -484,7 +490,7 @@ export default function App() {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.error('ZIP-fout:', err);
-      alert('Kon ZIP niet maken: ' + err.message);
+      alert('Kon ZIP niet maken: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -624,13 +630,10 @@ export default function App() {
                   <canvas
                     ref={editCanvasRef}
                     className="block w-full cursor-crosshair touch-none"
-                    onMouseDown={onPointerDown}
-                    onMouseMove={onPointerMove}
-                    onMouseUp={onPointerUp}
-                    onMouseLeave={onPointerUp}
-                    onTouchStart={onPointerDown}
-                    onTouchMove={onPointerMove}
-                    onTouchEnd={onPointerUp}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                    onPointerLeave={onPointerUp}
                   />
                 </div>
               </div>

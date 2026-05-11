@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Dot } from './Dot';
 import { formatDuration } from '@/lib/formatters';
-import { fg, accent, border, space, typeStyles, fontFamily } from '@/constants';
+import { fg, accent, border, space, typeStyles } from '@/constants';
 import type { WorkoutSummary } from '@/types/workout';
 
 const NL_MONTHS = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'] as const;
@@ -39,12 +39,6 @@ export interface WorkoutCardProps {
   onPress: (id: string) => void;
   isLast?: boolean;
 }
-
-const serifItalic16 = {
-  fontFamily: fontFamily.sourceSerifItalic,
-  fontSize: 16,
-  lineHeight: 16,
-} as const;
 
 export const WorkoutCard = memo(function WorkoutCard({
   workout: w,
@@ -128,7 +122,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   unit: {
-    ...serifItalic16,
+    ...typeStyles.kpiUnit,
     color: fg.primary,
   },
   right: {
@@ -146,7 +140,7 @@ const styles = StyleSheet.create({
     color: fg.onAccent,
   },
   distUnit: {
-    ...serifItalic16,
+    ...typeStyles.kpiUnit,
     color: fg.onAccent,
   },
   arrow: {

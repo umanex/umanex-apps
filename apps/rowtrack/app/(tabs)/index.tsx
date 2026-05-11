@@ -211,7 +211,7 @@ export default function HomeScreen() {
                     <Text style={styles.prValue}>{value}</Text>
                     <Text style={styles.prUnit}>{unit}</Text>
                   </View>
-                  <Text style={styles.prLabel}>{'Max.\nafstand'}</Text>
+                  <Text style={styles.prLabel}>{'Maximale\nafstand'}</Text>
                 </View>
               );
             })()}
@@ -300,11 +300,6 @@ export default function HomeScreen() {
   );
 }
 
-const serifItalic16 = {
-  ...typeStyles.kpiUnit,
-  fontFamily: fontFamily.sourceSerifItalic,
-} as const;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -329,7 +324,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     letterSpacing: letterSpacing.subtle * fontSize['14'],
     color: fg.secondary,
-    marginBottom: -space['6'],
+    marginBottom: -2,
     paddingLeft: space['20'],
   },
   name: {
@@ -345,7 +340,8 @@ const styles = StyleSheet.create({
     borderRadius: componentRadius.buttonOutline,
     backgroundColor: accent.subtle,
     paddingHorizontal: space['22'],
-    paddingVertical: space['12'],
+    paddingTop: space['14'],
+    paddingBottom: space['12'],
   },
   startButtonText: {
     ...typeStyles.buttonOutline,
@@ -359,15 +355,15 @@ const styles = StyleSheet.create({
   // PR block
   prSection: {
     padding: space['20'],
-    gap: space['20'],
+    gap: space['16'],
   },
   prRow: {
     flexDirection: 'row',
-    gap: space['8'],
+    gap: space['16'],
   },
   prCell: {
     flex: 1,
-    gap: space['8'],
+    gap: space['6'],
   },
   prValueRow: {
     flexDirection: 'row',
@@ -379,7 +375,7 @@ const styles = StyleSheet.create({
     color: fg.primary,
   },
   prUnit: {
-    ...serifItalic16,
+    ...typeStyles.kpiUnit,
     color: fg.secondary,
   },
   prLabel: {
@@ -389,7 +385,7 @@ const styles = StyleSheet.create({
 
   // Recent workouts section
   section: {
-    gap: space['20'],
+    gap: space['16'],
     paddingHorizontal: space['20'],
   },
   loader: {
@@ -398,13 +394,14 @@ const styles = StyleSheet.create({
 
   // Workout list + rows
   workoutList: {
-    gap: space['16'],
+    gap: space['8'],
   },
   workoutRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: space['20'],
-    paddingBottom: space['16'],
+    paddingTop: space['4'],
+    paddingBottom: space['12'],
     borderBottomWidth: 1,
     borderBottomColor: border.subtle,
   },
@@ -413,7 +410,7 @@ const styles = StyleSheet.create({
   },
   workoutLeft: {
     flex: 1,
-    gap: space['8'],
+    gap: space['4'],
   },
   workoutDay: {
     ...typeStyles.labelGoalPrefix,
@@ -429,7 +426,7 @@ const styles = StyleSheet.create({
     color: fg.primary,
   },
   workoutUnit: {
-    ...serifItalic16,
+    ...typeStyles.kpiUnit,
     color: fg.primary,
   },
   workoutRight: {
@@ -439,7 +436,7 @@ const styles = StyleSheet.create({
   },
   workoutDistRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     gap: 2,
   },
   dotWrapper: {
@@ -455,7 +452,7 @@ const styles = StyleSheet.create({
     color: fg.onAccent,
   },
   workoutDistUnit: {
-    ...serifItalic16,
+    ...typeStyles.kpiUnit,
     color: fg.onAccent,
   },
   workoutArrow: {

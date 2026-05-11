@@ -488,9 +488,6 @@ export function IdlePhase({
           </View>
         </View>
 
-        {/* Divider */}
-        <View style={styles.divider} />
-
         {/* Doel */}
         <View style={styles.doelSection}>
           <View style={styles.doelHeader}>
@@ -507,7 +504,6 @@ export function IdlePhase({
           title="Start training"
           variant="primary"
           onPress={onStart}
-          icon="play"
         />
       </View>
 
@@ -551,11 +547,6 @@ const styles = StyleSheet.create({
     color: fg.tertiary,
   },
 
-  divider: {
-    height: 1,
-    backgroundColor: border.default,
-  },
-
   doelSection: {
     gap: 8,
   },
@@ -565,8 +556,8 @@ const styles = StyleSheet.create({
 
   // Geen placeholder
   geenText: {
-    ...typeStyles.italicConnector,
-    color: fg.secondary,
+    ...typeStyles.kpiValue,
+    color: fg.primary,
   },
 
   // Goal input area

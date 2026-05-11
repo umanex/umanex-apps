@@ -91,7 +91,7 @@ export const typeStyles = {
     letterSpacing: -1.02,
   },
   kpiValue: {
-    fontFamily: 'SourceSerif4_600SemiBold',
+    fontFamily: 'SourceSerif4_400Regular',
     fontSize: 16,
     lineHeight: 16,
     letterSpacing: -0.4,

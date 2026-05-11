@@ -64,7 +64,7 @@ voor gedeprecate code.
 | `components/BleStatusBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=21-485&t=k6rKeRyqVNPmF9Pn-4` | Status / BleStatusBar |
 | `components/HrStatusBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=21-515&t=k6rKeRyqVNPmF9Pn-4` | Status / HrStatusBar |
 | `components/WorkoutCard.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=56-13791&t=k6rKeRyqVNPmF9Pn-4` | Cards / WorkoutCard |
-| `components/GoalProgressCard.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=64-14031&t=k6rKeRyqVNPmF9Pn-4` | Cards / GoalProgressCard |
+| `components/GoalProgressCard.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=64-14031&t=k6rKeRyqVNPmF9Pn-4` | GoalProgressCard |
 | `components/TabBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-9&t=k6rKeRyqVNPmF9Pn-4` | Cards / GoalProgressCard |
 
 

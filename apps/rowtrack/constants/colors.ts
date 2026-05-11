@@ -84,7 +84,7 @@ export const buttonTokens = {
       shadow: '[object Object]',
       text: '#F05454',
     },
-    radius: 22,
+    radius: 9999,
   } as const;
 
 // Backwards-compat aliases — existing components still reference these names

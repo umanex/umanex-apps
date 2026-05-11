@@ -160,8 +160,7 @@ export default function HomeScreen() {
 
   const hasPrRecords =
     records.longestDistance != null ||
-    records.longestDuration != null ||
-    records.fastestSplit != null;
+    records.longestDuration != null;
 
   return (
     <ScrollView
@@ -224,19 +223,7 @@ export default function HomeScreen() {
                     <Text style={styles.prValue}>{value}</Text>
                     <Text style={styles.prUnit}>{unit}</Text>
                   </View>
-                  <Text style={styles.prLabel}>{'Langste\nduur'}</Text>
-                </View>
-              );
-            })()}
-            {records.fastestSplit != null && (() => {
-              const { value, unit } = fmtPrSplit(records.fastestSplit!);
-              return (
-                <View style={styles.prCell}>
-                  <View style={styles.prValueRow}>
-                    <Text style={styles.prValue}>{value}</Text>
-                    <Text style={styles.prUnit}>{unit}</Text>
-                  </View>
-                  <Text style={styles.prLabel}>{'Snelste\nsplit'}</Text>
+                  <Text style={styles.prLabel}>{'Beste tijd\n2000m'}</Text>
                 </View>
               );
             })()}
@@ -313,9 +300,9 @@ export default function HomeScreen() {
   );
 }
 
-const newsreader16Italic = {
+const serifItalic16 = {
   ...typeStyles.kpiUnit,
-  fontFamily: fontFamily.newsreaderItalic,
+  fontFamily: fontFamily.sourceSerifItalic,
 } as const;
 
 const styles = StyleSheet.create({
@@ -337,7 +324,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space['20'],
   },
   greeting: {
-    fontFamily: fontFamily.newsreaderItalic,
+    fontFamily: fontFamily.sourceSerifItalic,
     fontSize: fontSize['14'],
     lineHeight: 21,
     letterSpacing: letterSpacing.subtle * fontSize['14'],
@@ -392,7 +379,7 @@ const styles = StyleSheet.create({
     color: fg.primary,
   },
   prUnit: {
-    ...newsreader16Italic,
+    ...serifItalic16,
     color: fg.secondary,
   },
   prLabel: {
@@ -442,7 +429,7 @@ const styles = StyleSheet.create({
     color: fg.primary,
   },
   workoutUnit: {
-    ...newsreader16Italic,
+    ...serifItalic16,
     color: fg.primary,
   },
   workoutRight: {
@@ -468,7 +455,7 @@ const styles = StyleSheet.create({
     color: fg.onAccent,
   },
   workoutDistUnit: {
-    ...newsreader16Italic,
+    ...serifItalic16,
     color: fg.onAccent,
   },
   workoutArrow: {

@@ -197,11 +197,7 @@ export function ActivePhase({
 
     return (
       <>
-        <TouchableOpacity
-          style={portraitStyles.doelPill}
-          onPress={() => setShowGoalModal(true)}
-          activeOpacity={0.8}
-        >
+        <View style={portraitStyles.doelPill}>
           {goal ? (
             <>
               <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
@@ -211,7 +207,7 @@ export function ActivePhase({
           ) : (
             <Text style={portraitStyles.doelPillValue}>Geen doel</Text>
           )}
-        </TouchableOpacity>
+        </View>
         <Text style={activeStyles.timerText}>{formattedTimer}</Text>
         {!goal && (
           <Text style={portraitStyles.subtitleText}>
@@ -438,11 +434,7 @@ export function ActivePhase({
       <View style={portraitStyles.root}>
         {/* Top Section */}
         <View style={portraitStyles.topSection}>
-          <TouchableOpacity
-            style={portraitStyles.doelPill}
-            onPress={() => setShowGoalModal(true)}
-            activeOpacity={0.8}
-          >
+          <View style={portraitStyles.doelPill}>
             {goal ? (
               <>
                 <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
@@ -452,7 +444,7 @@ export function ActivePhase({
             ) : (
               <Text style={portraitStyles.doelPillValue}>Geen doel</Text>
             )}
-          </TouchableOpacity>
+          </View>
 
           <Text style={portraitStyles.heroText}>{heroText}</Text>
 

@@ -165,7 +165,10 @@ export function ActivePhase({
 
   // --- Landscape: top section (timer + progress bar) ---
   function renderTopSection() {
+    const goalType = goal?.type ?? null;
+
     let doelTargetLabel = '';
+    let heroText: string = formattedTimer;
     let progressBarColor: string = accent.default;
     let progressBarRadius: number = radii.lg;
 
@@ -175,20 +178,28 @@ export function ActivePhase({
           const m = Math.floor(goal.target / 60);
           const s = goal.target % 60;
           doelTargetLabel = `${m}:${String(s).padStart(2, '0')} MIN`;
+          heroText = formatTimer(Math.max(0, goal.target - seconds));
           break;
         }
-        case 'distance':
+        case 'distance': {
           doelTargetLabel = goal.target >= 1000
             ? `${(goal.target / 1000).toFixed(1).replace('.', ',')} KM`
             : `${goal.target} M`;
+          const remainM = Math.round(Math.max(0, goal.target - distanceMeters));
+          heroText = remainM >= 1000
+            ? `${Math.floor(remainM / 1000)}.${String(remainM % 1000).padStart(3, '0')} m`
+            : `${remainM} m`;
           break;
+        }
         case 'split':
           doelTargetLabel = `${formatSplit(goal.target)}/500m`;
+          heroText = formatSplit(splitSeconds);
           progressBarColor = splitSeconds > 0 && splitSeconds <= goal.target ? progressBar.successFill : progressBar.warningFill;
           progressBarRadius = 6;
           break;
         case 'watts':
           doelTargetLabel = `${goal.target} W`;
+          heroText = `${watts} W`;
           progressBarColor = watts >= goal.target ? progressBar.successFill : progressBar.warningFill;
           progressBarRadius = 6;
           break;
@@ -208,7 +219,7 @@ export function ActivePhase({
             <Text style={portraitStyles.doelPillValue}>Geen doel</Text>
           )}
         </View>
-        <Text style={activeStyles.timerText}>{formattedTimer}</Text>
+        <Text style={activeStyles.timerText}>{heroText}</Text>
         {!goal && (
           <Text style={portraitStyles.subtitleText}>
             {`${formattedDistance.value} ${formattedDistance.unit}`}
@@ -247,20 +258,69 @@ export function ActivePhase({
 
   // --- Landscape: KPI rows ---
   function renderKPIs(compact: boolean) {
+    const goalType = goal?.type ?? null;
+    type KPIKey = 'SPLIT' | 'WATT' | 'SPM' | 'BPM' | 'AFSTAND' | 'TIJD' | 'KCAL';
+
+    let kpiOrder: KPIKey[];
+    switch (goalType) {
+      case 'distance':
+        kpiOrder = ['SPLIT', 'WATT', 'SPM', 'BPM', 'TIJD', 'KCAL'];
+        break;
+      case 'split':
+        kpiOrder = ['WATT', 'TIJD', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
+        break;
+      case 'watts':
+        kpiOrder = ['SPLIT', 'TIJD', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
+        break;
+      default:
+        kpiOrder = ['SPLIT', 'WATT', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
+    }
+
+    function kpiLabel(key: KPIKey): string {
+      switch (key) {
+        case 'SPLIT': return 'SPLIT/500M';
+        case 'WATT': return 'WATT';
+        case 'SPM': return 'SPM';
+        case 'BPM': return 'BPM';
+        case 'AFSTAND': return 'AFSTAND';
+        case 'TIJD': return 'TIJD';
+        case 'KCAL': return 'KCAL';
+      }
+    }
+
+    function kpiValue(key: KPIKey): string {
+      switch (key) {
+        case 'SPLIT': return formatSplit(avgSplit);
+        case 'WATT': return `${avgWatts} W`;
+        case 'SPM': return `${avgSpm}`;
+        case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
+        case 'AFSTAND': return `${formattedDistance.value} ${formattedDistance.unit}`;
+        case 'TIJD': return formattedTimer;
+        case 'KCAL': return `${Math.round(calories)}${hasProfileWeight ? '' : '*'}`;
+      }
+    }
+
     return (
       <>
-        <KPI label="SPLIT/500M" value={formatSplit(avgSplit)} compact={compact} />
-        <KPI label="WATT" value={`${avgWatts} W`} compact={compact} />
-        <KPI label="SPM" value={`${avgSpm}`} compact={compact} />
-        <KPI
-          label="BPM"
-          value={hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—'}
-          compact={compact}
-          onPress={startHRScan}
-          loading={hrStatus === 'scanning'}
-        />
-        <KPI label="AFSTAND" value={`${formattedDistance.value} ${formattedDistance.unit}`} compact={compact} />
-        <KPI label="KCAL" value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`} compact={compact} />
+        {kpiOrder.map((key) =>
+          key === 'BPM' ? (
+            <KPI
+              key="BPM"
+              label="BPM"
+              value={kpiValue('BPM')}
+              compact={compact}
+              onPress={startHRScan}
+              loading={hrStatus === 'scanning'}
+            />
+          ) : (
+            <KPI
+              key={key}
+              label={kpiLabel(key)}
+              value={kpiValue(key)}
+              compact={compact}
+            />
+          )
+        )}
       </>
     );
   }

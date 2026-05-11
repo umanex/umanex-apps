@@ -10,6 +10,13 @@ gamificatie en Supabase backend.
 
 ---
 
+## Figma mapping
+
+Voor elk Figma-gerelateerd werk: lees eerst `apps/rowtrack/figma-map.md`
+om de juiste node-id te vinden. Niet gokken op basis van componentnaam.
+
+---
+
 ## Skills
 
 > **Lees altijd de relevante SKILL.md vóór je begint.**

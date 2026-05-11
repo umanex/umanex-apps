@@ -190,9 +190,9 @@ export function ActivePhase({
       <>
         {goal && (
           <View style={portraitStyles.doelPill}>
-            <Text style={portraitStyles.doelPillText}>DOEL</Text>
+            <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
             <View style={portraitStyles.doelPillDivider} />
-            <Text style={portraitStyles.doelPillText}>{doelTargetLabel}</Text>
+            <Text style={portraitStyles.doelPillValue}>{doelTargetLabel}</Text>
           </View>
         )}
         <Text style={activeStyles.timerText}>{formattedTimer}</Text>
@@ -407,9 +407,9 @@ export function ActivePhase({
         <View style={portraitStyles.topSection}>
           {goal && (
             <View style={portraitStyles.doelPill}>
-              <Text style={portraitStyles.doelPillText}>DOEL</Text>
+              <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
               <View style={portraitStyles.doelPillDivider} />
-              <Text style={portraitStyles.doelPillText}>{doelTargetLabel}</Text>
+              <Text style={portraitStyles.doelPillValue}>{doelTargetLabel}</Text>
             </View>
           )}
 
@@ -639,7 +639,7 @@ const activeStyles = StyleSheet.create({
   progressTrack: {
     alignSelf: 'stretch',
     height: 2,
-    backgroundColor: '#3a3e48',
+    backgroundColor: border.strong,
     borderRadius: 1,
   },
   progressFill: {
@@ -684,9 +684,13 @@ const portraitStyles = StyleSheet.create({
     paddingHorizontal: space['12'],
     gap: space['8'],
   },
-  doelPillText: {
+  doelPillLabel: {
     ...typeStyles.labelGoalPrefix,
     color: fg.secondary,
+  },
+  doelPillValue: {
+    ...typeStyles.labelGoalPrefix,
+    color: accent.default,
   },
   doelPillDivider: {
     width: 1,
@@ -702,7 +706,7 @@ const portraitStyles = StyleSheet.create({
   progressTrack: {
     alignSelf: 'stretch',
     height: 2,
-    backgroundColor: '#3a3e48',
+    backgroundColor: border.strong,
     borderRadius: 1,
   },
   progressFill: {

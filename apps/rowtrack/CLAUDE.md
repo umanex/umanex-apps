@@ -119,7 +119,7 @@ import { bg, fg, accent, border, buttonTokens, neutral } from '@/constants';
 
 // Typografie
 import { fontFamily, fontSize, typeStyles, lineHeight } from '@/constants';
-// fontFamily.newsreaderRegular / newsreaderItalic / newsreaderSemiBold
+// fontFamily.sourceSerifRegular / sourceSerifItalic / sourceSerifSemiBold / sourceSerifBold
 // fontFamily.albertSansMedium / albertSansSemiBold
 // typeStyles.kpiValue / italicConnector / labelSection / buttonOutline / ...
 

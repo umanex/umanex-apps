@@ -15,11 +15,11 @@ voor gedeprecate code.
 
 | Code | Figma node-id | Frame naam |
 |---|---|---|
-| `app/(tabs)/index.tsx` | `` | Dashboard / Home |
-| `app/(tabs)/workout/index.tsx` | `` | Workout (container) |
-| `app/(tabs)/history/index.tsx` | `` | History / List |
-| `app/(tabs)/history/[id].tsx` | `` | History / Detail |
-| `app/(tabs)/profile/index.tsx` | `` | Profile |
+| `app/(tabs)/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=16-159&t=k6rKeRyqVNPmF9Pn-4` | Home |
+| `app/(tabs)/workout/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=35-1506&t=k6rKeRyqVNPmF9Pn-4` | IdlePhase |
+| `app/(tabs)/history/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-6&t=k6rKeRyqVNPmF9Pn-4` | History |
+| `app/(tabs)/history/[id].tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-7&t=k6rKeRyqVNPmF9Pn-4` | History/Detail/Overview |
+| `app/(tabs)/profile/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=52-8768&t=k6rKeRyqVNPmF9Pn-4` | Profile |
 
 ## Workout — phases & overlays
 
@@ -47,7 +47,7 @@ voor gedeprecate code.
 | `components/Icon.tsx` | `` | Atoms / Icon |
 | `components/Segment.tsx` | `` | Atoms / Segment |
 | `components/Subtitle.tsx` | `` | Typography / Subtitle |
-| `components/TabLabel.tsx` | `` | Navigation / TabLabel |
+| `components/TabItem.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=86-2769&t=k6rKeRyqVNPmF9Pn-4` | TabItem |
 
 ## Components — molecules
 
@@ -65,6 +65,7 @@ voor gedeprecate code.
 | `components/HrStatusBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=21-515&t=k6rKeRyqVNPmF9Pn-4` | Status / HrStatusBar |
 | `components/WorkoutCard.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=56-13791&t=k6rKeRyqVNPmF9Pn-4` | Cards / WorkoutCard |
 | `components/GoalProgressCard.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=64-14031&t=k6rKeRyqVNPmF9Pn-4` | Cards / GoalProgressCard |
+| `components/TabBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-9&t=k6rKeRyqVNPmF9Pn-4` | Cards / GoalProgressCard |
 
 
 ### `IdlePhase.tsx` variants

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { bg, fg, accent, border, typeStyles, space, radii } from '@/constants';
+import { bg, fg, accent, border, progressBar, typeStyles, space, radii } from '@/constants';
 import { Subtitle } from './Subtitle';
 import { Dot } from './Dot';
 import type { PeriodGoalMetric, PeriodGoalPeriod, PeriodGoalProgress } from '@/lib/hooks/usePeriodGoal';
@@ -62,7 +62,9 @@ export function GoalProgressCard({ progress, onEdit }: GoalProgressCardProps) {
 
       <View style={styles.progressSection}>
         <View style={styles.trackOuter}>
-          <View style={[styles.trackFill, { width: fillWidth }]} />
+          <View style={[styles.trackFill, { width: fillWidth }]}>
+            <View style={styles.trackDot} />
+          </View>
         </View>
         <View style={styles.statusRow}>
           <Text style={styles.statusPct}>{pct}%</Text>
@@ -79,6 +81,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: bg.elevated,
     padding: space['20'],
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: border.default,
   },
 
   valuesRow: {
@@ -95,6 +100,7 @@ const styles = StyleSheet.create({
   connector: {
     ...typeStyles.italicConnector,
     color: fg.tertiary,
+    paddingBottom: space['4'],
   },
   targetValue: {
     ...typeStyles.sectionValue,
@@ -105,15 +111,23 @@ const styles = StyleSheet.create({
     gap: space['16'],
   },
   trackOuter: {
-    height: 1,
-    backgroundColor: border.default,
+    height: 2,
+    backgroundColor: progressBar.trackColor,
     borderRadius: radii.xs,
-    overflow: 'hidden',
   },
   trackFill: {
-    height: 1,
+    height: 2,
     backgroundColor: accent.default,
     borderRadius: radii.xs,
+  },
+  trackDot: {
+    position: 'absolute',
+    right: 0,
+    top: -2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: accent.default,
   },
 
   statusRow: {

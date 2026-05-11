@@ -23,7 +23,7 @@ import {
 } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import { formatTimer, formatSplit, formatDistanceDynamic } from '@/lib/formatters';
-import { bg, fg, accent, border, status, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
+import { bg, fg, accent, border, progressBar, status, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
 import { styles } from './workout.styles';
 
@@ -91,6 +91,7 @@ interface ActivePhaseProps {
   insets: EdgeInsets;
 }
 
+
 // --- Component ---
 export function ActivePhase({
   phase,
@@ -122,6 +123,7 @@ export function ActivePhase({
   onClearGoal,
   saving,
   hasProfileWeight,
+  hrStatus,
   hrBpm,
   startHRScan,
   insets,
@@ -164,6 +166,9 @@ export function ActivePhase({
   // --- Landscape: top section (timer + progress bar) ---
   function renderTopSection() {
     let doelTargetLabel = '';
+    let progressBarColor: string = accent.default;
+    let progressBarRadius: number = radii.lg;
+
     if (goal) {
       switch (goal.type) {
         case 'duration': {
@@ -179,34 +184,55 @@ export function ActivePhase({
           break;
         case 'split':
           doelTargetLabel = `${formatSplit(goal.target)}/500m`;
+          progressBarColor = splitSeconds > 0 && splitSeconds <= goal.target ? progressBar.successFill : progressBar.warningFill;
+          progressBarRadius = 6;
           break;
         case 'watts':
           doelTargetLabel = `${goal.target} W`;
+          progressBarColor = watts >= goal.target ? progressBar.successFill : progressBar.warningFill;
+          progressBarRadius = 6;
           break;
       }
     }
 
     return (
       <>
-        {goal && (
-          <View style={portraitStyles.doelPill}>
-            <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
-            <View style={portraitStyles.doelPillDivider} />
-            <Text style={portraitStyles.doelPillValue}>{doelTargetLabel}</Text>
-          </View>
-        )}
+        <TouchableOpacity
+          style={portraitStyles.doelPill}
+          onPress={() => setShowGoalModal(true)}
+          activeOpacity={0.8}
+        >
+          {goal ? (
+            <>
+              <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
+              <View style={portraitStyles.doelPillDivider} />
+              <Text style={portraitStyles.doelPillValue}>{doelTargetLabel}</Text>
+            </>
+          ) : (
+            <Text style={portraitStyles.doelPillValue}>Geen doel</Text>
+          )}
+        </TouchableOpacity>
         <Text style={activeStyles.timerText}>{formattedTimer}</Text>
+        {!goal && (
+          <Text style={portraitStyles.subtitleText}>
+            {`${formattedDistance.value} ${formattedDistance.unit}`}
+          </Text>
+        )}
         {goal && goalProgress && (
           <>
-            <View style={activeStyles.progressTrack}>
+            <View style={[activeStyles.progressTrack, { borderRadius: progressBarRadius }]}>
               {goalProgress.percentage > 0 && (
                 <View
                   style={[
                     activeStyles.progressFill,
-                    { width: `${Math.min(goalProgress.percentage, 100)}%` },
+                    {
+                      width: `${Math.min(goalProgress.percentage, 100)}%`,
+                      backgroundColor: progressBarColor,
+                      borderRadius: progressBarRadius,
+                    },
                   ]}
                 >
-                  <View style={activeStyles.progressDot} />
+                  <View style={[activeStyles.progressDot, { backgroundColor: progressBarColor }]} />
                 </View>
               )}
             </View>
@@ -227,14 +253,18 @@ export function ActivePhase({
   function renderKPIs(compact: boolean) {
     return (
       <>
+        <KPI label="SPLIT/500M" value={formatSplit(avgSplit)} compact={compact} />
         <KPI label="WATT" value={`${avgWatts} W`} compact={compact} />
         <KPI label="SPM" value={`${avgSpm}`} compact={compact} />
-        <KPI label="SPLIT" value={formatSplit(avgSplit)} compact={compact} />
+        <KPI
+          label="BPM"
+          value={hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—'}
+          compact={compact}
+          onPress={startHRScan}
+          loading={hrStatus === 'scanning'}
+        />
         <KPI label="AFSTAND" value={`${formattedDistance.value} ${formattedDistance.unit}`} compact={compact} />
         <KPI label="KCAL" value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`} compact={compact} />
-        {hrBpm != null && hrBpm > 0 && (
-          <KPI label="BPM" value={`${hrBpm}`} compact={compact} />
-        )}
       </>
     );
   }
@@ -271,6 +301,7 @@ export function ActivePhase({
     let heroText = formattedTimer;
     let progressFillPct = 0;
     let progressBarColor: string = accent.default;
+    let progressBarRadius: number = radii.lg;
     let subtitleNode: ReactNode = null;
 
     switch (goalType) {
@@ -326,7 +357,8 @@ export function ActivePhase({
       }
       case 'split': {
         progressFillPct = 1;
-        progressBarColor = splitSeconds > 0 && splitSeconds <= goal!.target ? '#4CAF50' : '#FE9429';
+        progressBarColor = splitSeconds > 0 && splitSeconds <= goal!.target ? progressBar.successFill : progressBar.warningFill;
+        progressBarRadius = 6;
         heroText = formatSplit(splitSeconds);
         let splitSubtitle = 'Begin met roeien...';
         if (splitSeconds !== 0) {
@@ -343,7 +375,8 @@ export function ActivePhase({
       }
       case 'watts': {
         progressFillPct = 1;
-        progressBarColor = watts >= goal!.target ? '#4CAF50' : '#FE9429';
+        progressBarColor = watts >= goal!.target ? progressBar.successFill : progressBar.warningFill;
+        progressBarRadius = 6;
         heroText = `${watts} W`;
         let wattsSubtitle = 'Begin met roeien...';
         if (watts !== 0) {
@@ -405,18 +438,26 @@ export function ActivePhase({
       <View style={portraitStyles.root}>
         {/* Top Section */}
         <View style={portraitStyles.topSection}>
-          {goal && (
-            <View style={portraitStyles.doelPill}>
-              <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
-              <View style={portraitStyles.doelPillDivider} />
-              <Text style={portraitStyles.doelPillValue}>{doelTargetLabel}</Text>
-            </View>
-          )}
+          <TouchableOpacity
+            style={portraitStyles.doelPill}
+            onPress={() => setShowGoalModal(true)}
+            activeOpacity={0.8}
+          >
+            {goal ? (
+              <>
+                <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
+                <View style={portraitStyles.doelPillDivider} />
+                <Text style={portraitStyles.doelPillValue}>{doelTargetLabel}</Text>
+              </>
+            ) : (
+              <Text style={portraitStyles.doelPillValue}>Geen doel</Text>
+            )}
+          </TouchableOpacity>
 
           <Text style={portraitStyles.heroText}>{heroText}</Text>
 
           {goal && (
-            <View style={portraitStyles.progressTrack}>
+            <View style={[portraitStyles.progressTrack, { borderRadius: progressBarRadius }]}>
               {progressFillPct > 0 && (
                 <View
                   style={[
@@ -424,6 +465,7 @@ export function ActivePhase({
                     {
                       width: `${Math.min(progressFillPct * 100, 100)}%`,
                       backgroundColor: progressBarColor,
+                      borderRadius: progressBarRadius,
                     },
                   ]}
                 >
@@ -448,7 +490,11 @@ export function ActivePhase({
                   activeOpacity={0.8}
                 >
                   <Text style={portraitStyles.kpiLabel}>BPM</Text>
-                  <Text style={portraitStyles.kpiValue}>{kpiDisplayValue('BPM')}</Text>
+                  {hrStatus === 'scanning' ? (
+                    <ActivityIndicator size="small" color={fg.secondary} />
+                  ) : (
+                    <Text style={portraitStyles.kpiValue}>{kpiDisplayValue('BPM')}</Text>
+                  )}
                 </TouchableOpacity>
               );
             }
@@ -462,9 +508,13 @@ export function ActivePhase({
         </View>
 
         {/* Stop button */}
-        <TouchableOpacity style={portraitStyles.stopButton} onPress={onStop} activeOpacity={0.8}>
-          <Text style={portraitStyles.stopButtonText}>Stop training →</Text>
-        </TouchableOpacity>
+        <Button
+          title="Stop training"
+          variant="destructive"
+          size="md"
+          onPress={onStop}
+          style={{ alignSelf: 'stretch' }}
+        />
       </View>
     );
   }
@@ -634,18 +684,18 @@ const activeStyles = StyleSheet.create({
     fontFamily: fontFamily.sourceSerifBold,
     fontSize: fontSize['124'],
     lineHeight: fontSize['124'] * 0.95,
-    color: fg.primary,
+    color: fg.onAccent,
   },
   progressTrack: {
     alignSelf: 'stretch',
     height: 2,
-    backgroundColor: border.strong,
-    borderRadius: 1,
+    backgroundColor: progressBar.trackColor,
+    borderRadius: radii.lg,
   },
   progressFill: {
     height: 2,
     backgroundColor: accent.default,
-    borderRadius: 1,
+    borderRadius: radii.lg,
   },
   progressDot: {
     position: 'absolute',
@@ -677,41 +727,41 @@ const portraitStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 40,
-    backgroundColor: 'rgba(240,84,84,0.1)',
-    borderRadius: 18,
+    backgroundColor: accent.subtle,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(240,84,84,0.3)',
-    paddingHorizontal: space['12'],
-    gap: space['8'],
+    borderColor: accent.muted,
+    paddingHorizontal: space['16'],
+    gap: space['16'],
   },
   doelPillLabel: {
     ...typeStyles.labelGoalPrefix,
     color: fg.secondary,
   },
   doelPillValue: {
-    ...typeStyles.labelGoalPrefix,
+    ...typeStyles.kpiValue,
     color: accent.default,
   },
   doelPillDivider: {
     width: 1,
     height: 14,
-    backgroundColor: 'rgba(240,84,84,0.3)',
+    backgroundColor: fg.quaternary,
   },
   heroText: {
     fontFamily: fontFamily.sourceSerifBold,
     fontSize: fontSize['124'],
-    color: fg.primary,
+    color: fg.onAccent,
     lineHeight: fontSize['124'] * 0.95,
   },
   progressTrack: {
     alignSelf: 'stretch',
     height: 2,
-    backgroundColor: border.strong,
-    borderRadius: 1,
+    backgroundColor: progressBar.trackColor,
+    borderRadius: radii.lg,
   },
   progressFill: {
     height: 2,
-    borderRadius: 1,
+    borderRadius: radii.lg,
     backgroundColor: accent.default,
   },
   progressDot: {
@@ -723,8 +773,8 @@ const portraitStyles = StyleSheet.create({
     borderRadius: 5,
   },
   subtitleText: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    ...typeStyles.activeProgress,
+    color: fg.onAccent,
   },
   subtitleRow: {
     flexDirection: 'row',
@@ -746,11 +796,13 @@ const portraitStyles = StyleSheet.create({
   kpiRow: {
     height: 48,
     backgroundColor: bg.elevated,
-    borderRadius: componentRadius.cardSm,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: border.default,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
+    paddingHorizontal: space['18'],
   },
   kpiLabel: {
     ...typeStyles.labelGoalPrefix,
@@ -763,24 +815,13 @@ const portraitStyles = StyleSheet.create({
     letterSpacing: -0.4,
     color: fg.primary,
   },
-  stopButton: {
-    height: 56,
-    backgroundColor: accent.default,
-    borderRadius: componentRadius.buttonPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stopButtonText: {
-    ...typeStyles.buttonPrimary,
-    color: fg.onAccent,
-  },
 });
 
 const landscapeStyles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
-    gap: 40,
+    gap: space['40'],
   },
   leftCol: {
     flex: 1,
@@ -792,7 +833,7 @@ const landscapeStyles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: space['16'],
   },
   rightCol: {
     flex: 1,
@@ -856,9 +897,7 @@ const summaryStyles = StyleSheet.create({
     color: fg.primary,
   },
   kpiUnit: {
-    fontFamily: fontFamily.sourceSerifItalic,
-    fontSize: fontSize['16'],
-    lineHeight: 16,
+    ...typeStyles.kpiUnit,
     color: fg.secondary,
   },
   kpiLabel: {

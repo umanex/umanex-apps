@@ -1,7 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { View, Text, Animated, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import {
-  progressBar,
   accent,
   fontFamily,
   space,
@@ -220,7 +219,7 @@ const styles = StyleSheet.create({
   },
   bg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: progressBar.trackColor,
+    backgroundColor: '#c9b894',
     borderRadius: BORDER_RADIUS,
   },
   segHorizontal: {

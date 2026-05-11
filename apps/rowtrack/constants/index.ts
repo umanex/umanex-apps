@@ -1,4 +1,4 @@
-export { colors, neutral, bg, fg, accent, border, buttonTokens, background, text, brand, status, blue } from './colors';
+export { colors, neutral, bg, fg, accent, border, buttonTokens, progressBar, background, text, brand, status, blue } from './colors';
 export { overlay } from './overlay';
 export { spacing, space, layout } from './spacing';
 export { radius, radii, componentRadius } from './radius';

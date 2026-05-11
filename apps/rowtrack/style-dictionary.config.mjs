@@ -241,6 +241,13 @@ function formatColors() {
     ? `{\n${buttonVariants.join(',\n')},\n${buttonRadius ? `${buttonRadius}\n` : ''}  }`
     : '{}';
 
+  // --- progressBar tokens ---
+  const progressBarEntries = [
+    ['trackColor', lit(flat['progressBar.trackColor'] || '')],
+    ['successFill', lit(flat['progressBar.fillSucces'] || '')],  // token has typo: fillSucces
+    ['warningFill', lit(flat['progressBar.warningFill'] || '')],
+  ];
+
   return `${HEADER}
 export const neutral = ${obj(neutralEntries)} as const;
 
@@ -253,6 +260,8 @@ export const accent = ${obj(accentEntries)} as const;
 export const border = ${obj(borderEntries)} as const;
 
 export const buttonTokens = ${buttonTokensBody} as const;
+
+export const progressBar = ${obj(progressBarEntries)} as const;
 
 // Backwards-compat aliases — existing components still reference these names
 export const background = { ...bg, surface: bg.elevated } as const;

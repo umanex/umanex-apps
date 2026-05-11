@@ -87,6 +87,12 @@ export const buttonTokens = {
     radius: 22,
   } as const;
 
+export const progressBar = {
+  trackColor: '#C9B894',
+  successFill: '#4CAF50',
+  warningFill: '#FE9429',
+} as const;
+
 // Backwards-compat aliases — existing components still reference these names
 export const background = { ...bg, surface: bg.elevated } as const;
 export const text = { ...fg, muted: fg.tertiary, inverse: fg.onAccent } as const;

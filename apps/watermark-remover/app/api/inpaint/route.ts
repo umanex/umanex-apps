@@ -82,13 +82,21 @@ export async function POST(req: NextRequest) {
         'Cache-Control': 'no-store',
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Onbekende fout';
+    const causeCode =
+      err instanceof Error &&
+      err.cause != null &&
+      typeof err.cause === 'object' &&
+      'code' in err.cause
+        ? (err.cause as { code: string }).code
+        : undefined;
     return NextResponse.json(
       {
         error:
-          err.cause?.code === 'ECONNREFUSED'
+          causeCode === 'ECONNREFUSED'
             ? 'Kan geen verbinding maken met IOPaint. Draait de sidecar op poort 8080?'
-            : err.message || 'Onbekende fout',
+            : message,
       },
       { status: 500 }
     );
@@ -105,9 +113,9 @@ export async function GET() {
     if (!r.ok) throw new Error(`status ${r.status}`);
     const data = await r.json();
     return NextResponse.json({ ok: true, model: data });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { ok: false, error: err.message || 'onbereikbaar' },
+      { ok: false, error: err instanceof Error ? err.message : 'onbereikbaar' },
       { status: 503 }
     );
   }

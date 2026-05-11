@@ -573,10 +573,10 @@ export default function App() {
               >
                 <Upload className="w-8 h-8 mx-auto mb-5" strokeWidth={1.2} style={{ color: '#8B7A5A' }} />
                 <p className="display text-2xl font-light mb-2" style={{ color: '#1A1A1A' }}>
-                  Sleep je foto's hierheen
+                  Sleep je foto&apos;s hierheen
                 </p>
                 <p className="text-sm mb-6" style={{ color: '#6B6355' }}>
-                  of klik om te selecteren · JPG, PNG · alle foto's met zelfde watermerk-positie
+                  of klik om te selecteren · JPG, PNG · alle foto&apos;s met zelfde watermerk-positie
                 </p>
                 <p className="mono text-xs uppercase tracking-widest" style={{ color: '#A89B80' }}>
                   — browse files —
@@ -706,7 +706,7 @@ export default function App() {
             <div className="flex items-center justify-between flex-wrap gap-4 pt-4" style={{ borderTop: '1px solid #E8E1D3' }}>
               <p className="text-sm" style={{ color: '#6B6355' }}>
                 {results.length > 0
-                  ? <><Check className="inline w-4 h-4 mr-1.5" style={{ color: '#15803d' }} />{results.length} foto's verwerkt</>
+                  ? <><Check className="inline w-4 h-4 mr-1.5" style={{ color: '#15803d' }} />{results.length} foto&apos;s verwerkt</>
                   : processing
                     ? `Bezig… ${progress.done}/${progress.total}`
                     : "Klaar om alle foto's te verwerken"}

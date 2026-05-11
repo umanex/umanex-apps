@@ -13,8 +13,8 @@ export const radii = {
 
 export const componentRadius = {
   input: 16,
-  buttonOutline: 18,
-  buttonPrimary: 9999,
+  buttonOutline: 8,
+  buttonPrimary: 8,
   card: 16,
   highlightRow: 8,
   pill: 9999,

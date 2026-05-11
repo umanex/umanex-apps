@@ -50,7 +50,7 @@ export const buttonTokens = {
       color: '#FFFFFF',
       border: '#F05454',
       borderWidth: 0,
-      radius: 22,
+      radius: 8,
       height: 56,
       paddingX: 24,
       typography: '[object Object]',
@@ -65,7 +65,7 @@ export const buttonTokens = {
       color: '#F05454',
       border: '#F05454',
       borderWidth: 1,
-      radius: 18,
+      radius: 8,
       paddingY: 12,
       paddingX: 22,
       gap: 10,
@@ -78,18 +78,14 @@ export const buttonTokens = {
       color: '#F05454',
       border: '#F05454',
       borderWidth: 1,
-      radius: 22,
+      radius: 8,
       height: 52,
       typography: '[object Object]',
       shadow: '[object Object]',
       text: '#F05454',
     },
-    radius: 9999,
+    radius: 22,
   } as const;
-
-export const progressBar = {
-  trackColor: '#c9b894',
-} as const;
 
 // Backwards-compat aliases — existing components still reference these names
 export const background = { ...bg, surface: bg.elevated } as const;

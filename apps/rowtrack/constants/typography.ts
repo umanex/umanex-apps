@@ -43,7 +43,7 @@ export const fontSize = {
   '48': 48,
   '60': 60,
   '72': 72,
-  '124': 124,
+  '124': 96,
 } as const;
 
 export const lineHeight = {
@@ -68,15 +68,21 @@ export const letterSpacing = {
 export const typeStyles = {
   heroNumeric: {
     fontFamily: 'SourceSerif4_700Bold',
-    fontSize: 124,
-    lineHeight: 117.8,
-    letterSpacing: -5.58,
+    fontSize: 96,
+    lineHeight: 91.2,
+    letterSpacing: -4.32,
   },
   heroDisplay: {
     fontFamily: 'SourceSerif4_400Regular_Italic',
     fontSize: 44,
     lineHeight: 41.8,
     letterSpacing: -1.32,
+  },
+  activeProgress: {
+    fontFamily: 'SourceSerif4_400Regular',
+    fontSize: 28,
+    lineHeight: 26.6,
+    letterSpacing: -0.84,
   },
   sectionValue: {
     fontFamily: 'SourceSerif4_400Regular',
@@ -85,7 +91,7 @@ export const typeStyles = {
     letterSpacing: -1.02,
   },
   kpiValue: {
-    fontFamily: 'SourceSerif4_400Regular',
+    fontFamily: 'SourceSerif4_600SemiBold',
     fontSize: 16,
     lineHeight: 16,
     letterSpacing: -0.4,
@@ -142,12 +148,6 @@ export const typeStyles = {
     fontSize: 16,
     lineHeight: 16,
     letterSpacing: -0.24,
-  },
-  activeProgress: {
-    fontFamily: 'SourceSerif4_400Regular',
-    fontSize: 28,
-    lineHeight: 26.6,
-    letterSpacing: -0.84,
   },
   labelSection: {
     fontFamily: 'AlbertSans_600SemiBold',

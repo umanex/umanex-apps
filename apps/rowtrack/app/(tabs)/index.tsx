@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   },
   prCell: {
     flex: 1,
-    gap: space['6'],
+    gap: space['4'],
   },
   prValueRow: {
     flexDirection: 'row',

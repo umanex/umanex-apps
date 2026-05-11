@@ -107,14 +107,14 @@ const styles = StyleSheet.create({
     borderLeftColor: border.strong,
   },
   actionText: {
-    fontFamily: 'Newsreader_400Regular',
+    fontFamily: 'SourceSerif4_400Regular',
     fontSize: 15,
     lineHeight: 15,
     letterSpacing: -0.075,
     color: accent.default,
   },
   actionMuted: {
-    fontFamily: 'Newsreader_400Regular',
+    fontFamily: 'SourceSerif4_400Regular',
     fontSize: 15,
     lineHeight: 15,
     letterSpacing: -0.075,

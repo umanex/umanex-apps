@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts as useBarlowCondensed } from '@expo-google-fonts/barlow-condensed';
 import { useFonts as useInter } from '@expo-google-fonts/inter';
 import { useFonts as useJetBrainsMono } from '@expo-google-fonts/jetbrains-mono';
-import { useFonts as useNewsreader } from '@expo-google-fonts/newsreader';
+import { useFonts as useSourceSerif4 } from '@expo-google-fonts/source-serif-4';
 import { useFonts as useAlbertSans } from '@expo-google-fonts/albert-sans';
 import {
   BarlowCondensed_600SemiBold,
@@ -23,13 +23,11 @@ import {
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
 import {
-  Newsreader_300Light,
-  Newsreader_300Light_Italic,
-  Newsreader_400Regular,
-  Newsreader_400Regular_Italic,
-  Newsreader_600SemiBold,
-  Newsreader_600SemiBold_Italic,
-} from '@expo-google-fonts/newsreader';
+  SourceSerif4_400Regular,
+  SourceSerif4_400Regular_Italic,
+  SourceSerif4_600SemiBold,
+  SourceSerif4_700Bold,
+} from '@expo-google-fonts/source-serif-4';
 import {
   AlbertSans_500Medium,
   AlbertSans_600SemiBold,
@@ -77,13 +75,11 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
   });
 
-  const [newsreaderLoaded] = useNewsreader({
-    Newsreader_300Light,
-    Newsreader_300Light_Italic,
-    Newsreader_400Regular,
-    Newsreader_400Regular_Italic,
-    Newsreader_600SemiBold,
-    Newsreader_600SemiBold_Italic,
+  const [sourceSerifLoaded] = useSourceSerif4({
+    SourceSerif4_400Regular,
+    SourceSerif4_400Regular_Italic,
+    SourceSerif4_600SemiBold,
+    SourceSerif4_700Bold,
   });
 
   const [albertSansLoaded] = useAlbertSans({
@@ -91,7 +87,7 @@ export default function RootLayout() {
     AlbertSans_600SemiBold,
   });
 
-  const fontsLoaded = barlowLoaded && interLoaded && jetbrainsLoaded && newsreaderLoaded && albertSansLoaded;
+  const fontsLoaded = barlowLoaded && interLoaded && jetbrainsLoaded && sourceSerifLoaded && albertSansLoaded;
 
   useEffect(() => {
     if (fontsLoaded) {

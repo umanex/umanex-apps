@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     color: fg.primary,
   },
   kpiUnit: {
-    fontFamily: fontFamily.newsreaderItalic,
+    fontFamily: fontFamily.sourceSerifItalic,
     fontSize: fontSize['16'],
     lineHeight: fontSize['16'] * 1.3,
     color: fg.secondary,

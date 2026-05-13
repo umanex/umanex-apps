@@ -12,17 +12,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { Button, EmptyState, Segment } from '@/components';
-import { formatDuration, formatDistanceDynamic, formatSplit, formatDateTitle } from '@/lib/formatters';
+import { Button, EmptyState, KpiSingle, TabItem } from '@/components';
+import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle } from '@/lib/formatters';
 import {
   bg,
   fg,
   accent,
+  achievement,
   border,
+  neutral,
   space,
+  radii,
   typeStyles,
-  fontFamily,
-  fontSize,
   componentRadius,
 } from '@/constants';
 import type { WorkoutDetail } from '@/types/workout';
@@ -100,7 +101,7 @@ export default function WorkoutDetailScreen() {
   if (!workout) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.header}>
+        <View style={styles.notFoundHeader}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={accent.default} />
           </TouchableOpacity>
@@ -114,26 +115,30 @@ export default function WorkoutDetailScreen() {
     );
   }
 
+  const dist = formatDistanceDynamic(workout.distance_meters);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={accent.default} />
+        <View style={styles.headerTop}>
+          <Text style={styles.headerDate}>{formatDateTitle(workout.started_at)}</Text>
+          {workout.is_pr && (
+            <View style={styles.prBadge}>
+              <Text style={styles.prBadgeEmoji}>🏅</Text>
+              <Text style={styles.prBadgeText}>PR</Text>
+            </View>
+          )}
+        </View>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backLink}>
+          <Text style={styles.backLinkText}>← OVERZICHT</Text>
         </TouchableOpacity>
-        <Text style={styles.headerDate}>{formatDateTitle(workout.started_at)}</Text>
-        {workout.is_pr && (
-          <View style={styles.prBadge}>
-            <Text style={styles.prBadgeEmoji}>🏅</Text>
-            <Text style={styles.prBadgeText}>PR</Text>
-          </View>
-        )}
       </View>
 
       {/* Tab bar */}
       <View style={styles.tabBar}>
         {tabs.map(tab => (
-          <Segment
+          <TabItem
             key={tab}
             label={tab}
             active={activeTab === tab}
@@ -146,41 +151,39 @@ export default function WorkoutDetailScreen() {
         {/* Overzicht tab */}
         {activeTab === 'Overzicht' && (
           <>
-            <View style={styles.kpiRow}>
-              {(() => {
-                const dist = formatDistanceDynamic(workout.distance_meters);
-                const h = Math.floor(workout.duration_seconds / 3600);
-                const m = Math.floor((workout.duration_seconds % 3600) / 60);
-                const durVal = h > 0 ? `${h}u${m > 0 ? ` ${m}` : ''}` : `${m}`;
-                const durUnit = h > 0 ? '' : 'min';
-                return (
-                  <>
-                    <View style={styles.kpiCell}>
-                      <View style={styles.kpiValueRow}>
-                        <Text style={styles.kpiNumber}>{dist.value}</Text>
-                        <Text style={styles.kpiUnit}>{dist.unit}</Text>
-                      </View>
-                      <Text style={styles.kpiCellLabel}>{'MAX.\nAFSTAND'}</Text>
-                    </View>
-                    <View style={styles.kpiCell}>
-                      <View style={styles.kpiValueRow}>
-                        <Text style={styles.kpiNumber}>{durVal}</Text>
-                        {!!durUnit && <Text style={styles.kpiUnit}>{durUnit}</Text>}
-                      </View>
-                      <Text style={styles.kpiCellLabel}>{'LANGSTE\nDUUR'}</Text>
-                    </View>
-                    <View style={styles.kpiCell}>
-                      <View style={styles.kpiValueRow}>
-                        <Text style={styles.kpiNumber}>{workout.best_split != null ? formatSplit(workout.best_split) : '—'}</Text>
-                        {workout.best_split != null && <Text style={styles.kpiUnit}>/500m</Text>}
-                      </View>
-                      <Text style={styles.kpiCellLabel}>{'SNELSTE\nSPLIT'}</Text>
-                    </View>
-                  </>
-                );
-              })()}
+            {/* 2×2 KPI container */}
+            <View style={styles.kpiContainer}>
+              <View style={[styles.kpiGridRow, styles.kpiGridRowBordered]}>
+                <KpiSingle
+                  value={formatTimerFull(workout.duration_seconds)}
+                  unit={workout.duration_seconds >= 3600 ? 'uur' : 'min'}
+                  label="DUUR"
+                  style={styles.kpiCell}
+                />
+                <KpiSingle
+                  value={dist.value}
+                  unit={dist.unit}
+                  label="AFSTAND"
+                  style={styles.kpiCell}
+                />
+              </View>
+              <View style={styles.kpiGridRow}>
+                <KpiSingle
+                  value={workout.avg_split_seconds != null ? formatSplit(workout.avg_split_seconds) : '—'}
+                  unit={workout.avg_split_seconds != null ? '/500m' : ''}
+                  label={'GEMIDDELDE\nSPLIT'}
+                  style={styles.kpiCell}
+                />
+                <KpiSingle
+                  value={workout.avg_spm != null ? `${workout.avg_spm}` : '—'}
+                  unit={workout.avg_spm != null ? 'spm' : ''}
+                  label={'GEMIDDELDE\nSPM'}
+                  style={styles.kpiCell}
+                />
+              </View>
             </View>
-            <View style={styles.statsDivider} />
+
+            {/* Stats table GEM/PIEK */}
             <View style={styles.statsSection}>
               <View style={styles.statsHeader}>
                 <View style={styles.statsLabelCol} />
@@ -189,7 +192,7 @@ export default function WorkoutDetailScreen() {
               </View>
               <View style={styles.statsTable}>
                 {[
-                  { label: 'SPLIT 500/M', gem: workout.avg_split_seconds != null ? formatSplit(workout.avg_split_seconds) : '—', piek: workout.best_split != null ? formatSplit(workout.best_split) : '—' },
+                  { label: 'SPLIT /500M', gem: workout.avg_split_seconds != null ? formatSplit(workout.avg_split_seconds) : '—', piek: workout.best_split != null ? formatSplit(workout.best_split) : '—' },
                   { label: 'WATT', gem: workout.avg_watts != null ? `${workout.avg_watts}` : '—', piek: workout.max_watts != null ? `${workout.max_watts}` : '—' },
                   { label: 'SPM', gem: workout.avg_spm != null ? `${workout.avg_spm}` : '—', piek: workout.max_spm != null ? `${workout.max_spm}` : '—' },
                   { label: 'BPM', gem: workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—', piek: workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—' },
@@ -205,6 +208,7 @@ export default function WorkoutDetailScreen() {
                 ))}
               </View>
             </View>
+
           </>
         )}
 
@@ -235,26 +239,35 @@ export default function WorkoutDetailScreen() {
 
         {/* Hartslag tab */}
         {activeTab === 'Hartslag' && (
-          <View style={styles.kpiTilesRow}>
-            <View style={styles.kpiTile}>
-              <Text style={styles.kpiTileLabel}>GEM</Text>
-              <Text style={styles.kpiTileValue}>{workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—'}</Text>
-            </View>
-            <View style={styles.kpiTile}>
-              <Text style={styles.kpiTileLabel}>PIEK</Text>
-              <Text style={styles.kpiTileValue}>{workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—'}</Text>
+          <View style={styles.kpiContainer}>
+            <View style={styles.kpiGridRow}>
+              <KpiSingle
+                value={workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—'}
+                unit={workout.avg_heart_rate != null ? 'bpm' : ''}
+                label="BPM GEMIDDELD"
+                style={styles.kpiCell}
+              />
+              <KpiSingle
+                value={workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—'}
+                unit={workout.max_heart_rate != null ? 'bpm' : ''}
+                label="BPM MAXIMAAL"
+                style={styles.kpiCell}
+              />
             </View>
           </View>
         )}
 
-        <Button
-          title="Training verwijderen"
-          variant="primary"
-          onPress={confirmDelete}
-          loading={deleting}
-          disabled={deleting}
-          size="lg"
-        />
+        {/* Always-visible delete button */}
+        <View style={styles.buttonSection}>
+          <Button
+            title="Training verwijderen"
+            variant="outline"
+            onPress={confirmDelete}
+            loading={deleting}
+            disabled={deleting}
+            size="lg"
+          />
+        </View>
       </ScrollView>
     </View>
   );
@@ -269,12 +282,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+
+  // Not-found state header
+  notFoundHeader: {
     paddingHorizontal: space['20'],
     paddingVertical: space['12'],
-    gap: space['12'],
   },
   backButton: {
     width: 40,
@@ -282,27 +294,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // Main header
+  header: {
+    paddingHorizontal: space['20'],
+    paddingTop: space['16'],
+    paddingBottom: space['12'],
+    gap: space['8'],
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   headerDate: {
     flex: 1,
     ...typeStyles.sectionValue,
     color: fg.primary,
   },
+  backLink: {
+    alignSelf: 'flex-start',
+  },
+  backLinkText: {
+    ...typeStyles.labelGoalPrefix,
+    color: accent.default,
+  },
   prBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space['4'],
-    backgroundColor: 'rgba(255, 215, 0, 0.15)',
-    borderRadius: componentRadius.cardSm,
+    backgroundColor: achievement.default,
+    borderRadius: radii.full,
     paddingHorizontal: space['10'],
-    paddingVertical: space['4'],
+    paddingTop: space['4'],
+    paddingBottom: space['2'],
   },
   prBadgeEmoji: {
-    fontSize: fontSize['12'],
+    fontSize: 12,
   },
   prBadgeText: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['11'],
-    color: '#FFD700',
+    ...typeStyles.italicConnector,
+    color: neutral['600'],
   },
 
   // Tab bar
@@ -310,9 +342,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: bg.elevated,
     borderWidth: 1,
-    borderColor: border.default,
-    borderRadius: 10,
-    padding: 4,
+    borderColor: border.strong,
+    borderRadius: radii.sm,
+    padding: space['4'],
     marginHorizontal: space['20'],
     marginBottom: space['16'],
   },
@@ -324,73 +356,26 @@ const styles = StyleSheet.create({
     gap: space['20'],
   },
 
-  // KPI inline row (Overzicht tab)
-  kpiRow: {
+  // 2×2 KPI container (Overzicht + Hartslag tabs) — full-width stripe
+  kpiContainer: {
+    backgroundColor: bg.raised,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: border.default,
+    marginHorizontal: -space['20'],
+    paddingHorizontal: space['20'],
+  },
+  kpiGridRow: {
     flexDirection: 'row',
-    gap: space['8'],
+    paddingVertical: space['20'],
+  },
+  kpiGridRowBordered: {
+    borderBottomWidth: 1,
+    borderBottomColor: border.strong,
   },
   kpiCell: {
     flex: 1,
-    gap: space['8'],
-  },
-  kpiValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 3,
-    overflow: 'hidden',
-  },
-  kpiNumber: {
-    ...typeStyles.sectionValue,
-    color: fg.primary,
-  },
-  kpiUnit: {
-    fontFamily: fontFamily.sourceSerifItalic,
-    fontSize: fontSize['16'],
-    lineHeight: fontSize['16'] * 1.3,
-    color: fg.secondary,
-  },
-  kpiCellLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
-  },
-
-  // KPI tiles (Hartslag tab)
-  kpiTilesRow: {
-    flexDirection: 'row',
-    gap: space['20'],
-  },
-  kpiTile: {
-    flex: 1,
-    backgroundColor: bg.elevated,
-    borderRadius: componentRadius.cardSm,
-    height: 110,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: space['24'],
-    paddingBottom: space['16'],
-    paddingHorizontal: space['16'],
-    gap: space['8'],
-  },
-  kpiTileLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
-  },
-  kpiTileValue: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['22'],
-    color: fg.primary,
-    textAlign: 'center',
-  },
-  kpiTileUnit: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['13'],
-    color: fg.secondary,
-  },
-
-  // Divider
-  statsDivider: {
-    height: 1,
-    backgroundColor: border.default,
+    paddingHorizontal: space['4'],
   },
 
   // Stats table (GEM/PIEK)
@@ -399,7 +384,8 @@ const styles = StyleSheet.create({
   },
   statsHeader: {
     flexDirection: 'row',
-    paddingLeft: space['16'],
+    paddingHorizontal: space['16'],
+    paddingBottom: space['8'],
   },
   statsLabelCol: {
     width: 165,
@@ -410,8 +396,10 @@ const styles = StyleSheet.create({
     color: fg.tertiary,
   },
   statsTable: {
-    backgroundColor: bg.elevated,
-    borderRadius: componentRadius.cardSm,
+    backgroundColor: bg.raised,
+    borderWidth: 1,
+    borderColor: border.default,
+    borderRadius: radii.sm,
     overflow: 'hidden',
   },
   statsRow: {
@@ -423,7 +411,7 @@ const styles = StyleSheet.create({
   statsRowLabel: {
     width: 165,
     ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    color: fg.secondary,
   },
   statsRowValue: {
     flex: 1,
@@ -438,8 +426,14 @@ const styles = StyleSheet.create({
   // Splits table
   splitsTable: {
     backgroundColor: bg.elevated,
-    borderRadius: componentRadius.cardSm,
+    borderWidth: 1,
+    borderColor: border.default,
+    borderRadius: radii.sm,
     overflow: 'hidden',
+  },
+  buttonSection: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   splitsHeaderRow: {
     flexDirection: 'row',

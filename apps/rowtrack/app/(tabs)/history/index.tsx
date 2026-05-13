@@ -11,18 +11,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { EmptyState, Segment, WorkoutCard } from '@/components';
-import { formatDuration } from '@/lib/formatters';
+import { EmptyState, KpiSingle, TabItem, WorkoutCard } from '@/components';
+import { formatTimerFull, formatSplit, formatDistanceDynamic } from '@/lib/formatters';
 import {
   bg,
   fg,
   accent,
   border,
+  radii,
   space,
   typeStyles,
-  fontFamily,
-  fontSize,
-  componentRadius,
 } from '@/constants';
 import type { WorkoutSummary } from '@/types/workout';
 
@@ -89,11 +87,13 @@ export default function HistoryScreen() {
   }, [router]);
 
   const totalWorkouts = workouts.length;
-  const totalKm = workouts.reduce((s, w) => s + w.distance_meters, 0) / 1000;
-  const avgDurSec =
-    workouts.length > 0
-      ? workouts.reduce((s, w) => s + w.duration_seconds, 0) / workouts.length
-      : 0;
+  const totalDurSec = workouts.reduce((s, w) => s + w.duration_seconds, 0);
+  const totalDistM = workouts.reduce((s, w) => s + w.distance_meters, 0);
+  const totalDistFormatted = formatDistanceDynamic(totalDistM);
+  const splitsWithData = workouts.filter(w => w.avg_split_seconds != null);
+  const avgSplitSec = splitsWithData.length > 0
+    ? splitsWithData.reduce((s, w) => s + (w.avg_split_seconds ?? 0), 0) / splitsWithData.length
+    : 0;
 
   return (
     <ScrollView
@@ -107,12 +107,12 @@ export default function HistoryScreen() {
         />
       }
     >
-      <Text style={styles.title}>Historiek</Text>
+      <Text style={styles.title} accessibilityRole="header">Historiek</Text>
 
       {/* Segment filter */}
       <View style={styles.segmentContainer}>
         {FILTERS.map(({ key, label }) => (
-          <Segment
+          <TabItem
             key={key}
             label={label}
             active={filter === key}
@@ -121,21 +121,35 @@ export default function HistoryScreen() {
         ))}
       </View>
 
-      {/* KPI row */}
-      <View style={styles.kpiRow}>
-        <View style={styles.kpiTile}>
-          <Text style={styles.kpiValue}>{totalWorkouts}</Text>
-          <Text style={styles.kpiLabel}>AANTAL{'\n'}TRAININGEN</Text>
+      {/* KPI container — full width, bg.raised, border top+bottom */}
+      <View style={styles.kpiContainer}>
+        <View style={[styles.kpiGridRow, styles.kpiGridRowBordered]}>
+          <KpiSingle
+            value={formatTimerFull(totalDurSec)}
+            unit={totalDurSec >= 3600 ? 'uur' : 'min'}
+            label={'TOTALE\nDUUR'}
+            style={styles.kpiCell}
+          />
+          <KpiSingle
+            value={totalDistFormatted.value}
+            unit={totalDistFormatted.unit}
+            label={'TOTALE\nAFSTAND'}
+            style={styles.kpiCell}
+          />
         </View>
-        <View style={styles.kpiTile}>
-          <Text style={styles.kpiValue}>{totalKm.toFixed(1).replace('.', ',')}</Text>
-          <Text style={styles.kpiLabel}>TOTALE{'\n'}AFSTAND</Text>
-        </View>
-        <View style={styles.kpiTile}>
-          <Text style={styles.kpiValue}>
-            {avgDurSec > 0 ? formatDuration(Math.round(avgDurSec)) : '—'}
-          </Text>
-          <Text style={styles.kpiLabel}>GEM.{'\n'}DUUR</Text>
+        <View style={styles.kpiGridRow}>
+          <KpiSingle
+            value={avgSplitSec > 0 ? formatSplit(Math.round(avgSplitSec)) : '—'}
+            unit={avgSplitSec > 0 ? '/500m' : ''}
+            label={'GEMIDDELDE\nSPLIT'}
+            style={styles.kpiCell}
+          />
+          <KpiSingle
+            value={`${totalWorkouts}`}
+            unit=""
+            label={'AANTAL\nTRAININGEN'}
+            style={styles.kpiCell}
+          />
         </View>
       </View>
 
@@ -154,7 +168,6 @@ export default function HistoryScreen() {
               key={w.id}
               workout={w}
               onPress={handleWorkoutPress}
-              isLast={i === workouts.length - 1}
             />
           ))}
         </View>
@@ -170,13 +183,14 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingTop: space['20'],
-    paddingHorizontal: space['20'],
     paddingBottom: space['40'],
-    gap: space['20'],
+    gap: space['28'],
   },
   title: {
     ...typeStyles.sectionValue,
     color: fg.primary,
+    paddingHorizontal: space['20'],
+    paddingTop: space['8'],
   },
 
   // Segment filter
@@ -184,42 +198,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: bg.elevated,
     borderWidth: 1,
-    borderColor: border.default,
-    borderRadius: 10,
-    padding: 4,
+    borderColor: border.strong,
+    borderRadius: radii.sm,
+    padding: space['4'],
     height: 52,
+    marginHorizontal: space['20'],
   },
 
-  // KPI row
-  kpiRow: {
+  // KPI container — full-width bg.raised stripe
+  kpiContainer: {
+    backgroundColor: bg.raised,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: border.default,
+    paddingHorizontal: space['20'],
+  },
+  kpiGridRow: {
     flexDirection: 'row',
-    gap: space['12'],
+    paddingVertical: space['16'],
   },
-  kpiTile: {
+  kpiGridRowBordered: {
+    borderBottomWidth: 1,
+    borderBottomColor: border.strong,
+  },
+  kpiCell: {
     flex: 1,
-    backgroundColor: bg.elevated,
-    borderRadius: componentRadius.cardSm,
-    paddingHorizontal: space['8'],
-    paddingVertical: space['12'],
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space['4'],
-  },
-  kpiValue: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['22'],
-    color: fg.primary,
-  },
-  kpiLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
-    textAlign: 'center',
+    paddingHorizontal: space['4'],
   },
 
   loader: {
     paddingVertical: space['40'],
   },
   workoutList: {
-    gap: space['12'],
+    gap: space['8'],
+    paddingHorizontal: space['20'],
   },
 });

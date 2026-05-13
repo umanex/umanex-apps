@@ -50,54 +50,6 @@ die de bestaande codebase-conventies volgt.
 
 **Nooit** native Figma Code Connect gebruiken — altijd inspecteren via Figma MCP tools.
 
----
-
-## Architectuur
-
-```
-app/
-  (tabs)/
-    index.tsx          # Dashboard / Home
-    workout/
-      index.tsx        # Workout scherm (IdlePhase / ActivePhase)
-    history/
-      index.tsx        # Historiek lijst
-      [id].tsx         # Historiek detail
-    profile/
-      index.tsx        # Profiel
-    _layout.tsx        # Tab navigatie
-
-components/
-  workout/
-    IdlePhase.tsx      # Idle workout scherm
-    ActivePhase.tsx    # Actieve workout (portrait + landscape)
-    ProgressBar.tsx    # Geanimeerde voortgangsbalk
-    MotivationalToast.tsx  # Fullscreen goal-bereikt overlay
-    Confetti.tsx       # Confetti animatie (60 particles)
-  BleStatusBar.tsx     # BLE verbindingsstatus
-  HrStatusBar.tsx      # Hartslagmeter status
-  GoalSegments.tsx     # Doeltype segmented control
-  GoalInput.tsx        # Numeriek invoerveld met eenheid
-  Chip.tsx             # Selecteerbare chip (suggesties)
-  Icon.tsx             # Icon wrapper (@expo/vector-icons)
-
-lib/
-  ble/
-    ble-context.tsx    # BLE state (rower + HR)
-    ble-service.ts     # BLE scan / connect / disconnect
-    hr-service.ts      # Hartslagmeter BLE
-    ftms-parser.ts     # FTMS characteristic parser
-    constants.ts       # BLE UUIDs
-  calories.ts          # Kcal berekening (watt / HR)
-  formatters.ts        # Tijd / afstand formatters
-  hooks/
-    useWorkoutMetrics.ts
-    useGoalProgress.ts
-  workout-phase-context.tsx
-```
-
----
-
 ## Design tokens
 
 Tokens worden beheerd via Tokens Studio en gegenereerd via `pnpm tokens:build`.

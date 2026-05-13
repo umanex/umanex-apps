@@ -18,16 +18,22 @@ voor gedeprecate code.
 | `app/(tabs)/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=16-159&t=k6rKeRyqVNPmF9Pn-4` | Home |
 | `app/(tabs)/workout/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=35-1506&t=k6rKeRyqVNPmF9Pn-4` | IdlePhase |
 | `app/(tabs)/history/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-6&t=k6rKeRyqVNPmF9Pn-4` | History |
-| `app/(tabs)/history/[id].tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-7&t=k6rKeRyqVNPmF9Pn-4` | History/Detail/Overview |
 | `app/(tabs)/profile/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=52-8768&t=k6rKeRyqVNPmF9Pn-4` | Profile |
+
+## History - Segments
+
+| Code | Figma node-id | Frame naam |
+| `app/(tabs)/history/[id].tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-7&t=k6rKeRyqVNPmF9Pn-4` | History/Detail/Overview |
+| `app/(tabs)/history/[id].tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=38-5009&t=k6rKeRyqVNPmF9Pn-4` | History/Detail/Splits |
+| `app/(tabs)/history/[id].tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=38-5115&t=k6rKeRyqVNPmF9Pn-4` | History/Detail/BPM |
 
 ## Workout — phases & overlays
 
-| Code | Figma node-id | Frame naam |
+| Code | url | Frame naam |
 |---|---|---|
-| `components/workout/ActivePhase.tsx` (portrait) | `` | Workout / Active / Portrait |
-| `components/workout/ActivePhase.tsx` (landscape) | `` | Workout / Active / Landscape |
-| `components/workout/ActivePhase.tsx` (summary) | `` | Workout / Summary |
+| `components/workout/ActivePhase.tsx` (portrait) | `` | ActivePortrait |
+| `components/workout/ActivePhase.tsx` (landscape) | `` | Active/Landscape |
+| `components/workout/ActivePhase.tsx` (summary) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=43-8278&t=k6rKeRyqVNPmF9Pn-4` | Active/Summary |
 | `components/workout/ProgressBar.tsx` | `` | Workout / Progress Bar |
 | `components/workout/Confetti.tsx` | `` | Workout / Confetti (animatie) |
 | `components/GoalSetupModal.tsx` | `` | Workout / Goal Setup Modal |
@@ -40,14 +46,17 @@ voor gedeprecate code.
 
 | Code | Figma node-id | Component naam |
 |---|---|---|
-| `components/Button.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=64-14082&t=k6rKeRyqVNPmF9Pn-4` | Atoms / Button |
+| `components/Button.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=109-2214&t=NfyKsxb0ybecTdzm-4` | Button |
 | `components/Card.tsx` | `` | Atoms / Card |
 | `components/Chip.tsx` | `` | Atoms / Chip |
-| `components/Dot.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=67-14291&t=k6rKeRyqVNPmF9Pn-4` | Atoms / Dot |
+| `components/Dot.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=67-14291&t=k6rKeRyqVNPmF9Pn-4` | Dot |
 | `components/Icon.tsx` | `` | Atoms / Icon |
 | `components/Segment.tsx` | `` | Atoms / Segment |
-| `components/Subtitle.tsx` | `` | Typography / Subtitle |
-| `components/TabItem.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=86-2769&t=k6rKeRyqVNPmF9Pn-4` | TabItem |
+| `components/Subtitle.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=55-13730&t=NfyKsxb0ybecTdzm-4` | Subtitle |
+| `components/TabItem.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=21-400&t=NfyKsxb0ybecTdzm-4` | TabItem |
+| `components/KPI_single.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=89-3445&t=k6rKeRyqVNPmF9Pn-4` | KPI_single |
+
+
 
 ## Components — molecules
 

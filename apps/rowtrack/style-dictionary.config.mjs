@@ -200,11 +200,12 @@ function formatColors() {
   }
 
   const neutralEntries = colorScale('neutral');
-  // Semantic color groups — resolved from Theme set (bg / fg / accent / border)
+  // Semantic color groups — resolved from Theme set (bg / fg / accent / border / achievement)
   const bgEntries = semanticColorGroup('bg');
   const fgEntries = semanticColorGroup('fg');
   const accentEntries = semanticColorGroup('accent');
   const borderEntries = semanticColorGroup('border');
+  const achievementEntries = semanticColorGroup('achievement');
 
   // --- Component tokens (from components set) ---
   const compSet = raw[setOrder[2]] || {};
@@ -258,6 +259,8 @@ export const fg = ${obj(fgEntries)} as const;
 export const accent = ${obj(accentEntries)} as const;
 
 export const border = ${obj(borderEntries)} as const;
+
+export const achievement = ${obj(achievementEntries)} as const;
 
 export const buttonTokens = ${buttonTokensBody} as const;
 

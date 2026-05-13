@@ -38,6 +38,7 @@ export { WorkoutCard } from './WorkoutCard';
 export type { WorkoutCardProps } from './WorkoutCard';
 
 export { KPI } from './KPI';
+export { KpiSingle } from './KPI_single';
 
 export { PeriodGoalCard } from './PeriodGoalCard';
 export { GoalProgressCard } from './GoalProgressCard';
@@ -46,3 +47,5 @@ export { BottomSheet } from './BottomSheet';
 export type { BottomSheetProps } from './BottomSheet';
 export { Dot } from './Dot';
 export { TabLabel } from './TabLabel';
+export { TabItem } from './TabItem';
+export type { TabItemProps } from './TabItem';

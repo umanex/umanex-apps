@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { EmptyState, Dot } from '@/components';
+import { EmptyState, Dot, KpiSingle, Button } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
@@ -23,7 +23,6 @@ import {
   border,
   typeStyles,
   space,
-  componentRadius,
   fontFamily,
   fontSize,
   letterSpacing,
@@ -67,11 +66,13 @@ function fmtDate(iso: string): string {
   return `${d.getDate()} ${NL_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function fmtDuration(sec: number | null): string | null {
+function fmtDuration(sec: number | null): { value: string; unit: string } | null {
   if (sec == null) return null;
-  const m = Math.floor(sec / 60);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
   const s = Math.round(sec % 60);
-  return `${m}:${String(s).padStart(2, '0')}`;
+  if (h > 0) return { value: `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`, unit: 'uur' };
+  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: 'min' };
 }
 
 function fmtMetersVU(m: number): { value: string; unit: string } {
@@ -96,12 +97,6 @@ function fmtPrDuration(sec: number): { value: string; unit: string } {
   const m = Math.floor((sec % 3600) / 60);
   if (h > 0) return { value: `${h}u${m > 0 ? ` ${m}` : ''}`, unit: 'min' };
   return { value: `${m}`, unit: 'min' };
-}
-
-function fmtPrSplit(sec: number): { value: string; unit: string } {
-  const m = Math.floor(sec / 60);
-  const s = Math.round(sec % 60);
-  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: '/500m' };
 }
 
 export default function HomeScreen() {
@@ -180,14 +175,12 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>{greeting}</Text>
           <Text style={styles.name}>{name}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.startButton}
+        <Button
+          variant="primary"
+          size="lg"
+          title="Start →"
           onPress={() => router.push('/(tabs)/workout')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.startButtonText}>Start</Text>
-          <Text style={styles.startButtonArrow}>→</Text>
-        </TouchableOpacity>
+        />
       </View>
 
       {/* Goal progress */}
@@ -198,103 +191,101 @@ export default function HomeScreen() {
         />
       )}
 
-      {/* PR block */}
-      {hasPrRecords && (
-        <View style={styles.prSection}>
-          <Subtitle label="Persoonlijke records" />
-          <View style={styles.prRow}>
-            {records.longestDistance != null && (() => {
-              const { value, unit } = fmtPrDistance(records.longestDistance!);
-              return (
-                <View style={styles.prCell}>
-                  <View style={styles.prValueRow}>
-                    <Text style={styles.prValue}>{value}</Text>
-                    <Text style={styles.prUnit}>{unit}</Text>
-                  </View>
-                  <Text style={styles.prLabel}>{'Maximale\nafstand'}</Text>
-                </View>
-              );
-            })()}
-            {records.longestDuration != null && (() => {
-              const { value, unit } = fmtPrDuration(records.longestDuration!);
-              return (
-                <View style={styles.prCell}>
-                  <View style={styles.prValueRow}>
-                    <Text style={styles.prValue}>{value}</Text>
-                    <Text style={styles.prUnit}>{unit}</Text>
-                  </View>
-                  <Text style={styles.prLabel}>{'Beste tijd\n2000m'}</Text>
-                </View>
-              );
-            })()}
-          </View>
-        </View>
-      )}
-
-      {/* Recent workouts */}
-      <View style={styles.section}>
-        <Subtitle
-          label="Recente trainingen"
-          action={{
-            label: 'alle',
-            onPress: () => router.push('/(tabs)/history'),
-          }}
-        />
-
-        {loading ? (
-          <ActivityIndicator color={accent.default} style={styles.loader} />
-        ) : workouts.length === 0 ? (
-          <EmptyState
-            icon="water-outline"
-            title="Nog geen workouts — tijd om te beginnen!"
-          />
-        ) : (
-          <View style={styles.workoutList}>
-            {workouts.map((w, i) => {
-              const durStr = fmtDuration(w.duration_seconds);
-              const distVU = w.distance_meters != null ? fmtMetersVU(w.distance_meters) : null;
-              const isLast = i === workouts.length - 1;
-
-              return (
-                <TouchableOpacity
-                  key={w.id}
-                  style={[styles.workoutRow, isLast && styles.workoutRowLast]}
-                  onPress={() => handleWorkoutPress(w.id)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.workoutLeft}>
-                    <Text style={styles.workoutDay}>{fmtDate(w.started_at)}</Text>
-                    <View style={styles.workoutStatsRow}>
-                      {durStr != null && (
-                        <Text style={styles.workoutValue}>{durStr}</Text>
-                      )}
-                      {w.calories != null && (
-                        <>
-                          <View style={styles.dotWrapper}>
-                            <Dot />
-                          </View>
-                          <View style={styles.caloriesGroup}>
-                            <Text style={styles.workoutValue}>{w.calories}</Text>
-                            <Text style={styles.workoutUnit}>kcal</Text>
-                          </View>
-                        </>
-                      )}
-                    </View>
-                  </View>
-                  <View style={styles.workoutRight}>
-                    {distVU != null && (
-                      <View style={styles.workoutDistRow}>
-                        <Text style={styles.workoutDistValue}>{distVU.value}</Text>
-                        <Text style={styles.workoutDistUnit}>{distVU.unit}</Text>
-                      </View>
-                    )}
-                    <Text style={styles.workoutArrow}>→</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+      {/* PR + Recent sections */}
+      <View style={styles.body}>
+        {hasPrRecords && (
+          <View style={styles.prSection}>
+            <Subtitle label="Persoonlijke records" />
+            <View style={styles.prRow}>
+              {records.longestDistance != null && (() => {
+                const { value, unit } = fmtPrDistance(records.longestDistance!);
+                return (
+                  <KpiSingle
+                    style={styles.prCell}
+                    value={value}
+                    unit={unit}
+                    label={'Maximale\nafstand'}
+                  />
+                );
+              })()}
+              {records.longestDuration != null && (() => {
+                const { value, unit } = fmtPrDuration(records.longestDuration!);
+                return (
+                  <KpiSingle
+                    style={styles.prCell}
+                    value={value}
+                    unit={unit}
+                    label={'Beste tijd\n2000m'}
+                  />
+                );
+              })()}
+            </View>
           </View>
         )}
+
+        <View style={[styles.recentSection, hasPrRecords && styles.recentSectionBorder]}>
+          <Subtitle
+            label="Recente trainingen"
+            action={{ label: 'alle', onPress: () => router.push('/(tabs)/history') }}
+          />
+
+          {loading ? (
+            <ActivityIndicator color={accent.default} style={styles.loader} />
+          ) : workouts.length === 0 ? (
+            <EmptyState
+              icon="water-outline"
+              title="Nog geen workouts — tijd om te beginnen!"
+            />
+          ) : (
+            <View style={styles.workoutList}>
+              {workouts.map((w) => {
+                const dur = fmtDuration(w.duration_seconds);
+                const distVU = w.distance_meters != null ? fmtMetersVU(w.distance_meters) : null;
+
+                return (
+                  <TouchableOpacity
+                    key={w.id}
+                    style={styles.workoutRow}
+                    onPress={() => handleWorkoutPress(w.id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.workoutLeft}>
+                      <Text style={styles.workoutDay}>{fmtDate(w.started_at)}</Text>
+                      <View style={styles.workoutStatsRow}>
+                        {dur != null && (
+                          <View style={styles.durationGroup}>
+                            <Text style={styles.workoutValue}>{dur.value}</Text>
+                            <Text style={styles.workoutUnit}>{dur.unit}</Text>
+                          </View>
+                        )}
+                        {w.calories != null && (
+                          <>
+                            <View style={styles.dotWrapper}>
+                              <Dot />
+                            </View>
+                            <View style={styles.caloriesGroup}>
+                              <Text style={styles.workoutValue}>{w.calories}</Text>
+                              <Text style={styles.workoutUnit}>kcal</Text>
+                            </View>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                    <View style={styles.workoutRight}>
+                      {distVU != null && (
+                        <View style={styles.workoutDistRow}>
+                          <Text style={styles.workoutDistValue}>{distVU.value}</Text>
+                          <Text style={styles.workoutDistUnit}>{distVU.unit}</Text>
+                        </View>
+                      )}
+                      <Text style={styles.workoutArrow}>→</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
       </View>
     </ScrollView>
   );
@@ -306,9 +297,8 @@ const styles = StyleSheet.create({
     backgroundColor: bg.base,
   },
   content: {
-    paddingTop: space['20'],
+    paddingTop: space['28'],
     paddingBottom: space['32'],
-    gap: space['20'],
   },
 
   // Header
@@ -317,6 +307,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: space['20'],
+    paddingBottom: space['28'],
   },
   greeting: {
     fontFamily: fontFamily.sourceSerifItalic,
@@ -331,31 +322,18 @@ const styles = StyleSheet.create({
     ...typeStyles.sectionValue,
     color: fg.primary,
   },
-  startButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: typeStyles.buttonOutline.fontSize - 6,
-    borderWidth: 1,
-    borderColor: accent.default,
-    borderRadius: componentRadius.buttonOutline,
-    backgroundColor: accent.subtle,
-    paddingHorizontal: space['22'],
-    paddingTop: space['14'],
-    paddingBottom: space['12'],
-  },
-  startButtonText: {
-    ...typeStyles.buttonOutline,
-    color: accent.default,
-  },
-  startButtonArrow: {
-    ...typeStyles.buttonOutline,
-    color: accent.default,
+
+  // Body
+  body: {
+    paddingHorizontal: space['20'],
+    paddingTop: space['28'],
+    paddingBottom: space['28'],
   },
 
-  // PR block
+  // PR section
   prSection: {
-    padding: space['20'],
     gap: space['16'],
+    paddingBottom: space['28'],
   },
   prRow: {
     flexDirection: 'row',
@@ -363,36 +341,22 @@ const styles = StyleSheet.create({
   },
   prCell: {
     flex: 1,
-    gap: space['4'],
-  },
-  prValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 3,
-  },
-  prValue: {
-    ...typeStyles.sectionValue,
-    color: fg.primary,
-  },
-  prUnit: {
-    ...typeStyles.kpiUnit,
-    color: fg.secondary,
-  },
-  prLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
   },
 
-  // Recent workouts section
-  section: {
+  // Recent section
+  recentSection: {
     gap: space['16'],
-    paddingHorizontal: space['20'],
+  },
+  recentSectionBorder: {
+    borderTopWidth: 1,
+    borderTopColor: border.strong,
+    paddingTop: space['28'],
   },
   loader: {
     paddingVertical: space['40'],
   },
 
-  // Workout list + rows
+  // Workout list
   workoutList: {
     gap: space['8'],
   },
@@ -400,13 +364,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: space['20'],
-    paddingTop: space['4'],
-    paddingBottom: space['12'],
-    borderBottomWidth: 1,
-    borderBottomColor: border.subtle,
-  },
-  workoutRowLast: {
-    borderBottomWidth: 0,
+    paddingVertical: space['4'],
   },
   workoutLeft: {
     flex: 1,
@@ -420,6 +378,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space['6'],
+  },
+  durationGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
   workoutValue: {
     ...typeStyles.kpiValue,

@@ -15,14 +15,14 @@ import type { EdgeInsets } from 'react-native-safe-area-context';
 import type { ConnectionStatus, HRStatus } from '@/lib/ble/types';
 import type { WorkoutGoal } from '@/lib/workout-goals';
 import type { GoalProgress } from '@/lib/workout-goals';
-import { Button, KPI } from '@/components';
+import { Button, KPI, KpiSingle } from '@/components';
 import {
   GoalSetupModal,
   MotivationalToast,
   MilestoneOverlay,
 } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
-import { formatTimer, formatSplit, formatDistanceDynamic } from '@/lib/formatters';
+import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic } from '@/lib/formatters';
 import { bg, fg, accent, border, progressBar, status, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
 import { styles } from './workout.styles';
@@ -655,38 +655,37 @@ export function ActivePhase({
                 <Text style={summaryStyles.prText}>Nieuw persoonlijk record. Proficiat!</Text>
               </View>
             )}
-            {/* KPI row: AFSTAND / DUUR / ENERGIE */}
-            <View style={summaryStyles.kpiRow}>
-              {(() => {
-                const h = Math.floor(seconds / 3600);
-                const m = Math.floor((seconds % 3600) / 60);
-                const durValue = h > 0 ? `${h}u${m > 0 ? ` ${m}` : ''}` : `${m}`;
-                return (
-                  <>
-                    <View style={summaryStyles.kpiCell}>
-                      <View style={summaryStyles.kpiValueRow}>
-                        <Text style={summaryStyles.kpiNumber}>{formattedDistance.value}</Text>
-                        <Text style={summaryStyles.kpiUnit}>{formattedDistance.unit}</Text>
-                      </View>
-                      <Text style={summaryStyles.kpiLabel}>AFSTAND</Text>
-                    </View>
-                    <View style={summaryStyles.kpiCell}>
-                      <View style={summaryStyles.kpiValueRow}>
-                        <Text style={summaryStyles.kpiNumber}>{durValue}</Text>
-                        <Text style={summaryStyles.kpiUnit}>min</Text>
-                      </View>
-                      <Text style={summaryStyles.kpiLabel}>DUUR</Text>
-                    </View>
-                    <View style={summaryStyles.kpiCell}>
-                      <View style={summaryStyles.kpiValueRow}>
-                        <Text style={summaryStyles.kpiNumber}>{`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}</Text>
-                        <Text style={summaryStyles.kpiUnit}>kcal</Text>
-                      </View>
-                      <Text style={summaryStyles.kpiLabel}>ENERGIE</Text>
-                    </View>
-                  </>
-                );
-              })()}
+            {/* KPI grid: 2×2 AFSTAND / DUUR / ENERGIE / ENERGIE */}
+            <View style={summaryStyles.kpiGrid}>
+              <View style={summaryStyles.kpiGridRow}>
+                <KpiSingle
+                  value={formattedDistance.value}
+                  unit={formattedDistance.unit}
+                  label="AFSTAND"
+                  style={summaryStyles.kpiCell}
+                />
+                <KpiSingle
+                  value={formatTimerFull(seconds)}
+                  unit={seconds >= 3600 ? 'uur' : 'min'}
+                  label="DUUR"
+                  style={summaryStyles.kpiCell}
+                />
+              </View>
+              <View style={summaryStyles.kpiGridDivider} />
+              <View style={summaryStyles.kpiGridRow}>
+                <KpiSingle
+                  value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}
+                  unit="kcal"
+                  label="ENERGIE"
+                  style={summaryStyles.kpiCell}
+                />
+                <KpiSingle
+                  value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}
+                  unit="kcal"
+                  label="ENERGIE"
+                  style={summaryStyles.kpiCell}
+                />
+              </View>
             </View>
             <View style={summaryStyles.divider} />
             <View style={summaryStyles.statsSection}>
@@ -697,7 +696,7 @@ export function ActivePhase({
               </View>
               <View style={summaryStyles.statsTable}>
                 {[
-                  { label: 'SPLIT 500/M', gem: formatSplit(avgSplit), piek: summaryBestSplit != null ? formatSplit(summaryBestSplit) : '—' },
+                  { label: 'SPLIT /500M', gem: formatSplit(avgSplit), piek: summaryBestSplit != null ? formatSplit(summaryBestSplit) : '—' },
                   { label: 'WATT', gem: `${avgWatts}`, piek: summaryMaxWatts != null ? `${summaryMaxWatts}` : '—' },
                   { label: 'SPM', gem: `${avgSpm}`, piek: summaryMaxSpm != null ? `${summaryMaxSpm}` : '—' },
                   { label: 'BPM', gem: summaryAvgHr != null ? `${summaryAvgHr}` : '—', piek: summaryMaxHr != null ? `${summaryMaxHr}` : '—' },
@@ -931,30 +930,20 @@ const summaryStyles = StyleSheet.create({
     lineHeight: 22,
     color: status.warning,
   },
-  kpiRow: {
+  kpiGrid: {
+    gap: 0,
+  },
+  kpiGridRow: {
     flexDirection: 'row',
-    gap: space['8'],
+  },
+  kpiGridDivider: {
+    height: 1,
+    backgroundColor: border.default,
+    marginVertical: space['12'],
   },
   kpiCell: {
     flex: 1,
-    gap: space['8'],
-  },
-  kpiValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 3,
-  },
-  kpiNumber: {
-    ...typeStyles.sectionValue,
-    color: fg.primary,
-  },
-  kpiUnit: {
-    ...typeStyles.kpiUnit,
-    color: fg.secondary,
-  },
-  kpiLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    paddingHorizontal: space['4'],
   },
   divider: {
     height: 1,
@@ -976,7 +965,7 @@ const summaryStyles = StyleSheet.create({
     color: fg.tertiary,
   },
   statsTable: {
-    backgroundColor: bg.elevated,
+    backgroundColor: bg.raised,
     borderRadius: componentRadius.cardSm,
     overflow: 'hidden',
   },

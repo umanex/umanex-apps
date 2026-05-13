@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Dot } from './Dot';
-import { formatDuration } from '@/lib/formatters';
+import { formatTimerFull } from '@/lib/formatters';
 import { fg, accent, border, space, typeStyles } from '@/constants';
 import type { WorkoutSummary } from '@/types/workout';
 
@@ -37,27 +37,29 @@ function fmtMetersVU(m: number): { value: string; unit: string } {
 export interface WorkoutCardProps {
   workout: WorkoutSummary;
   onPress: (id: string) => void;
-  isLast?: boolean;
 }
 
 export const WorkoutCard = memo(function WorkoutCard({
   workout: w,
   onPress,
-  isLast,
 }: WorkoutCardProps) {
-  const durStr = formatDuration(w.duration_seconds);
+  const durStr = formatTimerFull(w.duration_seconds);
+  const durUnit = w.duration_seconds >= 3600 ? 'uur' : '';
   const dist = w.distance_meters != null ? fmtMetersVU(w.distance_meters) : null;
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => onPress(w.id)}
-      style={[styles.row, isLast && styles.rowLast]}
+      style={styles.row}
     >
       <View style={styles.left}>
         <Text style={styles.date}>{fmtDate(w.started_at)}</Text>
         <View style={styles.statsRow}>
-          <Text style={styles.value}>{durStr}</Text>
+          <View style={styles.durGroup}>
+            <Text style={styles.value}>{durStr}</Text>
+            {!!durUnit && <Text style={styles.unit}>{durUnit}</Text>}
+          </View>
           {w.calories != null && (
             <>
               <View style={styles.dotWrapper}>
@@ -89,12 +91,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: space['20'],
-    paddingBottom: space['16'],
-    borderBottomWidth: 1,
-    borderBottomColor: border.subtle,
-  },
-  rowLast: {
-    borderBottomWidth: 0,
+    paddingVertical: space['4'],
   },
   left: {
     flex: 1,
@@ -115,6 +112,11 @@ const styles = StyleSheet.create({
   },
   dotWrapper: {
     paddingBottom: 3,
+  },
+  durGroup: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3,
   },
   caloriesGroup: {
     flexDirection: 'row',

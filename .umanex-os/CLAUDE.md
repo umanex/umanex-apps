@@ -219,22 +219,25 @@ Voor andere wijzigingen (nieuwe components, refactors binnen één file, bug fix
 
 ## Git workflow
 
-**Wat mag, zonder vragen**
+### Wat mag, zonder vragen
 - Read-only: `git status`, `git diff`, `git log`, `git branch`
-- Lokaal: `git checkout`, `git checkout -b`, `git pull`, `git add`
-- Commits maken — onder de twee veiligheidskleppen hieronder
+- Lokaal: `git checkout`, `git checkout -b`, `git pull`, `git add`, `git merge`
+- Commits maken op feature branches
+- Pushen naar remote (`git push`) — inclusief feature branches die preview deployments triggeren bij Vercel
+- Branches aanmaken en verwijderen
+- Tags aanmaken en verwijderen
+- PR's openen
 
-**Wat nooit mag**
-- Pushen naar remote (`git push`)
-- Branches mergen (lokaal of via GitHub)
-- Tags aanmaken of verwijderen
-- Vercel deployments triggeren
+### Wat met melding vooraf
+- Merge naar `main` (lokaal of via PR) — geef een korte melding *voor* de merge, zodat Jeroen weet dat hij straks de Vercel production deploy moet triggeren als hij dat wil.
 
-**Veiligheidskleppen rond commits**
-1. Commit alleen op feature branches, nooit op `main`. Als je op main staat, maak eerst een feature branch aan.
-2. Toon de commit message en wacht op akkoord voor je commit. Niet de hele commit, alleen de message ter goedkeuring.
+### Wat nooit mag
+- Vercel production deployments triggeren. Production blijft handmatig via Jeroen.
 
-**Branch naming**
+### Veiligheidsklep
+Commit nooit direct op `main`. Werk altijd op een feature branch. Merges naar main verlopen via een PR of expliciete merge — niet door directe commits op main.
+
+### Branch naming
 Format: `<type>/<korte-beschrijving>`
 
 Types:
@@ -251,7 +254,7 @@ Voorbeelden:
 
 Klantnaam komt **niet** in branchnamen — die zit al in de repo.
 
-**Commit messages**
+### Commit messages
 Format: Conventional Commits in het Engels.
 
 ```
@@ -265,12 +268,8 @@ Body toevoegen wanneer:
 - er een breaking change is
 - er context is over *waarom* dit zo gebeurde (niet *wat*)
 
-**PR descriptions**
-Wanneer een feature af is, stel zelf een PR-description voor. Default sectie: alleen "Wat" (korte beschrijving van wat dit toevoegt of wijzigt).
-
-"Waarom" of "Hoe te testen" toevoegen als de wijziging dat verdient. Bij twijfel: alleen "Wat".
-
-Jeroen plakt de description zelf in de PR op GitHub.
+### PR descriptions
+Bij het openen van een PR: default sectie is alleen "Wat" (korte beschrijving van wat dit toevoegt of wijzigt). "Waarom" of "Hoe te testen" toevoegen als de wijziging dat verdient. Bij twijfel: alleen "Wat".
 
 ---
 

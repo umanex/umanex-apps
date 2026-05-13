@@ -7,6 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import {
   buttonTokens,
@@ -14,6 +15,7 @@ import {
   typeStyles,
   body,
   space,
+  radii,
 } from '@/constants';
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
@@ -60,14 +62,16 @@ export const Button = memo(function Button({
 }: ButtonProps) {
   const colors = variantStyles[variant];
   const isDisabled = disabled || loading;
+  const isPrimary = variant === 'primary';
 
   return (
     <TouchableOpacity
       style={[
         styles.base,
         size === 'lg' ? styles.sizeLg : styles.sizeMd,
-        variant !== 'ghost' && variant !== 'outline' && { backgroundColor: colors.bg },
+        variant === 'destructive' && { backgroundColor: colors.bg },
         variant === 'outline' && { borderWidth: buttonTokens.outline.borderWidth, borderColor: buttonTokens.outline.border },
+        isPrimary && !isDisabled && styles.primaryShadow,
         isDisabled && styles.disabled,
         style,
       ]}
@@ -75,6 +79,14 @@ export const Button = memo(function Button({
       disabled={isDisabled}
       activeOpacity={0.8}
     >
+      {isPrimary && (
+        <LinearGradient
+          colors={[buttonTokens.primary.gradientFrom, buttonTokens.primary.gradientTo]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[StyleSheet.absoluteFillObject, styles.gradient]}
+        />
+      )}
       {loading ? (
         <ActivityIndicator color={colors.text} />
       ) : (
@@ -106,21 +118,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: space['8'],
-    borderRadius: buttonTokens.radius,
+    borderRadius: radii.full,
   },
   sizeLg: {
-    height: buttonTokens.primary.height,
+    height: space['48'],
     paddingHorizontal: buttonTokens.primary.paddingX,
   },
   sizeMd: {
     paddingVertical: space['12'],
     paddingHorizontal: space['24'],
   },
+  primaryShadow: {
+    shadowColor: buttonTokens.primary.gradientTo,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
   disabled: {
     opacity: 0.6,
   },
+  gradient: {
+    borderRadius: radii.full,
+  },
   text: {
     ...typeStyles.buttonPrimary,
+    lineHeight: undefined,
   },
   ghostText: {
     ...body.md,

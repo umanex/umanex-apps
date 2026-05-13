@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { fg, accent, border, typeStyles, space } from '@/constants';
+import { fg, accent, typeStyles, space } from '@/constants';
 
 type SubtitleAction = {
   label: string;
@@ -34,14 +34,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: space['16'],
-    paddingBottom: space['12'],
-    borderBottomWidth: 1,
-    borderBottomColor: border.strong,
   },
   label: {
     flex: 1,
     ...typeStyles.labelSection,
-    color: fg.primary,
+    color: fg.secondary,
   },
   actionRow: {
     flexDirection: 'row',

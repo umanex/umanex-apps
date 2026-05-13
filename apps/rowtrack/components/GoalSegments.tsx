@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { bg, fg, accent, border, typeStyles } from '@/constants';
+import { bg, fg, accent, border, radii, space, typeStyles } from '@/constants';
 
 export type GoalSegmentType = 'Geen' | 'Duur' | 'Afstand' | 'Split' | 'Watt';
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -53,13 +53,13 @@ function SegmentButton({ type, isActive, onPress }: SegmentButtonProps) {
       Animated.parallel([
         Animated.timing(labelOpacity, {
           toValue: 1,
-          duration: 160,
+          duration: 80,
           useNativeDriver: true,
         }),
         Animated.spring(labelScale, {
           toValue: 1,
-          stiffness: 387,
-          damping: 31,
+          stiffness: 400,
+          damping: 40,
           mass: 1,
           useNativeDriver: true,
         }),
@@ -80,7 +80,7 @@ function SegmentButton({ type, isActive, onPress }: SegmentButtonProps) {
       <Ionicons
         name={GOAL_ICONS[type]}
         size={16}
-        color={isActive ? fg.onAccent : fg.secondary}
+        color={isActive ? accent.default : fg.secondary}
       />
       {isActive && (
         <Animated.Text
@@ -130,29 +130,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: bg.elevated,
     borderWidth: 1,
-    borderColor: border.default,
-    borderRadius: 10,
-    padding: 4,
+    borderColor: border.strong,
+    borderRadius: radii.sm,
+    padding: space['4'],
     alignItems: 'center',
   },
   segment: {
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
     flexDirection: 'row',
-    gap: 6,
+    gap: space['6'],
   },
   segmentInactive: {
     width: 44,
   },
   segmentActive: {
     flex: 1,
-    paddingHorizontal: 10,
-    backgroundColor: accent.default,
+    paddingHorizontal: space['10'],
+    backgroundColor: 'rgba(240, 84, 84, 0.20)',
+    borderWidth: 1,
+    borderColor: accent.default,
+    borderRadius: radii.xs,
   },
   activeLabel: {
     ...typeStyles.segmentActive,
-    color: fg.onAccent,
+    color: accent.default,
+    lineHeight: 20,
+    textAlignVertical: 'center',
   },
 });

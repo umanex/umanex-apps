@@ -44,6 +44,11 @@ export const border = {
   strong: '#3A3E48',
 } as const;
 
+export const achievement = {
+  default: '#E8DCC4',
+  muted: '#C9B894',
+} as const;
+
 export const buttonTokens = {
     primary: {
       background: '#F05454',

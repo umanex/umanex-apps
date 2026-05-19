@@ -110,11 +110,23 @@ function DraggablePotRow({
   onRemoveSettlement: (reservationId: string) => void;
   onFinalize: (reservationId: string, effectiveAmount: number) => void;
 }) {
-  const [localAmount, setLocalAmount] = useState(String(pot.effectiveAmount));
+  const autoAmount = pot.hasSettlement
+    ? pot.effectiveAmount
+    : pot.paymentsThisMonth.length > 0
+      ? pot.potBalance
+      : pot.monthlyAmount;
+
+  const [localAmount, setLocalAmount] = useState(String(autoAmount));
 
   useEffect(() => {
-    setLocalAmount(String(pot.effectiveAmount));
-  }, [pot.effectiveAmount]);
+    setLocalAmount(String(
+      pot.hasSettlement
+        ? pot.effectiveAmount
+        : pot.paymentsThisMonth.length > 0
+          ? pot.potBalance
+          : pot.monthlyAmount,
+    ));
+  }, [pot.effectiveAmount, pot.potBalance, pot.hasSettlement, pot.paymentsThisMonth.length]);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `reservation-pot-${pot.reservationId}-${monthKey}`,
@@ -130,11 +142,12 @@ function DraggablePotRow({
   function handleAmountBlur() {
     const amt = parseFloat(localAmount.replace(',', '.'));
     if (isNaN(amt) || amt < 0) {
-      setLocalAmount(String(pot.monthlyAmount));
+      setLocalAmount(String(autoAmount));
       onRemoveSettlement(pot.reservationId);
       return;
     }
-    if (Math.abs(amt - pot.monthlyAmount) < 0.01) {
+    const defaultWithoutSettlement = pot.paymentsThisMonth.length > 0 ? pot.potBalance : pot.monthlyAmount;
+    if (Math.abs(amt - defaultWithoutSettlement) < 0.01) {
       onRemoveSettlement(pot.reservationId);
     } else {
       onSettle(pot.reservationId, amt);

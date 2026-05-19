@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { IncomeItem, MonthKey } from '../../lib/cashflow/types';
-import { formatCurrency, generateId } from '../../lib/cashflow/recurring';
+import { formatCurrency, generateId, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
 
 interface IncomeSectionProps {
   monthKey: MonthKey;
@@ -29,7 +29,7 @@ function DraggableIncomeItem({
 }) {
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(item.label);
-  const [amount, setAmount] = useState(String(item.amount));
+  const [amount, setAmount] = useState(String(roundTo2(item.amount)));
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `income-${item.id}`,
@@ -75,7 +75,7 @@ function DraggableIncomeItem({
           type="text"
           inputMode="decimal"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => setAmount(limitDecimals(e.target.value))}
           placeholder="€"
           className="w-20 h-7 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
         />
@@ -242,7 +242,7 @@ export function IncomeSection({
             type="text"
             inputMode="decimal"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => setAmount(limitDecimals(e.target.value))}
             placeholder="€"
             className="w-20 h-7 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
           />

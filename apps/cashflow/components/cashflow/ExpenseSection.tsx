@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ExpenseItem, MonthKey } from '../../lib/cashflow/types';
-import { formatCurrency, generateId } from '../../lib/cashflow/recurring';
+import { formatCurrency, generateId, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
 
 interface ExpenseSectionProps {
   monthKey: MonthKey;
@@ -22,7 +22,7 @@ function DraggableExpenseItem({
   onUpdate: (id: string, patch: Partial<ExpenseItem>) => void;
   onRemove: (id: string) => void;
 }) {
-  const [localAmount, setLocalAmount] = useState(String(item.amount));
+  const [localAmount, setLocalAmount] = useState(String(roundTo2(item.amount)));
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `expense-${item.id}`,
@@ -69,7 +69,7 @@ function DraggableExpenseItem({
         type="text"
         inputMode="decimal"
         value={localAmount}
-        onChange={(e) => setLocalAmount(e.target.value)}
+        onChange={(e) => setLocalAmount(limitDecimals(e.target.value))}
         onBlur={handleAmountBlur}
         onPointerDown={(e) => e.stopPropagation()}
         className="w-20 h-6 px-1.5 text-xs text-right tabular-nums rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
@@ -181,7 +181,7 @@ export function ExpenseSection({
             type="text"
             inputMode="decimal"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => setAmount(limitDecimals(e.target.value))}
             placeholder="€"
             className="w-20 h-7 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
           />

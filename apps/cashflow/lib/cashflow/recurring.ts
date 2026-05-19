@@ -28,3 +28,13 @@ export function formatCurrency(amount: number): string {
 export function generateId(): string {
   return crypto.randomUUID();
 }
+
+export function roundTo2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+export function limitDecimals(value: string): string {
+  const sepIdx = value.search(/[,.]/);
+  if (sepIdx === -1) return value;
+  return value.slice(0, sepIdx + 1) + value.slice(sepIdx + 1).replace(/[,.]/g, '').slice(0, 2);
+}

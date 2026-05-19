@@ -84,6 +84,8 @@ export interface ReservationPotBalance {
   finalized: boolean;
   potBalance: number;
   paymentsThisMonth: ReservationPayment[];
+  provisionThisMonth: number;
+  deferredFromPrevious: number;
 }
 
 export interface MonthData {

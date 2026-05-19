@@ -63,6 +63,7 @@ export function calculateMonths(
   const result: MonthData[] = [];
   let runningBalance = startBalance;
   const potBalanceMap = new Map<string, number>();
+  const deferredRemainingMap = new Map<string, number>();
 
   let monthIndex = 0;
   for (const monthKey of months) {
@@ -129,8 +130,18 @@ export function calculateMonths(
       return settlement ? settlement.effectiveAmount : res.monthlyAmount;
     };
 
+    const getDeferred = (resId: string) => deferredRemainingMap.get(resId) ?? 0;
+    const getTotalProvision = (res: ReservationItem) => res.monthlyAmount + getDeferred(res.id);
+    const getProvisionThisMonth = (res: ReservationItem): number => {
+      const settlement = reservationSettlements.find(
+        (s) => s.reservationId === res.id && s.monthKey === monthKey,
+      );
+      if (settlement?.finalized) return settlement.effectiveAmount;
+      return settlement ? settlement.effectiveAmount : getTotalProvision(res);
+    };
+
     for (const res of billableReservations) {
-      potBalanceMap.set(res.id, (potBalanceMap.get(res.id) ?? 0) + getEffectiveAmount(res));
+      potBalanceMap.set(res.id, (potBalanceMap.get(res.id) ?? 0) + getProvisionThisMonth(res));
     }
     for (const d of arrivingReservationDefers) {
       const res = reservations.find((r) => r.id === d.reservationId);
@@ -146,7 +157,7 @@ export function calculateMonths(
     }
 
     const totalReservationDeductions =
-      billableReservations.reduce((s, r) => s + getEffectiveAmount(r), 0) + deferredReservationAmount;
+      billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) + deferredReservationAmount;
     const totalReservationCashPayments = monthReservationPayments.reduce((s, p) => s + p.fromCash, 0);
 
     const reservationPots: ReservationPotBalance[] = billableReservations.map((r) => {
@@ -162,6 +173,8 @@ export function calculateMonths(
         finalized: settlement?.finalized ?? false,
         potBalance: potBalanceMap.get(r.id) ?? 0,
         paymentsThisMonth: monthReservationPayments.filter((p) => p.reservationId === r.id),
+        provisionThisMonth: getProvisionThisMonth(r),
+        deferredFromPrevious: getDeferred(r.id),
       };
     });
 
@@ -247,30 +260,35 @@ export function calculateMonths(
       .filter((d) => !d.paid)
       .reduce((s, d) => s + d.amount, 0);
 
-    const unfinalizedPotDeductions = billableReservations.reduce((s, r) => {
+    const totalPotCarryForward = billableReservations.reduce((s, r) => {
       const settlement = reservationSettlements.find(
-        (st) => st.reservationId === r.id && st.monthKey === monthKey,
+        (ss) => ss.reservationId === r.id && ss.monthKey === monthKey,
       );
       if (settlement?.finalized) return s;
-      return s + (settlement ? settlement.effectiveAmount : r.monthlyAmount);
+      const hasPayments = monthReservationPayments.some((p) => p.reservationId === r.id);
+      if (settlement) return s + settlement.effectiveAmount;
+      if (hasPayments) return s + (potBalanceMap.get(r.id) ?? 0);
+      return s + r.monthlyAmount;
     }, 0);
-
-    const unfinalizedCashPayments = monthReservationPayments
-      .filter((p) => {
-        const settlement = reservationSettlements.find(
-          (st) => st.reservationId === p.reservationId && st.monthKey === monthKey,
-        );
-        return !settlement?.finalized;
-      })
-      .reduce((s, p) => s + p.fromCash, 0);
 
     const openstaandCarryForward =
       unpaidRecurringAmount +
       unpaidDeferredAmount +
       unpaidExpenses +
-      unfinalizedPotDeductions +
-      unfinalizedCashPayments +
+      totalPotCarryForward +
       deferredReservationAmount;
+
+    for (const res of billableReservations) {
+      const settlement = reservationSettlements.find(
+        (s) => s.reservationId === res.id && s.monthKey === monthKey,
+      );
+      if (settlement?.finalized) {
+        const remaining = getTotalProvision(res) - settlement.effectiveAmount;
+        deferredRemainingMap.set(res.id, remaining > 0 ? remaining : 0);
+      } else {
+        deferredRemainingMap.set(res.id, 0);
+      }
+    }
 
     runningBalance = (monthIndex === 0 ? 0 : runningBalance) + totalIncome - openstaandCarryForward;
     monthIndex++;

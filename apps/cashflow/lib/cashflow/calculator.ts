@@ -260,15 +260,22 @@ export function calculateMonths(
       .filter((d) => !d.paid)
       .reduce((s, d) => s + d.amount, 0);
 
-    const totalPotCarryForward = billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0);
-    const totalCashPaymentsCarryForward = monthReservationPayments.reduce((s, p) => s + p.fromCash, 0);
+    const totalPotCarryForward = billableReservations.reduce((s, r) => {
+      const settlement = reservationSettlements.find(
+        (ss) => ss.reservationId === r.id && ss.monthKey === monthKey,
+      );
+      if (settlement?.finalized) return s;
+      const hasPayments = monthReservationPayments.some((p) => p.reservationId === r.id);
+      if (settlement) return s + settlement.effectiveAmount;
+      if (hasPayments) return s + (potBalanceMap.get(r.id) ?? 0);
+      return s + r.monthlyAmount;
+    }, 0);
 
     const openstaandCarryForward =
       unpaidRecurringAmount +
       unpaidDeferredAmount +
       unpaidExpenses +
       totalPotCarryForward +
-      totalCashPaymentsCarryForward +
       deferredReservationAmount;
 
     for (const res of billableReservations) {

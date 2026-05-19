@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ReservationPotBalance, ReservationPayment, MonthKey } from '../../lib/cashflow/types';
-import { formatCurrency, getMonthLabel } from '../../lib/cashflow/recurring';
+import { formatCurrency, getMonthLabel, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
 
 interface DeferredReservationDisplayItem {
   deferId: string;
@@ -101,6 +101,7 @@ function DraggablePotRow({
   onSettle,
   onRemoveSettlement,
   onFinalize,
+  onAmountChange,
 }: {
   pot: ReservationPotBalance;
   monthKey: MonthKey;
@@ -109,6 +110,7 @@ function DraggablePotRow({
   onSettle: (reservationId: string, effectiveAmount: number) => void;
   onRemoveSettlement: (reservationId: string) => void;
   onFinalize: (reservationId: string, effectiveAmount: number) => void;
+  onAmountChange: (reservationId: string, amount: number | null) => void;
 }) {
   const autoAmount = pot.hasSettlement
     ? pot.effectiveAmount
@@ -116,16 +118,16 @@ function DraggablePotRow({
       ? pot.potBalance
       : pot.monthlyAmount;
 
-  const [localAmount, setLocalAmount] = useState(String(autoAmount));
+  const [localAmount, setLocalAmount] = useState(String(roundTo2(autoAmount)));
 
   useEffect(() => {
-    setLocalAmount(String(
+    setLocalAmount(String(roundTo2(
       pot.hasSettlement
         ? pot.effectiveAmount
         : pot.paymentsThisMonth.length > 0
           ? pot.potBalance
           : pot.monthlyAmount,
-    ));
+    )));
   }, [pot.effectiveAmount, pot.potBalance, pot.hasSettlement, pot.paymentsThisMonth.length]);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -143,10 +145,12 @@ function DraggablePotRow({
     const amt = parseFloat(localAmount.replace(',', '.'));
     if (isNaN(amt) || amt < 0) {
       setLocalAmount(String(autoAmount));
+      onAmountChange(pot.reservationId, null);
       onRemoveSettlement(pot.reservationId);
       return;
     }
     const defaultWithoutSettlement = pot.paymentsThisMonth.length > 0 ? pot.potBalance : pot.monthlyAmount;
+    onAmountChange(pot.reservationId, null);
     if (Math.abs(amt - defaultWithoutSettlement) < 0.01) {
       onRemoveSettlement(pot.reservationId);
     } else {
@@ -171,7 +175,12 @@ function DraggablePotRow({
           type="text"
           inputMode="decimal"
           value={localAmount}
-          onChange={(e) => setLocalAmount(e.target.value)}
+          onChange={(e) => {
+            const v = limitDecimals(e.target.value);
+            setLocalAmount(v);
+            const parsed = parseFloat(v.replace(',', '.'));
+            onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
+          }}
           onBlur={handleAmountBlur}
           onPointerDown={(e) => e.stopPropagation()}
           className={`w-20 h-6 px-1.5 text-xs text-right tabular-nums rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${
@@ -274,14 +283,31 @@ export function ReservationSection({
   onUnfinalize,
 }: ReservationSectionProps) {
   const [showFinalized, setShowFinalized] = useState(false);
+  const [overrideAmounts, setOverrideAmounts] = useState<Record<string, number>>({});
+
+  function handleAmountChange(reservationId: string, amount: number | null) {
+    setOverrideAmounts((prev) => {
+      if (amount === null) {
+        const next = { ...prev };
+        delete next[reservationId];
+        return next;
+      }
+      return { ...prev, [reservationId]: amount };
+    });
+  }
 
   const activePots = pots.filter((p) => !p.finalized);
   const finalizedPots = pots.filter((p) => p.finalized);
 
   const subtotaal =
     activePots.reduce((s, p) => {
-      const cashPayments = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0);
-      return s + p.provisionThisMonth + cashPayments;
+      const autoAmount = p.hasSettlement
+        ? p.effectiveAmount
+        : p.paymentsThisMonth.length > 0
+          ? p.potBalance
+          : p.monthlyAmount;
+      const provision = overrideAmounts[p.reservationId] ?? autoAmount;
+      return s + provision;
     }, 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 
@@ -326,6 +352,7 @@ export function ReservationSection({
           onSettle={onSettleReservation}
           onRemoveSettlement={onRemoveReservationSettlement}
           onFinalize={onFinalize}
+          onAmountChange={handleAmountChange}
         />
       ))}
 

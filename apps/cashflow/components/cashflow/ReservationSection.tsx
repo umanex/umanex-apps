@@ -198,7 +198,9 @@ function DraggablePotRow({
 
       {/* Rij 2: provisie saldo + eventueel overgedragen bedrag */}
       {(() => {
-        const displayAmount = pot.paymentsThisMonth.length > 0 ? pot.potBalance : pot.provisionThisMonth;
+        const displayAmount = pot.paymentsThisMonth.length > 0
+          ? pot.potBalance
+          : pot.provisionThisMonth + pot.deferredFromPrevious;
         return (
           <div className="pl-5 flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
@@ -212,11 +214,6 @@ function DraggablePotRow({
               {formatCurrency(displayAmount)}
               {displayAmount < 0 && ' ⚠'}
             </span>
-            {pot.deferredFromPrevious > 0 && pot.paymentsThisMonth.length === 0 && (
-              <span className="text-xs text-amber-600 tabular-nums">
-                +{formatCurrency(pot.deferredFromPrevious)} overgedragen
-              </span>
-            )}
           </div>
         );
       })()}

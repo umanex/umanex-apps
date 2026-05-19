@@ -62,10 +62,12 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
   const expenseSubtotaal = expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0);
 
   const spaarpotSubtotaal =
-    reservationPots.reduce((s, p) => {
-      const cashPayments = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0);
-      return s + p.provisionThisMonth + cashPayments;
-    }, 0) +
+    reservationPots
+      .filter((p) => !p.finalized)
+      .reduce((s, p) => {
+        const cashPayments = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0);
+        return s + p.provisionThisMonth + cashPayments;
+      }, 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 
   const openstaand = recurringSubtotaal + expenseSubtotaal + spaarpotSubtotaal;

@@ -266,7 +266,7 @@ export function ReservationSection({
   const finalizedPots = pots.filter((p) => p.finalized);
 
   const subtotaal =
-    pots.reduce((s, p) => {
+    activePots.reduce((s, p) => {
       const cashPayments = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0);
       return s + p.provisionThisMonth + cashPayments;
     }, 0) +

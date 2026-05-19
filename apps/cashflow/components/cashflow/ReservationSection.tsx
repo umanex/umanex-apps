@@ -174,8 +174,8 @@ function DraggablePotRow({
         )}
       </div>
 
-      {/* Rij 2: provisie saldo */}
-      <div className="pl-5 flex items-center gap-1">
+      {/* Rij 2: provisie saldo + eventueel overgedragen bedrag */}
+      <div className="pl-5 flex items-center gap-2">
         <span className="text-xs text-muted-foreground">Provisie:</span>
         <span
           className={`text-xs font-medium tabular-nums ${
@@ -185,6 +185,11 @@ function DraggablePotRow({
           {formatCurrency(pot.potBalance)}
           {pot.potBalance < 0 && ' ⚠'}
         </span>
+        {pot.deferredFromPrevious > 0 && (
+          <span className="text-xs text-amber-600 tabular-nums">
+            +{formatCurrency(pot.deferredFromPrevious)} overgedragen
+          </span>
+        )}
       </div>
 
       {/* Betalingen deze maand */}
@@ -261,9 +266,9 @@ export function ReservationSection({
   const finalizedPots = pots.filter((p) => p.finalized);
 
   const subtotaal =
-    activePots.reduce((s, p) => {
+    pots.reduce((s, p) => {
       const cashPayments = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0);
-      return s + p.effectiveAmount + cashPayments;
+      return s + p.provisionThisMonth + cashPayments;
     }, 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 

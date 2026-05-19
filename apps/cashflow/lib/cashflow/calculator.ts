@@ -137,7 +137,7 @@ export function calculateMonths(
         (s) => s.reservationId === res.id && s.monthKey === monthKey,
       );
       if (settlement?.finalized) return settlement.effectiveAmount;
-      return settlement ? settlement.effectiveAmount : getTotalProvision(res);
+      return settlement ? settlement.effectiveAmount : res.monthlyAmount;
     };
 
     for (const res of billableReservations) {
@@ -154,6 +154,12 @@ export function calculateMonths(
         payment.reservationId,
         (potBalanceMap.get(payment.reservationId) ?? 0) - payment.fromReservation,
       );
+    }
+    // Als er cash bijbetaald werd, is de pot volledig benut — saldo naar 0
+    for (const payment of monthReservationPayments) {
+      if (payment.fromCash > 0) {
+        potBalanceMap.set(payment.reservationId, 0);
+      }
     }
 
     const totalReservationDeductions =

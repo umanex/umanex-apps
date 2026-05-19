@@ -197,22 +197,29 @@ function DraggablePotRow({
       </div>
 
       {/* Rij 2: provisie saldo + eventueel overgedragen bedrag */}
-      <div className="pl-5 flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Provisie:</span>
-        <span
-          className={`text-xs font-medium tabular-nums ${
-            pot.potBalance < 0 ? 'text-destructive' : 'text-emerald-600'
-          }`}
-        >
-          {formatCurrency(pot.potBalance)}
-          {pot.potBalance < 0 && ' ⚠'}
-        </span>
-        {pot.deferredFromPrevious > 0 && (
-          <span className="text-xs text-amber-600 tabular-nums">
-            +{formatCurrency(pot.deferredFromPrevious)} overgedragen
-          </span>
-        )}
-      </div>
+      {(() => {
+        const displayAmount = pot.paymentsThisMonth.length > 0 ? pot.potBalance : pot.provisionThisMonth;
+        return (
+          <div className="pl-5 flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              {pot.paymentsThisMonth.length > 0 ? 'Resterend:' : 'Provisie:'}
+            </span>
+            <span
+              className={`text-xs font-medium tabular-nums ${
+                displayAmount < 0 ? 'text-destructive' : 'text-emerald-600'
+              }`}
+            >
+              {formatCurrency(displayAmount)}
+              {displayAmount < 0 && ' ⚠'}
+            </span>
+            {pot.deferredFromPrevious > 0 && pot.paymentsThisMonth.length === 0 && (
+              <span className="text-xs text-amber-600 tabular-nums">
+                +{formatCurrency(pot.deferredFromPrevious)} overgedragen
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Betalingen deze maand */}
       {pot.paymentsThisMonth.map((payment) => (

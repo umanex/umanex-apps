@@ -102,6 +102,7 @@ export function ExpenseSection({
   const paidItems = items.filter((i) => i.paid);
   const hasAnyPaid = paidItems.length > 0;
   const visibleItems = showPaid ? items : unpaidItems;
+  const subtotaal = unpaidItems.reduce((s, i) => s + i.amount, 0);
 
   function handleAdd() {
     const parsed = parseFloat(amount.replace(',', '.'));
@@ -127,41 +128,33 @@ export function ExpenseSection({
     }
   }
 
-  if (items.length === 0 && !adding) {
-    return (
-      <button
-        onClick={() => setAdding(true)}
-        className="text-xs text-muted-foreground hover:text-primary transition-colors"
-      >
-        + Kost toevoegen
-      </button>
-    );
-  }
-
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-shrink-0">
           Niet recurrente kosten
         </span>
         <div className="flex items-center gap-2">
-          {hasAnyPaid && (
-            <button
-              onClick={() => setShowPaid((v) => !v)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showPaid
-                ? `Verberg betaald (${paidItems.length})`
-                : `Toon betaald (${paidItems.length})`}
-            </button>
+          {subtotaal > 0 && (
+            <span className="text-xs font-medium tabular-nums text-destructive">
+              {formatCurrency(subtotaal)}
+            </span>
           )}
           <button
             onClick={() => setAdding(true)}
-            className="text-xs text-primary hover:text-primary/80 transition-colors"
+            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
             aria-label="Kost toevoegen"
           >
             + Toevoegen
           </button>
+          {hasAnyPaid && (
+            <button
+              onClick={() => setShowPaid((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+            >
+              {showPaid ? `Verberg betaald (${paidItems.length})` : `Toon betaald (${paidItems.length})`}
+            </button>
+          )}
         </div>
       </div>
 

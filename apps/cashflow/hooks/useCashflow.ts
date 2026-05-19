@@ -99,7 +99,6 @@ export function useMonths(count = 3): MonthData[] {
 
 export function useCashflowActions() {
   return {
-    setStartBalance: useCashflowStore((s) => s.setStartBalance),
     setAnchorMonth: useCashflowStore((s) => s.setAnchorMonth),
     addIncomeItem: useCashflowStore((s) => s.addIncomeItem),
     updateIncomeItem: useCashflowStore((s) => s.updateIncomeItem),
@@ -112,6 +111,7 @@ export function useCashflowActions() {
     removeExpenseItem: useCashflowStore((s) => s.removeExpenseItem),
     addRecurringDefer: useCashflowStore((s) => s.addRecurringDefer),
     removeRecurringDefer: useCashflowStore((s) => s.removeRecurringDefer),
+    settleRecurringDefer: useCashflowStore((s) => s.settleRecurringDefer),
     upsertRecurringSettlement: useCashflowStore((s) => s.upsertRecurringSettlement),
     removeRecurringSettlement: useCashflowStore((s) => s.removeRecurringSettlement),
     addReservationDefer: useCashflowStore((s) => s.addReservationDefer),

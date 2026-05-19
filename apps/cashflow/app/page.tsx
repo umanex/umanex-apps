@@ -44,6 +44,7 @@ export default function Page() {
                 monthData={month}
                 isFirst={index === 0}
                 onRegisterPayment={() => setPaymentMonth(month.monthKey)}
+                onOpenRecurringSidepanel={() => setRecurringOpen(true)}
               />
             ))}
           </div>

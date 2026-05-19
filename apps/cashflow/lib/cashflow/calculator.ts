@@ -64,6 +64,7 @@ export function calculateMonths(
   let runningBalance = startBalance;
   const potBalanceMap = new Map<string, number>();
 
+  let monthIndex = 0;
   for (const monthKey of months) {
     const monthExpenseItems = expenseItems.filter((i) => i.monthKey === monthKey);
     const monthIncomeItems = incomeItems.filter((i) => i.monthKey === monthKey);
@@ -79,7 +80,9 @@ export function calculateMonths(
       const ri = recurringItems.find((i) => i.id === d.recurringId && i.startMonth <= d.fromMonth);
       if (!ri) return [];
       const amount = ri.frequency === 'yearly' ? ri.amount / 12 : ri.amount;
-      return [{ deferId: d.id, recurringId: d.recurringId, label: ri.label, amount, fromMonth: d.fromMonth }];
+      const paid = d.paid ?? false;
+      const paidAmount = paid ? (d.paidAmount ?? amount) : amount;
+      return [{ deferId: d.id, recurringId: d.recurringId, label: ri.label, amount, fromMonth: d.fromMonth, paid, paidAmount }];
     });
 
     const totalIncome = monthIncomeItems.reduce((s, i) => s + i.amount, 0);
@@ -93,7 +96,7 @@ export function calculateMonths(
       return s + (settlement?.paid ? settlement.actualAmount : budgeted);
     }, 0);
 
-    const deferredRecurringAmount = deferredItems.reduce((s, d) => s + d.amount, 0);
+    const deferredRecurringAmount = deferredItems.reduce((s, d) => s + (d.paid ? d.paidAmount : d.amount), 0);
     const totalRecurring = totalNormalRecurring + deferredRecurringAmount;
 
     const activeReservations = reservations.filter((r) => r.startMonth <= monthKey);
@@ -240,7 +243,37 @@ export function calculateMonths(
       recurringSettlements: monthSettlements,
     });
 
-    runningBalance = endBalance;
+    const unpaidDeferredAmount = deferredItems
+      .filter((d) => !d.paid)
+      .reduce((s, d) => s + d.amount, 0);
+
+    const unfinalizedPotDeductions = billableReservations.reduce((s, r) => {
+      const settlement = reservationSettlements.find(
+        (st) => st.reservationId === r.id && st.monthKey === monthKey,
+      );
+      if (settlement?.finalized) return s;
+      return s + (settlement ? settlement.effectiveAmount : r.monthlyAmount);
+    }, 0);
+
+    const unfinalizedCashPayments = monthReservationPayments
+      .filter((p) => {
+        const settlement = reservationSettlements.find(
+          (st) => st.reservationId === p.reservationId && st.monthKey === monthKey,
+        );
+        return !settlement?.finalized;
+      })
+      .reduce((s, p) => s + p.fromCash, 0);
+
+    const openstaandCarryForward =
+      unpaidRecurringAmount +
+      unpaidDeferredAmount +
+      unpaidExpenses +
+      unfinalizedPotDeductions +
+      unfinalizedCashPayments +
+      deferredReservationAmount;
+
+    runningBalance = (monthIndex === 0 ? 0 : runningBalance) + totalIncome - openstaandCarryForward;
+    monthIndex++;
   }
 
   return result;

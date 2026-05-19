@@ -17,7 +17,7 @@ import type {
 } from '../lib/cashflow/types';
 
 // Verhoog bij elke schema-uitbreiding + voeg het nieuwe veld toe in migrate.
-const STORE_VERSION = 6;
+const STORE_VERSION = 7;
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
@@ -175,6 +175,15 @@ export const useCashflowStore = create<CashflowStore>()(
           state.recurringDefers = state.recurringDefers.filter((d) => d.id !== id);
         }),
 
+      settleRecurringDefer: (id, paid, paidAmount) =>
+        set((state) => {
+          const defer = state.recurringDefers.find((d) => d.id === id);
+          if (defer) {
+            defer.paid = paid;
+            defer.paidAmount = paidAmount;
+          }
+        }),
+
       addReservationDefer: (defer) =>
         set((state) => { state.reservationDefers.push(defer); }),
 
@@ -232,7 +241,13 @@ export const useCashflowStore = create<CashflowStore>()(
           recurringItems: Array.isArray(s.recurringItems) ? s.recurringItems : [],
           reservations: Array.isArray(s.reservations) ? s.reservations : [],
           reservationPayments: Array.isArray(s.reservationPayments) ? s.reservationPayments : [],
-          recurringDefers: Array.isArray(s.recurringDefers) ? s.recurringDefers : [],
+          recurringDefers: Array.isArray(s.recurringDefers)
+            ? (s.recurringDefers as RecurringDefer[]).map((d) => ({
+                ...d,
+                paid: d.paid ?? false,
+                paidAmount: d.paidAmount ?? 0,
+              }))
+            : [],
           recurringSettlements: Array.isArray(s.recurringSettlements) ? s.recurringSettlements : [],
           reservationSettlements: Array.isArray(s.reservationSettlements)
             ? (s.reservationSettlements as ReservationSettlement[]).map((rs) => ({

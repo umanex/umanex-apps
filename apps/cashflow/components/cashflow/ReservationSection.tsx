@@ -260,20 +260,42 @@ export function ReservationSection({
   const activePots = pots.filter((p) => !p.finalized);
   const finalizedPots = pots.filter((p) => p.finalized);
 
+  const subtotaal =
+    activePots.reduce((s, p) => {
+      const cashPayments = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0);
+      return s + p.effectiveAmount + cashPayments;
+    }, 0) +
+    deferredReservationItems.reduce((s, d) => s + d.amount, 0);
+
   if (activePots.length === 0 && finalizedPots.length === 0 && deferredReservationItems.length === 0) return null;
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-shrink-0">
           Spaarpotten
         </span>
-        <button
-          onClick={onRegisterPayment}
-          className="text-xs text-primary hover:text-primary/80 transition-colors"
-        >
-          + Betaling
-        </button>
+        <div className="flex items-center gap-2">
+          {subtotaal > 0 && (
+            <span className="text-xs font-medium tabular-nums text-destructive">
+              {formatCurrency(subtotaal)}
+            </span>
+          )}
+          <button
+            onClick={onRegisterPayment}
+            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+          >
+            + Betaling
+          </button>
+          {finalizedPots.length > 0 && (
+            <button
+              onClick={() => setShowFinalized((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+            >
+              {showFinalized ? `Verberg betaald (${finalizedPots.length})` : `Toon betaald (${finalizedPots.length})`}
+            </button>
+          )}
+        </div>
       </div>
 
       {activePots.map((pot) => (
@@ -311,18 +333,6 @@ export function ReservationSection({
           </button>
         </div>
       ))}
-
-      {/* Toggle voor gefinaliseerde potten */}
-      {finalizedPots.length > 0 && (
-        <button
-          onClick={() => setShowFinalized((v) => !v)}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {showFinalized
-            ? `Verberg gefinaliseerd (${finalizedPots.length})`
-            : `Toon gefinaliseerd (${finalizedPots.length})`}
-        </button>
-      )}
 
       {/* Gefinaliseerde potten */}
       {showFinalized &&

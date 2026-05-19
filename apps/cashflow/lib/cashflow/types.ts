@@ -30,6 +30,8 @@ export interface RecurringDefer {
   recurringId: string;
   fromMonth: MonthKey;
   toMonth: MonthKey;
+  paid?: boolean;
+  paidAmount?: number;
 }
 
 export interface ReservationDefer {
@@ -107,6 +109,8 @@ export interface MonthData {
     label: string;
     amount: number;
     fromMonth: MonthKey;
+    paid: boolean;
+    paidAmount: number;
   }>;
   expenseItems: ExpenseItem[];
   totalExpenses: number;
@@ -158,6 +162,7 @@ export interface CashflowStore {
 
   addRecurringDefer: (defer: RecurringDefer) => void;
   removeRecurringDefer: (id: string) => void;
+  settleRecurringDefer: (id: string, paid: boolean, paidAmount: number) => void;
 
   addReservationDefer: (defer: ReservationDefer) => void;
   removeReservationDefer: (id: string) => void;

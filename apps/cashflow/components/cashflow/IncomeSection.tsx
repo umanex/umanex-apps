@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { IncomeItem, MonthKey } from '../../lib/cashflow/types';
 import { formatCurrency, generateId } from '../../lib/cashflow/recurring';
@@ -10,7 +10,6 @@ interface IncomeSectionProps {
   items: IncomeItem[];
   startBalance: number;
   isFirstMonth?: boolean;
-  onSetStartBalance?: (v: number) => void;
   onAdd: (item: IncomeItem) => void;
   onUpdate: (id: string, patch: Partial<IncomeItem>) => void;
   onToggleReceived: (id: string, received: boolean) => void;
@@ -45,7 +44,7 @@ function DraggableIncomeItem({
 
   function handleSave() {
     const parsed = parseFloat(amount.replace(',', '.'));
-    if (!label.trim() || isNaN(parsed) || parsed <= 0) return;
+    if (!label.trim() || isNaN(parsed)) return;
     onUpdate(item.id, { label: label.trim(), amount: parsed });
     setEditing(false);
   }
@@ -117,7 +116,7 @@ function DraggableIncomeItem({
         {item.label}
       </span>
       <span
-        className="text-sm font-medium text-emerald-600 tabular-nums cursor-pointer"
+        className={`text-sm font-medium tabular-nums cursor-pointer ${item.amount >= 0 ? 'text-emerald-600' : 'text-destructive'}`}
         onClick={() => { setLabel(item.label); setAmount(String(item.amount)); setEditing(true); }}
       >
         {formatCurrency(item.amount)}
@@ -138,30 +137,24 @@ export function IncomeSection({
   items,
   startBalance,
   isFirstMonth,
-  onSetStartBalance,
   onAdd,
   onUpdate,
   onToggleReceived,
   onRemove,
 }: IncomeSectionProps) {
   const [adding, setAdding] = useState(false);
+  const [showReceived, setShowReceived] = useState(false);
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
-  const [localBalance, setLocalBalance] = useState(String(startBalance));
 
-  useEffect(() => {
-    if (isFirstMonth) setLocalBalance(String(startBalance));
-  }, [startBalance, isFirstMonth]);
-
-  function handleBalanceBlur() {
-    const parsed = parseFloat(localBalance.replace(',', '.'));
-    if (!isNaN(parsed) && onSetStartBalance) onSetStartBalance(parsed);
-    else setLocalBalance(String(startBalance));
-  }
+  const unreceived = items.filter((i) => !i.received);
+  const received = items.filter((i) => i.received);
+  const subtotaal = unreceived.reduce((s, i) => s + i.amount, 0);
+  const visibleItems = showReceived ? items : unreceived;
 
   function handleAdd() {
     const parsed = parseFloat(amount.replace(',', '.'));
-    if (!label.trim() || isNaN(parsed) || parsed <= 0) return;
+    if (!label.trim() || isNaN(parsed)) return;
     onAdd({
       id: generateId(),
       monthKey,
@@ -185,44 +178,47 @@ export function IncomeSection({
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-shrink-0">
           Inkomsten
         </span>
-        <button
-          onClick={() => setAdding(true)}
-          className="text-xs text-primary hover:text-primary/80 transition-colors"
-          aria-label="Inkomst toevoegen"
-        >
-          + Toevoegen
-        </button>
+        <div className="flex items-center gap-2">
+          {subtotaal !== 0 && (
+            <span className={`text-xs font-medium tabular-nums ${subtotaal >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+              {formatCurrency(subtotaal)}
+            </span>
+          )}
+          <button
+            onClick={() => setAdding(true)}
+            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+            aria-label="Inkomst toevoegen"
+          >
+            + Toevoegen
+          </button>
+          {received.length > 0 && (
+            <button
+              onClick={() => setShowReceived((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+            >
+              {showReceived ? `Verberg ontvangen (${received.length})` : `Toon ontvangen (${received.length})`}
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 py-0.5">
-        <span className="w-[18px] flex-shrink-0" />
-        <span className="w-3.5 flex-shrink-0" />
-        <span className={`flex-1 text-sm truncate ${!isFirstMonth ? 'text-muted-foreground italic' : ''}`}>
-          {isFirstMonth ? 'Huidig saldo' : 'Vorig saldo'}
-        </span>
-        {isFirstMonth ? (
-          <input
-            type="text"
-            inputMode="decimal"
-            value={localBalance}
-            onChange={(e) => setLocalBalance(e.target.value)}
-            onBlur={handleBalanceBlur}
-            className="w-20 h-6 px-1.5 text-xs text-right tabular-nums rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-            aria-label="Huidig saldo"
-          />
-        ) : (
-          <span className="text-sm font-medium text-emerald-600 tabular-nums">
+      {!isFirstMonth && (
+        <div className="flex items-center gap-2 py-0.5">
+          <span className="w-[18px] flex-shrink-0" />
+          <span className="w-3.5 flex-shrink-0" />
+          <span className="flex-1 text-sm truncate text-muted-foreground italic">Vorig saldo</span>
+          <span className={`text-sm font-medium tabular-nums ${startBalance >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
             {formatCurrency(startBalance)}
           </span>
-        )}
-        <span className="w-3 flex-shrink-0" />
-      </div>
+          <span className="w-3 flex-shrink-0" />
+        </div>
+      )}
 
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <DraggableIncomeItem
           key={item.id}
           item={item}
@@ -265,7 +261,7 @@ export function IncomeSection({
         </div>
       )}
 
-      {items.length === 0 && !adding && (
+      {unreceived.length === 0 && !adding && !showReceived && (
         <p className="text-xs text-muted-foreground italic py-0.5">Geen inkomsten deze maand</p>
       )}
     </div>

@@ -28,6 +28,19 @@ export function calcPotBalance(
   upToMonth: MonthKey,
 ): number {
   if (upToMonth < reservation.startMonth) return 0;
+
+  // Maandelijks budget: enkel de huidige maand telt — pot reset aan het einde van elke maand
+  if (reservation.type === 'maandelijks_budget') {
+    const settlement = settlements.find(
+      (s) => s.reservationId === reservation.id && s.monthKey === upToMonth,
+    );
+    const provision = settlement ? settlement.effectiveAmount : reservation.monthlyAmount;
+    const paid = payments
+      .filter((p) => p.reservationId === reservation.id && p.monthKey === upToMonth)
+      .reduce((s, p) => s + p.fromReservation, 0);
+    return provision - paid;
+  }
+
   const start = parseISO(`${reservation.startMonth}-01`);
   const end = parseISO(`${upToMonth}-01`);
   const monthCount = differenceInMonths(end, start) + 1;
@@ -162,8 +175,24 @@ export function calculateMonths(
       }
     }
 
+    // Maandelijks budget: onbesteed provisie-saldo terugstorten naar vrij saldo
+    const releasedPerPot = new Map<string, number>();
+    let releasedBudgetAmount = 0;
+    for (const res of billableReservations) {
+      if (res.type === 'maandelijks_budget') {
+        const balance = potBalanceMap.get(res.id) ?? 0;
+        if (balance > 0) {
+          releasedPerPot.set(res.id, balance);
+          releasedBudgetAmount += balance;
+          potBalanceMap.set(res.id, 0);
+        } else {
+          releasedPerPot.set(res.id, 0);
+        }
+      }
+    }
+
     const totalReservationDeductions =
-      billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) + deferredReservationAmount;
+      billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) + deferredReservationAmount - releasedBudgetAmount;
     const totalReservationCashPayments = monthReservationPayments.reduce((s, p) => s + p.fromCash, 0);
 
     const reservationPots: ReservationPotBalance[] = billableReservations.map((r) => {
@@ -181,6 +210,8 @@ export function calculateMonths(
         paymentsThisMonth: monthReservationPayments.filter((p) => p.reservationId === r.id),
         provisionThisMonth: getProvisionThisMonth(r),
         deferredFromPrevious: getDeferred(r.id),
+        potType: r.type,
+        releasedThisMonth: releasedPerPot.get(r.id) ?? 0,
       };
     });
 
@@ -267,6 +298,8 @@ export function calculateMonths(
       .reduce((s, d) => s + d.amount, 0);
 
     const totalPotCarryForward = billableReservations.reduce((s, r) => {
+      // Maandelijks budget reset elke maand — geen carry-forward
+      if (r.type === 'maandelijks_budget') return s;
       const settlement = reservationSettlements.find(
         (ss) => ss.reservationId === r.id && ss.monthKey === monthKey,
       );
@@ -285,6 +318,10 @@ export function calculateMonths(
       deferredReservationAmount;
 
     for (const res of billableReservations) {
+      if (res.type === 'maandelijks_budget') {
+        deferredRemainingMap.set(res.id, 0);
+        continue;
+      }
       const settlement = reservationSettlements.find(
         (s) => s.reservationId === res.id && s.monthKey === monthKey,
       );

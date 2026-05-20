@@ -57,11 +57,14 @@ export interface RecurringSettlement {
   actualAmount: number;
 }
 
+export type ReservationPotType = 'spaardoel' | 'maandelijks_budget';
+
 export interface ReservationItem {
   id: string;
   label: string;
   monthlyAmount: number;
   startMonth: MonthKey;
+  type: ReservationPotType;
 }
 
 export interface ReservationPayment {
@@ -86,6 +89,8 @@ export interface ReservationPotBalance {
   paymentsThisMonth: ReservationPayment[];
   provisionThisMonth: number;
   deferredFromPrevious: number;
+  potType: ReservationPotType;
+  releasedThisMonth: number;
 }
 
 export interface MonthData {

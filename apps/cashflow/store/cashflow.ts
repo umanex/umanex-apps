@@ -17,7 +17,7 @@ import type {
 } from '../lib/cashflow/types';
 
 // Verhoog bij elke schema-uitbreiding + voeg het nieuwe veld toe in migrate.
-const STORE_VERSION = 7;
+const STORE_VERSION = 8;
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
@@ -239,7 +239,12 @@ export const useCashflowStore = create<CashflowStore>()(
           expenseItems: Array.isArray(s.expenseItems) ? s.expenseItems : [],
           incomeItems: Array.isArray(s.incomeItems) ? s.incomeItems : [],
           recurringItems: Array.isArray(s.recurringItems) ? s.recurringItems : [],
-          reservations: Array.isArray(s.reservations) ? s.reservations : [],
+          reservations: Array.isArray(s.reservations)
+            ? (s.reservations as ReservationItem[]).map((r) => ({
+                ...r,
+                type: r.type ?? 'spaardoel',
+              }))
+            : [],
           reservationPayments: Array.isArray(s.reservationPayments) ? s.reservationPayments : [],
           recurringDefers: Array.isArray(s.recurringDefers)
             ? (s.recurringDefers as RecurringDefer[]).map((d) => ({

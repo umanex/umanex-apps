@@ -114,11 +114,12 @@ function DraggablePotRow({
 }) {
   const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
   const remainingProvision = pot.monthlyAmount + pot.deferredFromPrevious - paidFromReservation;
+  const totalInvoiced = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
 
   const autoAmount = pot.hasSettlement
     ? pot.effectiveAmount
     : pot.paymentsThisMonth.length > 0
-      ? remainingProvision
+      ? (remainingProvision > 0 ? remainingProvision : totalInvoiced)
       : pot.monthlyAmount;
 
   const [localAmount, setLocalAmount] = useState(String(roundTo2(autoAmount)));
@@ -127,11 +128,12 @@ function DraggablePotRow({
   useEffect(() => {
     const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
     const remaining = pot.monthlyAmount + pot.deferredFromPrevious - paid;
+    const totalInv = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
     setLocalAmount(String(roundTo2(
       pot.hasSettlement
         ? pot.effectiveAmount
         : pot.paymentsThisMonth.length > 0
-          ? remaining
+          ? (remaining > 0 ? remaining : totalInv)
           : pot.monthlyAmount,
     )));
   }, [pot.effectiveAmount, pot.monthlyAmount, pot.deferredFromPrevious, pot.hasSettlement, pot.paymentsThisMonth]);
@@ -156,8 +158,10 @@ function DraggablePotRow({
       return;
     }
     const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+    const remaining = pot.monthlyAmount + pot.deferredFromPrevious - paid;
+    const totalInv = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
     const defaultWithoutSettlement = pot.paymentsThisMonth.length > 0
-      ? pot.monthlyAmount + pot.deferredFromPrevious - paid
+      ? (remaining > 0 ? remaining : totalInv)
       : pot.monthlyAmount;
     onAmountChange(pot.reservationId, null);
     if (Math.abs(amt - defaultWithoutSettlement) < 0.01) {

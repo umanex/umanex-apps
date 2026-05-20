@@ -270,8 +270,8 @@ function DraggablePotRow({
         </div>
       ))}
 
-      {/* Finaliseer knop — enkel zichtbaar als er betalingen zijn en niet ingeklapt */}
-      {!paymentsCollapsed && pot.paymentsThisMonth.length > 0 && (
+      {/* Finaliseer knop — enkel voor maandelijks_budget, als er betalingen zijn en niet ingeklapt */}
+      {!paymentsCollapsed && pot.potType === 'maandelijks_budget' && pot.paymentsThisMonth.length > 0 && (
         <div className="pl-5">
           <button
             onClick={() => {

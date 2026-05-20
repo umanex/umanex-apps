@@ -151,7 +151,9 @@ export function calculateMonths(
       const settlement = reservationSettlements.find(
         (s) => s.reservationId === res.id && s.monthKey === monthKey,
       );
-      if (settlement?.finalized) return settlement.effectiveAmount;
+      if (settlement?.finalized) {
+        return res.type === 'maandelijks_budget' ? settlement.effectiveAmount : res.monthlyAmount;
+      }
       return settlement ? settlement.effectiveAmount : res.monthlyAmount;
     };
 
@@ -303,7 +305,7 @@ export function calculateMonths(
       const settlement = reservationSettlements.find(
         (ss) => ss.reservationId === r.id && ss.monthKey === monthKey,
       );
-      if (settlement?.finalized) return s;
+      if (settlement?.finalized && r.type === 'maandelijks_budget') return s;
       const paidFromReservation = monthReservationPayments
         .filter((p) => p.reservationId === r.id)
         .reduce((s2, p) => s2 + p.fromReservation, 0);
@@ -323,15 +325,11 @@ export function calculateMonths(
         deferredRemainingMap.set(res.id, 0);
         continue;
       }
-      const settlement = reservationSettlements.find(
-        (s) => s.reservationId === res.id && s.monthKey === monthKey,
-      );
-      if (settlement?.finalized) {
-        const remaining = getTotalProvision(res) - settlement.effectiveAmount;
-        deferredRemainingMap.set(res.id, remaining > 0 ? remaining : 0);
-      } else {
-        deferredRemainingMap.set(res.id, 0);
-      }
+      const paidFromReservation = monthReservationPayments
+        .filter((p) => p.reservationId === res.id)
+        .reduce((s, p) => s + p.fromReservation, 0);
+      const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
+      deferredRemainingMap.set(res.id, remaining > 0 ? remaining : 0);
     }
 
     runningBalance = (monthIndex === 0 ? 0 : runningBalance) + totalIncome - openstaandCarryForward;

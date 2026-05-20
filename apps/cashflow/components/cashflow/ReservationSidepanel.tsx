@@ -4,7 +4,7 @@ import { useCashflowStore } from '../../store/cashflow';
 import { useReservationActions } from '../../hooks/useCashflow';
 import { generateId, getCurrentMonthKey, formatCurrency } from '../../lib/cashflow/recurring';
 import { calcPotBalance } from '../../lib/cashflow/calculator';
-import type { ReservationItem, ReservationPayment, ReservationSettlement } from '../../lib/cashflow/types';
+import type { ReservationItem, ReservationPayment, ReservationSettlement, ReservationPotType } from '../../lib/cashflow/types';
 
 interface ReservationSidepanelProps {
   open: boolean;
@@ -73,6 +73,17 @@ function ReservationRow({
             onChange={(e) => onUpdate({ startMonth: e.target.value })}
             className="h-8 px-2 rounded border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <label className="text-xs text-muted-foreground">Type</label>
+          <select
+            value={reservation.type}
+            onChange={(e) => onUpdate({ type: e.target.value as ReservationPotType })}
+            className="h-8 px-2 rounded border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="spaardoel">Spaardoel</option>
+            <option value="maandelijks_budget">Maandelijks budget</option>
+          </select>
         </div>
         <div className="flex flex-col gap-0.5 ml-auto text-right">
           <span className="text-xs text-muted-foreground">Saldo nu</span>
@@ -194,6 +205,7 @@ export function ReservationSidepanel({ open, onClose }: ReservationSidepanelProp
       label: '',
       monthlyAmount: 0,
       startMonth: getCurrentMonthKey(),
+      type: 'spaardoel',
     });
   }
 

@@ -112,23 +112,28 @@ function DraggablePotRow({
   onFinalize: (reservationId: string, effectiveAmount: number) => void;
   onAmountChange: (reservationId: string, amount: number | null) => void;
 }) {
+  const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+  const remainingProvision = pot.monthlyAmount + pot.deferredFromPrevious - paidFromReservation;
+
   const autoAmount = pot.hasSettlement
     ? pot.effectiveAmount
     : pot.paymentsThisMonth.length > 0
-      ? pot.potBalance
+      ? remainingProvision
       : pot.monthlyAmount;
 
   const [localAmount, setLocalAmount] = useState(String(roundTo2(autoAmount)));
 
   useEffect(() => {
+    const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+    const remaining = pot.monthlyAmount + pot.deferredFromPrevious - paid;
     setLocalAmount(String(roundTo2(
       pot.hasSettlement
         ? pot.effectiveAmount
         : pot.paymentsThisMonth.length > 0
-          ? pot.potBalance
+          ? remaining
           : pot.monthlyAmount,
     )));
-  }, [pot.effectiveAmount, pot.potBalance, pot.hasSettlement, pot.paymentsThisMonth.length]);
+  }, [pot.effectiveAmount, pot.monthlyAmount, pot.deferredFromPrevious, pot.hasSettlement, pot.paymentsThisMonth]);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `reservation-pot-${pot.reservationId}-${monthKey}`,
@@ -149,7 +154,10 @@ function DraggablePotRow({
       onRemoveSettlement(pot.reservationId);
       return;
     }
-    const defaultWithoutSettlement = pot.paymentsThisMonth.length > 0 ? pot.potBalance : pot.monthlyAmount;
+    const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+    const defaultWithoutSettlement = pot.paymentsThisMonth.length > 0
+      ? pot.monthlyAmount + pot.deferredFromPrevious - paid
+      : pot.monthlyAmount;
     onAmountChange(pot.reservationId, null);
     if (Math.abs(amt - defaultWithoutSettlement) < 0.01) {
       onRemoveSettlement(pot.reservationId);
@@ -198,9 +206,8 @@ function DraggablePotRow({
 
       {/* Rij 2: provisie saldo + eventueel overgedragen bedrag */}
       {(() => {
-        const displayAmount = pot.paymentsThisMonth.length > 0
-          ? pot.potBalance
-          : pot.provisionThisMonth + pot.deferredFromPrevious;
+        const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+        const displayAmount = pot.provisionThisMonth + pot.deferredFromPrevious - paidFromReservation;
         return (
           <div className="pl-5 flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
@@ -305,11 +312,9 @@ export function ReservationSection({
 
   const subtotaal =
     activePots.reduce((s, p) => {
-      const autoAmount = p.hasSettlement
-        ? p.effectiveAmount
-        : p.paymentsThisMonth.length > 0
-          ? p.potBalance
-          : p.monthlyAmount;
+      const paid = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.fromReservation, 0);
+      const baseProvision = p.hasSettlement ? p.effectiveAmount : p.monthlyAmount;
+      const autoAmount = baseProvision + p.deferredFromPrevious - paid;
       const provision = overrideAmounts[p.reservationId] ?? autoAmount;
       return s + provision;
     }, 0) +

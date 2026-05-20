@@ -65,11 +65,9 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     reservationPots
       .filter((p) => !p.finalized)
       .reduce((s, p) => {
-        const autoAmount = p.hasSettlement
-          ? p.effectiveAmount
-          : p.paymentsThisMonth.length > 0
-            ? p.potBalance
-            : p.monthlyAmount;
+        const paid = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.fromReservation, 0);
+        const baseProvision = p.hasSettlement ? p.effectiveAmount : p.monthlyAmount;
+        const autoAmount = baseProvision + p.deferredFromPrevious - paid;
         return s + autoAmount;
       }, 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);

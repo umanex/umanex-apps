@@ -50,7 +50,9 @@ export function calcPotBalance(
     const settlement = settlements.find(
       (s) => s.reservationId === reservation.id && s.monthKey === mk,
     );
-    accumulated += settlement ? settlement.effectiveAmount : reservation.monthlyAmount;
+    accumulated += (settlement && !settlement.finalized)
+      ? settlement.effectiveAmount
+      : reservation.monthlyAmount;
   }
   const paid = payments
     .filter((p) => p.reservationId === reservation.id && p.monthKey <= upToMonth)
@@ -305,16 +307,8 @@ export function calculateMonths(
       const paidFromReservation = monthReservationPayments
         .filter((p) => p.reservationId === r.id)
         .reduce((s2, p) => s2 + p.fromReservation, 0);
-      // Maandelijks budget: potBalanceMap is genulld na release — bereken provision - paid direct
-      if (r.type === 'maandelijks_budget') {
-        return s + Math.max(0, getProvisionThisMonth(r) - paidFromReservation);
-      }
-      const hasPayments = paidFromReservation > 0;
-      // hasPayments eerst: potBalanceMap heeft paidFromReservation al verwerkt,
-      // ook als er een settlement is
-      if (hasPayments) return s + (potBalanceMap.get(r.id) ?? 0);
-      if (settlement) return s + settlement.effectiveAmount;
-      return s + r.monthlyAmount;
+      const deferred = r.type === 'maandelijks_budget' ? 0 : getDeferred(r.id);
+      return s + Math.max(0, getProvisionThisMonth(r) + deferred - paidFromReservation);
     }, 0);
 
     const openstaandCarryForward =

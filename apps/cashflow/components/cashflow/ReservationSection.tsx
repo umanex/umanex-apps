@@ -327,7 +327,9 @@ export function ReservationSection({
       const baseProvision = p.hasSettlement ? p.effectiveAmount : p.monthlyAmount;
       const autoAmount = baseProvision + p.deferredFromPrevious - paid;
       const provision = overrideAmounts[p.reservationId] ?? autoAmount;
-      return s + provision;
+      if (provision > 0) return s + provision;
+      const totalInvoiced = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.invoiceAmount, 0);
+      return s + totalInvoiced;
     }, 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 

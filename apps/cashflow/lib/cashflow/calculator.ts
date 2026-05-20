@@ -298,15 +298,22 @@ export function calculateMonths(
       .reduce((s, d) => s + d.amount, 0);
 
     const totalPotCarryForward = billableReservations.reduce((s, r) => {
-      // Maandelijks budget reset elke maand — geen carry-forward
-      if (r.type === 'maandelijks_budget') return s;
       const settlement = reservationSettlements.find(
         (ss) => ss.reservationId === r.id && ss.monthKey === monthKey,
       );
       if (settlement?.finalized) return s;
-      const hasPayments = monthReservationPayments.some((p) => p.reservationId === r.id);
-      if (settlement) return s + settlement.effectiveAmount;
+      const paidFromReservation = monthReservationPayments
+        .filter((p) => p.reservationId === r.id)
+        .reduce((s2, p) => s2 + p.fromReservation, 0);
+      // Maandelijks budget: potBalanceMap is genulld na release — bereken provision - paid direct
+      if (r.type === 'maandelijks_budget') {
+        return s + Math.max(0, getProvisionThisMonth(r) - paidFromReservation);
+      }
+      const hasPayments = paidFromReservation > 0;
+      // hasPayments eerst: potBalanceMap heeft paidFromReservation al verwerkt,
+      // ook als er een settlement is
       if (hasPayments) return s + (potBalanceMap.get(r.id) ?? 0);
+      if (settlement) return s + settlement.effectiveAmount;
       return s + r.monthlyAmount;
     }, 0);
 

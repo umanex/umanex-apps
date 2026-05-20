@@ -122,6 +122,7 @@ function DraggablePotRow({
       : pot.monthlyAmount;
 
   const [localAmount, setLocalAmount] = useState(String(roundTo2(autoAmount)));
+  const [paymentsCollapsed, setPaymentsCollapsed] = useState(false);
 
   useEffect(() => {
     const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
@@ -210,9 +211,19 @@ function DraggablePotRow({
         const displayAmount = pot.provisionThisMonth + pot.deferredFromPrevious - paidFromReservation;
         return (
           <div className="pl-5 flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {pot.paymentsThisMonth.length > 0 ? 'Resterend:' : 'Provisie:'}
-            </span>
+            {pot.paymentsThisMonth.length > 0 ? (
+              <button
+                onClick={() => setPaymentsCollapsed((v) => !v)}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                aria-label={paymentsCollapsed ? 'Betalingen tonen' : 'Betalingen verbergen'}
+              >
+                <span>{paymentsCollapsed ? '▸' : '▾'}</span>
+                <span>Resterend:</span>
+              </button>
+            ) : (
+              <span className="text-xs text-muted-foreground">Provisie:</span>
+            )}
             <span
               className={`text-xs font-medium tabular-nums ${
                 displayAmount < 0 ? 'text-destructive' : 'text-emerald-600'
@@ -226,7 +237,7 @@ function DraggablePotRow({
       })()}
 
       {/* Betalingen deze maand */}
-      {pot.paymentsThisMonth.map((payment) => (
+      {!paymentsCollapsed && pot.paymentsThisMonth.map((payment) => (
         <div key={payment.id} className="pl-5 space-y-0.5">
           <DraggablePayment
             payment={payment}
@@ -259,8 +270,8 @@ function DraggablePotRow({
         </div>
       ))}
 
-      {/* Finaliseer knop — enkel zichtbaar als er betalingen zijn */}
-      {pot.paymentsThisMonth.length > 0 && (
+      {/* Finaliseer knop — enkel zichtbaar als er betalingen zijn en niet ingeklapt */}
+      {!paymentsCollapsed && pot.paymentsThisMonth.length > 0 && (
         <div className="pl-5">
           <button
             onClick={() => {

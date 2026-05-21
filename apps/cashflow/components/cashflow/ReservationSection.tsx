@@ -123,7 +123,7 @@ function DraggablePotRow({
       : pot.monthlyAmount;
 
   const [localAmount, setLocalAmount] = useState(String(roundTo2(autoAmount)));
-  const [paymentsCollapsed, setPaymentsCollapsed] = useState(false);
+  const [paymentsCollapsed, setPaymentsCollapsed] = useState(true);
 
   useEffect(() => {
     const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);

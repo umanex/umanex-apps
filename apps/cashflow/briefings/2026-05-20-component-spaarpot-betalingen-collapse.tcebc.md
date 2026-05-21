@@ -17,7 +17,7 @@ CONTEXT:     DraggablePotRow in ReservationSection toont paymentsThisMonth altij
 ELEMENTS:    Chevron-toggle in de Provisie/Resterend-rij (Rij 2), betaling-rijen,
              Finaliseer-knop
 BEHAVIOUR:   Klik op toggle in Rij 2 → betalingen en Finaliseer-knop klappen uit/in;
-             standaard uitgebreid (bestaand gedrag bewaard);
+             standaard ingeklapt;
              toggle enkel zichtbaar wanneer pot betalingen heeft
 CONSTRAINTS: Staat per pot via useState in DraggablePotRow; geen nieuwe component;
              geen logica- of data-wijzigingen; puur visuele toggle
@@ -31,9 +31,10 @@ _(geen)_
 
 ## Aannames
 
-- [ASSUMPTION] Standaard uitgebreid — bestaand gedrag blijft intact bij eerste render
+- [ASSUMPTION] Standaard ingeklapt — minder visuele ruis bij potten met meerdere betalingen
 - [ASSUMPTION] Finaliseer-knop verdwijnt mee bij inklappen — is altijd bereikbaar via uitklappen
 
 ## Beslissingsgeschiedenis
 
 - 2026-05-20: initieel ontwerp
+- 2026-05-21: default gewijzigd van uitgebreid naar ingeklapt

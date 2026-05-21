@@ -310,7 +310,7 @@ export function calculateMonths(
         .filter((p) => p.reservationId === r.id)
         .reduce((s2, p) => s2 + p.fromReservation, 0);
       const deferred = r.type === 'maandelijks_budget' ? 0 : getDeferred(r.id);
-      return s + Math.max(0, getProvisionThisMonth(r) + deferred - paidFromReservation);
+      return s + Math.max(0, getProvisionThisMonth(r) - Math.max(0, paidFromReservation - deferred));
     }, 0);
 
     const openstaandCarryForward =

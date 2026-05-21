@@ -67,8 +67,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
       .reduce((s, p) => {
         const paid = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.fromReservation, 0);
         const baseProvision = p.hasSettlement ? p.effectiveAmount : p.monthlyAmount;
-        const autoAmount = baseProvision + p.deferredFromPrevious - paid;
-        return s + autoAmount;
+        return s + Math.max(0, baseProvision - Math.max(0, paid - p.deferredFromPrevious));
       }, 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 

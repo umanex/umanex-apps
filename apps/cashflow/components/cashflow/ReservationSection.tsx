@@ -115,6 +115,8 @@ function DraggablePotRow({
   const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
   const remainingProvision = pot.monthlyAmount + pot.deferredFromPrevious - paidFromReservation;
   const totalInvoiced = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
+  const baseProvision = pot.hasSettlement ? pot.effectiveAmount : pot.monthlyAmount;
+  const allInvoiced = pot.paymentsThisMonth.length > 0 && totalInvoiced >= baseProvision + pot.deferredFromPrevious;
 
   const autoAmount = pot.hasSettlement
     ? pot.effectiveAmount
@@ -236,6 +238,16 @@ function DraggablePotRow({
               {formatCurrency(displayAmount)}
               {displayAmount < 0 && ' ⚠'}
             </span>
+            {allInvoiced && (
+              <button
+                onClick={() => onFinalize(pot.reservationId, totalInvoiced)}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors ml-auto"
+                title="Verplaats naar betaalde kosten"
+              >
+                Toon als gefinaliseerd →
+              </button>
+            )}
           </div>
         );
       })()}
@@ -274,8 +286,8 @@ function DraggablePotRow({
         </div>
       ))}
 
-      {/* Finaliseer knop — enkel voor maandelijks_budget, als er betalingen zijn en niet ingeklapt */}
-      {!paymentsCollapsed && pot.potType === 'maandelijks_budget' && pot.paymentsThisMonth.length > 0 && (
+      {/* Finaliseer knop — enkel voor maandelijks_budget, als er betalingen zijn, niet ingeklapt, en niet al allInvoiced */}
+      {!paymentsCollapsed && !allInvoiced && pot.potType === 'maandelijks_budget' && pot.paymentsThisMonth.length > 0 && (
         <div className="pl-5">
           <button
             onClick={() => {

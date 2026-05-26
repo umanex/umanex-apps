@@ -13,7 +13,8 @@
     "pm2:stop": "pm2 stop cashflow",
     "pm2:restart": "pm2 restart cashflow",
     "pm2:logs": "pm2 logs cashflow",
-    "pm2:status": "pm2 status"
+    "pm2:status": "pm2 status",
+    "pm2:rebuild": "next build && pm2 restart cashflow"
   },
   "dependencies": {
     "next": "^14",

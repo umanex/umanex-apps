@@ -328,15 +328,17 @@ export function ReservationSection({
   const subtotaal =
     activePots.reduce((s, p) => {
       const paid = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.fromReservation, 0);
-      const remaining = p.monthlyAmount + p.deferredFromPrevious - paid;
       const totalInvoiced = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.invoiceAmount, 0);
+      const baseProvision = p.hasSettlement ? p.effectiveAmount : p.monthlyAmount;
+      const allInvoiced = p.paymentsThisMonth.length > 0 && totalInvoiced >= baseProvision + p.deferredFromPrevious;
+      if (allInvoiced) return s;
+      const remaining = baseProvision + p.deferredFromPrevious - paid;
       const autoAmount = p.hasSettlement
         ? p.effectiveAmount
         : p.paymentsThisMonth.length > 0
           ? (remaining > 0 ? remaining : totalInvoiced)
           : p.monthlyAmount;
-      const provision = overrideAmounts[p.reservationId] ?? autoAmount;
-      return s + provision;
+      return s + (overrideAmounts[p.reservationId] ?? autoAmount);
     }, 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 

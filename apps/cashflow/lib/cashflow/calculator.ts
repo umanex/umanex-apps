@@ -306,10 +306,12 @@ export function calculateMonths(
         (ss) => ss.reservationId === r.id && ss.monthKey === monthKey,
       );
       if (settlement?.finalized && r.type === 'maandelijks_budget') return s;
-      const paidFromReservation = monthReservationPayments
-        .filter((p) => p.reservationId === r.id)
-        .reduce((s2, p) => s2 + p.fromReservation, 0);
+      const paymentsForPot = monthReservationPayments.filter((p) => p.reservationId === r.id);
+      const paidFromReservation = paymentsForPot.reduce((s2, p) => s2 + p.fromReservation, 0);
+      const totalInvoiced = paymentsForPot.reduce((s2, p) => s2 + p.invoiceAmount, 0);
       const deferred = r.type === 'maandelijks_budget' ? 0 : getDeferred(r.id);
+      const allInvoiced = paymentsForPot.length > 0 && totalInvoiced >= getProvisionThisMonth(r) + deferred;
+      if (allInvoiced) return s;
       return s + Math.max(0, getProvisionThisMonth(r) - Math.max(0, paidFromReservation - deferred));
     }, 0);
 

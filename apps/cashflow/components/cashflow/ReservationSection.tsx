@@ -113,36 +113,28 @@ function DraggablePotRow({
   onAmountChange: (reservationId: string, amount: number | null) => void;
 }) {
   const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+  const remainingProvision = pot.monthlyAmount + pot.deferredFromPrevious - paidFromReservation;
   const totalInvoiced = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
-  const baseProvision = pot.hasSettlement ? pot.effectiveAmount : pot.monthlyAmount;
-  const allInvoiced = pot.paymentsThisMonth.length > 0 && totalInvoiced >= baseProvision + pot.deferredFromPrevious;
-  const remainingProvision = baseProvision + pot.deferredFromPrevious - paidFromReservation;
 
-  const autoAmount = allInvoiced
-    ? paidFromReservation
-    : pot.hasSettlement
-      ? pot.effectiveAmount
-      : pot.paymentsThisMonth.length > 0
-        ? (remainingProvision > 0 ? remainingProvision : totalInvoiced)
-        : pot.monthlyAmount;
+  const autoAmount = pot.hasSettlement
+    ? pot.effectiveAmount
+    : pot.paymentsThisMonth.length > 0
+      ? (remainingProvision > 0 ? remainingProvision : totalInvoiced)
+      : pot.monthlyAmount;
 
   const [localAmount, setLocalAmount] = useState(String(roundTo2(autoAmount)));
   const [paymentsCollapsed, setPaymentsCollapsed] = useState(true);
 
   useEffect(() => {
     const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+    const remaining = pot.monthlyAmount + pot.deferredFromPrevious - paid;
     const totalInv = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
-    const base = pot.hasSettlement ? pot.effectiveAmount : pot.monthlyAmount;
-    const allInv = pot.paymentsThisMonth.length > 0 && totalInv >= base + pot.deferredFromPrevious;
-    const remaining = base + pot.deferredFromPrevious - paid;
     setLocalAmount(String(roundTo2(
-      allInv
-        ? paid
-        : pot.hasSettlement
-          ? pot.effectiveAmount
-          : pot.paymentsThisMonth.length > 0
-            ? (remaining > 0 ? remaining : totalInv)
-            : pot.monthlyAmount,
+      pot.hasSettlement
+        ? pot.effectiveAmount
+        : pot.paymentsThisMonth.length > 0
+          ? (remaining > 0 ? remaining : totalInv)
+          : pot.monthlyAmount,
     )));
   }, [pot.effectiveAmount, pot.monthlyAmount, pot.deferredFromPrevious, pot.hasSettlement, pot.paymentsThisMonth]);
 
@@ -166,14 +158,11 @@ function DraggablePotRow({
       return;
     }
     const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+    const remaining = pot.monthlyAmount + pot.deferredFromPrevious - paid;
     const totalInv = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
-    const remainingWithout = pot.monthlyAmount + pot.deferredFromPrevious - paid;
-    const allInvWithout = pot.paymentsThisMonth.length > 0 && totalInv >= pot.monthlyAmount + pot.deferredFromPrevious;
-    const defaultWithoutSettlement = allInvWithout
-      ? paid
-      : pot.paymentsThisMonth.length > 0
-        ? (remainingWithout > 0 ? remainingWithout : totalInv)
-        : pot.monthlyAmount;
+    const defaultWithoutSettlement = pot.paymentsThisMonth.length > 0
+      ? (remaining > 0 ? remaining : totalInv)
+      : pot.monthlyAmount;
     onAmountChange(pot.reservationId, null);
     if (Math.abs(amt - defaultWithoutSettlement) < 0.01) {
       onRemoveSettlement(pot.reservationId);

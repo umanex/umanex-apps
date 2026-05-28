@@ -1,0 +1,19 @@
+# Next.js
+.next/
+out/
+
+# Database
+.data/
+*.db
+*.db-shm
+*.db-wal
+
+# Drizzle generated migrations (gebruik db:push in dev)
+drizzle/
+
+# Env
+.env.local
+.env*.local
+
+# OS
+.DS_Store

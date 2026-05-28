@@ -14,7 +14,11 @@
     "./components/ui/checkbox": "./components/ui/checkbox.tsx",
     "./components/ui/card": "./components/ui/card.tsx",
     "./components/ui/separator": "./components/ui/separator.tsx",
-    "./components/ui/label": "./components/ui/label.tsx"
+    "./components/ui/label": "./components/ui/label.tsx",
+    "./components/ui/badge": "./components/ui/badge.tsx",
+    "./components/ui/tabs": "./components/ui/tabs.tsx",
+    "./components/ui/slider": "./components/ui/slider.tsx",
+    "./components/ui/tooltip": "./components/ui/tooltip.tsx"
   },
   "peerDependencies": {
     "react": "^18",
@@ -24,6 +28,9 @@
     "@radix-ui/react-checkbox": "^1.1.0",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.0",
+    "@radix-ui/react-slider": "^1.2.0",
+    "@radix-ui/react-tooltip": "^1.1.0",
     "class-variance-authority": "^0.7.0",
     "lucide-react": "^0.400.0"
   },

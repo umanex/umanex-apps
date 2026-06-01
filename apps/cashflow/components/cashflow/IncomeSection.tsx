@@ -9,11 +9,13 @@ interface IncomeSectionProps {
   monthKey: MonthKey;
   items: IncomeItem[];
   startBalance: number;
+  computedStartBalance?: number;
   isFirstMonth?: boolean;
   onAdd: (item: IncomeItem) => void;
   onUpdate: (id: string, patch: Partial<IncomeItem>) => void;
   onToggleReceived: (id: string, received: boolean) => void;
   onRemove: (id: string) => void;
+  onSetStartBalance?: (balance: number) => void;
 }
 
 function DraggableIncomeItem({
@@ -136,20 +138,24 @@ export function IncomeSection({
   monthKey,
   items,
   startBalance,
+  computedStartBalance,
   isFirstMonth,
   onAdd,
   onUpdate,
   onToggleReceived,
   onRemove,
+  onSetStartBalance,
 }: IncomeSectionProps) {
   const [adding, setAdding] = useState(false);
+  const [editingBalance, setEditingBalance] = useState(false);
+  const [balanceInput, setBalanceInput] = useState('');
   const [showReceived, setShowReceived] = useState(false);
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
 
   const unreceived = items.filter((i) => !i.received);
   const received = items.filter((i) => i.received);
-  const subtotaal = unreceived.reduce((s, i) => s + i.amount, 0);
+  const subtotaal = startBalance + items.reduce((s, i) => s + i.amount, 0);
   const visibleItems = showReceived ? items : unreceived;
 
   function handleAdd() {
@@ -205,6 +211,42 @@ export function IncomeSection({
           )}
         </div>
       </div>
+
+      {isFirstMonth && onSetStartBalance && (
+        <div className="flex items-center gap-2 py-0.5">
+          <span className="w-[18px] flex-shrink-0" />
+          <span className="w-3.5 flex-shrink-0" />
+          <span className="flex-1 text-sm truncate text-muted-foreground italic">Beginsaldo</span>
+          {editingBalance ? (
+            <input
+              autoFocus
+              type="text"
+              inputMode="decimal"
+              value={balanceInput}
+              onChange={(e) => setBalanceInput(limitDecimals(e.target.value))}
+              onBlur={() => {
+                const parsed = parseFloat(balanceInput.replace(',', '.'));
+                if (!isNaN(parsed)) onSetStartBalance(parsed);
+                setEditingBalance(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                if (e.key === 'Escape') { setEditingBalance(false); }
+              }}
+              className="w-28 h-6 px-1.5 text-xs text-right tabular-nums rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          ) : (
+            <span
+              className={`text-sm font-medium tabular-nums cursor-pointer hover:underline ${startBalance >= 0 ? 'text-emerald-600' : 'text-destructive'}`}
+              onClick={() => { setBalanceInput(String(roundTo2(startBalance))); setEditingBalance(true); }}
+              title="Klik om aan te passen"
+            >
+              {formatCurrency(startBalance)}
+            </span>
+          )}
+          <span className="w-3 flex-shrink-0" />
+        </div>
+      )}
 
       {!isFirstMonth && (
         <div className="flex items-center gap-2 py-0.5">

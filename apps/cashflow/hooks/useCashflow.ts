@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { useCashflowStore } from '../store/cashflow';
-import { calculateMonths } from '../lib/cashflow/calculator';
+import { calculateMonths, computeHistoricalBalance } from '../lib/cashflow/calculator';
 import type { MonthData } from '../lib/cashflow/types';
 
 // Verwijder verouderde defers en settlements die volledig in het verleden liggen.
@@ -68,9 +68,10 @@ export function useHydrated(): boolean {
   return hydrated;
 }
 
-export function useMonths(count = 3): MonthData[] {
+export function useComputedStartBalance(): number {
+  const referenceBalance = useCashflowStore((s) => s.referenceBalance);
+  const referenceMonth = useCashflowStore((s) => s.referenceMonth);
   const anchorMonth = useCashflowStore((s) => s.anchorMonth);
-  const startBalance = useCashflowStore((s) => s.startBalance);
   const expenseItems = useCashflowStore((s) => s.expenseItems);
   const incomeItems = useCashflowStore((s) => s.incomeItems);
   const recurringItems = useCashflowStore((s) => s.recurringItems);
@@ -80,6 +81,37 @@ export function useMonths(count = 3): MonthData[] {
   const recurringSettlements = useCashflowStore((s) => s.recurringSettlements);
   const reservationDefers = useCashflowStore((s) => s.reservationDefers);
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
+  const balanceOverrides = useCashflowStore((s) => s.balanceOverrides);
+
+  return computeHistoricalBalance(
+    referenceBalance,
+    referenceMonth,
+    anchorMonth,
+    expenseItems,
+    incomeItems,
+    recurringItems,
+    reservations,
+    reservationPayments,
+    recurringDefers,
+    recurringSettlements,
+    reservationDefers,
+    reservationSettlements,
+    balanceOverrides,
+  );
+}
+
+export function useMonths(count = 3): MonthData[] {
+  const anchorMonth = useCashflowStore((s) => s.anchorMonth);
+  const expenseItems = useCashflowStore((s) => s.expenseItems);
+  const incomeItems = useCashflowStore((s) => s.incomeItems);
+  const recurringItems = useCashflowStore((s) => s.recurringItems);
+  const reservations = useCashflowStore((s) => s.reservations);
+  const reservationPayments = useCashflowStore((s) => s.reservationPayments);
+  const recurringDefers = useCashflowStore((s) => s.recurringDefers);
+  const recurringSettlements = useCashflowStore((s) => s.recurringSettlements);
+  const reservationDefers = useCashflowStore((s) => s.reservationDefers);
+  const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
+  const startBalance = useComputedStartBalance();
 
   return calculateMonths(
     anchorMonth,
@@ -94,11 +126,15 @@ export function useMonths(count = 3): MonthData[] {
     reservationDefers,
     reservationSettlements,
     count,
+    true,
   );
 }
 
 export function useCashflowActions() {
   return {
+    setReferenceBalance: useCashflowStore((s) => s.setReferenceBalance),
+    upsertBalanceOverride: useCashflowStore((s) => s.upsertBalanceOverride),
+    removeBalanceOverride: useCashflowStore((s) => s.removeBalanceOverride),
     setAnchorMonth: useCashflowStore((s) => s.setAnchorMonth),
     addIncomeItem: useCashflowStore((s) => s.addIncomeItem),
     updateIncomeItem: useCashflowStore((s) => s.updateIncomeItem),

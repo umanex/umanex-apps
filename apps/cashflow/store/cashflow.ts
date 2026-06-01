@@ -13,18 +13,21 @@ import type {
   ReservationPayment,
   ReservationSettlement,
   ReservationDefer,
+  BalanceOverride,
   MonthKey,
 } from '../lib/cashflow/types';
 
 // Verhoog bij elke schema-uitbreiding + voeg het nieuwe veld toe in migrate.
-const STORE_VERSION = 9;
+const STORE_VERSION = 11;
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
 export const useCashflowStore = create<CashflowStore>()(
   persist(
     immer((set) => ({
-      startBalance: 0,
+      referenceBalance: 0,
+      referenceMonth: currentMonth(),
+      balanceOverrides: [] as BalanceOverride[],
       // anchorMonth wordt nooit gepersisteerd — altijd de huidige maand
       anchorMonth: currentMonth(),
       expenseItems: [] as ExpenseItem[],
@@ -37,8 +40,26 @@ export const useCashflowStore = create<CashflowStore>()(
       reservationSettlements: [] as ReservationSettlement[],
       reservationDefers: [] as ReservationDefer[],
 
-      setStartBalance: (balance) =>
-        set((state) => { state.startBalance = balance; }),
+      setReferenceBalance: (balance, month) =>
+        set((state) => {
+          state.referenceBalance = balance;
+          state.referenceMonth = month;
+        }),
+
+      upsertBalanceOverride: (monthKey, balance) =>
+        set((state) => {
+          const existing = state.balanceOverrides.find((o) => o.monthKey === monthKey);
+          if (existing) {
+            existing.balance = balance;
+          } else {
+            state.balanceOverrides.push({ id: crypto.randomUUID(), monthKey, balance });
+          }
+        }),
+
+      removeBalanceOverride: (monthKey) =>
+        set((state) => {
+          state.balanceOverrides = state.balanceOverrides.filter((o) => o.monthKey !== monthKey);
+        }),
 
       setAnchorMonth: (month) =>
         set((state) => { state.anchorMonth = month; }),
@@ -227,15 +248,25 @@ export const useCashflowStore = create<CashflowStore>()(
         const { anchorMonth: _anchorMonth, ...rest } = state as unknown as Record<string, unknown>;
         return rest;
       },
+
       migrate: (persisted: unknown) => {
         const s = (persisted ?? {}) as Record<string, unknown>;
+        // Migratie van startBalance (model 1) naar referenceBalance + referenceMonth (model 2)
+        const migratedReferenceBalance =
+          typeof s.referenceBalance === 'number'
+            ? s.referenceBalance
+            : typeof s.startBalance === 'number'
+              ? s.startBalance
+              : 0;
         return {
           ...s,
-          // anchorMonth wordt niet gepersisteerd — altijd fresh berekend
           anchorMonth: currentMonth(),
-          // startBalance bewaren (fix: was per ongeluk altijd 0)
-          startBalance: typeof s.startBalance === 'number' ? s.startBalance : 0,
-          // Alle array-velden met fallback naar []
+          referenceBalance: migratedReferenceBalance,
+          referenceMonth:
+            typeof s.referenceMonth === 'string' ? s.referenceMonth : currentMonth(),
+          balanceOverrides: Array.isArray(s.balanceOverrides)
+            ? (s.balanceOverrides as BalanceOverride[]).filter(Boolean)
+            : [],
           expenseItems: Array.isArray(s.expenseItems) ? s.expenseItems : [],
           incomeItems: Array.isArray(s.incomeItems) ? s.incomeItems : [],
           recurringItems: Array.isArray(s.recurringItems) ? s.recurringItems : [],
@@ -258,7 +289,6 @@ export const useCashflowStore = create<CashflowStore>()(
             ? (s.reservationSettlements as ReservationSettlement[])
                 .filter(Boolean)
                 .map((rs) => ({ ...rs, finalized: rs.finalized ?? false }))
-                .filter((rs) => rs.finalized || rs.effectiveAmount > 0)
             : [],
           reservationDefers: Array.isArray(s.reservationDefers) ? s.reservationDefers : [],
         };

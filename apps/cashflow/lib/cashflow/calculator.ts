@@ -11,6 +11,7 @@ import type {
   ReservationPotBalance,
   ReservationSettlement,
   ReservationDefer,
+  BalanceOverride,
 } from './types';
 import { addMonths, format, parseISO, differenceInMonths } from 'date-fns';
 
@@ -73,12 +74,24 @@ export function calculateMonths(
   reservationDefers: ReservationDefer[],
   reservationSettlements: ReservationSettlement[],
   count = 3,
+  adjustFirstMonth = false,
 ): MonthData[] {
   const months = getMonthsInRange(anchorMonth, count);
   const result: MonthData[] = [];
   let runningBalance = startBalance;
   const potBalanceMap = new Map<string, number>();
   const deferredRemainingMap = new Map<string, number>();
+
+  // Initialiseer spaardoel-potten met historisch saldo vóór het berekeningsvenster.
+  // deferredRemainingMap = cumulatieve uitstaande provisies = potbalans voor spaardoelen.
+  const prevMonth = format(addMonths(parseISO(`${anchorMonth}-01`), -1), 'yyyy-MM');
+  for (const res of reservations) {
+    if (res.type === 'spaardoel' && res.startMonth <= prevMonth) {
+      const historical = calcPotBalance(res, reservationPayments, reservationSettlements, prevMonth);
+      potBalanceMap.set(res.id, historical);
+      deferredRemainingMap.set(res.id, historical);
+    }
+  }
 
   let monthIndex = 0;
   for (const monthKey of months) {
@@ -273,10 +286,26 @@ export function calculateMonths(
 
     const endBalance = availableBudget - totalOutstandingCosts;
 
+    // Met adjustFirstMonth: effectiveEndBalance = display-formule zodat het als startsaldo volgende maand dient.
+    // Maand 0: deferred + provisie per pot; maand 1+: alleen provisie (deferred gereset na maand 0).
+    const unpaidDeferredAmount = deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
+    const effectiveEndBalance = adjustFirstMonth
+      ? (() => {
+          const isFinalized = (r: ReservationItem) =>
+            reservationSettlements.some(
+              (ss) => ss.reservationId === r.id && ss.monthKey === monthKey && ss.finalized,
+            );
+          const spaarpotDeduction = (monthIndex === 0)
+            ? billableReservations.reduce((s, r) => isFinalized(r) ? s : s + getDeferred(r.id) + getProvisionThisMonth(r), 0) + deferredReservationAmount
+            : billableReservations.reduce((s, r) => isFinalized(r) ? s : s + getProvisionThisMonth(r), 0) + deferredReservationAmount;
+          return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferredAmount - unpaidExpenses - spaarpotDeduction;
+        })()
+      : endBalance;
+
     result.push({
       monthKey,
       startBalance: runningBalance,
-      endBalance,
+      endBalance: effectiveEndBalance,
       totalIncome,
       totalRecurring,
       totalReservationDeductions,
@@ -296,10 +325,6 @@ export function calculateMonths(
       deferredReservationItems,
       recurringSettlements: monthSettlements,
     });
-
-    const unpaidDeferredAmount = deferredItems
-      .filter((d) => !d.paid)
-      .reduce((s, d) => s + d.amount, 0);
 
     const totalPotCarryForward = billableReservations.reduce((s, r) => {
       const settlement = reservationSettlements.find(
@@ -322,21 +347,86 @@ export function calculateMonths(
       totalPotCarryForward +
       deferredReservationAmount;
 
-    for (const res of billableReservations) {
-      if (res.type === 'maandelijks_budget') {
+    if (adjustFirstMonth && monthIndex === 0) {
+      // Reset: deferred is geabsorbeerd in endBalance; volgende maanden starten alleen met maandelijkse provisie
+      for (const res of billableReservations) {
         deferredRemainingMap.set(res.id, 0);
-        continue;
+        if (res.type === 'spaardoel') potBalanceMap.set(res.id, 0);
       }
-      const paidFromReservation = monthReservationPayments
-        .filter((p) => p.reservationId === res.id)
-        .reduce((s, p) => s + p.fromReservation, 0);
-      const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
-      deferredRemainingMap.set(res.id, remaining > 0 ? remaining : 0);
+    } else {
+      for (const res of billableReservations) {
+        if (res.type === 'maandelijks_budget') {
+          deferredRemainingMap.set(res.id, 0);
+          continue;
+        }
+        const paidFromReservation = monthReservationPayments
+          .filter((p) => p.reservationId === res.id)
+          .reduce((s, p) => s + p.fromReservation, 0);
+        const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
+        deferredRemainingMap.set(res.id, remaining > 0 ? remaining : 0);
+      }
     }
 
-    runningBalance = (monthIndex === 0 ? 0 : runningBalance) + totalIncome - openstaandCarryForward;
+    runningBalance = effectiveEndBalance;
     monthIndex++;
   }
 
   return result;
+}
+
+export function computeHistoricalBalance(
+  referenceBalance: number,
+  referenceMonth: MonthKey,
+  anchorMonth: MonthKey,
+  expenseItems: ExpenseItem[],
+  incomeItems: IncomeItem[],
+  recurringItems: RecurringItem[],
+  reservations: ReservationItem[],
+  reservationPayments: ReservationPayment[],
+  recurringDefers: RecurringDefer[],
+  recurringSettlements: RecurringSettlement[],
+  reservationDefers: ReservationDefer[],
+  reservationSettlements: ReservationSettlement[],
+  balanceOverrides: BalanceOverride[],
+): number {
+  // Directe override voor anchorMonth heeft prioriteit
+  const anchorOverride = balanceOverrides.find((o) => o.monthKey === anchorMonth);
+  if (anchorOverride) return anchorOverride.balance;
+
+  if (anchorMonth <= referenceMonth) return referenceBalance;
+
+  // Meest recente override vóór anchorMonth fungeert als effectief referentiepunt
+  const priorOverrides = balanceOverrides
+    .filter((o) => o.monthKey >= referenceMonth && o.monthKey < anchorMonth)
+    .sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+
+  const pivot = priorOverrides[0];
+  const effectiveBalance = pivot ? pivot.balance : referenceBalance;
+  const effectiveMonth = pivot ? pivot.monthKey : referenceMonth;
+
+  const monthCount = differenceInMonths(
+    parseISO(`${anchorMonth}-01`),
+    parseISO(`${effectiveMonth}-01`),
+  );
+  if (monthCount <= 0) return effectiveBalance;
+
+  // Gebruik calculateMonths voor consistente carry-forward formule.
+  // We vragen monthCount+1 maanden; de laatste maand IS anchorMonth
+  // en diens startBalance is de forward-berekende balans die we nodig hebben.
+  const months = calculateMonths(
+    effectiveMonth,
+    effectiveBalance,
+    expenseItems,
+    incomeItems,
+    recurringItems,
+    reservations,
+    reservationPayments,
+    recurringDefers,
+    recurringSettlements,
+    reservationDefers,
+    reservationSettlements,
+    monthCount + 1,
+  );
+
+  return months[monthCount]?.startBalance ?? effectiveBalance;
 }

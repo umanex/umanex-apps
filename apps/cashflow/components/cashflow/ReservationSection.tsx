@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import type { ReservationPotBalance, ReservationPayment, MonthKey } from '../../lib/cashflow/types';
+import type { ReservationPotBalance, ReservationPayment, MonthKey, ReservationPotType } from '../../lib/cashflow/types';
 import { formatCurrency, getMonthLabel, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
 
 interface DeferredReservationDisplayItem {
@@ -15,9 +15,10 @@ interface DeferredReservationDisplayItem {
 
 interface ReservationSectionProps {
   monthKey: MonthKey;
+  isCurrentMonth?: boolean;
   pots: ReservationPotBalance[];
   deferredReservationItems: DeferredReservationDisplayItem[];
-  onRegisterPayment: () => void;
+  onRegisterPayment: (filterType: ReservationPotType) => void;
   onRemovePayment: (id: string) => void;
   onMovePayment: (id: string, newMonthKey: MonthKey) => void;
   onRemoveReservationDefer: (deferId: string) => void;
@@ -96,6 +97,7 @@ function DraggablePayment({
 function DraggablePotRow({
   pot,
   monthKey,
+  isCurrentMonth,
   onRemovePayment,
   onMovePayment,
   onSettle,
@@ -105,6 +107,7 @@ function DraggablePotRow({
 }: {
   pot: ReservationPotBalance;
   monthKey: MonthKey;
+  isCurrentMonth: boolean;
   onRemovePayment: (id: string) => void;
   onMovePayment: (id: string, newMonthKey: MonthKey) => void;
   onSettle: (reservationId: string, effectiveAmount: number) => void;
@@ -113,32 +116,18 @@ function DraggablePotRow({
   onAmountChange: (reservationId: string, amount: number | null) => void;
 }) {
   const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
-  const remainingProvision = pot.monthlyAmount + pot.deferredFromPrevious - paidFromReservation;
   const totalInvoiced = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
   const baseProvision = pot.hasSettlement ? pot.effectiveAmount : pot.monthlyAmount;
-  const allInvoiced = pot.paymentsThisMonth.length > 0 && totalInvoiced >= baseProvision + pot.deferredFromPrevious;
+  const allInvoiced = pot.paymentsThisMonth.length > 0 && paidFromReservation >= baseProvision + pot.deferredFromPrevious;
 
-  const autoAmount = pot.hasSettlement
-    ? pot.effectiveAmount
-    : pot.paymentsThisMonth.length > 0
-      ? (remainingProvision > 0 ? remainingProvision : totalInvoiced)
-      : pot.monthlyAmount;
+  const autoAmount = pot.provisionThisMonth;
 
   const [localAmount, setLocalAmount] = useState(String(roundTo2(autoAmount)));
   const [paymentsCollapsed, setPaymentsCollapsed] = useState(true);
 
   useEffect(() => {
-    const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
-    const remaining = pot.monthlyAmount + pot.deferredFromPrevious - paid;
-    const totalInv = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
-    setLocalAmount(String(roundTo2(
-      pot.hasSettlement
-        ? pot.effectiveAmount
-        : pot.paymentsThisMonth.length > 0
-          ? (remaining > 0 ? remaining : totalInv)
-          : pot.monthlyAmount,
-    )));
-  }, [pot.effectiveAmount, pot.monthlyAmount, pot.deferredFromPrevious, pot.hasSettlement, pot.paymentsThisMonth]);
+    setLocalAmount(String(roundTo2(pot.provisionThisMonth)));
+  }, [pot.provisionThisMonth]);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `reservation-pot-${pot.reservationId}-${monthKey}`,
@@ -153,22 +142,18 @@ function DraggablePotRow({
 
   function handleAmountBlur() {
     const amt = parseFloat(localAmount.replace(',', '.'));
+    const defaultValue = pot.provisionThisMonth;
     if (isNaN(amt) || amt < 0) {
-      setLocalAmount(String(autoAmount));
+      setLocalAmount(String(roundTo2(defaultValue)));
       onAmountChange(pot.reservationId, null);
       onRemoveSettlement(pot.reservationId);
       return;
     }
-    const paid = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
-    const remaining = pot.monthlyAmount + pot.deferredFromPrevious - paid;
-    const totalInv = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
-    const defaultWithoutSettlement = pot.paymentsThisMonth.length > 0
-      ? (remaining > 0 ? remaining : totalInv)
-      : pot.monthlyAmount;
     onAmountChange(pot.reservationId, null);
-    if (Math.abs(amt - defaultWithoutSettlement) < 0.01) {
-      onRemoveSettlement(pot.reservationId);
+    if (Math.abs(amt - defaultValue) < 0.01) {
+      if (!pot.hasSettlement) onRemoveSettlement(pot.reservationId);
     } else {
+      setLocalAmount(String(roundTo2(amt)));
       onSettle(pot.reservationId, amt);
     }
   }
@@ -307,8 +292,135 @@ function DraggablePotRow({
   );
 }
 
+function calcSubtotaal(
+  activePots: ReservationPotBalance[],
+  overrideAmounts: Record<string, number>,
+  isCurrentMonth: boolean,
+): number {
+  return activePots.reduce((s, p) => {
+    let defaultValue: number;
+    if (isCurrentMonth) {
+      defaultValue = p.deferredFromPrevious + p.provisionThisMonth;
+    } else {
+      defaultValue = p.provisionThisMonth;
+    }
+    return s + (overrideAmounts[p.reservationId] ?? defaultValue);
+  }, 0);
+}
+
+function PotSubgroup({
+  label,
+  potType,
+  activePots,
+  finalizedPots,
+  monthKey,
+  isCurrentMonth,
+  overrideAmounts,
+  onRegisterPayment,
+  onRemovePayment,
+  onMovePayment,
+  onSettleReservation,
+  onRemoveReservationSettlement,
+  onFinalize,
+  onUnfinalize,
+  onAmountChange,
+}: {
+  label: string;
+  potType: ReservationPotType;
+  activePots: ReservationPotBalance[];
+  finalizedPots: ReservationPotBalance[];
+  monthKey: MonthKey;
+  isCurrentMonth: boolean;
+  overrideAmounts: Record<string, number>;
+  onRegisterPayment: (filterType: ReservationPotType) => void;
+  onRemovePayment: (id: string) => void;
+  onMovePayment: (id: string, newMonthKey: MonthKey) => void;
+  onSettleReservation: (reservationId: string, effectiveAmount: number) => void;
+  onRemoveReservationSettlement: (reservationId: string) => void;
+  onFinalize: (reservationId: string, effectiveAmount: number) => void;
+  onUnfinalize: (reservationId: string) => void;
+  onAmountChange: (reservationId: string, amount: number | null) => void;
+}) {
+  const [showFinalized, setShowFinalized] = useState(false);
+  const subtotaal = calcSubtotaal(activePots, overrideAmounts, isCurrentMonth);
+
+  if (activePots.length === 0 && finalizedPots.length === 0) return null;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-shrink-0">
+          {label}
+        </span>
+        <div className="flex items-center gap-2">
+          {subtotaal > 0 && (
+            <span className="text-xs font-medium tabular-nums text-destructive">
+              {formatCurrency(subtotaal)}
+            </span>
+          )}
+          <button
+            onClick={() => onRegisterPayment(potType)}
+            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+          >
+            + Betaling
+          </button>
+          {finalizedPots.length > 0 && (
+            <button
+              onClick={() => setShowFinalized((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+            >
+              {showFinalized
+                ? `Verberg betaald (${finalizedPots.length})`
+                : `Toon betaald (${finalizedPots.length})`}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {activePots.map((pot) => (
+        <DraggablePotRow
+          key={pot.reservationId}
+          pot={pot}
+          monthKey={monthKey}
+          isCurrentMonth={isCurrentMonth}
+          onRemovePayment={onRemovePayment}
+          onMovePayment={onMovePayment}
+          onSettle={onSettleReservation}
+          onRemoveSettlement={onRemoveReservationSettlement}
+          onFinalize={onFinalize}
+          onAmountChange={onAmountChange}
+        />
+      ))}
+
+      {showFinalized &&
+        finalizedPots.map((pot) => (
+          <div
+            key={pot.reservationId}
+            className="flex items-center justify-between gap-2 opacity-50"
+          >
+            <span className="text-sm truncate">{pot.label}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {formatCurrency(pot.effectiveAmount)} / {formatCurrency(pot.monthlyAmount)}
+              </span>
+              <button
+                onClick={() => onUnfinalize(pot.reservationId)}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                title="Finalisatie opheffen"
+                aria-label="Finalisatie opheffen"
+              >
+                ↩
+              </button>
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+}
+
 export function ReservationSection({
   monthKey,
+  isCurrentMonth = false,
   pots,
   deferredReservationItems,
   onRegisterPayment,
@@ -320,7 +432,6 @@ export function ReservationSection({
   onFinalize,
   onUnfinalize,
 }: ReservationSectionProps) {
-  const [showFinalized, setShowFinalized] = useState(false);
   const [overrideAmounts, setOverrideAmounts] = useState<Record<string, number>>({});
 
   function handleAmountChange(reservationId: string, amount: number | null) {
@@ -334,70 +445,48 @@ export function ReservationSection({
     });
   }
 
-  const activePots = pots.filter((p) => !p.finalized);
-  const finalizedPots = pots.filter((p) => p.finalized);
+  const budgetActive = pots.filter((p) => !p.finalized && p.potType === 'maandelijks_budget');
+  const budgetFinalized = pots.filter((p) => p.finalized && p.potType === 'maandelijks_budget');
+  const spaardoelActive = pots.filter((p) => !p.finalized && p.potType === 'spaardoel');
+  const spaardoelFinalized = pots.filter((p) => p.finalized && p.potType === 'spaardoel');
 
-  const subtotaal =
-    activePots.reduce((s, p) => {
-      const paid = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.fromReservation, 0);
-      const totalInvoiced = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.invoiceAmount, 0);
-      const baseProvision = p.hasSettlement ? p.effectiveAmount : p.monthlyAmount;
-      const allInvoiced = p.paymentsThisMonth.length > 0 && totalInvoiced >= baseProvision + p.deferredFromPrevious;
-      if (allInvoiced) return s;
-      const remaining = baseProvision + p.deferredFromPrevious - paid;
-      const autoAmount = p.hasSettlement
-        ? p.effectiveAmount
-        : p.paymentsThisMonth.length > 0
-          ? (remaining > 0 ? remaining : totalInvoiced)
-          : p.monthlyAmount;
-      return s + (overrideAmounts[p.reservationId] ?? autoAmount);
-    }, 0) +
-    deferredReservationItems.reduce((s, d) => s + d.amount, 0);
+  const hasContent =
+    budgetActive.length > 0 || budgetFinalized.length > 0 ||
+    spaardoelActive.length > 0 || spaardoelFinalized.length > 0 ||
+    deferredReservationItems.length > 0;
 
-  if (activePots.length === 0 && finalizedPots.length === 0 && deferredReservationItems.length === 0) return null;
+  if (!hasContent) return null;
+
+  const sharedProps = {
+    monthKey,
+    isCurrentMonth,
+    overrideAmounts,
+    onRegisterPayment,
+    onRemovePayment,
+    onMovePayment,
+    onSettleReservation,
+    onRemoveReservationSettlement,
+    onFinalize,
+    onUnfinalize,
+    onAmountChange: handleAmountChange,
+  };
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-shrink-0">
-          Spaarpotten
-        </span>
-        <div className="flex items-center gap-2">
-          {subtotaal > 0 && (
-            <span className="text-xs font-medium tabular-nums text-destructive">
-              {formatCurrency(subtotaal)}
-            </span>
-          )}
-          <button
-            onClick={onRegisterPayment}
-            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
-          >
-            + Betaling
-          </button>
-          {finalizedPots.length > 0 && (
-            <button
-              onClick={() => setShowFinalized((v) => !v)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-            >
-              {showFinalized ? `Verberg betaald (${finalizedPots.length})` : `Toon betaald (${finalizedPots.length})`}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {activePots.map((pot) => (
-        <DraggablePotRow
-          key={pot.reservationId}
-          pot={pot}
-          monthKey={monthKey}
-          onRemovePayment={onRemovePayment}
-          onMovePayment={onMovePayment}
-          onSettle={onSettleReservation}
-          onRemoveSettlement={onRemoveReservationSettlement}
-          onFinalize={onFinalize}
-          onAmountChange={handleAmountChange}
-        />
-      ))}
+      <PotSubgroup
+        label="Spaarpot – Maandelijks budget"
+        potType="maandelijks_budget"
+        activePots={budgetActive}
+        finalizedPots={budgetFinalized}
+        {...sharedProps}
+      />
+      <PotSubgroup
+        label="Spaarpot – Spaardoel"
+        potType="spaardoel"
+        activePots={spaardoelActive}
+        finalizedPots={spaardoelFinalized}
+        {...sharedProps}
+      />
 
       {deferredReservationItems.map((d) => (
         <div key={d.deferId} className="flex items-center gap-2 py-0.5">
@@ -421,30 +510,6 @@ export function ReservationSection({
           </button>
         </div>
       ))}
-
-      {/* Gefinaliseerde potten */}
-      {showFinalized &&
-        finalizedPots.map((pot) => (
-          <div
-            key={pot.reservationId}
-            className="flex items-center justify-between gap-2 opacity-50"
-          >
-            <span className="text-sm truncate">{pot.label}</span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {formatCurrency(pot.effectiveAmount)} / {formatCurrency(pot.monthlyAmount)}
-              </span>
-              <button
-                onClick={() => onUnfinalize(pot.reservationId)}
-                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                title="Finalisatie opheffen"
-                aria-label="Finalisatie opheffen"
-              >
-                ↩
-              </button>
-            </div>
-          </div>
-        ))}
     </div>
   );
 }

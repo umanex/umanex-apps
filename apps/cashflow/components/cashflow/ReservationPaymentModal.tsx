@@ -5,20 +5,23 @@ import { useCashflowStore } from '../../store/cashflow';
 import { useReservationActions } from '../../hooks/useCashflow';
 import { calcPotBalance } from '../../lib/cashflow/calculator';
 import { generateId, formatCurrency } from '../../lib/cashflow/recurring';
-import type { MonthKey } from '../../lib/cashflow/types';
+import type { MonthKey, ReservationPotType } from '../../lib/cashflow/types';
 
 interface ReservationPaymentModalProps {
   monthKey: MonthKey;
+  filterType?: ReservationPotType;
   onClose: () => void;
 }
 
-export function ReservationPaymentModal({ monthKey, onClose }: ReservationPaymentModalProps) {
+export function ReservationPaymentModal({ monthKey, filterType, onClose }: ReservationPaymentModalProps) {
   const reservations = useCashflowStore((s) => s.reservations);
   const reservationPayments = useCashflowStore((s) => s.reservationPayments);
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
   const { addReservationPayment } = useReservationActions();
 
-  const activeReservations = reservations.filter((r) => r.startMonth <= monthKey);
+  const activeReservations = reservations.filter(
+    (r) => r.startMonth <= monthKey && (!filterType || r.type === filterType),
+  );
 
   const [reservationId, setReservationId] = useState(activeReservations[0]?.id ?? '');
   const [label, setLabel] = useState('');

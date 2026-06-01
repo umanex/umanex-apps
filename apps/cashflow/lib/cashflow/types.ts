@@ -131,8 +131,16 @@ export interface MonthData {
   }>;
 }
 
+export interface BalanceOverride {
+  id: string;
+  monthKey: MonthKey;
+  balance: number;
+}
+
 export interface CashflowStore {
-  startBalance: number;
+  referenceBalance: number;
+  referenceMonth: MonthKey;
+  balanceOverrides: BalanceOverride[];
   anchorMonth: MonthKey;
   expenseItems: ExpenseItem[];
   incomeItems: IncomeItem[];
@@ -144,7 +152,9 @@ export interface CashflowStore {
   recurringDefers: RecurringDefer[];
   reservationDefers: ReservationDefer[];
 
-  setStartBalance: (balance: number) => void;
+  setReferenceBalance: (balance: number, month: MonthKey) => void;
+  upsertBalanceOverride: (monthKey: MonthKey, balance: number) => void;
+  removeBalanceOverride: (monthKey: MonthKey) => void;
   setAnchorMonth: (month: MonthKey) => void;
 
   addIncomeItem: (item: IncomeItem) => void;

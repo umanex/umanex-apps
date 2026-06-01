@@ -2,18 +2,18 @@
 
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import type { MonthData } from '../../lib/cashflow/types';
+import type { MonthData, ReservationPotType } from '../../lib/cashflow/types';
 import { formatCurrency, getMonthLabel } from '../../lib/cashflow/recurring';
 import { IncomeSection } from './IncomeSection';
 import { RecurringSection } from './RecurringSection';
 import { ReservationSection } from './ReservationSection';
 import { ExpenseSection } from './ExpenseSection';
-import { useCashflowActions, useReservationActions } from '../../hooks/useCashflow';
+import { useCashflowActions, useReservationActions, useComputedStartBalance } from '../../hooks/useCashflow';
 
 
 interface MonthCardProps {
   monthData: MonthData;
-  onRegisterPayment: () => void;
+  onRegisterPayment: (filterType: ReservationPotType) => void;
   onOpenRecurringSidepanel: () => void;
   isFirst?: boolean;
 }
@@ -33,7 +33,11 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     upsertReservationSettlement,
     removeReservationSettlement,
     finalizeReservation,
+    upsertBalanceOverride,
+    removeBalanceOverride,
   } = useCashflowActions();
+
+  const computedStartBalance = useComputedStartBalance();
 
   const { removeReservationPayment, updateReservationPayment } = useReservationActions();
 
@@ -42,6 +46,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     startBalance,
     endBalance,
     totalIncome,
+    totalReservationCashPayments,
     incomeItems,
     recurringItems,
     reservationPots,
@@ -61,28 +66,25 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
 
   const expenseSubtotaal = expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0);
 
-  const spaarpotSubtotaal =
-    reservationPots
-      .filter((p) => !p.finalized)
-      .reduce((s, p) => {
-        const paid = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.fromReservation, 0);
-        const totalInvoiced = p.paymentsThisMonth.reduce((s2, pay) => s2 + pay.invoiceAmount, 0);
-        const baseProvision = p.hasSettlement ? p.effectiveAmount : p.monthlyAmount;
-        const allInvoiced = totalInvoiced >= baseProvision + p.deferredFromPrevious;
-        return s + (allInvoiced ? 0 : Math.max(0, baseProvision - Math.max(0, paid - p.deferredFromPrevious)));
-      }, 0) +
-    deferredReservationItems.reduce((s, d) => s + d.amount, 0);
+  const activePots = reservationPots.filter((p) => !p.finalized);
 
-  const openstaand = recurringSubtotaal + expenseSubtotaal + spaarpotSubtotaal;
-  const totaalInkomsten = isFirst ? totalIncome : startBalance + totalIncome;
-  const beschikbaar = totaalInkomsten - openstaand;
+  const deferredReservationSubtotaal = deferredReservationItems.reduce((s, d) => s + d.amount, 0);
+
+  // Subtotaal per pottype, consistent met calcSubtotaal in ReservationSection
+  const spaarpotSubtotaal = isFirst
+    ? activePots.reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth, 0) + deferredReservationSubtotaal
+    : activePots.reduce((s, p) => s + p.provisionThisMonth, 0) + deferredReservationSubtotaal;
+
+  const totaalInkomsten = startBalance + totalIncome;
+  const totaalKosten = recurringSubtotaal + expenseSubtotaal + spaarpotSubtotaal;
+  const eindsaldo = totaalInkomsten - totaalKosten;
 
   const { setNodeRef, isOver } = useDroppable({
     id: `month-${monthKey}`,
     data: { monthKey },
   });
 
-  const balanceColor = beschikbaar >= 0 ? 'text-emerald-600' : 'text-destructive';
+  const balanceColor = eindsaldo >= 0 ? 'text-emerald-600' : 'text-destructive';
 
   return (
     <div
@@ -95,7 +97,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
       <div className="flex items-baseline justify-between gap-4">
         <h2 className="font-semibold text-base">{getMonthLabel(monthKey)}</h2>
         <span className={`text-base font-bold tabular-nums ${balanceColor}`}>
-          {formatCurrency(beschikbaar)}
+          {formatCurrency(eindsaldo)}
         </span>
       </div>
 
@@ -107,15 +109,15 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
           </p>
         </div>
         <div className="rounded-lg bg-muted/50 px-3 py-2">
-          <p className="text-xs text-muted-foreground mb-0.5">Openstaand</p>
-          <p className="text-sm font-semibold tabular-nums text-destructive">
-            {formatCurrency(openstaand)}
+          <p className="text-xs text-muted-foreground mb-0.5">Kosten</p>
+          <p className={`text-sm font-semibold tabular-nums ${totaalKosten > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+            {formatCurrency(totaalKosten)}
           </p>
         </div>
         <div className="rounded-lg bg-muted/50 px-3 py-2">
           <p className="text-xs text-muted-foreground mb-0.5">Eindsaldo</p>
-          <p className={`text-sm font-semibold tabular-nums ${beschikbaar >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-            {formatCurrency(beschikbaar)}
+          <p className={`text-sm font-semibold tabular-nums ${eindsaldo >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+            {formatCurrency(eindsaldo)}
           </p>
         </div>
       </div>
@@ -124,11 +126,19 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
         monthKey={monthKey}
         items={incomeItems}
         startBalance={startBalance}
+        computedStartBalance={computedStartBalance}
         isFirstMonth={isFirst}
         onAdd={addIncomeItem}
         onUpdate={(id, patch) => updateIncomeItem(id, patch)}
         onToggleReceived={(id, received) => updateIncomeItem(id, { received })}
         onRemove={removeIncomeItem}
+        onSetStartBalance={isFirst ? (balance) => {
+          if (Math.abs(balance - computedStartBalance) < 0.01) {
+            removeBalanceOverride(monthKey);
+          } else {
+            upsertBalanceOverride(monthKey, balance);
+          }
+        } : undefined}
       />
 
       <RecurringSection
@@ -155,6 +165,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
 
       <ReservationSection
         monthKey={monthKey}
+        isCurrentMonth={isFirst}
         pots={reservationPots}
         deferredReservationItems={deferredReservationItems}
         onRegisterPayment={onRegisterPayment}
@@ -178,7 +189,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
       <div className="pt-2 border-t border-border flex items-center justify-between">
         <span className="text-sm font-medium">Eindsaldo</span>
         <span className={`text-lg font-bold tabular-nums ${balanceColor}`}>
-          {formatCurrency(beschikbaar)}
+          {formatCurrency(eindsaldo)}
         </span>
       </div>
     </div>

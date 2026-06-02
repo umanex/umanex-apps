@@ -24,6 +24,12 @@ export const KEYWORD_WEIGHTS: Record<SkillKey, number> = {
   product: 10,
 }
 
+// Zoektermen voor Adzuna (what_or = OR-matching). Pas hier aan om andere rollen of tech te targeten.
+export const ADZUNA_SEARCH = {
+  whatOr: 'UX designer UI designer frontend developer product designer',
+  country: 'be',
+} as const
+
 export const SIGNAL_WEIGHTS: Record<string, number> = {
   'dev-vacature zonder design': 30,
   'digital product team': 25,

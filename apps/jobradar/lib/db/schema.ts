@@ -1,6 +1,8 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
+
+export type ItemStatus = 'new' | 'saved' | 'dismissed' | 'contacted'
 
 export const jobs = sqliteTable(
   'jobs',
@@ -18,6 +20,7 @@ export const jobs = sqliteTable(
     dedupeHash: text('dedupe_hash').notNull(),
     score: integer('score').notNull().default(0),
     scoreBreakdown: text('score_breakdown').notNull().default('{}'),
+    jobStatus: text('job_status').notNull().default('new'),
     firstSeenAt: text('first_seen_at').notNull(),
     lastSeenAt: text('last_seen_at').notNull(),
   },
@@ -43,6 +46,7 @@ export const companies = sqliteTable(
     rechtsgrond: text('rechtsgrond').notNull().default('gerechtvaardigd belang'),
     optOut: integer('opt_out', { mode: 'boolean' }).notNull().default(false),
     dedupeHash: text('dedupe_hash').notNull(),
+    leadStatus: text('lead_status').notNull().default('new'),
     firstSeenAt: text('first_seen_at').notNull(),
     lastSeenAt: text('last_seen_at').notNull(),
   },

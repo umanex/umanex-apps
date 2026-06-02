@@ -7,7 +7,7 @@ import { FilterBar } from './FilterBar'
 import { SyncButton } from './SyncButton'
 import { JobCard } from './JobCard'
 import { LeadCard } from './LeadCard'
-import type { Job, Company } from '@/lib/db/schema'
+import type { Job, Company, ItemStatus } from '@/lib/db/schema'
 import type { RegionCode } from '@/lib/regions'
 
 type DashboardClientProps = {
@@ -18,17 +18,36 @@ type DashboardClientProps = {
 
 const ALL_REGIONS: RegionCode[] = ['WVL', 'OVL', 'BRU']
 
-export function DashboardClient({ jobs, companies, previousSyncAt }: DashboardClientProps) {
+export function DashboardClient({ jobs: initialJobs, companies: initialCompanies, previousSyncAt }: DashboardClientProps) {
+  const [jobs, setJobs] = useState(initialJobs)
+  const [companies, setCompanies] = useState(initialCompanies)
   const [regions, setRegions] = useState<RegionCode[]>(ALL_REGIONS)
   const [minScore, setMinScore] = useState(0)
+  const [statusFilter, setStatusFilter] = useState<ItemStatus | ''>('')
 
   const filteredJobs = jobs
-    .filter((j) => regions.includes(j.region as RegionCode) && j.score >= minScore)
+    .filter((j) =>
+      regions.includes(j.region as RegionCode) &&
+      j.score >= minScore &&
+      (statusFilter === '' || j.jobStatus === statusFilter)
+    )
     .sort((a, b) => b.score - a.score)
 
   const filteredCompanies = companies
-    .filter((c) => regions.includes(c.region as RegionCode) && c.leadScore >= minScore)
+    .filter((c) =>
+      regions.includes(c.region as RegionCode) &&
+      c.leadScore >= minScore &&
+      (statusFilter === '' || c.leadStatus === statusFilter)
+    )
     .sort((a, b) => b.leadScore - a.leadScore)
+
+  const handleJobStatusChange = (id: number, status: ItemStatus) => {
+    setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, jobStatus: status } : j)))
+  }
+
+  const handleLeadStatusChange = (id: number, status: ItemStatus) => {
+    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, leadStatus: status } : c)))
+  }
 
   return (
     <TooltipProvider>
@@ -41,8 +60,10 @@ export function DashboardClient({ jobs, companies, previousSyncAt }: DashboardCl
         <FilterBar
           regions={regions}
           minScore={minScore}
+          statusFilter={statusFilter}
           onRegionsChange={setRegions}
           onMinScoreChange={setMinScore}
+          onStatusFilterChange={setStatusFilter}
         />
 
         <Tabs defaultValue="jobs">
@@ -71,6 +92,7 @@ export function DashboardClient({ jobs, companies, previousSyncAt }: DashboardCl
                     key={job.id}
                     job={job}
                     isNew={job.firstSeenAt >= previousSyncAt}
+                    onStatusChange={(status) => handleJobStatusChange(job.id, status)}
                   />
                 ))}
               </div>
@@ -87,6 +109,7 @@ export function DashboardClient({ jobs, companies, previousSyncAt }: DashboardCl
                     key={company.id}
                     company={company}
                     isNew={company.firstSeenAt >= previousSyncAt}
+                    onStatusChange={(status) => handleLeadStatusChange(company.id, status)}
                   />
                 ))}
               </div>

@@ -9,14 +9,16 @@ import {
   TooltipTrigger,
 } from '@umanex/ui/components/ui/tooltip'
 import { ScoreBadge } from './ScoreBadge'
-import type { Company } from '@/lib/db/schema'
+import { StatusDropdown } from './StatusDropdown'
+import type { Company, ItemStatus } from '@/lib/db/schema'
 
 type LeadCardProps = {
   company: Company
   isNew: boolean
+  onStatusChange: (status: ItemStatus) => void
 }
 
-export function LeadCard({ company, isNew }: LeadCardProps) {
+export function LeadCard({ company, isNew, onStatusChange }: LeadCardProps) {
   const signals = JSON.parse(company.signals) as string[]
   const breakdown = JSON.parse(company.scoreBreakdown) as Record<string, number>
   const hasBreakdown = Object.keys(breakdown).length > 0
@@ -83,6 +85,14 @@ export function LeadCard({ company, isNew }: LeadCardProps) {
               Website <ExternalLink className="h-3 w-3" />
             </a>
           )}
+        </div>
+        <div className="mt-2 border-t pt-2">
+          <StatusDropdown
+            itemId={company.id}
+            status={company.leadStatus as ItemStatus}
+            type="lead"
+            onStatusChange={onStatusChange}
+          />
         </div>
       </CardContent>
     </Card>

@@ -347,24 +347,16 @@ export function calculateMonths(
       totalPotCarryForward +
       deferredReservationAmount;
 
-    if (adjustFirstMonth && monthIndex === 0) {
-      // Reset: deferred is geabsorbeerd in endBalance; volgende maanden starten alleen met maandelijkse provisie
-      for (const res of billableReservations) {
+    for (const res of billableReservations) {
+      if (res.type === 'maandelijks_budget') {
         deferredRemainingMap.set(res.id, 0);
-        if (res.type === 'spaardoel') potBalanceMap.set(res.id, 0);
+        continue;
       }
-    } else {
-      for (const res of billableReservations) {
-        if (res.type === 'maandelijks_budget') {
-          deferredRemainingMap.set(res.id, 0);
-          continue;
-        }
-        const paidFromReservation = monthReservationPayments
-          .filter((p) => p.reservationId === res.id)
-          .reduce((s, p) => s + p.fromReservation, 0);
-        const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
-        deferredRemainingMap.set(res.id, remaining > 0 ? remaining : 0);
-      }
+      const paidFromReservation = monthReservationPayments
+        .filter((p) => p.reservationId === res.id)
+        .reduce((s, p) => s + p.fromReservation, 0);
+      const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
+      deferredRemainingMap.set(res.id, remaining > 0 ? remaining : 0);
     }
 
     runningBalance = effectiveEndBalance;

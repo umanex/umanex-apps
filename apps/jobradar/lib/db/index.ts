@@ -67,4 +67,15 @@ sqlite.exec(`
   );
 `)
 
+// Migrations for existing databases (idempotent via PRAGMA table_info check)
+type ColInfo = { name: string }
+const jobCols = (sqlite.prepare('PRAGMA table_info(jobs)').all() as ColInfo[]).map((c) => c.name)
+if (!jobCols.includes('job_status')) {
+  sqlite.exec("ALTER TABLE jobs ADD COLUMN job_status TEXT NOT NULL DEFAULT 'new'")
+}
+const companyCols = (sqlite.prepare('PRAGMA table_info(companies)').all() as ColInfo[]).map((c) => c.name)
+if (!companyCols.includes('lead_status')) {
+  sqlite.exec("ALTER TABLE companies ADD COLUMN lead_status TEXT NOT NULL DEFAULT 'new'")
+}
+
 export const db = drizzle(sqlite, { schema })

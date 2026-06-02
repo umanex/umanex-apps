@@ -9,14 +9,16 @@ import {
   TooltipTrigger,
 } from '@umanex/ui/components/ui/tooltip'
 import { ScoreBadge } from './ScoreBadge'
-import type { Job } from '@/lib/db/schema'
+import { StatusDropdown } from './StatusDropdown'
+import type { Job, ItemStatus } from '@/lib/db/schema'
 
 type JobCardProps = {
   job: Job
   isNew: boolean
+  onStatusChange: (status: ItemStatus) => void
 }
 
-export function JobCard({ job, isNew }: JobCardProps) {
+export function JobCard({ job, isNew, onStatusChange }: JobCardProps) {
   const breakdown = JSON.parse(job.scoreBreakdown) as Record<string, number>
   const hasBreakdown = Object.keys(breakdown).length > 0
 
@@ -71,6 +73,14 @@ export function JobCard({ job, isNew }: JobCardProps) {
           >
             Bekijk <ExternalLink className="h-3 w-3" />
           </a>
+        </div>
+        <div className="mt-2 border-t pt-2">
+          <StatusDropdown
+            itemId={job.id}
+            status={job.jobStatus as ItemStatus}
+            type="job"
+            onStatusChange={onStatusChange}
+          />
         </div>
       </CardContent>
     </Card>

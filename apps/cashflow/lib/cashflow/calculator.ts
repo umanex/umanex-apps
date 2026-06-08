@@ -297,13 +297,16 @@ export function calculateMonths(
     const endBalance = monthIndex === 0
       ? (() => {
           const unpaidDeferred = deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
+          const overflowCash = reservationPots
+            .filter((p) => !p.finalized)
+            .reduce((s, p) => s + p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0), 0);
           const budgetSub = reservationPots
             .filter((p) => p.potType === 'maandelijks_budget' && !p.finalized)
             .reduce((s, p) => s + p.provisionThisMonth - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0);
           const provisieSub = reservationPots
             .filter((p) => p.potType === 'spaardoel' && !p.finalized)
             .reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth, 0) + deferredReservationAmount;
-          return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferred - unpaidExpenses - totalReservationCashPayments - budgetSub - provisieSub;
+          return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferred - unpaidExpenses - overflowCash - budgetSub - provisieSub;
         })()
       : availableBudget - totalOutstandingCosts;
 

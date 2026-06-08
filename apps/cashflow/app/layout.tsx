@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Fira_Sans } from 'next/font/google';
 import './globals.css';
+import '@umanex/tokens/variables.css';
 
 const firaSans = Fira_Sans({
   subsets: ['latin'],

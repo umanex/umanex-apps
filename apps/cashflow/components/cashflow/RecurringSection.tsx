@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { RecurringItem, RecurringSettlement, MonthKey } from '../../lib/cashflow/types';
 import { formatCurrency, getMonthLabel } from '../../lib/cashflow/recurring';
+import { SectionBar } from './SectionBar';
 
 interface DeferredDisplayItem {
   deferId: string;
@@ -29,11 +30,13 @@ interface RecurringSectionProps {
 
 function DraggableRecurringItem({
   item,
+  index,
   monthKey,
   settlement,
   onSettle,
 }: {
   item: RecurringItem;
+  index: number;
   monthKey: MonthKey;
   settlement: RecurringSettlement | undefined;
   onSettle: (recurringId: string, paid: boolean, actualAmount: number) => void;
@@ -68,16 +71,19 @@ function DraggableRecurringItem({
   }
 
   const hasDeviation = isPaid && Math.abs(actualAmount - budgeted) > 0.01;
+  const zebra = index % 2 !== 0;
 
   return (
     <div
       ref={setNodeRef}
-      className={`flex items-center gap-2 py-0.5 ${isDragging ? 'opacity-30' : ''}`}
+      className={`flex items-center gap-2 h-7 pl-2 rounded-[4px] w-full ${
+        isDragging ? 'opacity-30' : (isPaid ? 'opacity-70 ' : '') + (zebra ? 'bg-[var(--umanexNeutral50)]' : '')
+      }`}
     >
       <button
         {...listeners}
         {...attributes}
-        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing text-base leading-none select-none"
+        className="text-[var(--umanexNeutral500)] hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0"
         aria-label="Versleep"
         tabIndex={0}
       >
@@ -92,26 +98,28 @@ function DraggableRecurringItem({
         aria-label={`${item.label} betaald`}
       />
 
-      <span className="flex-1 text-sm truncate">
+      <span className={`flex-1 text-sm truncate min-w-0 ${isPaid ? 'line-through text-muted-foreground' : ''}`}>
         {item.label}
       </span>
 
       {item.frequency === 'yearly' && (
-        <span className="text-xs text-muted-foreground">(jaarlijks)</span>
+        <span className="text-xs text-muted-foreground shrink-0">(jaarlijks)</span>
       )}
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 shrink-0">
         <input
           type="text"
           inputMode="decimal"
           value={localAmount}
           onChange={(e) => setLocalAmount(e.target.value)}
           onBlur={handleAmountBlur}
-          className={`w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${isPaid ? 'text-emerald-600' : ''}`}
+          className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring ${
+            isPaid ? 'text-emerald-600' : ''
+          }`}
           aria-label="Werkelijk bedrag"
         />
         {hasDeviation && (
-          <span className="text-xs text-amber-500 tabular-nums" title={`Begroot: ${formatCurrency(budgeted)}`}>
+          <span className="text-xs text-amber-500 tabular-nums shrink-0" title={`Begroot: ${formatCurrency(budgeted)}`}>
             ({formatCurrency(budgeted)})
           </span>
         )}
@@ -122,11 +130,13 @@ function DraggableRecurringItem({
 
 function DeferredRecurringItem({
   item,
+  index,
   onFinalize,
   onUnsettle,
   onRemoveDefer,
 }: {
   item: DeferredDisplayItem;
+  index: number;
   onFinalize: (deferId: string, amount: number) => void;
   onUnsettle: (deferId: string) => void;
   onRemoveDefer: (deferId: string) => void;
@@ -157,10 +167,10 @@ function DeferredRecurringItem({
 
   const showInputs = localChecked && !item.paid;
   const hasDeviation = item.paid && Math.abs(item.paidAmount - item.amount) > 0.01;
+  const zebra = index % 2 !== 0;
 
   return (
-    <div className="flex items-center gap-2 py-0.5">
-      <span className="w-[18px] flex-shrink-0" />
+    <div className={`flex items-center gap-2 h-7 pl-2 rounded-[4px] w-full ${zebra ? 'bg-[var(--umanexNeutral50)]' : ''}`}>
       <input
         type="checkbox"
         checked={localChecked || item.paid}
@@ -169,7 +179,7 @@ function DeferredRecurringItem({
         className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${item.paid ? 'accent-emerald-600' : 'accent-primary'}`}
         aria-label={`${item.label} betaald`}
       />
-      <span className={`flex-1 text-sm truncate ${item.paid ? 'opacity-60' : ''}`}>
+      <span className={`flex-1 text-sm truncate min-w-0 ${item.paid ? 'opacity-60' : ''}`}>
         <span className={item.paid ? 'line-through text-muted-foreground' : 'text-amber-600'}>
           {item.label}
         </span>
@@ -186,23 +196,23 @@ function DeferredRecurringItem({
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={handleAmountBlur}
-            className="w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
             aria-label="Werkelijk bedrag"
           />
           <button
             onClick={handleFinalize}
-            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap shrink-0"
           >
             Finaliseer →
           </button>
         </>
       ) : (
         <>
-          <span className={`text-sm tabular-nums ${item.paid ? 'text-muted-foreground' : 'font-medium text-destructive'}`}>
+          <span className={`text-sm tabular-nums shrink-0 ${item.paid ? 'text-muted-foreground' : 'font-medium text-[var(--umanexPrimary500)]'}`}>
             {formatCurrency(item.paid ? item.paidAmount : item.amount)}
           </span>
           {hasDeviation && (
-            <span className="text-xs text-muted-foreground tabular-nums" title={`Begroot: ${formatCurrency(item.amount)}`}>
+            <span className="text-xs text-muted-foreground tabular-nums shrink-0" title={`Begroot: ${formatCurrency(item.amount)}`}>
               ({formatCurrency(item.amount)})
             </span>
           )}
@@ -211,9 +221,8 @@ function DeferredRecurringItem({
       {item.paid ? (
         <button
           onClick={() => onUnsettle(item.deferId)}
-          className="text-muted-foreground hover:text-amber-600 transition-colors text-sm leading-none"
+          className="text-muted-foreground hover:text-amber-600 transition-colors text-sm leading-none shrink-0"
           aria-label="Betaling ongedaan"
-          title="Betaling ongedaan"
         >
           ↩
         </button>
@@ -221,9 +230,8 @@ function DeferredRecurringItem({
         !localChecked && (
           <button
             onClick={() => onRemoveDefer(item.deferId)}
-            className="text-amber-500 hover:text-amber-700 transition-colors text-sm leading-none"
+            className="text-amber-500 hover:text-amber-700 transition-colors text-sm leading-none shrink-0"
             aria-label="Uitstelling ongedaan maken"
-            title="Ongedaan maken"
           >
             ↩
           </button>
@@ -256,7 +264,6 @@ export function RecurringSection({
   const visibleDeferred = showPaid ? deferredItems : deferredItems.filter((d) => !d.paid);
 
   const totalPaidCount = paidItems.length + paidDeferredCount;
-  const hasAnyPaid = totalPaidCount > 0;
   const visibleItems = showPaid ? items : unpaidItems;
 
   const subtotaal =
@@ -269,53 +276,39 @@ export function RecurringSection({
   if (items.length === 0 && deferredItems.length === 0) return null;
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 flex-shrink-0">
-          Vaste uitgaven
-        </span>
-        <div className="flex items-center gap-2">
-          {subtotaal > 0 && (
-            <span className="text-xs font-medium tabular-nums text-destructive">
-              {formatCurrency(subtotaal)}
-            </span>
-          )}
-          <button
-            onClick={onOpenSidepanel}
-            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-          >
-            + Toevoegen
-          </button>
-          {hasAnyPaid && (
-            <button
-              onClick={() => setShowPaid((v) => !v)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-            >
-              {showPaid ? `Verberg betaald (${totalPaidCount})` : `Toon betaald (${totalPaidCount})`}
-            </button>
-          )}
-        </div>
+    <div className="flex flex-col gap-2 w-full">
+      <SectionBar
+        label="Vaste uitgaves"
+        subtotaal={subtotaal > 0 ? formatCurrency(subtotaal) : undefined}
+        showPaid={totalPaidCount > 0 ? showPaid : undefined}
+        onFilterToggle={totalPaidCount > 0 ? () => setShowPaid((v) => !v) : undefined}
+        onAdd={onOpenSidepanel}
+        addAriaLabel="Vaste uitgave toevoegen"
+      />
+
+      <div className="flex flex-col gap-1 w-full">
+        {visibleItems.map((item, index) => (
+          <DraggableRecurringItem
+            key={item.id}
+            item={item}
+            index={index}
+            monthKey={monthKey}
+            settlement={settlements.find((s) => s.recurringId === item.id)}
+            onSettle={onSettle}
+          />
+        ))}
+
+        {visibleDeferred.map((d, index) => (
+          <DeferredRecurringItem
+            key={d.deferId}
+            item={d}
+            index={visibleItems.length + index}
+            onFinalize={onFinalizeDefer}
+            onUnsettle={onUnsettleDefer}
+            onRemoveDefer={onRemoveDefer}
+          />
+        ))}
       </div>
-
-      {visibleItems.map((item) => (
-        <DraggableRecurringItem
-          key={item.id}
-          item={item}
-          monthKey={monthKey}
-          settlement={settlements.find((s) => s.recurringId === item.id)}
-          onSettle={onSettle}
-        />
-      ))}
-
-      {visibleDeferred.map((d) => (
-        <DeferredRecurringItem
-          key={d.deferId}
-          item={d}
-          onFinalize={onFinalizeDefer}
-          onUnsettle={onUnsettleDefer}
-          onRemoveDefer={onRemoveDefer}
-        />
-      ))}
     </div>
   );
 }

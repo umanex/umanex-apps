@@ -173,30 +173,6 @@ function DraggablePotRow({
         </button>
         <span className="flex-1 text-sm font-medium truncate">{pot.label}</span>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={localAmount}
-            onChange={(e) => {
-              const v = limitDecimals(e.target.value);
-              setLocalAmount(v);
-              const parsed = parseFloat(v.replace(',', '.'));
-              onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
-            }}
-            onBlur={handleAmountBlur}
-            onPointerDown={(e) => e.stopPropagation()}
-            className={`w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${
-              pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'
-            }`}
-            aria-label="Stortingsbedrag"
-          />
-          <span className="text-xs text-muted-foreground">/m</span>
-          {pot.hasSettlement && (
-            <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">
-              ({formatCurrency(pot.monthlyAmount)})
-            </span>
-          )}
-          <span className="text-muted-foreground/30 select-none px-0.5">·</span>
           {pot.paymentsThisMonth.length > 0 ? (
             <button
               onClick={() => setPaymentsCollapsed((v) => !v)}
@@ -227,6 +203,30 @@ function DraggablePotRow({
             >
               Toon als gefinaliseerd →
             </button>
+          )}
+          <span className="text-muted-foreground/30 select-none px-0.5">·</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={localAmount}
+            onChange={(e) => {
+              const v = limitDecimals(e.target.value);
+              setLocalAmount(v);
+              const parsed = parseFloat(v.replace(',', '.'));
+              onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
+            }}
+            onBlur={handleAmountBlur}
+            onPointerDown={(e) => e.stopPropagation()}
+            className={`w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${
+              pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'
+            }`}
+            aria-label="Stortingsbedrag"
+          />
+          <span className="text-xs text-muted-foreground">/m</span>
+          {pot.hasSettlement && (
+            <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">
+              ({formatCurrency(pot.monthlyAmount)})
+            </span>
           )}
         </div>
       </div>

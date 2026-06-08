@@ -88,7 +88,7 @@ function DraggableRecurringItem({
         type="checkbox"
         checked={isPaid}
         onChange={(e) => handleCheck(e.target.checked)}
-        className="h-3.5 w-3.5 rounded border-input accent-primary flex-shrink-0"
+        className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${isPaid ? 'accent-emerald-600' : 'accent-primary'}`}
         aria-label={`${item.label} betaald`}
       />
 
@@ -107,7 +107,7 @@ function DraggableRecurringItem({
           value={localAmount}
           onChange={(e) => setLocalAmount(e.target.value)}
           onBlur={handleAmountBlur}
-          className="w-20 h-6 px-1.5 text-xs text-right tabular-nums rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+          className={`w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${isPaid ? 'text-emerald-600' : ''}`}
           aria-label="Werkelijk bedrag"
         />
         {hasDeviation && (
@@ -166,7 +166,7 @@ function DeferredRecurringItem({
         checked={localChecked || item.paid}
         disabled={item.paid}
         onChange={(e) => handleCheck(e.target.checked)}
-        className="h-3.5 w-3.5 rounded border-input accent-primary flex-shrink-0"
+        className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${item.paid ? 'accent-emerald-600' : 'accent-primary'}`}
         aria-label={`${item.label} betaald`}
       />
       <span className={`flex-1 text-sm truncate ${item.paid ? 'opacity-60' : ''}`}>
@@ -186,12 +186,12 @@ function DeferredRecurringItem({
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={handleAmountBlur}
-            className="w-20 h-6 px-1.5 text-xs text-right tabular-nums rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            className="w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
             aria-label="Werkelijk bedrag"
           />
           <button
             onClick={handleFinalize}
-            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
           >
             Finaliseer →
           </button>
@@ -269,9 +269,9 @@ export function RecurringSection({
   if (items.length === 0 && deferredItems.length === 0) return null;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-shrink-0">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 flex-shrink-0">
           Vaste uitgaven
         </span>
         <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ export function RecurringSection({
           )}
           <button
             onClick={onOpenSidepanel}
-            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
           >
             + Toevoegen
           </button>

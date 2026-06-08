@@ -8,6 +8,7 @@ import { formatCurrency, generateId, limitDecimals, roundTo2 } from '../../lib/c
 interface ExpenseSectionProps {
   monthKey: MonthKey;
   items: ExpenseItem[];
+  overflowItems?: { label: string; amount: number }[];
   onAdd: (item: ExpenseItem) => void;
   onUpdate: (id: string, patch: Partial<ExpenseItem>) => void;
   onRemove: (id: string) => void;
@@ -89,6 +90,7 @@ function DraggableExpenseItem({
 export function ExpenseSection({
   monthKey,
   items,
+  overflowItems = [],
   onAdd,
   onUpdate,
   onRemove,
@@ -102,7 +104,9 @@ export function ExpenseSection({
   const paidItems = items.filter((i) => i.paid);
   const hasAnyPaid = paidItems.length > 0;
   const visibleItems = showPaid ? items : unpaidItems;
-  const subtotaal = unpaidItems.reduce((s, i) => s + i.amount, 0);
+  const subtotaal =
+    unpaidItems.reduce((s, i) => s + i.amount, 0) +
+    overflowItems.reduce((s, i) => s + i.amount, 0);
 
   function handleAdd() {
     const parsed = parseFloat(amount.replace(',', '.'));
@@ -165,6 +169,21 @@ export function ExpenseSection({
           onUpdate={onUpdate}
           onRemove={onRemove}
         />
+      ))}
+
+      {overflowItems.map((item, idx) => (
+        <div key={`overflow-${idx}`} className="flex items-center gap-2 py-0.5 opacity-70">
+          <span className="w-[18px] flex-shrink-0" />
+          <span className="w-3.5 flex-shrink-0" />
+          <span className="flex-1 text-sm truncate text-muted-foreground">
+            {item.label}
+            <span className="ml-1 text-[11px] text-muted-foreground/60">– resterend</span>
+          </span>
+          <span className="w-20 text-sm tabular-nums text-emerald-600 text-right flex-shrink-0">
+            {formatCurrency(item.amount)}
+          </span>
+          <span className="w-3 flex-shrink-0" />
+        </div>
       ))}
 
       {adding && (

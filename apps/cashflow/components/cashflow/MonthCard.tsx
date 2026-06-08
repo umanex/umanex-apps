@@ -64,7 +64,17 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     }, 0) +
     deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
 
-  const expenseSubtotaal = expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0);
+  const overflowItems = reservationPots
+    .filter((p) => p.potType === 'spaardoel' && !p.finalized)
+    .flatMap((p) =>
+      p.paymentsThisMonth
+        .filter((pay) => pay.fromCash > 0)
+        .map((pay) => ({ label: pay.label, amount: pay.fromCash })),
+    );
+
+  const expenseSubtotaal =
+    expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0) +
+    overflowItems.reduce((s, i) => s + i.amount, 0);
 
   const activePots = reservationPots.filter((p) => !p.finalized);
 
@@ -158,6 +168,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
       <ExpenseSection
         monthKey={monthKey}
         items={expenseItems}
+        overflowItems={overflowItems}
         onAdd={addExpenseItem}
         onUpdate={(id, patch) => updateExpenseItem(id, patch)}
         onRemove={removeExpenseItem}

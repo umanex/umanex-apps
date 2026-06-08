@@ -74,7 +74,6 @@ export function calculateMonths(
   reservationDefers: ReservationDefer[],
   reservationSettlements: ReservationSettlement[],
   count = 3,
-  adjustFirstMonth = false,
 ): MonthData[] {
   const months = getMonthsInRange(anchorMonth, count);
   const result: MonthData[] = [];
@@ -93,7 +92,7 @@ export function calculateMonths(
     }
   }
 
-  let monthIndex = 0;
+
   for (const monthKey of months) {
     const monthExpenseItems = expenseItems.filter((i) => i.monthKey === monthKey);
     const monthIncomeItems = incomeItems.filter((i) => i.monthKey === monthKey);
@@ -286,26 +285,10 @@ export function calculateMonths(
 
     const endBalance = availableBudget - totalOutstandingCosts;
 
-    // Met adjustFirstMonth: effectiveEndBalance = display-formule zodat het als startsaldo volgende maand dient.
-    // Maand 0: deferred + provisie per pot; maand 1+: alleen provisie (deferred gereset na maand 0).
-    const unpaidDeferredAmount = deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
-    const effectiveEndBalance = adjustFirstMonth
-      ? (() => {
-          const isFinalized = (r: ReservationItem) =>
-            reservationSettlements.some(
-              (ss) => ss.reservationId === r.id && ss.monthKey === monthKey && ss.finalized,
-            );
-          const spaarpotDeduction = (monthIndex === 0)
-            ? billableReservations.reduce((s, r) => isFinalized(r) ? s : s + getDeferred(r.id) + getProvisionThisMonth(r), 0) + deferredReservationAmount
-            : billableReservations.reduce((s, r) => isFinalized(r) ? s : s + getProvisionThisMonth(r), 0) + deferredReservationAmount;
-          return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferredAmount - unpaidExpenses - spaarpotDeduction;
-        })()
-      : endBalance;
-
     result.push({
       monthKey,
       startBalance: runningBalance,
-      endBalance: effectiveEndBalance,
+      endBalance,
       totalIncome,
       totalRecurring,
       totalReservationDeductions,
@@ -326,27 +309,6 @@ export function calculateMonths(
       recurringSettlements: monthSettlements,
     });
 
-    const totalPotCarryForward = billableReservations.reduce((s, r) => {
-      const settlement = reservationSettlements.find(
-        (ss) => ss.reservationId === r.id && ss.monthKey === monthKey,
-      );
-      if (settlement?.finalized && r.type === 'maandelijks_budget') return s;
-      const paymentsForPot = monthReservationPayments.filter((p) => p.reservationId === r.id);
-      const paidFromReservation = paymentsForPot.reduce((s2, p) => s2 + p.fromReservation, 0);
-      const totalInvoiced = paymentsForPot.reduce((s2, p) => s2 + p.invoiceAmount, 0);
-      const deferred = r.type === 'maandelijks_budget' ? 0 : getDeferred(r.id);
-      const allInvoiced = paymentsForPot.length > 0 && totalInvoiced >= getProvisionThisMonth(r) + deferred;
-      if (allInvoiced) return s;
-      return s + Math.max(0, getProvisionThisMonth(r) - Math.max(0, paidFromReservation - deferred));
-    }, 0);
-
-    const openstaandCarryForward =
-      unpaidRecurringAmount +
-      unpaidDeferredAmount +
-      unpaidExpenses +
-      totalPotCarryForward +
-      deferredReservationAmount;
-
     for (const res of billableReservations) {
       if (res.type === 'maandelijks_budget') {
         deferredRemainingMap.set(res.id, 0);
@@ -359,8 +321,7 @@ export function calculateMonths(
       deferredRemainingMap.set(res.id, remaining > 0 ? remaining : 0);
     }
 
-    runningBalance = effectiveEndBalance;
-    monthIndex++;
+    runningBalance = endBalance;
   }
 
   return result;

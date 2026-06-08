@@ -46,6 +46,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     startBalance,
     endBalance,
     totalIncome,
+    totalReservationDeductions,
     totalReservationCashPayments,
     incomeItems,
     recurringItems,
@@ -76,14 +77,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0) +
     overflowItems.reduce((s, i) => s + i.amount, 0);
 
-  const activePots = reservationPots.filter((p) => !p.finalized);
-
-  const deferredReservationSubtotaal = deferredReservationItems.reduce((s, d) => s + d.amount, 0);
-
-  // Subtotaal per pottype, consistent met calcSubtotaal in ReservationSection
-  const spaarpotSubtotaal = isFirst
-    ? activePots.reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth, 0) + deferredReservationSubtotaal
-    : activePots.reduce((s, p) => s + p.provisionThisMonth, 0) + deferredReservationSubtotaal;
+  const spaarpotSubtotaal = totalReservationDeductions;
 
   const totaalInkomsten = startBalance + totalIncome;
   const totaalKosten = recurringSubtotaal + expenseSubtotaal + spaarpotSubtotaal;

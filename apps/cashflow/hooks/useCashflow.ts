@@ -126,7 +126,6 @@ export function useMonths(count = 3): MonthData[] {
     reservationDefers,
     reservationSettlements,
     count,
-    true,
   );
 }
 

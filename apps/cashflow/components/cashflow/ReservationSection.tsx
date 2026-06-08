@@ -119,6 +119,7 @@ function DraggablePotRow({
   const totalInvoiced = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
   const baseProvision = pot.hasSettlement ? pot.effectiveAmount : pot.monthlyAmount;
   const allInvoiced = pot.paymentsThisMonth.length > 0 && paidFromReservation >= baseProvision + pot.deferredFromPrevious;
+  const displayAmount = pot.provisionThisMonth + pot.deferredFromPrevious - paidFromReservation;
 
   const autoAmount = pot.provisionThisMonth;
 
@@ -160,7 +161,7 @@ function DraggablePotRow({
 
   return (
     <div ref={setNodeRef} className={`space-y-1.5 ${isDragging ? 'opacity-30' : ''}`}>
-      {/* Rij 1: label + effectief stortingsbedrag */}
+      {/* Gecombineerde rij: label + stortingsbedrag/m + provisie naast elkaar */}
       <div className="flex items-center gap-2">
         <button
           {...listeners}
@@ -171,71 +172,64 @@ function DraggablePotRow({
           ⠿
         </button>
         <span className="flex-1 text-sm font-medium truncate">{pot.label}</span>
-        <input
-          type="text"
-          inputMode="decimal"
-          value={localAmount}
-          onChange={(e) => {
-            const v = limitDecimals(e.target.value);
-            setLocalAmount(v);
-            const parsed = parseFloat(v.replace(',', '.'));
-            onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
-          }}
-          onBlur={handleAmountBlur}
-          onPointerDown={(e) => e.stopPropagation()}
-          className={`w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${
-            pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'
-          }`}
-          aria-label="Stortingsbedrag"
-        />
-        <span className="text-xs text-muted-foreground flex-shrink-0">/m</span>
-        {pot.hasSettlement && (
-          <span className="text-xs text-muted-foreground tabular-nums flex-shrink-0" title="Begroot bedrag">
-            ({formatCurrency(pot.monthlyAmount)})
-          </span>
-        )}
-      </div>
-
-      {/* Rij 2: provisie saldo + eventueel overgedragen bedrag */}
-      {(() => {
-        const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
-        const displayAmount = pot.provisionThisMonth + pot.deferredFromPrevious - paidFromReservation;
-        return (
-          <div className="pl-5 flex items-center gap-2">
-            {pot.paymentsThisMonth.length > 0 ? (
-              <button
-                onClick={() => setPaymentsCollapsed((v) => !v)}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors flex items-center gap-1"
-                aria-label={paymentsCollapsed ? 'Betalingen tonen' : 'Betalingen verbergen'}
-              >
-                <span>{paymentsCollapsed ? '▸' : '▾'}</span>
-                <span>Resterend:</span>
-              </button>
-            ) : (
-              <span className="text-[11px] text-muted-foreground/60">Provisie:</span>
-            )}
-            <span
-              className={`text-[11px] font-medium tabular-nums ${
-                displayAmount < 0 ? 'text-destructive' : 'text-emerald-600'
-              }`}
-            >
-              {formatCurrency(displayAmount)}
-              {displayAmount < 0 && ' ⚠'}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={localAmount}
+            onChange={(e) => {
+              const v = limitDecimals(e.target.value);
+              setLocalAmount(v);
+              const parsed = parseFloat(v.replace(',', '.'));
+              onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
+            }}
+            onBlur={handleAmountBlur}
+            onPointerDown={(e) => e.stopPropagation()}
+            className={`w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${
+              pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'
+            }`}
+            aria-label="Stortingsbedrag"
+          />
+          <span className="text-xs text-muted-foreground">/m</span>
+          {pot.hasSettlement && (
+            <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">
+              ({formatCurrency(pot.monthlyAmount)})
             </span>
-            {allInvoiced && (
-              <button
-                onClick={() => onFinalize(pot.reservationId, totalInvoiced)}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-auto"
-                title="Verplaats naar betaalde kosten"
-              >
-                Toon als gefinaliseerd →
-              </button>
-            )}
-          </div>
-        );
-      })()}
+          )}
+          <span className="text-muted-foreground/30 select-none px-0.5">·</span>
+          {pot.paymentsThisMonth.length > 0 ? (
+            <button
+              onClick={() => setPaymentsCollapsed((v) => !v)}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors flex items-center gap-0.5"
+              aria-label={paymentsCollapsed ? 'Betalingen tonen' : 'Betalingen verbergen'}
+            >
+              <span>{paymentsCollapsed ? '▸' : '▾'}</span>
+              <span>Resterend:</span>
+            </button>
+          ) : (
+            <span className="text-[11px] text-muted-foreground/60">Provisie:</span>
+          )}
+          <span
+            className={`text-[11px] font-medium tabular-nums ${
+              displayAmount < 0 ? 'text-destructive' : 'text-emerald-600'
+            }`}
+          >
+            {formatCurrency(displayAmount)}
+            {displayAmount < 0 && ' ⚠'}
+          </span>
+          {allInvoiced && (
+            <button
+              onClick={() => onFinalize(pot.reservationId, totalInvoiced)}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              title="Verplaats naar betaalde kosten"
+            >
+              Toon als gefinaliseerd →
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Betalingen deze maand */}
       {!paymentsCollapsed && pot.paymentsThisMonth.map((payment) => (

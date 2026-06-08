@@ -45,8 +45,6 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     monthKey,
     startBalance,
     totalIncome,
-    totalReservationDeductions,
-    totalReservationCashPayments,
     totalOutstandingCosts,
     incomeItems,
     recurringItems,
@@ -57,11 +55,6 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     expenseItems,
   } = monthData;
 
-  const unpaidExpensesTotal = expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0);
-  const recurringSubtotaal =
-    (totalOutstandingCosts - unpaidExpensesTotal) +
-    deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
-
   const overflowItems = reservationPots
     .filter((p) => !p.finalized)
     .flatMap((p) =>
@@ -70,13 +63,28 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
         .map((pay) => ({ label: pay.label, amount: pay.fromCash })),
     );
 
-  const overflowSubtotaal = overflowItems.reduce((s, i) => s + i.amount, 0);
-  const expenseSubtotaal = unpaidExpensesTotal + overflowSubtotaal;
+  const unpaidExpensesTotal = expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0);
 
-  const spaarpotSubtotaal = totalReservationDeductions;
+  const vastSubtotaal =
+    (totalOutstandingCosts - unpaidExpensesTotal) +
+    deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
+
+  const expenseSubtotaal =
+    unpaidExpensesTotal +
+    overflowItems.reduce((s, i) => s + i.amount, 0);
+
+  const budgetSubtotaal = reservationPots
+    .filter((p) => p.potType === 'maandelijks_budget')
+    .reduce((s, p) => s + p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0);
+
+  const provisieSubtotaal =
+    reservationPots
+      .filter((p) => p.potType === 'spaardoel')
+      .reduce((s, p) => s + p.provisionThisMonth, 0) +
+    deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 
   const totaalInkomsten = startBalance + totalIncome;
-  const totaalKosten = recurringSubtotaal + expenseSubtotaal + spaarpotSubtotaal;
+  const totaalKosten = vastSubtotaal + expenseSubtotaal + budgetSubtotaal + provisieSubtotaal;
   const eindsaldo = totaalInkomsten - totaalKosten;
 
   const { setNodeRef, isOver } = useDroppable({

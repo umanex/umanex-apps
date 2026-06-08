@@ -42,6 +42,7 @@ function DraggablePotRow({
   pot,
   index,
   monthKey,
+  isCurrentMonth,
   onRemovePayment,
   onMovePayment,
   onSettle,
@@ -52,6 +53,7 @@ function DraggablePotRow({
   pot: ReservationPotBalance;
   index: number;
   monthKey: MonthKey;
+  isCurrentMonth?: boolean;
   onRemovePayment: (id: string) => void;
   onMovePayment: (id: string, newMonthKey: MonthKey) => void;
   onSettle: (reservationId: string, effectiveAmount: number) => void;
@@ -62,12 +64,15 @@ function DraggablePotRow({
   const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
   const displayAmount = pot.provisionThisMonth + pot.deferredFromPrevious - paidFromReservation;
   const hasPayments = pot.paymentsThisMonth.length > 0;
+  const isBudgetCurrentMonth = pot.potType === 'maandelijks_budget' && isCurrentMonth;
 
-  const [localAmount, setLocalAmount] = useState(String(roundTo2(pot.provisionThisMonth)));
+  const syncValue = isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth;
+  const [localAmount, setLocalAmount] = useState(String(roundTo2(syncValue)));
 
   useEffect(() => {
-    setLocalAmount(String(roundTo2(pot.provisionThisMonth)));
-  }, [pot.provisionThisMonth]);
+    setLocalAmount(String(roundTo2(isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth)));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayAmount, pot.provisionThisMonth]);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `reservation-pot-${pot.reservationId}-${monthKey}`,
@@ -131,13 +136,15 @@ function DraggablePotRow({
               </button>
             )}
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[11px] text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
-            <span className={`text-[11px] font-semibold tabular-nums ${displayAmount < 0 ? 'text-[var(--umanexPrimary500)]' : 'text-emerald-600'}`}>
-              {formatCurrency(displayAmount)}
-              {displayAmount < 0 && ' ⚠'}
-            </span>
-          </div>
+          {!isBudgetCurrentMonth && (
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
+              <span className={`text-[11px] font-semibold tabular-nums ${displayAmount < 0 ? 'text-[var(--umanexPrimary500)]' : 'text-emerald-600'}`}>
+                {formatCurrency(displayAmount)}
+                {displayAmount < 0 && ' ⚠'}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
@@ -145,20 +152,23 @@ function DraggablePotRow({
             type="text"
             inputMode="decimal"
             value={localAmount}
+            disabled={isBudgetCurrentMonth}
             onChange={(e) => {
               const v = limitDecimals(e.target.value);
               setLocalAmount(v);
               const parsed = parseFloat(v.replace(',', '.'));
               onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
             }}
-            onBlur={handleAmountBlur}
+            onBlur={isBudgetCurrentMonth ? undefined : handleAmountBlur}
             onPointerDown={(e) => e.stopPropagation()}
-            className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring ${
-              pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'
+            className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] focus:outline-none focus:ring-1 focus:ring-ring ${
+              isBudgetCurrentMonth
+                ? `bg-[var(--umanexNeutral50)] cursor-default ${displayAmount < 0 ? 'text-[var(--umanexPrimary500)] font-medium' : 'text-emerald-600'}`
+                : `bg-white ${pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'}`
             }`}
-            aria-label="Stortingsbedrag"
+            aria-label={isBudgetCurrentMonth ? 'Resterende provisie' : 'Stortingsbedrag'}
           />
-          {pot.hasSettlement && (
+          {!isBudgetCurrentMonth && pot.hasSettlement && (
             <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">
               ({formatCurrency(pot.monthlyAmount)})
             </span>
@@ -198,17 +208,21 @@ function DraggablePotRow({
               </div>
               {/* Betaald · Provisie · Cash */}
               <div className="flex items-center gap-2 text-[11px]">
-                <span className="text-[var(--umanexNeutral500)] opacity-70">Betaald:</span>
-                <span className="font-semibold text-[var(--umanexTextTitle)] tabular-nums">{formatCurrency(payment.invoiceAmount)}</span>
-                {payment.fromReservation > 0 && (
+                {payment.fromCash === 0 ? (
+                  <span className="text-emerald-600 font-semibold tabular-nums">
+                    {formatCurrency(payment.invoiceAmount)} betaald met provisie
+                  </span>
+                ) : (
                   <>
-                    <span className="text-muted-foreground/40">·</span>
-                    <span className="text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
-                    <span className="font-semibold text-emerald-600 tabular-nums">{formatCurrency(payment.fromReservation)}</span>
-                  </>
-                )}
-                {payment.fromCash > 0 && (
-                  <>
+                    <span className="text-[var(--umanexNeutral500)] opacity-70">Betaald:</span>
+                    <span className="font-semibold text-[var(--umanexTextTitle)] tabular-nums">{formatCurrency(payment.invoiceAmount)}</span>
+                    {payment.fromReservation > 0 && (
+                      <>
+                        <span className="text-muted-foreground/40">·</span>
+                        <span className="text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
+                        <span className="font-semibold text-emerald-600 tabular-nums">{formatCurrency(payment.fromReservation)}</span>
+                      </>
+                    )}
                     <span className="text-muted-foreground/40">·</span>
                     <span className="text-[var(--umanexNeutral500)] opacity-70">Cash:</span>
                     <span className="font-semibold text-[var(--umanexPrimary500)] tabular-nums">{formatCurrency(payment.fromCash)}</span>
@@ -229,6 +243,10 @@ function calcSubtotaal(
   isCurrentMonth: boolean,
 ): number {
   return activePots.reduce((s, p) => {
+    if (p.potType === 'maandelijks_budget' && isCurrentMonth) {
+      const paid = p.paymentsThisMonth.reduce((sum, pay) => sum + pay.fromReservation, 0);
+      return s + p.provisionThisMonth - paid;
+    }
     const defaultValue = isCurrentMonth
       ? p.deferredFromPrevious + p.provisionThisMonth
       : p.provisionThisMonth;
@@ -292,6 +310,7 @@ function PotSubgroup({
             pot={pot}
             index={index}
             monthKey={monthKey}
+            isCurrentMonth={isCurrentMonth}
             onRemovePayment={onRemovePayment}
             onMovePayment={onMovePayment}
             onSettle={onSettleReservation}

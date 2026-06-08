@@ -65,7 +65,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
 
   const overflowItems = reservationPots
-    .filter((p) => p.potType === 'spaardoel' && !p.finalized)
+    .filter((p) => !p.finalized)
     .flatMap((p) =>
       p.paymentsThisMonth
         .filter((pay) => pay.fromCash > 0)

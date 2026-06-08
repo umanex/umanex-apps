@@ -243,8 +243,16 @@ function DraggablePotRow({
 function calcSubtotaal(
   activePots: ReservationPotBalance[],
   overrideAmounts: Record<string, number>,
+  isCurrentMonth: boolean,
 ): number {
-  return activePots.reduce((s, p) => s + (overrideAmounts[p.reservationId] ?? p.displayContribution), 0);
+  return activePots.reduce((s, p) => {
+    if (isCurrentMonth) {
+      const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
+      if (p.potType === 'maandelijks_budget') return s + p.provisionThisMonth - paid;
+      if (p.potType === 'spaardoel') return s + p.deferredFromPrevious + p.provisionThisMonth - paid;
+    }
+    return s + (overrideAmounts[p.reservationId] ?? p.displayContribution);
+  }, 0);
 }
 
 function PotSubgroup({
@@ -281,7 +289,7 @@ function PotSubgroup({
   onAmountChange: (reservationId: string, amount: number | null) => void;
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
-  const subtotaal = calcSubtotaal(activePots, overrideAmounts);
+  const subtotaal = calcSubtotaal(activePots, overrideAmounts, isCurrentMonth);
 
   if (activePots.length === 0 && finalizedPots.length === 0) return null;
 

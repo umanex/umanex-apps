@@ -80,7 +80,10 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
   const provisieSubtotaal =
     reservationPots
       .filter((p) => p.potType === 'spaardoel')
-      .reduce((s, p) => s + p.provisionThisMonth, 0) +
+      .reduce((s, p) => {
+        const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
+        return s + (isFirst ? p.deferredFromPrevious + p.provisionThisMonth - paid : p.provisionThisMonth);
+      }, 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 
   const totaalInkomsten = startBalance + totalIncome;

@@ -78,6 +78,7 @@ export function calculateMonths(
   const months = getMonthsInRange(anchorMonth, count);
   const result: MonthData[] = [];
   let runningBalance = startBalance;
+  let monthIndex = 0;
   const potBalanceMap = new Map<string, number>();
   const deferredRemainingMap = new Map<string, number>();
 
@@ -291,7 +292,20 @@ export function calculateMonths(
     // Openstaand bevat GEEN spaarpot stortingen meer — die zitten in paidThisMonth
     const totalOutstandingCosts = unpaidRecurringAmount + unpaidExpenses;
 
-    const endBalance = availableBudget - totalOutstandingCosts;
+    // Maand 0: eindsaldo = zelfde formule als MonthCard (onbetaald + sectie-subtotalen)
+    // zodat het startsaldo van maand 1 overeenkomt met het getoonde eindsaldo.
+    const endBalance = monthIndex === 0
+      ? (() => {
+          const unpaidDeferred = deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
+          const budgetSub = reservationPots
+            .filter((p) => p.potType === 'maandelijks_budget' && !p.finalized)
+            .reduce((s, p) => s + p.provisionThisMonth - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0);
+          const provisieSub = reservationPots
+            .filter((p) => p.potType === 'spaardoel' && !p.finalized)
+            .reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth, 0) + deferredReservationAmount;
+          return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferred - unpaidExpenses - totalReservationCashPayments - budgetSub - provisieSub;
+        })()
+      : availableBudget - totalOutstandingCosts;
 
     result.push({
       monthKey,
@@ -330,6 +344,7 @@ export function calculateMonths(
     }
 
     runningBalance = endBalance;
+    monthIndex++;
   }
 
   return result;

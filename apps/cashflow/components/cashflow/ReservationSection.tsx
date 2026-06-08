@@ -247,9 +247,11 @@ function calcSubtotaal(
 ): number {
   return activePots.reduce((s, p) => {
     if (isCurrentMonth) {
-      const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
-      if (p.potType === 'maandelijks_budget') return s + p.provisionThisMonth - paid;
-      if (p.potType === 'spaardoel') return s + p.deferredFromPrevious + p.provisionThisMonth - paid;
+      if (p.potType === 'maandelijks_budget') {
+        const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
+        return s + p.provisionThisMonth - paid;
+      }
+      if (p.potType === 'spaardoel') return s + p.deferredFromPrevious + p.provisionThisMonth;
     }
     return s + (overrideAmounts[p.reservationId] ?? p.displayContribution);
   }, 0);

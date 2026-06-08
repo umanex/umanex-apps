@@ -89,7 +89,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-xl border bg-card p-5 space-y-4 transition-colors ${
+      className={`rounded-xl border bg-card p-6 space-y-5 transition-colors ${
         isOver ? 'border-primary ring-2 ring-primary/30' : 'border-border'
       }`}
     >
@@ -101,22 +101,22 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-lg bg-muted/50 px-3 py-2">
-          <p className="text-xs text-muted-foreground mb-0.5">Inkomsten</p>
-          <p className={`text-sm font-semibold tabular-nums ${totaalInkomsten >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-lg bg-muted/50 px-3 py-3">
+          <p className="text-[11px] text-muted-foreground/70 mb-1">Inkomsten</p>
+          <p className={`text-lg font-bold tabular-nums ${totaalInkomsten >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
             {formatCurrency(totaalInkomsten)}
           </p>
         </div>
-        <div className="rounded-lg bg-muted/50 px-3 py-2">
-          <p className="text-xs text-muted-foreground mb-0.5">Kosten</p>
-          <p className={`text-sm font-semibold tabular-nums ${totaalKosten > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+        <div className="rounded-lg bg-muted/50 px-3 py-3">
+          <p className="text-[11px] text-muted-foreground/70 mb-1">Kosten</p>
+          <p className={`text-lg font-bold tabular-nums ${totaalKosten > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
             {formatCurrency(totaalKosten)}
           </p>
         </div>
-        <div className="rounded-lg bg-muted/50 px-3 py-2">
-          <p className="text-xs text-muted-foreground mb-0.5">Eindsaldo</p>
-          <p className={`text-sm font-semibold tabular-nums ${eindsaldo >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+        <div className="rounded-lg bg-muted/60 ring-1 ring-border/60 px-3 py-3">
+          <p className="text-[11px] text-muted-foreground/70 mb-1">Eindsaldo</p>
+          <p className={`text-lg font-bold tabular-nums ${eindsaldo >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
             {formatCurrency(eindsaldo)}
           </p>
         </div>

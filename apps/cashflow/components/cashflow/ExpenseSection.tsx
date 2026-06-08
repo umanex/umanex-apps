@@ -45,7 +45,7 @@ function DraggableExpenseItem({
   return (
     <div
       ref={setNodeRef}
-      className={`flex items-center gap-2 py-0.5 ${isDragging ? 'opacity-30' : ''}`}
+      className={`flex items-center gap-2 py-0.5 ${isDragging ? 'opacity-30' : item.paid ? 'opacity-70' : ''}`}
     >
       <button
         {...listeners}
@@ -59,7 +59,7 @@ function DraggableExpenseItem({
         type="checkbox"
         checked={item.paid}
         onChange={(e) => onUpdate(item.id, { paid: e.target.checked })}
-        className="h-3.5 w-3.5 rounded border-input accent-primary flex-shrink-0"
+        className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${item.paid ? 'accent-emerald-600' : 'accent-primary'}`}
         title="Betaald"
       />
       <span className={`flex-1 text-sm truncate ${item.paid ? 'text-muted-foreground' : ''}`}>
@@ -72,7 +72,7 @@ function DraggableExpenseItem({
         onChange={(e) => setLocalAmount(limitDecimals(e.target.value))}
         onBlur={handleAmountBlur}
         onPointerDown={(e) => e.stopPropagation()}
-        className="w-20 h-6 px-1.5 text-xs text-right tabular-nums rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+        className={`w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${item.paid ? 'text-emerald-600' : 'text-destructive'}`}
         aria-label="Bedrag"
       />
       <button
@@ -129,9 +129,9 @@ export function ExpenseSection({
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-shrink-0">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 flex-shrink-0">
           Niet recurrente kosten
         </span>
         <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export function ExpenseSection({
           )}
           <button
             onClick={() => setAdding(true)}
-            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
             aria-label="Kost toevoegen"
           >
             + Toevoegen
@@ -168,14 +168,14 @@ export function ExpenseSection({
       ))}
 
       {adding && (
-        <div className="flex items-center gap-2 pt-1" onKeyDown={handleKeyDown}>
+        <div className="flex items-center gap-2 pt-1.5" onKeyDown={handleKeyDown}>
           <input
             autoFocus
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Omschrijving"
-            className="flex-1 h-7 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            className="flex-1 h-7 px-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <input
             type="text"
@@ -183,9 +183,9 @@ export function ExpenseSection({
             value={amount}
             onChange={(e) => setAmount(limitDecimals(e.target.value))}
             placeholder="€"
-            className="w-20 h-7 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+            className="w-20 h-7 px-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right tabular-nums"
           />
-          <button onClick={handleAdd} className="text-xs text-primary hover:text-primary/80 font-medium">
+          <button onClick={handleAdd} className="text-xs font-medium text-foreground hover:text-foreground/80">
             OK
           </button>
           <button

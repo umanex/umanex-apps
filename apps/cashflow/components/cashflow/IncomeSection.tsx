@@ -71,7 +71,7 @@ function DraggableIncomeItem({
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Omschrijving"
-          className="flex-1 h-7 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+          className="flex-1 h-7 px-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
         />
         <input
           type="text"
@@ -79,9 +79,9 @@ function DraggableIncomeItem({
           value={amount}
           onChange={(e) => setAmount(limitDecimals(e.target.value))}
           placeholder="€"
-          className="w-20 h-7 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+          className="w-20 h-7 px-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right tabular-nums"
         />
-        <button onClick={handleSave} className="text-xs text-primary hover:text-primary/80 font-medium">
+        <button onClick={handleSave} className="text-xs font-medium text-foreground hover:text-foreground/80">
           OK
         </button>
         <button onClick={handleCancel} className="text-xs text-muted-foreground hover:text-foreground">
@@ -108,7 +108,7 @@ function DraggableIncomeItem({
         type="checkbox"
         checked={item.received}
         onChange={(e) => onToggleReceived(item.id, e.target.checked)}
-        className="h-3.5 w-3.5 rounded border-input accent-primary"
+        className={`h-3.5 w-3.5 rounded border-input ${item.received ? 'accent-emerald-600' : 'accent-primary'}`}
         title="Ontvangen"
       />
       <span
@@ -183,9 +183,9 @@ export function IncomeSection({
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-shrink-0">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 flex-shrink-0">
           Inkomsten
         </span>
         <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export function IncomeSection({
           )}
           <button
             onClick={() => setAdding(true)}
-            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
             aria-label="Inkomst toevoegen"
           >
             + Toevoegen
@@ -271,14 +271,14 @@ export function IncomeSection({
       ))}
 
       {adding && (
-        <div className="flex items-center gap-2 pt-1" onKeyDown={handleKeyDown}>
+        <div className="flex items-center gap-2 pt-1.5" onKeyDown={handleKeyDown}>
           <input
             autoFocus
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Omschrijving"
-            className="flex-1 h-7 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            className="flex-1 h-7 px-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <input
             type="text"
@@ -286,11 +286,11 @@ export function IncomeSection({
             value={amount}
             onChange={(e) => setAmount(limitDecimals(e.target.value))}
             placeholder="€"
-            className="w-20 h-7 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+            className="w-20 h-7 px-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right tabular-nums"
           />
           <button
             onClick={handleAdd}
-            className="text-xs text-primary hover:text-primary/80 font-medium"
+            className="text-xs font-medium text-foreground hover:text-foreground/80"
           >
             OK
           </button>

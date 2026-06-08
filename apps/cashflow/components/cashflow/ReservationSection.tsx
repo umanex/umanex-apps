@@ -76,7 +76,7 @@ function DraggablePayment({
       <button
         onClick={() => onMove(payment.id, nextMonthKey(currentMonthKey))}
         onPointerDown={(e) => e.stopPropagation()}
-        className="text-muted-foreground hover:text-primary transition-colors leading-none"
+        className="text-muted-foreground hover:text-foreground transition-colors leading-none"
         title="Verplaats naar volgende maand"
         aria-label="Verplaats naar volgende maand"
       >
@@ -159,7 +159,7 @@ function DraggablePotRow({
   }
 
   return (
-    <div ref={setNodeRef} className={`space-y-1 ${isDragging ? 'opacity-30' : ''}`}>
+    <div ref={setNodeRef} className={`space-y-1.5 ${isDragging ? 'opacity-30' : ''}`}>
       {/* Rij 1: label + effectief stortingsbedrag */}
       <div className="flex items-center gap-2">
         <button
@@ -183,7 +183,7 @@ function DraggablePotRow({
           }}
           onBlur={handleAmountBlur}
           onPointerDown={(e) => e.stopPropagation()}
-          className={`w-20 h-6 px-1.5 text-xs text-right tabular-nums rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${
+          className={`w-20 h-7 px-2 text-sm text-right tabular-nums rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${
             pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'
           }`}
           aria-label="Stortingsbedrag"
@@ -206,17 +206,17 @@ function DraggablePotRow({
               <button
                 onClick={() => setPaymentsCollapsed((v) => !v)}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors flex items-center gap-1"
                 aria-label={paymentsCollapsed ? 'Betalingen tonen' : 'Betalingen verbergen'}
               >
                 <span>{paymentsCollapsed ? '▸' : '▾'}</span>
                 <span>Resterend:</span>
               </button>
             ) : (
-              <span className="text-xs text-muted-foreground">Provisie:</span>
+              <span className="text-[11px] text-muted-foreground/60">Provisie:</span>
             )}
             <span
-              className={`text-xs font-medium tabular-nums ${
+              className={`text-[11px] font-medium tabular-nums ${
                 displayAmount < 0 ? 'text-destructive' : 'text-emerald-600'
               }`}
             >
@@ -227,7 +227,7 @@ function DraggablePotRow({
               <button
                 onClick={() => onFinalize(pot.reservationId, totalInvoiced)}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="text-xs text-muted-foreground hover:text-primary transition-colors ml-auto"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-auto"
                 title="Verplaats naar betaalde kosten"
               >
                 Toon als gefinaliseerd →
@@ -282,7 +282,7 @@ function DraggablePotRow({
               );
               onFinalize(pot.reservationId, total);
             }}
-            className="text-xs text-muted-foreground hover:text-primary transition-colors mt-0.5"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-0.5"
           >
             Finaliseer →
           </button>
@@ -347,9 +347,9 @@ function PotSubgroup({
   if (activePots.length === 0 && finalizedPots.length === 0) return null;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-2 py-1.5 -mx-2">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-shrink-0">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 flex-shrink-0">
           {label}
         </span>
         <div className="flex items-center gap-2">
@@ -360,7 +360,7 @@ function PotSubgroup({
           )}
           <button
             onClick={() => onRegisterPayment(potType)}
-            className="text-xs text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
           >
             + Betaling
           </button>
@@ -472,7 +472,7 @@ export function ReservationSection({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <PotSubgroup
         label="Spaarpot – Maandelijks budget"
         potType="maandelijks_budget"

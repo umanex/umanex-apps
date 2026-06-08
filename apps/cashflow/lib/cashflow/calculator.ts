@@ -215,6 +215,13 @@ export function calculateMonths(
       const settlement = reservationSettlements.find(
         (s) => s.reservationId === r.id && s.monthKey === monthKey,
       );
+      const paymentsThisMonth = monthReservationPayments.filter((p) => p.reservationId === r.id);
+      const paidFromReservation = paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+      const provision = getProvisionThisMonth(r);
+      const deferred = getDeferred(r.id);
+      const displayContribution = r.type === 'maandelijks_budget'
+        ? provision - paidFromReservation
+        : deferred + provision;
       return {
         reservationId: r.id,
         label: r.label,
@@ -223,11 +230,12 @@ export function calculateMonths(
         hasSettlement: !!settlement,
         finalized: settlement?.finalized ?? false,
         potBalance: potBalanceMap.get(r.id) ?? 0,
-        paymentsThisMonth: monthReservationPayments.filter((p) => p.reservationId === r.id),
-        provisionThisMonth: getProvisionThisMonth(r),
-        deferredFromPrevious: getDeferred(r.id),
+        paymentsThisMonth,
+        provisionThisMonth: provision,
+        deferredFromPrevious: deferred,
         potType: r.type,
         releasedThisMonth: releasedPerPot.get(r.id) ?? 0,
+        displayContribution,
       };
     });
 

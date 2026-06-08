@@ -91,6 +91,7 @@ export interface ReservationPotBalance {
   deferredFromPrevious: number;
   potType: ReservationPotType;
   releasedThisMonth: number;
+  displayContribution: number;
 }
 
 export interface MonthData {

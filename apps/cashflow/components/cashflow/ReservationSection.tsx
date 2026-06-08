@@ -64,6 +64,9 @@ function DraggablePotRow({
   const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
   const displayAmount = pot.provisionThisMonth + pot.deferredFromPrevious - paidFromReservation;
   const hasPayments = pot.paymentsThisMonth.length > 0;
+  const totalInvoiced = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
+  const canFinalize = pot.potType === 'maandelijks_budget' ||
+    totalInvoiced >= pot.provisionThisMonth + pot.deferredFromPrevious;
   const isBudgetCurrentMonth = pot.potType === 'maandelijks_budget' && isCurrentMonth;
 
   const syncValue = isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth;
@@ -126,7 +129,7 @@ function DraggablePotRow({
         <div className="flex-1 flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-[var(--umanexTextTitle)] truncate">{pot.label}</span>
-            {hasPayments && (
+            {hasPayments && canFinalize && (
               <button
                 onClick={handleFinalize}
                 onPointerDown={(e) => e.stopPropagation()}
@@ -240,18 +243,8 @@ function DraggablePotRow({
 function calcSubtotaal(
   activePots: ReservationPotBalance[],
   overrideAmounts: Record<string, number>,
-  isCurrentMonth: boolean,
 ): number {
-  return activePots.reduce((s, p) => {
-    if (p.potType === 'maandelijks_budget' && isCurrentMonth) {
-      const paid = p.paymentsThisMonth.reduce((sum, pay) => sum + pay.fromReservation, 0);
-      return s + p.provisionThisMonth - paid;
-    }
-    const defaultValue = isCurrentMonth
-      ? p.deferredFromPrevious + p.provisionThisMonth
-      : p.provisionThisMonth;
-    return s + (overrideAmounts[p.reservationId] ?? defaultValue);
-  }, 0);
+  return activePots.reduce((s, p) => s + (overrideAmounts[p.reservationId] ?? p.displayContribution), 0);
 }
 
 function PotSubgroup({
@@ -288,7 +281,7 @@ function PotSubgroup({
   onAmountChange: (reservationId: string, amount: number | null) => void;
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
-  const subtotaal = calcSubtotaal(activePots, overrideAmounts, isCurrentMonth);
+  const subtotaal = calcSubtotaal(activePots, overrideAmounts);
 
   if (activePots.length === 0 && finalizedPots.length === 0) return null;
 

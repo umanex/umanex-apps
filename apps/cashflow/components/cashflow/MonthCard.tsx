@@ -44,10 +44,10 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
   const {
     monthKey,
     startBalance,
-    endBalance,
     totalIncome,
     totalReservationDeductions,
     totalReservationCashPayments,
+    totalOutstandingCosts,
     incomeItems,
     recurringItems,
     reservationPots,
@@ -57,12 +57,9 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     expenseItems,
   } = monthData;
 
+  const unpaidExpensesTotal = expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0);
   const recurringSubtotaal =
-    recurringItems.reduce((s, item) => {
-      const budgeted = item.frequency === 'yearly' ? item.amount / 12 : item.amount;
-      const isPaid = recurringSettlements.some((st) => st.recurringId === item.id && st.paid);
-      return isPaid ? s : s + budgeted;
-    }, 0) +
+    (totalOutstandingCosts - unpaidExpensesTotal) +
     deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
 
   const overflowItems = reservationPots
@@ -73,9 +70,8 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
         .map((pay) => ({ label: pay.label, amount: pay.fromCash })),
     );
 
-  const expenseSubtotaal =
-    expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0) +
-    overflowItems.reduce((s, i) => s + i.amount, 0);
+  const overflowSubtotaal = overflowItems.reduce((s, i) => s + i.amount, 0);
+  const expenseSubtotaal = unpaidExpensesTotal + overflowSubtotaal;
 
   const spaarpotSubtotaal = totalReservationDeductions;
 

@@ -74,7 +74,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     overflowItems.reduce((s, i) => s + i.amount, 0);
 
   const budgetSubtotaal = reservationPots
-    .filter((p) => p.potType === 'maandelijks_budget')
+    .filter((p) => p.potType === 'maandelijks_budget' && (!isFirst || !p.finalized))
     .reduce((s, p) => {
       const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
       return s + (isFirst ? p.provisionThisMonth - paid : paid);
@@ -82,7 +82,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
 
   const provisieSubtotaal =
     reservationPots
-      .filter((p) => p.potType === 'spaardoel')
+      .filter((p) => p.potType === 'spaardoel' && (!isFirst || !p.finalized))
       .reduce((s, p) => s + (isFirst ? p.deferredFromPrevious + p.provisionThisMonth : p.provisionThisMonth), 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 

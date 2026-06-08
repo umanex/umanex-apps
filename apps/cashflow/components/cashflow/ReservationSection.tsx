@@ -164,7 +164,6 @@ function DraggablePotRow({
             }`}
             aria-label="Stortingsbedrag"
           />
-          <span className="text-xs text-[var(--umanexNeutral500)]">/m</span>
           {pot.hasSettlement && (
             <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">
               ({formatCurrency(pot.monthlyAmount)})
@@ -414,7 +413,7 @@ export function ReservationSection({
             </span>
           </span>
           <span className="text-sm font-medium text-amber-600 tabular-nums shrink-0">
-            -{formatCurrency(d.amount)}/m
+            -{formatCurrency(d.amount)}
           </span>
           <button
             onClick={() => onRemoveReservationDefer(d.deferId)}

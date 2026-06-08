@@ -107,8 +107,8 @@ function DraggablePotRow({
 
   return (
     <div ref={setNodeRef} className={`${isDragging ? 'opacity-30' : ''}`}>
-      {/* Pot hoofdrij */}
-      <div className={`flex gap-2 pl-1 rounded-[4px] w-full ${hasPayments ? 'items-start py-1' : 'items-center h-7'} ${zebra ? 'bg-[var(--umanexNeutral50)]' : ''}`}>
+      {/* Pot hoofdrij — altijd label + beschikbare provisie */}
+      <div className={`flex gap-2 pl-1 rounded-[4px] w-full items-start py-1 ${zebra ? 'bg-[var(--umanexNeutral50)]' : ''}`}>
         <button
           {...listeners}
           {...attributes}
@@ -118,11 +118,10 @@ function DraggablePotRow({
           ⠿
         </button>
 
-        {hasPayments ? (
-          /* Met betalingen: label + Finaliseren inline, provisie sub-label */
-          <div className="flex-1 flex flex-col gap-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-[var(--umanexTextTitle)] truncate">{pot.label}</span>
+        <div className="flex-1 flex flex-col gap-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-[var(--umanexTextTitle)] truncate">{pot.label}</span>
+            {hasPayments && (
               <button
                 onClick={handleFinalize}
                 onPointerDown={(e) => e.stopPropagation()}
@@ -130,21 +129,16 @@ function DraggablePotRow({
               >
                 Finaliseren →
               </button>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
-              <span className={`text-[11px] font-semibold tabular-nums ${displayAmount < 0 ? 'text-[var(--umanexPrimary500)]' : 'text-emerald-600'}`}>
-                {formatCurrency(displayAmount)}
-                {displayAmount < 0 && ' ⚠'}
-              </span>
-            </div>
+            )}
           </div>
-        ) : (
-          /* Zonder betalingen: eenvoudige enkele rij */
-          <span className="flex-1 text-sm font-medium text-[var(--umanexTextTitle)] truncate min-w-0">
-            {pot.label}
-          </span>
-        )}
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
+            <span className={`text-[11px] font-semibold tabular-nums ${displayAmount < 0 ? 'text-[var(--umanexPrimary500)]' : 'text-emerald-600'}`}>
+              {formatCurrency(displayAmount)}
+              {displayAmount < 0 && ' ⚠'}
+            </span>
+          </div>
+        </div>
 
         <div className="flex items-center gap-1 shrink-0">
           <input

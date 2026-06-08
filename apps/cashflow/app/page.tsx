@@ -7,7 +7,6 @@ import { CashflowDndContext } from '../components/cashflow/CashflowDndContext';
 import { RecurringSidepanel } from '../components/cashflow/RecurringSidepanel';
 import { ReservationSidepanel } from '../components/cashflow/ReservationSidepanel';
 import { ReservationPaymentModal } from '../components/cashflow/ReservationPaymentModal';
-import { MonthNavigator } from '../components/cashflow/MonthNavigator';
 import type { MonthKey, ReservationPotType } from '../lib/cashflow/types';
 
 export default function Page() {
@@ -19,10 +18,7 @@ export default function Page() {
   return (
     <main className="min-h-screen bg-background px-4 py-8 space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold tracking-tight">Cashflow prognose</h1>
-          <MonthNavigator />
-        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Cashflow prognose</h1>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setRecurringOpen(true)}

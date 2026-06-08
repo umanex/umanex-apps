@@ -221,7 +221,7 @@ export function calculateMonths(
       const deferred = getDeferred(r.id);
       const displayContribution = r.type === 'maandelijks_budget'
         ? provision - paidFromReservation
-        : deferred + provision;
+        : provision;
       return {
         reservationId: r.id,
         label: r.label,

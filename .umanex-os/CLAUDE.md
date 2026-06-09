@@ -325,6 +325,18 @@ Reden: token path is bron-van-waarheid neutraal — werkt in Figma, JSON, CSS va
 
 In code zelf vertaal je wel naar de juiste implementatie (Tailwind class, CSS variable, etc.). Maar wanneer je *over* tokens praat in chat, briefings of rationale: altijd het path.
 
+**Alleen token-mapping, geen hardcoded values**
+
+Werk uitsluitend met de mapping uit `tokens.json` (via de Tokens Studio + Style Dictionary pipeline). Hardcoded waardes — losse hex-kleuren, pixel-spacings, font-sizes, radii, shadows die niet uit een token komen — worden vermeden in committed code.
+
+Wanneer een benodigde waarde geen token heeft: **eerst vragen** of er een token toegevoegd moet worden, niet stilzwijgend hardcoden. In WIP/prototype mag een hardcoded waarde tijdelijk, mits `// TODO:` comment die naar de ontbrekende token verwijst.
+
+**Altijd de meest recente `tokens.json` ophalen**
+
+Vóór design- of token-werk: haal eerst de meest recente `tokens.json` op via GitHub (`git pull` van de tokens-bron op de actieve branch). Zo wordt nooit met een stale token-set gewerkt.
+
+Welke repo en welk pad de tokens-bron is, verschilt per klant en wordt in de klant- of project-CLAUDE.md vastgelegd (bv. Columba: `tokens.json` → `packages/tokens/build/variables.css`). Bij twijfel over de bron: vraag voor je begint.
+
 **Bestand- en code-locatie referenties**
 
 Altijd vol pad vanaf project root. Geen compacte vorm, geen "in FilterBar.tsx" zonder pad.
@@ -333,22 +345,40 @@ Altijd vol pad vanaf project root. Geen compacte vorm, geen "in FilterBar.tsx" z
 
 Reden: in monorepos bestaat dezelfde filename vaak in meerdere apps.
 
-**Figma MCP vs Figma Console MCP — twee-laag setup**
+**Figma Console MCP — primaire tool voor alle Figma-operaties**
 
-Strict scheiding:
+Figma Console MCP (Desktop Bridge Plugin API) is de primaire tool voor **alles** in Figma — lezen én schrijven. Geen lees/schrijf split.
 
-```
-Lezen uit Figma      → Figma MCP
-Schrijven naar Figma → Figma Console MCP
-```
+    Alle Figma-operaties  → Figma Console MCP (via Desktop Bridge)
+    Native Figma MCP      → uitsluitend voor eenvoudige taken of als fallback
 
-Geen uitzonderingen. Vermeld expliciet welke MCP je gebruikt voor welke stap.
+**Desktop Bridge check — altijd eerst**
 
-**Bij gemengde taken (lezen én schrijven):**
-Vraag vooraf welke kant op te gaan. Bijvoorbeeld: *"Wil je dat ik eerst lees en je laat vergelijken, of meteen schrijf op basis van wat ik in code zie?"*
+Start elke Figma-operatie met `figma_get_status`. Als de Bridge niet actief is:
+- Vraag: *"Wil je Desktop Bridge activeren, of overschakelen naar native MCP?"*
+- Wacht op antwoord voor je verdergaat
+- Ga **nooit** stilzwijgend over naar native MCP
 
-**Als Figma Console MCP niet beschikbaar is:**
-Weiger de schrijfactie en vraag om Console MCP eerst te enabelen. Geen workarounds via manuele instructies of plugin-code.
+**Figma → code**
+
+Gebruik de `figma-naar-code` skill. Die is leidend voor alle stappen, token mapping en verificatie.
+
+**Code naar Figma workflow**
+
+Bij het omzetten van code naar Figma met volledige token binding:
+
+1. `figma_get_status` — Desktop Bridge check
+2. Parallel: `figma_get_variables` + `tokens.json` lezen
+3. Lookup bouwen + gap-analyse — `token path → Figma variable ID`, ontbrekende variabelen aanmaken (`figma_create_variable`) of importeren (`figma_import_library_variable`) vóór execute
+4. `figma_execute` — `setBoundVariable` voor fills/spacing/radius, text styles, effect styles, auto layout structuur, component variants voor states
+5. `figma_take_screenshot` — visuele check
+6. `figma_get_component_for_development_deep` — verifieer dat alle `boundVariables` de juiste IDs bevatten, geen hardcoded values
+
+Hardcoded values in Figma (`fills = [{color: {r,g,b}}]` zonder variable binding) zijn het equivalent van hardcoded hex in code — verboden in committed work.
+
+**Vermeld altijd welke MCP je gebruikt**
+
+Bij elke Figma-stap: noem expliciet Console MCP of native MCP. Geen impliciete keuzes.
 
 ---
 

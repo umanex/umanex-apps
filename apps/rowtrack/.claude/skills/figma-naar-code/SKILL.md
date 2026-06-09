@@ -13,8 +13,18 @@ Gebruik deze skill **altijd** wanneer de gebruiker:
 - zegt "sync met Figma", "implementeer dit design", "pas de code aan op basis van Figma"
 - zegt "neem dit over uit Figma", "vertaal naar code", "update de component op basis van het design"
 
-**Nooit** native Figma Code Connect gebruiken. Altijd inspecteren via
-**Figma MCP tools** (`get_metadata`, `get_screenshot`, `get_design_context`).
+---
+
+## MCP-gebruik — Console MCP primair, native als backup
+
+Overgenomen van de globale skill, zodat RowTrack dezelfde regel volgt: **Figma Console MCP (Desktop Bridge) is de primaire tool voor álle Figma-operaties — lezen én schrijven.** Native Figma MCP is uitsluitend backup: wanneer de Desktop Bridge niet actief is, of een Console-tool faalt.
+
+- **Start elke operatie met `figma_get_status`** (Desktop Bridge check). Niet actief → vraag: *"Wil je Desktop Bridge activeren, of overschakelen naar native MCP?"* Wacht op antwoord, ga nooit stilzwijgend over op native.
+- Lezen via Console: `figma_get_component_for_development_deep` (structuur, afmetingen, states) en `figma_take_screenshot` (visueel).
+- Native backup-equivalenten: `get_metadata`, `get_screenshot`, `get_design_context` — alléén bij fallback.
+- **Nooit** native Figma Code Connect gebruiken.
+
+> RowTrack gebruikt hardcoded design tokens (geen Figma-variabelen). De `boundVariables` die de globale skill via Console uitleest zijn hier dus meestal leeg — voor RowTrack zit de waarde van de deep-read in structuur, afmetingen en states, niet in token-paden.
 
 ---
 
@@ -34,20 +44,19 @@ Haal `fileKey` en `nodeId` uit de Figma URL:
 - nodeId conversie: `X-Y` → `X:Y`
 
 ### Stap 2 — Inspecteer de structuur
-Gebruik `get_metadata` voor een overzicht van de node-hiërarchie:
+Gebruik `figma_get_component_for_development_deep` (Console MCP) voor de node-hiërarchie, exacte afmetingen en states. Backup bij fallback: `get_metadata`.
 - Identificeer alle child frames, tekst nodes en component instances
 - Noteer exacte afmetingen (width, height, x, y)
 - Identificeer herbruikbare sub-componenten
 
 ### Stap 3 — Screenshot ophalen
-Gebruik `get_screenshot` om de visuele weergave te bekijken:
+Gebruik `figma_take_screenshot` (Console MCP) om de visuele weergave te bekijken. Backup bij fallback: `get_screenshot`.
 - Controleer kleuren, spacing, typografie en layout
-- Identificeer states die niet uit metadata blijken (hover, active, connected)
+- Identificeer states die niet uit de structuur blijken (hover, active, connected)
 - Vergelijk met eventueel bestaande code
 
 ### Stap 4 — Design context ophalen (optioneel voor details)
-Gebruik `get_design_context` voor gedetailleerde stijlinformatie van
-specifieke nodes wanneer metadata onvoldoende is.
+De deep-read uit stap 2 dekt de meeste stijlinformatie. Heb je extra detail nodig op een specifieke node → native `get_design_context` als backup.
 
 ### Stap 5 — Analyseer bestaande codebase
 Lees de bestaande component bestanden voordat je schrijft:
@@ -119,7 +128,7 @@ Pas ook de parent component aan die dit component gebruikt.
 
 ### Stap 8 — Design parity check (visueel)
 De code-checks in stap 9 bewijzen niet dat het component er effectief uitziet als het design. Deze stap doet dat wel — een visuele vergelijking, geen aanname.
-1. **Figma-referentie** — `get_screenshot` van de bron-node (de screenshot uit stap 3 hergebruiken mag, of opnieuw ophalen).
+1. **Figma-referentie** — `figma_take_screenshot` (Console MCP) van de bron-node; backup bij fallback: `get_screenshot`. De screenshot uit stap 3 hergebruiken mag, of opnieuw ophalen.
 2. **Gebouwd component renderen** — render het component in de draaiende Expo-app (iOS simulator of device) en maak een screenshot van het scherm/component. Draait er geen Expo-instance → vraag om er een te starten; ga niet zelf gokken.
 3. **Vergelijk** op de dingen die een code-review níet vangt: layout & flex-richting, spacing/gap, proporties & exacte afmetingen, alignment, typografie (Inter-gewichten), `@expo/vector-icons` iconen, afgekapte of overlopende content, en elke state.
 4. **Itereer** — bij een mismatch: fix in code → opnieuw renderen → opnieuw vergelijken. Max 3 iteraties; daarna structurele afwijkingen melden i.p.v. blijven bijschaven.
@@ -139,8 +148,8 @@ Na implementatie:
 
 ### Schermen (volledige pagina's)
 Bij een volledig scherm (bv. IdlePhase, ActivePhase):
-1. Lees eerst alle child node IDs via `get_metadata`
-2. Neem screenshots van elk logisch blok afzonderlijk
+1. Lees eerst alle child node IDs via `figma_get_component_for_development_deep` (Console MCP); backup: `get_metadata`
+2. Neem per logisch blok een screenshot met `figma_take_screenshot` (Console MCP); backup: `get_screenshot`
 3. Implementeer bottom-up: eerst sub-componenten, dan het scherm zelf
 4. Gebruik `ScrollView` als de content de schermhoogte kan overschrijden
 

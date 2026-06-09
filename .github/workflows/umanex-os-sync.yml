@@ -1,0 +1,59 @@
+name: Sync umanex-os layer
+
+# Ontvangt een repository_dispatch vanuit umanex-os wanneer de globale
+# CLAUDE.md of een profile wijzigt, en opent een PR met de bijgewerkte
+# .umanex-os/ laag. De inhoud komt mee in de dispatch-payload (base64),
+# zodat deze repo geen leestoegang tot de private umanex-os repo nodig heeft.
+
+on:
+  repository_dispatch:
+    types: [umanex-os-sync]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    if: github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Schrijf .umanex-os laag uit payload en open PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLAUDE_MD_B64: ${{ github.event.client_payload.claude_md_b64 }}
+          PROFILE_B64: ${{ github.event.client_payload.profile_b64 }}
+          PROFILE_NAME: ${{ github.event.client_payload.profile_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PROFILE_NAME:-}" ] || [ -z "${CLAUDE_MD_B64:-}" ]; then
+            echo "Onvolledige payload — afgebroken."; exit 1
+          fi
+
+          mkdir -p .umanex-os/profiles
+          printf '%s' "$CLAUDE_MD_B64" | base64 -d > .umanex-os/CLAUDE.md
+          printf '%s' "$PROFILE_B64"   | base64 -d > ".umanex-os/profiles/${PROFILE_NAME}.md"
+
+          if git diff --quiet -- .umanex-os; then
+            echo "Geen drift — .umanex-os is al up-to-date."
+            exit 0
+          fi
+
+          BRANCH="chore/sync-umanex-os"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add .umanex-os
+          git commit -m "chore: sync .umanex-os layer with global umanex-os"
+          git push -f origin "$BRANCH"
+
+          if gh pr view "$BRANCH" --json state -q .state 2>/dev/null | grep -q OPEN; then
+            echo "Bestaande open PR bijgewerkt via push."
+          else
+            gh pr create --base main --head "$BRANCH" \
+              --title "chore: sync .umanex-os layer with global umanex-os" \
+              --body "Automatische sync van de globale umanex-os laag (CLAUDE.md + profile), getriggerd door een wijziging in umanex-os. Review en merge wanneer je wil."
+          fi

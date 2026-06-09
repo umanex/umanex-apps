@@ -1,3 +1,8 @@
+---
+name: figma-naar-code
+description: Vertaalt een Figma component of scherm naar pixel-accurate React Native/Expo (TypeScript, StyleSheet) code voor het RowTrack project. Gebruik deze skill altijd wanneer de gebruiker een Figma URL deelt, vraagt om een component te implementeren vanuit Figma, design-aanpassingen door te voeren, of zegt "sync met Figma", "implementeer dit design", "vertaal naar code".
+---
+
 # Skill: Figma to Code
 
 ## Trigger

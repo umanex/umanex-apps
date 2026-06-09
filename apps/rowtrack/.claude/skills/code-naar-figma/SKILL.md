@@ -1,3 +1,8 @@
+---
+name: code-naar-figma
+description: Exporteert een bestaand React Native/Expo (TypeScript) component naar het RowTrack Figma-bestand via de Figma Console MCP en Desktop Bridge. Gebruik deze skill altijd wanneer de gebruiker vraagt om een component naar Figma te exporteren, te synchroniseren, bij te werken in Figma, of zegt "exporteer naar Figma", "update Figma", "zet dit in Figma", "sync naar Figma".
+---
+
 # Skill: Code to Figma
 
 ## Trigger

@@ -117,11 +117,21 @@ gold:       '#FFD700'   // achievement / PR
 Als het component al bestaat, **update** het in plaats van een nieuw bestand te maken.
 Pas ook de parent component aan die dit component gebruikt.
 
-### Stap 8 — Verificatie
+### Stap 8 — Design parity check (visueel)
+De code-checks in stap 9 bewijzen niet dat het component er effectief uitziet als het design. Deze stap doet dat wel — een visuele vergelijking, geen aanname.
+1. **Figma-referentie** — `get_screenshot` van de bron-node (de screenshot uit stap 3 hergebruiken mag, of opnieuw ophalen).
+2. **Gebouwd component renderen** — render het component in de draaiende Expo-app (iOS simulator of device) en maak een screenshot van het scherm/component. Draait er geen Expo-instance → vraag om er een te starten; ga niet zelf gokken.
+3. **Vergelijk** op de dingen die een code-review níet vangt: layout & flex-richting, spacing/gap, proporties & exacte afmetingen, alignment, typografie (Inter-gewichten), `@expo/vector-icons` iconen, afgekapte of overlopende content, en elke state.
+4. **Itereer** — bij een mismatch: fix in code → opnieuw renderen → opnieuw vergelijken. Max 3 iteraties; daarna structurele afwijkingen melden i.p.v. blijven bijschaven.
+
+Pas door naar stap 9 als de render visueel overeenkomt met de Figma-referentie. Kan het component niet gerenderd worden (geen Expo-instance) → meld expliciet dat de parity-check is overgeslagen; sluit nooit stil af alsof hij geslaagd is.
+
+### Stap 9 — Verificatie
 Na implementatie:
 - Controleer dat alle states correct zijn geïmplementeerd
 - Controleer dat afmetingen exact overeenkomen met Figma
 - Controleer dat de component correct geïmporteerd wordt in de parent
+- Controleer dat de design parity check (stap 8) geslaagd of expliciet als overgeslagen gemeld is
 
 ---
 

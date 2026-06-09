@@ -123,8 +123,8 @@ figma.viewport.scrollAndZoomIntoView([frame]);
 ```
 
 ### Stap 8 — Screenshot ter verificatie
-Neem een screenshot van het frame via de Figma MCP screenshot tool
-om het resultaat visueel te bevestigen.
+Neem een screenshot van het frame met `figma_take_screenshot` (Console MCP)
+om het resultaat visueel te bevestigen. Backup bij fallback: native `get_screenshot`.
 
 ---
 

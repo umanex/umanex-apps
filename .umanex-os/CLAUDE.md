@@ -165,7 +165,7 @@ Drie uitgewerkte voorbeelden staan in `umanex-os/docs/tc-ebc-examples/`:
 ## Werkprincipes voor code en componenten
 
 **Component structuur**
-Strict 1 component = 1 file. Geldt ook voor sub-componenten (CardHeader, CardBody, CardFooter staan elk in hun eigen bestand). Dit zorgt voor cleane Figma MCP / Code Connect koppeling.
+Strict 1 component = 1 file. Geldt ook voor sub-componenten (CardHeader, CardBody, CardFooter staan elk in hun eigen bestand). Dit zorgt voor een cleane Figma MCP koppeling.
 
 **Naamgeving**
 - Components: PascalCase (`Card.tsx`, `FilterBar.tsx`)
@@ -350,7 +350,11 @@ Reden: in monorepos bestaat dezelfde filename vaak in meerdere apps.
 Figma Console MCP (Desktop Bridge Plugin API) is de primaire tool voor **alles** in Figma — lezen én schrijven. Geen lees/schrijf split.
 
     Alle Figma-operaties  → Figma Console MCP (via Desktop Bridge)
-    Native Figma MCP      → uitsluitend voor eenvoudige taken of als fallback
+    Native Figma MCP      → uitsluitend als fallback (Desktop Bridge niet beschikbaar)
+
+**Native MCP is fallback-only.** Het is nooit de aangewezen tool voor een taak — het wordt uitsluitend gebruikt wanneer de Desktop Bridge niet beschikbaar is en de gebruiker daar expliciet voor kiest.
+
+**Figma Code Connect wordt niet gebruikt** — noch native, noch via Console. Stel geen Code Connect mappings voor of in.
 
 **Desktop Bridge check — altijd eerst**
 

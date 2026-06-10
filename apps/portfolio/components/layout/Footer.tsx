@@ -7,7 +7,7 @@ export const Footer = () => (
     <Container className="flex flex-col gap-8 text-sm text-muted-foreground sm:flex-row sm:justify-between">
       <div className="space-y-1">
         <p className="font-medium text-foreground">
-          {site.name} — {site.owner}
+          {site.owner} — {site.name}
         </p>
         <p>{site.address}</p>
         <p>BTW {site.vat}</p>
@@ -35,10 +35,10 @@ export const Footer = () => (
         </p>
       </div>
       <p className="max-w-xs">
-        Deze site is gebouwd met eigen design tokens, een eigen component library en
-        AI-agents.{' '}
+        Deze site is gebouwd met mijn eigen design tokens, component library en
+        AI-agents — dezelfde werkwijze die ik bij teams opzet.{' '}
         <Link href="/werkwijze" className="underline hover:text-foreground">
-          Bekijk de werkwijze
+          Zo werk ik
         </Link>
         .
       </p>

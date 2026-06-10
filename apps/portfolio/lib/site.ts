@@ -8,6 +8,6 @@ export const site = {
   linkedin: 'https://www.linkedin.com/in/jcolpaert/',
   address: 'Eernegemweg 97, BE-8490 Snellegem',
   vat: 'BE 0802.456.056',
-  // TODO: vervang door boekingslink (Cal.com of Calendly) — open vraag in briefing
-  bookingHref: 'mailto:jeroen@umanex.be?subject=Kennismaking',
+  // TODO: vervang door Calendly-link zodra beschikbaar (beslissing 2026-06-10: voorlopig zonder)
+  contactHref: 'mailto:jeroen@umanex.be?subject=Kennismaking',
 } as const;

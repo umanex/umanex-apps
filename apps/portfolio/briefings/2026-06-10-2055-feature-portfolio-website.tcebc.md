@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** portfolio (apps/portfolio)
 - **Klant:** umanex (eigen werk)
-- **Status:** wacht op content-input van Jeroen — structuur beslist, bouw nog niet gestart
+- **Status:** gebouwd met placeholders — wacht op definitieve content van Jeroen
 
 Vervangt de richting van `2026-06-10-feature-portfolio-website.tcebc.md` (diensten-site). Die blijft staan als historiek.
 
@@ -36,15 +36,19 @@ CONSTRAINTS: Zelfde tokens (packages/tokens — geen wijzigingen), layout volled
 - **PR #61:** herwerken op dezelfde branch; technische basis blijft, alle pagina's/componenten/copy van scratch.
 - **Foto:** nog niet beschikbaar — placeholder + afmetings-spec, hero ontworpen op foto.
 
-## Open vragen — content-input van Jeroen vereist (geen aannames toegestaan)
+## Beslist (2026-06-10, derde ronde — content-antwoorden)
 
-1. **Carrière-feiten:** jaren ervaring, rollen, sectoren, eventueel opleiding; welke werkgevers/klanten mogen bij naam genoemd worden?
-2. **Klantwerk-cases:** welke 2–3, wat mag benoemd vs. geanonimiseerd, kernverhaal per case (probleem → aanpak → resultaat)?
-3. **Stakeholder-verhalen:** 2–3 concrete voorbeelden van "moeilijke omgevingen" die de stakeholder-boodschap dragen?
-4. **Testimonials:** beschikbare quotes met naam, rol, bedrijf en toestemming?
-5. **Eigen producten:** RowTrack/Cashflow behouden als AI-werkwijze-bewijs, of andere selectie?
-6. **Boekingslink:** Cal.com/Calendly-URL (nu mailto-fallback met TODO).
-7. **Animatie-techniek:** goedkeuring concept + keuze Framer Motion (nieuwe dependency, bevestiging vereist) vs. CSS-only.
+- **Klantwerk:** Adhese, Luminus en Columba mogen bij naam genoemd worden. Columba-kernverhaal: centrale repository van waaruit specifieke apps gebouwd worden. Detail-copy: placeholders + TODO.
+- **Carrière, stakeholder-verhalen, testimonials:** placeholders + TODO in `lib/career.ts`, `lib/cases.ts` en `lib/testimonials.ts` — Jeroen vult aan.
+- **Eigen werk:** RowTrack + het umanex-os werkingsprincipe (ook implementeerbaar bij klanten) — uitgewerkt op /werkwijze en als case.
+- **Boekingslink:** voorlopig zonder Calendly — mailto met TODO in `lib/site.ts`.
+- **Animaties:** concept goedgekeurd; Framer Motion geïnstalleerd (`Reveal` component, prefers-reduced-motion gerespecteerd).
+
+## Open vragen (resterende content-input)
+
+1. Definitieve copy voor alle `[Placeholder]`-velden: carrière-feiten, Adhese/Luminus/Columba-details, stakeholder-verhalen, testimonials.
+2. Portretfoto (4:5, min. 800×1000 px) — placeholder met spec staat klaar.
+3. Calendly-URL zodra beschikbaar.
 
 ## Aannames
 
@@ -54,3 +58,4 @@ Geen — op expliciete vraag van Jeroen worden ontbrekende items als open vraag 
 
 - 2026-06-10: **Pivot** — van diensten-site (v1) naar persoonlijke voorstelling voor hiring-beslissers. Doelgroep verengd naar PM's/design/UX/product leads bij KMO's en grotere B2B-bedrijven. Drie kernboodschappen vastgelegd (ervaring, stakeholders, AI-innovatie). Layout volledig vrij, tokens blijven. Subtiele klassevolle animaties toegevoegd aan scope.
 - 2026-06-10: Structuurbeslissingen tweede ronde — Jeroen voorop met umanex als label, multi-page herbevestigd, bewijslaag = alle vier de vormen, NL, herwerken op branch feature/portfolio-app, nieuwe briefing naast v1, foto volgt later.
+- 2026-06-10: Content-ronde — klantnamen Adhese/Luminus/Columba goedgekeurd, Columba-kernverhaal vastgelegd, eigen werk = RowTrack + umanex-os, animatieconcept goedgekeurd (Framer Motion), rest als placeholder gebouwd. Site v2 volledig herbouwd op feature/portfolio-app.

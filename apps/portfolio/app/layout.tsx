@@ -15,11 +15,11 @@ const firaSans = Fira_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: 'umanex — Design Team Of One + AI',
-    template: '%s — umanex',
+    default: 'Jeroen Colpaert — UX/UI designer · umanex',
+    template: '%s — Jeroen Colpaert',
   },
   description:
-    'Eén designer die complexe B2B software teams helpt sneller gebruiksvriendelijke functionaliteiten te lanceren — versterkt met een AI-werkwijze die de output van een klein team levert.',
+    'UX/UI designer met ruime ervaring over het hele design proces in complexe B2B-omgevingen — versterkt met een AI-werkwijze die de output van een klein team levert.',
   openGraph: {
     type: 'website',
     locale: 'nl_BE',

@@ -11,25 +11,26 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@umanex/tokens": "workspace:*",
+    "@umanex/ui": "workspace:*",
+    "clsx": "^2",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^0.400.0",
     "next": "^14",
     "react": "^18",
     "react-dom": "^18",
-    "@umanex/ui": "workspace:*",
-    "@umanex/tokens": "workspace:*",
-    "lucide-react": "^0.400.0",
-    "clsx": "^2",
     "tailwind-merge": "^2"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@umanex/config": "workspace:*",
-    "tailwindcss": "^3",
-    "postcss": "^8",
     "autoprefixer": "^10",
     "eslint": "^8",
-    "eslint-config-next": "^14"
+    "eslint-config-next": "^14",
+    "postcss": "^8",
+    "tailwindcss": "^3",
+    "typescript": "^5"
   }
 }

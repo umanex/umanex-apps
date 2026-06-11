@@ -9,7 +9,7 @@ Monorepoconventies voor de umanex-apps codebase. Lees dit vóór je iets impleme
 
 - **Eigenaar**: Jeroen (jeroen@umanex.be), Belgische freelance UX/UI designer & developer
 - **Stack**: Next.js 14 App Router, TypeScript strict, Tailwind CSS, pnpm workspaces, Turborepo
-- **Apps**: cashflow (persoonlijke cashflow prognose tool), rowtrack (React Native rowing tracker), watermark-remover, meer volgen
+- **Apps**: cashflow (persoonlijke cashflow prognose tool), rowtrack (React Native rowing tracker), jobradar, portfolio (umanex.be presentatiesite), meer volgen
 - **Deployment**: Vercel, één project per app
 
 ## Structuurregels

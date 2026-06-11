@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
+import { AccentBar } from '@/components/ui/AccentBar';
 import { CareerItem } from '@/components/data-display/CareerItem';
 import { careerEntries } from '@/lib/career';
 
@@ -16,6 +17,7 @@ export default function CarrierePage() {
       <Container className="max-w-3xl space-y-14">
         <Reveal>
           <header className="space-y-4">
+            <AccentBar />
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Carrière</h1>
             <p className="text-lg text-muted-foreground">
               Geen lijst van tools maar een parcours: het hele design proces, telkens in

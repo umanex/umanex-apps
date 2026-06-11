@@ -27,7 +27,7 @@ export const CaseCard = ({ caseStudy }: Props) => (
         {caseStudy.stack.map((item) => (
           <li
             key={item}
-            className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
+            className="rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-foreground"
           >
             {item}
           </li>

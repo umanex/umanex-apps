@@ -1,5 +1,6 @@
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
+import { AccentBar } from '@/components/ui/AccentBar';
 import { TestimonialCard } from '@/components/data-display/TestimonialCard';
 import { testimonials } from '@/lib/testimonials';
 
@@ -7,6 +8,7 @@ export const Testimonials = () => (
   <section className="border-t border-border bg-muted/40 py-20">
     <Container className="space-y-12">
       <Reveal>
+        <AccentBar />
         <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
           Wat samenwerken met mij oplevert
         </h2>

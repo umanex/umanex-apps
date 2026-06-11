@@ -14,6 +14,7 @@ export const Header = () => (
     <Container className="flex h-16 items-center justify-between">
       <Link href="/" className="text-base font-bold tracking-tight sm:text-lg">
         Jeroen Colpaert
+        <span className="text-primary">.</span>
         <span className="ml-2 hidden text-sm font-normal text-muted-foreground sm:inline">
           umanex
         </span>
@@ -23,7 +24,7 @@ export const Header = () => (
           <Link
             key={item.href}
             href={item.href}
-            className="rounded-md px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:px-3"
+            className="rounded-md px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:px-3"
           >
             {item.label}
           </Link>

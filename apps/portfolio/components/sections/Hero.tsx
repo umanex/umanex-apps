@@ -16,6 +16,7 @@ export const Hero = () => (
         <Reveal delay={0.08}>
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
             Jeroen Colpaert
+            <span className="text-primary">.</span>
           </h1>
         </Reveal>
         <Reveal delay={0.16}>
@@ -47,7 +48,13 @@ export const Hero = () => (
         </Reveal>
       </div>
       <Reveal delay={0.2} className="mx-auto w-full max-w-sm lg:max-w-none">
-        <PhotoPlaceholder />
+        <div className="group relative">
+          <div
+            aria-hidden="true"
+            className="absolute -inset-2 -z-10 -rotate-2 rounded-2xl bg-accent transition-transform duration-300 group-hover:rotate-0"
+          />
+          <PhotoPlaceholder />
+        </div>
       </Reveal>
     </Container>
   </section>

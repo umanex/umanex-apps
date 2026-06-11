@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
+import { AccentBar } from '@/components/ui/AccentBar';
 import { CaseCard } from '@/components/data-display/CaseCard';
 import { clientCases, ownWorkCases } from '@/lib/cases';
 
@@ -16,6 +17,7 @@ export default function CasesPage() {
       <Container className="space-y-16">
         <Reveal>
           <header className="max-w-2xl space-y-4">
+            <AccentBar />
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Cases</h1>
             <p className="text-lg text-muted-foreground">
               Klantwerk in complexe B2B-omgevingen en eigen werk dat volledig toonbaar

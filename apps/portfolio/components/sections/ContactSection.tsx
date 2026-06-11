@@ -1,13 +1,15 @@
 import { ArrowRight } from 'lucide-react';
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
+import { AccentBar } from '@/components/ui/AccentBar';
 import { site } from '@/lib/site';
 
 export const ContactSection = () => (
-  <section id="contact" className="border-t border-border py-20">
+  <section id="contact" className="border-t border-border bg-accent/40 py-20">
     <Container>
       <Reveal>
         <div className="space-y-6">
+          <AccentBar />
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Kennismaken?</h2>
           <p className="max-w-2xl text-lg text-muted-foreground">
             Vertel kort waar je team aan werkt. Een snelle eerste check leert meestal

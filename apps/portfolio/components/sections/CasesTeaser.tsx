@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
+import { AccentBar } from '@/components/ui/AccentBar';
 import { CaseCard } from '@/components/data-display/CaseCard';
 import { clientCases, ownWorkCases } from '@/lib/cases';
 
@@ -13,6 +14,7 @@ export const CasesTeaser = () => {
         <Reveal>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl space-y-3">
+              <AccentBar />
               <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
                 Werk waar je iets aan hebt
               </h2>

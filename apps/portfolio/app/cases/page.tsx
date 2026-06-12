@@ -4,11 +4,11 @@ import { Reveal } from '@/components/ui/Reveal';
 import { AccentBar } from '@/components/ui/AccentBar';
 import { CaseCard } from '@/components/data-display/CaseCard';
 import { clientCases, ownWorkCases } from '@/lib/cases';
+import { copy } from '@/lib/copy';
 
 export const metadata: Metadata = {
-  title: 'Cases',
-  description:
-    'Klantwerk bij onder meer Adhese, Luminus en Columba, en eigen werk dat de AI-werkwijze van briefing tot gelanceerd product toont.',
+  title: copy.meta.cases.title,
+  description: copy.meta.cases.description,
 };
 
 export default function CasesPage() {
@@ -18,17 +18,16 @@ export default function CasesPage() {
         <Reveal>
           <header className="max-w-2xl space-y-4">
             <AccentBar />
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Cases</h1>
-            <p className="text-lg text-muted-foreground">
-              Klantwerk in complexe B2B-omgevingen en eigen werk dat volledig toonbaar
-              is — samen geven ze het eerlijkste beeld van hoe ik werk.
-            </p>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              {copy.cases.hero.title}
+            </h1>
+            <p className="text-lg text-muted-foreground">{copy.cases.hero.subtitle}</p>
           </header>
         </Reveal>
 
         <section className="space-y-8">
           <Reveal>
-            <h2 className="text-xl font-semibold">Klantwerk</h2>
+            <h2 className="text-xl font-semibold">{copy.cases.clientWorkTitle}</h2>
           </Reveal>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {clientCases.map((caseStudy, index) => (
@@ -41,7 +40,7 @@ export default function CasesPage() {
 
         <section className="space-y-8">
           <Reveal>
-            <h2 className="text-xl font-semibold">Eigen werk</h2>
+            <h2 className="text-xl font-semibold">{copy.cases.ownWorkTitle}</h2>
           </Reveal>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {ownWorkCases.map((caseStudy, index) => (

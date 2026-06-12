@@ -4,6 +4,9 @@ import { Reveal } from '@/components/ui/Reveal';
 import { AccentBar } from '@/components/ui/AccentBar';
 import { CaseCard } from '@/components/data-display/CaseCard';
 import { clientCases, ownWorkCases } from '@/lib/cases';
+import { copy } from '@/lib/copy';
+
+const teaser = copy.home.casesTeaser;
 
 export const CasesTeaser = () => {
   const highlighted = [...clientCases.slice(0, 2), ...ownWorkCases.slice(0, 1)];
@@ -16,18 +19,17 @@ export const CasesTeaser = () => {
             <div className="max-w-2xl space-y-3">
               <AccentBar />
               <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Werk waar je iets aan hebt
+                {teaser.title}
               </h2>
               <p className="text-lg text-muted-foreground">
-                Klantwerk in complexe B2B-omgevingen, en eigen werk dat de AI-werkwijze
-                van begin tot eind toont.
+                {teaser.subtitle}
               </p>
             </div>
             <Link
               href="/cases"
               className="text-sm font-medium text-primary hover:underline"
             >
-              Alle cases
+              {teaser.linkLabel}
             </Link>
           </div>
         </Reveal>

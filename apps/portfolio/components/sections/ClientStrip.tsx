@@ -1,7 +1,8 @@
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
+import { copy } from '@/lib/copy';
 
-const clients = ['Adhese', 'Luminus', 'Columba'] as const;
+const { intro, clients } = copy.home.clientStrip;
 
 export const ClientStrip = () => (
   <section className="py-14">
@@ -9,7 +10,7 @@ export const ClientStrip = () => (
       <Reveal>
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            Werkte onder meer voor
+            {intro}
           </p>
           <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
             {clients.map((client) => (

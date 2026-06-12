@@ -6,6 +6,7 @@ import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
 import { PlaceholderNote } from '@/components/feedback/PlaceholderNote';
 import { caseStudies, getCaseStudy } from '@/lib/cases';
+import { copy } from '@/lib/copy';
 
 type Props = {
   params: { slug: string };
@@ -21,7 +22,7 @@ export function generateMetadata({ params }: Props): Metadata {
     return {};
   }
   return {
-    title: `${caseStudy.title} — case`,
+    title: `${caseStudy.title} ${copy.caseDetail.metaTitleSuffix}`,
     description: caseStudy.summary,
   };
 }
@@ -33,9 +34,9 @@ export default function CaseDetailPage({ params }: Props) {
   }
 
   const sections = [
-    { heading: 'De uitdaging', body: caseStudy.problem },
-    { heading: 'Mijn aanpak', body: caseStudy.approach },
-    { heading: 'Het resultaat', body: caseStudy.result },
+    { heading: copy.caseDetail.sections.problem, body: caseStudy.problem },
+    { heading: copy.caseDetail.sections.approach, body: caseStudy.approach },
+    { heading: copy.caseDetail.sections.result, body: caseStudy.result },
   ];
 
   return (
@@ -47,7 +48,7 @@ export default function CaseDetailPage({ params }: Props) {
             className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Alle cases
+            {copy.caseDetail.backLabel}
           </Link>
         </Reveal>
         <Reveal>
@@ -60,7 +61,7 @@ export default function CaseDetailPage({ params }: Props) {
             </h1>
             <p className="text-lg text-muted-foreground">{caseStudy.summary}</p>
             {caseStudy.stack.length > 0 && (
-              <ul className="flex flex-wrap gap-2" aria-label="Stack">
+              <ul className="flex flex-wrap gap-2" aria-label={copy.caseDetail.stackLabel}>
                 {caseStudy.stack.map((item) => (
                   <li
                     key={item}
@@ -72,9 +73,7 @@ export default function CaseDetailPage({ params }: Props) {
               </ul>
             )}
             {caseStudy.draft && (
-              <PlaceholderNote>
-                Case in opbouw — de details worden nog aangevuld
-              </PlaceholderNote>
+              <PlaceholderNote>{copy.caseDetail.draftNote}</PlaceholderNote>
             )}
           </header>
         </Reveal>

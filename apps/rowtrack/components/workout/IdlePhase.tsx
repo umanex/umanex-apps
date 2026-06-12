@@ -160,7 +160,7 @@ const nudgeStyles = StyleSheet.create({
 
 // --- Props ---
 
-interface IdlePhaseProps {
+type IdlePhaseProps = {
   bleStatus: ConnectionStatus;
   deviceName: string | null;
   bleError: string | null;

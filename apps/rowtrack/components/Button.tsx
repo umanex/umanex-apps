@@ -20,7 +20,7 @@ import {
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
-export interface ButtonProps {
+export type ButtonProps = {
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'destructive' | 'ghost' | 'outline';

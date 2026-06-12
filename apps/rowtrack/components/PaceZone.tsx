@@ -10,7 +10,7 @@ import {
 
 export type PaceZoneLevel = 'on_pace' | 'slightly_off' | 'off_pace';
 
-export interface PaceZoneProps {
+export type PaceZoneProps = {
   zone: PaceZoneLevel;
 }
 

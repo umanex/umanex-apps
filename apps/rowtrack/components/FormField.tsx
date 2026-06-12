@@ -17,7 +17,7 @@ import {
   componentRadius,
 } from '@/constants';
 
-export interface FormFieldProps {
+export type FormFieldProps = {
   label?: string;
   value: string;
   onChangeText?: (text: string) => void;

@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { fg, label } from '@/constants';
 
-export interface SectionHeaderProps {
+export type SectionHeaderProps = {
   title: string;
 }
 

@@ -50,7 +50,7 @@ function buildGoalLabel(goal: WorkoutGoal): string {
 }
 
 // --- Props ---
-interface ActivePhaseProps {
+type ActivePhaseProps = {
   phase: Phase;
   metricsState: WorkoutMetricsState;
   bleStatus: ConnectionStatus;

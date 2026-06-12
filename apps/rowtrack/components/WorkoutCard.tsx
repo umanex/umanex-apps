@@ -34,7 +34,7 @@ function fmtMetersVU(m: number): { value: string; unit: string } {
   return { value: `${m}`, unit: 'm' };
 }
 
-export interface WorkoutCardProps {
+export type WorkoutCardProps = {
   workout: WorkoutSummary;
   onPress: (id: string) => void;
 }

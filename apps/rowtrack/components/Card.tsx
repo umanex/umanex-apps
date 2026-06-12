@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { bg, space, componentRadius } from '@/constants';
 
-export interface CardProps {
+export type CardProps = {
   children: React.ReactNode;
   padding?: number;
   style?: StyleProp<ViewStyle>;

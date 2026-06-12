@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { fg, border, body, mono, space } from '@/constants';
 
-export interface SummaryRowProps {
+export type SummaryRowProps = {
   label: string;
   value: string;
 }

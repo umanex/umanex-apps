@@ -8,7 +8,7 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { fg, fontFamily, fontSize } from '@/constants';
+import { border, fg, fontFamily, fontSize } from '@/constants';
 import type { WheelItem } from '@/lib/formatters';
 
 const ITEM_H = 44;
@@ -24,7 +24,7 @@ function getDisplayValue(item: WheelItem): string {
   return idx === -1 ? item.label : item.label.slice(0, idx);
 }
 
-interface WheelPickerProps {
+type WheelPickerProps = {
   items: WheelItem[];
   selectedIndex: number;
   onIndexChange: (index: number) => void;
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     height: ITEM_H,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#2C2F37',
+    borderColor: border.default,
     zIndex: 1,
   },
   listContent: {

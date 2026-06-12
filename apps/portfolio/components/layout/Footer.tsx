@@ -1,5 +1,6 @@
-import Link from 'next/link';
 import { Container } from '@/components/layout/Container';
+import { RichText } from '@/components/ui/RichText';
+import { copy } from '@/lib/copy';
 import { site } from '@/lib/site';
 
 export const Footer = () => (
@@ -10,7 +11,9 @@ export const Footer = () => (
           {site.owner} — {site.name}
         </p>
         <p>{site.address}</p>
-        <p>BTW {site.vat}</p>
+        <p>
+          {copy.footer.vatLabel} {site.vat}
+        </p>
       </div>
       <div className="space-y-1">
         <p>
@@ -30,17 +33,12 @@ export const Footer = () => (
             target="_blank"
             className="hover:text-foreground"
           >
-            LinkedIn
+            {copy.footer.linkedinLabel}
           </a>
         </p>
       </div>
       <p className="max-w-xs">
-        Deze site is gebouwd met mijn eigen design tokens, component library en
-        AI-agents — dezelfde werkwijze die ik bij teams opzet.{' '}
-        <Link href="/werkwijze" className="underline hover:text-foreground">
-          Zo werk ik
-        </Link>
-        .
+        <RichText segments={copy.footer.tagline} />
       </p>
     </Container>
   </footer>

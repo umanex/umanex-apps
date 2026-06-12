@@ -2,6 +2,7 @@ import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
 import { AccentBar } from '@/components/ui/AccentBar';
 import { TestimonialCard } from '@/components/data-display/TestimonialCard';
+import { copy } from '@/lib/copy';
 import { testimonials } from '@/lib/testimonials';
 
 export const Testimonials = () => (
@@ -10,7 +11,7 @@ export const Testimonials = () => (
       <Reveal>
         <AccentBar />
         <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Wat samenwerken met mij oplevert
+          {copy.home.testimonials.title}
         </h2>
       </Reveal>
       <div className="grid gap-6 sm:grid-cols-2">

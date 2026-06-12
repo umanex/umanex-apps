@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
 import { AccentBar } from '@/components/ui/AccentBar';
+import { copy } from '@/lib/copy';
 import { keyMessages } from '@/lib/keyMessages';
 
 export const KeyMessages = () => (
@@ -11,7 +12,7 @@ export const KeyMessages = () => (
       <Reveal>
         <AccentBar />
         <h2 className="max-w-2xl text-2xl font-bold tracking-tight sm:text-3xl">
-          Waarom teams mij erbij halen
+          {copy.home.keyMessages.title}
         </h2>
       </Reveal>
       <div className="grid gap-6 lg:grid-cols-3">

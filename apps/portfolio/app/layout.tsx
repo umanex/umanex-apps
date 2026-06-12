@@ -5,6 +5,7 @@ import '@umanex/tokens/variables.css';
 import './theme.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { copy } from '@/lib/copy';
 import { site } from '@/lib/site';
 
 const firaSans = Fira_Sans({
@@ -16,11 +17,10 @@ const firaSans = Fira_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: 'Jeroen Colpaert — UX/UI designer · umanex',
-    template: '%s — Jeroen Colpaert',
+    default: copy.meta.root.title,
+    template: copy.meta.root.titleTemplate,
   },
-  description:
-    'UX/UI designer met ruime ervaring over het hele design proces in complexe B2B-omgevingen — versterkt met een AI-werkwijze die de output van een klein team levert.',
+  description: copy.meta.root.description,
   openGraph: {
     type: 'website',
     locale: 'nl_BE',

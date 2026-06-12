@@ -2,7 +2,10 @@ import { ArrowRight } from 'lucide-react';
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
 import { PhotoPlaceholder } from '@/components/ui/PhotoPlaceholder';
+import { copy } from '@/lib/copy';
 import { site } from '@/lib/site';
+
+const hero = copy.home.hero;
 
 export const Hero = () => (
   <section className="py-20 sm:py-28">
@@ -10,21 +13,18 @@ export const Hero = () => (
       <div className="space-y-6">
         <Reveal>
           <p className="text-sm font-medium uppercase tracking-widest text-primary">
-            UX/UI designer · umanex
+            {hero.eyebrow}
           </p>
         </Reveal>
         <Reveal delay={0.08}>
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-            Jeroen Colpaert
+            {hero.name}
             <span className="text-primary">.</span>
           </h1>
         </Reveal>
         <Reveal delay={0.16}>
           <p className="max-w-xl text-lg text-muted-foreground sm:text-xl">
-            Ik help B2B software teams gebruiksvriendelijke functionaliteiten lanceren —
-            met ruime ervaring over het hele design proces, stevige voeten in complexe
-            stakeholder-omgevingen, en een AI-werkwijze die de output van een klein team
-            levert.
+            {hero.intro}
           </p>
         </Reveal>
         <Reveal delay={0.24}>
@@ -33,7 +33,7 @@ export const Hero = () => (
               href={site.contactHref}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Kennismaken
+              {hero.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
             <a
@@ -42,7 +42,7 @@ export const Hero = () => (
               target="_blank"
               className="inline-flex items-center rounded-md border border-border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted"
             >
-              LinkedIn
+              {hero.linkedinLabel}
             </a>
           </div>
         </Reveal>

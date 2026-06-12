@@ -10,7 +10,7 @@ import {
   space,
 } from '@/constants';
 
-export interface MetricDisplayProps {
+export type MetricDisplayProps = {
   value: string | number;
   label: string;
   unit?: string;

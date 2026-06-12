@@ -35,7 +35,7 @@ export function PeriodGoalCard({ progress, onEdit }: PeriodGoalCardProps) {
       <View style={styles.topRow}>
         <Text style={styles.periodLabel}>{periodLabel}</Text>
         {onEdit && (
-          <TouchableOpacity onPress={onEdit} activeOpacity={0.7}>
+          <TouchableOpacity onPress={onEdit} activeOpacity={0.8}>
             <Text style={styles.editLink}>Bewerken →</Text>
           </TouchableOpacity>
         )}

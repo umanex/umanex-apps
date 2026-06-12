@@ -65,6 +65,7 @@ export class RowerBleService {
   private monitorSub: Subscription | null = null;
   private stateSub: Subscription | null = null;
   private scanTimeout: ReturnType<typeof setTimeout> | null = null;
+  private fallbackTimeout: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
   private intentionalDisconnect = false;
   private isConnecting = false;
@@ -190,10 +191,11 @@ export class RowerBleService {
 
   // ── Private ───────────────────────────────────────────────
 
-  private async connectToDevice(device: Device): Promise<void> {
+  /** Returns true when the connection (incl. service discovery) succeeded. */
+  private async connectToDevice(device: Device): Promise<boolean> {
     if (this.isConnecting) {
       log(' connectToDevice skipped — already connecting');
-      return;
+      return false;
     }
     this.isConnecting = true;
     const name = device.name || device.localName || 'Rower';
@@ -237,11 +239,13 @@ export class RowerBleService {
 
       this.onStatusChange('connected', undefined, name);
       this.isConnecting = false;
+      return true;
     } catch (e: unknown) {
       this.isConnecting = false;
       const bleErr = e as { message?: string; errorCode?: number };
       log(' connect error:', bleErr.message, 'code:', bleErr.errorCode);
       this.onStatusChange('error', bleErr.message || 'Verbinding mislukt');
+      return false;
     }
   }
 
@@ -262,7 +266,8 @@ export class RowerBleService {
             log(' 403 on 2AD1, trying fallback 2ACC');
             this.monitorSub?.remove();
             this.monitorSub = null;
-            setTimeout(() => {
+            this.fallbackTimeout = setTimeout(() => {
+              this.fallbackTimeout = null;
               if (!this.intentionalDisconnect) {
                 this.startMonitoring(device, ROWER_DATA_ALT_UUID);
               }
@@ -288,19 +293,30 @@ export class RowerBleService {
         log(' notification received on', charUuid);
         try {
           const parsed = parseRowerData(char.value);
-          this.lastMetrics = mergeMetrics(this.lastMetrics, parsed);
+          const merged = mergeMetrics(this.lastMetrics, parsed);
 
           // When rower is idle (spm=0, watts=0), clear stale pace values
           if (
-            this.lastMetrics.strokeRate === 0 &&
-            this.lastMetrics.instantaneousPower === 0
+            merged.strokeRate === 0 &&
+            merged.instantaneousPower === 0
           ) {
-            this.lastMetrics.strokeRate = null;
-            this.lastMetrics.instantaneousPower = null;
-            this.lastMetrics.instantaneousPace = null;
+            merged.strokeRate = null;
+            merged.instantaneousPower = null;
+            merged.instantaneousPace = null;
           }
 
-          this.onMetrics(this.lastMetrics);
+          // Duplicate packets (no field changed) don't need a React update
+          let changed = false;
+          for (const key of Object.keys(merged) as (keyof RowerMetrics)[]) {
+            if (merged[key] !== this.lastMetrics[key]) {
+              changed = true;
+              break;
+            }
+          }
+          if (changed) {
+            this.lastMetrics = merged;
+            this.onMetrics(merged);
+          }
         } catch (e) {
           log('parse error:', e);
         }
@@ -338,12 +354,11 @@ export class RowerBleService {
     await this.delay(RECONNECT_DELAY_MS);
 
     if (this.device && !this.intentionalDisconnect) {
-      try {
-        await this.connectToDevice(this.device);
+      const ok = await this.connectToDevice(this.device);
+      if (ok) {
         this.reconnectAttempts = 0;
-      } catch (e: unknown) {
-        const bleErr = e as { message?: string };
-        log(' reconnect failed:', bleErr.message);
+      } else {
+        log(' reconnect failed, retrying');
         this.attemptReconnect();
       }
     }
@@ -373,6 +388,10 @@ export class RowerBleService {
 
   private cleanup(): void {
     this.clearScanTimeout();
+    if (this.fallbackTimeout) {
+      clearTimeout(this.fallbackTimeout);
+      this.fallbackTimeout = null;
+    }
     this.monitorSub?.remove();
     this.monitorSub = null;
     this.stateSub?.remove();

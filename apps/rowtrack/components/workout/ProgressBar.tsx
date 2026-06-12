@@ -2,7 +2,9 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { View, Text, Animated, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import {
   accent,
+  fg,
   fontFamily,
+  progressBar,
   space,
   status,
 } from '@/constants';
@@ -21,7 +23,7 @@ function blendColors(c1: string, c2: string, t: number): string {
   return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()}`;
 }
 
-export interface ProgressBarProps {
+export type ProgressBarProps = {
   progress: number;
   timerDisplay: string;
   isCountdown: boolean;
@@ -219,7 +221,7 @@ const styles = StyleSheet.create({
   },
   bg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#c9b894',
+    backgroundColor: progressBar.trackColor,
     borderRadius: BORDER_RADIUS,
   },
   segHorizontal: {
@@ -244,7 +246,7 @@ const styles = StyleSheet.create({
   pctLabel: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: 13,
-    color: '#FFFFFF',
+    color: fg.onAccent,
     opacity: 0.6,
   },
   timer: {
@@ -254,7 +256,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fontFamily.bodySemiBold,
     fontSize: 13,
-    color: '#FFFFFF',
+    color: fg.onAccent,
     opacity: 0.6,
     letterSpacing: 0.5,
     textTransform: 'uppercase',

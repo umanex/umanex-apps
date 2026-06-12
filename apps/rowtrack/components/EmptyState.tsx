@@ -5,7 +5,7 @@ import { fg, display, body, space } from '@/constants';
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
-export interface EmptyStateProps {
+export type EmptyStateProps = {
   icon: IoniconsName;
   title: string;
   subtitle?: string;

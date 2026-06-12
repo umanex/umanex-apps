@@ -32,6 +32,7 @@ export function formatDistanceDynamic(meters: number): { value: string; unit: st
 }
 
 export function formatSplit(splitSec: number): string {
+  if (!Number.isFinite(splitSec)) return '—';
   const m = Math.floor(splitSec / 60);
   const s = Math.round(splitSec % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;

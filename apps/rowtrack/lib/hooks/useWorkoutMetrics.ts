@@ -104,7 +104,8 @@ export function useWorkoutMetrics(
       .select('weight_kg')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) log('profile weight fetch failed, using default:', error.message);
         weightKgRef.current = data?.weight_kg ?? null;
       });
   }, [user]);

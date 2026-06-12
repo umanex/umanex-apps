@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
-interface IconProps {
+type IconProps = {
   name: IoniconsName;
   size?: number;
   color?: string;

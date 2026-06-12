@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { status, body } from '@/constants';
 
-export interface ErrorMessageProps {
+export type ErrorMessageProps = {
   message?: string | null;
 }
 

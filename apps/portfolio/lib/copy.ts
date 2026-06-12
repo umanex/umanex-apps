@@ -73,6 +73,23 @@ export const copy = {
     },
     keyMessages: {
       title: 'Waarom teams mij erbij halen',
+      items: [
+        {
+          title: 'Het hele design proces',
+          body: 'Van gebruikersonderzoek en prototypes tot design systems en kwaliteitsbewaking tijdens development. Eén aanspreekpunt dat het volledige traject beheert — geen overdrachten, geen vertaalverlies.',
+          link: { label: 'Bekijk mijn parcours', href: '/carriere' },
+        },
+        {
+          title: 'Stakeholders in complexe omgevingen',
+          body: 'B2B software betekent veel stemmen rond de tafel: product, development, business, eindgebruikers. Ik breng die samen — ook wanneer belangen botsen of de scope blijft schuiven.',
+          link: { label: 'Lees de cases', href: '/cases' },
+        },
+        {
+          title: 'Innovatie met AI',
+          body: 'Geen AI als buzzword maar als werkwijze: gestructureerde briefings, design tokens als bron van waarheid en agents die binnen vaste conventies bouwen. Deze site draait erop.',
+          link: { label: 'Zo werk ik', href: '/werkwijze' },
+        },
+      ],
     },
     casesTeaser: {
       title: 'Werk waar je iets aan hebt',

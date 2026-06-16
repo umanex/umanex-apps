@@ -155,6 +155,42 @@ else
   echo "  ⚠ Geen umanex-os/skills/ folder gevonden — skill-sync overgeslagen"
 fi
 
+# Context-snapshot systeem: generieke generator + dependency-vrije git hook.
+# Snapshots zijn commit-time tooling (lokaal), dus dit rijdt mee met de lokale sync,
+# niet met de CI-laag. De hook wordt geactiveerd via core.hooksPath=.githooks.
+echo ""
+echo "→ Installeer context-snapshot systeem..."
+GEN_SNAPSHOT="$UMANEX_OS_PATH/templates/gen-snapshot.sh"
+GITHOOK="$UMANEX_OS_PATH/templates/githooks-pre-commit"
+CONTEXT_TEMPLATE="$UMANEX_OS_PATH/templates/context.json.template"
+
+if [ -f "$GEN_SNAPSHOT" ]; then
+  mkdir -p scripts
+  cp "$GEN_SNAPSHOT" scripts/gen-snapshot.sh
+  chmod +x scripts/gen-snapshot.sh
+  echo "  ✓ scripts/gen-snapshot.sh"
+else
+  echo "  ⚠ templates/gen-snapshot.sh niet gevonden — overgeslagen"
+fi
+
+if [ -f "$GITHOOK" ]; then
+  mkdir -p .githooks
+  cp "$GITHOOK" .githooks/pre-commit
+  chmod +x .githooks/pre-commit
+  git config core.hooksPath .githooks
+  echo "  ✓ .githooks/pre-commit (core.hooksPath gezet)"
+else
+  echo "  ⚠ templates/githooks-pre-commit niet gevonden — hook overgeslagen"
+fi
+
+# context.json is repo-eigen input — alleen scaffolden als afwezig, nooit overschrijven.
+if [ -f "context.json" ]; then
+  echo "  • context.json bestaat al — ongemoeid gelaten"
+elif [ -f "$CONTEXT_TEMPLATE" ]; then
+  cp "$CONTEXT_TEMPLATE" context.json
+  echo "  ✓ context.json aangemaakt uit template — vul de Figma-gegevens per app in"
+fi
+
 echo ""
 echo "✓ Sync compleet."
 echo ""

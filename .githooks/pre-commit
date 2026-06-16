@@ -1,0 +1,16 @@
+#!/bin/bash
+# .githooks/pre-commit — genereert context-snapshots vóór elke commit en voegt ze toe.
+#
+# Canonieke bron: umanex-os/templates/githooks-pre-commit. Gesynct naar
+# <klant-repo>/.githooks/pre-commit en geactiveerd via core.hooksPath=.githooks
+# (zet scripts/sync-os.sh automatisch). Dependency-vrij — geen husky.
+
+[ -f ./scripts/gen-snapshot.sh ] || exit 0
+
+echo "🔄 Context snapshots bijwerken..."
+bash ./scripts/gen-snapshot.sh all
+
+# Voeg alle gegenereerde snapshots toe aan de commit (glob — geen hardcoded paden).
+git add apps/*/context-snapshot.md 2>/dev/null || true
+
+echo "✅ Snapshots toegevoegd aan commit"

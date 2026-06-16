@@ -1,0 +1,34 @@
+{
+  "_comment": "Per-repo metadata voor gen-snapshot.sh. Vul per app de Figma-gegevens in. gen-snapshot matcht een app op het .dir-veld (apps/<app>), niet op de key hieronder — de key mag dus vrij gekozen worden.",
+  "project": "umanex",
+  "apps": {
+    "cashflow": {
+      "dir": "apps/cashflow",
+      "figmaKey": "[TODO]",
+      "figmaUrl": "[TODO]",
+      "description": "[TODO: korte beschrijving van cashflow]",
+      "status": "active"
+    },
+    "jobradar": {
+      "dir": "apps/jobradar",
+      "figmaKey": "[TODO]",
+      "figmaUrl": "[TODO]",
+      "description": "[TODO: korte beschrijving van jobradar]",
+      "status": "active"
+    },
+    "portfolio": {
+      "dir": "apps/portfolio",
+      "figmaKey": "[TODO]",
+      "figmaUrl": "[TODO]",
+      "description": "[TODO: korte beschrijving van portfolio]",
+      "status": "active"
+    },
+    "rowtrack": {
+      "dir": "apps/rowtrack",
+      "figmaKey": "[TODO]",
+      "figmaUrl": "[TODO]",
+      "description": "[TODO: korte beschrijving van rowtrack]",
+      "status": "active"
+    }
+  }
+}

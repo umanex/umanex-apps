@@ -54,10 +54,22 @@ if [ ! -d "$UMANEX_OS_PATH" ]; then
   exit 1
 fi
 
-# Pull laatste versie van umanex-os — non-fataal: zonder netwerk synct het script
+# Vereis dat umanex-os op main staat. Sync leest de working tree van umanex-os; staat die
+# op een feature-branch, dan zou stale of half-afgewerkte content stilletjes propageren.
+# Alleen gemergede main-content is bron-van-waarheid — dus weigeren als het niet main is.
+OS_BRANCH="$(git -C "$UMANEX_OS_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+if [ "$OS_BRANCH" != "main" ]; then
+  echo "✗ umanex-os staat op '$OS_BRANCH', niet op main."
+  echo "  Sync propageert alleen gemergede main-content. Checkout main in umanex-os:"
+  echo "    git -C \"$UMANEX_OS_PATH\" checkout main"
+  echo "  en draai daarna opnieuw."
+  exit 1
+fi
+
+# Pull laatste versie van umanex-os main — non-fataal: zonder netwerk synct het script
 # gewoon de lokale (mogelijk al actuele) versie i.p.v. volledig af te breken.
-echo "→ Pull laatste versie uit GitHub..."
-if git -C "$UMANEX_OS_PATH" pull --quiet 2>/dev/null; then
+echo "→ Pull laatste versie van main uit GitHub..."
+if git -C "$UMANEX_OS_PATH" pull --quiet origin main 2>/dev/null; then
   echo "  ✓ umanex-os up-to-date"
 else
   echo "  ⚠ git pull mislukt (offline of geen toegang) — verder met lokale versie"

@@ -1,13 +1,19 @@
 #!/bin/bash
 
 # sync-os.sh — synct umanex-os naar de huidige klant-repo
-# Plaats dit script in <klant-repo>/scripts/sync-os.sh
-# Aanpassen per klant: UMANEX_OS_PATH en CLIENT_PROFILE
+# Plaats dit script in <klant-repo>/scripts/sync-os.sh — dit script is identiek in elke
+# klant-repo; niets per klant aanpassen.
+#
+# Het klant-profiel wordt NIET in dit script gezet, maar gelezen uit de repo zelf:
+#   .umanex-os/profile  → één woord, de klantnaam (bv. umanex, columba, luminus).
+# Zo blijft het script overal byte-identiek en kan een verkeerde kopie nooit stil het
+# verkeerde profiel pakken — ontbreekt de marker, dan stopt de sync met een melding.
 #
 # Wat dit script synct:
 # - .umanex-os/CLAUDE.md          (globale werkprincipes)
 # - .umanex-os/profiles/{X}.md     (klant-specifiek profile)
 # - ~/.claude/skills/<naam>        (globale skills uit umanex-os/skills/, user-level discovery)
+# - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
 #
 # Wat dit script NOOIT aanraakt:
 # - <klant-repo>/.claude/skills/   — klant-specifieke skills (project-level discovery)
@@ -17,17 +23,28 @@
 
 set -uo pipefail
 
-# === AANPASSEN PER KLANT ===
+# Pad naar de lokale umanex-os checkout (per machine; standaard onder ~/Documents).
 UMANEX_OS_PATH="$HOME/Documents/umanex-os"
-CLIENT_PROFILE="umanex"   # opties: columba, luminus, umanex
-# ============================
 
 # Bepaal waar dit script staat en ga naar de klant-repo root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CLIENT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
+# Lees het klant-profiel uit de marker in de repo zelf — geen hardcoded default.
+PROFILE_MARKER="$CLIENT_ROOT/.umanex-os/profile"
+if [ ! -f "$PROFILE_MARKER" ]; then
+  echo "✗ Geen profiel-marker gevonden op .umanex-os/profile"
+  echo "  Maak hem aan met de klantnaam, bv.:  mkdir -p .umanex-os && echo umanex > .umanex-os/profile"
+  exit 1
+fi
+CLIENT_PROFILE="$(tr -d '[:space:]' < "$PROFILE_MARKER")"
+if [ -z "$CLIENT_PROFILE" ]; then
+  echo "✗ Profiel-marker .umanex-os/profile is leeg — vul de klantnaam in."
+  exit 1
+fi
+
 echo "→ Sync umanex-os naar $(basename "$CLIENT_ROOT")"
-echo "  Profile: $CLIENT_PROFILE"
+echo "  Profile: $CLIENT_PROFILE (uit .umanex-os/profile)"
 echo ""
 
 # Check of umanex-os lokaal staat
@@ -63,6 +80,37 @@ if [ -f "$UMANEX_OS_PATH/profiles/$CLIENT_PROFILE.md" ]; then
   echo "  ✓ .umanex-os/profiles/$CLIENT_PROFILE.md"
 else
   echo "  ⚠ Profile $CLIENT_PROFILE.md niet gevonden in umanex-os/profiles/"
+fi
+
+# Seed een leeg LEARNINGS.md in de klant-repo root én in elke app (apps/*) als die er
+# nog niet is. LEARNINGS.md is een staging-bestand met repo-eigen entries — dus NOOIT
+# overschrijven: bestaat het al, dan blijft het ongemoeid. De vastleggen skill voegt de
+# laag-header (# Klant — <profile> resp. # Project — <app>) en entries toe bij de eerste capture.
+LEARNINGS_TEMPLATE="$UMANEX_OS_PATH/templates/LEARNINGS.template.md"
+
+seed_learnings() {
+  # $1 = doelmap; seedt $1/LEARNINGS.md alleen als die nog niet bestaat
+  local target="$1/LEARNINGS.md"
+  if [ -f "$target" ]; then
+    echo "  • $target bestaat al — ongemoeid gelaten"
+  else
+    cp "$LEARNINGS_TEMPLATE" "$target"
+    echo "  ✓ $target aangemaakt uit template"
+  fi
+}
+
+echo ""
+echo "→ Seed LEARNINGS.md (root + elke app, alleen als afwezig)..."
+if [ ! -f "$LEARNINGS_TEMPLATE" ]; then
+  echo "  ⚠ templates/LEARNINGS.template.md niet gevonden — seed overgeslagen"
+else
+  seed_learnings "."
+  if [ -d "apps" ]; then
+    for app_dir in apps/*/; do
+      [ -d "$app_dir" ] || continue          # geen match → overslaan
+      seed_learnings "${app_dir%/}"
+    done
+  fi
 fi
 
 # Verwijder oude in-repo skills folder als die er nog staat (legacy van vorige versie)

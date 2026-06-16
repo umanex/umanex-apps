@@ -9,10 +9,17 @@ name: Sync umanex-os layer
 #   - .umanex-os/CLAUDE.md, .umanex-os/profiles/<profile>.md   globale laag
 #   - .umanex-os/profile                                        marker voor scripts/sync-os.sh
 #   - scripts/sync-os.sh                                        canoniek sync-script
+#   - scripts/gen-snapshot.sh, .githooks/pre-commit             snapshot-systeem (bestanden)
+#   - context.json                                              snapshot-input, seed-if-absent
 #   - LEARNINGS.md in root + elke apps/*                        capture-staging, seed-if-absent
 #
 # Skills worden NIET via CI gesynct: die staan user-level (~/.claude/skills) en komen
 # via het lokale scripts/sync-os.sh. GitHub Actions kan niet naar de runner-home schrijven.
+#
+# De snapshot-hook ACTIVATIE (git config core.hooksPath .githooks) zet CI NIET — dat is
+# lokale git-config van je werkkopie. De bestanden staan na deze sync wel in de repo;
+# draai één keer scripts/sync-os.sh lokaal (of `git config core.hooksPath .githooks`)
+# om de hook te activeren.
 #
 # Deze workflow kan zichzelf niet updaten — GitHub weigert workflow-wijzigingen met de
 # default GITHUB_TOKEN. Nieuwe versies van deze receiver gaan via een handmatige PR.
@@ -43,6 +50,9 @@ jobs:
           PROFILE_NAME: ${{ github.event.client_payload.profile_name }}
           SYNC_SCRIPT_B64: ${{ github.event.client_payload.sync_script_b64 }}
           LEARNINGS_TEMPLATE_B64: ${{ github.event.client_payload.learnings_template_b64 }}
+          GEN_SNAPSHOT_B64: ${{ github.event.client_payload.gen_snapshot_b64 }}
+          GITHOOK_B64: ${{ github.event.client_payload.githook_b64 }}
+          CONTEXT_TEMPLATE_B64: ${{ github.event.client_payload.context_template_b64 }}
         run: |
           set -euo pipefail
           if [ -z "${PROFILE_NAME:-}" ] || [ -z "${CLAUDE_MD_B64:-}" ]; then
@@ -62,6 +72,23 @@ jobs:
             mkdir -p scripts
             printf '%s' "$SYNC_SCRIPT_B64" | base64 -d > scripts/sync-os.sh
             chmod +x scripts/sync-os.sh
+          fi
+
+          # Snapshot-systeem: gen-snapshot.sh + pre-commit hook zijn canonieke bestanden
+          # (geen repo-eigen inhoud) → overschrijven mag. De hook-activatie blijft lokaal.
+          if [ -n "${GEN_SNAPSHOT_B64:-}" ]; then
+            mkdir -p scripts
+            printf '%s' "$GEN_SNAPSHOT_B64" | base64 -d > scripts/gen-snapshot.sh
+            chmod +x scripts/gen-snapshot.sh
+          fi
+          if [ -n "${GITHOOK_B64:-}" ]; then
+            mkdir -p .githooks
+            printf '%s' "$GITHOOK_B64" | base64 -d > .githooks/pre-commit
+            chmod +x .githooks/pre-commit
+          fi
+          # context.json is repo-eigen input → alleen scaffolden als afwezig, nooit overschrijven.
+          if [ -n "${CONTEXT_TEMPLATE_B64:-}" ] && [ ! -f context.json ]; then
+            printf '%s' "$CONTEXT_TEMPLATE_B64" | base64 -d > context.json
           fi
 
           # LEARNINGS-seed in root + elke app — alleen als afwezig, nooit overschrijven

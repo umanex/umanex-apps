@@ -13,6 +13,7 @@
 # - .umanex-os/CLAUDE.md          (globale werkprincipes)
 # - .umanex-os/profiles/{X}.md     (klant-specifiek profile)
 # - ~/.claude/skills/<naam>        (globale skills uit umanex-os/skills/, user-level discovery)
+# - ~/.claude/hooks/tcebc-reminder.sh + settings.json  (TC-EBC UserPromptSubmit hook, user-level)
 # - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
 #
 # Wat dit script NOOIT aanraakt:
@@ -189,6 +190,42 @@ if [ -f "context.json" ]; then
 elif [ -f "$CONTEXT_TEMPLATE" ]; then
   cp "$CONTEXT_TEMPLATE" context.json
   echo "  ✓ context.json aangemaakt uit template — vul de Figma-gegevens per app in"
+fi
+
+# TC-EBC UserPromptSubmit hook: user-level (~/.claude), net als de skills — niet repo-lokaal.
+# Bron: umanex-os/templates/tcebc-reminder.sh. Activatie = het script kopiëren én een hook-entry
+# in ~/.claude/settings.json. settings.json is je eigen config, dus MERGEN met jq (idempotent:
+# alleen toevoegen als de entry nog ontbreekt), nooit overschrijven.
+echo ""
+echo "→ Installeer TC-EBC UserPromptSubmit hook (user-level)..."
+TCEBC_SRC="$UMANEX_OS_PATH/templates/tcebc-reminder.sh"
+USER_HOOKS="$HOME/.claude/hooks"
+USER_SETTINGS="$HOME/.claude/settings.json"
+HOOK_CMD="$USER_HOOKS/tcebc-reminder.sh"
+if [ ! -f "$TCEBC_SRC" ]; then
+  echo "  ⚠ templates/tcebc-reminder.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$TCEBC_SRC" "$HOOK_CMD"
+  chmod +x "$HOOK_CMD"
+  echo "  ✓ ~/.claude/hooks/tcebc-reminder.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast. Voeg de UserPromptSubmit-hook handmatig toe (zie docs/architecture.md)."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$HOOK_CMD" '.hooks.UserPromptSubmit[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$HOOK_CMD" '.hooks.UserPromptSubmit += [{"hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"TC-EBC check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        mv "$_tmp" "$USER_SETTINGS"
+        echo "  ✓ UserPromptSubmit-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
+      else
+        rm -f "$_tmp"
+        echo "  ⚠ kon settings.json niet bewerken — controleer of het geldige JSON is"
+      fi
+    fi
+  fi
 fi
 
 echo ""

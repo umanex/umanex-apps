@@ -227,9 +227,10 @@ Voor andere wijzigingen (nieuwe components, refactors binnen één file, bug fix
 - Branches aanmaken en verwijderen
 - Tags aanmaken en verwijderen
 - PR's openen
+- Merge naar `main` — mag automatisch, zonder voorafgaande melding. Blijf wel volgens het vaste principe werken: feature branch → PR → merge. Na een geslaagde merge: de feature branch verwijderen (lokaal en remote).
 
 ### Wat met melding vooraf
-- Merge naar `main` (lokaal of via PR) — geef een korte melding *voor* de merge, zodat Jeroen weet dat hij straks de Vercel production deploy moet triggeren als hij dat wil.
+- Na een merge naar `main`: meld kort dat de merge gebeurd is, zodat Jeroen weet dat hij de Vercel production deploy kan triggeren als hij dat wil. (Production blijft handmatig — zie "Wat nooit mag".)
 
 ### Wat nooit mag
 - Vercel production deployments triggeren. Production blijft handmatig via Jeroen.

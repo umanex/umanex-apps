@@ -18,11 +18,11 @@ _Gegenereerd op 2026-06-17_
 
 ## Recente commits (app + packages)
 ```
+923f63e feat(tokens): extend neutral/primary/secondary scales to 950
 66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
 38f4aab chore: add global context-snapshot system (.githooks)
 66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
 78866ef fix(cashflow): overflowCash maand 0 filtert gefinaliseerde potten
-a5600a9 fix(cashflow): eindsaldo actieve maand stroomt correct door naar volgende maand
 ```
 
 ## Uncommitted wijzigingen

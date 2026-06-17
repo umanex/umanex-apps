@@ -18,11 +18,11 @@ _Gegenereerd op 2026-06-17_
 
 ## Recente commits (app + packages)
 ```
+66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
 38f4aab chore: add global context-snapshot system (.githooks)
 66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
 a8c5533 feat(jobradar): status tracking op jobs en leads
 bf45a95 feat(jobradar): real Adzuna API adapter
-fd92b98 chore(jobradar): add eslint config and pin eslint@8
 ```
 
 ## Uncommitted wijzigingen

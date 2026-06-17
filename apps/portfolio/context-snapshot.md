@@ -18,11 +18,11 @@ _Gegenereerd op 2026-06-17_
 
 ## Recente commits (app + packages)
 ```
+66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
 38f4aab chore: add global context-snapshot system (.githooks)
 66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
 4dffaa4 refactor(portfolio): fold keyMessages into lib/copy.ts
 5bf44fa refactor(portfolio): extract page copy to lib/copy.ts
-337432f feat(portfolio): restyle with playful red accents
 ```
 
 ## Uncommitted wijzigingen

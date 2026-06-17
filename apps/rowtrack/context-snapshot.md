@@ -18,11 +18,11 @@ _Gegenereerd op 2026-06-17_
 
 ## Recente commits (app + packages)
 ```
+66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
 38f4aab chore: add global context-snapshot system (.githooks)
 66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
 671a22d docs(rowtrack): add TODO list with open items from code review
 7ce4b9a fix(rowtrack): add missing birth_date column and profiles insert policy
-db92242 refactor(rowtrack): align components with conventions
 ```
 
 ## Uncommitted wijzigingen

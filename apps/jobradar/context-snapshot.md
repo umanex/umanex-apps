@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-06-16_
+_Gegenereerd op 2026-06-17_
 
 ## Project
 - **App:** jobradar
@@ -18,15 +18,15 @@ _Gegenereerd op 2026-06-16_
 
 ## Recente commits (app + packages)
 ```
+38f4aab chore: add global context-snapshot system (.githooks)
 66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
 a8c5533 feat(jobradar): status tracking op jobs en leads
 bf45a95 feat(jobradar): real Adzuna API adapter
 fd92b98 chore(jobradar): add eslint config and pin eslint@8
-3bad899 feat(jobradar): scaffold app — regio-laag, mock adapters, Drizzle/SQLite, sync API + dashboard (#48)
 ```
 
 ## Uncommitted wijzigingen
-  (geen)
+  M  packages/tokens/tokens.json
 
 ## Bestanden met TODO/FIXME
   (geen)

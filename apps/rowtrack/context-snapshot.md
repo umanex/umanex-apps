@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-06-16_
+_Gegenereerd op 2026-06-17_
 
 ## Project
 - **App:** rowtrack
@@ -18,15 +18,15 @@ _Gegenereerd op 2026-06-16_
 
 ## Recente commits (app + packages)
 ```
+38f4aab chore: add global context-snapshot system (.githooks)
 66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
 671a22d docs(rowtrack): add TODO list with open items from code review
 7ce4b9a fix(rowtrack): add missing birth_date column and profiles insert policy
 db92242 refactor(rowtrack): align components with conventions
-37e815f fix(rowtrack): guard formatSplit against non-finite input, log weight fetch errors
 ```
 
 ## Uncommitted wijzigingen
-  (geen)
+  M  packages/tokens/tokens.json
 
 ## Bestanden met TODO/FIXME
   (geen)

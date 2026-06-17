@@ -1,5 +1,5 @@
 # Context Snapshot — portfolio
-_Gegenereerd op 2026-06-16_
+_Gegenereerd op 2026-06-17_
 
 ## Project
 - **App:** portfolio
@@ -18,15 +18,15 @@ _Gegenereerd op 2026-06-16_
 
 ## Recente commits (app + packages)
 ```
+38f4aab chore: add global context-snapshot system (.githooks)
 66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
 4dffaa4 refactor(portfolio): fold keyMessages into lib/copy.ts
 5bf44fa refactor(portfolio): extract page copy to lib/copy.ts
 337432f feat(portfolio): restyle with playful red accents
-9fa5028 feat(portfolio): rebuild as personal presentation site (v2)
 ```
 
 ## Uncommitted wijzigingen
-  (geen)
+  M  packages/tokens/tokens.json
 
 ## Bestanden met TODO/FIXME
   (geen)

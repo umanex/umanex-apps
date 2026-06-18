@@ -1,5 +1,5 @@
 # Context Snapshot — portfolio
-_Gegenereerd op 2026-06-16_
+_Gegenereerd op 2026-06-17_
 
 ## Project
 - **App:** portfolio
@@ -18,15 +18,17 @@ _Gegenereerd op 2026-06-16_
 
 ## Recente commits (app + packages)
 ```
-66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
-4dffaa4 refactor(portfolio): fold keyMessages into lib/copy.ts
-5bf44fa refactor(portfolio): extract page copy to lib/copy.ts
-337432f feat(portfolio): restyle with playful red accents
-9fa5028 feat(portfolio): rebuild as personal presentation site (v2)
+78609ca feat(tokens): generate shadcn :root/.dark CSS from tokens
+1464bde feat(tokens): add Semantic/shadcn token set (light + dark)
+923f63e feat(tokens): extend neutral/primary/secondary scales to 950
+66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
+38f4aab chore: add global context-snapshot system (.githooks)
 ```
 
 ## Uncommitted wijzigingen
-  (geen)
+  M  packages/tokens/build/shadcn.css
+  M  packages/tokens/lib/hslTriplet.mjs
+  M  packages/ui/globals.css
 
 ## Bestanden met TODO/FIXME
   (geen)

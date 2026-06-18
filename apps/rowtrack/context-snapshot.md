@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-06-16_
+_Gegenereerd op 2026-06-17_
 
 ## Project
 - **App:** rowtrack
@@ -18,15 +18,17 @@ _Gegenereerd op 2026-06-16_
 
 ## Recente commits (app + packages)
 ```
-66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
-671a22d docs(rowtrack): add TODO list with open items from code review
-7ce4b9a fix(rowtrack): add missing birth_date column and profiles insert policy
-db92242 refactor(rowtrack): align components with conventions
-37e815f fix(rowtrack): guard formatSplit against non-finite input, log weight fetch errors
+78609ca feat(tokens): generate shadcn :root/.dark CSS from tokens
+1464bde feat(tokens): add Semantic/shadcn token set (light + dark)
+923f63e feat(tokens): extend neutral/primary/secondary scales to 950
+66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
+38f4aab chore: add global context-snapshot system (.githooks)
 ```
 
 ## Uncommitted wijzigingen
-  (geen)
+  M  packages/tokens/build/shadcn.css
+  M  packages/tokens/lib/hslTriplet.mjs
+  M  packages/ui/globals.css
 
 ## Bestanden met TODO/FIXME
   (geen)

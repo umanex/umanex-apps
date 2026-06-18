@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-06-16_
+_Gegenereerd op 2026-06-17_
 
 ## Project
 - **App:** jobradar
@@ -18,15 +18,17 @@ _Gegenereerd op 2026-06-16_
 
 ## Recente commits (app + packages)
 ```
-66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
-a8c5533 feat(jobradar): status tracking op jobs en leads
-bf45a95 feat(jobradar): real Adzuna API adapter
-fd92b98 chore(jobradar): add eslint config and pin eslint@8
-3bad899 feat(jobradar): scaffold app — regio-laag, mock adapters, Drizzle/SQLite, sync API + dashboard (#48)
+78609ca feat(tokens): generate shadcn :root/.dark CSS from tokens
+1464bde feat(tokens): add Semantic/shadcn token set (light + dark)
+923f63e feat(tokens): extend neutral/primary/secondary scales to 950
+66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
+38f4aab chore: add global context-snapshot system (.githooks)
 ```
 
 ## Uncommitted wijzigingen
-  (geen)
+  M  packages/tokens/build/shadcn.css
+  M  packages/tokens/lib/hslTriplet.mjs
+  M  packages/ui/globals.css
 
 ## Bestanden met TODO/FIXME
   (geen)

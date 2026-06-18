@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-06-16_
+_Gegenereerd op 2026-06-17_
 
 ## Project
 - **App:** cashflow
@@ -18,15 +18,17 @@ _Gegenereerd op 2026-06-16_
 
 ## Recente commits (app + packages)
 ```
-66b587b chore: adopt umanex-os LEARNINGS capture + profile marker
-78866ef fix(cashflow): overflowCash maand 0 filtert gefinaliseerde potten
-a5600a9 fix(cashflow): eindsaldo actieve maand stroomt correct door naar volgende maand
-a739131 fix(cashflow): gefinaliseerde potten uitsluiten van subtotalen actieve maand
-cde1929 fix(cashflow): budgetSubtotaal actieve maand = provision - paid
+78609ca feat(tokens): generate shadcn :root/.dark CSS from tokens
+1464bde feat(tokens): add Semantic/shadcn token set (light + dark)
+923f63e feat(tokens): extend neutral/primary/secondary scales to 950
+66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
+38f4aab chore: add global context-snapshot system (.githooks)
 ```
 
 ## Uncommitted wijzigingen
-  (geen)
+  M  packages/tokens/build/shadcn.css
+  M  packages/tokens/lib/hslTriplet.mjs
+  M  packages/ui/globals.css
 
 ## Bestanden met TODO/FIXME
   (geen)

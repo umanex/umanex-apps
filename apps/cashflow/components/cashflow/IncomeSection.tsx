@@ -74,7 +74,7 @@ function DraggableIncomeItem({
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Omschrijving"
-          className="flex-1 h-7 px-2 text-[13px] rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+          className="flex-1 h-7 px-2 text-[13px] rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
         />
         <div className="flex flex-col gap-2 items-end shrink-0">
           <input
@@ -83,10 +83,10 @@ function DraggableIncomeItem({
             value={amount}
             onChange={(e) => setAmount(limitDecimals(e.target.value))}
             placeholder="€"
-            className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+            className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <div className="flex gap-2 items-center">
-            <button onClick={handleSave} className="text-xs font-semibold text-[var(--umanexTextTitle)]">OK</button>
+            <button onClick={handleSave} className="text-xs font-semibold text-[var(--umanexNeutral800)]">OK</button>
             <button onClick={handleCancel} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
           </div>
         </div>
@@ -209,7 +209,7 @@ export function IncomeSection({
                   if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                   if (e.key === 'Escape') setEditingBalance(false);
                 }}
-                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
               />
             ) : (
               <span
@@ -254,7 +254,7 @@ export function IncomeSection({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Omschrijving"
-              className="flex-1 h-7 px-2 text-[13px] rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+              className="flex-1 h-7 px-2 text-[13px] rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
             />
             <div className="flex flex-col gap-2 items-end shrink-0">
               <input
@@ -263,10 +263,10 @@ export function IncomeSection({
                 value={amount}
                 onChange={(e) => setAmount(limitDecimals(e.target.value))}
                 placeholder="€"
-                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <div className="flex gap-2 items-center">
-                <button onClick={handleAdd} className="text-xs font-semibold text-[var(--umanexTextTitle)]">OK</button>
+                <button onClick={handleAdd} className="text-xs font-semibold text-[var(--umanexNeutral800)]">OK</button>
                 <button
                   onClick={() => { setAdding(false); setLabel(''); setAmount(''); }}
                   className="text-xs text-muted-foreground hover:text-foreground"

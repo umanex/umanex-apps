@@ -113,7 +113,7 @@ function DraggableRecurringItem({
           value={localAmount}
           onChange={(e) => setLocalAmount(e.target.value)}
           onBlur={handleAmountBlur}
-          className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring ${
+          className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring ${
             isPaid ? 'text-emerald-600' : ''
           }`}
           aria-label="Werkelijk bedrag"
@@ -196,7 +196,7 @@ function DeferredRecurringItem({
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={handleAmountBlur}
-            className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+            className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
             aria-label="Werkelijk bedrag"
           />
           <button

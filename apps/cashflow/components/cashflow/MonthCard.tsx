@@ -106,7 +106,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     >
       {/* Gekleurde header strip: maandnaam + eindsaldo */}
       <div className="flex items-center justify-between px-6 py-3 bg-[var(--umanexNeutral100)]">
-        <h2 className="font-semibold text-base text-[var(--umanexTextTitle)]">
+        <h2 className="font-semibold text-base text-[var(--umanexNeutral800)]">
           {getMonthLabel(monthKey)}
         </h2>
         <span className={`text-base font-bold tabular-nums ${balanceColor}`}>
@@ -119,13 +119,13 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
         {/* 2 KPI tiles: Inkomsten + Uitgaves */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg bg-[var(--umanexNeutral50)] border border-[var(--umanexNeutral200)] px-3 py-3 flex items-center justify-between">
-            <p className="text-sm text-[var(--umanexTextTitle)]">Inkomsten</p>
+            <p className="text-sm text-[var(--umanexNeutral800)]">Inkomsten</p>
             <p className={`text-lg font-bold tabular-nums whitespace-nowrap ${totaalInkomsten >= 0 ? 'text-emerald-600' : 'text-[var(--umanexPrimary500)]'}`}>
               {formatCurrency(totaalInkomsten)}
             </p>
           </div>
           <div className="rounded-lg bg-[var(--umanexNeutral50)] border border-[var(--umanexNeutral200)] px-3 py-3 flex items-center justify-between">
-            <p className="text-sm text-[var(--umanexTextTitle)]">Uitgaves</p>
+            <p className="text-sm text-[var(--umanexNeutral800)]">Uitgaves</p>
             <p className={`text-lg font-bold tabular-nums whitespace-nowrap ${totaalKosten > 0 ? 'text-[var(--umanexPrimary500)]' : 'text-muted-foreground'}`}>
               {formatCurrency(totaalKosten)}
             </p>
@@ -200,7 +200,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
 
       {/* Footer eindsaldo (Q3: behouden) */}
       <div className="border-t border-[var(--umanexPrimary50)] px-4 py-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-[var(--umanexTextTitle)]">Eindsaldo</span>
+        <span className="text-sm font-medium text-[var(--umanexNeutral800)]">Eindsaldo</span>
         <span className={`text-lg font-bold tabular-nums ${balanceColor}`}>
           {formatCurrency(eindsaldo)}
         </span>

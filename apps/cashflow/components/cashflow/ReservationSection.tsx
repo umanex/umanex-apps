@@ -128,7 +128,7 @@ function DraggablePotRow({
 
         <div className="flex-1 flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-[var(--umanexTextTitle)] truncate">{pot.label}</span>
+            <span className="text-sm font-medium text-[var(--umanexNeutral800)] truncate">{pot.label}</span>
             {hasPayments && canFinalize && (
               <button
                 onClick={handleFinalize}
@@ -164,7 +164,7 @@ function DraggablePotRow({
             }}
             onBlur={isBudgetCurrentMonth ? undefined : handleAmountBlur}
             onPointerDown={(e) => e.stopPropagation()}
-            className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] focus:outline-none focus:ring-1 focus:ring-ring ${
+            className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] focus:outline-none focus:ring-1 focus:ring-ring ${
               isBudgetCurrentMonth
                 ? `bg-[var(--umanexNeutral50)] cursor-default ${displayAmount < 0 ? 'text-[var(--umanexPrimary500)] font-medium' : 'text-emerald-600'}`
                 : `bg-white ${pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'}`
@@ -191,7 +191,7 @@ function DraggablePotRow({
             >
               {/* Betalingslabel + verwijder/verplaats */}
               <div className="flex items-center gap-1">
-                <span className="text-xs text-[var(--umanexSecondary500)] font-medium">{payment.label}</span>
+                <span className="text-xs text-[var(--umanexNeutral800)] font-medium">{payment.label}</span>
                 <button
                   onClick={() => onMovePayment(payment.id, nextMonthKey(monthKey))}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -218,7 +218,7 @@ function DraggablePotRow({
                 ) : (
                   <>
                     <span className="text-[var(--umanexNeutral500)] opacity-70">Betaald:</span>
-                    <span className="font-semibold text-[var(--umanexTextTitle)] tabular-nums">{formatCurrency(payment.invoiceAmount)}</span>
+                    <span className="font-semibold text-[var(--umanexNeutral800)] tabular-nums">{formatCurrency(payment.invoiceAmount)}</span>
                     {payment.fromReservation > 0 && (
                       <>
                         <span className="text-muted-foreground/40">·</span>

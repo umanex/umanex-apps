@@ -80,7 +80,7 @@ function DraggableExpenseItem({
         onChange={(e) => setLocalAmount(limitDecimals(e.target.value))}
         onBlur={handleAmountBlur}
         onPointerDown={(e) => e.stopPropagation()}
-        className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring shrink-0 ${
+        className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring shrink-0 ${
           item.paid ? 'text-emerald-600' : 'text-[var(--umanexPrimary500)]'
         }`}
         aria-label="Bedrag"
@@ -189,7 +189,7 @@ export function ExpenseSection({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Omschrijving"
-              className="flex-1 h-7 px-2 text-[13px] rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+              className="flex-1 h-7 px-2 text-[13px] rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
             />
             <div className="flex flex-col gap-2 items-end shrink-0">
               <input
@@ -198,10 +198,10 @@ export function ExpenseSection({
                 value={amount}
                 onChange={(e) => setAmount(limitDecimals(e.target.value))}
                 placeholder="€"
-                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexUiBorder)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <div className="flex gap-2 items-center">
-                <button onClick={handleAdd} className="text-xs font-semibold text-[var(--umanexTextTitle)]">OK</button>
+                <button onClick={handleAdd} className="text-xs font-semibold text-[var(--umanexNeutral800)]">OK</button>
                 <button
                   onClick={() => { setAdding(false); setLabel(''); setAmount(''); }}
                   className="text-xs text-muted-foreground hover:text-foreground"

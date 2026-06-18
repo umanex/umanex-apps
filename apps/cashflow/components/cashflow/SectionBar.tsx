@@ -24,7 +24,7 @@ export function SectionBar({
 
   return (
     <div className="flex items-center justify-between pl-2 bg-[var(--umanexNeutral100)] rounded-[4px] shrink-0 w-full">
-      <span className="text-sm font-semibold text-[var(--umanexTextTitle)] whitespace-nowrap shrink-0">
+      <span className="text-sm font-semibold text-[var(--umanexNeutral800)] whitespace-nowrap shrink-0">
         {label}
       </span>
       <div className="flex items-center gap-2 shrink-0">
@@ -43,7 +43,7 @@ export function SectionBar({
           {hasFilter && (
             <button
               onClick={onFilterToggle}
-              className="bg-[var(--umanexSecondary500)] h-7 px-4 rounded-l-[4px] text-[13px] text-[var(--umanexNeutral50)] leading-none whitespace-nowrap"
+              className="bg-[var(--umanexNeutral800)] h-7 px-4 rounded-l-[4px] text-[13px] text-[var(--umanexNeutral50)] leading-none whitespace-nowrap"
               aria-label={showPaid ? 'Filter: alles zichtbaar — klik voor openstaand' : 'Filter: openstaand — klik voor alles'}
             >
               {showPaid ? 'Alle' : 'Open'}
@@ -51,7 +51,7 @@ export function SectionBar({
           )}
           <button
             onClick={onAdd}
-            className={`bg-[var(--umanexAlertsSuccessNormal)] size-7 flex items-center justify-center text-[var(--umanexNeutral50)] text-[19px] leading-none ${
+            className={`bg-emerald-600 size-7 flex items-center justify-center text-[var(--umanexNeutral50)] text-[19px] leading-none ${
               hasFilter ? 'rounded-r-[4px]' : 'rounded-[4px]'
             }`}
             aria-label={addAriaLabel}

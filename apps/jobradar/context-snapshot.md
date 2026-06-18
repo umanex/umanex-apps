@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-06-18_
+_Gegenereerd op 2026-06-19_
 
 ## Project
 - **App:** jobradar
@@ -18,16 +18,15 @@ _Gegenereerd op 2026-06-18_
 
 ## Recente commits (app + packages)
 ```
+149047a feat(tokens): rebuild as shadcn-native token set
+91dc049 fix(tokens): repoint dangling Content.M typography refs
 d7a8183 fix(tokens): emit exact-fidelity HSL triplets
 78609ca feat(tokens): generate shadcn :root/.dark CSS from tokens
 1464bde feat(tokens): add Semantic/shadcn token set (light + dark)
-923f63e feat(tokens): extend neutral/primary/secondary scales to 950
-66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
 ```
 
 ## Uncommitted wijzigingen
-  M  packages/tokens/build/tailwind.js
-  M  packages/tokens/tokens.json
+  (geen)
 
 ## Bestanden met TODO/FIXME
   (geen)

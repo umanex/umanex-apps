@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-06-17_
+_Gegenereerd op 2026-06-18_
 
 ## Project
 - **App:** rowtrack
@@ -18,17 +18,16 @@ _Gegenereerd op 2026-06-17_
 
 ## Recente commits (app + packages)
 ```
+d7a8183 fix(tokens): emit exact-fidelity HSL triplets
 78609ca feat(tokens): generate shadcn :root/.dark CSS from tokens
 1464bde feat(tokens): add Semantic/shadcn token set (light + dark)
 923f63e feat(tokens): extend neutral/primary/secondary scales to 950
 66d127d feat(tokens): rebuild tokens.json as umanex-only shadcn source
-38f4aab chore: add global context-snapshot system (.githooks)
 ```
 
 ## Uncommitted wijzigingen
-  M  packages/tokens/build/shadcn.css
-  M  packages/tokens/lib/hslTriplet.mjs
-  M  packages/ui/globals.css
+  M  packages/tokens/build/tailwind.js
+  M  packages/tokens/tokens.json
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Fira_Sans } from 'next/font/google';
+import { Fira_Sans, Merriweather } from 'next/font/google';
 import '@umanex/ui/globals.css';
 import '@umanex/tokens/variables.css';
 import './theme.css';
@@ -12,6 +12,16 @@ const firaSans = Fira_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-sans',
+});
+
+// Serif (--umanexFontSerif). preload:false want nog nergens toegepast — laadt pas
+// wanneer font-serif effectief gebruikt wordt (bv. serif-headings).
+const merriweather = Merriweather({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-serif',
+  display: 'swap',
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -44,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="nl-BE" className={firaSans.variable} suppressHydrationWarning>
+    <html lang="nl-BE" className={`${firaSans.variable} ${merriweather.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

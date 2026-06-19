@@ -4,6 +4,7 @@ import { Reveal } from '@/components/ui/Reveal';
 import { AccentBar } from '@/components/ui/AccentBar';
 import { copy } from '@/lib/copy';
 import { site } from '@/lib/site';
+import { buttonVariants } from '@umanex/ui/components/ui/button';
 
 const contact = copy.home.contact;
 
@@ -20,7 +21,7 @@ export const ContactSection = () => (
           <div className="flex flex-wrap items-center gap-4">
             <a
               href={site.contactHref}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className={buttonVariants({ size: 'lg' })}
             >
               {contact.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />

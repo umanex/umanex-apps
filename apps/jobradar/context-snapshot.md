@@ -18,11 +18,11 @@ _Gegenereerd op 2026-06-19_
 
 ## Recente commits (app + packages)
 ```
+f29c8bb refactor(cashflow): migrate dropped primitive refs to new tokens
 149047a feat(tokens): rebuild as shadcn-native token set
 91dc049 fix(tokens): repoint dangling Content.M typography refs
 d7a8183 fix(tokens): emit exact-fidelity HSL triplets
 78609ca feat(tokens): generate shadcn :root/.dark CSS from tokens
-1464bde feat(tokens): add Semantic/shadcn token set (light + dark)
 ```
 
 ## Uncommitted wijzigingen

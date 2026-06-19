@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
 import { AccentBar } from '@/components/ui/AccentBar';
+import { Card } from '@umanex/ui/components/ui/card';
 import { copy } from '@/lib/copy';
 
 const { title, items } = copy.home.keyMessages;
@@ -19,7 +20,7 @@ export const KeyMessages = () => (
       <div className="grid gap-6 lg:grid-cols-3">
         {items.map((message, index) => (
           <Reveal key={message.title} delay={index * 0.08}>
-            <div className="flex h-full flex-col gap-3 rounded-xl border border-border bg-background p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-sm">
+            <Card className="flex h-full flex-col gap-3 rounded-xl bg-background p-6 shadow-none transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-sm">
               <h3 className="text-lg font-semibold">{message.title}</h3>
               <p className="text-sm text-muted-foreground">{message.body}</p>
               <Link
@@ -32,7 +33,7 @@ export const KeyMessages = () => (
                   aria-hidden="true"
                 />
               </Link>
-            </div>
+            </Card>
           </Reveal>
         ))}
       </div>

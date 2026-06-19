@@ -1,9 +1,0 @@
-/*
- * Portfolio-specifieke theme overrides bovenop @umanex/ui/globals.css.
- *
- * Momenteel geen overrides: de portfolio volgt volledig de gedeelde shadcn-tokens.
- * De vroegere --foreground override naar Neutral.800 is verwijderd — die was
- * geschreven tegen de oude systeem-default (Neutral.700, donkergrijs) om "near-black"
- * te krijgen. De huidige systeem-default is Neutral.900 (#101828, al near-black), dus
- * de override maakte de tekst juist lichter dan bedoeld en is nu overbodig.
- */

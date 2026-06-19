@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Fira_Sans, Merriweather } from 'next/font/google';
 import '@umanex/ui/globals.css';
 import '@umanex/tokens/variables.css';
-import './theme.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { copy } from '@/lib/copy';

@@ -6,6 +6,7 @@ import { RichText } from '@/components/ui/RichText';
 import { copy } from '@/lib/copy';
 import { site } from '@/lib/site';
 import { buttonVariants } from '@umanex/ui/components/ui/button';
+import { Card } from '@umanex/ui/components/ui/card';
 
 export const metadata: Metadata = {
   title: copy.meta.werkwijze.title,
@@ -46,13 +47,13 @@ export default function WerkwijzePage() {
               const Icon = principleIcons[principle.key];
               return (
                 <Reveal key={principle.key} delay={index * 0.06}>
-                  <div className="flex gap-4 rounded-xl border border-border p-6">
+                  <Card className="flex gap-4 rounded-xl bg-transparent p-6 shadow-none">
                     <Icon className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
                     <div className="space-y-1">
                       <h3 className="font-semibold">{principle.title}</h3>
                       <p className="text-sm text-muted-foreground">{principle.body}</p>
                     </div>
-                  </div>
+                  </Card>
                 </Reveal>
               );
             })}
@@ -60,12 +61,12 @@ export default function WerkwijzePage() {
         </section>
 
         <Reveal>
-          <section className="space-y-4 rounded-xl border border-border bg-muted/40 p-6">
+          <Card className="space-y-4 rounded-xl bg-muted/40 p-6 shadow-none">
             <h2 className="text-xl font-semibold">{forYourTeam.title}</h2>
             <p className="text-muted-foreground">
               <RichText segments={forYourTeam.body} />
             </p>
-          </section>
+          </Card>
         </Reveal>
 
         <Reveal>

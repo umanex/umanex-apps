@@ -18,20 +18,20 @@ _Gegenereerd op 2026-06-19_
 
 ## Recente commits (app + packages)
 ```
+c65034e feat(ui): export badgeVariants
+35ecd46 refactor(portfolio): adopt shared Button + token-drive theme & typography
 f29c8bb refactor(cashflow): migrate dropped primitive refs to new tokens
 149047a feat(tokens): rebuild as shadcn-native token set
 91dc049 fix(tokens): repoint dangling Content.M typography refs
-d7a8183 fix(tokens): emit exact-fidelity HSL triplets
-78609ca feat(tokens): generate shadcn :root/.dark CSS from tokens
 ```
 
 ## Uncommitted wijzigingen
   M  apps/portfolio/app/layout.tsx
-  M  apps/portfolio/app/theme.css
+  D  apps/portfolio/app/theme.css
   M  apps/portfolio/app/werkwijze/page.tsx
-  M  apps/portfolio/components/sections/ContactSection.tsx
-  M  apps/portfolio/components/sections/Hero.tsx
-  M  apps/portfolio/tailwind.config.ts
+  M  apps/portfolio/components/data-display/CaseCard.tsx
+  M  apps/portfolio/components/data-display/TestimonialCard.tsx
+  M  apps/portfolio/components/sections/KeyMessages.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

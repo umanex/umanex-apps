@@ -4,6 +4,7 @@ import { Reveal } from '@/components/ui/Reveal';
 import { PhotoPlaceholder } from '@/components/ui/PhotoPlaceholder';
 import { copy } from '@/lib/copy';
 import { site } from '@/lib/site';
+import { buttonVariants } from '@umanex/ui/components/ui/button';
 
 const hero = copy.home.hero;
 
@@ -31,7 +32,7 @@ export const Hero = () => (
           <div className="flex flex-wrap items-center gap-4 pt-2">
             <a
               href={site.contactHref}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className={buttonVariants({ size: 'lg' })}
             >
               {hero.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -40,7 +41,7 @@ export const Hero = () => (
               href={site.linkedin}
               rel="noopener noreferrer"
               target="_blank"
-              className="inline-flex items-center rounded-md border border-border px-5 py-3 text-sm font-medium transition-colors hover:bg-muted"
+              className={buttonVariants({ variant: 'outline', size: 'lg' })}
             >
               {hero.linkedinLabel}
             </a>

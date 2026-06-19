@@ -1,12 +1,9 @@
 /*
  * Portfolio-specifieke theme overrides bovenop @umanex/ui/globals.css.
- * Alleen afwijkingen van de gedeelde basis horen hier — de rest blijft semantic.
+ *
+ * Momenteel geen overrides: de portfolio volgt volledig de gedeelde shadcn-tokens.
+ * De vroegere --foreground override naar Neutral.800 is verwijderd — die was
+ * geschreven tegen de oude systeem-default (Neutral.700, donkergrijs) om "near-black"
+ * te krijgen. De huidige systeem-default is Neutral.900 (#101828, al near-black), dus
+ * de override maakte de tekst juist lichter dan bedoeld en is nu overbodig.
  */
-
-/* Geen @layer base: dit bestand gaat los door de Tailwind PostCSS-plugin,
-   die @layer weigert zonder @tailwind directives in hetzelfde bestand.
-   Volstaat ook zonder — theme.css laadt ná globals.css en wint in de cascade. */
-:root {
-  /* Titels en body-emphasis near-black i.p.v. donkergrijs; grijs blijft via muted-foreground */
-  --foreground: 214 33% 17%; /* Neutral.800 #1D2939 */
-}

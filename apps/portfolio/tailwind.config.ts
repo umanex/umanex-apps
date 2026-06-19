@@ -14,7 +14,11 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // next/font laadt de families (--font-sans / --font-serif); de token-primitives
+        // (--umanexFontSans / --umanexFontSerif) staan in de stack als bron-van-intentie
+        // én fallback, zodat ze niet langer wees zijn en een token-wijziging doorwerkt.
+        sans: ['var(--font-sans)', 'var(--umanexFontSans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-serif)', 'var(--umanexFontSerif)', 'ui-serif', 'Georgia', 'serif'],
       },
       colors: {
         border: 'hsl(var(--border))',

@@ -5,6 +5,7 @@ import { Reveal } from '@/components/ui/Reveal';
 import { RichText } from '@/components/ui/RichText';
 import { copy } from '@/lib/copy';
 import { site } from '@/lib/site';
+import { buttonVariants } from '@umanex/ui/components/ui/button';
 
 export const metadata: Metadata = {
   title: copy.meta.werkwijze.title,
@@ -72,7 +73,7 @@ export default function WerkwijzePage() {
             <h2 className="text-2xl font-bold tracking-tight">{contact.title}</h2>
             <a
               href={site.contactHref}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className={buttonVariants({ size: 'lg' })}
             >
               {contact.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />

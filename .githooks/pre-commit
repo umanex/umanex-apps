@@ -7,10 +7,18 @@
 
 [ -f ./scripts/gen-snapshot.sh ] || exit 0
 
-echo "🔄 Context snapshots bijwerken..."
-bash ./scripts/gen-snapshot.sh all
+# Alleen snapshots regenereren + stagen voor apps die in DEZE commit gewijzigd zijn.
+# Zo sleept een commit in app A nooit de snapshot van app B mee (geen cross-app ruis).
+changed_apps="$(git diff --cached --name-only --diff-filter=ACMR \
+  | sed -n 's#^apps/\([^/]*\)/.*#\1#p' | sort -u)"
 
-# Voeg alle gegenereerde snapshots toe aan de commit (glob — geen hardcoded paden).
-git add apps/*/context-snapshot.md 2>/dev/null || true
+[ -z "$changed_apps" ] && exit 0
+
+echo "🔄 Context snapshots bijwerken..."
+for app in $changed_apps; do
+  [ -d "apps/$app" ] || continue
+  bash ./scripts/gen-snapshot.sh "$app"
+  git add "apps/$app/context-snapshot.md" 2>/dev/null || true
+done
 
 echo "✅ Snapshots toegevoegd aan commit"

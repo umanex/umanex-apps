@@ -139,11 +139,13 @@ De `.tcebc.md` extensie is een pilot-marker die verifieerbaar maakt dat de TC-EB
 
 **Bestandsinhoud — volledig structuurformaat**
 
-Het bestand bevat: titel met naam, metadata blok (Datum / Type / Project / Klant / Status), een horizontale lijn, het inline TC-EBC codeblock met TASK / CONTEXT / ELEMENTS / BEHAVIOUR / CONSTRAINTS labels, een tweede horizontale lijn, dan de secties Open vragen, Aannames, en Beslissingsgeschiedenis.
+Het bestand bevat: titel met naam, metadata blok (Datum / Type / Project / Klant / Status), een horizontale lijn, het inline TC-EBC codeblock met TASK / CONTEXT / ELEMENTS / BEHAVIOUR / CONSTRAINTS labels, een tweede horizontale lijn, dan de secties Open vragen, Aannames, Acceptatie, en Beslissingsgeschiedenis.
 
 Open vragen-sectie: lijst van kritische items die nog niet beantwoord zijn. Leeg laten als alles beantwoord is.
 
 Aannames-sectie: lijst van items met `[ASSUMPTION]` markers — niet kritisch maar context-afhankelijk.
+
+Acceptatie-sectie: de checklist waartegen de Beoordeel-stap valideert (zie *Plan / Bouw / Beoordeel — werkprincipe*). Eén `- [ ]` item per toetsbaar criterium, afgeleid uit de vier kritische items (component-typologie, states, interactie, edge cases) plus de toetsbare kern van BEHAVIOUR en CONSTRAINTS. De `Status` in het metadata blok doorloopt onder dit principe `gepland → gebouwd → gevalideerd`; `gevalideerd` mag pas zodra elk item `- [x]` is én er geen P0/P1-bevindingen meer openstaan. Bij pure niet-design taken blijft deze sectie leeg — daar leeft het acceptatie-contract los (doel / invariants / done-criteria).
 
 Beslissingsgeschiedenis-sectie: alleen kantelpunten, niet elke kleine wijziging.
 
@@ -159,6 +161,48 @@ Drie uitgewerkte voorbeelden staan in `umanex-os/docs/tc-ebc-examples/`:
 - `01-volledige-briefing-columba.md` — rijke briefing, weinig open vragen
 - `02-onvolledige-briefing.md` — minimale briefing, veel kritische items als open vragen
 - `03-feature-mobile.md` — niet-component briefing op feature-niveau
+
+---
+
+## Plan / Bouw / Beoordeel — werkprincipe
+
+**Wat het is**
+
+Een lus voor substantieel bouwwerk: **PLAN → BOUW → BEOORDEEL**, herhalend tot de taak *gevalideerd* is. Het is de snelle, per-taak tegenhanger van de trage eval-loop (`vastleggen` → `learnings-verwerken`); de twee koppelen op één punt (zie *Brug*). Bouwt niets nieuws — het knoopt bestaande rollen aan elkaar.
+
+Status: dit is v1, een **werkprincipe** (model-gedreven, geen skill of hook), exact zoals TC-EBC begon. Rijping staat onderaan.
+
+**Wanneer toepassen — de poort**
+
+- **Wel:** design-to-code, nieuw component, feature-flow, en business-logica met afhankelijke berekeningen — werk waar één feat doorgaans meerdere fix-iteraties vraagt.
+- **Niet (bouw direct, geen cyclus):** copy-/token-/één-regel-fix, dep-bump, ci/config-sync, rename, pure debug/deploy/infra zonder gedragscontract.
+- **Twijfel?** De poort weegt of de Beoordeel-stap iets *meetbaars* heeft om tegen te valideren. Zo niet → geen cyclus.
+
+**De drie rollen** (mapping naar bestaande primitieven, geen nieuwe machinerie)
+
+- **PLAN** — TC-EBC (design, **main-agent only** — harde rail, nooit naar een sub-agent) of een licht **taak-contract** (doel / invariants-regressiechecks / done-criteria) voor refactor/bugfix/infra waar TC-EBC bewust wordt overgeslagen. Levert één machine-leesbare **acceptatie-checklist** (`- [ ]`).
+- **BOUW** — main-agent (erft de `@`-import CLAUDE.md-keten met git/Figma/token-rails) of de bouw-skill bij het taaktype: `nieuw-component`, `figma-naar-code`, `code-naar-figma`. Een build-sub-agent alleen bewust — `@`-import-erving is buiten de main-agent niet gegarandeerd.
+- **BEOORDEEL** — een panel langs verschillende assen, elk een eigen bril: `code-review` (diff-correctheid, P0-blokker), `verify` (gedrag tegen BEHAVIOUR, P0-blokker), `ux-audit` (design, niet-blokkerend). Bij design-to-code is parity + token-checklist uit `figma-naar-code` de meetbare as. De main-agent is **scheidsrechter** en consolideert tot één geprioriteerde P0–P3 fix-lijst. Geef een reviewer-sub-agent **nooit** een hint over de verwachte fout — dat besmet de test (`learnings-verwerken` stap 3-discipline).
+
+**De cyclus en "validatie volledig"**
+
+Itereer BOUW → BEOORDEEL zolang er P0/P1 openstaan. EXIT (status `gevalideerd`) geldt pas wanneer **alle drie** waar zijn:
+
+1. elk acceptatie-item afgevinkt `- [x]`;
+2. geen P0/P1 in `code-review` of `verify`;
+3. Open vragen leeg.
+
+Harde rail: **max 3 iteraties**. Convergeert het niet → **gecontroleerde stop**: roep `vastleggen` niet-interactief aan (taak-input als Input, de aanhoudende bevinding als Fout) en escaleer naar Jeroen. Nooit stil afsluiten alsof gevalideerd. Ontbreekt de meetbare as (geen render-pad → `verify`/parity vallen terug op "overgeslagen")? Meld dat expliciet; draai de Beoordeel-stap niet alsof hij slaagde.
+
+**Brug naar de eval-loop**
+
+Een gefaalde review die een **terugkerende faalklasse** blootlegt = een `vastleggen`-trigger. De triade is de *feeder* van de trage loop, geen duplicaat. Houd de twee assen uit elkaar: triade-status (`gepland → gebouwd → gevalideerd`, per taak) staat los van learning-status (`open → verified → promoted`, over sessies heen). Die brug is het enige raakpunt.
+
+**Rijping** (zoals TC-EBC: eerst principe, dan hardenen)
+
+- **v1** — dit werkprincipe.
+- **v2** — een `cyclus-tot-validatie`-skill die de lus triggerbaar maakt met een Stap-0 overkill-poort; propageert user-level via `sync-os.sh`.
+- **v3** — een deterministisch Workflow-script + render-paden per app, pas wanneer de Beoordeel-as echt machine-checkbaar meet.
 
 ---
 
@@ -254,6 +298,10 @@ Voorbeelden:
 - `chore/update-deps`
 
 Klantnaam komt **niet** in branchnamen — die zit al in de repo.
+
+### Cross-repo review — normaliseer eerst naar main
+
+Voor élke cross-repo inventarisatie of code review: bepaal per repo eerst `git -C <repo> rev-parse --abbrev-ref HEAD`. Staat een repo NIET op main, dan is de uitgecheckte werkkopie geen canonieke bron — normaliseer eerst (`git -C <repo> checkout main && git -C <repo> pull`) of, als checkout niet wenselijk is, vergelijk expliciet tegen `origin/main` en flag elke afwijking. Dit geldt óók voor umanex-os zelf: rapporteer nooit content van een feature-branch (incl. nog-niet-gemergede skills of uncommitted wijzigingen) als bestaand systeemonderdeel zonder te markeren dat die nog niet op main staat. Behandel nooit een toevallig uitgecheckte staat als de waarheid.
 
 ### Commit messages
 Format: Conventional Commits in het Engels.

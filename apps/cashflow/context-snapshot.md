@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-06-19_
+_Gegenereerd op 2026-06-23_
 
 ## Project
 - **App:** cashflow
@@ -18,11 +18,11 @@ _Gegenereerd op 2026-06-19_
 
 ## Recente commits (app + packages)
 ```
+9a03734 refactor(portfolio): adopt Card/Badge primitives, drop theme.css
 c65034e feat(ui): export badgeVariants
 35ecd46 refactor(portfolio): adopt shared Button + token-drive theme & typography
 f29c8bb refactor(cashflow): migrate dropped primitive refs to new tokens
 149047a feat(tokens): rebuild as shadcn-native token set
-91dc049 fix(tokens): repoint dangling Content.M typography refs
 ```
 
 ## Uncommitted wijzigingen

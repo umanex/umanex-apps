@@ -1,14 +1,14 @@
-# Context Snapshot — rowtrack
+# Context Snapshot — vyvey
 _Gegenereerd op 2026-06-23_
 
 ## Project
-- **App:** rowtrack
-- **Beschrijving:** [TODO: korte beschrijving van rowtrack]
-- **Dir:** `apps/rowtrack`
+- **App:** vyvey
+- **Beschrijving:** [TODO: description in context.json]
+- **Dir:** `apps/vyvey`
 
 ## Figma
-- **Key:** `[TODO]`
-- **URL:** [TODO]
+- **Key:** `[TODO: figmaKey in context.json]`
+- **URL:** [TODO: figmaUrl in context.json]
 - ⚠️ Node IDs veranderen na edits — altijd opnieuw ophalen via "Copy link to selection"
 
 ## Packages
@@ -18,15 +18,15 @@ _Gegenereerd op 2026-06-23_
 
 ## Recente commits (app + packages)
 ```
-9a03734 refactor(portfolio): adopt Card/Badge primitives, drop theme.css
 c65034e feat(ui): export badgeVariants
-35ecd46 refactor(portfolio): adopt shared Button + token-drive theme & typography
-f29c8bb refactor(cashflow): migrate dropped primitive refs to new tokens
 149047a feat(tokens): rebuild as shadcn-native token set
+91dc049 fix(tokens): repoint dangling Content.M typography refs
+d7a8183 fix(tokens): emit exact-fidelity HSL triplets
+78609ca feat(tokens): generate shadcn :root/.dark CSS from tokens
 ```
 
 ## Uncommitted wijzigingen
-  (geen)
+  ?? apps/vyvey/
 
 ## Bestanden met TODO/FIXME
   (geen)

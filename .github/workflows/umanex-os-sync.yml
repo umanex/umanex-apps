@@ -2,7 +2,7 @@ name: Sync umanex-os layer
 
 # Ontvangt een repository_dispatch vanuit umanex-os wanneer de globale CLAUDE.md,
 # een profile, het sync-script of de LEARNINGS-template wijzigt, en opent een PR met
-# de bijgewerkte umanex-os-laag. Alle inhoud komt mee in de payload (base64), zodat
+# de bijgewerkte umanex-os-laag. Alle inhoud komt mee in de payload (gzip+base64), zodat
 # deze repo geen leestoegang tot de private umanex-os repo nodig heeft.
 #
 # Wat deze workflow schrijft (alle uit de payload):
@@ -61,8 +61,8 @@ jobs:
 
           # Globale laag
           mkdir -p .umanex-os/profiles
-          printf '%s' "$CLAUDE_MD_B64" | base64 -d > .umanex-os/CLAUDE.md
-          printf '%s' "$PROFILE_B64"   | base64 -d > ".umanex-os/profiles/${PROFILE_NAME}.md"
+          printf '%s' "$CLAUDE_MD_B64" | base64 -d | gunzip > .umanex-os/CLAUDE.md
+          printf '%s' "$PROFILE_B64"   | base64 -d | gunzip > ".umanex-os/profiles/${PROFILE_NAME}.md"
 
           # Marker voor het lokale scripts/sync-os.sh
           printf '%s\n' "$PROFILE_NAME" > .umanex-os/profile
@@ -70,7 +70,7 @@ jobs:
           # Canoniek sync-script (indien meegestuurd)
           if [ -n "${SYNC_SCRIPT_B64:-}" ]; then
             mkdir -p scripts
-            printf '%s' "$SYNC_SCRIPT_B64" | base64 -d > scripts/sync-os.sh
+            printf '%s' "$SYNC_SCRIPT_B64" | base64 -d | gunzip > scripts/sync-os.sh
             chmod +x scripts/sync-os.sh
           fi
 
@@ -78,23 +78,23 @@ jobs:
           # (geen repo-eigen inhoud) → overschrijven mag. De hook-activatie blijft lokaal.
           if [ -n "${GEN_SNAPSHOT_B64:-}" ]; then
             mkdir -p scripts
-            printf '%s' "$GEN_SNAPSHOT_B64" | base64 -d > scripts/gen-snapshot.sh
+            printf '%s' "$GEN_SNAPSHOT_B64" | base64 -d | gunzip > scripts/gen-snapshot.sh
             chmod +x scripts/gen-snapshot.sh
           fi
           if [ -n "${GITHOOK_B64:-}" ]; then
             mkdir -p .githooks
-            printf '%s' "$GITHOOK_B64" | base64 -d > .githooks/pre-commit
+            printf '%s' "$GITHOOK_B64" | base64 -d | gunzip > .githooks/pre-commit
             chmod +x .githooks/pre-commit
           fi
           # context.json is repo-eigen input → alleen scaffolden als afwezig, nooit overschrijven.
           if [ -n "${CONTEXT_TEMPLATE_B64:-}" ] && [ ! -f context.json ]; then
-            printf '%s' "$CONTEXT_TEMPLATE_B64" | base64 -d > context.json
+            printf '%s' "$CONTEXT_TEMPLATE_B64" | base64 -d | gunzip > context.json
           fi
 
           # LEARNINGS-seed in root + elke app — alleen als afwezig, nooit overschrijven
           if [ -n "${LEARNINGS_TEMPLATE_B64:-}" ]; then
             TMP_TEMPLATE="$(mktemp)"
-            printf '%s' "$LEARNINGS_TEMPLATE_B64" | base64 -d > "$TMP_TEMPLATE"
+            printf '%s' "$LEARNINGS_TEMPLATE_B64" | base64 -d | gunzip > "$TMP_TEMPLATE"
             seed() { [ -f "$1/LEARNINGS.md" ] || cp "$TMP_TEMPLATE" "$1/LEARNINGS.md"; }
             seed "."
             if [ -d apps ]; then

@@ -67,6 +67,9 @@ function DraggablePotRow({
   const totalInvoiced = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
   const canFinalize = pot.potType === 'maandelijks_budget' ||
     totalInvoiced >= pot.provisionThisMonth + pot.deferredFromPrevious;
+  // Maandelijks budget mag ook zonder betalingen gefinaliseerd worden (besteed = 0);
+  // spaardoel blijft betalingen vereisen.
+  const canShowFinalize = canFinalize && (pot.potType === 'maandelijks_budget' || hasPayments);
   const isBudgetCurrentMonth = pot.potType === 'maandelijks_budget' && isCurrentMonth;
 
   const syncValue = isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth;
@@ -129,7 +132,7 @@ function DraggablePotRow({
         <div className="flex-1 flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-[var(--umanexNeutral800)] truncate">{pot.label}</span>
-            {hasPayments && canFinalize && (
+            {canShowFinalize && (
               <button
                 onClick={handleFinalize}
                 onPointerDown={(e) => e.stopPropagation()}

@@ -18,11 +18,11 @@ _Gegenereerd op 2026-06-30_
 
 ## Recente commits (app + packages)
 ```
+8fb1592 fix(cashflow): trek provisie-betalingen af van Provisies-subtotaal
 bea08c5 chore: gunzip umanex-os sync payload in receiver
 c65034e feat(ui): export badgeVariants
 149047a feat(tokens): rebuild as shadcn-native token set
 91dc049 fix(tokens): repoint dangling Content.M typography refs
-d7a8183 fix(tokens): emit exact-fidelity HSL triplets
 ```
 
 ## Uncommitted wijzigingen

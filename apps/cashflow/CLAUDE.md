@@ -2,18 +2,20 @@
 
 ## Server management
 
-De cashflow app draait als production server (`next start`) op **port 3000**.
+De cashflow app draait als production server (`next start --port 3000`), beheerd door **PM2** (app-naam `cashflow`, `autorestart: true`, config in `ecosystem.config.js`). Het is **geen** `next dev` — de browser ziet de vooraf-gebouwde `.next`, niet je live source.
 
-### Harde regel: herstart na elke build
+### Harde regel: na elke code-wijziging build + PM2 restart
 
-Na elke build — via `pnpm --filter cashflow build`, `pnpm turbo build --filter=cashflow`, of equivalent — **moet** de server op port 3000 gekilled en herstart worden:
+Een source-wijziging is pas zichtbaar op localhost na een nieuwe build én een PM2 restart:
 
 ```bash
-kill $(lsof -ti:3000) 2>/dev/null; sleep 1; cd /Users/jeroen/Documents/umanex-apps/apps/cashflow && pnpm start &
+pnpm --filter cashflow build && pm2 restart cashflow
 ```
 
-**Reden:** `next start` serveert chunks met content hashes. Na een rebuild zijn die hashes veranderd. Een lopende server kent alleen de oude hashes en geeft `ChunkLoadError` in de browser. Hard refresh helpt niet — de server zelf moet herstarten. Dit is eerder fout gegaan en heeft tot dataloss-situatie geleid.
+Beide commando's staan in de allowlist van `.claude/settings.local.json`. Daarna in de browser een **hard refresh** (Cmd+Shift+R) — het open tabblad heeft de oude chunk-hashes nog gecached.
 
-Een PostToolUse hook in `.claude/settings.local.json` handelt dit automatisch af na iedere Bash-command die zowel "cashflow" als "build" bevat. Server logs gaan naar `/tmp/cashflow-server.log`.
+**Reden:** `next start` serveert chunks met content hashes. Na een rebuild zijn die hashes veranderd; een lopende server kent alleen de oude hashes en geeft `ChunkLoadError` in de browser. Hard refresh van het tabblad alleen volstaat niet — de server zelf moet de nieuwe build laden.
 
-**Uitzondering:** bij een monorepo-wide `pnpm turbo build` zonder cashflow-filter wordt de hook niet getriggerd — doe dit dan handmatig.
+**Niet manueel killen.** PM2 `autorestart` respawnt het proces direct, en een handmatige `pnpm start &` ernaast geeft een tweede, conflicterende server op dezelfde poort. Gebruik altijd `pm2 restart cashflow`.
+
+Logs: `pm2 logs cashflow` of `/Users/jeroen/.pm2/logs/cashflow-{out,error}.log`.

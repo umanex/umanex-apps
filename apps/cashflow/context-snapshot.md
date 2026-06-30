@@ -18,16 +18,15 @@ _Gegenereerd op 2026-06-30_
 
 ## Recente commits (app + packages)
 ```
+bddd4d5 feat(cashflow): finaliseer maandelijks budget zonder betaling
 8fb1592 fix(cashflow): trek provisie-betalingen af van Provisies-subtotaal
 bea08c5 chore: gunzip umanex-os sync payload in receiver
 9a03734 refactor(portfolio): adopt Card/Badge primitives, drop theme.css
 c65034e feat(ui): export badgeVariants
-35ecd46 refactor(portfolio): adopt shared Button + token-drive theme & typography
 ```
 
 ## Uncommitted wijzigingen
-   M apps/cashflow/CLAUDE.md
-  M  apps/cashflow/components/cashflow/ReservationSection.tsx
+  M  apps/cashflow/CLAUDE.md
 
 ## Bestanden met TODO/FIXME
   (geen)

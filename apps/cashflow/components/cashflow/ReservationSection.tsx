@@ -251,7 +251,10 @@ function calcSubtotaal(
         const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
         return s + p.provisionThisMonth - paid;
       }
-      if (p.potType === 'spaardoel') return s + p.deferredFromPrevious + p.provisionThisMonth;
+      if (p.potType === 'spaardoel') {
+        const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
+        return s + p.deferredFromPrevious + p.provisionThisMonth - paid;
+      }
     }
     return s + (overrideAmounts[p.reservationId] ?? p.displayContribution);
   }, 0);

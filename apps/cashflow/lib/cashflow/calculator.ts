@@ -407,5 +407,39 @@ export function computeHistoricalBalance(
     monthCount + 1,
   );
 
-  return months[monthCount]?.startBalance ?? effectiveBalance;
+  // months[monthCount].startBalance is het doorgerolde VRIJE saldo aan het begin
+  // van anchorMonth (de opgebouwde spaarpotten zijn er in de voorgaande maand-0
+  // al uitgehaald). De ankermaand-berekening (calculateMonths maand 0) verwacht
+  // echter een BANKsaldo en trekt de opgebouwde spaarpot opnieuw af. Zonder
+  // correctie wordt de volledige pot dus dubbel afgetrokken. We tellen daarom de
+  // opgebouwde spaarpot t/m de maand vóór anchorMonth terug op — exact hetzelfde
+  // bedrag als calculateMonths initialiseert in deferredRemainingMap.
+  const rolledFreeBalance = months[monthCount]?.startBalance ?? effectiveBalance;
+  const anchorPrevMonth = format(addMonths(parseISO(`${anchorMonth}-01`), -1), 'yyyy-MM');
+  // We tellen enkel de potten terug waarvan calculateMonths maand-0 de opgebouwde
+  // pot (deferredFromPrevious) ook effectief aftrekt. Maand-0 slaat twee groepen
+  // over: potten die de ankermaand verlaten (reservationDefer.fromMonth === anchor,
+  // vallen uit billableReservations) en potten die in de ankermaand gefinaliseerd
+  // zijn (!p.finalized filter). Die tellen we dus óók niet terug — anders over-telling.
+  const departingAtAnchor = new Set(
+    reservationDefers.filter((d) => d.fromMonth === anchorMonth).map((d) => d.reservationId),
+  );
+  const finalizedAtAnchor = new Set(
+    reservationSettlements
+      .filter((st) => st.monthKey === anchorMonth && st.finalized)
+      .map((st) => st.reservationId),
+  );
+  const reservedAtAnchorStart = reservations
+    .filter(
+      (r) =>
+        r.type === 'spaardoel' &&
+        r.startMonth <= anchorPrevMonth &&
+        !departingAtAnchor.has(r.id) &&
+        !finalizedAtAnchor.has(r.id),
+    )
+    .reduce(
+      (sum, r) => sum + calcPotBalance(r, reservationPayments, reservationSettlements, anchorPrevMonth),
+      0,
+    );
+  return rolledFreeBalance + reservedAtAnchorStart;
 }

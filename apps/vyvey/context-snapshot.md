@@ -1,5 +1,5 @@
 # Context Snapshot — vyvey
-_Gegenereerd op 2026-06-30_
+_Gegenereerd op 2026-07-01_
 
 ## Project
 - **App:** vyvey
@@ -18,11 +18,11 @@ _Gegenereerd op 2026-06-30_
 
 ## Recente commits (app + packages)
 ```
+51abcde docs(cashflow): documenteer PM2 build/restart flow
 bddd4d5 feat(cashflow): finaliseer maandelijks budget zonder betaling
 8fb1592 fix(cashflow): trek provisie-betalingen af van Provisies-subtotaal
 bea08c5 chore: gunzip umanex-os sync payload in receiver
 c65034e feat(ui): export badgeVariants
-149047a feat(tokens): rebuild as shadcn-native token set
 ```
 
 ## Uncommitted wijzigingen

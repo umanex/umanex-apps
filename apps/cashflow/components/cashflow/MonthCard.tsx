@@ -76,8 +76,9 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
   const budgetSubtotaal = reservationPots
     .filter((p) => p.potType === 'maandelijks_budget' && (!isFirst || !p.finalized))
     .reduce((s, p) => {
+      // Prudent: budget-kost = provisie − betaald, zowel huidige als toekomstige maand.
       const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
-      return s + (isFirst ? p.provisionThisMonth - paid : paid);
+      return s + (p.provisionThisMonth - paid);
     }, 0);
 
   const provisieSubtotaal =

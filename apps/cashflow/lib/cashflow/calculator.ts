@@ -192,24 +192,26 @@ export function calculateMonths(
       }
     }
 
-    // Maandelijks budget: onbesteed provisie-saldo terugstorten naar vrij saldo
-    const releasedPerPot = new Map<string, number>();
-    let releasedBudgetAmount = 0;
-    for (const res of billableReservations) {
-      if (res.type === 'maandelijks_budget') {
-        const balance = potBalanceMap.get(res.id) ?? 0;
-        if (balance > 0) {
-          releasedPerPot.set(res.id, balance);
-          releasedBudgetAmount += balance;
-          potBalanceMap.set(res.id, 0);
-        } else {
-          releasedPerPot.set(res.id, 0);
-        }
-      }
-    }
+    // Prudent budget-model: onbesteed maandbudget wordt NIET teruggestort naar het
+    // vrije saldo — we nemen aan dat het budget besteed wordt. De kost van een budget
+    // = provisie − betaald uit pot, identiek in de huidige én toekomstige maanden (en
+    // aan de sectie-kop die dat via displayContribution al toont). Een betaling uit een
+    // budget verhoogt zo, net als bij een provisie, het eindsaldo van die maand.
+    const budgetPaidFromReservation = billableReservations
+      .filter((r) => r.type === 'maandelijks_budget')
+      .reduce(
+        (s, r) =>
+          s +
+          monthReservationPayments
+            .filter((p) => p.reservationId === r.id)
+            .reduce((ps, p) => ps + p.fromReservation, 0),
+        0,
+      );
 
     const totalReservationDeductions =
-      billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) + deferredReservationAmount - releasedBudgetAmount;
+      billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) +
+      deferredReservationAmount -
+      budgetPaidFromReservation;
     const totalReservationCashPayments = monthReservationPayments.reduce((s, p) => s + p.fromCash, 0);
 
     const reservationPots: ReservationPotBalance[] = billableReservations.map((r) => {
@@ -235,7 +237,7 @@ export function calculateMonths(
         provisionThisMonth: provision,
         deferredFromPrevious: deferred,
         potType: r.type,
-        releasedThisMonth: releasedPerPot.get(r.id) ?? 0,
+        releasedThisMonth: 0,
         displayContribution,
       };
     });

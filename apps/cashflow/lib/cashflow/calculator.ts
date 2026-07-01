@@ -192,24 +192,26 @@ export function calculateMonths(
       }
     }
 
-    // Maandelijks budget: onbesteed provisie-saldo terugstorten naar vrij saldo
-    const releasedPerPot = new Map<string, number>();
-    let releasedBudgetAmount = 0;
-    for (const res of billableReservations) {
-      if (res.type === 'maandelijks_budget') {
-        const balance = potBalanceMap.get(res.id) ?? 0;
-        if (balance > 0) {
-          releasedPerPot.set(res.id, balance);
-          releasedBudgetAmount += balance;
-          potBalanceMap.set(res.id, 0);
-        } else {
-          releasedPerPot.set(res.id, 0);
-        }
-      }
-    }
+    // Prudent budget-model: onbesteed maandbudget wordt NIET teruggestort naar het
+    // vrije saldo — we nemen aan dat het budget besteed wordt. De kost van een budget
+    // = provisie − betaald uit pot, identiek in de huidige én toekomstige maanden (en
+    // aan de sectie-kop die dat via displayContribution al toont). Een betaling uit een
+    // budget verhoogt zo, net als bij een provisie, het eindsaldo van die maand.
+    const budgetPaidFromReservation = billableReservations
+      .filter((r) => r.type === 'maandelijks_budget')
+      .reduce(
+        (s, r) =>
+          s +
+          monthReservationPayments
+            .filter((p) => p.reservationId === r.id)
+            .reduce((ps, p) => ps + p.fromReservation, 0),
+        0,
+      );
 
     const totalReservationDeductions =
-      billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) + deferredReservationAmount - releasedBudgetAmount;
+      billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) +
+      deferredReservationAmount -
+      budgetPaidFromReservation;
     const totalReservationCashPayments = monthReservationPayments.reduce((s, p) => s + p.fromCash, 0);
 
     const reservationPots: ReservationPotBalance[] = billableReservations.map((r) => {
@@ -235,7 +237,7 @@ export function calculateMonths(
         provisionThisMonth: provision,
         deferredFromPrevious: deferred,
         potType: r.type,
-        releasedThisMonth: releasedPerPot.get(r.id) ?? 0,
+        releasedThisMonth: 0,
         displayContribution,
       };
     });
@@ -305,7 +307,8 @@ export function calculateMonths(
             .reduce((s, p) => s + p.provisionThisMonth - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0);
           const provisieSub = reservationPots
             .filter((p) => p.potType === 'spaardoel' && !p.finalized)
-            .reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth, 0) + deferredReservationAmount;
+            .reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth
+              - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0) + deferredReservationAmount;
           return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferred - unpaidExpenses - overflowCash - budgetSub - provisieSub;
         })()
       : availableBudget - totalOutstandingCosts;
@@ -407,5 +410,39 @@ export function computeHistoricalBalance(
     monthCount + 1,
   );
 
-  return months[monthCount]?.startBalance ?? effectiveBalance;
+  // months[monthCount].startBalance is het doorgerolde VRIJE saldo aan het begin
+  // van anchorMonth (de opgebouwde spaarpotten zijn er in de voorgaande maand-0
+  // al uitgehaald). De ankermaand-berekening (calculateMonths maand 0) verwacht
+  // echter een BANKsaldo en trekt de opgebouwde spaarpot opnieuw af. Zonder
+  // correctie wordt de volledige pot dus dubbel afgetrokken. We tellen daarom de
+  // opgebouwde spaarpot t/m de maand vóór anchorMonth terug op — exact hetzelfde
+  // bedrag als calculateMonths initialiseert in deferredRemainingMap.
+  const rolledFreeBalance = months[monthCount]?.startBalance ?? effectiveBalance;
+  const anchorPrevMonth = format(addMonths(parseISO(`${anchorMonth}-01`), -1), 'yyyy-MM');
+  // We tellen enkel de potten terug waarvan calculateMonths maand-0 de opgebouwde
+  // pot (deferredFromPrevious) ook effectief aftrekt. Maand-0 slaat twee groepen
+  // over: potten die de ankermaand verlaten (reservationDefer.fromMonth === anchor,
+  // vallen uit billableReservations) en potten die in de ankermaand gefinaliseerd
+  // zijn (!p.finalized filter). Die tellen we dus óók niet terug — anders over-telling.
+  const departingAtAnchor = new Set(
+    reservationDefers.filter((d) => d.fromMonth === anchorMonth).map((d) => d.reservationId),
+  );
+  const finalizedAtAnchor = new Set(
+    reservationSettlements
+      .filter((st) => st.monthKey === anchorMonth && st.finalized)
+      .map((st) => st.reservationId),
+  );
+  const reservedAtAnchorStart = reservations
+    .filter(
+      (r) =>
+        r.type === 'spaardoel' &&
+        r.startMonth <= anchorPrevMonth &&
+        !departingAtAnchor.has(r.id) &&
+        !finalizedAtAnchor.has(r.id),
+    )
+    .reduce(
+      (sum, r) => sum + calcPotBalance(r, reservationPayments, reservationSettlements, anchorPrevMonth),
+      0,
+    );
+  return rolledFreeBalance + reservedAtAnchorStart;
 }

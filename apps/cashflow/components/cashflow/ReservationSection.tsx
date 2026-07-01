@@ -254,6 +254,10 @@ function calcSubtotaal(
         const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
         return s + p.provisionThisMonth - paid;
       }
+      // Huidige maand: provisie-kop = som van de RESTERENDE provisies
+      // (deferred + provisie deze maand − betaald uit pot). Zo daalt de kop bij een
+      // betaling en telt de sectie op tot de Uitgaves-tegel. Zelfde formule als
+      // MonthCard/calculator maand-0, zodat kop en tegel consistent blijven.
       if (p.potType === 'spaardoel') {
         const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
         return s + p.deferredFromPrevious + p.provisionThisMonth - paid;

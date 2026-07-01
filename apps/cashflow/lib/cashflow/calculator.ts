@@ -305,7 +305,8 @@ export function calculateMonths(
             .reduce((s, p) => s + p.provisionThisMonth - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0);
           const provisieSub = reservationPots
             .filter((p) => p.potType === 'spaardoel' && !p.finalized)
-            .reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth, 0) + deferredReservationAmount;
+            .reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth
+              - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0) + deferredReservationAmount;
           return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferred - unpaidExpenses - overflowCash - budgetSub - provisieSub;
         })()
       : availableBudget - totalOutstandingCosts;

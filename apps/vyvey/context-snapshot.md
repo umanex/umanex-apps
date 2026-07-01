@@ -18,11 +18,11 @@ _Gegenereerd op 2026-07-01_
 
 ## Recente commits (app + packages)
 ```
+2f68049 fix(cashflow): corrigeer dubbele spaarpot-aftrek bij maandovergang
 51abcde docs(cashflow): documenteer PM2 build/restart flow
 bddd4d5 feat(cashflow): finaliseer maandelijks budget zonder betaling
 8fb1592 fix(cashflow): trek provisie-betalingen af van Provisies-subtotaal
 bea08c5 chore: gunzip umanex-os sync payload in receiver
-c65034e feat(ui): export badgeVariants
 ```
 
 ## Uncommitted wijzigingen

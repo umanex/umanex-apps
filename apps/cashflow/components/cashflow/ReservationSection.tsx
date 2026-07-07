@@ -64,12 +64,10 @@ function DraggablePotRow({
   const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
   const displayAmount = pot.provisionThisMonth + pot.deferredFromPrevious - paidFromReservation;
   const hasPayments = pot.paymentsThisMonth.length > 0;
-  const totalInvoiced = pot.paymentsThisMonth.reduce((s, p) => s + p.invoiceAmount, 0);
-  const canFinalize = pot.potType === 'maandelijks_budget' ||
-    totalInvoiced >= pot.provisionThisMonth + pot.deferredFromPrevious;
   // Maandelijks budget mag ook zonder betalingen gefinaliseerd worden (besteed = 0);
-  // spaardoel blijft betalingen vereisen.
-  const canShowFinalize = canFinalize && (pot.potType === 'maandelijks_budget' || hasPayments);
+  // spaardoel is finaliseerbaar zodra er betalingen zijn — het restsaldo wordt
+  // bij finalisatie vrijgegeven en de opbouw herstart de maand erna.
+  const canShowFinalize = pot.potType === 'maandelijks_budget' || hasPayments;
   const isBudgetCurrentMonth = pot.potType === 'maandelijks_budget' && isCurrentMonth;
 
   const syncValue = isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth;
@@ -110,8 +108,14 @@ function DraggablePotRow({
   }
 
   function handleFinalize() {
+    // Budget: effectiveAmount = besteed bedrag (prudente release van onbesteed budget).
+    // Spaardoel: behoud de storting van deze maand — het restsaldo komt via de
+    // calculator vrij, de storting zelf mag niet herschreven worden.
     const total = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
-    onFinalize(pot.reservationId, total);
+    onFinalize(
+      pot.reservationId,
+      pot.potType === 'maandelijks_budget' ? total : pot.effectiveAmount,
+    );
   }
 
   const zebra = index % 2 !== 0;

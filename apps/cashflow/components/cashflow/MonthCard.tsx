@@ -86,8 +86,12 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
       .filter((p) => p.potType === 'spaardoel' && (!isFirst || !p.finalized))
       .reduce((s, p) => {
         // Huidige maand: resterende provisie (deferred + provisie − betaald uit pot).
+        // Latere maanden: storting minus wat een finalisatie die maand vrijgeeft
+        // (spiegel van totalReservationDeductions in de calculator).
         const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
-        return s + (isFirst ? p.deferredFromPrevious + p.provisionThisMonth - paid : p.provisionThisMonth);
+        return s + (isFirst
+          ? p.deferredFromPrevious + p.provisionThisMonth - paid
+          : p.provisionThisMonth - p.releasedThisMonth);
       }, 0) +
     deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 
@@ -197,9 +201,16 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
           onFinalize={(reservationId, effectiveAmount) =>
             finalizeReservation(reservationId, monthKey, effectiveAmount)
           }
-          onUnfinalize={(reservationId) =>
-            removeReservationSettlement(reservationId, monthKey)
-          }
+          onUnfinalize={(reservationId) => {
+            // Behoud een aangepaste storting bij het opheffen van een finalisatie;
+            // alleen een settlement op het begrote bedrag mag helemaal weg.
+            const pot = reservationPots.find((p) => p.reservationId === reservationId);
+            if (pot && Math.abs(pot.effectiveAmount - pot.monthlyAmount) >= 0.01) {
+              upsertReservationSettlement(reservationId, monthKey, pot.effectiveAmount);
+            } else {
+              removeReservationSettlement(reservationId, monthKey);
+            }
+          }}
         />
       </div>
 

@@ -42,21 +42,33 @@ export function calcPotBalance(
     return provision - paid;
   }
 
+  // Spaardoel: een gefinaliseerde maand sluit de pot af — het restsaldo is
+  // vrijgegeven en de opbouw herstart in de maand erna. Alleen maanden en
+  // betalingen ná de laatst gefinaliseerde maand tellen nog mee.
+  const lastFinalized = settlements
+    .filter((s) => s.reservationId === reservation.id && s.finalized && s.monthKey <= upToMonth)
+    .reduce<MonthKey | null>((max, s) => (max === null || s.monthKey > max ? s.monthKey : max), null);
+  if (lastFinalized === upToMonth) return 0;
+
   const start = parseISO(`${reservation.startMonth}-01`);
   const end = parseISO(`${upToMonth}-01`);
   const monthCount = differenceInMonths(end, start) + 1;
   let accumulated = 0;
   for (let i = 0; i < monthCount; i++) {
     const mk = format(addMonths(start, i), 'yyyy-MM');
+    if (lastFinalized !== null && mk <= lastFinalized) continue;
     const settlement = settlements.find(
       (s) => s.reservationId === reservation.id && s.monthKey === mk,
     );
-    accumulated += (settlement && !settlement.finalized)
-      ? settlement.effectiveAmount
-      : reservation.monthlyAmount;
+    accumulated += settlement ? settlement.effectiveAmount : reservation.monthlyAmount;
   }
   const paid = payments
-    .filter((p) => p.reservationId === reservation.id && p.monthKey <= upToMonth)
+    .filter(
+      (p) =>
+        p.reservationId === reservation.id &&
+        p.monthKey <= upToMonth &&
+        (lastFinalized === null || p.monthKey > lastFinalized),
+    )
     .reduce((s, p) => s + p.fromReservation, 0);
   return accumulated - paid;
 }
@@ -164,9 +176,6 @@ export function calculateMonths(
       const settlement = reservationSettlements.find(
         (s) => s.reservationId === res.id && s.monthKey === monthKey,
       );
-      if (settlement?.finalized) {
-        return res.type === 'maandelijks_budget' ? settlement.effectiveAmount : res.monthlyAmount;
-      }
       return settlement ? settlement.effectiveAmount : res.monthlyAmount;
     };
 
@@ -208,10 +217,30 @@ export function calculateMonths(
         0,
       );
 
+    // Gefinaliseerde spaardoelen: de pot is afgesloten, het restsaldo
+    // (overgedragen + storting − betaald uit pot) valt vrij in deze maand.
+    // Netto kost van de afsluitmaand = betaald − overgedragen, onafhankelijk
+    // van de storting — over de hele cyclus is de kost dan exact wat betaald is.
+    const spaardoelReleases = new Map<string, number>();
+    for (const res of billableReservations) {
+      if (res.type !== 'spaardoel') continue;
+      const settlement = reservationSettlements.find(
+        (s) => s.reservationId === res.id && s.monthKey === monthKey,
+      );
+      if (!settlement?.finalized) continue;
+      const paidFromReservation = monthReservationPayments
+        .filter((p) => p.reservationId === res.id)
+        .reduce((s, p) => s + p.fromReservation, 0);
+      const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
+      spaardoelReleases.set(res.id, remaining > 0 ? remaining : 0);
+    }
+    const totalSpaardoelReleased = Array.from(spaardoelReleases.values()).reduce((s, v) => s + v, 0);
+
     const totalReservationDeductions =
       billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) +
       deferredReservationAmount -
-      budgetPaidFromReservation;
+      budgetPaidFromReservation -
+      totalSpaardoelReleased;
     const totalReservationCashPayments = monthReservationPayments.reduce((s, p) => s + p.fromCash, 0);
 
     const reservationPots: ReservationPotBalance[] = billableReservations.map((r) => {
@@ -237,7 +266,7 @@ export function calculateMonths(
         provisionThisMonth: provision,
         deferredFromPrevious: deferred,
         potType: r.type,
-        releasedThisMonth: 0,
+        releasedThisMonth: spaardoelReleases.get(r.id) ?? 0,
         displayContribution,
       };
     });
@@ -340,6 +369,13 @@ export function calculateMonths(
     for (const res of billableReservations) {
       if (res.type === 'maandelijks_budget') {
         deferredRemainingMap.set(res.id, 0);
+        continue;
+      }
+      // Gefinaliseerde spaardoel-maand: pot is afgesloten, restsaldo is
+      // vrijgegeven — opbouw herstart de volgende maand op nul.
+      if (spaardoelReleases.has(res.id)) {
+        deferredRemainingMap.set(res.id, 0);
+        potBalanceMap.set(res.id, 0);
         continue;
       }
       const paidFromReservation = monthReservationPayments

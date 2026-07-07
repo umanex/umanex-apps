@@ -1,5 +1,5 @@
 # Context Snapshot — vyvey
-_Gegenereerd op 2026-07-01_
+_Gegenereerd op 2026-07-07_
 
 ## Project
 - **App:** vyvey
@@ -18,11 +18,11 @@ _Gegenereerd op 2026-07-01_
 
 ## Recente commits (app + packages)
 ```
+f42fe26 feat(cashflow): prudent budget-model, geen release van onbesteed budget
 9083da0 feat(cashflow): resterende provisie in huidige maand
 2f68049 fix(cashflow): corrigeer dubbele spaarpot-aftrek bij maandovergang
 51abcde docs(cashflow): documenteer PM2 build/restart flow
 bddd4d5 feat(cashflow): finaliseer maandelijks budget zonder betaling
-8fb1592 fix(cashflow): trek provisie-betalingen af van Provisies-subtotaal
 ```
 
 ## Uncommitted wijzigingen

@@ -4,7 +4,7 @@
 - **Type:** feature (screen-varianten)
 - **Project:** RowTrack
 - **Klant:** umanex (eigen product)
-- **Status:** deels gebouwd (50/50 klaar; metriek-hiërarchie beslist, implementatie open)
+- **Status:** gevalideerd (50/50 + metriek-hiërarchie geïmplementeerd; review-gate groen)
 
 ---
 
@@ -54,14 +54,26 @@ CONSTRAINTS: RN/Expo · token-only · StyleSheet · geen gedragswijziging aan po
 
 ## Acceptatie
 
-- [ ] Duration/Split/Watts/Distance KPI-volgorde volgens beslissing (1).
-- [ ] Split/Watts subtitel + progressbalk volgens beslissing (2)+(3).
-- [ ] Afstand-notatie volgens beslissing (4), consistent KPI + subtitel.
-- [ ] Landscape KPI-waarde 16px; distance-subtitel toont afstand; geen-doel-pill compleet.
-- [ ] Doel-pill waarde/unit-formaat gelijk aan portrait.
-- [ ] Portrait-gedrag ongewijzigd; `tsc` groen.
-- [ ] LAAG-polish items afgevinkt.
+- [x] Duration/Split/Watts/Distance KPI-volgorde volgens beslissing (1). — was al correct; duration/no-goal 5e slot = AFSTAND.
+- [x] Split/Watts subtitel + progressbalk volgens beslissing (2)+(3). — vergelijkingszin ('seconden'), fillPct=1, geen dot, radius 6.
+- [x] Afstand-notatie volgens beslissing (4), consistent KPI + subtitel. — `formatMetersDotted`; hero zonder unit, KPI + subtitel met ' m'.
+- [x] Landscape KPI-waarde 16px; distance-subtitel toont afstand; geen-doel-pill compleet. — KPI.tsx compact = `kpiValue` + label `fg.secondary`; 'DOEL | Geen doel'.
+- [x] Doel-pill waarde/unit-formaat gelijk aan portrait. — portrait-pariteit behouden (single-string); italic-unit '20 min' bewust NIET (zie beslissing hieronder).
+- [x] Portrait-gedrag ongewijzigd; `tsc` groen. — landscape volledig geïsoleerd in `activeStyles`; `formatSplit(x)` default onveranderd.
+- [x] LAAG-polish items afgevinkt. — letterspacing -4.32, trackdot 6px, pill-divider 16px, bar→subtitel 24px, pill top-aligned, leading-zero splits, distance-hero zonder ' m'. Uitzonderingen: zie beslissing hieronder.
 
 ## Beslissingsgeschiedenis
 
 - 2026-07-08: Briefing aangemaakt vanuit audit cluster 5.
+- 2026-07-08: Geïmplementeerd (branch `fix/rowtrack-landscape-metrics-cluster5`). `renderTopSection`
+  herschreven per doeltype (subtitel + progressbalk-descriptor), landscape-styles losgetrokken naar
+  `activeStyles`, pill top-aligned. Dode `goalProgress`-prop opgeruimd (ActivePhase + workout.tsx).
+  Adversariële review-gate (4 dimensies + per-finding verify) groen: 0 P0/P1/P2, 1 P3 weerlegd.
+- 2026-07-08: **Bewust uitgesteld / afgeweken van audit** (3 items):
+  1. Pill-achtergrond blijft `accent.subtle` (6%) i.p.v. 10% — geen token tussen 6% en 12%; wacht op
+     Tokens-Studio-token (raakt dan ook portrait-pill, audit-cluster dashboard). Niet gehardcode.
+  2. Doel-pill houdt portrait-pariteit ('20:00 MIN'); italic-unit '20 min' (audit-finding) botst met
+     acceptatie-#5 + portrait-freeze — voorstel: app-breed in aparte stap (portrait+landscape samen).
+  3. Design-inconsistenties NIET nagevolgd (uniform gehouden): Watts-variant gap 28 → 24; split/watts
+     bar-inset 20px → volle breedte; hero-kleur wit i.p.v. wisselend fg.primary/wit. Audit flagde deze
+     zelf als design-bugs.

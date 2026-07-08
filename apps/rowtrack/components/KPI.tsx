@@ -13,11 +13,11 @@ type KPIProps = {
 export function KPI({ label, value, highlighted = false, compact = false, onPress, loading = false }: KPIProps) {
   const content = (
     <>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, compact && styles.labelCompact]}>{label}</Text>
       {loading ? (
         <ActivityIndicator size="small" color={fg.secondary} />
       ) : (
-        <Text style={[styles.value, highlighted && styles.valueHighlighted]}>{value}</Text>
+        <Text style={[styles.value, highlighted && styles.valueHighlighted, compact && styles.valueCompact]}>{value}</Text>
       )}
     </>
   );
@@ -62,9 +62,15 @@ const styles = StyleSheet.create({
     ...typeStyles.labelGoalPrefix,
     color: fg.tertiary,
   },
+  labelCompact: {
+    color: fg.secondary,
+  },
   value: {
     ...typeStyles.sectionValue,
     color: fg.primary,
+  },
+  valueCompact: {
+    ...typeStyles.kpiValue,
   },
   valueHighlighted: {
     color: accent.default,

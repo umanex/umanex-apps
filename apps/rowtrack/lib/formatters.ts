@@ -31,11 +31,22 @@ export function formatDistanceDynamic(meters: number): { value: string; unit: st
   return { value: (meters / 1000).toFixed(2), unit: 'km' };
 }
 
-export function formatSplit(splitSec: number): string {
+/**
+ * Meters with a Dutch thousands separator, no unit: 1234 -> '1.234', 850 -> '850'.
+ * Landscape-only notation (portrait/design uses km); append ' m' at the call site if needed.
+ */
+export function formatMetersDotted(meters: number): string {
+  const m = Math.round(meters);
+  return String(m).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/** `padMinutes` pads the minutes to two digits ('02:10') — landscape-only; portrait keeps '2:10'. */
+export function formatSplit(splitSec: number, padMinutes = false): string {
   if (!Number.isFinite(splitSec)) return '—';
   const m = Math.floor(splitSec / 60);
   const s = Math.round(splitSec % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
+  const mm = padMinutes ? m.toString().padStart(2, '0') : m.toString();
+  return `${mm}:${s.toString().padStart(2, '0')}`;
 }
 
 export function formatDate(iso: string): string {

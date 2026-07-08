@@ -42,7 +42,7 @@ export default function WorkoutScreen() {
   const { state: metricsState, refs, resetAll, hasProfileWeight } = useWorkoutMetrics(phase, bleMetrics, hrBpm);
   const {
     milestoneMsg, toastMsg, splits, goalReached, prFlags, pulseAnim,
-    avgWatts, avgSpm, avgSplit, goalProgress, isCountdown, paceZone, hasPR,
+    avgWatts, avgSpm, avgSplit, isCountdown, paceZone, hasPR,
     dismissMilestone, dismissToast, fetchPRs, resetGameState, resetGoalReached,
   } = useGoalProgress(phase, goal, metricsState, refs, user?.id);
 
@@ -203,7 +203,6 @@ export default function WorkoutScreen() {
       bleError={bleError}
       startScan={startScan}
       goal={goal}
-      goalProgress={goalProgress}
       isCountdown={isCountdown}
       paceZone={paceZone}
       milestoneMsg={milestoneMsg}

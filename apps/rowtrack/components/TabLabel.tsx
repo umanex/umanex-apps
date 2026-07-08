@@ -7,19 +7,18 @@ type TabLabelProps = {
   color: string;
 };
 
-export function TabLabel({ label, focused, color }: TabLabelProps) {
+// Design: Albert Sans SemiBold 11px voor actief én inactief — enkel de kleur
+// verschilt, en die komt via de `color`-prop van de tab-navigator.
+export function TabLabel({ label, color }: TabLabelProps) {
   return (
-    <Text style={[focused ? styles.active : styles.inactive, { color }]}>
+    <Text style={[styles.label, { color }]}>
       {label}
     </Text>
   );
 }
 
 const styles = StyleSheet.create({
-  active: {
+  label: {
     ...typeStyles.labelGoalPrefix,
-  },
-  inactive: {
-    ...typeStyles.labelMicro,
   },
 });

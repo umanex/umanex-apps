@@ -58,16 +58,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+21335c4 fix(rowtrack): Verbreek action uses accent colour (audit cluster 7)
 b38ddd3 fix(rowtrack): align Button with design — trailing icon, Primary Stop, border+shadow (audit cluster 4)
 2e502e0 button height
 6d5cb07 button border width & 44 spacing scale
 bd07791 fix(rowtrack): align unit/label italics with design (audit cluster 3)
-f3d6735 fix(rowtrack): serialize composite button tokens in DTCG-aware token build
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/BleStatusBar.tsx
-  M  apps/rowtrack/components/HrStatusBar.tsx
+  M  apps/rowtrack/components/TabLabel.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

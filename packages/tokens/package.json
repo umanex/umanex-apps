@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./variables.css": "./build/variables.css",
-    "./tailwind": "./build/tailwind.js"
+    "./variables.css": "./build/variables.css"
   },
   "scripts": {
     "build": "node build.mjs"

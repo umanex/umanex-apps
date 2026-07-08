@@ -53,14 +53,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+191ab45 fix(rowtrack): portrait active-phase parity with design + landscape (audit)
 ae2fb7c fix(rowtrack): landscape metric hierarchy per goal type (audit cluster 5)
 4a97420 docs(rowtrack): cluster 5 (landscape) briefing + decisions
 3696add fix(rowtrack): landscape columns split 50/50 (audit cluster 5)
 e5261b3 chore(rowtrack): remove dead components (audit cluster 8)
-122db9f fix(rowtrack): drop motivational nudges, wire goal-reached celebration properly
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/rowtrack/app/(tabs)/index.tsx
+  M  apps/rowtrack/components/KPI_single.tsx
   M  apps/rowtrack/components/workout/ActivePhase.tsx
 
 ## Bestanden met TODO/FIXME

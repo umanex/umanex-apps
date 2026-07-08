@@ -141,7 +141,7 @@ export function ActivePhase({
   const summaryDateLabel = useMemo(() => {
     if (phase !== 'summary') return '';
     const now = new Date();
-    const h = String(now.getHours()).padStart(2, '0');
+    const h = String(now.getHours());
     const m = String(now.getMinutes()).padStart(2, '0');
     return `Vandaag - ${h}:${m}`;
   }, [phase]);
@@ -996,15 +996,14 @@ const summaryStyles = StyleSheet.create({
     gap: space['20'],
   },
   header: {
-    gap: space['4'],
+    gap: space['0'],
   },
   title: {
     ...typeStyles.sectionValue,
     color: fg.primary,
   },
   dateText: {
-    fontFamily: fontFamily.sourceSerifItalic,
-    fontSize: fontSize['15'],
+    ...typeStyles.labelGoalPrefix,
     color: fg.secondary,
   },
   prBanner: {
@@ -1029,7 +1028,7 @@ const summaryStyles = StyleSheet.create({
   },
   kpiGridDivider: {
     height: 1,
-    backgroundColor: border.default,
+    backgroundColor: border.strong,
     marginVertical: space['12'],
   },
   kpiCell: {

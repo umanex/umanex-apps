@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-07_
+_Gegenereerd op 2026-07-08_
 
 ## Project
 - **App:** rowtrack
@@ -18,15 +18,15 @@ _Gegenereerd op 2026-07-07_
 
 ## Recente commits (app + packages)
 ```
+f55a171 fix(cashflow): allow finalizing spaardoel with leftover balance
 f42fe26 feat(cashflow): prudent budget-model, geen release van onbesteed budget
 9083da0 feat(cashflow): resterende provisie in huidige maand
 2f68049 fix(cashflow): corrigeer dubbele spaarpot-aftrek bij maandovergang
 51abcde docs(cashflow): documenteer PM2 build/restart flow
-bddd4d5 feat(cashflow): finaliseer maandelijks budget zonder betaling
 ```
 
 ## Uncommitted wijzigingen
-  ?? apps/rowtrack/briefings/2026-07-04-audit-design-vs-code.md
+  A  apps/rowtrack/briefings/2026-07-04-audit-design-vs-code.md
 
 ## Bestanden met TODO/FIXME
   (geen)

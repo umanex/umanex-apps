@@ -12,7 +12,7 @@
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "clean": "turbo clean && rm -rf node_modules",
-    "postinstall": "mkdir -p apps/cashflow/node_modules apps/jobradar/node_modules apps/portfolio/node_modules && rm -rf apps/cashflow/node_modules/react apps/jobradar/node_modules/react apps/portfolio/node_modules/react node_modules/styled-jsx/node_modules/react node_modules/react-dom/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/cashflow/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/jobradar/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/portfolio/node_modules/react && ln -s ../../next/node_modules/react node_modules/styled-jsx/node_modules/react && ln -s ../../next/node_modules/react node_modules/react-dom/node_modules/react"
+    "postinstall": "mkdir -p apps/cashflow/node_modules apps/jobradar/node_modules apps/portfolio/node_modules apps/vyvey/node_modules && rm -rf apps/cashflow/node_modules/react apps/jobradar/node_modules/react apps/portfolio/node_modules/react apps/vyvey/node_modules/react node_modules/styled-jsx/node_modules/react node_modules/react-dom/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/cashflow/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/jobradar/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/portfolio/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/vyvey/node_modules/react && ln -s ../../next/node_modules/react node_modules/styled-jsx/node_modules/react && ln -s ../../next/node_modules/react node_modules/react-dom/node_modules/react"
   },
   "devDependencies": {
     "turbo": "^2.0.0"

@@ -315,7 +315,7 @@ export function ActivePhase({
 
     function kpiLabel(key: KPIKey): string {
       switch (key) {
-        case 'SPLIT': return 'SPLIT/500M';
+        case 'SPLIT': return 'SPLIT 500/M';
         case 'WATT': return 'WATT';
         case 'SPM': return 'SPM';
         case 'BPM': return 'BPM';
@@ -401,7 +401,7 @@ export function ActivePhase({
       case null: {
         subtitleNode = (
           <Text style={portraitStyles.subtitleText}>
-            {`${formattedDistance.value} ${formattedDistance.unit} geroeid`}
+            {`${formatMetersDotted(distanceMeters)} m`}
           </Text>
         );
         break;
@@ -427,11 +427,8 @@ export function ActivePhase({
         const target = goal!.target;
         const remaining = Math.max(0, target - distanceMeters);
         const pct = target > 0 ? Math.min(1, distanceMeters / target) : 0;
-        // Hero: remaining in meters, Dutch thousands separator (e.g. "15.000 m")
-        const remainM = Math.round(remaining);
-        heroText = remainM >= 1000
-          ? `${Math.floor(remainM / 1000)}.${String(remainM % 1000).padStart(3, '0')} m`
-          : `${remainM} m`;
+        // Hero: remaining meters with dotted thousands, no unit (design 85:2381 "15.000")
+        heroText = formatMetersDotted(remaining);
         progressFillPct = pct;
         // Subtitle elapsed: comma as decimal separator (e.g. "5,0 km")
         const elapsedStr = distanceMeters >= 1000
@@ -458,8 +455,8 @@ export function ActivePhase({
           const diff = goal!.target - splitSeconds;
           const absDiff = Math.abs(Math.round(diff));
           splitSubtitle = diff >= 0
-            ? `Je bent ${absDiff} sec sneller`
-            : `Je bent ${absDiff} sec trager`;
+            ? `Je bent ${absDiff} seconden sneller`
+            : `Je bent ${absDiff} seconden trager`;
         }
         subtitleNode = (
           <Text style={portraitStyles.subtitleText}>{splitSubtitle}</Text>
@@ -505,7 +502,7 @@ export function ActivePhase({
 
     function kpiDisplayLabel(key: KPIKey): string {
       switch (key) {
-        case 'SPLIT': return 'SPLIT/500M';
+        case 'SPLIT': return 'SPLIT 500/M';
         case 'WATT': return 'WATT';
         case 'SPM': return 'SPM';
         case 'BPM': return 'BPM';
@@ -532,39 +529,37 @@ export function ActivePhase({
         {/* Top Section */}
         <View style={portraitStyles.topSection}>
           <View style={portraitStyles.doelPill}>
-            {goal ? (
-              <>
-                <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
-                <View style={portraitStyles.doelPillDivider} />
-                <Text style={portraitStyles.doelPillValue}>{doelTargetLabel}</Text>
-              </>
-            ) : (
-              <Text style={portraitStyles.doelPillValue}>Geen doel</Text>
-            )}
+            <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
+            <View style={portraitStyles.doelPillDivider} />
+            <Text style={portraitStyles.doelPillValue}>{goal ? doelTargetLabel : 'Geen doel'}</Text>
           </View>
 
-          <Text style={portraitStyles.heroText}>{heroText}</Text>
+          <View style={portraitStyles.heroGroup}>
+            <Text style={portraitStyles.heroText}>{heroText}</Text>
 
-          {goal && (
-            <View style={[portraitStyles.progressTrack, { borderRadius: progressBarRadius }]}>
-              {progressFillPct > 0 && (
-                <View
-                  style={[
-                    portraitStyles.progressFill,
-                    {
-                      width: `${Math.min(progressFillPct * 100, 100)}%`,
-                      backgroundColor: progressBarColor,
-                      borderRadius: progressBarRadius,
-                    },
-                  ]}
-                >
-                  <View style={[portraitStyles.progressDot, { backgroundColor: progressBarColor }]} />
-                </View>
-              )}
-            </View>
-          )}
+            {goal && (
+              <View style={[portraitStyles.progressTrack, { borderRadius: progressBarRadius }]}>
+                {progressFillPct > 0 && (
+                  <View
+                    style={[
+                      portraitStyles.progressFill,
+                      {
+                        width: `${Math.min(progressFillPct * 100, 100)}%`,
+                        backgroundColor: progressBarColor,
+                        borderRadius: progressBarRadius,
+                      },
+                    ]}
+                  >
+                    {goalType !== 'split' && goalType !== 'watts' && (
+                      <View style={[portraitStyles.progressDot, { backgroundColor: progressBarColor }]} />
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
 
-          {subtitleNode}
+            {subtitleNode}
+          </View>
         </View>
 
         {/* KPI Grid */}
@@ -857,11 +852,17 @@ const portraitStyles = StyleSheet.create({
     flex: 1,
     gap: space['20'],
   },
+  // Pill anchored to the top; hero group centred in the remaining space (design 42:5589).
   topSection: {
     flex: 1,
     alignItems: 'center',
+  },
+  heroGroup: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: space['12'],
+    gap: space['28'],
   },
   doelPill: {
     flexDirection: 'row',
@@ -884,7 +885,7 @@ const portraitStyles = StyleSheet.create({
   },
   doelPillDivider: {
     width: 1,
-    height: 14,
+    height: 16,
     backgroundColor: fg.quaternary,
   },
   heroText: {
@@ -892,6 +893,7 @@ const portraitStyles = StyleSheet.create({
     fontSize: fontSize['124'],
     color: fg.onAccent,
     lineHeight: fontSize['124'] * 0.95,
+    letterSpacing: typeStyles.heroNumeric.letterSpacing,
   },
   progressTrack: {
     alignSelf: 'stretch',
@@ -906,11 +908,11 @@ const portraitStyles = StyleSheet.create({
   },
   progressDot: {
     position: 'absolute',
-    right: -5,
-    top: -4,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    right: -3,
+    top: -2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   subtitleText: {
     ...typeStyles.activeProgress,
@@ -949,10 +951,7 @@ const portraitStyles = StyleSheet.create({
     color: fg.secondary,
   },
   kpiValue: {
-    fontFamily: fontFamily.sourceSerifSemiBold,
-    fontSize: fontSize['16'],
-    lineHeight: fontSize['16'],
-    letterSpacing: -0.4,
+    ...typeStyles.kpiValue,
     color: fg.primary,
   },
 });

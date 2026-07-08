@@ -7,8 +7,8 @@ export type { ProgressBarProps } from './ProgressBar';
 export { MilestoneOverlay } from '../MilestoneOverlay';
 export type { MilestoneOverlayProps } from '../MilestoneOverlay';
 
-export { PaceZone, getPaceZone } from '../PaceZone';
-export type { PaceZoneProps, PaceZoneLevel } from '../PaceZone';
+export { getPaceZone } from '../PaceZone';
+export type { PaceZoneLevel } from '../PaceZone';
 
 export { MotivationalToast } from '../MotivationalToast';
 export type { MotivationalToastProps } from '../MotivationalToast';

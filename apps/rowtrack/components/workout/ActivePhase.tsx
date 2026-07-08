@@ -14,7 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import type { ConnectionStatus, HRStatus } from '@/lib/ble/types';
 import type { WorkoutGoal } from '@/lib/workout-goals';
-import type { GoalProgress } from '@/lib/workout-goals';
 import { Button, KPI, KpiSingle } from '@/components';
 import {
   GoalSetupModal,
@@ -22,7 +21,7 @@ import {
   MilestoneOverlay,
 } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
-import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic } from '@/lib/formatters';
+import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatMetersDotted } from '@/lib/formatters';
 import { bg, fg, accent, border, progressBar, status, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
 import { styles } from './workout.styles';
@@ -58,7 +57,6 @@ type ActivePhaseProps = {
   bleError: string | null;
   startScan: () => void;
   goal: WorkoutGoal | null;
-  goalProgress: GoalProgress | null;
   isCountdown: boolean;
   paceZone: PaceZoneLevel | null;
   milestoneMsg: string | null;
@@ -99,7 +97,6 @@ export function ActivePhase({
   bleError,
   startScan,
   goal,
-  goalProgress,
   milestoneMsg,
   toastMsg,
   dismissMilestone,
@@ -161,95 +158,137 @@ export function ActivePhase({
 
   const handleCloseGoalModal = useCallback(() => setShowGoalModal(false), []);
 
-  // --- Landscape: top section (timer + progress bar) ---
+  // --- Landscape: top section (pill top-aligned; hero + bar + subtitle centred) ---
   function renderTopSection() {
     const goalType = goal?.type ?? null;
 
+    // Pill target label — portrait-parity structure; landscape splits get leading-zero minutes.
     let doelTargetLabel = '';
-    let heroText: string = formattedTimer;
-    let progressBarColor: string = accent.default;
-    let progressBarRadius: number = radii.lg;
-
     if (goal) {
       switch (goal.type) {
         case 'duration': {
           const m = Math.floor(goal.target / 60);
           const s = goal.target % 60;
           doelTargetLabel = `${m}:${String(s).padStart(2, '0')} MIN`;
-          heroText = formatTimer(Math.max(0, goal.target - seconds));
           break;
         }
-        case 'distance': {
+        case 'distance':
           doelTargetLabel = goal.target >= 1000
             ? `${(goal.target / 1000).toFixed(1).replace('.', ',')} KM`
             : `${goal.target} M`;
-          const remainM = Math.round(Math.max(0, goal.target - distanceMeters));
-          heroText = remainM >= 1000
-            ? `${Math.floor(remainM / 1000)}.${String(remainM % 1000).padStart(3, '0')} m`
-            : `${remainM} m`;
           break;
-        }
         case 'split':
-          doelTargetLabel = `${formatSplit(goal.target)}/500m`;
-          heroText = formatSplit(splitSeconds);
-          progressBarColor = splitSeconds > 0 && splitSeconds <= goal.target ? progressBar.successFill : progressBar.warningFill;
-          progressBarRadius = 6;
+          doelTargetLabel = `${formatSplit(goal.target, true)}/500m`;
           break;
         case 'watts':
           doelTargetLabel = `${goal.target} W`;
-          heroText = `${watts} W`;
-          progressBarColor = watts >= goal.target ? progressBar.successFill : progressBar.warningFill;
-          progressBarRadius = 6;
           break;
+      }
+    }
+
+    // Hero + progress bar descriptor + subtitle — mirrors the portrait per-goal logic.
+    type Bar = { fillPct: number; color: string; radius: number; showDot: boolean };
+    let heroText: string = formattedTimer;
+    let bar: Bar | null = null;
+    let subtitleNode: ReactNode = null;
+
+    switch (goalType) {
+      case null: {
+        subtitleNode = (
+          <Text style={[activeStyles.subtitleText, activeStyles.subtitleSpacer]}>
+            {`${formatMetersDotted(distanceMeters)} m`}
+          </Text>
+        );
+        break;
+      }
+      case 'duration': {
+        const target = goal!.target;
+        const pct = target > 0 ? Math.min(1, seconds / target) : 0;
+        heroText = formatTimer(Math.max(0, target - seconds));
+        bar = { fillPct: pct, color: accent.default, radius: radii.lg, showDot: true };
+        subtitleNode = (
+          <View style={[activeStyles.subtitleRow, activeStyles.subtitleSpacer]}>
+            <Text style={activeStyles.subtitleRowText}>{formatTimer(seconds)}</Text>
+            <View style={activeStyles.subtitleDivider} />
+            <Text style={activeStyles.subtitleRowText}>{`${Math.round(pct * 100)}% voltooid`}</Text>
+          </View>
+        );
+        break;
+      }
+      case 'distance': {
+        const target = goal!.target;
+        const pct = target > 0 ? Math.min(1, distanceMeters / target) : 0;
+        // Hero: remaining meters with dotted thousands, no unit (design 42:5934 '15.000').
+        heroText = formatMetersDotted(Math.max(0, target - distanceMeters));
+        bar = { fillPct: pct, color: accent.default, radius: radii.lg, showDot: true };
+        subtitleNode = (
+          <View style={[activeStyles.subtitleRow, activeStyles.subtitleSpacer]}>
+            <Text style={activeStyles.subtitleRowText}>{`${formatMetersDotted(distanceMeters)} m`}</Text>
+            <View style={activeStyles.subtitleDivider} />
+            <Text style={activeStyles.subtitleRowText}>{`${Math.round(pct * 100)}% voltooid`}</Text>
+          </View>
+        );
+        break;
+      }
+      case 'split': {
+        heroText = formatSplit(splitSeconds, true);
+        const onTarget = splitSeconds > 0 && splitSeconds <= goal!.target;
+        bar = { fillPct: 1, color: onTarget ? progressBar.successFill : progressBar.warningFill, radius: 6, showDot: false };
+        let sub = 'Begin met roeien...';
+        if (splitSeconds !== 0) {
+          const diff = goal!.target - splitSeconds;
+          const absDiff = Math.abs(Math.round(diff));
+          sub = diff >= 0 ? `Je bent ${absDiff} seconden sneller` : `Je bent ${absDiff} seconden trager`;
+        }
+        subtitleNode = <Text style={[activeStyles.subtitleText, activeStyles.subtitleSpacer]}>{sub}</Text>;
+        break;
+      }
+      case 'watts': {
+        heroText = `${watts} W`;
+        const onTarget = watts >= goal!.target;
+        bar = { fillPct: 1, color: onTarget ? progressBar.successFill : progressBar.warningFill, radius: 6, showDot: false };
+        let sub = 'Begin met roeien...';
+        if (watts !== 0) {
+          const diff = watts - goal!.target;
+          const absDiff = Math.abs(Math.round(diff));
+          sub = diff >= 0 ? `Je levert ${absDiff} W meer` : `Je levert ${absDiff} W minder dan je doel`;
+        }
+        subtitleNode = <Text style={[activeStyles.subtitleText, activeStyles.subtitleSpacer]}>{sub}</Text>;
+        break;
       }
     }
 
     return (
       <>
-        <View style={portraitStyles.doelPill}>
-          {goal ? (
-            <>
-              <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
-              <View style={portraitStyles.doelPillDivider} />
-              <Text style={portraitStyles.doelPillValue}>{doelTargetLabel}</Text>
-            </>
-          ) : (
-            <Text style={portraitStyles.doelPillValue}>Geen doel</Text>
-          )}
+        <View style={activeStyles.doelPill}>
+          <Text style={activeStyles.doelPillLabel}>DOEL</Text>
+          <View style={activeStyles.doelPillDivider} />
+          <Text style={activeStyles.doelPillValue}>{goal ? doelTargetLabel : 'Geen doel'}</Text>
         </View>
-        <Text style={activeStyles.timerText}>{heroText}</Text>
-        {!goal && (
-          <Text style={portraitStyles.subtitleText}>
-            {`${formattedDistance.value} ${formattedDistance.unit}`}
-          </Text>
-        )}
-        {goal && goalProgress && (
-          <>
-            <View style={[activeStyles.progressTrack, { borderRadius: progressBarRadius }]}>
-              {goalProgress.percentage > 0 && (
+        <View style={activeStyles.heroGroup}>
+          <Text style={activeStyles.timerText}>{heroText}</Text>
+          {bar && (
+            <View style={[activeStyles.progressTrack, { borderRadius: bar.radius }]}>
+              {bar.fillPct > 0 && (
                 <View
                   style={[
                     activeStyles.progressFill,
                     {
-                      width: `${Math.min(goalProgress.percentage, 100)}%`,
-                      backgroundColor: progressBarColor,
-                      borderRadius: progressBarRadius,
+                      width: `${Math.min(bar.fillPct * 100, 100)}%`,
+                      backgroundColor: bar.color,
+                      borderRadius: bar.radius,
                     },
                   ]}
                 >
-                  <View style={[activeStyles.progressDot, { backgroundColor: progressBarColor }]} />
+                  {bar.showDot && (
+                    <View style={[activeStyles.progressDot, { backgroundColor: bar.color }]} />
+                  )}
                 </View>
               )}
             </View>
-            <View style={portraitStyles.subtitleRow}>
-              <Text style={portraitStyles.subtitleRowText}>{formattedTimer}</Text>
-              <View style={portraitStyles.subtitleDivider} />
-              <Text style={portraitStyles.subtitleRowText}>
-                {`${Math.round(goalProgress.percentage)}% voltooid`}
-              </Text>
-            </View>
-          </>
-        )}
+          )}
+          {subtitleNode}
+        </View>
       </>
     );
   }
@@ -288,11 +327,11 @@ export function ActivePhase({
 
     function kpiValue(key: KPIKey): string {
       switch (key) {
-        case 'SPLIT': return formatSplit(avgSplit);
+        case 'SPLIT': return formatSplit(avgSplit, true);
         case 'WATT': return `${avgWatts} W`;
         case 'SPM': return `${avgSpm}`;
         case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
-        case 'AFSTAND': return `${formattedDistance.value} ${formattedDistance.unit}`;
+        case 'AFSTAND': return `${formatMetersDotted(distanceMeters)} m`;
         case 'TIJD': return formattedTimer;
         case 'KCAL': return `${Math.round(calories)}${hasProfileWeight ? '' : '*'}`;
       }
@@ -729,14 +768,44 @@ export function ActivePhase({
 }
 
 const activeStyles = StyleSheet.create({
-  goalLabel: {
+  // Pill anchored to the top of the left column (design 42:5876).
+  doelPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 40,
+    backgroundColor: accent.subtle,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: accent.muted,
+    paddingHorizontal: space['16'],
+    gap: space['16'],
+  },
+  doelPillLabel: {
     ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    color: fg.secondary,
+  },
+  doelPillDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: fg.quaternary,
+  },
+  doelPillValue: {
+    ...typeStyles.kpiValue,
+    color: accent.default,
+  },
+  // Hero group fills the space below the pill and centres its content.
+  heroGroup: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space['16'],
   },
   timerText: {
     fontFamily: fontFamily.sourceSerifBold,
     fontSize: fontSize['124'],
     lineHeight: fontSize['124'] * 0.95,
+    letterSpacing: typeStyles.heroNumeric.letterSpacing,
     color: fg.onAccent,
   },
   progressTrack: {
@@ -752,16 +821,34 @@ const activeStyles = StyleSheet.create({
   },
   progressDot: {
     position: 'absolute',
-    right: -5,
-    top: -4,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    right: -3,
+    top: -2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: accent.default,
   },
-  progressPct: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+  subtitleText: {
+    ...typeStyles.activeProgress,
+    color: fg.onAccent,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['16'],
+  },
+  subtitleDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: fg.quaternary,
+  },
+  subtitleRowText: {
+    ...typeStyles.activeProgress,
+    color: fg.onAccent,
+  },
+  // Extra 8px above the subtitle → 24px between bar and subtitle (design 42:5900).
+  subtitleSpacer: {
+    paddingTop: space['8'],
   },
 });
 
@@ -889,8 +976,6 @@ const landscapeStyles = StyleSheet.create({
     flex: 1,
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: space['16'],
   },
   rightCol: {
     flex: 1,

@@ -50,7 +50,7 @@ export function BleStatusBar({ bleStatus, deviceName, bleError, onConnect, onDis
 
       {isConnected && (
         <TouchableOpacity style={styles.actionPanel} onPress={onDisconnect} activeOpacity={0.8}>
-          <Text style={styles.actionMuted}>Verbreek</Text>
+          <Text style={styles.actionText}>Verbreek</Text>
         </TouchableOpacity>
       )}
 
@@ -109,9 +109,5 @@ const styles = StyleSheet.create({
   actionText: {
     ...typeStyles.textLink,
     color: accent.default,
-  },
-  actionMuted: {
-    ...typeStyles.textLink,
-    color: fg.tertiary,
   },
 });

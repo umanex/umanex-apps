@@ -58,21 +58,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b38ddd3 fix(rowtrack): align Button with design — trailing icon, Primary Stop, border+shadow (audit cluster 4)
 2e502e0 button height
 6d5cb07 button border width & 44 spacing scale
 bd07791 fix(rowtrack): align unit/label italics with design (audit cluster 3)
 f3d6735 fix(rowtrack): serialize composite button tokens in DTCG-aware token build
-1ee4832 Merge pull request #83 from umanex/w3c-dtcg-conversion
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  A  apps/rowtrack/briefings/2026-07-08-component-button-alignment.tcebc.md
-  M  apps/rowtrack/components/Button.tsx
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-  M  apps/rowtrack/components/workout/IdlePhase.tsx
-  M  apps/rowtrack/constants/colors.ts
-  M  apps/rowtrack/constants/spacing.ts
+  M  apps/rowtrack/components/BleStatusBar.tsx
+  M  apps/rowtrack/components/HrStatusBar.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

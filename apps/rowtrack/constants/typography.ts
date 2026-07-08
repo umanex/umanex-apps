@@ -97,7 +97,7 @@ export const typeStyles = {
     letterSpacing: -0.4,
   },
   kpiUnit: {
-    fontFamily: 'SourceSerif4_400Regular',
+    fontFamily: 'SourceSerif4_400Regular_Italic',
     fontSize: 16,
     lineHeight: 16,
   },

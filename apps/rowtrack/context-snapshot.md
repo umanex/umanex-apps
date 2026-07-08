@@ -53,22 +53,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e5261b3 chore(rowtrack): remove dead components (audit cluster 8)
 122db9f fix(rowtrack): drop motivational nudges, wire goal-reached celebration properly
 4bddbd6 fix(rowtrack): tab labels SemiBold 11px active and inactive (audit cluster 6)
 21335c4 fix(rowtrack): Verbreek action uses accent colour (audit cluster 7)
 b38ddd3 fix(rowtrack): align Button with design — trailing icon, Primary Stop, border+shadow (audit cluster 4)
-2e502e0 button height
 ```
 
 ## Uncommitted wijzigingen
-  D  apps/rowtrack/components/Card.tsx
-  D  apps/rowtrack/components/GoalInput.tsx
-  D  apps/rowtrack/components/MetricDisplay.tsx
-  M  apps/rowtrack/components/PaceZone.tsx
-  D  apps/rowtrack/components/PeriodGoalCard.tsx
-  D  apps/rowtrack/components/SummaryRow.tsx
-  M  apps/rowtrack/components/index.ts
-  M  apps/rowtrack/components/workout/index.ts
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  ?? apps/rowtrack/briefings/2026-07-08-feature-landscape-metrics.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

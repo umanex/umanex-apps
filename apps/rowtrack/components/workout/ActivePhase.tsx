@@ -878,6 +878,10 @@ const landscapeStyles = StyleSheet.create({
   },
   leftCol: {
     flex: 1,
+    // minWidth 0 zodat de kolom écht 50% deelt: Yoga (RN 0.81/New Arch) laat een
+    // flex-item anders niet krimpen onder z'n content, waardoor de bredere KPI-kolom
+    // de hero-kolom smaller duwt (hero brak af over twee regels).
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -890,6 +894,7 @@ const landscapeStyles = StyleSheet.create({
   },
   rightCol: {
     flex: 1,
+    minWidth: 0,
     justifyContent: 'space-between',
   },
 });

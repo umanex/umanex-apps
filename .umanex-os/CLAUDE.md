@@ -182,14 +182,14 @@ Status: dit is v1, een **werkprincipe** (model-gedreven, geen skill of hook), ex
 
 - **PLAN** — TC-EBC (design, **main-agent only** — harde rail, nooit naar een sub-agent) of een licht **taak-contract** (doel / invariants-regressiechecks / done-criteria) voor refactor/bugfix/infra waar TC-EBC bewust wordt overgeslagen. Levert één machine-leesbare **acceptatie-checklist** (`- [ ]`).
 - **BOUW** — main-agent (erft de `@`-import CLAUDE.md-keten met git/Figma/token-rails) of de bouw-skill bij het taaktype: `nieuw-component`, `figma-naar-code`, `code-naar-figma`. Een build-sub-agent alleen bewust — `@`-import-erving is buiten de main-agent niet gegarandeerd.
-- **BEOORDEEL** — een panel langs verschillende assen, elk een eigen bril: `code-review` (diff-correctheid, P0-blokker), `verify` (gedrag tegen BEHAVIOUR, P0-blokker), `ux-audit` (design, niet-blokkerend). Bij design-to-code is de **design-snapshot** (traceability-`.md` uit `figma-naar-code` stap 4b) + parity + token-checklist de meetbare as: `verify` dift de gebouwde code tegen de snapshot i.p.v. tegen een vluchtige in-context mapping. De main-agent is **scheidsrechter** en consolideert tot één geprioriteerde P0–P3 fix-lijst. Geef een reviewer-sub-agent **nooit** een hint over de verwachte fout — dat besmet de test (`learnings-verwerken` stap 3-discipline).
+- **BEOORDEEL** — een panel langs verschillende assen, elk een eigen bril: `code-review` (diff-correctheid, P0/P1-blokker), `verify` (gedrag tegen BEHAVIOUR, P0/P1-blokker), `ux-audit` (design, niet-blokkerend), `security-audit` (backend-security & robustheid, P0/P1-blokker bij backend-werk). Bij design-to-code is de **design-snapshot** (traceability-`.md` uit `figma-naar-code` stap 4b) + parity + token-checklist de meetbare as: `verify` dift de gebouwde code tegen de snapshot i.p.v. tegen een vluchtige in-context mapping. De main-agent is **scheidsrechter** en consolideert tot één geprioriteerde P0–P3 fix-lijst. Geef een reviewer-sub-agent **nooit** een hint over de verwachte fout — dat besmet de test (`learnings-verwerken` stap 3-discipline).
 
 **De cyclus en "validatie volledig"**
 
 Itereer BOUW → BEOORDEEL zolang er P0/P1 openstaan. EXIT (status `gevalideerd`) geldt pas wanneer **alle drie** waar zijn:
 
 1. elk acceptatie-item afgevinkt `- [x]`;
-2. geen P0/P1 in `code-review` of `verify`;
+2. geen P0/P1 in `code-review`, `verify` of (bij backend-werk) `security-audit`;
 3. Open vragen leeg.
 
 Harde rail: **max 3 iteraties**. Convergeert het niet → **gecontroleerde stop**: roep `vastleggen` niet-interactief aan (taak-input als Input, de aanhoudende bevinding als Fout) en escaleer naar Jeroen. Nooit stil afsluiten alsof gevalideerd. Ontbreekt de meetbare as (geen render-pad → `verify`/parity vallen terug op "overgeslagen")? Meld dat expliciet; draai de Beoordeel-stap niet alsof hij slaagde.

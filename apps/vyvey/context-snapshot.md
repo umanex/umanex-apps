@@ -1,5 +1,5 @@
 # Context Snapshot — vyvey
-_Gegenereerd op 2026-07-07_
+_Gegenereerd op 2026-07-08_
 
 ## Project
 - **App:** vyvey
@@ -18,14 +18,15 @@ _Gegenereerd op 2026-07-07_
 
 ## Recente commits (app + packages)
 ```
+f55a171 fix(cashflow): allow finalizing spaardoel with leftover balance
 f42fe26 feat(cashflow): prudent budget-model, geen release van onbesteed budget
 9083da0 feat(cashflow): resterende provisie in huidige maand
 2f68049 fix(cashflow): corrigeer dubbele spaarpot-aftrek bij maandovergang
 51abcde docs(cashflow): documenteer PM2 build/restart flow
-bddd4d5 feat(cashflow): finaliseer maandelijks budget zonder betaling
 ```
 
 ## Uncommitted wijzigingen
+  A  apps/vyvey/LEARNINGS.md
   ?? apps/vyvey/.env.example
   ?? apps/vyvey/.eslintrc.json
   ?? apps/vyvey/.gitignore
@@ -35,7 +36,6 @@ bddd4d5 feat(cashflow): finaliseer maandelijks budget zonder betaling
   ?? apps/vyvey/lib/
   ?? apps/vyvey/next-env.d.ts
   ?? apps/vyvey/next.config.mjs
-  ?? apps/vyvey/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

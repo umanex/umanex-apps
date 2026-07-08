@@ -204,7 +204,6 @@ export default function WorkoutScreen() {
       startScan={startScan}
       goal={goal}
       goalProgress={goalProgress}
-      goalReached={goalReached}
       isCountdown={isCountdown}
       paceZone={paceZone}
       milestoneMsg={milestoneMsg}

@@ -53,15 +53,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+80a9ea3 fix(rowtrack): IdlePhase audit MIDDEL — abbreviated units + stepLabel DNA
 6a07e02 fix(rowtrack): Profile sheets audit MIDDEL — DNA labels + sheet radius
 13810d4 fix(rowtrack): History audit MIDDEL fixes
 554715e fix(rowtrack): Home + Summary audit MIDDEL fixes
 191ab45 fix(rowtrack): portrait active-phase parity with design + landscape (audit)
-ae2fb7c fix(rowtrack): landscape metric hierarchy per goal type (audit cluster 5)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/workout/IdlePhase.tsx
+  M  apps/rowtrack/app/(tabs)/history/index.tsx
+  M  apps/rowtrack/app/(tabs)/index.tsx
+  M  apps/rowtrack/components/WorkoutCard.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

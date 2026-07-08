@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: space['20'],
-    paddingVertical: space['8'],
+    paddingVertical: space['4'],
     borderBottomWidth: 1,
     borderBottomColor: border.default,
   },

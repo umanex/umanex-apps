@@ -53,18 +53,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+2b4c1fd docs(rowtrack): cluster 8 design-backlog briefings + decisions
 ae2fb7c fix(rowtrack): landscape metric hierarchy per goal type (audit cluster 5)
 4a97420 docs(rowtrack): cluster 5 (landscape) briefing + decisions
 3696add fix(rowtrack): landscape columns split 50/50 (audit cluster 5)
 e5261b3 chore(rowtrack): remove dead components (audit cluster 8)
-122db9f fix(rowtrack): drop motivational nudges, wire goal-reached celebration properly
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/briefings/2026-07-08-component-connect-overlay.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-08-component-goal-setup-modal.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-08-component-milestone-overlay.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-08-flow-auth.tcebc.md
+  M  apps/rowtrack/briefings/2026-07-08-component-goal-setup-modal.tcebc.md
+  M  apps/rowtrack/briefings/2026-07-08-flow-auth.tcebc.md
+  M  apps/rowtrack/figma-map.md
 
 ## Bestanden met TODO/FIXME
   (geen)

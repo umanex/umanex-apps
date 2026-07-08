@@ -4,7 +4,7 @@
 - **Type:** component (modal met states)
 - **Project:** RowTrack
 - **Klant:** umanex (eigen product)
-- **Status:** gepland — design-beslissingen genomen, klaar voor Figma-build
+- **Status:** gebouwd (Figma) — close-glyph + code-implicaties (min/max) open
 
 ---
 
@@ -84,3 +84,8 @@ CONSTRAINTS: RN/Expo · token-only · StyleSheet · vrije numerieke input HEEFT 
 - 2026-07-08: Kruisbeslissingen genomen — compact numeriek + centered modal behouden (geen wheel),
   visueel afstemmen op IdlePhase, min/max afdwingen; DNA migreren. Code-implicatie: min/max-clamp
   toevoegen aan de nu-ongebonden vrije input.
+- 2026-07-08: Figma-build `GoalSetupModal` (182-2599, Components). `Segments/Goals` (72-15146) +
+  `Button` (109-2214, Primary + Secondary) hergebruikt (stap 4b), grote Source Serif waarde + italic
+  `type/kpiUnit`-unit, token-gebonden, auto-layout. **Gap:** modal-radius = `radius/card` (16) — er is
+  géén Figma-var voor `componentRadius.modal` (24); beslissen: `radius/modal`=24 aanmaken óf code → 16.
+  **Open:** close-glyph (slot geleverd), 'Wis doel' zonder arrow-icoon. **Code-implicatie:** min/max-clamp.

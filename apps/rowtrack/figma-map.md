@@ -4,7 +4,7 @@ Single source of truth voor welke code-eenheid bij welk Figma frame hoort.
 Bijwerken bij elke Figma re-organisatie of nieuwe screen/component.
 
 **Figma file**: https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=0-1&t=k6rKeRyqVNPmF9Pn-1
-**Laatst gesynct**: 2026-05-11
+**Laatst gesynct**: 2026-07-08
 
 Lege `node-id` kolom = nog niet gemapt of nog niet in Figma. Verwijder rijen
 voor gedeprecate code.
@@ -19,6 +19,13 @@ voor gedeprecate code.
 | `app/(tabs)/workout/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=35-1506&t=k6rKeRyqVNPmF9Pn-4` | IdlePhase |
 | `app/(tabs)/history/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-6&t=k6rKeRyqVNPmF9Pn-4` | History |
 | `app/(tabs)/profile/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=52-8768&t=k6rKeRyqVNPmF9Pn-4` | Profile |
+
+## Auth (`app/(auth)/`)
+
+| Code | Figma node-id | Frame naam |
+|---|---|---|
+| `app/(auth)/login.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=182-2642` | Auth/Login |
+| `app/(auth)/register.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=182-2660` | Auth/Register |
 
 ## History - Segments
 
@@ -36,7 +43,7 @@ voor gedeprecate code.
 | `components/workout/ActivePhase.tsx` (summary) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=43-8278&t=k6rKeRyqVNPmF9Pn-4` | Active/Summary |
 | `components/workout/ProgressBar.tsx` | `` | Workout / Progress Bar |
 | `components/workout/Confetti.tsx` | `` | Workout / Confetti (animatie) |
-| `components/GoalSetupModal.tsx` | `` | Workout / Goal Setup Modal |
+| `components/GoalSetupModal.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=182-2599` | Workout / Goal Setup Modal |
 | `components/MotivationalToast.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-5&t=k6rKeRyqVNPmF9Pn-4` | Workout / Motivational Toast (goal-reached viering) |
 | `components/MilestoneOverlay.tsx` | `` | Workout / Milestone Overlay |
 | `components/PaceZone.tsx` | `` | Workout / Pace Zone |
@@ -62,14 +69,14 @@ voor gedeprecate code.
 
 | Code | Figma node-id | Component naam |
 |---|---|---|
-| `components/FormField.tsx` | `` | Forms / FormField |
+| `components/FormField.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=182-2592` | Forms / FormField |
 | `components/GoalInput.tsx` | `` | Forms / GoalInput |
 | `components/GoalSegments.tsx` | `` | Forms / GoalSegments |
 | `components/MetricDisplay.tsx` | `` | Data / MetricDisplay |
 | `components/SectionHeader.tsx` | `` | Layout / SectionHeader |
 | `components/SummaryRow.tsx` | `` | Data / SummaryRow |
 | `components/EmptyState.tsx` | `` | Feedback / EmptyState |
-| `components/ErrorMessage.tsx` | `` | Feedback / ErrorMessage |
+| `components/ErrorMessage.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=182-2565` | Feedback / ErrorMessage |
 | `components/BleStatusBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=21-485&t=k6rKeRyqVNPmF9Pn-4` | Status / BleStatusBar |
 | `components/HrStatusBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=21-515&t=k6rKeRyqVNPmF9Pn-4` | Status / HrStatusBar |
 | `components/WorkoutCard.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=56-13791&t=k6rKeRyqVNPmF9Pn-4` | Cards / WorkoutCard |

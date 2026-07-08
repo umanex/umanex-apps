@@ -40,10 +40,11 @@ StyleDictionary.registerFormat({
     for (const token of dictionary.allTokens) {
       const group = token.path[0];
       const name = token.path[token.path.length - 1];
-      if (group === 'light') light.push([name, token.value]);
-      else if (group === 'dark') dark.push([name, token.value]);
+      const val = token.$value ?? token.value; // DTCG: de getransformeerde waarde staat op $value, niet op value
+      if (group === 'light') light.push([name, val]);
+      else if (group === 'dark') dark.push([name, val]);
       else if (group === 'radius' || name === 'radius') {
-        const v = String(token.value);
+        const v = String(val);
         radius = v.includes('rem') ? v : `${parseFloat(v) / 16}rem`;
       }
     }
@@ -124,15 +125,6 @@ const sd = new StyleDictionary({
         },
       }],
     },
-    js: {
-      transformGroup: 'tokens-studio',
-      buildPath: 'build/',
-      files: [{
-        destination: 'tailwind.js',
-        format: 'javascript/esm',
-        filter: (token) => ALLOWED_TYPES.includes(token.$type ?? token.type) && !isShadcn(token),
-      }],
-    },
     shadcn: {
       transformGroup: 'shadcn',
       buildPath: 'build/',
@@ -146,7 +138,7 @@ const sd = new StyleDictionary({
 });
 
 await sd.buildAllPlatforms();
-console.log('\n✓ @umanex/tokens build complete → build/variables.css + build/tailwind.js + build/shadcn.css');
+console.log('\n✓ @umanex/tokens build complete → build/variables.css + build/shadcn.css');
 
 // Inject the generated shadcn block into the consumed @umanex/ui globals.css, between
 // markers. The hand-written @tailwind directives and the @layer base body (border-border

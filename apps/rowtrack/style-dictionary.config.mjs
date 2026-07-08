@@ -135,7 +135,9 @@ const EXPO_FONT_NAME = {
 };
 
 /** typeStyles entries that should use the italic font variant. */
-const ITALIC_TYPE_STYLES = new Set(['italicConnector', 'heroDisplay', 'textLink']);
+// heroDisplay verwijderd: Figma-bron is Regular (fontWeight.regular) — de code
+// forceerde ten onrechte Italic (audit cluster 3, spiegelbug). Token volgt nu de bron.
+const ITALIC_TYPE_STYLES = new Set(['italicConnector', 'textLink']);
 
 /** Font sizes missing from the primitive scale but referenced in existing code. */
 const EXTRA_FONT_SIZES = { 12: 12, 20: 20, 24: 24, 30: 30, 48: 48, 60: 60, 72: 72 };

@@ -95,17 +95,11 @@ const styles = StyleSheet.create({
     borderLeftColor: border.strong,
   },
   actionText: {
-    fontFamily: 'SourceSerif4_400Regular',
-    fontSize: 15,
-    lineHeight: 15,
-    letterSpacing: -0.075,
+    ...typeStyles.textLink,
     color: accent.default,
   },
   actionMuted: {
-    fontFamily: 'SourceSerif4_400Regular',
-    fontSize: 15,
-    lineHeight: 15,
-    letterSpacing: -0.075,
+    ...typeStyles.textLink,
     color: fg.tertiary,
   },
 });

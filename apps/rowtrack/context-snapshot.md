@@ -58,15 +58,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+f3d6735 fix(rowtrack): serialize composite button tokens in DTCG-aware token build
 1ee4832 Merge pull request #83 from umanex/w3c-dtcg-conversion
 2bbf3e7 Convert to W3C DTCG format, read more at https://docs.tokens.studio/convert-to-dtcg-format
 7d0d1bc fix(tokens): correcte DTCG-build + verwijder ongebruikte tailwind.js-export
 cea9181 Convert to W3C DTCG format, read more at https://docs.tokens.studio/convert-to-dtcg-format
-a9d6b18 docs(rowtrack): TC-EBC briefing — design-vs-code audit
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/constants/colors.ts
+  M  apps/rowtrack/components/BleStatusBar.tsx
+  M  apps/rowtrack/components/HrStatusBar.tsx
   M  apps/rowtrack/constants/typography.ts
   M  apps/rowtrack/style-dictionary.config.mjs
 

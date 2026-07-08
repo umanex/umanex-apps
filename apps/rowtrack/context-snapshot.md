@@ -53,16 +53,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6a07e02 fix(rowtrack): Profile sheets audit MIDDEL — DNA labels + sheet radius
 13810d4 fix(rowtrack): History audit MIDDEL fixes
 554715e fix(rowtrack): Home + Summary audit MIDDEL fixes
 191ab45 fix(rowtrack): portrait active-phase parity with design + landscape (audit)
 ae2fb7c fix(rowtrack): landscape metric hierarchy per goal type (audit cluster 5)
-4a97420 docs(rowtrack): cluster 5 (landscape) briefing + decisions
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  M  apps/rowtrack/components/BottomSheet.tsx
+  M  apps/rowtrack/components/workout/IdlePhase.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -151,10 +151,8 @@ const nudgeStyles = StyleSheet.create({
     gap: 2,
   },
   stepLabel: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: fontSize['11'],
+    ...typeStyles.labelGoalPrefix,
     color: fg.secondary,
-    letterSpacing: 0.3,
   },
 });
 
@@ -316,12 +314,12 @@ export function IdlePhase({
       case 'duration':
         return { items: durItems, idx: durIdx, setIdx: setDurIdx, sync: syncDur,
                  nudgeStep: NUDGE_STEP_IDX.duration, nudgeLabel: NUDGE_LABEL.duration,
-                 unit: 'minuten' as string | null,
+                 unit: 'min' as string | null,
                  nudgeDisplayValue: (i: number) => String(Math.round(durItems[i].value / 60)) };
       case 'distance':
         return { items: distItems, idx: distIdx, setIdx: setDistIdx, sync: syncDist,
                  nudgeStep: NUDGE_STEP_IDX.distance, nudgeLabel: NUDGE_LABEL.distance,
-                 unit: 'kilometer' as string | null,
+                 unit: 'km' as string | null,
                  nudgeDisplayValue: (i: number) => (distItems[i].value / 1000).toFixed(1).replace('.', ',') };
       case 'split':
         return { items: splitItems, idx: splitIdx, setIdx: setSplitIdx, sync: syncSplit,
@@ -331,7 +329,7 @@ export function IdlePhase({
       case 'watts':
         return { items: wattItems, idx: wattIdx, setIdx: setWattIdx, sync: syncWatt,
                  nudgeStep: NUDGE_STEP_IDX.watts, nudgeLabel: NUDGE_LABEL.watts,
-                 unit: 'watt gem.' as string | null,
+                 unit: 'W' as string | null,
                  nudgeDisplayValue: (i: number) => String(Math.round(wattItems[i].value)) };
     }
   }

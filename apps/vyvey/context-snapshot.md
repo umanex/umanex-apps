@@ -18,24 +18,24 @@ _Gegenereerd op 2026-07-08_
 
 ## Recente commits (app + packages)
 ```
+72a202a chore: sync umanex-os layer (CLAUDE.md, snapshot-hook, vyvey LEARNINGS-seed)
 f55a171 fix(cashflow): allow finalizing spaardoel with leftover balance
 f42fe26 feat(cashflow): prudent budget-model, geen release van onbesteed budget
 9083da0 feat(cashflow): resterende provisie in huidige maand
 2f68049 fix(cashflow): corrigeer dubbele spaarpot-aftrek bij maandovergang
-51abcde docs(cashflow): documenteer PM2 build/restart flow
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/vyvey/LEARNINGS.md
-  ?? apps/vyvey/.env.example
-  ?? apps/vyvey/.eslintrc.json
-  ?? apps/vyvey/.gitignore
-  ?? apps/vyvey/app/
-  ?? apps/vyvey/briefings/
-  ?? apps/vyvey/components/
-  ?? apps/vyvey/lib/
-  ?? apps/vyvey/next-env.d.ts
-  ?? apps/vyvey/next.config.mjs
+  A  apps/vyvey/.env.example
+  A  apps/vyvey/.eslintrc.json
+  A  apps/vyvey/.gitignore
+  A  apps/vyvey/app/algemene-voorwaarden/page.tsx
+  A  apps/vyvey/app/api/contact/route.ts
+  A  apps/vyvey/app/globals.css
+  A  apps/vyvey/app/layout.tsx
+  A  apps/vyvey/app/page.tsx
+  A  apps/vyvey/app/privacy/page.tsx
+  A  apps/vyvey/briefings/2026-06-19-feature-vyvey-site-migratie.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

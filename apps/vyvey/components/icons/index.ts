@@ -1,0 +1,10 @@
+export { Wordmark } from './Wordmark';
+export { UmanexCredit } from './UmanexCredit';
+export { IconAdvies } from './IconAdvies';
+export { IconPersoonlijkContact } from './IconPersoonlijkContact';
+export { IconKwaliteit } from './IconKwaliteit';
+export { IconTotaalinrichting } from './IconTotaalinrichting';
+export { IconInterieurDecoratie } from './IconInterieurDecoratie';
+export { IconDecoratie } from './IconDecoratie';
+export { IconContact } from './IconContact';
+export { IconOpeningsuren } from './IconOpeningsuren';

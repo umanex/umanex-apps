@@ -1,24 +1,46 @@
 #!/bin/bash
-# .githooks/pre-commit — genereert context-snapshots vóór elke commit en voegt ze toe.
+# .githooks/pre-commit — houdt gegenereerde artefacten in sync vóór elke commit.
+#
+# Per app die in DEZE commit gewijzigd is (geen cross-app ruis) draait:
+#  1. Context-snapshot regenereren + stagen (via scripts/gen-snapshot.sh).
+#  2. Design tokens: constants/ herbouwen uit tokens.json + stagen, zodat de
+#     gegenereerde output nooit stil wegdrijft van de token-bron. Activeert
+#     alleen voor apps met een "tokens:build"-script én een constants/-map.
 #
 # Canonieke bron: umanex-os/templates/githooks-pre-commit. Gesynct naar
 # <klant-repo>/.githooks/pre-commit en geactiveerd via core.hooksPath=.githooks
 # (zet scripts/sync-os.sh automatisch). Dependency-vrij — geen husky.
 
-[ -f ./scripts/gen-snapshot.sh ] || exit 0
-
-# Alleen snapshots regenereren + stagen voor apps die in DEZE commit gewijzigd zijn.
-# Zo sleept een commit in app A nooit de snapshot van app B mee (geen cross-app ruis).
 changed_apps="$(git diff --cached --name-only --diff-filter=ACMR \
   | sed -n 's#^apps/\([^/]*\)/.*#\1#p' | sort -u)"
 
 [ -z "$changed_apps" ] && exit 0
 
-echo "🔄 Context snapshots bijwerken..."
-for app in $changed_apps; do
-  [ -d "apps/$app" ] || continue
-  bash ./scripts/gen-snapshot.sh "$app"
-  git add "apps/$app/context-snapshot.md" 2>/dev/null || true
-done
+# 1. Context-snapshots — ongewijzigd gedrag voor alle repos.
+if [ -f ./scripts/gen-snapshot.sh ]; then
+  echo "🔄 Context snapshots bijwerken..."
+  for app in $changed_apps; do
+    [ -d "apps/$app" ] || continue
+    bash ./scripts/gen-snapshot.sh "$app"
+    git add "apps/$app/context-snapshot.md" 2>/dev/null || true
+  done
+  echo "✅ Snapshots toegevoegd aan commit"
+fi
 
-echo "✅ Snapshots toegevoegd aan commit"
+# 2. Design tokens — constants/ in sync houden met tokens.json.
+#    Strikt gegateerd: alleen apps die een tokens:build-script én constants/ hebben.
+for app in $changed_apps; do
+  [ -d "apps/$app/constants" ] || continue
+  grep -q '"tokens:build"' "apps/$app/package.json" 2>/dev/null || continue
+  if command -v pnpm >/dev/null 2>&1; then
+    echo "🎨 Design tokens ($app) herbouwen uit tokens.json..."
+    if ( cd "apps/$app" && pnpm run tokens:build >/dev/null 2>&1 ); then
+      git add "apps/$app/constants" 2>/dev/null || true
+    else
+      echo "✗ tokens:build faalde voor $app — commit gestopt. Fix de tokens/config en probeer opnieuw."
+      exit 1
+    fi
+  else
+    echo "⚠ pnpm niet gevonden — design-token-sync overgeslagen voor $app"
+  fi
+done

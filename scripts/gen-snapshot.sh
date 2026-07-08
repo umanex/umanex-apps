@@ -1,5 +1,8 @@
 #!/bin/bash
 # gen-snapshot.sh — genereert per app een context-snapshot.md voor Claude-sessies.
+# Bevat o.a. een AFGELEIDE component-inventaris (uit // @figma-headers + design-snapshot
+# sidecars), zodat "welke componenten bestaan er en waar" niet meer hand-onderhouden of
+# gegrept hoeft te worden. Vervangt de vroegere handmatige Figma-koppelingstabel.
 #
 # Canonieke bron: umanex-os/templates/gen-snapshot.sh — wijzig hier, sync naar klant-repos
 # via scripts/sync-os.sh. Niet per klant aanpassen.
@@ -46,6 +49,33 @@ list_packages() {
   [ "$found" -eq 0 ] && echo "- (geen shared packages)"
 }
 
+# Afgeleide component-inventaris voor een app: elk PascalCase .tsx-component (1 file = 1
+# component), met categorie (parent-folder), Figma-node (uit de // @figma-header),
+# snapshot-aanwezigheid en een afgeleide koppelstatus. Niet hand-onderhouden.
+list_components() {
+  local app_dir="$1"
+  local found=0 f base name dir cat node figma snap status
+  while IFS= read -r f; do
+    base="$(basename "$f")"
+    name="${base%.tsx}"
+    case "$name" in [ABCDEFGHIJKLMNOPQRSTUVWXYZ]*) ;; *) continue ;; esac   # PascalCase (expliciet, locale-onafhankelijk — [A-Z] matcht in UTF-8 ook lowercase)
+    found=1
+    dir="$(dirname "$f")"
+    cat="$(basename "$dir")"
+    [ "$cat" = "$name" ] && cat="$(basename "$(dirname "$dir")")"   # single-component PascalCase-map → taxonomie-map erboven
+    node="$(head -5 "$f" 2>/dev/null | grep -o 'node-id=[^] &)\"]*' | head -1)"
+    if [ -n "$node" ]; then figma="\`$node\`"
+    elif head -5 "$f" 2>/dev/null | grep -q '@figma'; then figma="✓"
+    else figma="—"; fi
+    if [ -f "$dir/$name.design-snapshot.md" ]; then snap="✓"; else snap="—"; fi
+    if [ "$figma" != "—" ] || [ "$snap" = "✓" ]; then status="gekoppeld"; else status="—"; fi
+    echo "| $name | \`$f\` | $cat | $figma | $snap | $status |"
+  done < <(find "$app_dir" -type f -name '*.tsx' \
+             -not -path '*/node_modules/*' -not -path '*/.next/*' \
+             -not -name '*.test.tsx' -not -name '*.stories.tsx' 2>/dev/null | sort)
+  [ "$found" -eq 0 ] && echo "| _(geen componenten gevonden)_ | — | — | — | — | — |"
+}
+
 generate_snapshot() {
   local app="$1"
   local app_dir="apps/$app"
@@ -63,6 +93,7 @@ generate_snapshot() {
   changed="$(git status --short -- "$app_dir" packages 2>/dev/null | head -10 | sed 's/^/  /')"; [ -n "$changed" ] || changed="  (geen)"
   todos="$(grep -rl "TODO\|FIXME\|HACK" "$app_dir/src" --include='*.tsx' --include='*.ts' 2>/dev/null | head -10 | sed 's/^/  - /')"; [ -n "$todos" ] || todos="  (geen)"
   packages="$(list_packages)"
+  components="$(list_components "$app_dir")"
 
   cat > "$app_dir/context-snapshot.md" << EOF
 # Context Snapshot — $app
@@ -80,6 +111,13 @@ _Gegenereerd op ${DATE}_
 
 ## Packages
 $packages
+
+## Componenten
+_Afgeleid uit de codebase — niet manueel aanpassen. Bron: \`// @figma\`-headers + co-located \`.design-snapshot.md\` sidecars._
+
+| Component | Pad | Categorie | Figma-node | Snapshot | Status |
+|---|---|---|---|---|---|
+$components
 
 ## Recente commits (app + packages)
 \`\`\`

@@ -37,7 +37,7 @@ voor gedeprecate code.
 | `components/workout/ProgressBar.tsx` | `` | Workout / Progress Bar |
 | `components/workout/Confetti.tsx` | `` | Workout / Confetti (animatie) |
 | `components/GoalSetupModal.tsx` | `` | Workout / Goal Setup Modal |
-| `components/MotivationalToast.tsx` | `` | Workout / Motivational Toast |
+| `components/MotivationalToast.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-5&t=k6rKeRyqVNPmF9Pn-4` | Workout / Motivational Toast (goal-reached viering) |
 | `components/MilestoneOverlay.tsx` | `` | Workout / Milestone Overlay |
 | `components/PaceZone.tsx` | `` | Workout / Pace Zone |
 | `components/SplitsList.tsx` | `` | Workout / Splits List |

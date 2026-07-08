@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '@/lib/supabase';
 import { calculateProgress } from '@/lib/workout-goals';
 import type { WorkoutGoal } from '@/lib/workout-goals';
+import { formatDistanceDynamic, formatSplit } from '@/lib/formatters';
 import { getPaceZone } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import type { WorkoutMetricsState, AccumulatorRefs } from './useWorkoutMetrics';
@@ -17,13 +18,24 @@ const MILESTONE_MESSAGES: Record<number, string> = {
   100: 'DOEL BEREIKT! \u{1F3C6}',
 };
 
-// --- Motivational messages ---
+// --- Goal-reached celebration message (dynamisch per doeltype) ---
 
-const MOTIVATIONAL: Record<PaceZoneLevel, string[]> = {
-  on_pace: ['Perfecte pace, hou vol!', 'Geweldig ritme!', 'Zo moet het!'],
-  slightly_off: ['Kom op, iets meer gas!', 'Je kan sneller!', 'Trek het tempo op!'],
-  off_pace: ['Geef alles wat je hebt!', 'Push door!', 'Niet opgeven!'],
-};
+function celebrationMessage(goal: WorkoutGoal): string {
+  switch (goal.type) {
+    case 'duration': {
+      const min = Math.round(goal.target / 60);
+      return `Je hebt ${min} ${min === 1 ? 'minuut' : 'minuten'} geroeid. Geweldig gedaan! 💪`;
+    }
+    case 'distance': {
+      const { value, unit } = formatDistanceDynamic(goal.target);
+      return `Je hebt ${value.replace('.', ',')} ${unit} geroeid. Geweldig gedaan! 💪`;
+    }
+    case 'split':
+      return `Je hebt je split-doel van ${formatSplit(goal.target)}/500m gehaald. Geweldig gedaan! 💪`;
+    case 'watts':
+      return `Je hebt je doel van ${goal.target} watt gehaald. Geweldig gedaan! 💪`;
+  }
+}
 
 // --- PR types ---
 
@@ -59,7 +71,6 @@ export function useGoalProgress(
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const goalReachedRef = useRef(false);
   const milestonesHit = useRef(new Set<string>());
-  const lastToastTime = useRef(0);
   const lastSplitDistance = useRef(0);
   const splitStartSeconds = useRef(0);
   const personalRecords = useRef<PersonalRecords>({
@@ -139,10 +150,11 @@ export function useGoalProgress(
   useEffect(() => {
     if (phase !== 'active' || !goal || !goalProgress) return;
 
-    // Goal reached
+    // Goal reached → toon de viering-toast
     if (goalProgress.reached && !goalReachedRef.current) {
       goalReachedRef.current = true;
       setGoalReached(true);
+      setToastMsg(celebrationMessage(goal));
     }
 
     // Percentage milestones
@@ -192,29 +204,6 @@ export function useGoalProgress(
       splitStartSeconds.current = seconds;
     }
   }, [phase, distanceMeters, seconds, goal]);
-
-  // --- Motivational messages ---
-  useEffect(() => {
-    if (phase !== 'active' || !goal) return;
-    if (goal.type !== 'split' && goal.type !== 'watts') return;
-    if (toastMsg !== null) return;
-    if (seconds < 30) return;
-
-    const now = Date.now();
-    if (now - lastToastTime.current < 90_000) return;
-
-    let zone: PaceZoneLevel;
-    if (goal.type === 'split') {
-      zone = getPaceZone(avgSplit, goal.target, true);
-    } else {
-      zone = getPaceZone(goal.target, avgWatts, false);
-    }
-
-    const messages = MOTIVATIONAL[zone];
-    const msg = messages[Math.floor(Math.random() * messages.length)];
-    lastToastTime.current = now;
-    setToastMsg(msg);
-  }, [phase, goal, seconds, toastMsg, avgSplit, avgWatts]);
 
   // --- PR checking ---
   useEffect(() => {
@@ -277,7 +266,6 @@ export function useGoalProgress(
     goalReachedRef.current = false;
     setGoalReached(false);
     milestonesHit.current.clear();
-    lastToastTime.current = 0;
     lastSplitDistance.current = 0;
     splitStartSeconds.current = 0;
     setSplits([]);

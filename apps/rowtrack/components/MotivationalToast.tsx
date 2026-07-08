@@ -19,7 +19,6 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 export type MotivationalToastProps = {
   message: string | null;
   onDismiss: () => void;
-  isGoalComplete?: boolean;
 };
 
 // --- Confetti ---
@@ -113,12 +112,11 @@ function Confetti({ visible, particles }: { visible: boolean; particles: Particl
   );
 }
 
-// --- Toast ---
+// --- Goal-reached celebration toast ---
 
 export const MotivationalToast = memo(function MotivationalToast({
   message,
   onDismiss,
-  isGoalComplete,
 }: MotivationalToastProps) {
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.8)).current;
@@ -126,8 +124,7 @@ export const MotivationalToast = memo(function MotivationalToast({
   onDismissRef.current = onDismiss;
 
   const visible = !!message;
-  const showConfetti = !!isGoalComplete && visible;
-  const confettiParticles = useConfetti(showConfetti);
+  const confettiParticles = useConfetti(visible);
 
   useEffect(() => {
     if (!message) return;
@@ -139,19 +136,8 @@ export const MotivationalToast = memo(function MotivationalToast({
       Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: true }),
       Animated.timing(scale, { toValue: 1, duration: 300, useNativeDriver: true }),
     ]).start();
-
-    // Goal complete: no auto-dismiss, user must press button
-    if (!isGoalComplete) {
-      const timer = setTimeout(() => {
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }).start(() => onDismissRef.current());
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [message, isGoalComplete]); // opacity, scale are stable refs
+    // Viering: geen auto-dismiss — de gebruiker sluit af met de knop.
+  }, [message]); // opacity, scale are stable refs
 
   return (
     <Modal
@@ -163,7 +149,7 @@ export const MotivationalToast = memo(function MotivationalToast({
     >
       <StatusBar backgroundColor="rgba(0,0,0,0.85)" barStyle="light-content" />
       <View style={styles.overlay}>
-        <Confetti visible={showConfetti} particles={confettiParticles} />
+        <Confetti visible={visible} particles={confettiParticles} />
 
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
@@ -172,23 +158,15 @@ export const MotivationalToast = memo(function MotivationalToast({
         />
 
         <Animated.View style={[styles.card, { opacity, transform: [{ scale }] }]}>
-          {isGoalComplete && (
-            <Text style={styles.trophy}>🏆</Text>
-          )}
-          <Text style={[styles.title, isGoalComplete && styles.titleGoal]}>
-            {isGoalComplete ? 'Doel bereikt!' : (message ?? '')}
-          </Text>
-          {isGoalComplete && message && (
-            <Text style={styles.body}>{message}</Text>
-          )}
+          <Text style={styles.trophy}>🏆</Text>
+          <Text style={styles.title}>Doel bereikt!</Text>
+          {message && <Text style={styles.body}>{message}</Text>}
           <TouchableOpacity
             style={styles.closeBtn}
             onPress={() => onDismissRef.current()}
             activeOpacity={0.8}
           >
-            <Text style={styles.closeBtnText}>
-              {isGoalComplete ? 'Training afsluiten' : 'OK'}
-            </Text>
+            <Text style={styles.closeBtnText}>Training afsluiten</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -219,11 +197,8 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamily.bodyBold,
     fontSize: fontSize['24'],
-    color: fg.primary,
-    textAlign: 'center',
-  },
-  titleGoal: {
     color: '#FFD700',
+    textAlign: 'center',
   },
   body: {
     fontFamily: fontFamily.bodyRegular,

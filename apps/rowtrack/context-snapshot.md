@@ -58,15 +58,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4bddbd6 fix(rowtrack): tab labels SemiBold 11px active and inactive (audit cluster 6)
 21335c4 fix(rowtrack): Verbreek action uses accent colour (audit cluster 7)
 b38ddd3 fix(rowtrack): align Button with design — trailing icon, Primary Stop, border+shadow (audit cluster 4)
 2e502e0 button height
 6d5cb07 button border width & 44 spacing scale
-bd07791 fix(rowtrack): align unit/label italics with design (audit cluster 3)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/TabLabel.tsx
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/components/MotivationalToast.tsx
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/figma-map.md
+  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

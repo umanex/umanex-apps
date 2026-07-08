@@ -59,7 +59,6 @@ type ActivePhaseProps = {
   startScan: () => void;
   goal: WorkoutGoal | null;
   goalProgress: GoalProgress | null;
-  goalReached: boolean;
   isCountdown: boolean;
   paceZone: PaceZoneLevel | null;
   milestoneMsg: string | null;
@@ -101,7 +100,6 @@ export function ActivePhase({
   startScan,
   goal,
   goalProgress,
-  goalReached,
   milestoneMsg,
   toastMsg,
   dismissMilestone,
@@ -724,8 +722,8 @@ export function ActivePhase({
         </View>
       </Modal>
 
-      {/* Motivational toast */}
-      <MotivationalToast message={toastMsg} onDismiss={dismissToast} isGoalComplete={goalReached} />
+      {/* Goal-reached viering */}
+      <MotivationalToast message={toastMsg} onDismiss={dismissToast} />
     </View>
   );
 }

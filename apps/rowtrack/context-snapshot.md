@@ -24,13 +24,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | BleStatusBar | `apps/rowtrack/components/BleStatusBar.tsx` | components | — | — | — |
 | BottomSheet | `apps/rowtrack/components/BottomSheet.tsx` | components | — | — | — |
 | Button | `apps/rowtrack/components/Button.tsx` | components | — | — | — |
-| Card | `apps/rowtrack/components/Card.tsx` | components | — | — | — |
 | Chip | `apps/rowtrack/components/Chip.tsx` | components | — | — | — |
 | Dot | `apps/rowtrack/components/Dot.tsx` | components | — | — | — |
 | EmptyState | `apps/rowtrack/components/EmptyState.tsx` | components | — | — | — |
 | ErrorMessage | `apps/rowtrack/components/ErrorMessage.tsx` | components | — | — | — |
 | FormField | `apps/rowtrack/components/FormField.tsx` | components | — | — | — |
-| GoalInput | `apps/rowtrack/components/GoalInput.tsx` | components | — | — | — |
 | GoalProgressCard | `apps/rowtrack/components/GoalProgressCard.tsx` | components | — | — | — |
 | GoalSegments | `apps/rowtrack/components/GoalSegments.tsx` | components | — | — | — |
 | GoalSetupModal | `apps/rowtrack/components/GoalSetupModal.tsx` | components | — | — | — |
@@ -38,16 +36,13 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | Icon | `apps/rowtrack/components/Icon.tsx` | components | — | — | — |
 | KPI_single | `apps/rowtrack/components/KPI_single.tsx` | components | — | — | — |
 | KPI | `apps/rowtrack/components/KPI.tsx` | components | — | — | — |
-| MetricDisplay | `apps/rowtrack/components/MetricDisplay.tsx` | components | — | — | — |
 | MilestoneOverlay | `apps/rowtrack/components/MilestoneOverlay.tsx` | components | — | — | — |
 | MotivationalToast | `apps/rowtrack/components/MotivationalToast.tsx` | components | — | — | — |
 | PaceZone | `apps/rowtrack/components/PaceZone.tsx` | components | — | — | — |
-| PeriodGoalCard | `apps/rowtrack/components/PeriodGoalCard.tsx` | components | — | — | — |
 | SectionHeader | `apps/rowtrack/components/SectionHeader.tsx` | components | — | — | — |
 | Segment | `apps/rowtrack/components/Segment.tsx` | components | — | — | — |
 | SplitsList | `apps/rowtrack/components/SplitsList.tsx` | components | — | — | — |
 | Subtitle | `apps/rowtrack/components/Subtitle.tsx` | components | — | — | — |
-| SummaryRow | `apps/rowtrack/components/SummaryRow.tsx` | components | — | — | — |
 | TabItem | `apps/rowtrack/components/TabItem.tsx` | components | — | — | — |
 | TabLabel | `apps/rowtrack/components/TabLabel.tsx` | components | — | — | — |
 | WheelPicker | `apps/rowtrack/components/WheelPicker.tsx` | components | — | — | — |
@@ -58,19 +53,22 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+122db9f fix(rowtrack): drop motivational nudges, wire goal-reached celebration properly
 4bddbd6 fix(rowtrack): tab labels SemiBold 11px active and inactive (audit cluster 6)
 21335c4 fix(rowtrack): Verbreek action uses accent colour (audit cluster 7)
 b38ddd3 fix(rowtrack): align Button with design — trailing icon, Primary Stop, border+shadow (audit cluster 4)
 2e502e0 button height
-6d5cb07 button border width & 44 spacing scale
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/components/MotivationalToast.tsx
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-  M  apps/rowtrack/figma-map.md
-  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
+  D  apps/rowtrack/components/Card.tsx
+  D  apps/rowtrack/components/GoalInput.tsx
+  D  apps/rowtrack/components/MetricDisplay.tsx
+  M  apps/rowtrack/components/PaceZone.tsx
+  D  apps/rowtrack/components/PeriodGoalCard.tsx
+  D  apps/rowtrack/components/SummaryRow.tsx
+  M  apps/rowtrack/components/index.ts
+  M  apps/rowtrack/components/workout/index.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

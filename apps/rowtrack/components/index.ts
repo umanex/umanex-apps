@@ -4,17 +4,8 @@ export type { ButtonProps } from './Button';
 export { FormField } from './FormField';
 export type { FormFieldProps } from './FormField';
 
-export { Card } from './Card';
-export type { CardProps } from './Card';
-
-export { MetricDisplay } from './MetricDisplay';
-export type { MetricDisplayProps } from './MetricDisplay';
-
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
-
-export { SummaryRow } from './SummaryRow';
-export type { SummaryRowProps } from './SummaryRow';
 
 export { SectionHeader } from './SectionHeader';
 export type { SectionHeaderProps } from './SectionHeader';
@@ -30,7 +21,6 @@ export { Segment } from './Segment';
 export { Chip } from './Chip';
 export { GoalSegments } from './GoalSegments';
 export type { GoalSegmentType } from './GoalSegments';
-export { GoalInput } from './GoalInput';
 
 export { WheelPicker } from './WheelPicker';
 
@@ -40,7 +30,6 @@ export type { WorkoutCardProps } from './WorkoutCard';
 export { KPI } from './KPI';
 export { KpiSingle } from './KPI_single';
 
-export { PeriodGoalCard } from './PeriodGoalCard';
 export { GoalProgressCard } from './GoalProgressCard';
 export { Subtitle } from './Subtitle';
 export { BottomSheet } from './BottomSheet';

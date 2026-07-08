@@ -54,9 +54,9 @@ export const buttonTokens = {
       background: '#F05454',
       color: '#FFFFFF',
       border: '#F05454',
-      borderWidth: 0,
+      borderWidth: 1,
       radius: 8,
-      height: 56,
+      height: 44,
       paddingX: 24,
       typography: { fontFamily: 'SourceSerif4_600SemiBold', fontSize: 18, lineHeight: 18, letterSpacing: -0.27 },
       shadow: [

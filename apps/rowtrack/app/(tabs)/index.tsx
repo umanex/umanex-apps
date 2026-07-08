@@ -178,7 +178,9 @@ export default function HomeScreen() {
         <Button
           variant="primary"
           size="lg"
-          title="Start →"
+          title="Start"
+          icon="arrow-forward"
+          iconPosition="trailing"
           onPress={() => router.push('/(tabs)/workout')}
         />
       </View>

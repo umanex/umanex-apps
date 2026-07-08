@@ -562,8 +562,10 @@ export function ActivePhase({
         {/* Stop button */}
         <Button
           title="Stop training"
-          variant="destructive"
+          variant="primary"
           size="md"
+          icon="arrow-forward"
+          iconPosition="trailing"
           onPress={onStop}
           style={{ alignSelf: 'stretch' }}
         />
@@ -615,8 +617,10 @@ export function ActivePhase({
             </View>
             <Button
               title="Stop training"
-              variant="destructive"
+              variant="primary"
               size="md"
+              icon="arrow-forward"
+              iconPosition="trailing"
               onPress={onStop}
               style={{ alignSelf: 'stretch' }}
             />
@@ -714,7 +718,7 @@ export function ActivePhase({
             </View>
             <View style={summaryStyles.buttonsArea}>
               <Button title="Annuleren" onPress={onDiscard} variant="outline" disabled={saving} size="lg" />
-              <Button title="Opslaan →" onPress={onSave} loading={saving} size="lg" />
+              <Button title="Opslaan" onPress={onSave} loading={saving} size="lg" icon="arrow-forward" iconPosition="trailing" />
             </View>
           </View>
         </View>

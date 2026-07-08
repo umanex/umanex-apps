@@ -26,6 +26,7 @@ export type ButtonProps = {
   variant?: 'primary' | 'destructive' | 'ghost' | 'outline';
   size?: 'md' | 'lg';
   icon?: IoniconsName;
+  iconPosition?: 'leading' | 'trailing';
   loading?: boolean;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -56,6 +57,7 @@ export const Button = memo(function Button({
   variant = 'primary',
   size = 'lg',
   icon,
+  iconPosition = 'leading',
   loading = false,
   disabled = false,
   style,
@@ -64,6 +66,10 @@ export const Button = memo(function Button({
   const isDisabled = disabled || loading;
   const isPrimary = variant === 'primary';
 
+  const iconEl = icon ? (
+    <Ionicons name={icon} size={18} color={colors.text} />
+  ) : null;
+
   return (
     <TouchableOpacity
       style={[
@@ -71,7 +77,7 @@ export const Button = memo(function Button({
         size === 'lg' ? styles.sizeLg : styles.sizeMd,
         variant === 'destructive' && { backgroundColor: colors.bg },
         variant === 'outline' && { borderWidth: buttonTokens.outline.borderWidth, borderColor: buttonTokens.outline.border },
-        isPrimary && !isDisabled && styles.primaryShadow,
+        isPrimary && !isDisabled && styles.primary,
         isDisabled && styles.disabled,
         style,
       ]}
@@ -91,13 +97,7 @@ export const Button = memo(function Button({
         <ActivityIndicator color={colors.text} />
       ) : (
         <>
-          {icon && (
-            <Ionicons
-              name={icon}
-              size={24}
-              color={colors.text}
-            />
-          )}
+          {iconPosition === 'leading' && iconEl}
           <Text
             style={[
               variant === 'ghost' ? styles.ghostText : styles.text,
@@ -106,6 +106,7 @@ export const Button = memo(function Button({
           >
             {title}
           </Text>
+          {iconPosition === 'trailing' && iconEl}
         </>
       )}
     </TouchableOpacity>
@@ -121,19 +122,18 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
   },
   sizeLg: {
-    height: space['48'],
+    height: space['44'],
     paddingHorizontal: buttonTokens.primary.paddingX,
   },
   sizeMd: {
     paddingVertical: space['12'],
     paddingHorizontal: space['24'],
   },
-  primaryShadow: {
-    shadowColor: buttonTokens.primary.gradientTo,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+  primary: {
+    // 1px accent-rand + 4-laags boxShadow uit de design-tokens (audit cluster 4).
+    borderWidth: buttonTokens.primary.borderWidth,
+    borderColor: buttonTokens.primary.border,
+    boxShadow: [...buttonTokens.primary.shadow],
   },
   disabled: {
     opacity: 0.6,

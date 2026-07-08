@@ -58,18 +58,21 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+2e502e0 button height
+6d5cb07 button border width & 44 spacing scale
+bd07791 fix(rowtrack): align unit/label italics with design (audit cluster 3)
 f3d6735 fix(rowtrack): serialize composite button tokens in DTCG-aware token build
 1ee4832 Merge pull request #83 from umanex/w3c-dtcg-conversion
-2bbf3e7 Convert to W3C DTCG format, read more at https://docs.tokens.studio/convert-to-dtcg-format
-7d0d1bc fix(tokens): correcte DTCG-build + verwijder ongebruikte tailwind.js-export
-cea9181 Convert to W3C DTCG format, read more at https://docs.tokens.studio/convert-to-dtcg-format
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/BleStatusBar.tsx
-  M  apps/rowtrack/components/HrStatusBar.tsx
-  M  apps/rowtrack/constants/typography.ts
-  M  apps/rowtrack/style-dictionary.config.mjs
+  M  apps/rowtrack/app/(tabs)/index.tsx
+  A  apps/rowtrack/briefings/2026-07-08-component-button-alignment.tcebc.md
+  M  apps/rowtrack/components/Button.tsx
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/components/workout/IdlePhase.tsx
+  M  apps/rowtrack/constants/colors.ts
+  M  apps/rowtrack/constants/spacing.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

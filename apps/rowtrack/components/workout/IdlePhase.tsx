@@ -503,6 +503,8 @@ export function IdlePhase({
         <Button
           title="Start training"
           variant="primary"
+          icon="arrow-forward"
+          iconPosition="trailing"
           onPress={onStart}
         />
       </View>

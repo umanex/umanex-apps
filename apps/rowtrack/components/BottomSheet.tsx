@@ -20,7 +20,7 @@ import {
   overlay,
   typeStyles,
   space,
-  radii,
+  componentRadius,
 } from '@/constants';
 
 export type BottomSheetProps = {
@@ -147,8 +147,8 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: bg.elevated,
-    borderTopLeftRadius: radii['3xl'],
-    borderTopRightRadius: radii['3xl'],
+    borderTopLeftRadius: componentRadius.modal,
+    borderTopRightRadius: componentRadius.modal,
     paddingHorizontal: space['20'],
     paddingTop: space['20'],
     maxHeight: '90%',

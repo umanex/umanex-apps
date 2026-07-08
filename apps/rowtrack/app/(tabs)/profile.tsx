@@ -875,11 +875,8 @@ const styles = StyleSheet.create({
     gap: space['8'],
   },
   sheetFieldLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['11'],
-    color: fg.secondary,
-    letterSpacing: 0.88,
-    textTransform: 'uppercase',
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
   },
   sheetInputRow: {
     flexDirection: 'row',

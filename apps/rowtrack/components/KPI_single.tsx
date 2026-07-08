@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
   },
   unit: {
     ...typeStyles.kpiUnit,
-    color: fg.secondary,
+    color: fg.tertiary,
   },
   label: {
     ...typeStyles.labelGoalPrefix,

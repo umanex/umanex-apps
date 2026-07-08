@@ -168,6 +168,7 @@ export default function HistoryScreen() {
               key={w.id}
               workout={w}
               onPress={handleWorkoutPress}
+              isLast={i === workouts.length - 1}
             />
           ))}
         </View>

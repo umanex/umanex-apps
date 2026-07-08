@@ -37,11 +37,13 @@ function fmtMetersVU(m: number): { value: string; unit: string } {
 export type WorkoutCardProps = {
   workout: WorkoutSummary;
   onPress: (id: string) => void;
+  isLast?: boolean;
 }
 
 export const WorkoutCard = memo(function WorkoutCard({
   workout: w,
   onPress,
+  isLast = false,
 }: WorkoutCardProps) {
   const durStr = formatTimerFull(w.duration_seconds);
   const durUnit = w.duration_seconds >= 3600 ? 'uur' : '';
@@ -51,7 +53,7 @@ export const WorkoutCard = memo(function WorkoutCard({
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => onPress(w.id)}
-      style={styles.row}
+      style={[styles.row, isLast && styles.rowLast]}
     >
       <View style={styles.left}>
         <Text style={styles.date}>{fmtDate(w.started_at)}</Text>
@@ -92,6 +94,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: space['20'],
     paddingVertical: space['4'],
+    borderBottomWidth: 1,
+    borderBottomColor: border.default,
+  },
+  rowLast: {
+    borderBottomWidth: 0,
   },
   left: {
     flex: 1,

@@ -53,16 +53,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+3696add fix(rowtrack): landscape columns split 50/50 (audit cluster 5)
 e5261b3 chore(rowtrack): remove dead components (audit cluster 8)
 122db9f fix(rowtrack): drop motivational nudges, wire goal-reached celebration properly
 4bddbd6 fix(rowtrack): tab labels SemiBold 11px active and inactive (audit cluster 6)
 21335c4 fix(rowtrack): Verbreek action uses accent colour (audit cluster 7)
-b38ddd3 fix(rowtrack): align Button with design — trailing icon, Primary Stop, border+shadow (audit cluster 4)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-  ?? apps/rowtrack/briefings/2026-07-08-feature-landscape-metrics.tcebc.md
+  A  apps/rowtrack/briefings/2026-07-08-feature-landscape-metrics.tcebc.md
+  M  apps/rowtrack/context-snapshot.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -351,6 +351,7 @@ const styles = StyleSheet.create({
 
   // Scroll content
   content: {
+    flexGrow: 1,
     paddingHorizontal: space['20'],
     paddingBottom: space['40'],
     gap: space['20'],
@@ -425,10 +426,10 @@ const styles = StyleSheet.create({
 
   // Splits table
   splitsTable: {
-    backgroundColor: bg.elevated,
+    backgroundColor: bg.raised,
     borderWidth: 1,
     borderColor: border.default,
-    borderRadius: radii.sm,
+    borderRadius: componentRadius.cardSm,
     overflow: 'hidden',
   },
   buttonSection: {

@@ -91,7 +91,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: space['20'],
-    paddingVertical: space['4'],
+    paddingVertical: space['8'],
+    borderBottomWidth: 1,
+    borderBottomColor: border.default,
   },
   left: {
     flex: 1,

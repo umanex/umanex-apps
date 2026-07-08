@@ -73,7 +73,7 @@ export const typeStyles = {
     letterSpacing: -4.32,
   },
   heroDisplay: {
-    fontFamily: 'SourceSerif4_400Regular_Italic',
+    fontFamily: 'SourceSerif4_400Regular',
     fontSize: 44,
     lineHeight: 41.8,
     letterSpacing: -1.32,

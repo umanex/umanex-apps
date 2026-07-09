@@ -53,16 +53,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0e992a3 feat(rowtrack): sync Home recent-workout list with updated Figma (16:159)
 17b670d docs(rowtrack): mark shared-component decisions applied in flag list (audit)
 60bf80f fix(rowtrack): shared-component audit decisions — inline arrows to Ionicons (audit)
 28571b1 fix(rowtrack): shared-component audit decisions — gaps, padding, outline text (audit)
 26d0507 docs(rowtrack): LAAG-sweep flag list for device review (audit)
-98082a5 fix(rowtrack): shared Button audit LAAG — icon gap 8->10 (audit)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  A  apps/rowtrack/briefings/2026-07-09-screen-home-figma-sync.tcebc.md
+   M apps/rowtrack/app/(tabs)/index.tsx
+  A  apps/rowtrack/briefings/2026-07-09-component-tabitem-chip-centering.tcebc.md
+  M  apps/rowtrack/components/Button.tsx
+  M  apps/rowtrack/components/GoalSegments.tsx
+  M  apps/rowtrack/constants/colors.ts
+  M  apps/rowtrack/constants/typography.ts
+   M apps/rowtrack/context-snapshot.md
+  M  apps/rowtrack/style-dictionary.config.mjs
+  ?? apps/rowtrack/briefings/2026-07-09-component-recent-training-rows.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

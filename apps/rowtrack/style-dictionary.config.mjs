@@ -227,7 +227,12 @@ function typographyLiteral(ref, flat) {
   const lh = Math.round(fs * lhFactor * 100) / 100;
   const ls = lsToAbsPx(resolve(String(comp.letterSpacing ?? '0'), flat), fs);
   const expoName = EXPO_FONT_NAME[`${familyRaw}_${weight}`] || `${familyRaw}_${weight}`;
-  const parts = [`fontFamily: '${expoName}'`, `fontSize: ${fs}`, `lineHeight: ${lh}`];
+  const parts = [`fontFamily: '${expoName}'`, `fontSize: ${fs}`];
+  // Alleen leading uitsturen wanneer lineHeight méér is dan de glyph-em (>100%).
+  // Bij ≤100% (compact/tight/AUTO) zou lineHeight===fontSize de serif-glyph op iOS
+  // omhoog duwen in een gecentreerde container — laat RN dan de natuurlijke
+  // font-metrics gebruiken (zie emitLineHeight-rationale in formatTypography).
+  if (lh > fs) parts.push(`lineHeight: ${lh}`);
   if (ls !== 0) parts.push(`letterSpacing: ${ls}`);
   return `{ ${parts.join(', ')} }`;
 }
@@ -543,7 +548,8 @@ function formatTypography() {
       // fontFamily from SEMANTIC_TYPOGRAPHY (RN variant name with correct weight)
       const fb = fallbackMap[size];
       const ff = fb ? (FONT_FAMILY[fb.ff] || fb.ff) : String(resolveRef(def.fontFamily));
-      const props = [`    fontFamily: '${ff}'`, `    fontSize: ${fs}`, `    lineHeight: ${computed}`];
+      const props = [`    fontFamily: '${ff}'`, `    fontSize: ${fs}`];
+      if (computed > fs) props.push(`    lineHeight: ${computed}`);
       // letterSpacing: prefer fallback (em-relative), fall back to token value
       if (fb?.ls !== undefined) {
         const lsAbs = Math.abs(fb.ls) < 1 ? Math.round(fs * fb.ls * 100) / 100 : fb.ls;
@@ -570,7 +576,8 @@ function formatTypography() {
     for (const d of defs) {
       const ff = FONT_FAMILY[d.ff] || d.ff;
       const computed = Math.round(d.fs * d.lh * 100) / 100;
-      const props = [`    fontFamily: '${ff}'`, `    fontSize: ${d.fs}`, `    lineHeight: ${computed}`];
+      const props = [`    fontFamily: '${ff}'`, `    fontSize: ${d.fs}`];
+      if (computed > d.fs) props.push(`    lineHeight: ${computed}`);
       if (d.ls !== undefined) {
         const lsAbs = Math.abs(d.ls) < 1 ? Math.round(d.fs * d.ls * 100) / 100 : d.ls;
         props.push(`    letterSpacing: ${lsAbs}`);
@@ -622,7 +629,14 @@ function formatTypography() {
     const expoKey = isItalic ? `${familyRaw}_${weightRaw}_italic` : `${familyRaw}_${weightRaw}`;
     const expoName = EXPO_FONT_NAME[expoKey] || (isItalic ? `${familyRaw}_${weightRaw}_Italic` : `${familyRaw}_${weightRaw}`);
 
-    const props = [`    fontFamily: '${expoName}'`, `    fontSize: ${fs}`, `    lineHeight: ${lh}`];
+    // emitLineHeight-rationale: alleen een expliciete lineHeight uitsturen wanneer
+    // hij méér is dan de fontSize (>100% → echte leading voor multi-line tekst).
+    // Bij ≤100% (compact/tight/AUTO) is lineHeight===fontSize, wat op iOS de
+    // Source-Serif-glyph naar boven duwt binnen een gecentreerde container (de
+    // descent-ruimte blijft leeg → label staat te hoog). Weglaten laat RN de
+    // natuurlijke font-metrics gebruiken, die single-line labels correct centreren.
+    const props = [`    fontFamily: '${expoName}'`, `    fontSize: ${fs}`];
+    if (lh > fs) props.push(`    lineHeight: ${lh}`);
     if (ls !== 0) props.push(`    letterSpacing: ${ls}`);
     if (hasUppercase) props.push(`    textTransform: 'uppercase' as const`);
 

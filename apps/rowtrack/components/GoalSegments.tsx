@@ -156,7 +156,5 @@ const styles = StyleSheet.create({
   activeLabel: {
     ...typeStyles.segmentActive,
     color: accent.default,
-    lineHeight: 20,
-    textAlignVertical: 'center',
   },
 });

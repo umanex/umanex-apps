@@ -53,16 +53,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+38a2335 fix(rowtrack): History list audit LAAG — segment container radius (audit)
 9888ad9 fix(rowtrack): Home audit LAAG — dot colour, status/connector spacing (audit)
 c989de1 refactor(rowtrack): GoalSetupModal reuses GoalSegments incl. 'Geen' (audit cluster 8)
 3f6b811 fix(rowtrack): address cluster-8 review findings (P1/P2/P3)
 454be5c fix(rowtrack): Figma parity for FormField + GoalSetupModal (audit cluster 8)
-166b7e9 feat(rowtrack): password-reset flow with deep link (audit cluster 8)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-   M apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
   ?? apps/rowtrack/briefings/2026-07-09-laag-flags.md
 
 ## Bestanden met TODO/FIXME

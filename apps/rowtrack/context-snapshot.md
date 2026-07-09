@@ -53,16 +53,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+98082a5 fix(rowtrack): shared Button audit LAAG — icon gap 8->10 (audit)
 a2f9ecc fix(rowtrack): History detail audit LAAG — label colours + tab radius + BPM labels (audit)
 4e4587f fix(rowtrack): Idle-phase audit LAAG — serif/tint tokens + status bars (audit)
 894f9d3 fix(rowtrack): Summary audit LAAG — PR banner + stats table (audit)
 38a2335 fix(rowtrack): History list audit LAAG — segment container radius (audit)
-9888ad9 fix(rowtrack): Home audit LAAG — dot colour, status/connector spacing (audit)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/Button.tsx
-  ?? apps/rowtrack/briefings/2026-07-09-laag-flags.md
+  A  apps/rowtrack/briefings/2026-07-09-laag-flags.md
 
 ## Bestanden met TODO/FIXME
   (geen)

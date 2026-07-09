@@ -15,20 +15,21 @@ import type { WorkoutGoal, GoalType } from '@/lib/workout-goals';
 import {
   GOAL_TYPES,
   GOAL_TYPE_ORDER,
+  GOAL_INPUT_BOUNDS,
   userInputToTarget,
   targetToUserInput,
 } from '@/lib/workout-goals';
+import { formatDuration } from '@/lib/formatters';
 import {
   bg,
   fg,
   accent,
   border,
   overlay,
-  fontFamily,
-  fontSize,
   space,
   componentRadius,
   radii,
+  typeStyles,
 } from '@/constants';
 
 export type GoalSetupModalProps = {
@@ -38,6 +39,22 @@ export type GoalSetupModalProps = {
   onClearGoal: () => void;
   onClose: () => void;
 };
+
+/** Toont de toegestane invoer-range per doeltype, in de eenheid die de
+ *  gebruiker herkent (mm:ss voor split, km voor afstand). */
+function formatBoundsHint(type: GoalType): string {
+  const { min, max } = GOAL_INPUT_BOUNDS[type];
+  switch (type) {
+    case 'duration':
+      return `${min}–${max} min`;
+    case 'distance':
+      return `${min} m – ${max / 1000} km`;
+    case 'split':
+      return `${formatDuration(min)} – ${formatDuration(max)} /500m`;
+    case 'watts':
+      return `${min}–${max} W`;
+  }
+}
 
 export const GoalSetupModal = memo(function GoalSetupModal({
   visible,
@@ -62,8 +79,12 @@ export const GoalSetupModal = memo(function GoalSetupModal({
   }, [visible, currentGoal]);
 
   const config = GOAL_TYPES[selectedType];
+  const bounds = GOAL_INPUT_BOUNDS[selectedType];
   const numericValue = parseFloat(inputValue);
-  const isValid = !isNaN(numericValue) && numericValue > 0;
+  const hasInput = inputValue.trim().length > 0;
+  const isValid =
+    !isNaN(numericValue) && numericValue >= bounds.min && numericValue <= bounds.max;
+  const isOutOfRange = hasInput && !isNaN(numericValue) && !isValid;
 
   function handleSet() {
     if (!isValid) return;
@@ -83,12 +104,12 @@ export const GoalSetupModal = memo(function GoalSetupModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Stel doel in</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={8}>
+            <TouchableOpacity onPress={onClose} hitSlop={8} accessibilityLabel="Sluiten" accessibilityRole="button">
               <Ionicons name="close" size={24} color={fg.secondary} />
             </TouchableOpacity>
           </View>
 
-          {/* Segmented control */}
+          {/* Segmented control — icoon-only inactief, icoon+label actief (GoalSegments-taal) */}
           <View style={styles.segmentedControl}>
             {GOAL_TYPE_ORDER.map((type) => {
               const typeConfig = GOAL_TYPES[type];
@@ -96,25 +117,26 @@ export const GoalSetupModal = memo(function GoalSetupModal({
               return (
                 <TouchableOpacity
                   key={type}
-                  style={[styles.segment, isActive && styles.segmentActive]}
+                  style={[styles.segment, isActive ? styles.segmentActive : styles.segmentInactive]}
                   onPress={() => {
                     setSelectedType(type);
                     setInputValue('');
                   }}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                  accessibilityLabel={typeConfig.label}
                 >
                   <Ionicons
                     name={typeConfig.icon}
                     size={16}
-                    color={isActive ? bg.base : fg.tertiary}
+                    color={isActive ? accent.default : fg.secondary}
                   />
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      isActive && styles.segmentTextActive,
-                    ]}
-                  >
-                    {typeConfig.label}
-                  </Text>
+                  {isActive && (
+                    <Text style={styles.segmentTextActive} numberOfLines={1}>
+                      {typeConfig.label}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -135,20 +157,15 @@ export const GoalSetupModal = memo(function GoalSetupModal({
             <Text style={styles.unitLabel}>{config.unit}</Text>
           </View>
 
+          {/* Range-hint — subtiel; accent zodra de waarde buiten de grenzen valt */}
+          <Text style={[styles.hint, isOutOfRange && styles.hintError]}>
+            {formatBoundsHint(selectedType)}
+          </Text>
+
           {/* Actions */}
-          <Button
-            title="Stel in"
-            onPress={handleSet}
-            disabled={!isValid}
-            size="lg"
-          />
+          <Button title="Stel in" onPress={handleSet} disabled={!isValid} size="lg" />
           {currentGoal && (
-            <Button
-              title="Wis doel"
-              onPress={onClearGoal}
-              variant="ghost"
-              size="md"
-            />
+            <Button title="Wis doel" onPress={onClearGoal} variant="ghost" size="md" />
           )}
         </View>
       </KeyboardAvoidingView>
@@ -175,35 +192,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontFamily: fontFamily.displaySemiBold,
-    fontSize: fontSize['24'],
+    ...typeStyles.sectionValue,
     color: fg.primary,
   },
   segmentedControl: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['4'],
     backgroundColor: bg.raised,
-    borderRadius: radii.md,
-    padding: space.px,
+    borderWidth: 1,
+    borderColor: border.strong,
+    borderRadius: radii.sm,
+    padding: space['4'],
   },
   segment: {
-    flex: 1,
+    height: space['44'],
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space['4'],
-    paddingVertical: space['8'],
-    borderRadius: radii.sm,
+    gap: space['6'],
+    borderRadius: radii.xs,
+  },
+  segmentInactive: {
+    width: space['44'],
   },
   segmentActive: {
-    backgroundColor: accent.default,
-  },
-  segmentText: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['12'],
-    color: fg.tertiary,
+    flex: 1,
+    paddingHorizontal: space['10'],
+    backgroundColor: accent.muted,
+    borderWidth: 1,
+    borderColor: accent.default,
   },
   segmentTextActive: {
-    color: bg.base,
+    ...typeStyles.segmentActive,
+    color: accent.default,
   },
   inputRow: {
     flexDirection: 'row',
@@ -218,15 +240,22 @@ const styles = StyleSheet.create({
     borderRadius: componentRadius.input,
     paddingHorizontal: space['16'],
     paddingVertical: space['12'],
-    fontFamily: fontFamily.monoMedium,
-    fontSize: fontSize['36'],
+    ...typeStyles.heroDisplay,
+    lineHeight: undefined,
     color: fg.primary,
     textAlign: 'center',
   },
   unitLabel: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: fontSize['16'],
+    ...typeStyles.kpiUnit,
     color: fg.secondary,
     minWidth: 60,
+  },
+  hint: {
+    ...typeStyles.labelGoalPrefix,
+    color: fg.tertiary,
+    textAlign: 'center',
+  },
+  hintError: {
+    color: accent.default,
   },
 });

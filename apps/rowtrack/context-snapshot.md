@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-08_
+_Gegenereerd op 2026-07-09_
 
 ## Project
 - **App:** rowtrack
@@ -53,17 +53,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+db254e8 fix(rowtrack): address audit-parity review P3s (last-row border, padding)
 80a9ea3 fix(rowtrack): IdlePhase audit MIDDEL — abbreviated units + stepLabel DNA
 6a07e02 fix(rowtrack): Profile sheets audit MIDDEL — DNA labels + sheet radius
 13810d4 fix(rowtrack): History audit MIDDEL fixes
 554715e fix(rowtrack): Home + Summary audit MIDDEL fixes
-191ab45 fix(rowtrack): portrait active-phase parity with design + landscape (audit)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  M  apps/rowtrack/components/WorkoutCard.tsx
+  M  apps/rowtrack/components/GoalSetupModal.tsx
+  M  apps/rowtrack/lib/formatters.ts
+  M  apps/rowtrack/lib/workout-goals.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

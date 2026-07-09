@@ -70,6 +70,19 @@ export const GOAL_TYPES: Record<GoalType, GoalTypeConfig> = {
 
 export const GOAL_TYPE_ORDER: GoalType[] = ['duration', 'distance', 'split', 'watts'];
 
+/**
+ * Min/max grenzen per doeltype in user-input-eenheden
+ * (duration: minuten, distance: meter, split: sec/500m, watts: watt).
+ * Eén bron van waarheid: de GoalSetupModal-clamp én de WheelPicker
+ * item-builders in formatters.ts leiden hun grenzen hieruit af.
+ */
+export const GOAL_INPUT_BOUNDS: Record<GoalType, { min: number; max: number }> = {
+  duration: { min: 1, max: 180 },
+  distance: { min: 500, max: 42000 },
+  split: { min: 90, max: 180 },
+  watts: { min: 50, max: 500 },
+};
+
 // --- Nudge buttons ---
 
 /** Index delta in the WheelPicker array per nudge tap. */

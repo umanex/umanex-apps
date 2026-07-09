@@ -80,7 +80,7 @@ function SegmentButton({ type, isActive, onPress }: SegmentButtonProps) {
       <Ionicons
         name={GOAL_ICONS[type]}
         size={16}
-        color={isActive ? accent.default : fg.secondary}
+        color={isActive ? accent.default : fg.tertiary}
       />
       {isActive && (
         <Animated.Text

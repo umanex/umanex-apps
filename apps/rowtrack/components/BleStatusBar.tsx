@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import type { ConnectionStatus } from '@/lib/ble/types';
-import { bg, fg, accent, border, status, typeStyles, componentRadius } from '@/constants';
+import { bg, fg, accent, border, status, typeStyles, radii } from '@/constants';
 
 type BleStatusBarProps = {
   bleStatus: ConnectionStatus;
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: bg.elevated,
-    borderRadius: componentRadius.cardSm,
+    borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: border.default,
     height: 48,
@@ -89,9 +89,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: radii.full,
   },
   label: {
     ...typeStyles.kpiValue,

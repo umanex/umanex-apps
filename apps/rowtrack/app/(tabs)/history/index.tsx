@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     backgroundColor: bg.elevated,
     borderWidth: 1,
     borderColor: border.strong,
-    borderRadius: radii.sm,
+    borderRadius: radii.xs,
     padding: space['4'],
     height: 52,
     marginHorizontal: space['20'],

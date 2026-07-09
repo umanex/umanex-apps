@@ -1010,14 +1010,12 @@ const summaryStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderRadius: radii.md,
+    borderRadius: componentRadius.highlightRow,
     padding: space['20'],
     gap: space['8'],
   },
   prText: {
-    fontFamily: fontFamily.sourceSerifItalic,
-    fontSize: fontSize['16'],
-    lineHeight: 22,
+    ...typeStyles.kpiUnit,
     color: status.warning,
   },
   kpiGrid: {
@@ -1056,7 +1054,9 @@ const summaryStyles = StyleSheet.create({
   },
   statsTable: {
     backgroundColor: bg.raised,
-    borderRadius: componentRadius.cardSm,
+    borderWidth: 1,
+    borderColor: border.default,
+    borderRadius: radii.sm,
     overflow: 'hidden',
   },
   statsRow: {
@@ -1068,7 +1068,7 @@ const summaryStyles = StyleSheet.create({
   statsRowLabel: {
     width: 165,
     ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    color: fg.secondary,
   },
   statsRowValue: {
     flex: 1,

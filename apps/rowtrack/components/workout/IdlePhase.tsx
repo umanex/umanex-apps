@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,12 @@ import {
   FlatList,
   ScrollView,
   StyleSheet,
-  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import type { ConnectionStatus, HRFoundDevice, HRStatus } from '@/lib/ble/types';
 import type { GoalType } from '@/lib/workout-goals';
-import { NUDGE_STEP_IDX, NUDGE_LABEL, goalTargetToWheelIndex } from '@/lib/workout-goals';
+import { buildGoalSuggestions } from '@/lib/workout-goals';
 import {
   BleStatusBar,
   Button,
@@ -30,6 +28,7 @@ import {
   buildDistItems,
   buildSplitItems,
   buildWattItems,
+  wheelItemParts,
 } from '@/lib/formatters';
 import {
   bg,
@@ -91,90 +90,11 @@ const DEFAULT_DIST_IDX  = 9;
 const DEFAULT_SPLIT_IDX = 30;
 const DEFAULT_WATT_IDX  = 26;
 
-// --- NudgeButton ---
-
-type NudgeButtonProps = {
-  direction: 'increment' | 'decrement';
-  stepLabel: string;
-  disabled: boolean;
-  onPress: () => void;
-  position: 'left' | 'right';
-};
-
-function NudgeButton({ direction, stepLabel, disabled, onPress, position }: NudgeButtonProps) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  function handlePressIn() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
-  }
-
-  function handlePressOut() {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
-  }
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      disabled={disabled}
-      activeOpacity={1}
-      style={[
-        nudgeStyles.cell,
-        position === 'left' ? nudgeStyles.cellLeft : nudgeStyles.cellRight,
-        disabled && nudgeStyles.cellDisabled,
-      ]}
-    >
-      <Animated.View style={[nudgeStyles.inner, { transform: [{ scale }] }]}>
-        <Ionicons
-          name={direction === 'increment' ? 'add' : 'remove'}
-          size={20}
-          color={fg.secondary}
-        />
-        <Text style={nudgeStyles.stepLabel}>{stepLabel}</Text>
-      </Animated.View>
-    </TouchableOpacity>
-  );
-}
-
-const nudgeStyles = StyleSheet.create({
-  // Cel binnen de samengevoegde nudge-bar: geen eigen rand/radius, enkel een
-  // divider op de binnenrand. De buitenste bar levert border + radius.
-  cell: {
-    width: 64,
-    backgroundColor: bg.raised,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 4,
-  },
-  cellLeft: {
-    borderRightWidth: 1,
-    borderRightColor: border.strong,
-  },
-  cellRight: {
-    borderLeftWidth: 1,
-    borderLeftColor: border.strong,
-  },
-  cellDisabled: {
-    opacity: 0.4,
-  },
-  inner: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.secondary,
-  },
-});
-
 // --- Props ---
 
 type IdlePhaseProps = {
   bleStatus: ConnectionStatus;
   deviceName: string | null;
-  bleError: string | null;
   onConnect: () => void;
   onDisconnect: () => void;
   hrStatus: HRStatus;
@@ -264,7 +184,6 @@ const modalStyles = StyleSheet.create({
 export function IdlePhase({
   bleStatus,
   deviceName,
-  bleError,
   onConnect,
   onDisconnect,
   hrStatus,
@@ -325,25 +244,13 @@ export function IdlePhase({
   function getModeConfig(goalType: GoalType) {
     switch (goalType) {
       case 'duration':
-        return { items: durItems, idx: durIdx, setIdx: setDurIdx, sync: syncDur,
-                 nudgeStep: NUDGE_STEP_IDX.duration, nudgeLabel: NUDGE_LABEL.duration,
-                 unit: 'min' as string | null,
-                 nudgeDisplayValue: (i: number) => String(Math.round(durItems[i].value / 60)) };
+        return { items: durItems, idx: durIdx, setIdx: setDurIdx, sync: syncDur };
       case 'distance':
-        return { items: distItems, idx: distIdx, setIdx: setDistIdx, sync: syncDist,
-                 nudgeStep: NUDGE_STEP_IDX.distance, nudgeLabel: NUDGE_LABEL.distance,
-                 unit: 'km' as string | null,
-                 nudgeDisplayValue: (i: number) => (distItems[i].value / 1000).toFixed(1).replace('.', ',') };
+        return { items: distItems, idx: distIdx, setIdx: setDistIdx, sync: syncDist };
       case 'split':
-        return { items: splitItems, idx: splitIdx, setIdx: setSplitIdx, sync: syncSplit,
-                 nudgeStep: NUDGE_STEP_IDX.split, nudgeLabel: NUDGE_LABEL.split,
-                 unit: '/ 500m' as string | null,
-                 nudgeDisplayValue: (i: number) => splitItems[i].label };
+        return { items: splitItems, idx: splitIdx, setIdx: setSplitIdx, sync: syncSplit };
       case 'watts':
-        return { items: wattItems, idx: wattIdx, setIdx: setWattIdx, sync: syncWatt,
-                 nudgeStep: NUDGE_STEP_IDX.watts, nudgeLabel: NUDGE_LABEL.watts,
-                 unit: 'W' as string | null,
-                 nudgeDisplayValue: (i: number) => String(Math.round(wattItems[i].value)) };
+        return { items: wattItems, idx: wattIdx, setIdx: setWattIdx, sync: syncWatt };
     }
   }
 
@@ -391,45 +298,31 @@ export function IdlePhase({
     }
 
     const goalType = idleGoalType!;
-    const { items, idx, setIdx, sync, nudgeStep, nudgeLabel, unit, nudgeDisplayValue } = getModeConfig(goalType);
-    const canDecrement = idx >= nudgeStep;
-    const canIncrement = idx <= items.length - 1 - nudgeStep;
-
-    function handleNudge(delta: number) {
-      const newIdx = Math.max(0, Math.min(idx + delta, items.length - 1));
-      if (newIdx !== idx) {
-        setIdx(newIdx);
-        sync(newIdx);
-      }
-    }
+    const { items, idx, setIdx, sync } = getModeConfig(goalType);
+    const suggestions = buildGoalSuggestions(goalType, recents);
 
     return (
       <View style={styles.pickerArea}>
-        {/* Nudge row — samengevoegde segmented bar (−/+ delen randen met de waarde) */}
-        <View style={styles.nudgeRow}>
-          <NudgeButton
-            direction="decrement"
-            stepLabel={nudgeLabel}
-            disabled={!canDecrement}
-            onPress={() => handleNudge(-nudgeStep)}
-            position="left"
-          />
-          <View style={styles.nudgeDisplay}>
-            <View style={styles.valueRow}>
-              <Text style={styles.nudgeValue}>{nudgeDisplayValue(idx)}</Text>
-              {unit && <Text style={styles.nudgeUnit}>{unit}</Text>}
-            </View>
-          </View>
-          <NudgeButton
-            direction="increment"
-            stepLabel={nudgeLabel}
-            disabled={!canIncrement}
-            onPress={() => handleNudge(nudgeStep)}
-            position="right"
-          />
+        {/* Suggestions — always 3 chips (recent picks padded with defaults) */}
+        <View style={styles.chipRow}>
+          {suggestions.map((chipIdx) => {
+            const { value, unit } = wheelItemParts(items[chipIdx]);
+            return (
+              <Chip
+                key={chipIdx}
+                value={value}
+                unit={unit}
+                active={chipIdx === idx}
+                onPress={() => {
+                  setIdx(chipIdx);
+                  sync(chipIdx);
+                }}
+              />
+            );
+          })}
         </View>
 
-        {/* Wheel picker */}
+        {/* Wheel picker — the only value selector */}
         <WheelPicker
           items={items}
           selectedIndex={idx}
@@ -438,40 +331,6 @@ export function IdlePhase({
             sync(newIdx);
           }}
         />
-
-        {/* Recents — hidden when empty */}
-        {recents.length > 0 && (
-          <View style={styles.recentsSection}>
-            <Text style={styles.recentsLabel}>RECENT</Text>
-            <View style={styles.chipRow}>
-              {(() => {
-                const seen = new Set<number>();
-                return recents.map((target) => {
-                  const chipIdx = goalTargetToWheelIndex(goalType, target);
-                  if (chipIdx === null || seen.has(chipIdx)) return null;
-                  seen.add(chipIdx);
-                  const item = items[chipIdx];
-                  const rawUnit = item?.unit;
-                  const full = item?.label ?? String(target);
-                  const hasUnit = !!rawUnit && full.endsWith(` ${rawUnit}`);
-                  const value = hasUnit ? full.slice(0, full.length - rawUnit.length - 1) : full;
-                  return (
-                    <Chip
-                      key={chipIdx}
-                      value={value}
-                      unit={hasUnit ? rawUnit : undefined}
-                      active={chipIdx === idx}
-                      onPress={() => {
-                        setIdx(chipIdx);
-                        sync(chipIdx);
-                      }}
-                    />
-                  );
-                });
-              })()}
-            </View>
-          </View>
-        )}
       </View>
     );
   }
@@ -492,14 +351,14 @@ export function IdlePhase({
         {/* Toestellen */}
         <View style={styles.toestelSection}>
           <Text style={styles.sectionLabel}>TOESTELLEN</Text>
-          <View style={styles.barsStack}>
+          <View style={styles.deviceCard}>
             <BleStatusBar
               bleStatus={bleStatus}
               deviceName={deviceName}
-              bleError={bleError}
               onConnect={onConnect}
               onDisconnect={onDisconnect}
             />
+            <View style={styles.deviceDivider} />
             <HrStatusBar
               hrStatus={hrStatus}
               hrDeviceName={hrDeviceName}
@@ -562,8 +421,18 @@ const styles = StyleSheet.create({
   toestelSection: {
     gap: 8,
   },
-  barsStack: {
-    gap: 8,
+  // Grouped device card: one rounded container holding both rows, split by a
+  // hairline divider. The rows themselves are transparent (DeviceRow).
+  deviceCard: {
+    backgroundColor: bg.elevated,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: border.default,
+    overflow: 'hidden',
+  },
+  deviceDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: border.default,
   },
   sectionLabel: {
     ...typeStyles.labelGoalPrefix,
@@ -583,53 +452,9 @@ const styles = StyleSheet.create({
     color: fg.primary,
   },
 
-  // Goal input area
+  // Goal input area — chips then wheel
   pickerArea: {
     gap: 20,
-  },
-
-  // Nudge row — één samengevoegde bar (buitenrand + radius; cellen gap 0)
-  nudgeRow: {
-    flexDirection: 'row',
-    height: 64,
-    alignItems: 'stretch',
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: border.default,
-    overflow: 'hidden',
-  },
-  nudgeDisplay: {
-    flex: 1,
-    backgroundColor: bg.elevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-  },
-  nudgeValue: {
-    fontFamily: fontFamily.sourceSerifRegular,
-    fontSize: fontSize['34'],
-    lineHeight: fontSize['34'],
-    letterSpacing: -1.02,
-    color: fg.primary,
-  },
-  nudgeUnit: {
-    fontFamily: fontFamily.sourceSerifItalic,
-    fontSize: fontSize['16'],
-    lineHeight: fontSize['16'],
-    color: fg.secondary,
-  },
-
-  // Recents
-  recentsSection: {
-    gap: 8,
-  },
-  recentsLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
   },
   chipRow: {
     flexDirection: 'row',

@@ -83,6 +83,21 @@ export function formatDateLong(iso: string): string {
 
 export type WheelItem = { label: string; value: number; unit?: string };
 
+/**
+ * Splits a WheelItem label into its value part and (italic) unit part.
+ * Single source of truth for both the WheelPicker rows and the suggestion
+ * chips, so the value/unit rendering can never drift between the two.
+ * When the unit isn't a trailing token of the label (e.g. split "2:00"),
+ * the whole label is the value and no unit is returned.
+ */
+export function wheelItemParts(item: WheelItem): { value: string; unit?: string } {
+  if (!item.unit) return { value: item.label };
+  const suffix = ` ${item.unit}`;
+  const idx = item.label.lastIndexOf(suffix);
+  if (idx === -1) return { value: item.label };
+  return { value: item.label.slice(0, idx), unit: item.unit };
+}
+
 /** 1\u2013180 minutes, step 1 min. value = total seconds. */
 export function buildDurItems(): WheelItem[] {
   const items: WheelItem[] = [];

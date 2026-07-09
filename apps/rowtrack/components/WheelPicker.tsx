@@ -9,20 +9,13 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { border, fg, fontFamily, fontSize } from '@/constants';
-import type { WheelItem } from '@/lib/formatters';
+import { wheelItemParts, type WheelItem } from '@/lib/formatters';
 
 const ITEM_H = 44;
 const VISIBLE = 3;
 const HALF = 1;
 const PADDING = ITEM_H * HALF;
 const PICKER_H = ITEM_H * VISIBLE;
-
-function getDisplayValue(item: WheelItem): string {
-  if (!item.unit) return item.label;
-  const suffix = ` ${item.unit}`;
-  const idx = item.label.lastIndexOf(suffix);
-  return idx === -1 ? item.label : item.label.slice(0, idx);
-}
 
 type WheelPickerProps = {
   items: WheelItem[];
@@ -81,21 +74,21 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
       >
         {items.map((item, index) => {
           const isSelected = index === selectedIndex;
-          const displayValue = getDisplayValue(item);
+          const { value, unit } = wheelItemParts(item);
           return (
             <View key={index} style={styles.item}>
               {isSelected ? (
                 <View style={styles.valueRow}>
-                  <Text style={styles.itemLabelSelected}>{displayValue}</Text>
-                  {item.unit && (
-                    <Text style={styles.itemUnitSelected}>{item.unit}</Text>
+                  <Text style={styles.itemLabelSelected}>{value}</Text>
+                  {unit && (
+                    <Text style={styles.itemUnitSelected}>{unit}</Text>
                   )}
                 </View>
               ) : (
                 <View style={styles.valueRow}>
-                  <Text style={styles.itemLabel}>{displayValue}</Text>
-                  {item.unit && (
-                    <Text style={styles.itemUnit}>{item.unit}</Text>
+                  <Text style={styles.itemLabel}>{value}</Text>
+                  {unit && (
+                    <Text style={styles.itemUnit}>{unit}</Text>
                   )}
                 </View>
               )}

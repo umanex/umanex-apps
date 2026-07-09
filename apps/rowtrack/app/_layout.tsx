@@ -44,6 +44,10 @@ function RootNavigator() {
   useEffect(() => {
     if (isLoading) return;
 
+    // De wachtwoord-reset zet zelf een recovery-sessie en navigeert daarna
+    // expliciet — laat de auto-redirect dat scherm met rust.
+    if (segments.includes('reset-password')) return;
+
     const inAuthGroup = segments[0] === '(auth)';
 
     if (!session && !inAuthGroup) {

@@ -79,6 +79,12 @@ export default function LoginScreen() {
           autoComplete="password"
         />
 
+        <Link href="/(auth)/forgot-password" asChild>
+          <TouchableOpacity style={styles.forgot} accessibilityRole="link">
+            <Text style={styles.forgotText}>Wachtwoord vergeten?</Text>
+          </TouchableOpacity>
+        </Link>
+
         <Button
           title="Log in"
           onPress={handleLogin}
@@ -121,6 +127,14 @@ const styles = StyleSheet.create({
     color: fg.secondary,
     textAlign: 'center',
     marginBottom: space['8'],
+  },
+  forgot: {
+    alignSelf: 'flex-end',
+    marginTop: -space['8'],
+  },
+  forgotText: {
+    ...typeStyles.textLink,
+    color: accent.default,
   },
   button: {
     marginTop: space['8'],

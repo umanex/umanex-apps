@@ -53,17 +53,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+1bb8b72 feat(rowtrack): GoalSetupModal DNA + min/max clamp (audit cluster 8)
 db254e8 fix(rowtrack): address audit-parity review P3s (last-row border, padding)
 80a9ea3 fix(rowtrack): IdlePhase audit MIDDEL — abbreviated units + stepLabel DNA
 6a07e02 fix(rowtrack): Profile sheets audit MIDDEL — DNA labels + sheet radius
 13810d4 fix(rowtrack): History audit MIDDEL fixes
-554715e fix(rowtrack): Home + Summary audit MIDDEL fixes
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/GoalSetupModal.tsx
-  M  apps/rowtrack/lib/formatters.ts
-  M  apps/rowtrack/lib/workout-goals.ts
+  M  apps/rowtrack/components/ErrorMessage.tsx
+  M  apps/rowtrack/components/FormField.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

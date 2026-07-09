@@ -1,20 +1,23 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
+  TouchableOpacity,
   StyleSheet,
   type TextInputProps as RNTextInputProps,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import {
   bg,
   fg,
+  accent,
   border,
-  label,
   fontFamily,
   fontSize,
   space,
   componentRadius,
+  typeStyles,
 } from '@/constants';
 
 export type FormFieldProps = {
@@ -27,7 +30,7 @@ export type FormFieldProps = {
   autoCapitalize?: RNTextInputProps['autoCapitalize'];
   autoComplete?: RNTextInputProps['autoComplete'];
   autoCorrect?: boolean;
-  readOnly?: boolean;
+  error?: string | null;
 }
 
 export const FormField = memo(function FormField({
@@ -40,62 +43,95 @@ export const FormField = memo(function FormField({
   autoCapitalize,
   autoComplete,
   autoCorrect,
-  readOnly = false,
+  error,
 }: FormFieldProps) {
+  const [focused, setFocused] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+
+  const hasError = !!error;
+  const isPassword = !!secureTextEntry;
+
   return (
-    <View style={fieldLabel ? styles.fieldWithLabel : undefined}>
+    <View style={styles.wrap}>
       {fieldLabel && <Text style={styles.label}>{fieldLabel}</Text>}
 
-      {readOnly ? (
-        <View style={styles.readOnlyInput}>
-          <Text style={styles.readOnlyText}>{value}</Text>
-        </View>
-      ) : (
+      <View
+        style={[
+          styles.inputWrap,
+          focused && styles.inputWrapFocused,
+          hasError && styles.inputWrapError,
+        ]}
+      >
         <TextInput
           style={styles.input}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={fg.tertiary}
-          secureTextEntry={secureTextEntry}
+          secureTextEntry={isPassword && !revealed}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
           autoCorrect={autoCorrect}
+          selectionColor={accent.default}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
         />
-      )}
+        {isPassword && (
+          <TouchableOpacity
+            onPress={() => setRevealed((r) => !r)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={revealed ? 'Verberg wachtwoord' : 'Toon wachtwoord'}
+          >
+            <Ionicons
+              name={revealed ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={fg.tertiary}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {hasError && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  fieldWithLabel: {
+  wrap: {
     gap: space['8'],
   },
   label: {
-    ...label.caps,
+    ...typeStyles.labelGoalPrefix,
     color: fg.tertiary,
   },
-  input: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
-    color: fg.primary,
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['8'],
     backgroundColor: bg.elevated,
     borderWidth: 1,
     borderColor: border.default,
     borderRadius: componentRadius.input,
     paddingHorizontal: space['16'],
-    paddingVertical: space['12'],
   },
-  readOnlyInput: {
-    backgroundColor: bg.elevated,
-    borderRadius: componentRadius.input,
-    paddingHorizontal: space['16'],
-    paddingVertical: space['12'],
+  inputWrapFocused: {
+    borderColor: accent.default,
   },
-  readOnlyText: {
-    fontFamily: fontFamily.bodyRegular,
+  inputWrapError: {
+    borderColor: accent.default,
+    backgroundColor: accent.subtle,
+  },
+  input: {
+    flex: 1,
+    fontFamily: fontFamily.sourceSerifRegular,
     fontSize: fontSize['16'],
-    color: fg.secondary,
+    color: fg.primary,
+    paddingVertical: space['12'],
+  },
+  errorText: {
+    ...typeStyles.textLink,
+    color: accent.default,
   },
 });

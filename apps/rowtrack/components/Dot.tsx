@@ -16,6 +16,6 @@ const styles = StyleSheet.create({
     width: space['4'],
     height: space['4'],
     borderRadius: space['4'] / 2,
-    backgroundColor: fg.quaternary,
+    backgroundColor: fg.tertiary,
   },
 });

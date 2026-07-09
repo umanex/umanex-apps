@@ -56,7 +56,7 @@ export function GoalProgressCard({ progress, onEdit }: GoalProgressCardProps) {
 
       <View style={styles.valuesRow}>
         <Text style={styles.currentValue}>{fmtValue(goal.metric, current)}</Text>
-        <Text style={styles.connector}> van </Text>
+        <Text style={styles.connector}>van</Text>
         <Text style={styles.targetValue}>{fmtValue(goal.metric, goal.target)}</Text>
       </View>
 
@@ -68,7 +68,7 @@ export function GoalProgressCard({ progress, onEdit }: GoalProgressCardProps) {
         </View>
         <View style={styles.statusRow}>
           <Text style={styles.statusPct}>{pct}%</Text>
-          <Text style={styles.statusLabel}> voldaan</Text>
+          <Text style={styles.statusLabel}>voldaan</Text>
           <Dot />
           <Text style={styles.statusRemaining}>{fmtRemaining(goal.metric, current, goal.target)}</Text>
         </View>
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   trackOuter: {
     height: 2,
     backgroundColor: progressBar.trackColor,
-    borderRadius: radii.xs,
+    borderRadius: radii.lg,
   },
   trackFill: {
     height: 2,
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space['6'],
+    gap: space['4'],
   },
   statusPct: {
     ...typeStyles.italicConnector,

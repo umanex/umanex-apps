@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space['8'],
+    gap: space['10'],
     borderRadius: radii.full,
   },
   sizeLg: {

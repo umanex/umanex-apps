@@ -53,16 +53,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a2f9ecc fix(rowtrack): History detail audit LAAG — label colours + tab radius + BPM labels (audit)
 4e4587f fix(rowtrack): Idle-phase audit LAAG — serif/tint tokens + status bars (audit)
 894f9d3 fix(rowtrack): Summary audit LAAG — PR banner + stats table (audit)
 38a2335 fix(rowtrack): History list audit LAAG — segment container radius (audit)
 9888ad9 fix(rowtrack): Home audit LAAG — dot colour, status/connector spacing (audit)
-c989de1 refactor(rowtrack): GoalSetupModal reuses GoalSegments incl. 'Geen' (audit cluster 8)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/[id].tsx
-   M apps/rowtrack/components/Button.tsx
+  M  apps/rowtrack/components/Button.tsx
   ?? apps/rowtrack/briefings/2026-07-09-laag-flags.md
 
 ## Bestanden met TODO/FIXME

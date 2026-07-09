@@ -53,16 +53,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e00cb7b Merge origin/main into main
+7b6bc95 buttonheight
+dfc2603 buttonHeight
+3ac5f86 feat(rowtrack): alternate background on recent-workout rows
 a87d650 fix(rowtrack): center serif labels via token-pipeline lineHeight rule
-0e992a3 feat(rowtrack): sync Home recent-workout list with updated Figma (16:159)
-17b670d docs(rowtrack): mark shared-component decisions applied in flag list (audit)
-60bf80f fix(rowtrack): shared-component audit decisions — inline arrows to Ionicons (audit)
-28571b1 fix(rowtrack): shared-component audit decisions — gaps, padding, outline text (audit)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  A  apps/rowtrack/briefings/2026-07-09-component-recent-training-rows.tcebc.md
+  M  apps/rowtrack/constants/colors.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

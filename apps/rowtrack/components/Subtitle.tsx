@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { fg, accent, typeStyles, space } from '@/constants';
 
 type SubtitleAction = {
@@ -22,7 +23,7 @@ export function Subtitle({ label, action }: SubtitleProps) {
           activeOpacity={0.8}
         >
           <Text style={styles.actionLabel}>{action.label}</Text>
-          <Text style={styles.actionArrow}>→</Text>
+          <Ionicons name="arrow-forward" size={14} color={accent.default} />
         </TouchableOpacity>
       )}
     </View>
@@ -46,10 +47,6 @@ const styles = StyleSheet.create({
     gap: space['8'],
   },
   actionLabel: {
-    ...typeStyles.labelSection,
-    color: accent.default,
-  },
-  actionArrow: {
     ...typeStyles.labelSection,
     color: accent.default,
   },

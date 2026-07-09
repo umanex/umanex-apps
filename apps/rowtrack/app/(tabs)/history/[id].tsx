@@ -131,7 +131,8 @@ export default function WorkoutDetailScreen() {
           )}
         </View>
         <TouchableOpacity onPress={() => router.back()} style={styles.backLink}>
-          <Text style={styles.backLinkText}>← OVERZICHT</Text>
+          <Ionicons name="arrow-back" size={14} color={accent.default} />
+          <Text style={styles.backLinkText}>OVERZICHT</Text>
         </TouchableOpacity>
       </View>
 
@@ -313,6 +314,9 @@ const styles = StyleSheet.create({
     color: fg.primary,
   },
   backLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['4'],
     alignSelf: 'flex-start',
   },
   backLinkText: {

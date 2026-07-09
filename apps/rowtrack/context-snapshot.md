@@ -53,20 +53,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+28571b1 fix(rowtrack): shared-component audit decisions — gaps, padding, outline text (audit)
 26d0507 docs(rowtrack): LAAG-sweep flag list for device review (audit)
 98082a5 fix(rowtrack): shared Button audit LAAG — icon gap 8->10 (audit)
 a2f9ecc fix(rowtrack): History detail audit LAAG — label colours + tab radius + BPM labels (audit)
 4e4587f fix(rowtrack): Idle-phase audit LAAG — serif/tint tokens + status bars (audit)
-894f9d3 fix(rowtrack): Summary audit LAAG — PR banner + stats table (audit)
 ```
 
 ## Uncommitted wijzigingen
-   M apps/rowtrack/app/(tabs)/history/[id].tsx
-  M  apps/rowtrack/components/Button.tsx
-  M  apps/rowtrack/components/KPI_single.tsx
-   M apps/rowtrack/components/Subtitle.tsx
-  M  apps/rowtrack/components/TabItem.tsx
-   M apps/rowtrack/components/WorkoutCard.tsx
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  M  apps/rowtrack/components/Subtitle.tsx
+  M  apps/rowtrack/components/WorkoutCard.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

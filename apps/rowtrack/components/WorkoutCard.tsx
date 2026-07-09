@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Dot } from './Dot';
 import { formatTimerFull } from '@/lib/formatters';
 import { fg, accent, border, space, typeStyles } from '@/constants';
@@ -82,7 +83,7 @@ export const WorkoutCard = memo(function WorkoutCard({
             <Text style={styles.distUnit}>{dist.unit}</Text>
           </View>
         )}
-        <Text style={styles.arrow}>→</Text>
+        <Ionicons name="arrow-forward" size={16} color={accent.default} />
       </View>
     </TouchableOpacity>
   );
@@ -151,9 +152,5 @@ const styles = StyleSheet.create({
   distUnit: {
     ...typeStyles.kpiUnit,
     color: fg.onAccent,
-  },
-  arrow: {
-    ...typeStyles.kpiValue,
-    color: accent.default,
   },
 });

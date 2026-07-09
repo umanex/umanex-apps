@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import type { HRStatus } from '@/lib/ble/types';
-import { bg, fg, accent, border, status, typeStyles, componentRadius } from '@/constants';
+import { bg, fg, accent, border, status, typeStyles, radii } from '@/constants';
 
 type HrStatusBarProps = {
   hrStatus: HRStatus;
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: bg.elevated,
-    borderRadius: componentRadius.cardSm,
+    borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: border.default,
     height: 48,

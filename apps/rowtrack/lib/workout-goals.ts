@@ -97,7 +97,7 @@ export const NUDGE_STEP_IDX: Record<GoalType, number> = {
 export const NUDGE_LABEL: Record<GoalType, string> = {
   duration: '5 min',
   distance: '0,5 km',
-  split:    '5s',
+  split:    '5 s',
   watts:    '10 W',
 };
 

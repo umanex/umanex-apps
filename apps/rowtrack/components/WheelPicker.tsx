@@ -160,6 +160,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sourceSerifItalic,
     fontSize: fontSize['16'],
     lineHeight: fontSize['16'],
-    color: fg.secondary,
+    color: fg.primary,
   },
 });

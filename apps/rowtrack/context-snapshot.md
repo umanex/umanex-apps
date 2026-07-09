@@ -53,15 +53,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+894f9d3 fix(rowtrack): Summary audit LAAG — PR banner + stats table (audit)
 38a2335 fix(rowtrack): History list audit LAAG — segment container radius (audit)
 9888ad9 fix(rowtrack): Home audit LAAG — dot colour, status/connector spacing (audit)
 c989de1 refactor(rowtrack): GoalSetupModal reuses GoalSegments incl. 'Geen' (audit cluster 8)
 3f6b811 fix(rowtrack): address cluster-8 review findings (P1/P2/P3)
-454be5c fix(rowtrack): Figma parity for FormField + GoalSetupModal (audit cluster 8)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/components/BleStatusBar.tsx
+  M  apps/rowtrack/components/GoalSegments.tsx
+  M  apps/rowtrack/components/HrStatusBar.tsx
+  M  apps/rowtrack/components/WheelPicker.tsx
+  M  apps/rowtrack/lib/workout-goals.ts
   ?? apps/rowtrack/briefings/2026-07-09-laag-flags.md
 
 ## Bestanden met TODO/FIXME

@@ -33,6 +33,7 @@ import {
   AlbertSans_600SemiBold,
 } from '@expo-google-fonts/albert-sans';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { startDeepLinkCapture } from '@/lib/recovery-link';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,6 +46,12 @@ function RootNavigator() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+
+    // De wachtwoord-reset zet zelf een recovery-sessie en navigeert daarna
+    // expliciet — laat de auto-redirect dat scherm met rust. Positionele match
+    // zodat een toekomstige route die toevallig 'reset-password' heet de
+    // auth-redirect niet verliest (review P3).
+    if (inAuthGroup && (segments as string[])[1] === 'reset-password') return;
 
     if (!session && !inAuthGroup) {
       router.replace('/(auth)/login');
@@ -94,6 +101,10 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  // Vang deep links vanaf app-start op (o.a. de wachtwoord-reset-link), ook op
+  // een warm start waar de router het 'url'-event vóór schermmontage consumeert.
+  useEffect(() => startDeepLinkCapture(), []);
 
   if (!fontsLoaded) {
     return null;

@@ -9,35 +9,30 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { signIn } from '@/lib/auth';
+import { isValidEmail, emailFieldError, passwordFieldError } from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
-import {
-  bg,
-  fg,
-  accent,
-  display,
-  body,
-  fontFamily,
-  space,
-  layout,
-} from '@/constants';
+import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const emailError = emailFieldError(email, touched.email);
+  const passwordError = passwordFieldError(password, touched.password);
+
+  const canSubmit = isValidEmail(email) && password.length > 0 && !loading;
+
   async function handleLogin() {
-    if (!email || !password) {
-      setError('Vul e-mail en wachtwoord in.');
-      return;
-    }
-    setError('');
+    if (!canSubmit) return;
+    setSubmitError('');
     setLoading(true);
     try {
       await signIn(email.trim(), password);
     } catch (e: any) {
-      setError(e.message ?? 'Inloggen mislukt.');
+      setSubmitError(e.message ?? 'Inloggen mislukt.');
     } finally {
       setLoading(false);
     }
@@ -52,28 +47,41 @@ export default function LoginScreen() {
         <Text style={styles.title}>RowTrack</Text>
         <Text style={styles.subtitle}>Log in om verder te gaan</Text>
 
-        <ErrorMessage message={error} />
+        <ErrorMessage message={submitError} />
 
         <FormField
-          placeholder="E-mail"
+          label="E-mail"
+          placeholder="naam@voorbeeld.be"
           value={email}
           onChangeText={setEmail}
+          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          error={emailError}
           autoCapitalize="none"
           keyboardType="email-address"
           autoComplete="email"
+          autoCorrect={false}
         />
 
         <FormField
-          placeholder="Wachtwoord"
+          label="Wachtwoord"
           value={password}
           onChangeText={setPassword}
+          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          error={passwordError}
           secureTextEntry
           autoComplete="password"
         />
 
+        <Link href="/(auth)/forgot-password" asChild>
+          <TouchableOpacity style={styles.forgot} accessibilityRole="link">
+            <Text style={styles.forgotText}>Wachtwoord vergeten?</Text>
+          </TouchableOpacity>
+        </Link>
+
         <Button
           title="Log in"
           onPress={handleLogin}
+          disabled={!canSubmit}
           loading={loading}
           style={styles.button}
         />
@@ -103,15 +111,23 @@ const styles = StyleSheet.create({
     gap: space['16'],
   },
   title: {
-    ...display.md,
+    ...typeStyles.heroDisplay,
     color: accent.default,
     textAlign: 'center',
   },
   subtitle: {
-    ...body.md,
+    ...typeStyles.italicConnector,
     color: fg.secondary,
     textAlign: 'center',
-    marginBottom: space['16'],
+    marginBottom: space['8'],
+  },
+  forgot: {
+    alignSelf: 'flex-end',
+    marginTop: -space['8'],
+  },
+  forgotText: {
+    ...typeStyles.textLink,
+    color: accent.default,
   },
   button: {
     marginTop: space['8'],
@@ -121,11 +137,11 @@ const styles = StyleSheet.create({
     paddingVertical: space['8'],
   },
   linkText: {
-    ...body.sm,
+    ...typeStyles.textLink,
     color: fg.secondary,
+    textAlign: 'center',
   },
   linkAccent: {
     color: accent.default,
-    fontFamily: fontFamily.bodySemiBold,
   },
 });

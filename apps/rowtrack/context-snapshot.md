@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-08_
+_Gegenereerd op 2026-07-09_
 
 ## Project
 - **App:** rowtrack
@@ -53,17 +53,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-80a9ea3 fix(rowtrack): IdlePhase audit MIDDEL — abbreviated units + stepLabel DNA
-6a07e02 fix(rowtrack): Profile sheets audit MIDDEL — DNA labels + sheet radius
-13810d4 fix(rowtrack): History audit MIDDEL fixes
-554715e fix(rowtrack): Home + Summary audit MIDDEL fixes
-191ab45 fix(rowtrack): portrait active-phase parity with design + landscape (audit)
+3f6b811 fix(rowtrack): address cluster-8 review findings (P1/P2/P3)
+454be5c fix(rowtrack): Figma parity for FormField + GoalSetupModal (audit cluster 8)
+166b7e9 feat(rowtrack): password-reset flow with deep link (audit cluster 8)
+9483bfd feat(rowtrack): auth inline validation + DNA migration (audit cluster 8)
+a255522 feat(rowtrack): redesign FormField + ErrorMessage primitives (audit cluster 8)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  M  apps/rowtrack/components/WorkoutCard.tsx
+  M  apps/rowtrack/components/GoalSetupModal.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

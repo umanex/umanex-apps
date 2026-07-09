@@ -53,20 +53,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+166b7e9 feat(rowtrack): password-reset flow with deep link (audit cluster 8)
 9483bfd feat(rowtrack): auth inline validation + DNA migration (audit cluster 8)
 a255522 feat(rowtrack): redesign FormField + ErrorMessage primitives (audit cluster 8)
 1bb8b72 feat(rowtrack): GoalSetupModal DNA + min/max clamp (audit cluster 8)
 db254e8 fix(rowtrack): address audit-parity review P3s (last-row border, padding)
-80a9ea3 fix(rowtrack): IdlePhase audit MIDDEL — abbreviated units + stepLabel DNA
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/app/(auth)/forgot-password.tsx
-  M  apps/rowtrack/app/(auth)/login.tsx
-  A  apps/rowtrack/app/(auth)/reset-password.tsx
-  M  apps/rowtrack/app/_layout.tsx
-  A  apps/rowtrack/docs/supabase-password-reset-setup.md
-  M  apps/rowtrack/lib/auth.ts
+  M  apps/rowtrack/components/FormField.tsx
+  M  apps/rowtrack/components/GoalSetupModal.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

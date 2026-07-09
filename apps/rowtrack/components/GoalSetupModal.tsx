@@ -163,7 +163,14 @@ export const GoalSetupModal = memo(function GoalSetupModal({
           </Text>
 
           {/* Actions */}
-          <Button title="Stel in" onPress={handleSet} disabled={!isValid} size="lg" />
+          <Button
+            title="Stel in"
+            onPress={handleSet}
+            disabled={!isValid}
+            size="lg"
+            icon="arrow-forward"
+            iconPosition="trailing"
+          />
           {currentGoal && (
             <Button title="Wis doel" onPress={onClearGoal} variant="ghost" size="md" />
           )}

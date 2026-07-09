@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
   },
   inputWrapFocused: {
     borderColor: accent.default,
+    borderWidth: 2,
   },
   inputWrapError: {
     borderColor: accent.default,
@@ -132,6 +133,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: fontFamily.sourceSerifRegular,
     fontSize: fontSize['16'],
+    letterSpacing: -0.24,
     color: fg.primary,
     paddingVertical: space['12'],
   },

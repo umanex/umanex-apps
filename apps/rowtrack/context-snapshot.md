@@ -53,15 +53,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+5635f6f feat(rowtrack): redesign idlephase goal selection
+a482ebc chore: seed HANDOFF.md staging files (root + apps)
+3239089 chore(rowtrack): rebuild tokens after merge (button height 44->48)
 e00cb7b Merge origin/main into main
 7b6bc95 buttonheight
-dfc2603 buttonHeight
-3ac5f86 feat(rowtrack): alternate background on recent-workout rows
-a87d650 fix(rowtrack): center serif labels via token-pipeline lineHeight rule
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/constants/colors.ts
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

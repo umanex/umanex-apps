@@ -40,6 +40,7 @@ import {
   typeStyles,
   fontFamily,
   fontSize,
+  radii,
   componentRadius,
 } from '@/constants';
 import { useAuth } from '@/lib/auth-context';
@@ -97,9 +98,10 @@ type NudgeButtonProps = {
   stepLabel: string;
   disabled: boolean;
   onPress: () => void;
+  position: 'left' | 'right';
 };
 
-function NudgeButton({ direction, stepLabel, disabled, onPress }: NudgeButtonProps) {
+function NudgeButton({ direction, stepLabel, disabled, onPress, position }: NudgeButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
 
   function handlePressIn() {
@@ -118,12 +120,16 @@ function NudgeButton({ direction, stepLabel, disabled, onPress }: NudgeButtonPro
       onPressOut={handlePressOut}
       disabled={disabled}
       activeOpacity={1}
-      style={[nudgeStyles.btn, disabled && nudgeStyles.btnDisabled]}
+      style={[
+        nudgeStyles.cell,
+        position === 'left' ? nudgeStyles.cellLeft : nudgeStyles.cellRight,
+        disabled && nudgeStyles.cellDisabled,
+      ]}
     >
       <Animated.View style={[nudgeStyles.inner, { transform: [{ scale }] }]}>
         <Ionicons
           name={direction === 'increment' ? 'add' : 'remove'}
-          size={22}
+          size={20}
           color={fg.secondary}
         />
         <Text style={nudgeStyles.stepLabel}>{stepLabel}</Text>
@@ -133,22 +139,29 @@ function NudgeButton({ direction, stepLabel, disabled, onPress }: NudgeButtonPro
 }
 
 const nudgeStyles = StyleSheet.create({
-  btn: {
+  // Cel binnen de samengevoegde nudge-bar: geen eigen rand/radius, enkel een
+  // divider op de binnenrand. De buitenste bar levert border + radius.
+  cell: {
     width: 64,
-    height: 64,
-    backgroundColor: bg.elevated,
-    borderRadius: componentRadius.cardSm,
-    borderWidth: 1,
-    borderColor: border.default,
+    backgroundColor: bg.raised,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: 4,
   },
-  btnDisabled: {
+  cellLeft: {
+    borderRightWidth: 1,
+    borderRightColor: border.strong,
+  },
+  cellRight: {
+    borderLeftWidth: 1,
+    borderLeftColor: border.strong,
+  },
+  cellDisabled: {
     opacity: 0.4,
   },
   inner: {
     alignItems: 'center',
-    gap: 2,
+    gap: 8,
   },
   stepLabel: {
     ...typeStyles.labelGoalPrefix,
@@ -392,23 +405,27 @@ export function IdlePhase({
 
     return (
       <View style={styles.pickerArea}>
-        {/* Nudge row */}
+        {/* Nudge row — samengevoegde segmented bar (−/+ delen randen met de waarde) */}
         <View style={styles.nudgeRow}>
           <NudgeButton
             direction="decrement"
             stepLabel={nudgeLabel}
             disabled={!canDecrement}
             onPress={() => handleNudge(-nudgeStep)}
+            position="left"
           />
           <View style={styles.nudgeDisplay}>
-            <Text style={styles.nudgeValue}>{nudgeDisplayValue(idx)}</Text>
-            {unit && <Text style={styles.nudgeUnit}>{unit}</Text>}
+            <View style={styles.valueRow}>
+              <Text style={styles.nudgeValue}>{nudgeDisplayValue(idx)}</Text>
+              {unit && <Text style={styles.nudgeUnit}>{unit}</Text>}
+            </View>
           </View>
           <NudgeButton
             direction="increment"
             stepLabel={nudgeLabel}
             disabled={!canIncrement}
             onPress={() => handleNudge(nudgeStep)}
+            position="right"
           />
         </View>
 
@@ -433,10 +450,16 @@ export function IdlePhase({
                   const chipIdx = goalTargetToWheelIndex(goalType, target);
                   if (chipIdx === null || seen.has(chipIdx)) return null;
                   seen.add(chipIdx);
+                  const item = items[chipIdx];
+                  const rawUnit = item?.unit;
+                  const full = item?.label ?? String(target);
+                  const hasUnit = !!rawUnit && full.endsWith(` ${rawUnit}`);
+                  const value = hasUnit ? full.slice(0, full.length - rawUnit.length - 1) : full;
                   return (
                     <Chip
                       key={chipIdx}
-                      label={items[chipIdx]?.label ?? String(target)}
+                      value={value}
+                      unit={hasUnit ? rawUnit : undefined}
                       active={chipIdx === idx}
                       onPress={() => {
                         setIdx(chipIdx);
@@ -528,7 +551,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 20,
-    gap: 20,
+    gap: 28,
   },
 
   header: {
@@ -548,7 +571,7 @@ const styles = StyleSheet.create({
   },
 
   doelSection: {
-    gap: 8,
+    gap: 20,
   },
   doelHeader: {
     gap: 8,
@@ -562,35 +585,41 @@ const styles = StyleSheet.create({
 
   // Goal input area
   pickerArea: {
-    gap: 8,
+    gap: 20,
   },
 
-  // Nudge row
+  // Nudge row — één samengevoegde bar (buitenrand + radius; cellen gap 0)
   nudgeRow: {
     flexDirection: 'row',
-    gap: 8,
+    height: 64,
     alignItems: 'stretch',
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: border.default,
+    overflow: 'hidden',
   },
   nudgeDisplay: {
     flex: 1,
-    height: 64,
     backgroundColor: bg.elevated,
-    borderRadius: componentRadius.cardSm,
-    borderWidth: 1,
-    borderColor: border.default,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
   },
   nudgeValue: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['28'],
+    fontFamily: fontFamily.sourceSerifRegular,
+    fontSize: fontSize['34'],
+    lineHeight: fontSize['34'],
+    letterSpacing: -1.02,
     color: fg.primary,
   },
   nudgeUnit: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['12'],
+    fontFamily: fontFamily.sourceSerifItalic,
+    fontSize: fontSize['16'],
+    lineHeight: fontSize['16'],
     color: fg.secondary,
   },
 

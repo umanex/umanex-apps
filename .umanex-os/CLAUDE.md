@@ -221,6 +221,21 @@ Bij een probleem, bug of gefaalde check: zoek de onderliggende oorzaak en los d�
 
 ---
 
+## Sessie-reflectie en handoff — werkprincipe
+
+Aan het einde van een substantiële sessie: een kritisch, eerlijk retrospectief dat de vluchtige context vastlegt vóór ze verdampt. Niet vleiend — de waarde zit in wat Claude zelf naar boven haalt: onzekerheden, onuitgesproken aannames, blinde vlekken, toekomstig breukrisico, de eerste zet voor de volgende keer. Dit draait via de `sessie-reflectie` skill.
+
+**Router, geen silo.** De reflectie is een *feeder* die elke bevinding naar het juiste bestaande huis stuurt — geen parallelle opslag (root cause boven patch):
+- terugkerende **faalklasse** → `vastleggen` (LEARNINGS, de eval-loop);
+- **durend feit** over Jeroen/project → auto-memory;
+- **vooruitkijkend & sessie-gebonden** (onzekerheid, aanname, risico, next-step, idee, debt) → `HANDOFF.md`.
+
+**HANDOFF.md** is de vooruitkijkende tegenhanger van LEARNINGS: gelaagd (globaal `umanex-os/HANDOFF.md` / klant `{repo-root}/HANDOFF.md` / project `apps/{app}/HANDOFF.md`), on-demand aangemaakt, statussen `open → resolved`. De open items komen bij de **start** van een volgende sessie automatisch mee via de user-level SessionStart-hook (`session-start-handoff.sh`, geïnstalleerd door `sync-os.sh` — zelfde kanaal als de TC-EBC-hook). Zo is de lus rond: reflecteren aan het eind → automatisch oppikken aan het begin.
+
+**Grens met de eval-loop.** Een fout hoort in LEARNINGS mét zijn verificatie-input, niet in HANDOFF; HANDOFF is enkel het vooruitkijkende restant dat (nog) geen fout is. Multi-inzetbaar zoals alle globale skills: bron in `umanex-os/`, user-level gesynct, werkt in elk project. Auto-trigger bij sessie-einde (Stop-hook) is een latere rijping — nu wordt de skill manueel opgeroepen.
+
+---
+
 ## Werkprincipes voor code en componenten
 
 **Component structuur**

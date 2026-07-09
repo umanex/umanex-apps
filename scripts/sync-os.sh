@@ -14,7 +14,9 @@
 # - .umanex-os/profiles/{X}.md     (klant-specifiek profile)
 # - ~/.claude/skills/<naam>        (globale skills uit umanex-os/skills/, user-level discovery)
 # - ~/.claude/hooks/tcebc-reminder.sh + settings.json  (TC-EBC UserPromptSubmit hook, user-level)
+# - ~/.claude/hooks/session-start-handoff.sh + settings.json  (SessionStart handoff-hook, user-level)
 # - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
+# - HANDOFF.md                     (sessie-handoff in root + elke app, geseed als afwezig — nooit overschreven)
 #
 # Wat dit script NOOIT aanraakt:
 # - <klant-repo>/.claude/skills/   — klant-specifieke skills (project-level discovery)
@@ -126,6 +128,36 @@ else
   fi
 fi
 
+# Seed HANDOFF.md (root + elke app) — vooruitkijkende tegenhanger van LEARNINGS.md,
+# gevuld door de sessie-reflectie skill en getoond bij sessiestart via de handoff-hook.
+# Zelfde regel: repo-eigen staging, dus NOOIT overschrijven.
+HANDOFF_TEMPLATE="$UMANEX_OS_PATH/templates/HANDOFF.template.md"
+
+seed_handoff() {
+  # $1 = doelmap; seedt $1/HANDOFF.md alleen als die nog niet bestaat
+  local target="$1/HANDOFF.md"
+  if [ -f "$target" ]; then
+    echo "  • $target bestaat al — ongemoeid gelaten"
+  else
+    cp "$HANDOFF_TEMPLATE" "$target"
+    echo "  ✓ $target aangemaakt uit template"
+  fi
+}
+
+echo ""
+echo "→ Seed HANDOFF.md (root + elke app, alleen als afwezig)..."
+if [ ! -f "$HANDOFF_TEMPLATE" ]; then
+  echo "  ⚠ templates/HANDOFF.template.md niet gevonden — seed overgeslagen"
+else
+  seed_handoff "."
+  if [ -d "apps" ]; then
+    for app_dir in apps/*/; do
+      [ -d "$app_dir" ] || continue          # geen match → overslaan
+      seed_handoff "${app_dir%/}"
+    done
+  fi
+fi
+
 # Verwijder oude in-repo skills folder als die er nog staat (legacy van vorige versie)
 if [ -d ".umanex-os/skills" ]; then
   echo "→ Oude .umanex-os/skills/ folder gevonden — opruimen..."
@@ -220,6 +252,39 @@ else
       if jq --arg cmd "$HOOK_CMD" '.hooks.UserPromptSubmit += [{"hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"TC-EBC check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
         mv "$_tmp" "$USER_SETTINGS"
         echo "  ✓ UserPromptSubmit-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
+      else
+        rm -f "$_tmp"
+        echo "  ⚠ kon settings.json niet bewerken — controleer of het geldige JSON is"
+      fi
+    fi
+  fi
+fi
+
+# SessionStart handoff-hook: user-level, zelfde patroon als de TC-EBC-hook hierboven.
+# Toont bij sessiestart de open HANDOFF-items. Script kopiëren + een SessionStart-entry
+# mergen in ~/.claude/settings.json met jq (idempotent — alleen toevoegen als hij ontbreekt).
+echo ""
+echo "→ Installeer SessionStart handoff-hook (user-level)..."
+HANDOFF_HOOK_SRC="$UMANEX_OS_PATH/templates/session-start-handoff.sh"
+HANDOFF_HOOK_CMD="$USER_HOOKS/session-start-handoff.sh"
+if [ ! -f "$HANDOFF_HOOK_SRC" ]; then
+  echo "  ⚠ templates/session-start-handoff.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$HANDOFF_HOOK_SRC" "$HANDOFF_HOOK_CMD"
+  chmod +x "$HANDOFF_HOOK_CMD"
+  echo "  ✓ ~/.claude/hooks/session-start-handoff.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast. Voeg de SessionStart-hook handmatig toe (zie docs/architecture.md)."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$HANDOFF_HOOK_CMD" '.hooks.SessionStart[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$HANDOFF_HOOK_CMD" '.hooks.SessionStart += [{"hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Handoff surface"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        mv "$_tmp" "$USER_SETTINGS"
+        echo "  ✓ SessionStart-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
       else
         rm -f "$_tmp"
         echo "  ⚠ kon settings.json niet bewerken — controleer of het geldige JSON is"

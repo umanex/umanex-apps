@@ -1,22 +1,30 @@
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { bg, fg, accent, border, typeStyles } from '@/constants';
+import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
+import { bg, fg, accent, border, fontFamily, fontSize, radii } from '@/constants';
 
 type ChipProps = {
-  label: string;
+  value: string;
+  unit?: string;
   active: boolean;
   onPress: () => void;
 };
 
-export function Chip({ label, active, onPress }: ChipProps) {
+export function Chip({ value, unit, active, onPress }: ChipProps) {
   return (
     <TouchableOpacity
       style={[styles.chip, active ? styles.chipActive : styles.chipDefault]}
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Text style={[styles.label, active ? styles.labelActive : styles.labelDefault]}>
-        {label}
-      </Text>
+      <View style={styles.row}>
+        <Text style={[styles.value, active ? styles.textActive : styles.textDefault]}>
+          {value}
+        </Text>
+        {unit ? (
+          <Text style={[styles.unit, active ? styles.textActive : styles.textDefault]}>
+            {unit}
+          </Text>
+        ) : null}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -24,14 +32,16 @@ export function Chip({ label, active, onPress }: ChipProps) {
 const styles = StyleSheet.create({
   chip: {
     flex: 1,
-    height: 44,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    paddingHorizontal: 16,
+    borderRadius: radii.sm,
+    paddingHorizontal: 8,
   },
   chipActive: {
-    backgroundColor: accent.muted,
+    // TODO: token voor de 0.20 accent-selectie-fill ontbreekt (accent.muted = 0.12).
+    // Gelijkgetrokken met GoalSegments' actieve segment tot er een token bestaat.
+    backgroundColor: 'rgba(240, 84, 84, 0.20)',
     borderWidth: 1,
     borderColor: accent.default,
   },
@@ -40,13 +50,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: border.default,
   },
-  label: {
-    ...typeStyles.kpiValue,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
   },
-  labelActive: {
+  value: {
+    fontFamily: fontFamily.sourceSerifRegular,
+    fontSize: fontSize['16'],
+    lineHeight: fontSize['16'],
+    letterSpacing: -0.4,
+  },
+  unit: {
+    fontFamily: fontFamily.sourceSerifItalic,
+    fontSize: fontSize['16'],
+    lineHeight: fontSize['16'],
+  },
+  textActive: {
     color: accent.default,
   },
-  labelDefault: {
+  textDefault: {
     color: fg.secondary,
   },
 });

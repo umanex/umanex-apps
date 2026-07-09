@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { bg, fg, accent, border, radii, space, typeStyles } from '@/constants';
+import { bg, fg, accent, border, radii, space, layout, typeStyles } from '@/constants';
 
 export type GoalSegmentType = 'Geen' | 'Duur' | 'Afstand' | 'Split' | 'Watt';
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -126,14 +126,18 @@ export function GoalSegments({ selected, onChange }: GoalSegmentsProps) {
 }
 
 const styles = StyleSheet.create({
+  // Full-bleed band: breekt uit de 20px scherm-padding en spant tot de randen,
+  // met enkel top/bottom dividers (geen omrande, afgeronde box).
   container: {
     flexDirection: 'row',
-    backgroundColor: bg.elevated,
-    borderWidth: 1,
-    borderColor: border.strong,
-    borderRadius: radii.sm,
-    padding: space['4'],
     alignItems: 'center',
+    marginHorizontal: -layout.screenHorizontal,
+    paddingHorizontal: space['4'],
+    paddingVertical: space['4'],
+    backgroundColor: bg.elevated,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: border.strong,
   },
   segment: {
     height: 44,
@@ -142,12 +146,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: space['6'],
   },
+  // Inactieve segmenten verdelen de resterende ruimte gelijk; het actieve
+  // segment is hug-content (icon + label) — conform Figma (inactief ~71, actief ~99).
   segmentInactive: {
-    width: 44,
+    flex: 1,
   },
   segmentActive: {
-    flex: 1,
-    paddingHorizontal: space['10'],
+    paddingHorizontal: space['20'],
     backgroundColor: 'rgba(240, 84, 84, 0.20)',
     borderWidth: 1,
     borderColor: accent.default,

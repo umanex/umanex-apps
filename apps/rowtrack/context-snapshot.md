@@ -53,15 +53,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a482ebc chore: seed HANDOFF.md staging files (root + apps)
+3239089 chore(rowtrack): rebuild tokens after merge (button height 44->48)
 e00cb7b Merge origin/main into main
 7b6bc95 buttonheight
 dfc2603 buttonHeight
-3ac5f86 feat(rowtrack): alternate background on recent-workout rows
-a87d650 fix(rowtrack): center serif labels via token-pipeline lineHeight rule
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/constants/colors.ts
+  A  apps/rowtrack/briefings/2026-07-09-screen-idlephase-goal.tcebc.md
+  M  apps/rowtrack/components/Chip.tsx
+  M  apps/rowtrack/components/GoalSegments.tsx
+  M  apps/rowtrack/components/workout/IdlePhase.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

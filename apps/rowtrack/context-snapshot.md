@@ -53,16 +53,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a255522 feat(rowtrack): redesign FormField + ErrorMessage primitives (audit cluster 8)
 1bb8b72 feat(rowtrack): GoalSetupModal DNA + min/max clamp (audit cluster 8)
 db254e8 fix(rowtrack): address audit-parity review P3s (last-row border, padding)
 80a9ea3 fix(rowtrack): IdlePhase audit MIDDEL — abbreviated units + stepLabel DNA
 6a07e02 fix(rowtrack): Profile sheets audit MIDDEL — DNA labels + sheet radius
-13810d4 fix(rowtrack): History audit MIDDEL fixes
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/ErrorMessage.tsx
+  M  apps/rowtrack/app/(auth)/login.tsx
+  M  apps/rowtrack/app/(auth)/register.tsx
   M  apps/rowtrack/components/FormField.tsx
+  A  apps/rowtrack/lib/validation.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

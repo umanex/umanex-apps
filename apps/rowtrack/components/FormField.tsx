@@ -31,6 +31,7 @@ export type FormFieldProps = {
   autoComplete?: RNTextInputProps['autoComplete'];
   autoCorrect?: boolean;
   error?: string | null;
+  onBlur?: () => void;
 }
 
 export const FormField = memo(function FormField({
@@ -44,6 +45,7 @@ export const FormField = memo(function FormField({
   autoComplete,
   autoCorrect,
   error,
+  onBlur,
 }: FormFieldProps) {
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
@@ -75,7 +77,10 @@ export const FormField = memo(function FormField({
           autoCorrect={autoCorrect}
           selectionColor={accent.default}
           onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onBlur={() => {
+            setFocused(false);
+            onBlur?.();
+          }}
         />
         {isPassword && (
           <TouchableOpacity

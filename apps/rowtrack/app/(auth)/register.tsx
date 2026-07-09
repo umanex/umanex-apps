@@ -9,44 +9,55 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { signUp } from '@/lib/auth';
+import { isValidEmail, isValidPassword, MIN_PASSWORD_LENGTH } from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
-import {
-  bg,
-  fg,
-  accent,
-  display,
-  body,
-  fontFamily,
-  space,
-  layout,
-} from '@/constants';
+import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [touched, setTouched] = useState({ email: false, password: false, confirm: false });
+  const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const emailError = touched.email
+    ? !email.trim()
+      ? 'Vul je e-mailadres in'
+      : !isValidEmail(email)
+        ? 'Ongeldig e-mailadres'
+        : undefined
+    : undefined;
+  const passwordError = touched.password
+    ? !password
+      ? 'Vul een wachtwoord in'
+      : !isValidPassword(password)
+        ? `Minstens ${MIN_PASSWORD_LENGTH} tekens`
+        : undefined
+    : undefined;
+  const confirmError = touched.confirm
+    ? !confirmPassword
+      ? 'Bevestig je wachtwoord'
+      : confirmPassword !== password
+        ? 'Wachtwoorden komen niet overeen'
+        : undefined
+    : undefined;
+
+  const canSubmit =
+    isValidEmail(email) &&
+    isValidPassword(password) &&
+    confirmPassword.length > 0 &&
+    confirmPassword === password &&
+    !loading;
+
   async function handleRegister() {
-    if (!email || !password || !confirmPassword) {
-      setError('Vul alle velden in.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Wachtwoorden komen niet overeen.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Wachtwoord moet minstens 6 tekens zijn.');
-      return;
-    }
-    setError('');
+    if (!canSubmit) return;
+    setSubmitError('');
     setLoading(true);
     try {
       await signUp(email.trim(), password);
     } catch (e: any) {
-      setError(e.message ?? 'Registratie mislukt.');
+      setSubmitError(e.message ?? 'Registratie mislukt.');
     } finally {
       setLoading(false);
     }
@@ -61,29 +72,38 @@ export default function RegisterScreen() {
         <Text style={styles.title}>Account aanmaken</Text>
         <Text style={styles.subtitle}>Begin met roeien</Text>
 
-        <ErrorMessage message={error} />
+        <ErrorMessage message={submitError} />
 
         <FormField
-          placeholder="E-mail"
+          label="E-mail"
+          placeholder="naam@voorbeeld.be"
           value={email}
           onChangeText={setEmail}
+          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          error={emailError}
           autoCapitalize="none"
           keyboardType="email-address"
           autoComplete="email"
+          autoCorrect={false}
         />
 
         <FormField
-          placeholder="Wachtwoord"
+          label="Wachtwoord"
+          placeholder={`Minstens ${MIN_PASSWORD_LENGTH} tekens`}
           value={password}
           onChangeText={setPassword}
+          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          error={passwordError}
           secureTextEntry
           autoComplete="new-password"
         />
 
         <FormField
-          placeholder="Bevestig wachtwoord"
+          label="Bevestig wachtwoord"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
+          onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
+          error={confirmError}
           secureTextEntry
           autoComplete="new-password"
         />
@@ -91,6 +111,7 @@ export default function RegisterScreen() {
         <Button
           title="Maak account"
           onPress={handleRegister}
+          disabled={!canSubmit}
           loading={loading}
           style={styles.button}
         />
@@ -120,15 +141,15 @@ const styles = StyleSheet.create({
     gap: space['16'],
   },
   title: {
-    ...display.md,
-    color: accent.default,
+    ...typeStyles.heroDisplay,
+    color: fg.primary,
     textAlign: 'center',
   },
   subtitle: {
-    ...body.md,
+    ...typeStyles.italicConnector,
     color: fg.secondary,
     textAlign: 'center',
-    marginBottom: space['16'],
+    marginBottom: space['8'],
   },
   button: {
     marginTop: space['8'],
@@ -138,11 +159,11 @@ const styles = StyleSheet.create({
     paddingVertical: space['8'],
   },
   linkText: {
-    ...body.sm,
+    ...typeStyles.textLink,
     color: fg.secondary,
+    textAlign: 'center',
   },
   linkAccent: {
     color: accent.default,
-    fontFamily: fontFamily.bodySemiBold,
   },
 });

@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from './Button';
+import { GoalSegments, type GoalSegmentType } from './GoalSegments';
 import type { WorkoutGoal, GoalType } from '@/lib/workout-goals';
 import {
   GOAL_TYPES,
-  GOAL_TYPE_ORDER,
   GOAL_INPUT_BOUNDS,
   userInputToTarget,
   targetToUserInput,
@@ -27,7 +27,6 @@ import {
   overlay,
   space,
   componentRadius,
-  radii,
   typeStyles,
 } from '@/constants';
 
@@ -37,6 +36,21 @@ export type GoalSetupModalProps = {
   onSetGoal: (goal: WorkoutGoal) => void;
   onClearGoal: () => void;
   onClose: () => void;
+};
+
+// Mapping tussen de doel-domeintypes en de GoalSegments-labels. 'Geen' = doel wissen.
+const SEGMENT_BY_GOAL: Record<GoalType, GoalSegmentType> = {
+  duration: 'Duur',
+  distance: 'Afstand',
+  split: 'Split',
+  watts: 'Watt',
+};
+const GOAL_BY_SEGMENT: Record<GoalSegmentType, GoalType | null> = {
+  Geen: null,
+  Duur: 'duration',
+  Afstand: 'distance',
+  Split: 'split',
+  Watt: 'watts',
 };
 
 /** Toont de toegestane invoer-range in de eenheid die het veld ook accepteert
@@ -54,36 +68,70 @@ export const GoalSetupModal = memo(function GoalSetupModal({
   onClearGoal,
   onClose,
 }: GoalSetupModalProps) {
-  const [selectedType, setSelectedType] = useState<GoalType>('duration');
+  const [selectedSegment, setSelectedSegment] = useState<GoalSegmentType>('Geen');
   const [inputValue, setInputValue] = useState('');
 
   useEffect(() => {
     if (visible) {
       if (currentGoal) {
-        setSelectedType(currentGoal.type);
+        setSelectedSegment(SEGMENT_BY_GOAL[currentGoal.type]);
         setInputValue(String(targetToUserInput(currentGoal.type, currentGoal.target)));
       } else {
-        setSelectedType('duration');
+        setSelectedSegment('Geen');
         setInputValue('');
       }
     }
   }, [visible, currentGoal]);
 
-  const config = GOAL_TYPES[selectedType];
-  const bounds = GOAL_INPUT_BOUNDS[selectedType];
+  const selectedType = GOAL_BY_SEGMENT[selectedSegment];
+  const bounds = selectedType ? GOAL_INPUT_BOUNDS[selectedType] : null;
   const numericValue = parseFloat(inputValue);
   const hasInput = inputValue.trim().length > 0;
+  // 'Geen' is altijd geldig (wist het doel); een doeltype vereist een waarde binnen de grenzen.
   const isValid =
-    !isNaN(numericValue) && numericValue >= bounds.min && numericValue <= bounds.max;
-  const isOutOfRange = hasInput && !isNaN(numericValue) && !isValid;
+    selectedType === null ||
+    (!!bounds && !isNaN(numericValue) && numericValue >= bounds.min && numericValue <= bounds.max);
+  const isOutOfRange = selectedType !== null && hasInput && !isNaN(numericValue) && !isValid;
 
-  function handleSet() {
+  function handleSegmentChange(segment: GoalSegmentType) {
+    setSelectedSegment(segment);
+    setInputValue('');
+  }
+
+  function handleConfirm() {
+    if (selectedType === null) {
+      onClearGoal();
+      return;
+    }
     if (!isValid) return;
     onSetGoal({
       type: selectedType,
       target: userInputToTarget(selectedType, numericValue),
     });
   }
+
+  const typeBlock = selectedType ? (
+    <>
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          value={inputValue}
+          onChangeText={setInputValue}
+          keyboardType="numeric"
+          placeholder={GOAL_TYPES[selectedType].placeholder}
+          placeholderTextColor={fg.tertiary}
+          selectionColor={accent.default}
+          returnKeyType="done"
+        />
+        <Text style={styles.unitLabel}>{GOAL_TYPES[selectedType].unit}</Text>
+      </View>
+      <Text style={[styles.hint, isOutOfRange && styles.hintError]}>
+        {formatBoundsHint(selectedType)}
+      </Text>
+    </>
+  ) : (
+    <Text style={styles.noGoalNote}>Geen doel voor deze training.</Text>
+  );
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -100,71 +148,19 @@ export const GoalSetupModal = memo(function GoalSetupModal({
             </TouchableOpacity>
           </View>
 
-          {/* Segmented control — icoon-only inactief, icoon+label actief (GoalSegments-taal) */}
-          <View style={styles.segmentedControl}>
-            {GOAL_TYPE_ORDER.map((type) => {
-              const typeConfig = GOAL_TYPES[type];
-              const isActive = selectedType === type;
-              return (
-                <TouchableOpacity
-                  key={type}
-                  style={[styles.segment, isActive ? styles.segmentActive : styles.segmentInactive]}
-                  onPress={() => {
-                    setSelectedType(type);
-                    setInputValue('');
-                  }}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isActive }}
-                  accessibilityLabel={typeConfig.label}
-                >
-                  <Ionicons
-                    name={typeConfig.icon}
-                    size={16}
-                    color={isActive ? accent.default : fg.secondary}
-                  />
-                  {isActive && (
-                    <Text style={styles.segmentTextActive} numberOfLines={1}>
-                      {typeConfig.label}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {/* Doeltype — incl. 'Geen' dat het doel wist (vervangt de aparte Wis-knop) */}
+          <GoalSegments selected={selectedSegment} onChange={handleSegmentChange} />
 
-          {/* Input */}
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              value={inputValue}
-              onChangeText={setInputValue}
-              keyboardType="numeric"
-              placeholder={config.placeholder}
-              placeholderTextColor={fg.tertiary}
-              selectionColor={accent.default}
-              returnKeyType="done"
-            />
-            <Text style={styles.unitLabel}>{config.unit}</Text>
-          </View>
+          {typeBlock}
 
-          {/* Range-hint — subtiel; accent zodra de waarde buiten de grenzen valt */}
-          <Text style={[styles.hint, isOutOfRange && styles.hintError]}>
-            {formatBoundsHint(selectedType)}
-          </Text>
-
-          {/* Actions */}
           <Button
             title="Stel in"
-            onPress={handleSet}
+            onPress={handleConfirm}
             disabled={!isValid}
             size="lg"
             icon="arrow-forward"
             iconPosition="trailing"
           />
-          {currentGoal && (
-            <Button title="Wis doel" onPress={onClearGoal} variant="ghost" size="md" />
-          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -192,38 +188,6 @@ const styles = StyleSheet.create({
   title: {
     ...typeStyles.sectionValue,
     color: fg.primary,
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['4'],
-    backgroundColor: bg.raised,
-    borderWidth: 1,
-    borderColor: border.strong,
-    borderRadius: radii.sm,
-    padding: space['4'],
-  },
-  segment: {
-    height: space['44'],
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space['6'],
-    borderRadius: radii.xs,
-  },
-  segmentInactive: {
-    width: space['44'],
-  },
-  segmentActive: {
-    flex: 1,
-    paddingHorizontal: space['10'],
-    backgroundColor: accent.muted,
-    borderWidth: 1,
-    borderColor: accent.default,
-  },
-  segmentTextActive: {
-    ...typeStyles.segmentActive,
-    color: accent.default,
   },
   inputRow: {
     flexDirection: 'row',
@@ -255,5 +219,11 @@ const styles = StyleSheet.create({
   },
   hintError: {
     color: accent.default,
+  },
+  noGoalNote: {
+    ...typeStyles.italicConnector,
+    color: fg.secondary,
+    textAlign: 'center',
+    paddingVertical: space['12'],
   },
 });

@@ -244,13 +244,13 @@ export default function WorkoutDetailScreen() {
               <KpiSingle
                 value={workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—'}
                 unit={workout.avg_heart_rate != null ? 'bpm' : ''}
-                label="BPM GEMIDDELD"
+                label={'BPM\nGEMIDDELD'}
                 style={styles.kpiCell}
               />
               <KpiSingle
                 value={workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—'}
                 unit={workout.max_heart_rate != null ? 'bpm' : ''}
-                label="BPM MAXIMAAL"
+                label={'BPM\nMAXIMAAL'}
                 style={styles.kpiCell}
               />
             </View>
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space['20'],
     paddingTop: space['16'],
     paddingBottom: space['12'],
-    gap: space['8'],
+    gap: space['0'],
   },
   headerTop: {
     flexDirection: 'row',
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     backgroundColor: bg.elevated,
     borderWidth: 1,
     borderColor: border.strong,
-    borderRadius: radii.sm,
+    borderRadius: radii.xs,
     padding: space['4'],
     marginHorizontal: space['20'],
     marginBottom: space['16'],
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   splitsDistLabel: {
     width: 165,
     ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    color: fg.secondary,
   },
   splitsValue: {
     flex: 1,

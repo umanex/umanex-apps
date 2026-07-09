@@ -6,8 +6,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -245,11 +246,10 @@ export default function HomeScreen() {
                 const distVU = w.distance_meters != null ? fmtMetersVU(w.distance_meters) : null;
 
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={w.id}
-                    style={styles.workoutRow}
+                    style={({ pressed }) => [styles.workoutRow, pressed && styles.workoutRowPressed]}
                     onPress={() => handleWorkoutPress(w.id)}
-                    activeOpacity={0.8}
                   >
                     <View style={styles.workoutLeft}>
                       <Text style={styles.workoutDay}>{fmtDate(w.started_at)}</Text>
@@ -280,9 +280,9 @@ export default function HomeScreen() {
                           <Text style={styles.workoutDistUnit}>{distVU.unit}</Text>
                         </View>
                       )}
-                      <Text style={styles.workoutArrow}>→</Text>
+                      <Ionicons name="arrow-forward" size={16} color={accent.default} />
                     </View>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -358,17 +358,20 @@ const styles = StyleSheet.create({
     paddingVertical: space['40'],
   },
 
-  // Workout list
+  // Workout list — full-bleed flush tiles, highlight on press (design 16:159)
   workoutList: {
-    gap: space['8'],
+    gap: space['0'],
   },
   workoutRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: space['20'],
-    paddingVertical: space['4'],
-    borderBottomWidth: 1,
-    borderBottomColor: border.default,
+    paddingVertical: space['12'],
+    paddingHorizontal: space['20'],
+    marginHorizontal: -space['20'],
+  },
+  workoutRowPressed: {
+    backgroundColor: bg.raised,
   },
   workoutLeft: {
     flex: 1,
@@ -421,9 +424,5 @@ const styles = StyleSheet.create({
   workoutDistUnit: {
     ...typeStyles.kpiUnit,
     color: fg.onAccent,
-  },
-  workoutArrow: {
-    ...typeStyles.kpiValue,
-    color: accent.default,
   },
 });

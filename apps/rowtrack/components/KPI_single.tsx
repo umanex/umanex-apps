@@ -22,7 +22,7 @@ export function KpiSingle({ value, unit, label, style }: KpiSingleProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: space['4'],
+    gap: space['0'],
   },
   valueRow: {
     flexDirection: 'row',

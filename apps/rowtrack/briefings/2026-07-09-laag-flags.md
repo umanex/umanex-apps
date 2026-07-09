@@ -4,6 +4,19 @@ Items die bewust NIET blind gefixt zijn tijdens de per-gebied LAAG-sweep — ze
 vergen jouw device-oog (optisch), een token-beslissing, of zijn een design-bug.
 Per gebied. SAFE-FIX-items zijn wél toegepast en per gebied gecommit.
 
+---
+
+## UPDATE 2026-07-09 — gedeelde-component beslissingen toegepast (Jeroen)
+
+Deze eerder-geflagde gedeelde-component-items zijn nu beslist + toegepast (branch `feature/rowtrack-shared-components`):
+- **KpiSingle waarde↔label gap → 0** app-breed (Home/History/ActivePhase, ~20 usages).
+- **TabItem segment-padding → 20** (truncatie-risico 'Overzicht' geaccepteerd — check op device).
+- **Inline pijlen → Ionicons**: WorkoutCard-rij (`arrow-forward` 16), Subtitle 'wijzig' (14), History back-link (`arrow-back` 14). Profile-chevrons waren al Ionicons. NB: design-"9×8" niet leesbaar via Ionicons → readable sizes.
+- **Button outline-tekst → 16** (`typeStyles.buttonOutline` i.p.v. buttonPrimary 18).
+- **Chip actief-state**: scout-conflict opgelost — het is een *tint* (géén solid; conform TabItem/GoalSegments). Enkel 0.12→0.20 blijft open = **Tokens-Studio-item** (accent @0.20-token, samen met de TabItem/GoalSegments 0.20-hardcode).
+
+Resteert in de lijst hieronder: overige optische/design-items + de Tokens-Studio-gaps.
+
 ## Home — gedaan (commit 9888ad9): Dot-kleur, status/connector-spacing, track-radius
 Flags:
 - `KpiSingle` waarde↔label gap 4→0: gedeeld over 5 gebieden — design-system-beslissing, niet blind globaal.

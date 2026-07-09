@@ -100,7 +100,11 @@ export const Button = memo(function Button({
           {iconPosition === 'leading' && iconEl}
           <Text
             style={[
-              variant === 'ghost' ? styles.ghostText : styles.text,
+              variant === 'ghost'
+                ? styles.ghostText
+                : variant === 'outline'
+                  ? styles.outlineText
+                  : styles.text,
               { color: colors.text },
             ]}
           >
@@ -143,6 +147,10 @@ const styles = StyleSheet.create({
   },
   text: {
     ...typeStyles.buttonPrimary,
+    lineHeight: undefined,
+  },
+  outlineText: {
+    ...typeStyles.buttonOutline,
     lineHeight: undefined,
   },
   ghostText: {

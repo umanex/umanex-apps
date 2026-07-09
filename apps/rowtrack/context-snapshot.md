@@ -53,16 +53,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a87d650 fix(rowtrack): center serif labels via token-pipeline lineHeight rule
+0e992a3 feat(rowtrack): sync Home recent-workout list with updated Figma (16:159)
 17b670d docs(rowtrack): mark shared-component decisions applied in flag list (audit)
 60bf80f fix(rowtrack): shared-component audit decisions — inline arrows to Ionicons (audit)
 28571b1 fix(rowtrack): shared-component audit decisions — gaps, padding, outline text (audit)
-26d0507 docs(rowtrack): LAAG-sweep flag list for device review (audit)
-98082a5 fix(rowtrack): shared Button audit LAAG — icon gap 8->10 (audit)
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/app/(tabs)/index.tsx
-  A  apps/rowtrack/briefings/2026-07-09-screen-home-figma-sync.tcebc.md
+  A  apps/rowtrack/briefings/2026-07-09-component-recent-training-rows.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

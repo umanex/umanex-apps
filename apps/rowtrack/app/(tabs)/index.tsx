@@ -241,14 +241,18 @@ export default function HomeScreen() {
             />
           ) : (
             <View style={styles.workoutList}>
-              {workouts.map((w) => {
+              {workouts.map((w, i) => {
                 const dur = fmtDuration(w.duration_seconds);
                 const distVU = w.distance_meters != null ? fmtMetersVU(w.distance_meters) : null;
 
                 return (
                   <Pressable
                     key={w.id}
-                    style={({ pressed }) => [styles.workoutRow, pressed && styles.workoutRowPressed]}
+                    style={({ pressed }) => [
+                      styles.workoutRow,
+                      i % 2 === 1 && styles.workoutRowAlt,
+                      pressed && styles.workoutRowPressed,
+                    ]}
                     onPress={() => handleWorkoutPress(w.id)}
                   >
                     <View style={styles.workoutLeft}>
@@ -358,7 +362,7 @@ const styles = StyleSheet.create({
     paddingVertical: space['40'],
   },
 
-  // Workout list — full-bleed flush tiles, highlight on press (design 16:159)
+  // Workout list — full-bleed flush tiles, alternating row bg + highlight on press (design 167:2365)
   workoutList: {
     gap: space['0'],
   },
@@ -369,6 +373,10 @@ const styles = StyleSheet.create({
     paddingVertical: space['12'],
     paddingHorizontal: space['20'],
     marginHorizontal: -space['20'],
+  },
+  // Zebra-striping: odd rows (index 1, 3, …) get the raised tile — Figma "Workout / Variant2"
+  workoutRowAlt: {
+    backgroundColor: bg.raised,
   },
   workoutRowPressed: {
     backgroundColor: bg.raised,

@@ -147,11 +147,9 @@ const styles = StyleSheet.create({
   },
   text: {
     ...typeStyles.buttonPrimary,
-    lineHeight: undefined,
   },
   outlineText: {
     ...typeStyles.buttonOutline,
-    lineHeight: undefined,
   },
   ghostText: {
     ...body.md,

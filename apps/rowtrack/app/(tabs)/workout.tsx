@@ -169,7 +169,6 @@ export default function WorkoutScreen() {
       <IdlePhase
         bleStatus={status}
         deviceName={deviceName}
-        bleError={bleError}
         onConnect={startScan}
         onDisconnect={disconnect}
         hrStatus={hrStatus}

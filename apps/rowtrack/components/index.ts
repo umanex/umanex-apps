@@ -17,6 +17,8 @@ export { Icon } from './Icon';
 
 export { BleStatusBar } from './BleStatusBar';
 export { HrStatusBar } from './HrStatusBar';
+export { DeviceRow } from './DeviceRow';
+export type { DeviceRowProps } from './DeviceRow';
 export { Segment } from './Segment';
 export { Chip } from './Chip';
 export { GoalSegments } from './GoalSegments';

@@ -1,0 +1,103 @@
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { accent, fg, radii, space, typeStyles } from '@/constants';
+
+export type DeviceRowProps = {
+  icon: 'dot' | 'heart';
+  iconColor: string;
+  label: string;
+  action: string;
+  onPress: () => void;
+  loading?: boolean;
+  actionDisabled?: boolean;
+};
+
+/**
+ * One device line inside the TOESTELLEN card: left status icon + device
+ * label, right an italic connect/disconnect verb with a bluetooth glyph.
+ * Purely presentational — BleStatusBar / HrStatusBar map their connection
+ * state onto these props. Carries no border/radius/background; the card
+ * wrapper provides those and the divider between rows.
+ */
+export function DeviceRow({
+  icon,
+  iconColor,
+  label,
+  action,
+  onPress,
+  loading = false,
+  actionDisabled = false,
+}: DeviceRowProps) {
+  return (
+    <View style={styles.container}>
+      <View style={styles.left}>
+        <View style={styles.iconContainer}>
+          {loading ? (
+            <ActivityIndicator size="small" color={accent.default} />
+          ) : icon === 'heart' ? (
+            <Ionicons name="heart" size={14} color={iconColor} />
+          ) : (
+            <View style={[styles.dot, { backgroundColor: iconColor }]} />
+          )}
+        </View>
+        <Text style={styles.label} numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
+
+      <TouchableOpacity
+        style={styles.action}
+        onPress={onPress}
+        disabled={actionDisabled}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${action}`}
+      >
+        <Text style={styles.actionText}>{action}</Text>
+        <Ionicons name="bluetooth-outline" size={15} color={fg.secondary} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: space['48'],
+    paddingLeft: space['16'],
+  },
+  left: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['8'],
+    flex: 1,
+  },
+  iconContainer: {
+    width: space['16'],
+    height: space['16'],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dot: {
+    width: space['10'],
+    height: space['10'],
+    borderRadius: radii.full,
+  },
+  label: {
+    ...typeStyles.kpiValue,
+    color: fg.primary,
+  },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['4'],
+    height: '100%',
+    paddingHorizontal: space['16'],
+  },
+  actionText: {
+    ...typeStyles.textLink,
+    color: fg.secondary,
+  },
+});

@@ -83,23 +83,40 @@ export const GOAL_INPUT_BOUNDS: Record<GoalType, { min: number; max: number }> =
   watts: { min: 50, max: 500 },
 };
 
-// --- Nudge buttons ---
+// --- Goal suggestions ---
 
-/** Index delta in the WheelPicker array per nudge tap. */
-export const NUDGE_STEP_IDX: Record<GoalType, number> = {
-  duration: 5,  // 5 min  (1 index = 1 min)
-  distance: 1,  // 500 m  (1 index = 500 m)
-  split:    5,  // 5 s    (1 index = 1 s)
-  watts:    2,  // 10 W   (1 index = 5 W)
+/**
+ * Relevant fallback targets per goal type (raw Supabase units), used to fill
+ * the suggestion row up to 3 chips when a user has fewer than 3 recent picks.
+ * duration: seconds · distance: meters · split: sec/500m · watts: watt.
+ */
+export const GOAL_DEFAULT_SUGGESTIONS: Record<GoalType, number[]> = {
+  duration: [1200, 1800, 2700], // 20, 30, 45 min
+  distance: [2000, 5000, 10000], // 2, 5, 10 km
+  split:    [120, 130, 140],    // 2:00, 2:10, 2:20 /500m
+  watts:    [150, 180, 200],
 };
 
-/** Label shown on the nudge button below the icon. */
-export const NUDGE_LABEL: Record<GoalType, string> = {
-  duration: '5 min',
-  distance: '0,5 km',
-  split:    '5 s',
-  watts:    '10 W',
-};
+/**
+ * Builds exactly 3 WheelPicker indices to suggest for a goal type: the most
+ * recently chosen targets first, padded with relevant defaults. Deduplicates
+ * on wheel index and drops out-of-range targets, so the result is always ≤ 3
+ * valid, distinct indices (3 whenever defaults are in range, which they are).
+ */
+export function buildGoalSuggestions(type: GoalType, recents: number[]): number[] {
+  const indices: number[] = [];
+  const seen = new Set<number>();
+  const push = (target: number) => {
+    const idx = goalTargetToWheelIndex(type, target);
+    if (idx !== null && !seen.has(idx)) {
+      seen.add(idx);
+      indices.push(idx);
+    }
+  };
+  recents.forEach(push);
+  GOAL_DEFAULT_SUGGESTIONS[type].forEach(push);
+  return indices.slice(0, 3);
+}
 
 /**
  * Converts a saved goal_target value (raw Supabase units) back to its

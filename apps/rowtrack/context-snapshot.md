@@ -25,6 +25,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | BottomSheet | `apps/rowtrack/components/BottomSheet.tsx` | components | — | — | — |
 | Button | `apps/rowtrack/components/Button.tsx` | components | — | — | — |
 | Chip | `apps/rowtrack/components/Chip.tsx` | components | — | — | — |
+| DeviceRow | `apps/rowtrack/components/DeviceRow.tsx` | components | — | — | — |
 | Dot | `apps/rowtrack/components/Dot.tsx` | components | — | — | — |
 | EmptyState | `apps/rowtrack/components/EmptyState.tsx` | components | — | — | — |
 | ErrorMessage | `apps/rowtrack/components/ErrorMessage.tsx` | components | — | — | — |
@@ -53,15 +54,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4976719 chore(rowtrack): session handoff entries voor idlephase redesign
 5635f6f feat(rowtrack): redesign idlephase goal selection
 a482ebc chore: seed HANDOFF.md staging files (root + apps)
 3239089 chore(rowtrack): rebuild tokens after merge (button height 44->48)
 e00cb7b Merge origin/main into main
-7b6bc95 buttonheight
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  A  apps/rowtrack/briefings/2026-07-09-screen-idlephase-goal-v2.tcebc.md
+  M  apps/rowtrack/components/BleStatusBar.tsx
+  A  apps/rowtrack/components/DeviceRow.tsx
+  M  apps/rowtrack/components/HrStatusBar.tsx
+  M  apps/rowtrack/components/WheelPicker.tsx
+  M  apps/rowtrack/components/index.ts
+  M  apps/rowtrack/components/workout/IdlePhase.tsx
+  M  apps/rowtrack/lib/formatters.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

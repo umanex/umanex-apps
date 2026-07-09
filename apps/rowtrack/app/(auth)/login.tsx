@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { signIn } from '@/lib/auth';
-import { isValidEmail } from '@/lib/validation';
+import { isValidEmail, emailFieldError, passwordFieldError } from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
 import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
@@ -20,15 +20,8 @@ export default function LoginScreen() {
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const emailError = touched.email
-    ? !email.trim()
-      ? 'Vul je e-mailadres in'
-      : !isValidEmail(email)
-        ? 'Ongeldig e-mailadres'
-        : undefined
-    : undefined;
-  const passwordError =
-    touched.password && !password ? 'Vul je wachtwoord in' : undefined;
+  const emailError = emailFieldError(email, touched.email);
+  const passwordError = passwordFieldError(password, touched.password);
 
   const canSubmit = isValidEmail(email) && password.length > 0 && !loading;
 

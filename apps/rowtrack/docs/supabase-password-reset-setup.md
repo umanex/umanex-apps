@@ -43,6 +43,21 @@ de deep link `rowtrack://` pakt pas na een native build:
 pnpm ios     # of: pnpm android
 ```
 
+## Security-config (Jeroen — out-of-band, uit de security-review)
+
+- **Redirect-URL exact matchen, geen wildcard.** De hele veiligheid van de flow
+  rust erop dat de recovery-tokens alleen in de app terechtkomen. Zet in de
+  allowlist exact `rowtrack://reset-password` (+ evt. de Expo Go-variant), nooit
+  een brede wildcard — dat zou recovery-token-hijack mogelijk maken.
+- **Enumeration protection aan.** `forgot-password` lekt niets (toont altijd
+  "check je mail"), maar `signUp` kan bij een bestaand adres "User already
+  registered" teruggeven → account-enumeratie op registratie. Zet Supabase →
+  Auth → *Enable email confirmations* / enumeration-protection aan zodat signUp
+  een bestaand adres niet verraadt.
+- **Rate limiting** op `resetPasswordForEmail` / `signInWithPassword` / `signUp`
+  wordt server-side door GoTrue afgedwongen — controleer dat het niet is
+  uitgezet in het project.
+
 ## Aannames / caveats
 
 - **Implicit flow.** De Supabase-client (`lib/supabase.ts`) zet geen `flowType`,

@@ -50,10 +50,15 @@ export async function completePasswordReset(
   const { error: sessionError } = await supabase.auth.setSession(tokens);
   if (sessionError) throw sessionError;
 
-  const { error: updateError } = await supabase.auth.updateUser({
-    password: newPassword,
-  });
-  if (updateError) throw updateError;
-
-  await supabase.auth.signOut().catch(() => {});
+  try {
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (updateError) throw updateError;
+  } finally {
+    // Recovery-sessie altijd (global scope) opruimen — ook als updateUser faalt.
+    // Anders blijft een auto-refreshende sessie in AsyncStorage achter en landt
+    // de volgende koude start meteen in de app (security review P1).
+    await supabase.auth.signOut().catch(() => {});
+  }
 }

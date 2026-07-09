@@ -9,7 +9,14 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { signUp } from '@/lib/auth';
-import { isValidEmail, isValidPassword, MIN_PASSWORD_LENGTH } from '@/lib/validation';
+import {
+  isValidEmail,
+  isValidPassword,
+  MIN_PASSWORD_LENGTH,
+  emailFieldError,
+  passwordFieldError,
+  confirmFieldError,
+} from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
 import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
@@ -21,27 +28,9 @@ export default function RegisterScreen() {
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const emailError = touched.email
-    ? !email.trim()
-      ? 'Vul je e-mailadres in'
-      : !isValidEmail(email)
-        ? 'Ongeldig e-mailadres'
-        : undefined
-    : undefined;
-  const passwordError = touched.password
-    ? !password
-      ? 'Vul een wachtwoord in'
-      : !isValidPassword(password)
-        ? `Minstens ${MIN_PASSWORD_LENGTH} tekens`
-        : undefined
-    : undefined;
-  const confirmError = touched.confirm
-    ? !confirmPassword
-      ? 'Bevestig je wachtwoord'
-      : confirmPassword !== password
-        ? 'Wachtwoorden komen niet overeen'
-        : undefined
-    : undefined;
+  const emailError = emailFieldError(email, touched.email);
+  const passwordError = passwordFieldError(password, touched.password, true);
+  const confirmError = confirmFieldError(confirmPassword, password, touched.confirm);
 
   const canSubmit =
     isValidEmail(email) &&

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,23 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import * as Linking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
 import { completePasswordReset } from '@/lib/auth';
-import { isValidPassword, MIN_PASSWORD_LENGTH } from '@/lib/validation';
+import {
+  passwordFieldError,
+  confirmFieldError,
+  isValidPassword,
+  MIN_PASSWORD_LENGTH,
+} from '@/lib/validation';
+import { useDeepLink } from '@/lib/recovery-link';
 import { Button, FormField, ErrorMessage } from '@/components';
 import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
 type RecoveryTokens = { access_token: string; refresh_token: string };
 
 /** Haalt de recovery-tokens uit de deep-link. Supabase's implicit flow zet ze
- *  in de URL-fragment (#…); een query (?…) wordt als fallback ondersteund. */
+ *  in de URL-fragment (#…); een query (?…) wordt als fallback ondersteund.
+ *  `type` moet 'recovery' zijn — magiclink/signup-tokens worden geweigerd. */
 function parseRecoveryTokens(url: string | null): RecoveryTokens | null {
   if (!url) return null;
   const fragment = url.includes('#') ? url.split('#')[1] : '';
@@ -28,7 +34,7 @@ function parseRecoveryTokens(url: string | null): RecoveryTokens | null {
   const access_token = params.get('access_token');
   const refresh_token = params.get('refresh_token');
   const type = params.get('type');
-  if (access_token && refresh_token && (type === null || type === 'recovery')) {
+  if (access_token && refresh_token && type === 'recovery') {
     return { access_token, refresh_token };
   }
   return null;
@@ -36,9 +42,7 @@ function parseRecoveryTokens(url: string | null): RecoveryTokens | null {
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
-
-  const [url, setUrl] = useState<string | null>(null);
-  const [resolving, setResolving] = useState(true);
+  const { url, resolved } = useDeepLink();
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -47,34 +51,10 @@ export default function ResetPasswordScreen() {
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
 
-  useEffect(() => {
-    Linking.getInitialURL().then((initial) => {
-      setUrl(initial);
-      setResolving(false);
-    });
-    const sub = Linking.addEventListener('url', (event) => {
-      setUrl(event.url);
-      setResolving(false);
-    });
-    return () => sub.remove();
-  }, []);
-
   const tokens = useMemo(() => parseRecoveryTokens(url), [url]);
 
-  const passwordError = touched.password
-    ? !password
-      ? 'Vul een wachtwoord in'
-      : !isValidPassword(password)
-        ? `Minstens ${MIN_PASSWORD_LENGTH} tekens`
-        : undefined
-    : undefined;
-  const confirmError = touched.confirm
-    ? !confirm
-      ? 'Bevestig je wachtwoord'
-      : confirm !== password
-        ? 'Wachtwoorden komen niet overeen'
-        : undefined
-    : undefined;
+  const passwordError = passwordFieldError(password, touched.password, true);
+  const confirmError = confirmFieldError(confirm, password, touched.confirm);
 
   const canSubmit =
     isValidPassword(password) && confirm.length > 0 && confirm === password && !saving;
@@ -99,7 +79,7 @@ export default function ResetPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-        {resolving ? (
+        {!resolved ? (
           <ActivityIndicator color={accent.default} />
         ) : done ? (
           <>

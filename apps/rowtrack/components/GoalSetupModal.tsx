@@ -19,7 +19,6 @@ import {
   userInputToTarget,
   targetToUserInput,
 } from '@/lib/workout-goals';
-import { formatDuration } from '@/lib/formatters';
 import {
   bg,
   fg,
@@ -40,20 +39,12 @@ export type GoalSetupModalProps = {
   onClose: () => void;
 };
 
-/** Toont de toegestane invoer-range per doeltype, in de eenheid die de
- *  gebruiker herkent (mm:ss voor split, km voor afstand). */
+/** Toont de toegestane invoer-range in de eenheid die het veld ook accepteert
+ *  (rauwe seconden voor split, meters voor afstand) — anders zou de hint een
+ *  waarde tonen die op het numerieke toetsenbord niet typbaar is (review P2). */
 function formatBoundsHint(type: GoalType): string {
   const { min, max } = GOAL_INPUT_BOUNDS[type];
-  switch (type) {
-    case 'duration':
-      return `${min}–${max} min`;
-    case 'distance':
-      return `${min} m – ${max / 1000} km`;
-    case 'split':
-      return `${formatDuration(min)} – ${formatDuration(max)} /500m`;
-    case 'watts':
-      return `${min}–${max} W`;
-  }
+  return `${min}–${max} ${GOAL_TYPES[type].unit}`;
 }
 
 export const GoalSetupModal = memo(function GoalSetupModal({

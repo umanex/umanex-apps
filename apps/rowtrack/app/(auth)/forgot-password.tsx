@@ -10,7 +10,7 @@ import {
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { sendPasswordReset } from '@/lib/auth';
-import { isValidEmail } from '@/lib/validation';
+import { isValidEmail, emailFieldError } from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
 import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
@@ -21,13 +21,7 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const emailError = touched
-    ? !email.trim()
-      ? 'Vul je e-mailadres in'
-      : !isValidEmail(email)
-        ? 'Ongeldig e-mailadres'
-        : undefined
-    : undefined;
+  const emailError = emailFieldError(email, touched);
 
   const canSubmit = isValidEmail(email) && !loading;
 

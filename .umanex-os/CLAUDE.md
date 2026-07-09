@@ -206,6 +206,21 @@ Een gefaalde review die een **terugkerende faalklasse** blootlegt = een `vastleg
 
 ---
 
+## Root cause boven patch — werkprincipe
+
+Bij een probleem, bug of gefaalde check: zoek de onderliggende oorzaak en los díe op, niet enkel het symptoom. Een patch die het zichtbare gedrag maskeert terwijl de oorzaak blijft bestaan, verplaatst het probleem — hij lost het niet op. Dit geldt breed: code, tooling, pipeline, proces.
+
+**De toets — patch of root cause?**
+- Kan dezelfde oorzaak elders opnieuw toeslaan? Dan is een lokale fix een patch.
+- Fix je het gevolg (de foutmelding, de kapotte output) of de reden waaróm dat gevolg ontstaat?
+- Voorbeeld uit deze codebase: bij een kapotte DTCG-build is de root cause een custom format die `token.value` i.p.v. `token.$value` leest — niet de ontbrekende output-waarde die je ook handmatig zou kunnen bijvullen.
+
+**Wanneer een patch tóch mag** — tijdsdruk, een echt lokaal incident, of de root cause zit buiten scope. Dan geldt: benoem het expliciet als patch en maak de oorzaak zichtbaar — een `// TODO:` die naar de root cause wijst, of een `vastleggen`-entry bij een terugkerende faalklasse. Nooit stilzwijgend om een oorzaak heen werken en het als opgelost rapporteren.
+
+**Koppeling met de eval-loop.** Dit principe is de attitude achter de trage loop: een terugkerende faalklasse hoort niet per instantie gepatcht, maar via `vastleggen` → `learnings-verwerken` structureel gehard aan de root (juiste CLAUDE.md-laag of code-guard). De Plan / Bouw / Beoordeel-triade is de per-taak tegenhanger — een gefaalde review los je op bij de oorzaak, niet met een cosmetische fix die de check net doet slagen.
+
+---
+
 ## Werkprincipes voor code en componenten
 
 **Component structuur**
@@ -391,6 +406,12 @@ Wanneer een benodigde waarde geen token heeft: **eerst vragen** of er een token 
 Vóór design- of token-werk: haal eerst de meest recente `tokens.json` op via GitHub (`git pull` van de tokens-bron op de actieve branch). Zo wordt nooit met een stale token-set gewerkt.
 
 Welke repo en welk pad de tokens-bron is, verschilt per klant en wordt in de klant- of project-CLAUDE.md vastgelegd (bv. Columba: `tokens.json` → `packages/tokens/build/variables.css`). Bij twijfel over de bron: vraag voor je begint.
+
+**Token-formaat: W3C DTCG (standaard voor alle apps)**
+
+De canonieke `tokens.json` is **W3C DTCG**: elke leaf gebruikt `$value` + `$type` (niet de Tokens Studio classic `value`/`type`). In Tokens Studio is dit een export-instelling ("Convert to W3C DTCG format"). Alle apps — bestaand én nieuw — volgen dit; het is het formaat dat `sync-tokens.js` en de Style Dictionary v4-pipeline verwachten. Een classic-format `tokens.json` geeft in `sync-tokens.js` 0 tokens.
+
+**Build-valkuil (DTCG):** een custom Style Dictionary format of transform leest de getransformeerde waarde van **`token.$value`** (fallback `?? token.value`), nooit enkel `token.value` — bij DTCG landt de waarde op `$value`. Een custom format die `token.value` leest, produceert **stil `undefined`**: de build slaagt zónder error maar de output is kapot. Built-in formats (`css/variables`) handelen DTCG zelf af; enkel custom formats zijn de val. Verifieer een DTCG-build daarom altijd door te herbouwen en de output op echte waarden te checken, niet enkel op een geslaagde exit.
 
 **Bestand- en code-locatie referenties**
 

@@ -128,6 +128,15 @@ export function ActivePhase({
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
 
+  // Landscape 50/50: measure the row and hand each column an explicit half-width.
+  // A definite width can't be content-sized by the engine, so the split holds on
+  // any RN version/architecture (old arch resolves `flex:1` → flexBasis 'auto',
+  // which lets the wide KPI column starve the metric column — hero wraps).
+  const [landColWidth, setLandColWidth] = useState<number | null>(null);
+  const landColStyle = landColWidth != null
+    ? { width: landColWidth, flexGrow: 0, flexShrink: 0 }
+    : landscapeStyles.colGrow;
+
   const [showGoalModal, setShowGoalModal] = useState(false);
 
   const isConnecting = useMemo(
@@ -641,9 +650,15 @@ export function ActivePhase({
 
       {!isConnecting && isLandscape ? (
         /* ===== LANDSCAPE LAYOUT ===== */
-        <View style={landscapeStyles.root}>
+        <View
+          style={landscapeStyles.root}
+          onLayout={e => {
+            const next = (e.nativeEvent.layout.width - space['40']) / 2;
+            setLandColWidth(prev => (prev != null && Math.abs(prev - next) < 0.5 ? prev : next));
+          }}
+        >
           {/* Left column: timer + stop button */}
-          <View style={landscapeStyles.leftCol}>
+          <View style={[landscapeStyles.leftCol, landColStyle]}>
             <View style={landscapeStyles.leftTop}>
               {renderTopSection()}
             </View>
@@ -659,7 +674,7 @@ export function ActivePhase({
           </View>
 
           {/* Right column: KPI list */}
-          <View style={landscapeStyles.rightCol}>
+          <View style={[landscapeStyles.rightCol, landColStyle]}>
             {renderKPIs(true)}
           </View>
         </View>
@@ -962,15 +977,15 @@ const landscapeStyles = StyleSheet.create({
     flexDirection: 'row',
     gap: space['40'],
   },
-  leftCol: {
-    // Expliciete flexBasis:0 i.p.v. de `flex:1`-shorthand: hoe `flex:1` de flexBasis
-    // oplost (0 vs 'auto') verschilt tussen RN-versies/architecturen. Op oudere builds
-    // content-sizede `flex:1` de kolommen (KPI-kolom te breed, hero-kolom te smal → hero
-    // brak af). Met flexBasis:0 + gelijke flexGrow delen beide kolommen gegarandeerd 50/50,
-    // ongeacht content; minWidth:0 houdt de content-floor van de KPI-kolom tegen.
+  // De kolombreedte wordt in de component gezet als een expliciete, gemeten
+  // helft (zie landColStyle): een definitieve breedte die geen enkele engine
+  // content-kan-sizen. colGrow is enkel de eerste-frame fallback vóór de meting.
+  colGrow: {
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
+  },
+  leftCol: {
     minWidth: 0,
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -981,9 +996,6 @@ const landscapeStyles = StyleSheet.create({
     alignItems: 'center',
   },
   rightCol: {
-    flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: 0,
     minWidth: 0,
     justifyContent: 'space-between',
   },

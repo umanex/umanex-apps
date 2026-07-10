@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { BottomFade, EmptyState, KpiSingle, TabItem, WorkoutCard } from '@/components';
@@ -72,9 +72,13 @@ export default function HistoryScreen() {
     setLoading(false);
   }, [user, filter]);
 
-  useEffect(() => {
-    fetchWorkouts();
-  }, [fetchWorkouts]);
+  // Refetch bij focus (ook bij terugkeer uit de detail na een delete), zodat een
+  // verwijderde workout niet stale in de lijst blijft staan.
+  useFocusEffect(
+    useCallback(() => {
+      fetchWorkouts();
+    }, [fetchWorkouts]),
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

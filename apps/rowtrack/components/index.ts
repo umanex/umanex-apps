@@ -28,6 +28,7 @@ export { WheelPicker } from './WheelPicker';
 
 export { WorkoutCard } from './WorkoutCard';
 export type { WorkoutCardProps } from './WorkoutCard';
+export { BottomFade } from './BottomFade';
 
 export { KPI } from './KPI';
 export { KpiSingle } from './KPI_single';

@@ -963,10 +963,14 @@ const landscapeStyles = StyleSheet.create({
     gap: space['40'],
   },
   leftCol: {
-    flex: 1,
-    // minWidth 0 zodat de kolom écht 50% deelt: Yoga (RN 0.81/New Arch) laat een
-    // flex-item anders niet krimpen onder z'n content, waardoor de bredere KPI-kolom
-    // de hero-kolom smaller duwt (hero brak af over twee regels).
+    // Expliciete flexBasis:0 i.p.v. de `flex:1`-shorthand: hoe `flex:1` de flexBasis
+    // oplost (0 vs 'auto') verschilt tussen RN-versies/architecturen. Op oudere builds
+    // content-sizede `flex:1` de kolommen (KPI-kolom te breed, hero-kolom te smal → hero
+    // brak af). Met flexBasis:0 + gelijke flexGrow delen beide kolommen gegarandeerd 50/50,
+    // ongeacht content; minWidth:0 houdt de content-floor van de KPI-kolom tegen.
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     minWidth: 0,
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -977,7 +981,9 @@ const landscapeStyles = StyleSheet.create({
     alignItems: 'center',
   },
   rightCol: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     minWidth: 0,
     justifyContent: 'space-between',
   },

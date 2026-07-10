@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import type { RowerMetrics } from '@/lib/ble/types';
+import type { Sample } from '@/lib/bestDistanceTime';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { calculateCalories } from '@/lib/calories';
@@ -60,6 +61,8 @@ export interface AccumulatorRefs {
   startedAtRef: React.MutableRefObject<Date | null>;
   splitIntervalWattsSum: React.MutableRefObject<number>;
   splitIntervalWattsCount: React.MutableRefObject<number>;
+  /** {tijd, afstand}-tijdreeks (~1 Hz) voor de exacte beste-2000m-berekening. */
+  samplesRef: React.MutableRefObject<Sample[]>;
 }
 
 // --- Hook ---
@@ -92,8 +95,11 @@ export function useWorkoutMetrics(
   const lastKcalElapsed = useRef(0);
   const currentWattsRef = useRef(0);
   const currentSecondsRef = useRef(0);
+  const currentDistanceRef = useRef(0);
   const splitIntervalWattsSum = useRef(0);
   const splitIntervalWattsCount = useRef(0);
+  const samplesRef = useRef<Sample[]>([]);
+  const lastSampleSecond = useRef(-1);
 
   // --- Load profile weight ---
   const { user } = useAuth();
@@ -169,6 +175,26 @@ export function useWorkoutMetrics(
     // Keep refs in sync for kcal calculation
     if (partial.watts != null) currentWattsRef.current = partial.watts;
     if (partial.seconds != null) currentSecondsRef.current = partial.seconds;
+    if (partial.distanceMeters != null) currentDistanceRef.current = partial.distanceMeters;
+
+    // Capture the {t, d} time-series at ~1 Hz (one point per whole device-second)
+    // for the exact best-2000m calculation at save time (lib/bestDistanceTime.ts).
+    // Device-elapsedTime is integer seconds and freezes on pause, so dedupe by
+    // whole second keeps the payload small and pauses out of the moving time.
+    //
+    // Key sampling on a fresh elapsed reading AND require distance to be baselined
+    // first: a device that ever emits a distance-only packet before the first
+    // elapsed field would otherwise collapse accumulated distance onto t=0 and
+    // produce a false-fast best-2k. Requiring an elapsed baseline (initialElapsed
+    // is set whenever partial.seconds != null) plus an established distance
+    // baseline pairs every sample's t and d correctly.
+    if (partial.seconds != null && initialDistance.current !== null) {
+      const whole = Math.floor(currentSecondsRef.current);
+      if (whole !== lastSampleSecond.current) {
+        lastSampleSecond.current = whole;
+        samplesRef.current.push({ t: currentSecondsRef.current, d: currentDistanceRef.current });
+      }
+    }
 
     // Cumulative calories: add interval kcal every 5 seconds
     const elapsed = currentSecondsRef.current;
@@ -206,8 +232,11 @@ export function useWorkoutMetrics(
     lastKcalElapsed.current = 0;
     currentWattsRef.current = 0;
     currentSecondsRef.current = 0;
+    currentDistanceRef.current = 0;
     splitIntervalWattsSum.current = 0;
     splitIntervalWattsCount.current = 0;
+    samplesRef.current = [];
+    lastSampleSecond.current = -1;
     startedAtRef.current = new Date();
   }, []);
 
@@ -226,6 +255,7 @@ export function useWorkoutMetrics(
     startedAtRef,
     splitIntervalWattsSum,
     splitIntervalWattsCount,
+    samplesRef,
   };
 
   return { state, refs, resetAll, hasProfileWeight: weightKgRef.current !== null };

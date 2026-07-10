@@ -10,6 +10,7 @@ import type { GoalType, WorkoutGoal } from '@/lib/workout-goals';
 import { userInputToTarget, targetToUserInput } from '@/lib/workout-goals';
 import { useWorkoutMetrics } from '@/lib/hooks/useWorkoutMetrics';
 import { useGoalProgress } from '@/lib/hooks/useGoalProgress';
+import { bestTimeForDistance } from '@/lib/bestDistanceTime';
 import { IdlePhase } from '@/components/workout/IdlePhase';
 import { ActivePhase } from '@/components/workout/ActivePhase';
 
@@ -108,6 +109,12 @@ export default function WorkoutScreen() {
     const t = refs.tickCount.current;
     const avgW = Math.round(refs.wattsSum.current / t);
 
+    // Exacte beste 2000m uit de {tijd, afstand}-tijdreeks (two-pointer + interpolatie).
+    // null wanneer de sessie < 2000m was. Samples compact als [t, d]-tuples opgeslagen.
+    const samples = refs.samplesRef.current;
+    const best2k = bestTimeForDistance(samples, 2000);
+    const sampleTuples = samples.length > 0 ? samples.map((s) => [s.t, s.d]) : null;
+
     const { error } = await supabase.from('workouts').insert({
       user_id: user.id,
       started_at: refs.startedAtRef.current?.toISOString() ?? new Date().toISOString(),
@@ -135,6 +142,8 @@ export default function WorkoutScreen() {
       goal_reached: goal ? goalReached : null,
       splits: splits.length > 0 ? splits : null,
       is_pr: hasPR || null,
+      samples: sampleTuples,
+      best_2k_seconds: best2k,
     });
 
     setSaving(false);

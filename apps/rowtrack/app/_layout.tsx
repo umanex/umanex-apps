@@ -34,6 +34,7 @@ import {
 } from '@expo-google-fonts/albert-sans';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { startDeepLinkCapture } from '@/lib/recovery-link';
+import { lockPortrait } from '@/lib/orientation';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -105,6 +106,10 @@ export default function RootLayout() {
   // Vang deep links vanaf app-start op (o.a. de wachtwoord-reset-link), ook op
   // een warm start waar de router het 'url'-event vóór schermmontage consumeert.
   useEffect(() => startDeepLinkCapture(), []);
+
+  // App-brede default: portrait. De active workout heft dit tijdelijk op
+  // (zie app/(tabs)/_layout.tsx).
+  useEffect(() => lockPortrait(), []);
 
   if (!fontsLoaded) {
     return null;

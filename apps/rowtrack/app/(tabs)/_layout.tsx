@@ -1,15 +1,26 @@
+import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BleProvider } from '@/lib/ble/ble-context';
 import { WorkoutPhaseProvider, useWorkoutPhase } from '@/lib/workout-phase-context';
 import { TabLabel } from '@/components/TabLabel';
+import { lockPortrait, allowAllOrientations } from '@/lib/orientation';
 import { bg, fg, accent, border, space } from '@/constants';
 
 function TabsInner() {
   const insets = useSafeAreaInsets();
   const { phase } = useWorkoutPhase();
   const hideTabBar = phase === 'active' || phase === 'summary';
+
+  // Enkel de active workout mag landscape; overal elders portrait-only.
+  useEffect(() => {
+    if (phase === 'active') {
+      allowAllOrientations();
+    } else {
+      lockPortrait();
+    }
+  }, [phase]);
 
   return (
     <Tabs

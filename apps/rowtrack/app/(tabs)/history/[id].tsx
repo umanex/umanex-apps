@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { Button, EmptyState, KpiSingle, TabItem } from '@/components';
+import { BottomFade, Button, EmptyState, KpiSingle, TabItem } from '@/components';
 import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle } from '@/lib/formatters';
 import {
   bg,
@@ -148,7 +148,8 @@ export default function WorkoutDetailScreen() {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.scrollWrap}>
+        <ScrollView contentContainerStyle={styles.content}>
         {/* Overzicht tab */}
         {activeTab === 'Overzicht' && (
           <>
@@ -258,18 +259,22 @@ export default function WorkoutDetailScreen() {
           </View>
         )}
 
-        {/* Always-visible delete button */}
-        <View style={styles.buttonSection}>
-          <Button
-            title="Training verwijderen"
-            variant="outline"
-            onPress={confirmDelete}
-            loading={deleting}
-            disabled={deleting}
-            size="lg"
-          />
-        </View>
-      </ScrollView>
+        </ScrollView>
+        {/* Fade: lange split-tabel vervaagt mooi richting de vaste knop/tabbar */}
+        <BottomFade />
+      </View>
+
+      {/* Vaste verwijder-knop onderaan */}
+      <View style={[styles.buttonSection, { paddingBottom: Math.max(space['20'], insets.bottom) }]}>
+        <Button
+          title="Training verwijderen"
+          variant="outline"
+          onPress={confirmDelete}
+          loading={deleting}
+          disabled={deleting}
+          size="lg"
+        />
+      </View>
     </View>
   );
 }
@@ -436,9 +441,14 @@ const styles = StyleSheet.create({
     borderRadius: componentRadius.cardSm,
     overflow: 'hidden',
   },
-  buttonSection: {
+  // Scrollbare content-zone (fade positioneert hier absoluut onderaan)
+  scrollWrap: {
     flex: 1,
-    justifyContent: 'flex-end',
+  },
+  // Vaste verwijder-knop onder de scroll-zone
+  buttonSection: {
+    paddingHorizontal: space['20'],
+    paddingTop: space['20'],
   },
   splitsHeaderRow: {
     flexDirection: 'row',

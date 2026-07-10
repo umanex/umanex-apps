@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { EmptyState, KpiSingle, TabItem, WorkoutCard } from '@/components';
+import { BottomFade, EmptyState, KpiSingle, TabItem, WorkoutCard } from '@/components';
 import { formatTimerFull, formatSplit, formatDistanceDynamic } from '@/lib/formatters';
 import {
   bg,
@@ -96,6 +96,7 @@ export default function HistoryScreen() {
     : 0;
 
   return (
+    <View style={styles.screen}>
     <ScrollView
       style={[styles.container, { paddingTop: insets.top }]}
       contentContainerStyle={styles.content}
@@ -174,10 +175,16 @@ export default function HistoryScreen() {
         </View>
       )}
     </ScrollView>
+      <BottomFade />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: bg.base,
+  },
   container: {
     flex: 1,
     backgroundColor: bg.base,

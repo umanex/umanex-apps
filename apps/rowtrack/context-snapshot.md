@@ -22,6 +22,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | Component | Pad | Categorie | Figma-node | Snapshot | Status |
 |---|---|---|---|---|---|
 | BleStatusBar | `apps/rowtrack/components/BleStatusBar.tsx` | components | — | — | — |
+| BottomFade | `apps/rowtrack/components/BottomFade.tsx` | components | — | — | — |
 | BottomSheet | `apps/rowtrack/components/BottomSheet.tsx` | components | — | — | — |
 | Button | `apps/rowtrack/components/Button.tsx` | components | — | — | — |
 | Chip | `apps/rowtrack/components/Chip.tsx` | components | — | — | — |
@@ -54,16 +55,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e3178fa docs(rowtrack): vul ActivePhase portrait/landscape node-URLs in figma-map + typo-fix
 77c2fe9 feat(rowtrack): Active/Summary redesign per Figma (43-8278)
 7561a63 feat(rowtrack): portrait-only app, landscape enkel tijdens active workout
 fc7c93a fix(rowtrack): active-workout edge-paddings per Figma
 b0f643c fix(rowtrack): active workout hero-clip + landscape KPI fill per Figma
-c8ab055 fix(rowtrack): landscape-kolommen 50/50 via gemeten expliciete breedte
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/figma-map.md
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  M  apps/rowtrack/app/(tabs)/history/index.tsx
+  A  apps/rowtrack/components/BottomFade.tsx
+  M  apps/rowtrack/components/index.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

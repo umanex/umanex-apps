@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -95,6 +95,9 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
   // (chip tap / goal switch); a finger touch re-arms it.
   const suppress = useSharedValue(false);
   const count = items.length;
+  // Mount-time scroll offset, captured once so `contentOffset` stays stable and
+  // never fights the re-sync effect below.
+  const initialY = useRef(selectedIndex * ITEM_H).current;
 
   const commit = useCallback((idx: number) => {
     if (idx !== selectedIndex) onIndexChange(idx);
@@ -133,14 +136,20 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
     })();
   }, [selectedIndex, scrollRef, scrollY, suppress, syncedIdx]);
 
-  const onLayout = useCallback(() => {
+  // Land on the selected row once the content has actually been measured.
+  // onLayout fires before the children are sized, so scrollTo there clamps to 0
+  // on a fresh mount (a goal picked straight from "Geen") — the wheel would sit
+  // at index 0 while the chip shows the real default. onContentSizeChange is the
+  // first point where the scroll offset is valid.
+  const onContentSizeChange = useCallback(() => {
     if (initialized.value) return;
     initialized.value = true;
     const y = selectedIndex * ITEM_H;
+    scrollY.value = y;
     runOnUI(() => {
       scrollTo(scrollRef, 0, y, false);
     })();
-  }, [initialized, scrollRef, selectedIndex]);
+  }, [initialized, scrollRef, scrollY, selectedIndex]);
 
   return (
     <View style={styles.container}>
@@ -151,7 +160,8 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_H}
         decelerationRate="fast"
-        onLayout={onLayout}
+        contentOffset={{ x: 0, y: initialY }}
+        onContentSizeChange={onContentSizeChange}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         nestedScrollEnabled

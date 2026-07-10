@@ -701,81 +701,88 @@ export function ActivePhase({
         onClose={handleCloseGoalModal}
       />
 
-      {/* Summary Modal */}
+      {/* Summary Modal — volle-breedte secties (Figma 43-8278) */}
       <Modal visible={phase === 'summary'} transparent animationType="fade" statusBarTranslucent>
         <View style={summaryStyles.screen}>
-          <View style={summaryStyles.card}>
-            <View style={summaryStyles.header}>
+          {/* Top: titel + datum + PR-banner */}
+          <View style={summaryStyles.topSection}>
+            <View style={[summaryStyles.titleBlock, { paddingTop: Math.max(space['28'], insets.top) }]}>
               <Text style={summaryStyles.title}>Samenvatting</Text>
               <Text style={summaryStyles.dateText}>{summaryDateLabel}</Text>
             </View>
             {hasPR && (
-              <View style={summaryStyles.prBanner}>
-                <Text>🏅</Text>
-                <Text style={summaryStyles.prText}>Nieuw persoonlijk record. Proficiat!</Text>
+              <View style={summaryStyles.prWrapper}>
+                <View style={summaryStyles.prBanner}>
+                  <Text style={summaryStyles.prEmoji}>🏅</Text>
+                  <Text style={summaryStyles.prText}>Nieuw persoonlijk record. Proficiat!</Text>
+                </View>
               </View>
             )}
-            {/* KPI grid: 2×2 AFSTAND / DUUR / ENERGIE / ENERGIE */}
-            <View style={summaryStyles.kpiGrid}>
-              <View style={summaryStyles.kpiGridRow}>
-                <KpiSingle
-                  value={formattedDistance.value}
-                  unit={formattedDistance.unit}
-                  label="AFSTAND"
-                  style={summaryStyles.kpiCell}
-                />
-                <KpiSingle
-                  value={formatTimerFull(seconds)}
-                  unit={seconds >= 3600 ? 'uur' : 'min'}
-                  label="DUUR"
-                  style={summaryStyles.kpiCell}
-                />
-              </View>
-              <View style={summaryStyles.kpiGridDivider} />
-              <View style={summaryStyles.kpiGridRow}>
-                <KpiSingle
-                  value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}
-                  unit="kcal"
-                  label="ENERGIE"
-                  style={summaryStyles.kpiCell}
-                />
-                <KpiSingle
-                  value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}
-                  unit="kcal"
-                  label="ENERGIE"
-                  style={summaryStyles.kpiCell}
-                />
-              </View>
+          </View>
+
+          {/* KPI-metrics — volle-breedte bg.raised band */}
+          <View style={summaryStyles.kpiBand}>
+            <View style={summaryStyles.kpiRow}>
+              <KpiSingle
+                value={formattedDistance.value}
+                unit={formattedDistance.unit}
+                label="AFSTAND"
+                style={summaryStyles.kpiCell}
+              />
+              <KpiSingle
+                value={formatTimerFull(seconds)}
+                unit={seconds >= 3600 ? 'uur' : 'min'}
+                label="DUUR"
+                style={summaryStyles.kpiCell}
+              />
             </View>
-            <View style={summaryStyles.divider} />
-            <View style={summaryStyles.statsSection}>
-              <View style={summaryStyles.statsHeader}>
-                <View style={summaryStyles.statsLabelCol} />
-                <Text style={summaryStyles.statsColLabel}>GEM</Text>
-                <Text style={summaryStyles.statsColLabel}>PIEK</Text>
-              </View>
-              <View style={summaryStyles.statsTable}>
-                {[
-                  { label: 'SPLIT /500M', gem: formatSplit(avgSplit), piek: summaryBestSplit != null ? formatSplit(summaryBestSplit) : '—' },
-                  { label: 'WATT', gem: `${avgWatts}`, piek: summaryMaxWatts != null ? `${summaryMaxWatts}` : '—' },
-                  { label: 'SPM', gem: `${avgSpm}`, piek: summaryMaxSpm != null ? `${summaryMaxSpm}` : '—' },
-                  { label: 'BPM', gem: summaryAvgHr != null ? `${summaryAvgHr}` : '—', piek: summaryMaxHr != null ? `${summaryMaxHr}` : '—' },
-                ].map((row, i, arr) => (
-                  <View key={row.label}>
-                    <View style={summaryStyles.statsRow}>
-                      <Text style={summaryStyles.statsRowLabel}>{row.label}</Text>
-                      <Text style={summaryStyles.statsRowValue}>{row.gem}</Text>
-                      <Text style={summaryStyles.statsRowValue}>{row.piek}</Text>
-                    </View>
-                    {i < arr.length - 1 && <View style={summaryStyles.statsRowDivider} />}
+            <View style={summaryStyles.kpiBandDivider} />
+            <View style={summaryStyles.kpiRow}>
+              <KpiSingle
+                value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}
+                unit="kcal"
+                label="ENERGIE"
+                style={summaryStyles.kpiCell}
+              />
+              <KpiSingle
+                value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}
+                unit="kcal"
+                label="ENERGIE"
+                style={summaryStyles.kpiCell}
+              />
+            </View>
+          </View>
+
+          {/* Stats-sectie */}
+          <View style={summaryStyles.statsSection}>
+            <View style={summaryStyles.statsHeader}>
+              <View style={summaryStyles.statsLabelCol} />
+              <Text style={summaryStyles.statsColLabel}>GEM</Text>
+              <Text style={summaryStyles.statsColLabel}>PIEK</Text>
+            </View>
+            <View style={summaryStyles.statsTable}>
+              {[
+                { label: 'SPLIT /500M', gem: formatSplit(avgSplit), piek: summaryBestSplit != null ? formatSplit(summaryBestSplit) : '—' },
+                { label: 'WATT', gem: `${avgWatts}`, piek: summaryMaxWatts != null ? `${summaryMaxWatts}` : '—' },
+                { label: 'SPM', gem: `${avgSpm}`, piek: summaryMaxSpm != null ? `${summaryMaxSpm}` : '—' },
+                { label: 'BPM', gem: summaryAvgHr != null ? `${summaryAvgHr}` : '—', piek: summaryMaxHr != null ? `${summaryMaxHr}` : '—' },
+              ].map((row, i, arr) => (
+                <View key={row.label}>
+                  <View style={summaryStyles.statsRow}>
+                    <Text style={summaryStyles.statsRowLabel}>{row.label}</Text>
+                    <Text style={summaryStyles.statsRowValue}>{row.gem}</Text>
+                    <Text style={summaryStyles.statsRowValue}>{row.piek}</Text>
                   </View>
-                ))}
-              </View>
+                  {i < arr.length - 1 && <View style={summaryStyles.statsRowDivider} />}
+                </View>
+              ))}
             </View>
-            <View style={summaryStyles.buttonsArea}>
-              <Button title="Annuleren" onPress={onDiscard} variant="outline" disabled={saving} size="lg" />
-              <Button title="Opslaan" onPress={onSave} loading={saving} size="lg" icon="arrow-forward" iconPosition="trailing" />
-            </View>
+          </View>
+
+          {/* Knoppen — onderaan */}
+          <View style={[summaryStyles.buttonsArea, { paddingBottom: Math.max(space['28'], insets.bottom) }]}>
+            <Button title="Annuleren" onPress={onDiscard} variant="outline" disabled={saving} size="lg" />
+            <Button title="Opslaan" onPress={onSave} loading={saving} size="lg" icon="arrow-forward" iconPosition="trailing" />
           </View>
         </View>
       </Modal>
@@ -1015,19 +1022,19 @@ const landscapeStyles = StyleSheet.create({
 });
 
 const summaryStyles = StyleSheet.create({
+  // Volle-breedte scherm; secties dragen hun eigen padding (Figma 43-8278).
   screen: {
     flex: 1,
     backgroundColor: bg.base,
-    padding: space['20'],
   },
-  card: {
-    flex: 1,
-    borderRadius: componentRadius.modal,
-    overflow: 'hidden',
+  // Top: titel + datum + PR-banner (Frame 108)
+  topSection: {
+    paddingBottom: space['28'],
     gap: space['20'],
   },
-  header: {
-    gap: space['0'],
+  titleBlock: {
+    paddingHorizontal: space['20'],
+    // paddingTop wordt inline gezet (safe-area top)
   },
   title: {
     ...typeStyles.sectionValue,
@@ -1036,6 +1043,10 @@ const summaryStyles = StyleSheet.create({
   dateText: {
     ...typeStyles.labelGoalPrefix,
     color: fg.secondary,
+    textTransform: 'uppercase',
+  },
+  prWrapper: {
+    paddingHorizontal: space['20'],
   },
   prBanner: {
     flexDirection: 'row',
@@ -1045,35 +1056,39 @@ const summaryStyles = StyleSheet.create({
     padding: space['20'],
     gap: space['8'],
   },
+  prEmoji: {
+    fontSize: fontSize['14'],
+  },
   prText: {
     ...typeStyles.kpiUnit,
     color: status.warning,
   },
-  kpiGrid: {
-    gap: 0,
+  // KPI-metrics — volle-breedte bg.raised band (KPI Row-frame)
+  kpiBand: {
+    backgroundColor: bg.raised,
+    paddingHorizontal: space['20'],
   },
-  kpiGridRow: {
+  kpiRow: {
     flexDirection: 'row',
-  },
-  kpiGridDivider: {
-    height: 1,
-    backgroundColor: border.strong,
-    marginVertical: space['12'],
+    paddingVertical: space['20'],
+    gap: space['20'],
   },
   kpiCell: {
     flex: 1,
-    paddingHorizontal: space['4'],
   },
-  divider: {
-    height: 1,
+  kpiBandDivider: {
+    height: StyleSheet.hairlineWidth,
     backgroundColor: border.default,
   },
+  // Stats-sectie (Frame 42 + 49)
   statsSection: {
+    paddingHorizontal: space['20'],
+    paddingVertical: space['28'],
     gap: space['8'],
   },
   statsHeader: {
     flexDirection: 'row',
-    paddingLeft: space['16'],
+    paddingHorizontal: space['16'],
   },
   statsLabelCol: {
     width: 165,
@@ -1085,15 +1100,13 @@ const summaryStyles = StyleSheet.create({
   },
   statsTable: {
     backgroundColor: bg.raised,
-    borderWidth: 1,
-    borderColor: border.default,
     borderRadius: radii.sm,
     overflow: 'hidden',
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: space['16'],
+    paddingHorizontal: space['16'],
     paddingVertical: space['16'],
   },
   statsRowLabel: {
@@ -1107,12 +1120,16 @@ const summaryStyles = StyleSheet.create({
     color: fg.primary,
   },
   statsRowDivider: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
     backgroundColor: border.default,
   },
+  // Knoppen — onderaan (Frame 41)
   buttonsArea: {
     flex: 1,
     justifyContent: 'flex-end',
+    paddingHorizontal: space['20'],
+    paddingTop: space['28'],
     gap: space['8'],
+    // paddingBottom wordt inline gezet (safe-area bottom)
   },
 });

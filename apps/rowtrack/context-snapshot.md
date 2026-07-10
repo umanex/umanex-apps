@@ -54,16 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+77c2fe9 feat(rowtrack): Active/Summary redesign per Figma (43-8278)
 7561a63 feat(rowtrack): portrait-only app, landscape enkel tijdens active workout
 fc7c93a fix(rowtrack): active-workout edge-paddings per Figma
 b0f643c fix(rowtrack): active workout hero-clip + landscape KPI fill per Figma
 c8ab055 fix(rowtrack): landscape-kolommen 50/50 via gemeten expliciete breedte
-fd40ad9 fix(rowtrack): forceer landscape-kolommen 50/50 met expliciete flexBasis
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/figma-map.md
 
 ## Bestanden met TODO/FIXME
   (geen)

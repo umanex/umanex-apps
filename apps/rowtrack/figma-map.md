@@ -31,8 +31,8 @@ voor gedeprecate code.
 
 | Code | url | Frame naam |
 |---|---|---|
-| `components/workout/ActivePhase.tsx` (portrait) | `` | ActivePortrait |
-| `components/workout/ActivePhase.tsx` (landscape) | `` | Active/Landscape |
+| `components/workout/ActivePhase.tsx` (portrait) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-3&t=k6rKeRyqVNPmF9Pn-4` | Active/Portrait/None (base; goal-varianten zie sectie hieronder) |
+| `components/workout/ActivePhase.tsx` (landscape) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-4&t=k6rKeRyqVNPmF9Pn-4` | Active/Landscape/None (base; goal-varianten zie sectie hieronder) |
 | `components/workout/ActivePhase.tsx` (summary) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=43-8278&t=k6rKeRyqVNPmF9Pn-4` | Active/Summary |
 | `components/workout/ProgressBar.tsx` | `` | Workout / Progress Bar |
 | `components/workout/Confetti.tsx` | `` | Workout / Confetti (animatie) |
@@ -109,7 +109,7 @@ voor gedeprecate code.
 | `goalType=none` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-4&t=k6rKeRyqVNPmF9Pn-4` |
 | `goalType=duration` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5712&t=k6rKeRyqVNPmF9Pn-4` |
 | `goalType=distance` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5741&t=k6rKeRyqVNPmF9Pn-4` |
-| `goalType=split` | `hhttps://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5770&t=k6rKeRyqVNPmF9Pn-4` |
+| `goalType=split` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5770&t=k6rKeRyqVNPmF9Pn-4` |
 | `goalType=watts` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5799&t=k6rKeRyqVNPmF9Pn-4` |
 
 

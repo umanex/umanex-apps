@@ -54,16 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+d66be94 fix(rowtrack): idlephase goal picker positioning & suggestion state
 5238f61 feat(rowtrack): idlephase wheel redesign + reanimated animations
 ccf241f feat(rowtrack): idlephase goal suggestions, device card & nudge removal
 4976719 chore(rowtrack): session handoff entries voor idlephase redesign
 5635f6f feat(rowtrack): redesign idlephase goal selection
-a482ebc chore: seed HANDOFF.md staging files (root + apps)
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/components/WheelPicker.tsx
+   M apps/rowtrack/components/workout/ActivePhase.tsx
   M  apps/rowtrack/components/workout/IdlePhase.tsx
 
 ## Bestanden met TODO/FIXME

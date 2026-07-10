@@ -309,16 +309,19 @@ export function IdlePhase({
           })}
         </View>
 
-        {/* Wheel picker — the only value selector */}
-        <WheelPicker
-          items={items}
-          selectedIndex={idx}
-          onIndexChange={(newIdx) => {
-            setGoalTouched(true);
-            setIdx(newIdx);
-            sync(newIdx);
-          }}
-        />
+        {/* Wheel picker — centred in the space below the chips so the selected
+            value (pill) reads as the vertical anchor between chips and CTA. */}
+        <View style={styles.wheelWrap}>
+          <WheelPicker
+            items={items}
+            selectedIndex={idx}
+            onIndexChange={(newIdx) => {
+              setGoalTouched(true);
+              setIdx(newIdx);
+              sync(newIdx);
+            }}
+          />
+        </View>
       </View>
     );
   }
@@ -406,8 +409,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingBottom: 20,
     gap: 20, // segments ↔ picker breathing room
+    // No paddingBottom: the fixed CTA area below already provides the gap, and
+    // reclaiming it lets the wheel centre instead of overflowing under the CTA.
   },
   // Natural-height top block; the picker below it fills the rest and centres.
   topGroup: {
@@ -459,13 +463,20 @@ const styles = StyleSheet.create({
     color: fg.primary,
   },
 
-  // Goal input area — chips then wheel
+  // Goal input area — chips pinned at the top, wheel centred in the space
+  // below them. No fixed gap here: the wheel's flex centring supplies the
+  // breathing room, so the 250pt wheel can float centred instead of being
+  // pushed down against the CTA.
   pickerArea: {
-    gap: 20,
+    flex: 1,
   },
   chipRow: {
     flexDirection: 'row',
     gap: 8,
+  },
+  wheelWrap: {
+    flex: 1,
+    justifyContent: 'center',
   },
 
   // CTA

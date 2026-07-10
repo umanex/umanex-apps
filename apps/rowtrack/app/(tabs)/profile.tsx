@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   TouchableOpacity,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -99,6 +100,7 @@ export default function ProfileScreen() {
   const [heightCm, setHeightCm] = useState<number | null>(null);
   const [weightKg, setWeightKg] = useState<number | null>(null);
   const [birthDate, setBirthDate] = useState<string | null>(null);
+  const [spmHalved, setSpmHalved] = useState(false);
   const [goalPeriod, setGoalPeriod] = useState<PeriodGoalPeriod | null>(null);
   const [goalMetric, setGoalMetric] = useState<PeriodGoalMetric | null>(null);
   const [goalTarget, setGoalTarget] = useState('');
@@ -154,7 +156,7 @@ export default function ProfileScreen() {
     if (!user) return;
     const { data } = await supabase
       .from('profiles')
-      .select('display_name, gender, height_cm, weight_kg, birth_date')
+      .select('display_name, gender, height_cm, weight_kg, birth_date, spm_halved')
       .eq('id', user.id)
       .single();
 
@@ -163,6 +165,7 @@ export default function ProfileScreen() {
     setHeightCm(data?.height_cm ?? null);
     setWeightKg(data?.weight_kg ?? null);
     setBirthDate(data?.birth_date ?? null);
+    setSpmHalved(data?.spm_halved ?? false);
     setLoading(false);
   }, [user]);
 
@@ -331,6 +334,7 @@ export default function ProfileScreen() {
         height_cm: heightCm,
         weight_kg: weightKg,
         birth_date: birthDate,
+        spm_halved: spmHalved,
         period_goal_period: hasGoal ? goalPeriod : null,
         period_goal_metric: hasGoal ? goalMetric : null,
         period_goal_target: goalTargetStored,
@@ -444,6 +448,26 @@ export default function ProfileScreen() {
                 <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ROEITRAINER */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>ROEITRAINER</Text>
+          <View style={styles.listCard}>
+            <View style={styles.listRow}>
+              <View style={styles.spmToggleLabel}>
+                <Text style={styles.listLabel}>SPM halveren</Text>
+                <Text style={styles.listHint}>Voor trainers die de slagfrequentie dubbel tellen</Text>
+              </View>
+              <Switch
+                value={spmHalved}
+                onValueChange={setSpmHalved}
+                trackColor={{ false: border.strong, true: accent.default }}
+                thumbColor={fg.primary}
+                ios_backgroundColor={border.strong}
+              />
+            </View>
           </View>
         </View>
 
@@ -775,6 +799,16 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['16'],
     color: fg.primary,
+  },
+  spmToggleLabel: {
+    flex: 1,
+    gap: space['2'],
+    paddingRight: space['16'],
+  },
+  listHint: {
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['13'],
+    color: fg.tertiary,
   },
 
   // Sheet: text input

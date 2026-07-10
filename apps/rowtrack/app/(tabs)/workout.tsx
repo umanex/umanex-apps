@@ -162,7 +162,7 @@ export default function WorkoutScreen() {
   const summaryAvgHr = refs.heartRateCount.current > 0
     ? Math.round(refs.heartRateSum.current / refs.heartRateCount.current)
     : null;
-  const summaryMaxSpm = refs.maxSpmRef.current > 0 ? refs.maxSpmRef.current : null;
+  const summaryMaxSpm = refs.maxSpmRef.current > 0 ? Math.round(refs.maxSpmRef.current) : null;
   const summaryMaxHr = refs.maxHeartRateRef.current > 0 ? refs.maxHeartRateRef.current : null;
 
   // --- Render ---

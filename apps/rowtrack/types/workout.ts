@@ -27,4 +27,5 @@ export type WorkoutDetail = WorkoutSummary & {
   goal_reached: boolean | null;
   splits: SplitEntry[] | null;
   is_pr: boolean | null;
+  best_2k_seconds: number | null;
 };

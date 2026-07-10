@@ -19,7 +19,7 @@ export interface PeriodGoalProgress {
 
 export interface PersonalRecords {
   longestDistance: number | null;   // meters
-  longestDuration: number | null;  // seconds
+  best2k: number | null;           // fastest 2000m in seconds
   fastestSplit: number | null;     // seconds per 500m
 }
 
@@ -42,7 +42,7 @@ export function usePeriodGoal(userId: string | undefined) {
   const [goalProgress, setGoalProgress] = useState<PeriodGoalProgress | null>(null);
   const [records, setRecords] = useState<PersonalRecords>({
     longestDistance: null,
-    longestDuration: null,
+    best2k: null,
     fastestSplit: null,
   });
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ export function usePeriodGoal(userId: string | undefined) {
     if (!userId) return;
 
     // Fetch goal from profile + PRs from workouts in parallel
-    const [profileRes, prDistRes, prDurRes, prSplitRes] = await Promise.all([
+    const [profileRes, prDistRes, prBest2kRes, prSplitRes] = await Promise.all([
       supabase
         .from('profiles')
         .select('period_goal_period, period_goal_metric, period_goal_target')
@@ -65,9 +65,10 @@ export function usePeriodGoal(userId: string | undefined) {
         .limit(1),
       supabase
         .from('workouts')
-        .select('duration_seconds')
+        .select('best_2k_seconds')
         .eq('user_id', userId)
-        .order('duration_seconds', { ascending: false })
+        .not('best_2k_seconds', 'is', null)
+        .order('best_2k_seconds', { ascending: true })
         .limit(1),
       supabase
         .from('workouts')
@@ -81,7 +82,7 @@ export function usePeriodGoal(userId: string | undefined) {
     // Personal records
     setRecords({
       longestDistance: prDistRes.data?.[0]?.distance_meters ?? null,
-      longestDuration: prDurRes.data?.[0]?.duration_seconds ?? null,
+      best2k: prBest2kRes.data?.[0]?.best_2k_seconds ?? null,
       fastestSplit: prSplitRes.data?.[0]?.best_split ?? null,
     });
 

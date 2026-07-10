@@ -93,11 +93,11 @@ function fmtPrDistance(m: number): { value: string; unit: string } {
   return { value: `${m}`, unit: 'm' };
 }
 
-function fmtPrDuration(sec: number): { value: string; unit: string } {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  if (h > 0) return { value: `${h}u${m > 0 ? ` ${m}` : ''}`, unit: 'min' };
-  return { value: `${m}`, unit: 'min' };
+function fmtPr2k(sec: number): { value: string; unit: string } {
+  const total = Math.round(sec); // round first so 7:59.7 → 8:00, never "7:60"
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: 'min' };
 }
 
 export default function HomeScreen() {
@@ -156,7 +156,7 @@ export default function HomeScreen() {
 
   const hasPrRecords =
     records.longestDistance != null ||
-    records.longestDuration != null;
+    records.best2k != null;
 
   return (
     <ScrollView
@@ -211,8 +211,8 @@ export default function HomeScreen() {
                   />
                 );
               })()}
-              {records.longestDuration != null && (() => {
-                const { value, unit } = fmtPrDuration(records.longestDuration!);
+              {records.best2k != null && (() => {
+                const { value, unit } = fmtPr2k(records.best2k!);
                 return (
                   <KpiSingle
                     style={styles.prCell}

@@ -13,7 +13,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { BottomFade, Button, EmptyState, KpiSingle, TabItem } from '@/components';
-import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle } from '@/lib/formatters';
+import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, correctSpm } from '@/lib/formatters';
+import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import {
   bg,
   fg,
@@ -34,6 +35,7 @@ export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const spmHalved = useSpmHalved();
 
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -177,7 +179,7 @@ export default function WorkoutDetailScreen() {
                   style={styles.kpiCell}
                 />
                 <KpiSingle
-                  value={workout.avg_spm != null ? `${workout.avg_spm}` : '—'}
+                  value={workout.avg_spm != null ? `${correctSpm(workout.avg_spm, spmHalved)}` : '—'}
                   unit={workout.avg_spm != null ? 'spm' : ''}
                   label={'GEMIDDELDE\nSPM'}
                   style={styles.kpiCell}
@@ -196,7 +198,7 @@ export default function WorkoutDetailScreen() {
                 {[
                   { label: 'SPLIT /500M', gem: workout.avg_split_seconds != null ? formatSplit(workout.avg_split_seconds) : '—', piek: workout.best_split != null ? formatSplit(workout.best_split) : '—' },
                   { label: 'WATT', gem: workout.avg_watts != null ? `${workout.avg_watts}` : '—', piek: workout.max_watts != null ? `${workout.max_watts}` : '—' },
-                  { label: 'SPM', gem: workout.avg_spm != null ? `${workout.avg_spm}` : '—', piek: workout.max_spm != null ? `${workout.max_spm}` : '—' },
+                  { label: 'SPM', gem: workout.avg_spm != null ? `${correctSpm(workout.avg_spm, spmHalved)}` : '—', piek: workout.max_spm != null ? `${correctSpm(workout.max_spm, spmHalved)}` : '—' },
                   { label: 'BPM', gem: workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—', piek: workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—' },
                 ].map((row, i, arr) => (
                   <View key={row.label}>

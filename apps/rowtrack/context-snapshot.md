@@ -55,19 +55,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ebba769 feat(rowtrack): SPM-correctie voor dubbeltellende trainers + afronding weergave
 b93ab24 fix(rowtrack): rond max/int-waardes af bij opslaan workout
 ae2fe68 fix(rowtrack): ververs history-lijst bij focus (verwijderde workout bleef stale)
 a6358d2 feat(rowtrack): fade onderaan lange history-lijsten/tabellen
 e3178fa docs(rowtrack): vul ActivePhase portrait/landscape node-URLs in figma-map + typo-fix
-77c2fe9 feat(rowtrack): Active/Summary redesign per Figma (43-8278)
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  M  apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/lib/formatters.ts
+  A  apps/rowtrack/lib/hooks/useSpmHalved.ts
   M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
-  A  apps/rowtrack/supabase/migrations/add_spm_halved.sql
 
 ## Bestanden met TODO/FIXME
   (geen)

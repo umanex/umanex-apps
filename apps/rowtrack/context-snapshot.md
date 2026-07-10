@@ -54,17 +54,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b0f643c fix(rowtrack): active workout hero-clip + landscape KPI fill per Figma
 c8ab055 fix(rowtrack): landscape-kolommen 50/50 via gemeten expliciete breedte
 fd40ad9 fix(rowtrack): forceer landscape-kolommen 50/50 met expliciete flexBasis
 d581b28 fix(rowtrack): centreer idlephase wheel-waarde tussen chips en CTA
 d66be94 fix(rowtrack): idlephase goal picker positioning & suggestion state
-5238f61 feat(rowtrack): idlephase wheel redesign + reanimated animations
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/components/KPI.tsx
+   M apps/rowtrack/app/(tabs)/_layout.tsx
+   M apps/rowtrack/app/_layout.tsx
   M  apps/rowtrack/components/workout/ActivePhase.tsx
+   M apps/rowtrack/package.json
+  ?? apps/rowtrack/lib/orientation.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

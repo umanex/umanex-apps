@@ -616,12 +616,19 @@ export function ActivePhase({
     );
   }
 
+  // Figma: landscape 20px rondom; portrait 20 L/R + 28 T/B. Elke rand is
+  // max(design-padding, safe-area-inset) zodat content de notch/home-indicator
+  // vrijhoudt. Horizontaal symmetrisch (max van beide insets) zodat het 50/50-blok
+  // gecentreerd op het scherm blijft i.p.v. weggeduwd door de notch aan één kant.
+  const edgePadV = isLandscape ? space['20'] : space['28'];
+  const edgePadH = Math.max(layout.screenHorizontal, insets.left, insets.right);
+
   return (
     <View style={[styles.container, {
-      paddingTop: insets.top,
-      paddingBottom: insets.bottom + 8,
-      paddingLeft: Math.max(layout.screenHorizontal, insets.left),
-      paddingRight: Math.max(layout.screenHorizontal, insets.right),
+      paddingTop: Math.max(edgePadV, insets.top),
+      paddingBottom: Math.max(edgePadV, insets.bottom),
+      paddingLeft: edgePadH,
+      paddingRight: edgePadH,
     }]}>
       {/* Milestone overlay */}
       <MilestoneOverlay message={milestoneMsg} onDismiss={dismissMilestone} />

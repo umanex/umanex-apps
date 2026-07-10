@@ -98,10 +98,10 @@ export function wheelItemParts(item: WheelItem): { value: string; unit?: string 
   return { value: item.label.slice(0, idx), unit: item.unit };
 }
 
-/** 1\u2013180 minutes, step 1 min. value = total seconds. */
+/** 5\u2013180 minutes, step 5 min. value = total seconds. */
 export function buildDurItems(): WheelItem[] {
   const items: WheelItem[] = [];
-  for (let m = GOAL_INPUT_BOUNDS.duration.min; m <= GOAL_INPUT_BOUNDS.duration.max; m++) {
+  for (let m = 5; m <= GOAL_INPUT_BOUNDS.duration.max; m += 5) {
     const h = Math.floor(m / 60);
     const min = m % 60;
     const label = h > 0
@@ -133,10 +133,10 @@ export function buildDistItems(): WheelItem[] {
   return items;
 }
 
-/** 1:30 \u2013 3:00 /500m, step 1 sec. value = total seconds. */
+/** 1:30 \u2013 3:00 /500m, step 5 sec. value = total seconds. */
 export function buildSplitItems(): WheelItem[] {
   const items: WheelItem[] = [];
-  for (let s = GOAL_INPUT_BOUNDS.split.min; s <= GOAL_INPUT_BOUNDS.split.max; s++) {
+  for (let s = GOAL_INPUT_BOUNDS.split.min; s <= GOAL_INPUT_BOUNDS.split.max; s += 5) {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     items.push({ label: `${m}:${sec.toString().padStart(2, '0')}`, value: s });

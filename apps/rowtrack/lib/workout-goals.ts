@@ -125,16 +125,16 @@ export function buildGoalSuggestions(type: GoalType, recents: number[]): number[
 export function goalTargetToWheelIndex(type: GoalType, target: number): number | null {
   switch (type) {
     case 'duration': {
-      const idx = Math.round(target / 60) - 1;        // 1–180 min → 0–179
-      return idx >= 0 && idx <= 179 ? idx : null;
+      const idx = Math.round(target / 300) - 1;       // 5–180 min, step 5 → 0–35
+      return idx >= 0 && idx <= 35 ? idx : null;
     }
     case 'distance': {
       const idx = Math.round(target / 500) - 1;       // 500–42000 m → 0–83
       return idx >= 0 && idx <= 83 ? idx : null;
     }
     case 'split': {
-      const idx = Math.round(target) - 90;            // 90–180 s → 0–90
-      return idx >= 0 && idx <= 90 ? idx : null;
+      const idx = Math.round((target - 90) / 5);      // 90–180 s, step 5 → 0–18
+      return idx >= 0 && idx <= 18 ? idx : null;
     }
     case 'watts': {
       const idx = Math.round((target - 50) / 5);      // 50–500 W → 0–90

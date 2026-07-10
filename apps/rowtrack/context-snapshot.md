@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-09_
+_Gegenereerd op 2026-07-10_
 
 ## Project
 - **App:** rowtrack
@@ -54,24 +54,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ccf241f feat(rowtrack): idlephase goal suggestions, device card & nudge removal
 4976719 chore(rowtrack): session handoff entries voor idlephase redesign
 5635f6f feat(rowtrack): redesign idlephase goal selection
 a482ebc chore: seed HANDOFF.md staging files (root + apps)
 3239089 chore(rowtrack): rebuild tokens after merge (button height 44->48)
-e00cb7b Merge origin/main into main
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  A  apps/rowtrack/briefings/2026-07-09-screen-idlephase-goal-v2.tcebc.md
-  M  apps/rowtrack/components/BleStatusBar.tsx
-  A  apps/rowtrack/components/DeviceRow.tsx
-  M  apps/rowtrack/components/HrStatusBar.tsx
+  A  apps/rowtrack/babel.config.js
+  A  apps/rowtrack/briefings/2026-07-09-component-wheel-picker.tcebc.md
+  A  apps/rowtrack/briefings/2026-07-10-component-wheel-animations.tcebc.md
+  A  apps/rowtrack/briefings/2026-07-10-component-wheel-finetune.tcebc.md
+  M  apps/rowtrack/components/Chip.tsx
+  M  apps/rowtrack/components/GoalSegments.tsx
   M  apps/rowtrack/components/WheelPicker.tsx
-  M  apps/rowtrack/components/index.ts
   M  apps/rowtrack/components/workout/IdlePhase.tsx
   M  apps/rowtrack/lib/formatters.ts
+  M  apps/rowtrack/lib/workout-goals.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

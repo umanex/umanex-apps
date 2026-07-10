@@ -3,11 +3,11 @@ import {
   View,
   Text,
   TouchableOpacity,
-  LayoutAnimation,
   Modal,
   FlatList,
   ScrollView,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { EdgeInsets } from 'react-native-safe-area-context';
@@ -41,30 +41,10 @@ import {
   fontSize,
   radii,
   componentRadius,
+  layout,
 } from '@/constants';
 import { useAuth } from '@/lib/auth-context';
 import { useRecentGoals } from '@/lib/hooks/useRecentGoals';
-
-// Spring LayoutAnimation used for segment transitions and goal mode changes
-const LAYOUT_SPRING: Parameters<typeof LayoutAnimation.configureNext>[0] = {
-  duration: 320,
-  create: {
-    duration: 180,
-    type: LayoutAnimation.Types.spring,
-    springDamping: 0.78,
-    property: LayoutAnimation.Properties.opacity,
-  },
-  update: {
-    duration: 320,
-    type: LayoutAnimation.Types.spring,
-    springDamping: 0.78,
-  },
-  delete: {
-    duration: 100,
-    type: LayoutAnimation.Types.easeOut,
-    property: LayoutAnimation.Properties.opacity,
-  },
-};
 
 // --- Goal type mapping ---
 
@@ -85,10 +65,10 @@ const GOAL_TO_SEGMENT: Record<string, GoalSegmentType> = {
 
 // --- Default picker indices (spec: 30 min, 5 km, 2:00, 180 W) ---
 
-const DEFAULT_DUR_IDX   = 29;
-const DEFAULT_DIST_IDX  = 9;
-const DEFAULT_SPLIT_IDX = 30;
-const DEFAULT_WATT_IDX  = 26;
+const DEFAULT_DUR_IDX   = 5;   // 30 min (step 5 min)
+const DEFAULT_DIST_IDX  = 9;   // 5 km
+const DEFAULT_SPLIT_IDX = 6;   // 2:00 /500m (step 5 s)
+const DEFAULT_WATT_IDX  = 26;  // 180 W
 
 // --- Props ---
 
@@ -204,6 +184,7 @@ export function IdlePhase({
 }: IdlePhaseProps) {
   const { user } = useAuth();
   const recents = useRecentGoals(user?.id, idleGoalType);
+  const { width: screenWidth } = useWindowDimensions();
 
   const selectedSegment: GoalSegmentType = idleGoalType
     ? GOAL_TO_SEGMENT[idleGoalType] ?? 'Geen'
@@ -257,7 +238,6 @@ export function IdlePhase({
   // --- Segment change ---
 
   function handleSegmentChange(segment: GoalSegmentType) {
-    LayoutAnimation.configureNext(LAYOUT_SPRING);
     const goalType = SEGMENT_TO_GOAL[segment];
     setIdleGoalType(goalType);
     setDurIdx(DEFAULT_DUR_IDX);
@@ -343,37 +323,44 @@ export function IdlePhase({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View>
-          <Text style={styles.header}>Nieuwe training</Text>
-        </View>
-
-        {/* Toestellen */}
-        <View style={styles.toestelSection}>
-          <Text style={styles.sectionLabel}>TOESTELLEN</Text>
-          <View style={styles.deviceCard}>
-            <BleStatusBar
-              bleStatus={bleStatus}
-              deviceName={deviceName}
-              onConnect={onConnect}
-              onDisconnect={onDisconnect}
-            />
-            <View style={styles.deviceDivider} />
-            <HrStatusBar
-              hrStatus={hrStatus}
-              hrDeviceName={hrDeviceName}
-              onConnect={onHRConnect}
-              onDisconnect={onHRDisconnect}
-            />
+        {/* Fixed top group: header, devices, goal segments */}
+        <View style={styles.topGroup}>
+          <View>
+            <Text style={styles.header}>Nieuwe training</Text>
           </View>
-        </View>
 
-        {/* Doel */}
-        <View style={styles.doelSection}>
+          {/* Toestellen */}
+          <View style={styles.toestelSection}>
+            <Text style={styles.sectionLabel}>TOESTELLEN</Text>
+            <View style={styles.deviceCard}>
+              <BleStatusBar
+                bleStatus={bleStatus}
+                deviceName={deviceName}
+                onConnect={onConnect}
+                onDisconnect={onDisconnect}
+              />
+              <View style={styles.deviceDivider} />
+              <HrStatusBar
+                hrStatus={hrStatus}
+                hrDeviceName={hrDeviceName}
+                onConnect={onHRConnect}
+                onDisconnect={onHRDisconnect}
+              />
+            </View>
+          </View>
+
+          {/* Doel header + segments */}
           <View style={styles.doelHeader}>
             <Text style={styles.sectionLabel}>DOEL</Text>
-            <GoalSegments selected={selectedSegment} onChange={handleSegmentChange} />
+            {/* Full-bleed: definite screen width so the segments distribute evenly */}
+            <View style={{ width: screenWidth, marginLeft: -layout.screenHorizontal }}>
+              <GoalSegments selected={selectedSegment} onChange={handleSegmentChange} />
+            </View>
           </View>
+        </View>
+
+        {/* Picker — vertically centred in the remaining space, responsive to height */}
+        <View style={styles.pickerCenter}>
           {renderGoalInput()}
         </View>
       </ScrollView>
@@ -408,9 +395,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 20,
     paddingBottom: 20,
+    gap: 20, // segments ↔ picker breathing room
+  },
+  // Natural-height top block; the picker below it fills the rest and centres.
+  topGroup: {
     gap: 28,
+  },
+  // Picker sits in the space between the segments and the CTA, vertically
+  // centred and elastic so it adapts to any screen height.
+  pickerCenter: {
+    flex: 1,
+    justifyContent: 'center',
   },
 
   header: {
@@ -439,9 +437,6 @@ const styles = StyleSheet.create({
     color: fg.tertiary,
   },
 
-  doelSection: {
-    gap: 20,
-  },
   doelHeader: {
     gap: 8,
   },

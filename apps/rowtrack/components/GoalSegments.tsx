@@ -1,8 +1,25 @@
-import { useRef, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, { withTiming, Easing } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { bg, fg, accent, border, radii, space, layout, typeStyles } from '@/constants';
+import { bg, fg, accent, border, radii, space, typeStyles } from '@/constants';
+
+// Custom enter: the pill + label fade and spring-pop in on the (remounted)
+// active segment — a UI-thread, buttery version of the pop-in. The segment
+// LAYOUT is kept correct by the remount (Fabric reclaims the de-activated
+// label's width there); animating the width instead — RN LayoutAnimation or
+// Reanimated LinearTransition — reintroduces the stale-width clipping, so we
+// animate the appearance, not the width.
+function pillEnter() {
+  'worklet';
+  return {
+    initialValues: { opacity: 0, transform: [{ scale: 0.9 }] },
+    animations: {
+      opacity: withTiming(1, { duration: 150 }),
+      transform: [{ scale: withTiming(1, { duration: 220, easing: Easing.out(Easing.back(1.3)) }) }],
+    },
+  };
+}
 
 export type GoalSegmentType = 'Geen' | 'Duur' | 'Afstand' | 'Split' | 'Watt';
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -42,32 +59,6 @@ type SegmentButtonProps = {
 };
 
 function SegmentButton({ type, isActive, onPress }: SegmentButtonProps) {
-  const labelOpacity = useRef(new Animated.Value(isActive ? 1 : 0)).current;
-  const labelScale   = useRef(new Animated.Value(isActive ? 1 : 0.85)).current;
-  const prevActive   = useRef(isActive);
-
-  useEffect(() => {
-    if (isActive && !prevActive.current) {
-      labelOpacity.setValue(0);
-      labelScale.setValue(0.85);
-      Animated.parallel([
-        Animated.timing(labelOpacity, {
-          toValue: 1,
-          duration: 80,
-          useNativeDriver: true,
-        }),
-        Animated.spring(labelScale, {
-          toValue: 1,
-          stiffness: 400,
-          damping: 40,
-          mass: 1,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-    prevActive.current = isActive;
-  }, [isActive, labelOpacity, labelScale]);
-
   return (
     <TouchableOpacity
       style={[styles.segment, isActive ? styles.segmentActive : styles.segmentInactive]}
@@ -77,19 +68,16 @@ function SegmentButton({ type, isActive, onPress }: SegmentButtonProps) {
       accessibilityLabel={ACCESSIBILITY_LABELS[type]}
       accessibilityState={{ selected: isActive }}
     >
+      {isActive && (
+        <Animated.View entering={pillEnter} style={styles.activePill} pointerEvents="none" />
+      )}
       <Ionicons
         name={GOAL_ICONS[type]}
         size={16}
         color={isActive ? accent.default : fg.tertiary}
       />
       {isActive && (
-        <Animated.Text
-          style={[
-            styles.activeLabel,
-            { opacity: labelOpacity, transform: [{ scale: labelScale }] },
-          ]}
-          numberOfLines={1}
-        >
+        <Animated.Text entering={pillEnter} style={styles.activeLabel} numberOfLines={1}>
           {SEGMENT_LABELS[type]}
         </Animated.Text>
       )}
@@ -111,11 +99,17 @@ export function GoalSegments({ selected, onChange }: GoalSegmentsProps) {
     onChange(type);
   }
 
+  // Fills its parent's width (definite in every context) so the flex:1 inactive
+  // segments compress evenly. Full-bleed is the parent's job — IdlePhase wraps
+  // this in a screen-width bleed container; the modal card sizes it to the card.
   return (
     <View style={styles.container}>
       {GOAL_TYPES.map((type) => (
+        // Key on active-state: a de-activated segment remounts fresh (icon only,
+        // flex:1) so Fabric reclaims its old label width — otherwise a later
+        // active segment (Split/Watt) runs off-screen.
         <SegmentButton
-          key={type}
+          key={`${type}-${selected === type}`}
           type={type}
           isActive={selected === type}
           onPress={() => handlePress(type)}
@@ -126,12 +120,11 @@ export function GoalSegments({ selected, onChange }: GoalSegmentsProps) {
 }
 
 const styles = StyleSheet.create({
-  // Full-bleed band: breekt uit de 20px scherm-padding en spant tot de randen,
-  // met enkel top/bottom dividers (geen omrande, afgeronde box).
+  // Band with only top/bottom dividers (no rounded box). Fills the parent width;
+  // the parent decides whether that is full-bleed (IdlePhase) or card-width (modal).
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: -layout.screenHorizontal,
     paddingHorizontal: space['4'],
     paddingVertical: space['4'],
     backgroundColor: bg.elevated,
@@ -153,6 +146,12 @@ const styles = StyleSheet.create({
   },
   segmentActive: {
     paddingHorizontal: space['20'],
+  },
+  // Pill visuals live on an absolute layer so they can animate (opacity + scale)
+  // independently of the segment's layout width.
+  activePill: {
+    ...StyleSheet.absoluteFillObject,
+    // TODO: token voor de 0.20 accent-selectie-fill ontbreekt (accent.muted = 0.12).
     backgroundColor: 'rgba(240, 84, 84, 0.20)',
     borderWidth: 1,
     borderColor: accent.default,

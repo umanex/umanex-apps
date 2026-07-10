@@ -111,7 +111,10 @@ export default function WorkoutScreen() {
     const { error } = await supabase.from('workouts').insert({
       user_id: user.id,
       started_at: refs.startedAtRef.current?.toISOString() ?? new Date().toISOString(),
-      duration_seconds: metricsState.seconds,
+      // Alle waardes die in integer-kolommen landen worden afgerond — de rauwe
+      // BLE-/max-waardes kunnen floats zijn (bv. max_spm 45.5) en Postgres weigert
+      // die anders ("invalid input syntax for type integer").
+      duration_seconds: Math.round(metricsState.seconds),
       distance_meters: Math.round(metricsState.distanceMeters),
       avg_watts: avgW,
       avg_spm: Math.round(refs.spmSum.current / t),
@@ -119,14 +122,14 @@ export default function WorkoutScreen() {
         ? Math.round(refs.splitSum.current / refs.splitTickCount.current)
         : null,
       calories: Math.round(metricsState.calories),
-      max_watts: refs.maxWattsRef.current > 0 ? refs.maxWattsRef.current : null,
-      max_spm: refs.maxSpmRef.current > 0 ? refs.maxSpmRef.current : null,
+      max_watts: refs.maxWattsRef.current > 0 ? Math.round(refs.maxWattsRef.current) : null,
+      max_spm: refs.maxSpmRef.current > 0 ? Math.round(refs.maxSpmRef.current) : null,
       best_split: refs.bestSplitRef.current < Infinity ? Math.round(refs.bestSplitRef.current) : null,
       avg_heart_rate: refs.heartRateCount.current > 0
         ? Math.round(refs.heartRateSum.current / refs.heartRateCount.current)
         : null,
-      max_heart_rate: refs.maxHeartRateRef.current > 0 ? refs.maxHeartRateRef.current : null,
-      resistance_level: metricsState.resistanceLevel,
+      max_heart_rate: refs.maxHeartRateRef.current > 0 ? Math.round(refs.maxHeartRateRef.current) : null,
+      resistance_level: metricsState.resistanceLevel != null ? Math.round(metricsState.resistanceLevel) : null,
       goal_type: goal?.type ?? null,
       goal_target: goal?.target ?? null,
       goal_reached: goal ? goalReached : null,

@@ -52,19 +52,18 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    // Match Figma: value + unit centred vertically, not baseline-aligned.
+    alignItems: 'center',
     gap: 2,
   },
   value: {
     fontFamily: fontFamily.sourceSerifRegular,
     fontSize: fontSize['16'],
-    lineHeight: fontSize['16'],
     letterSpacing: -0.4,
   },
   unit: {
     fontFamily: fontFamily.sourceSerifItalic,
     fontSize: fontSize['16'],
-    lineHeight: fontSize['16'],
   },
   textActive: {
     color: accent.default,

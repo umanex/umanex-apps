@@ -355,6 +355,7 @@ export function ActivePhase({
               label="BPM"
               value={kpiValue('BPM')}
               compact={compact}
+              fill={compact}
               onPress={startHRScan}
               loading={hrStatus === 'scanning'}
             />
@@ -364,6 +365,7 @@ export function ActivePhase({
               label={kpiLabel(key)}
               value={kpiValue(key)}
               compact={compact}
+              fill={compact}
             />
           )
         )}
@@ -814,7 +816,8 @@ const activeStyles = StyleSheet.create({
   timerText: {
     fontFamily: fontFamily.sourceSerifBold,
     fontSize: fontSize['124'],
-    lineHeight: fontSize['124'] * 0.95,
+    // Geen lineHeight < fontSize: een krappe regelhoogte kapt de serif-toppen af
+    // (bovenaan). Natuurlijke regelhoogte bevat de glyph en centreert vanzelf.
     letterSpacing: typeStyles.heroNumeric.letterSpacing,
     color: fg.onAccent,
   },
@@ -907,7 +910,7 @@ const portraitStyles = StyleSheet.create({
     fontFamily: fontFamily.sourceSerifBold,
     fontSize: fontSize['124'],
     color: fg.onAccent,
-    lineHeight: fontSize['124'] * 0.95,
+    // Geen lineHeight < fontSize: dat kapt de serif-toppen af (bovenaan).
     letterSpacing: typeStyles.heroNumeric.letterSpacing,
   },
   progressTrack: {
@@ -997,7 +1000,10 @@ const landscapeStyles = StyleSheet.create({
   },
   rightCol: {
     minWidth: 0,
-    justifyContent: 'space-between',
+    // Figma: container gap 8, KPI-kaarten flex-vullen de resterende hoogte.
+    // (Tijdens een active workout is de tabbar verborgen, dus de volle hoogte
+    // is beschikbaar.)
+    gap: space['8'],
   },
 });
 

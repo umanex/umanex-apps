@@ -54,15 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+c8ab055 fix(rowtrack): landscape-kolommen 50/50 via gemeten expliciete breedte
 fd40ad9 fix(rowtrack): forceer landscape-kolommen 50/50 met expliciete flexBasis
 d581b28 fix(rowtrack): centreer idlephase wheel-waarde tussen chips en CTA
 d66be94 fix(rowtrack): idlephase goal picker positioning & suggestion state
 5238f61 feat(rowtrack): idlephase wheel redesign + reanimated animations
-ccf241f feat(rowtrack): idlephase goal suggestions, device card & nudge removal
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/components/KPI.tsx
   M  apps/rowtrack/components/workout/ActivePhase.tsx
 
 ## Bestanden met TODO/FIXME

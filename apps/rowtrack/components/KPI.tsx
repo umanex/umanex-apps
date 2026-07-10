@@ -6,11 +6,13 @@ type KPIProps = {
   value: string;
   highlighted?: boolean;
   compact?: boolean;
+  /** Flex to fill the parent column height (landscape stack) instead of a fixed height. */
+  fill?: boolean;
   onPress?: () => void;
   loading?: boolean;
 };
 
-export function KPI({ label, value, highlighted = false, compact = false, onPress, loading = false }: KPIProps) {
+export function KPI({ label, value, highlighted = false, compact = false, fill = false, onPress, loading = false }: KPIProps) {
   const content = (
     <>
       <Text style={[styles.label, compact && styles.labelCompact]}>{label}</Text>
@@ -25,7 +27,7 @@ export function KPI({ label, value, highlighted = false, compact = false, onPres
   if (onPress) {
     return (
       <TouchableOpacity
-        style={[styles.container, compact && styles.containerCompact]}
+        style={[styles.container, fill ? styles.containerFill : compact ? styles.containerCompact : styles.containerFixed]}
         onPress={onPress}
         activeOpacity={0.8}
       >
@@ -47,16 +49,26 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: border.default,
-    height: 58,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: space['18'],
     paddingVertical: 12,
   },
+  // Height variants are mutually exclusive (fixed vs compact vs fill) so a fill
+  // card carries NO fixed height and can genuinely flex to fill its column.
+  containerFixed: {
+    height: 58,
+  },
   containerCompact: {
     height: 54,
     paddingVertical: 10,
+  },
+  // Flex to fill the column height (Figma landscape stack). minHeight guards
+  // very short screens; content stays vertically centred via alignItems.
+  containerFill: {
+    flex: 1,
+    minHeight: 36,
   },
   label: {
     ...typeStyles.labelGoalPrefix,

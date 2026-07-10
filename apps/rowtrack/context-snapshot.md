@@ -55,16 +55,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ae2fe68 fix(rowtrack): ververs history-lijst bij focus (verwijderde workout bleef stale)
 a6358d2 feat(rowtrack): fade onderaan lange history-lijsten/tabellen
 e3178fa docs(rowtrack): vul ActivePhase portrait/landscape node-URLs in figma-map + typo-fix
 77c2fe9 feat(rowtrack): Active/Summary redesign per Figma (43-8278)
 7561a63 feat(rowtrack): portrait-only app, landscape enkel tijdens active workout
-fc7c93a fix(rowtrack): active-workout edge-paddings per Figma
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
+  M  apps/rowtrack/app/(tabs)/workout.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

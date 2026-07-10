@@ -200,6 +200,11 @@ export function IdlePhase({
   const [splitIdx, setSplitIdx] = useState(DEFAULT_SPLIT_IDX);
   const [wattIdx,  setWattIdx]  = useState(DEFAULT_WATT_IDX);
 
+  // A suggestion chip only reads as "active" once the user has actually chosen a
+  // value. At the default (untouched) nothing highlights, so landing on any
+  // segment looks the same whether or not its default happens to match a chip.
+  const [goalTouched, setGoalTouched] = useState(false);
+
   // --- Sync helpers (wheel index → parent goal props) ---
 
   function syncDur(idx: number) {
@@ -240,6 +245,7 @@ export function IdlePhase({
   function handleSegmentChange(segment: GoalSegmentType) {
     const goalType = SEGMENT_TO_GOAL[segment];
     setIdleGoalType(goalType);
+    setGoalTouched(false);
     setDurIdx(DEFAULT_DUR_IDX);
     setDistIdx(DEFAULT_DIST_IDX);
     setSplitIdx(DEFAULT_SPLIT_IDX);
@@ -292,8 +298,9 @@ export function IdlePhase({
                 key={chipIdx}
                 value={value}
                 unit={unit}
-                active={chipIdx === idx}
+                active={goalTouched && chipIdx === idx}
                 onPress={() => {
+                  setGoalTouched(true);
                   setIdx(chipIdx);
                   sync(chipIdx);
                 }}
@@ -307,6 +314,7 @@ export function IdlePhase({
           items={items}
           selectedIndex={idx}
           onIndexChange={(newIdx) => {
+            setGoalTouched(true);
             setIdx(newIdx);
             sync(newIdx);
           }}
@@ -359,8 +367,9 @@ export function IdlePhase({
           </View>
         </View>
 
-        {/* Picker — vertically centred in the remaining space, responsive to height */}
-        <View style={styles.pickerCenter}>
+        {/* Picker — vertically centred in the remaining space, responsive to
+            height. "Geen" is a static line, so it hugs the top instead. */}
+        <View style={[styles.pickerCenter, selectedSegment === 'Geen' && styles.pickerTop]}>
           {renderGoalInput()}
         </View>
       </ScrollView>
@@ -409,6 +418,9 @@ const styles = StyleSheet.create({
   pickerCenter: {
     flex: 1,
     justifyContent: 'center',
+  },
+  pickerTop: {
+    justifyContent: 'flex-start',
   },
 
   header: {

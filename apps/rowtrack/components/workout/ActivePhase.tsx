@@ -21,7 +21,8 @@ import {
   MilestoneOverlay,
 } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
-import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatMetersDotted } from '@/lib/formatters';
+import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatMetersDotted, correctSpm } from '@/lib/formatters';
+import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import { bg, fg, accent, border, progressBar, status, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
 import { styles } from './workout.styles';
@@ -127,6 +128,7 @@ export function ActivePhase({
 
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
+  const spmHalved = useSpmHalved();
 
   // Landscape 50/50: measure the row and hand each column an explicit half-width.
   // A definite width can't be content-sized by the engine, so the split holds on
@@ -338,7 +340,7 @@ export function ActivePhase({
       switch (key) {
         case 'SPLIT': return formatSplit(avgSplit, true);
         case 'WATT': return `${avgWatts} W`;
-        case 'SPM': return `${avgSpm}`;
+        case 'SPM': return `${correctSpm(avgSpm, spmHalved)}`;
         case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
         case 'AFSTAND': return `${formatMetersDotted(distanceMeters)} m`;
         case 'TIJD': return formattedTimer;
@@ -527,7 +529,7 @@ export function ActivePhase({
       switch (key) {
         case 'SPLIT': return formatSplit(avgSplit);
         case 'WATT': return `${avgWatts} W`;
-        case 'SPM': return `${avgSpm}`;
+        case 'SPM': return `${correctSpm(avgSpm, spmHalved)}`;
         case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
         case 'AFSTAND': return `${formattedDistance.value} ${formattedDistance.unit}`;
         case 'TIJD': return formattedTimer;
@@ -764,7 +766,7 @@ export function ActivePhase({
               {[
                 { label: 'SPLIT /500M', gem: formatSplit(avgSplit), piek: summaryBestSplit != null ? formatSplit(summaryBestSplit) : '—' },
                 { label: 'WATT', gem: `${avgWatts}`, piek: summaryMaxWatts != null ? `${summaryMaxWatts}` : '—' },
-                { label: 'SPM', gem: `${avgSpm}`, piek: summaryMaxSpm != null ? `${summaryMaxSpm}` : '—' },
+                { label: 'SPM', gem: `${correctSpm(avgSpm, spmHalved)}`, piek: summaryMaxSpm != null ? `${correctSpm(summaryMaxSpm, spmHalved)}` : '—' },
                 { label: 'BPM', gem: summaryAvgHr != null ? `${summaryAvgHr}` : '—', piek: summaryMaxHr != null ? `${summaryMaxHr}` : '—' },
               ].map((row, i, arr) => (
                 <View key={row.label}>

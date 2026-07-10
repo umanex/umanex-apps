@@ -88,8 +88,6 @@ export function useWorkoutMetrics(
   const initialElapsed = useRef<number | null>(null);
   const initialDistance = useRef<number | null>(null);
   const weightKgRef = useRef<number | null>(null);
-  // SPM-correctie: sommige trainers tellen dubbel → factor 0.5 (uit profiel).
-  const spmFactorRef = useRef(1);
   const kcalAccumulator = useRef(0);
   const lastKcalElapsed = useRef(0);
   const currentWattsRef = useRef(0);
@@ -103,13 +101,12 @@ export function useWorkoutMetrics(
     if (!user) return;
     supabase
       .from('profiles')
-      .select('weight_kg, spm_halved')
+      .select('weight_kg')
       .eq('id', user.id)
       .single()
       .then(({ data, error }) => {
-        if (error) log('profile fetch failed, using defaults:', error.message);
+        if (error) log('profile weight fetch failed, using default:', error.message);
         weightKgRef.current = data?.weight_kg ?? null;
-        spmFactorRef.current = data?.spm_halved ? 0.5 : 1;
       });
   }, [user]);
 
@@ -129,11 +126,12 @@ export function useWorkoutMetrics(
       }
     }
     if (bleMetrics.strokeRate != null) {
-      const spm = bleMetrics.strokeRate * spmFactorRef.current;
-      partial.spm = spm;
-      spmSum.current += spm;
-      if (spm > maxSpmRef.current) {
-        maxSpmRef.current = spm;
+      // Rauwe SPM opslaan; de 'SPM halveren'-correctie gebeurt bij weergave
+      // (zie correctSpm + useSpmHalved) zodat álle historiek consistent is.
+      partial.spm = bleMetrics.strokeRate;
+      spmSum.current += bleMetrics.strokeRate;
+      if (bleMetrics.strokeRate > maxSpmRef.current) {
+        maxSpmRef.current = bleMetrics.strokeRate;
       }
     }
     if (bleMetrics.instantaneousPace != null && bleMetrics.instantaneousPace > 0) {

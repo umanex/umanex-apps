@@ -22,6 +22,16 @@ export function formatTimerFull(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/**
+ * Corrigeert + rondt een rauwe SPM-waarde af voor weergave. `halved` is de
+ * per-profiel 'SPM halveren'-instelling (trainers die de slagfrequentie dubbel
+ * tellen). Rauwe SPM wordt opgeslagen; de correctie gebeurt hier bij weergave
+ * zodat álle historiek — oud én nieuw — consistent met de toggle meebeweegt.
+ */
+export function correctSpm(spm: number, halved: boolean): number {
+  return Math.round(halved ? spm / 2 : spm);
+}
+
 export function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(2)} km`;
 }

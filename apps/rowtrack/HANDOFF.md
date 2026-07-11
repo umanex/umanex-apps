@@ -78,3 +78,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Bevinding:** De nieuwe `{t,d}`-samplereeks (voor de exacte beste-2000m) baselinet `initialElapsed`/`initialDistance` enkel in `resetAll` (bij Start), niet op een auto-reconnect. `ble-service.attemptReconnect()` reset `lastMetrics` ook niet. Reset een erg zijn eigen elapsed/distance-tellers bij reconnect (onbekend voor Concept2, "sommige FTMS"), dan gaan post-reconnect samples negatief → `sanitize()` in `bestDistanceTime.ts` gooit ze weg. Faalmodus is veilig: **nooit een vals-snelle PR**, hooguit data-verlies van het na-reconnect-fragment (best-2k uit het vóór-fragment of `null`). Review reproduceerde de mechaniek maar zette het op `real=false` wegens onzekere trigger + veilige degradatie.
 - **Volgende zet:** Als een reële erg dit ooit vertoont: op reconnect de baseline opnieuw zetten (of `lastMetrics` resetten) en de reeks bewust in een nieuwe run laten starten i.p.v. stil te droppen. Nu bewust niet gebouwd.
 - **Status:** open
+
+## 2026-07-10 — Best-2000m capture end-to-end onbevestigd op echte erg · [next-step]
+- **Bevinding:** Het `bestTimeForDistance`-algoritme is machine-geverifieerd (19/19 unittests + 800k fuzz vs O(N²)-referentie), maar de capture in `useWorkoutMetrics` draaide nooit op echte hardware. Drie onbevestigde aannames: (1) Jeroens erg bundelt distance+elapsed in één packet (CLAUDE.md zegt ja, code is er defensief tegen); (2) notificatie-cadans zit ver onder de 3s-dropout-floor (~1Hz) — een trage erg rond 2-3s kan spurious splits geven; (3) de dedup-per-hele-seconde laat de laatste fractionele seconde vóór 2000m vallen (bewust, geschat <1s ruis). `samples`-payloadgrootte op een lange rit ook niet gemeten.
+- **Volgende zet:** Eén echte ≥2000m rit op de fysieke iPhone-build → de opgeslagen `samples` in Supabase inspecteren (vorm, dichtheid, grootte, monotoon), best-2k tegen een handberekening checken, en bevestigen dat de tile een plausibele tijd toont. Bij trage cadans: de 3s-floor heroverwegen. **Dit is de #1 eerste zet.**
+- **Status:** open
+
+## 2026-07-10 — best_2k_seconds is een bevroren afgeleide waarde · [aanname]
+- **Bevinding:** `best_2k_seconds` wordt bij opslaan berekend en opgeslagen (net als `best_split`). De ruwe `samples` staan er ook, dus herberekening is mogelijk — maar niets herberekent automatisch. Wijzigt de algoritme- of pauze-/moving-time-semantiek later, dan houden bestaande rijen hun oude waarde tot een expliciete backfill.
+- **Volgende zet:** Bij een semantiek-wijziging: een migratie/script dat `best_2k_seconds` (en toekomstige 500m/1k/5k) uit `samples` herberekent voor alle rijen. Nu niet nodig.
+- **Status:** open

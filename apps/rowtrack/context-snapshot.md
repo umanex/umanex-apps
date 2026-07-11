@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-10_
+_Gegenereerd op 2026-07-11_
 
 ## Project
 - **App:** rowtrack
@@ -55,22 +55,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6180b69 feat(rowtrack): exacte beste-2000m op startscherm i.p.v. langste duur
 8591b9d fix(rowtrack): SPM-correctie bij weergave i.p.v. opslag (historiek volgt de toggle)
 ebba769 feat(rowtrack): SPM-correctie voor dubbeltellende trainers + afronding weergave
 b93ab24 fix(rowtrack): rond max/int-waardes af bij opslaan workout
 ae2fe68 fix(rowtrack): ververs history-lijst bij focus (verwijderde workout bleef stale)
-a6358d2 feat(rowtrack): fade onderaan lange history-lijsten/tabellen
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  A  apps/rowtrack/lib/bestDistanceTime.ts
-  M  apps/rowtrack/lib/hooks/usePeriodGoal.ts
-  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
-  A  apps/rowtrack/supabase/migrations/add_workout_samples_and_best_2k.sql
-  M  apps/rowtrack/types/workout.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

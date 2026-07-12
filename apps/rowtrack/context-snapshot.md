@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-11_
+_Gegenereerd op 2026-07-12_
 
 ## Project
 - **App:** rowtrack
@@ -55,11 +55,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6eea8e2 docs(rowtrack): best-2000m capture geverifieerd op echte 657m rit
 814a87f docs(rowtrack): handoff-notities best-2000m sessie-reflectie
 6180b69 feat(rowtrack): exacte beste-2000m op startscherm i.p.v. langste duur
 8591b9d fix(rowtrack): SPM-correctie bij weergave i.p.v. opslag (historiek volgt de toggle)
 ebba769 feat(rowtrack): SPM-correctie voor dubbeltellende trainers + afronding weergave
-b93ab24 fix(rowtrack): rond max/int-waardes af bij opslaan workout
 ```
 
 ## Uncommitted wijzigingen

@@ -55,15 +55,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+efe22cc chore(rowtrack): keep-alive functionaliteit verwijderd
+6b39463 docs(rowtrack): best-2000m end-to-end geverifieerd op echte ≥2k rit
 6eea8e2 docs(rowtrack): best-2000m capture geverifieerd op echte 657m rit
 814a87f docs(rowtrack): handoff-notities best-2000m sessie-reflectie
 6180b69 feat(rowtrack): exacte beste-2000m op startscherm i.p.v. langste duur
-8591b9d fix(rowtrack): SPM-correctie bij weergave i.p.v. opslag (historiek volgt de toggle)
-ebba769 feat(rowtrack): SPM-correctie voor dubbeltellende trainers + afronding weergave
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -191,19 +191,10 @@ export function useGoalProgress(
       refs.splitIntervalWattsCount.current = 0;
       setSplits((prev) => [...prev, { distance: nextMilestone, split: splitTime, watts: avgSplitWatts }]);
 
-      const key = `dist_${nextMilestone}`;
-      if (!milestonesHit.current.has(key)) {
-        milestonesHit.current.add(key);
-        if (goal?.type === 'distance') {
-          setMilestoneMsg(`${nextMilestone}m \u2713`);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        }
-      }
-
       lastSplitDistance.current = nextMilestone;
       splitStartSeconds.current = seconds;
     }
-  }, [phase, distanceMeters, seconds, goal]);
+  }, [phase, distanceMeters, seconds]);
 
   // --- PR checking ---
   useEffect(() => {

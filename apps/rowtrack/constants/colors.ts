@@ -58,7 +58,7 @@ export const buttonTokens = {
       radius: 8,
       height: 48,
       paddingX: 24,
-      typography: { fontFamily: 'SourceSerif4_600SemiBold', fontSize: 18, letterSpacing: -0.27 },
+      typography: { fontFamily: 'AlbertSans_400Regular', fontSize: 18, letterSpacing: -0.27 },
       shadow: [
         { offsetX: 0, offsetY: 1, blurRadius: 0, spreadDistance: 0, color: 'rgba(255, 255, 255, 0.22)', inset: true },
         { offsetX: 0, offsetY: -2, blurRadius: 4, spreadDistance: 0, color: 'rgba(180, 40, 40, 0.30)', inset: true },
@@ -79,7 +79,7 @@ export const buttonTokens = {
       paddingY: 12,
       paddingX: 22,
       gap: 10,
-      typography: { fontFamily: 'SourceSerif4_600SemiBold', fontSize: 16, letterSpacing: -0.24 },
+      typography: { fontFamily: 'AlbertSans_400Regular', fontSize: 16, letterSpacing: -0.24 },
       shadow: [
         { offsetX: 0, offsetY: 1, blurRadius: 0, spreadDistance: 0, color: 'rgba(255, 255, 255, 0.04)', inset: true },
       ],
@@ -92,7 +92,7 @@ export const buttonTokens = {
       borderWidth: 1,
       radius: 8,
       height: 52,
-      typography: { fontFamily: 'SourceSerif4_600SemiBold', fontSize: 16, letterSpacing: -0.24 },
+      typography: { fontFamily: 'AlbertSans_400Regular', fontSize: 16, letterSpacing: -0.24 },
       shadow: [
         { offsetX: 0, offsetY: 1, blurRadius: 0, spreadDistance: 0, color: 'rgba(255, 255, 255, 0.04)', inset: true },
       ],

@@ -54,16 +54,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+73555c6 button fonts
+882c8cd chore(rowtrack): ongebruikte ProgressBar component verwijderd
 4647b89 fix(rowtrack): voltooid-% via floor i.p.v. round
 6e1203a refactor(rowtrack): 500m-milestone popup verwijderd uit actieve training
 efe22cc chore(rowtrack): keep-alive functionaliteit verwijderd
-6b39463 docs(rowtrack): best-2000m end-to-end geverifieerd op echte ≥2k rit
-6eea8e2 docs(rowtrack): best-2000m capture geverifieerd op echte 657m rit
 ```
 
 ## Uncommitted wijzigingen
-  D  apps/rowtrack/components/workout/ProgressBar.tsx
-  M  apps/rowtrack/components/workout/index.ts
+   M apps/rowtrack/app/_layout.tsx
+   M apps/rowtrack/components/workout/ActivePhase.tsx
+   M apps/rowtrack/constants/colors.ts
+   M apps/rowtrack/constants/typography.ts
+  M  apps/rowtrack/lib/orientation.ts
+   M apps/rowtrack/style-dictionary.config.mjs
+   M apps/rowtrack/tokens/tokens.json
+  ?? apps/rowtrack/audits/
+  ?? apps/rowtrack/briefings/2026-07-13-active-workout-redesign-snapshot.md
+  ?? apps/rowtrack/briefings/2026-07-13-component-active-hero-labels.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

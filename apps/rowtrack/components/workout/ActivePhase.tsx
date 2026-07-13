@@ -221,7 +221,7 @@ export function ActivePhase({
           <View style={[activeStyles.subtitleRow, activeStyles.subtitleSpacer]}>
             <Text style={activeStyles.subtitleRowText}>{formatTimer(seconds)}</Text>
             <View style={activeStyles.subtitleDivider} />
-            <Text style={activeStyles.subtitleRowText}>{`${Math.round(pct * 100)}% voltooid`}</Text>
+            <Text style={activeStyles.subtitleRowText}>{`${Math.floor(pct * 100)}% voltooid`}</Text>
           </View>
         );
         break;
@@ -236,7 +236,7 @@ export function ActivePhase({
           <View style={[activeStyles.subtitleRow, activeStyles.subtitleSpacer]}>
             <Text style={activeStyles.subtitleRowText}>{`${formatMetersDotted(distanceMeters)} m`}</Text>
             <View style={activeStyles.subtitleDivider} />
-            <Text style={activeStyles.subtitleRowText}>{`${Math.round(pct * 100)}% voltooid`}</Text>
+            <Text style={activeStyles.subtitleRowText}>{`${Math.floor(pct * 100)}% voltooid`}</Text>
           </View>
         );
         break;
@@ -430,7 +430,7 @@ export function ActivePhase({
             <Text style={portraitStyles.subtitleRowText}>{formatTimer(seconds)}</Text>
             <View style={portraitStyles.subtitleDivider} />
             <Text style={portraitStyles.subtitleRowText}>
-              {`${Math.round(pct * 100)}% voltooid`}
+              {`${Math.floor(pct * 100)}% voltooid`}
             </Text>
           </View>
         );
@@ -452,7 +452,7 @@ export function ActivePhase({
             <Text style={portraitStyles.subtitleRowText}>{elapsedStr}</Text>
             <View style={portraitStyles.subtitleDivider} />
             <Text style={portraitStyles.subtitleRowText}>
-              {`${Math.round(pct * 100)}% voltooid`}
+              {`${Math.floor(pct * 100)}% voltooid`}
             </Text>
           </View>
         );

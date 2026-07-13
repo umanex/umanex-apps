@@ -44,7 +44,9 @@ function fmtRemaining(metric: PeriodGoalMetric, current: number, target: number)
 
 export function GoalProgressCard({ progress, onEdit }: GoalProgressCardProps) {
   const { goal, current, percentage } = progress;
-  const pct = Math.round(percentage);
+  // Floor, niet round: een 'voldaan'-teller mag een drempel pas tonen zodra hij écht bereikt is
+  // (99,6% → 99%, niet 100%). Round zou progressie overdrijven.
+  const pct = Math.floor(percentage);
   const fillWidth = `${Math.min(pct, 100)}%` as const;
 
   return (

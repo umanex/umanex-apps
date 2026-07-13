@@ -11,10 +11,11 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import type { ConnectionStatus, HRStatus } from '@/lib/ble/types';
 import type { WorkoutGoal } from '@/lib/workout-goals';
-import { Button, KPI, KpiSingle } from '@/components';
+import { Button, KpiSingle } from '@/components';
 import {
   GoalSetupModal,
   MotivationalToast,
@@ -23,7 +24,7 @@ import {
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatMetersDotted, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
-import { bg, fg, accent, border, progressBar, status, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
+import { bg, fg, accent, border, progressBar, status, buttonTokens, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
 import { styles } from './workout.styles';
 
@@ -169,150 +170,205 @@ export function ActivePhase({
 
   const handleCloseGoalModal = useCallback(() => setShowGoalModal(false), []);
 
-  // --- Landscape: top section (pill top-aligned; hero + bar + subtitle centred) ---
-  function renderTopSection() {
-    const goalType = goal?.type ?? null;
-
-    // Pill target label — portrait-parity structure; landscape splits get leading-zero minutes.
-    let doelTargetLabel = '';
-    if (goal) {
-      switch (goal.type) {
-        case 'duration': {
-          const m = Math.floor(goal.target / 60);
-          const s = goal.target % 60;
-          doelTargetLabel = `${m}:${String(s).padStart(2, '0')} MIN`;
-          break;
-        }
-        case 'distance':
-          doelTargetLabel = goal.target >= 1000
-            ? `${(goal.target / 1000).toFixed(1).replace('.', ',')} KM`
-            : `${goal.target} M`;
-          break;
-        case 'split':
-          doelTargetLabel = `${formatSplit(goal.target, true)}/500m`;
-          break;
-        case 'watts':
-          doelTargetLabel = `${goal.target} W`;
-          break;
+  // --- DOEL-pill waarde (nieuw compact/lowercase design) ---
+  // None="Geen", duration="20 min", distance="10 km". split/watts behouden hun
+  // huidige format (staan niet in de redesign-frames).
+  function goalPillValue(): string {
+    if (!goal) return 'Geen';
+    switch (goal.type) {
+      case 'duration': {
+        const m = Math.floor(goal.target / 60);
+        const s = goal.target % 60;
+        return s === 0 ? `${m} min` : `${m}:${String(s).padStart(2, '0')} min`;
       }
+      case 'distance': {
+        if (goal.target >= 1000) {
+          const km = goal.target / 1000;
+          return Number.isInteger(km) ? `${km} km` : `${km.toFixed(1).replace('.', ',')} km`;
+        }
+        return `${goal.target} m`;
+      }
+      case 'split':
+        return `${formatSplit(goal.target, true)}/500m`;
+      case 'watts':
+        return `${goal.target} W`;
     }
+  }
 
-    // Hero + progress bar descriptor + subtitle — mirrors the portrait per-goal logic.
-    type Bar = { fillPct: number; color: string; radius: number; showDot: boolean };
-    let heroText: string = formattedTimer;
-    let bar: Bar | null = null;
-    let subtitleNode: ReactNode = null;
+  // --- Hero-getal + subtitle + progress-fill per doeltype (gedeeld portrait/landscape) ---
+  type FillKind = 'none' | 'gradient' | 'success' | 'warning';
+  function computeGoalView(): { heroLabel: string | null; heroText: string; subLabel: string | null; subtitle: ReactNode; fillPct: number; fillKind: FillKind } {
+    const goalType = goal?.type ?? null;
+    // Eyebrow-labels maken het hero-getal ondubbelzinnig: bij een doel telt de hero
+    // AF (resterend), zonder label leest dat verkeerd (audit F3). Defaults = geen doel.
+    let heroLabel: string | null = 'Totale tijd';
+    let heroText = formattedTimer;
+    let subLabel: string | null = 'Totale afstand';
+    let subtitle: ReactNode = null;
+    let fillPct = 0;
+    let fillKind: FillKind = 'none';
+
+    // Subtitle-rij voor duration/distance: verstreken waarde · divider · "{n}%" (floor).
+    const progressRow = (left: string, p: number) => (
+      <View style={activeStyles.subtitleRow}>
+        <Text style={activeStyles.subtitleText}>{left}</Text>
+        <View style={activeStyles.subtitleDivider} />
+        <Text style={activeStyles.subtitleText}>{`${Math.floor(p * 100)}%`}</Text>
+      </View>
+    );
 
     switch (goalType) {
-      case null: {
-        subtitleNode = (
-          <Text style={[activeStyles.subtitleText, activeStyles.subtitleSpacer]}>
-            {`${formatMetersDotted(distanceMeters)} m`}
-          </Text>
-        );
-        break;
-      }
       case 'duration': {
         const target = goal!.target;
-        const pct = target > 0 ? Math.min(1, seconds / target) : 0;
+        fillPct = target > 0 ? Math.min(1, seconds / target) : 0;
+        fillKind = 'gradient';
+        heroLabel = 'Resterende tijd';
         heroText = formatTimer(Math.max(0, target - seconds));
-        bar = { fillPct: pct, color: accent.default, radius: radii.lg, showDot: true };
-        subtitleNode = (
-          <View style={[activeStyles.subtitleRow, activeStyles.subtitleSpacer]}>
-            <Text style={activeStyles.subtitleRowText}>{formatTimer(seconds)}</Text>
-            <View style={activeStyles.subtitleDivider} />
-            <Text style={activeStyles.subtitleRowText}>{`${Math.floor(pct * 100)}% voltooid`}</Text>
-          </View>
-        );
+        subLabel = 'Afgelegd';
+        subtitle = progressRow(formatTimer(seconds), fillPct);
         break;
       }
       case 'distance': {
         const target = goal!.target;
-        const pct = target > 0 ? Math.min(1, distanceMeters / target) : 0;
-        // Hero: remaining meters with dotted thousands, no unit (design 42:5934 '15.000').
+        fillPct = target > 0 ? Math.min(1, distanceMeters / target) : 0;
+        fillKind = 'gradient';
+        heroLabel = 'Resterende afstand';
         heroText = formatMetersDotted(Math.max(0, target - distanceMeters));
-        bar = { fillPct: pct, color: accent.default, radius: radii.lg, showDot: true };
-        subtitleNode = (
-          <View style={[activeStyles.subtitleRow, activeStyles.subtitleSpacer]}>
-            <Text style={activeStyles.subtitleRowText}>{`${formatMetersDotted(distanceMeters)} m`}</Text>
-            <View style={activeStyles.subtitleDivider} />
-            <Text style={activeStyles.subtitleRowText}>{`${Math.floor(pct * 100)}% voltooid`}</Text>
-          </View>
-        );
+        subLabel = 'Afgelegd';
+        subtitle = progressRow(`${formatMetersDotted(distanceMeters)}m`, fillPct);
         break;
       }
       case 'split': {
+        heroLabel = 'Huidige split 500/m';
+        subLabel = null;
         heroText = formatSplit(splitSeconds, true);
-        const onTarget = splitSeconds > 0 && splitSeconds <= goal!.target;
-        bar = { fillPct: 1, color: onTarget ? progressBar.successFill : progressBar.warningFill, radius: 6, showDot: false };
+        fillPct = 1;
+        fillKind = splitSeconds > 0 && splitSeconds <= goal!.target ? 'success' : 'warning';
         let sub = 'Begin met roeien...';
         if (splitSeconds !== 0) {
           const diff = goal!.target - splitSeconds;
           const absDiff = Math.abs(Math.round(diff));
           sub = diff >= 0 ? `Je bent ${absDiff} seconden sneller` : `Je bent ${absDiff} seconden trager`;
         }
-        subtitleNode = <Text style={[activeStyles.subtitleText, activeStyles.subtitleSpacer]}>{sub}</Text>;
+        subtitle = <Text style={activeStyles.subtitleText}>{sub}</Text>;
         break;
       }
       case 'watts': {
+        heroLabel = 'Huidige kracht';
+        subLabel = null;
         heroText = `${watts} W`;
-        const onTarget = watts >= goal!.target;
-        bar = { fillPct: 1, color: onTarget ? progressBar.successFill : progressBar.warningFill, radius: 6, showDot: false };
+        fillPct = 1;
+        fillKind = watts >= goal!.target ? 'success' : 'warning';
         let sub = 'Begin met roeien...';
         if (watts !== 0) {
           const diff = watts - goal!.target;
           const absDiff = Math.abs(Math.round(diff));
           sub = diff >= 0 ? `Je levert ${absDiff} W meer` : `Je levert ${absDiff} W minder dan je doel`;
         }
-        subtitleNode = <Text style={[activeStyles.subtitleText, activeStyles.subtitleSpacer]}>{sub}</Text>;
+        subtitle = <Text style={activeStyles.subtitleText}>{sub}</Text>;
         break;
       }
+      default:
+        // Geen doel: hero = verstreken tijd, subtitle = verstreken afstand.
+        heroText = formattedTimer;
+        subtitle = <Text style={activeStyles.subtitleText}>{`${formatMetersDotted(distanceMeters)}m`}</Text>;
     }
+    return { heroLabel, heroText, subLabel, subtitle, fillPct, fillKind };
+  }
 
+  // --- Hero-content: eyebrow-label + hero-getal, dan eyebrow-label + subtitle.
+  // Gedeeld portrait/landscape (Figma Main KPI: gap 40 tussen groepen, gap 8 binnen).
+  // Split/watts hebben geen subtitle-eyebrow (subLabel = null) → enkel coaching-tekst. ---
+  function renderHeroContent(gv: ReturnType<typeof computeGoalView>): ReactNode {
+    return (
+      <>
+        <View style={activeStyles.heroGroup}>
+          {gv.heroLabel != null && <Text style={activeStyles.heroLabel}>{gv.heroLabel}</Text>}
+          <Text style={activeStyles.heroText}>{gv.heroText}</Text>
+        </View>
+        <View style={activeStyles.heroGroup}>
+          {gv.subLabel != null && <Text style={activeStyles.heroLabel}>{gv.subLabel}</Text>}
+          {gv.subtitle}
+        </View>
+      </>
+    );
+  }
+
+  // --- Header-inhoud: DOEL-pill + compacte Stop-knop (gedeeld) ---
+  function headerChildren(): ReactNode {
     return (
       <>
         <View style={activeStyles.doelPill}>
           <Text style={activeStyles.doelPillLabel}>DOEL</Text>
           <View style={activeStyles.doelPillDivider} />
-          <Text style={activeStyles.doelPillValue}>{goal ? doelTargetLabel : 'Geen doel'}</Text>
+          <Text style={activeStyles.doelPillValue}>{goalPillValue()}</Text>
         </View>
-        <View style={activeStyles.heroGroup}>
-          <Text style={activeStyles.timerText}>{heroText}</Text>
-          {bar && (
-            <View style={[activeStyles.progressTrack, { borderRadius: bar.radius }]}>
-              {bar.fillPct > 0 && (
-                <View
-                  style={[
-                    activeStyles.progressFill,
-                    {
-                      width: `${Math.min(bar.fillPct * 100, 100)}%`,
-                      backgroundColor: bar.color,
-                      borderRadius: bar.radius,
-                    },
-                  ]}
-                >
-                  {bar.showDot && (
-                    <View style={[activeStyles.progressDot, { backgroundColor: bar.color }]} />
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-          {subtitleNode}
-        </View>
+        <Button
+          title="Stop"
+          variant="primary"
+          size="md"
+          icon="arrow-forward"
+          iconPosition="trailing"
+          onPress={onStop}
+        />
       </>
     );
   }
 
-  // --- Landscape: KPI rows ---
-  function renderKPIs(compact: boolean) {
+  // --- Progress-fill: gradient (duration/distance) of solid success/warning (split/watts) ---
+  function barFillInner(fillKind: FillKind, vertical: boolean): ReactNode {
+    if (fillKind === 'gradient') {
+      return (
+        <LinearGradient
+          colors={[buttonTokens.primary.gradientFrom, buttonTokens.primary.gradientTo]}
+          start={vertical ? { x: 0, y: 1 } : { x: 0, y: 0 }}
+          end={vertical ? { x: 0, y: 0 } : { x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      );
+    }
+    const color = fillKind === 'success' ? progressBar.successFill : progressBar.warningFill;
+    return <View style={[StyleSheet.absoluteFill, { backgroundColor: color }]} />;
+  }
+
+  // --- Progress-bar horizontaal (portrait): full-bleed 4px tussen hero-paneel en KPI-lijst ---
+  function renderProgressBarH(fillPct: number, fillKind: FillKind): ReactNode {
+    return (
+      <View style={activeStyles.barTrackH}>
+        {fillKind !== 'none' && fillPct > 0 && (
+          <View style={[activeStyles.barFillH, { width: `${Math.min(fillPct * 100, 100)}%` }]}>
+            {barFillInner(fillKind, false)}
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // --- Progress-bar verticaal (landscape): 4px op de kolomscheiding, vult onder→boven ---
+  function renderProgressBarV(fillPct: number, fillKind: FillKind): ReactNode {
+    return (
+      <View style={landscapeStyles.barTrackV}>
+        {fillKind !== 'none' && fillPct > 0 && (
+          <View style={[landscapeStyles.barFillV, { height: `${Math.min(fillPct * 100, 100)}%` }]}>
+            {barFillInner(fillKind, true)}
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // --- KPI-lijst: flatte rijen met hairline-divider (gedeeld; fill=true → landscape) ---
+  type KPIKey = 'SPLIT' | 'WATT' | 'SPM' | 'BPM' | 'AFSTAND' | 'TIJD' | 'KCAL';
+  function renderKpiList(fill: boolean): ReactNode {
     const goalType = goal?.type ?? null;
-    type KPIKey = 'SPLIT' | 'WATT' | 'SPM' | 'BPM' | 'AFSTAND' | 'TIJD' | 'KCAL';
 
     let kpiOrder: KPIKey[];
     switch (goalType) {
       case 'distance':
         kpiOrder = ['SPLIT', 'WATT', 'SPM', 'BPM', 'TIJD', 'KCAL'];
+        break;
+      case 'duration':
+        kpiOrder = ['SPLIT', 'WATT', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
         break;
       case 'split':
         kpiOrder = ['WATT', 'TIJD', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
@@ -321,28 +377,31 @@ export function ActivePhase({
         kpiOrder = ['SPLIT', 'TIJD', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
         break;
       default:
-        kpiOrder = ['SPLIT', 'WATT', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
+        // Geen doel: totale afstand staat al als hero-subtitle → niet dubbel in de lijst.
+        kpiOrder = ['SPLIT', 'WATT', 'SPM', 'BPM', 'KCAL'];
     }
 
+    // Natuurlijke casing (design): labels niet uppercase; SPM/BPM blijven acroniemen.
     function kpiLabel(key: KPIKey): string {
       switch (key) {
-        case 'SPLIT': return 'SPLIT 500/M';
-        case 'WATT': return 'WATT';
+        case 'SPLIT': return 'Split 500/m';
+        case 'WATT': return 'Watt';
         case 'SPM': return 'SPM';
         case 'BPM': return 'BPM';
-        case 'AFSTAND': return 'AFSTAND';
-        case 'TIJD': return 'TIJD';
-        case 'KCAL': return 'KCAL';
+        case 'AFSTAND': return 'Totaal afstand';
+        case 'TIJD': return 'Tijd';
+        case 'KCAL': return 'Totaal Kcal';
       }
     }
 
+    // Waarden zonder redundante unit (het label draagt de eenheid); Afstand houdt "m".
     function kpiValue(key: KPIKey): string {
       switch (key) {
         case 'SPLIT': return formatSplit(avgSplit, true);
-        case 'WATT': return `${avgWatts} W`;
+        case 'WATT': return `${avgWatts}`;
         case 'SPM': return `${correctSpm(avgSpm, spmHalved)}`;
         case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
-        case 'AFSTAND': return `${formatMetersDotted(distanceMeters)} m`;
+        case 'AFSTAND': return `${formatMetersDotted(distanceMeters)}m`;
         case 'TIJD': return formattedTimer;
         case 'KCAL': return `${Math.round(calories)}${hasProfileWeight ? '' : '*'}`;
       }
@@ -350,294 +409,90 @@ export function ActivePhase({
 
     return (
       <>
-        {kpiOrder.map((key) =>
-          key === 'BPM' ? (
-            <KPI
-              key="BPM"
-              label="BPM"
-              value={kpiValue('BPM')}
-              compact={compact}
-              fill={compact}
-              onPress={startHRScan}
-              loading={hrStatus === 'scanning'}
-            />
-          ) : (
-            <KPI
-              key={key}
-              label={kpiLabel(key)}
-              value={kpiValue(key)}
-              compact={compact}
-              fill={compact}
-            />
-          )
-        )}
+        {kpiOrder.map((key, i) => {
+          const rowStyle = [
+            activeStyles.kpiRow,
+            fill ? activeStyles.kpiRowFill : activeStyles.kpiRowFixed,
+            i < kpiOrder.length - 1 && activeStyles.kpiRowDivider,
+          ];
+          if (key === 'BPM') {
+            return (
+              <TouchableOpacity key="BPM" style={rowStyle} onPress={startHRScan} activeOpacity={0.8}>
+                <Text style={activeStyles.kpiLabel}>BPM</Text>
+                {hrStatus === 'scanning' ? (
+                  <ActivityIndicator size="small" color={fg.secondary} />
+                ) : (
+                  <Text style={activeStyles.kpiValue}>{kpiValue('BPM')}</Text>
+                )}
+              </TouchableOpacity>
+            );
+          }
+          return (
+            <View key={key} style={rowStyle}>
+              <Text style={activeStyles.kpiLabel}>{kpiLabel(key)}</Text>
+              <Text style={activeStyles.kpiValue}>{kpiValue(key)}</Text>
+            </View>
+          );
+        })}
       </>
     );
   }
 
-  // --- Portrait: 5 goal-type variants ---
-  function renderPortrait() {
-    const goalType = goal?.type ?? null;
-
-    // DOEL pill: always "DOEL" on left, formatted target value on right
-    let doelTargetLabel = '';
-    if (goal) {
-      switch (goal.type) {
-        case 'duration': {
-          const m = Math.floor(goal.target / 60);
-          const s = goal.target % 60;
-          doelTargetLabel = `${m}:${String(s).padStart(2, '0')} MIN`;
-          break;
-        }
-        case 'distance':
-          doelTargetLabel = goal.target >= 1000
-            ? `${(goal.target / 1000).toFixed(1).replace('.', ',')} KM`
-            : `${goal.target} M`;
-          break;
-        case 'split':
-          doelTargetLabel = `${formatSplit(goal.target)}/500m`;
-          break;
-        case 'watts':
-          doelTargetLabel = `${goal.target} W`;
-          break;
-      }
-    }
-
-    // Hero + progress fill pct (0–1) + subtitle node — computed per goal type
-    let heroText = formattedTimer;
-    let progressFillPct = 0;
-    let progressBarColor: string = accent.default;
-    let progressBarRadius: number = radii.lg;
-    let subtitleNode: ReactNode = null;
-
-    switch (goalType) {
-      case null: {
-        subtitleNode = (
-          <Text style={portraitStyles.subtitleText}>
-            {`${formatMetersDotted(distanceMeters)} m`}
-          </Text>
-        );
-        break;
-      }
-      case 'duration': {
-        const target = goal!.target;
-        const remaining = Math.max(0, target - seconds);
-        const pct = target > 0 ? Math.min(1, seconds / target) : 0;
-        heroText = formatTimer(remaining);
-        progressFillPct = pct;
-        subtitleNode = (
-          <View style={portraitStyles.subtitleRow}>
-            <Text style={portraitStyles.subtitleRowText}>{formatTimer(seconds)}</Text>
-            <View style={portraitStyles.subtitleDivider} />
-            <Text style={portraitStyles.subtitleRowText}>
-              {`${Math.floor(pct * 100)}% voltooid`}
-            </Text>
-          </View>
-        );
-        break;
-      }
-      case 'distance': {
-        const target = goal!.target;
-        const remaining = Math.max(0, target - distanceMeters);
-        const pct = target > 0 ? Math.min(1, distanceMeters / target) : 0;
-        // Hero: remaining meters with dotted thousands, no unit (design 85:2381 "15.000")
-        heroText = formatMetersDotted(remaining);
-        progressFillPct = pct;
-        // Subtitle elapsed: comma as decimal separator (e.g. "5,0 km")
-        const elapsedStr = distanceMeters >= 1000
-          ? `${(distanceMeters / 1000).toFixed(1).replace('.', ',')} km`
-          : `${Math.round(distanceMeters)} m`;
-        subtitleNode = (
-          <View style={portraitStyles.subtitleRow}>
-            <Text style={portraitStyles.subtitleRowText}>{elapsedStr}</Text>
-            <View style={portraitStyles.subtitleDivider} />
-            <Text style={portraitStyles.subtitleRowText}>
-              {`${Math.floor(pct * 100)}% voltooid`}
-            </Text>
-          </View>
-        );
-        break;
-      }
-      case 'split': {
-        progressFillPct = 1;
-        progressBarColor = splitSeconds > 0 && splitSeconds <= goal!.target ? progressBar.successFill : progressBar.warningFill;
-        progressBarRadius = 6;
-        heroText = formatSplit(splitSeconds);
-        let splitSubtitle = 'Begin met roeien...';
-        if (splitSeconds !== 0) {
-          const diff = goal!.target - splitSeconds;
-          const absDiff = Math.abs(Math.round(diff));
-          splitSubtitle = diff >= 0
-            ? `Je bent ${absDiff} seconden sneller`
-            : `Je bent ${absDiff} seconden trager`;
-        }
-        subtitleNode = (
-          <Text style={portraitStyles.subtitleText}>{splitSubtitle}</Text>
-        );
-        break;
-      }
-      case 'watts': {
-        progressFillPct = 1;
-        progressBarColor = watts >= goal!.target ? progressBar.successFill : progressBar.warningFill;
-        progressBarRadius = 6;
-        heroText = `${watts} W`;
-        let wattsSubtitle = 'Begin met roeien...';
-        if (watts !== 0) {
-          const diff = watts - goal!.target;
-          const absDiff = Math.abs(Math.round(diff));
-          wattsSubtitle = diff >= 0
-            ? `Je levert ${absDiff} W meer`
-            : `Je levert ${absDiff} W minder dan je doel`;
-        }
-        subtitleNode = (
-          <Text style={portraitStyles.subtitleText}>{wattsSubtitle}</Text>
-        );
-        break;
-      }
-    }
-
-    // KPI ordering per goal type
-    type KPIKey = 'SPLIT' | 'WATT' | 'SPM' | 'BPM' | 'AFSTAND' | 'TIJD' | 'KCAL';
-    let kpiOrder: KPIKey[];
-    switch (goalType) {
-      case 'distance':
-        kpiOrder = ['SPLIT', 'WATT', 'SPM', 'BPM', 'TIJD', 'KCAL'];
-        break;
-      case 'split':
-        kpiOrder = ['WATT', 'TIJD', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
-        break;
-      case 'watts':
-        kpiOrder = ['SPLIT', 'TIJD', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
-        break;
-      default:
-        kpiOrder = ['SPLIT', 'WATT', 'SPM', 'BPM', 'AFSTAND', 'KCAL'];
-    }
-
-    function kpiDisplayLabel(key: KPIKey): string {
-      switch (key) {
-        case 'SPLIT': return 'SPLIT 500/M';
-        case 'WATT': return 'WATT';
-        case 'SPM': return 'SPM';
-        case 'BPM': return 'BPM';
-        case 'AFSTAND': return 'AFSTAND';
-        case 'TIJD': return 'TIJD';
-        case 'KCAL': return 'KCAL';
-      }
-    }
-
-    function kpiDisplayValue(key: KPIKey): string {
-      switch (key) {
-        case 'SPLIT': return formatSplit(avgSplit);
-        case 'WATT': return `${avgWatts} W`;
-        case 'SPM': return `${correctSpm(avgSpm, spmHalved)}`;
-        case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
-        case 'AFSTAND': return `${formattedDistance.value} ${formattedDistance.unit}`;
-        case 'TIJD': return formattedTimer;
-        case 'KCAL': return `${Math.round(calories)}${hasProfileWeight ? '' : '*'}`;
-      }
-    }
-
+  // --- Portrait layout ---
+  function renderPortrait(): ReactNode {
+    const gv = computeGoalView();
     return (
       <View style={portraitStyles.root}>
-        {/* Top Section */}
-        <View style={portraitStyles.topSection}>
-          <View style={portraitStyles.doelPill}>
-            <Text style={portraitStyles.doelPillLabel}>DOEL</Text>
-            <View style={portraitStyles.doelPillDivider} />
-            <Text style={portraitStyles.doelPillValue}>{goal ? doelTargetLabel : 'Geen doel'}</Text>
-          </View>
-
-          <View style={portraitStyles.heroGroup}>
-            <Text style={portraitStyles.heroText}>{heroText}</Text>
-
-            {goal && (
-              <View style={[portraitStyles.progressTrack, { borderRadius: progressBarRadius }]}>
-                {progressFillPct > 0 && (
-                  <View
-                    style={[
-                      portraitStyles.progressFill,
-                      {
-                        width: `${Math.min(progressFillPct * 100, 100)}%`,
-                        backgroundColor: progressBarColor,
-                        borderRadius: progressBarRadius,
-                      },
-                    ]}
-                  >
-                    {goalType !== 'split' && goalType !== 'watts' && (
-                      <View style={[portraitStyles.progressDot, { backgroundColor: progressBarColor }]} />
-                    )}
-                  </View>
-                )}
-              </View>
-            )}
-
-            {subtitleNode}
-          </View>
+        {/* Header: DOEL-pill links, compacte Stop-knop rechts */}
+        <View
+          style={[
+            activeStyles.header,
+            {
+              paddingTop: Math.max(space['28'], insets.top),
+              paddingBottom: space['28'],
+              paddingHorizontal: padH,
+            },
+          ]}
+        >
+          {headerChildren()}
         </View>
 
-        {/* KPI Grid */}
-        <View style={portraitStyles.kpiGrid}>
-          {kpiOrder.map((key) => {
-            if (key === 'BPM') {
-              return (
-                <TouchableOpacity
-                  key="BPM"
-                  style={portraitStyles.kpiRow}
-                  onPress={startHRScan}
-                  activeOpacity={0.8}
-                >
-                  <Text style={portraitStyles.kpiLabel}>BPM</Text>
-                  {hrStatus === 'scanning' ? (
-                    <ActivityIndicator size="small" color={fg.secondary} />
-                  ) : (
-                    <Text style={portraitStyles.kpiValue}>{kpiDisplayValue('BPM')}</Text>
-                  )}
-                </TouchableOpacity>
-              );
-            }
-            return (
-              <View key={key} style={portraitStyles.kpiRow}>
-                <Text style={portraitStyles.kpiLabel}>{kpiDisplayLabel(key)}</Text>
-                <Text style={portraitStyles.kpiValue}>{kpiDisplayValue(key)}</Text>
-              </View>
-            );
-          })}
+        {/* Hero-paneel (bg.elevated), vult de vrije ruimte, content gecentreerd */}
+        <View style={[activeStyles.heroPanel, portraitStyles.heroPanel]}>
+          {renderHeroContent(gv)}
         </View>
 
-        {/* Stop button */}
-        <Button
-          title="Stop training"
-          variant="primary"
-          size="md"
-          icon="arrow-forward"
-          iconPosition="trailing"
-          onPress={onStop}
-          style={{ alignSelf: 'stretch' }}
-        />
+        {/* Progress-bar: full-bleed 4px tussen paneel en KPI-lijst */}
+        {renderProgressBarH(gv.fillPct, gv.fillKind)}
+
+        {/* KPI-lijst: flatte rijen */}
+        <View
+          style={[
+            portraitStyles.kpiGrid,
+            { paddingHorizontal: padH, paddingBottom: Math.max(space['8'], insets.bottom) },
+          ]}
+        >
+          {renderKpiList(false)}
+        </View>
       </View>
     );
   }
 
-  // Figma: landscape 20px rondom; portrait 20 L/R + 28 T/B. Elke rand is
-  // max(design-padding, safe-area-inset) zodat content de notch/home-indicator
-  // vrijhoudt. Horizontaal symmetrisch (max van beide insets) zodat het 50/50-blok
-  // gecentreerd op het scherm blijft i.p.v. weggeduwd door de notch aan één kant.
-  const edgePadV = isLandscape ? space['20'] : space['28'];
-  const edgePadH = Math.max(layout.screenHorizontal, insets.left, insets.right);
+  // Full-bleed secties: de container draagt geen horizontale padding meer. Elke
+  // sectie (header, KPI-grid) regelt zelf zijn padding + safe-area, zodat het
+  // hero-paneel (bg.elevated) en de progress-bar tot de schermrand lopen.
+  // padH is symmetrisch (max van beide insets) zodat het 50/50-blok gecentreerd
+  // blijft i.p.v. weggeduwd door de notch aan één kant.
+  const padH = Math.max(layout.screenHorizontal, insets.left, insets.right);
 
   return (
-    <View style={[styles.container, {
-      paddingTop: Math.max(edgePadV, insets.top),
-      paddingBottom: Math.max(edgePadV, insets.bottom),
-      paddingLeft: edgePadH,
-      paddingRight: edgePadH,
-    }]}>
+    <View style={[styles.container, { paddingHorizontal: 0 }]}>
       {/* Milestone overlay */}
       <MilestoneOverlay message={milestoneMsg} onDismiss={dismissMilestone} />
 
       {/* Connection status overlay */}
       {isConnecting && (
-        <View style={styles.connectionOverlay}>
+        <View style={[styles.connectionOverlay, { paddingHorizontal: padH }]}>
           {bleStatus !== 'error' ? (
             <>
               <ActivityIndicator color={accent.default} size="large" />
@@ -664,30 +519,53 @@ export function ActivePhase({
         <View
           style={landscapeStyles.root}
           onLayout={e => {
-            const next = (e.nativeEvent.layout.width - space['40']) / 2;
+            // Twee gelijke kolommen met een 4px verticale progress-bar ertussen.
+            const next = (e.nativeEvent.layout.width - 4) / 2;
             setLandColWidth(prev => (prev != null && Math.abs(prev - next) < 0.5 ? prev : next));
           }}
         >
-          {/* Left column: timer + stop button */}
-          <View style={[landscapeStyles.leftCol, landColStyle]}>
-            <View style={landscapeStyles.leftTop}>
-              {renderTopSection()}
-            </View>
-            <Button
-              title="Stop training"
-              variant="primary"
-              size="md"
-              icon="arrow-forward"
-              iconPosition="trailing"
-              onPress={onStop}
-              style={{ alignSelf: 'stretch' }}
-            />
-          </View>
+          {(() => {
+            const gv = computeGoalView();
+            return (
+              <>
+                {/* Links: hero-paneel (bg.elevated) */}
+                <View style={[activeStyles.heroPanel, landColStyle, { paddingLeft: insets.left }]}>
+                  {renderHeroContent(gv)}
+                </View>
 
-          {/* Right column: KPI list */}
-          <View style={[landscapeStyles.rightCol, landColStyle]}>
-            {renderKPIs(true)}
-          </View>
+                {/* Verticale progress-bar op de kolomscheiding */}
+                {renderProgressBarV(gv.fillPct, gv.fillKind)}
+
+                {/* Rechts: header (pill + Stop) boven de KPI-lijst */}
+                <View style={[landscapeStyles.rightCol, landColStyle]}>
+                  <View
+                    style={[
+                      activeStyles.header,
+                      {
+                        paddingTop: Math.max(space['20'], insets.top),
+                        paddingBottom: space['20'],
+                        paddingLeft: space['20'],
+                        paddingRight: Math.max(space['20'], insets.right),
+                      },
+                    ]}
+                  >
+                    {headerChildren()}
+                  </View>
+                  <View
+                    style={[
+                      landscapeStyles.kpiList,
+                      {
+                        paddingRight: Math.max(space['20'], insets.right),
+                        paddingBottom: Math.max(space['8'], insets.bottom),
+                      },
+                    ]}
+                  >
+                    {renderKpiList(true)}
+                  </View>
+                </View>
+              </>
+            );
+          })()}
         </View>
       ) : !isConnecting ? (
         /* ===== PORTRAIT LAYOUT ===== */
@@ -796,197 +674,140 @@ export function ActivePhase({
 }
 
 const activeStyles = StyleSheet.create({
-  // Pill anchored to the top of the left column (design 42:5876).
+  // Header: DOEL-pill links, compacte Stop-knop rechts (top-uitgelijnd).
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: space['16'],
+  },
+  // DOEL-pill: pill-vorm, hoogte 48, subtiele accent-fill.
   doelPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 40,
-    backgroundColor: accent.subtle,
-    borderRadius: radii.lg,
+    height: 48,
+    // TODO: token accent.subtle-10 (0.10) via Tokens Studio — accent.subtle=0.06 / accent.muted=0.12 dekken deze fill niet.
+    backgroundColor: 'rgba(240, 84, 84, 0.10)',
+    borderRadius: radii.full,
     borderWidth: 1,
     borderColor: accent.muted,
-    paddingHorizontal: space['16'],
+    paddingHorizontal: space['20'],
     gap: space['16'],
   },
   doelPillLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.secondary,
+    fontFamily: fontFamily.albertSansSemiBold,
+    fontSize: fontSize['14'],
+    letterSpacing: 2.8, // 20% van 14
+    color: fg.onAccent,
   },
   doelPillDivider: {
     width: 1,
     height: 16,
-    backgroundColor: fg.quaternary,
+    borderRadius: 8,
+    backgroundColor: fg.secondary,
   },
   doelPillValue: {
-    ...typeStyles.kpiValue,
+    fontFamily: fontFamily.albertSansRegular,
+    fontSize: fontSize['18'],
+    letterSpacing: -0.45, // -2.5% van 18
     color: accent.default,
   },
-  // Hero group fills the space below the pill and centres its content.
-  heroGroup: {
-    flex: 1,
-    width: '100%',
+  // Hero-paneel (bg.elevated); flex/stretch worden per oriëntatie toegevoegd.
+  heroPanel: {
+    backgroundColor: bg.elevated,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space['16'],
+    gap: space['40'],
   },
-  timerText: {
-    fontFamily: fontFamily.sourceSerifBold,
-    fontSize: fontSize['124'],
-    // Geen lineHeight < fontSize: een krappe regelhoogte kapt de serif-toppen af
-    // (bovenaan). Natuurlijke regelhoogte bevat de glyph en centreert vanzelf.
-    letterSpacing: typeStyles.heroNumeric.letterSpacing,
+  // Hero- en subtitle-groep: eyebrow-label boven zijn waarde (Figma Frame 130/132, gap 8).
+  heroGroup: {
+    alignItems: 'center',
+    gap: space['8'],
+  },
+  // Eyebrow-label boven hero-getal én subtitle: Albert Sans SemiBold 16, 20% tracking, UPPER.
+  heroLabel: {
+    fontFamily: fontFamily.albertSansSemiBold,
+    fontSize: fontSize['16'],
+    letterSpacing: 3.2, // 20% van 16
+    textTransform: 'uppercase',
     color: fg.onAccent,
   },
-  progressTrack: {
-    alignSelf: 'stretch',
-    height: 2,
-    backgroundColor: progressBar.trackColor,
-    borderRadius: radii.lg,
-  },
-  progressFill: {
-    height: 2,
-    backgroundColor: accent.default,
-    borderRadius: radii.lg,
-  },
-  progressDot: {
-    position: 'absolute',
-    right: -3,
-    top: -2,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: accent.default,
+  heroText: {
+    fontFamily: fontFamily.albertSansBold,
+    // TODO: token fontSize.114 via Tokens Studio (grootste bestaande token = 96).
+    fontSize: 114,
+    letterSpacing: -5.13, // -4.5% van 114
+    color: fg.onAccent,
   },
   subtitleText: {
-    ...typeStyles.activeProgress,
-    color: fg.onAccent,
+    fontFamily: fontFamily.albertSansLight,
+    fontSize: fontSize['36'],
+    letterSpacing: -0.9, // -2.5% van 36
+    color: fg.primary,
   },
   subtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space['16'],
+    gap: space['20'],
   },
   subtitleDivider: {
-    width: 1,
+    width: 2,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: fg.tertiary,
+  },
+  // Progress-bar horizontaal (portrait): full-bleed 4px.
+  barTrackH: {
     alignSelf: 'stretch',
-    backgroundColor: fg.quaternary,
+    height: 4,
+    backgroundColor: progressBar.trackColor,
+    overflow: 'hidden',
   },
-  subtitleRowText: {
-    ...typeStyles.activeProgress,
-    color: fg.onAccent,
+  barFillH: {
+    height: 4,
   },
-  // Extra 8px above the subtitle → 24px between bar and subtitle (design 42:5900).
-  subtitleSpacer: {
-    paddingTop: space['8'],
+  // KPI flat-rijen (gedeeld portrait/landscape).
+  kpiRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  kpiRowFixed: {
+    height: 56,
+  },
+  kpiRowFill: {
+    flex: 1,
+    minHeight: 44,
+  },
+  kpiRowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: border.default,
+  },
+  kpiLabel: {
+    fontFamily: fontFamily.albertSansLight,
+    fontSize: fontSize['22'],
+    letterSpacing: 1.1, // 5% van 22
+    color: fg.secondary,
+  },
+  kpiValue: {
+    fontFamily: fontFamily.albertSansMedium,
+    fontSize: fontSize['28'],
+    letterSpacing: -0.7, // -2.5% van 28
+    color: fg.primary,
   },
 });
 
 const portraitStyles = StyleSheet.create({
   root: {
     flex: 1,
-    gap: space['20'],
   },
-  // Pill anchored to the top; hero group centred in the remaining space (design 42:5589).
-  topSection: {
+  // Hero-paneel vult de vrije verticale ruimte en spant de volle breedte.
+  heroPanel: {
     flex: 1,
-    alignItems: 'center',
-  },
-  heroGroup: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space['28'],
-  },
-  doelPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 40,
-    backgroundColor: accent.subtle,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: accent.muted,
-    paddingHorizontal: space['16'],
-    gap: space['16'],
-  },
-  doelPillLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.secondary,
-  },
-  doelPillValue: {
-    ...typeStyles.kpiValue,
-    color: accent.default,
-  },
-  doelPillDivider: {
-    width: 1,
-    height: 16,
-    backgroundColor: fg.quaternary,
-  },
-  heroText: {
-    fontFamily: fontFamily.sourceSerifBold,
-    fontSize: fontSize['124'],
-    color: fg.onAccent,
-    // Geen lineHeight < fontSize: dat kapt de serif-toppen af (bovenaan).
-    letterSpacing: typeStyles.heroNumeric.letterSpacing,
-  },
-  progressTrack: {
     alignSelf: 'stretch',
-    height: 2,
-    backgroundColor: progressBar.trackColor,
-    borderRadius: radii.lg,
-  },
-  progressFill: {
-    height: 2,
-    borderRadius: radii.lg,
-    backgroundColor: accent.default,
-  },
-  progressDot: {
-    position: 'absolute',
-    right: -3,
-    top: -2,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  subtitleText: {
-    ...typeStyles.activeProgress,
-    color: fg.onAccent,
-  },
-  subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['16'],
-  },
-  subtitleDivider: {
-    width: 1,
-    alignSelf: 'stretch',
-    backgroundColor: fg.quaternary,
-  },
-  subtitleRowText: {
-    ...typeStyles.activeProgress,
-    color: fg.onAccent,
   },
   kpiGrid: {
-    gap: space['8'],
-  },
-  kpiRow: {
-    height: 48,
-    backgroundColor: bg.elevated,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: border.default,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: space['18'],
-  },
-  kpiLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.secondary,
-  },
-  kpiValue: {
-    ...typeStyles.kpiValue,
-    color: fg.primary,
+    paddingTop: space['8'],
   },
 });
 
@@ -994,32 +815,34 @@ const landscapeStyles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
-    gap: space['40'],
   },
-  // De kolombreedte wordt in de component gezet als een expliciete, gemeten
-  // helft (zie landColStyle): een definitieve breedte die geen enkele engine
-  // content-kan-sizen. colGrow is enkel de eerste-frame fallback vóór de meting.
+  // Eerste-frame fallback vóór de breedte-meting (zie landColStyle in de component):
+  // een definitieve, gemeten kolombreedte die geen enkele engine content-kan-sizen.
   colGrow: {
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
   },
-  leftCol: {
-    minWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  leftTop: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-  },
   rightCol: {
     minWidth: 0,
-    // Figma: container gap 8, KPI-kaarten flex-vullen de resterende hoogte.
-    // (Tijdens een active workout is de tabbar verborgen, dus de volle hoogte
-    // is beschikbaar.)
-    gap: space['8'],
+  },
+  kpiList: {
+    flex: 1,
+    // paddingRight + paddingBottom worden inline safe-area-aware gezet: de Dynamic
+    // Island/notch zit in landscape aan de zijkant (insets.right bij landscape-right),
+    // de home-indicator onderaan. paddingLeft grenst aan de progress-bar (midden) → vast.
+    paddingLeft: space['20'],
+  },
+  // Verticale progress-bar op de kolomscheiding; fill onderaan verankerd (onder→boven).
+  barTrackV: {
+    width: 4,
+    alignSelf: 'stretch',
+    backgroundColor: progressBar.trackColor,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  barFillV: {
+    width: 4,
   },
 });
 

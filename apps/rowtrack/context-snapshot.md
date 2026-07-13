@@ -54,16 +54,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-4647b89 fix(rowtrack): voltooid-% via floor i.p.v. round
-6e1203a refactor(rowtrack): 500m-milestone popup verwijderd uit actieve training
-efe22cc chore(rowtrack): keep-alive functionaliteit verwijderd
-6b39463 docs(rowtrack): best-2000m end-to-end geverifieerd op echte ≥2k rit
-6eea8e2 docs(rowtrack): best-2000m capture geverifieerd op echte 657m rit
+704f36f refactor(rowtrack): single-source font pipeline + build guard + Albert Sans typografie
+77de8a5 feat(rowtrack): active-workout hero labels + KPI/subtitle resync
+de84885 fix(rowtrack): guard absent ExpoScreenOrientation native module
+73555c6 button fonts
+882c8cd chore(rowtrack): ongebruikte ProgressBar component verwijderd
 ```
 
 ## Uncommitted wijzigingen
-  D  apps/rowtrack/components/workout/ProgressBar.tsx
-  M  apps/rowtrack/components/workout/index.ts
+  A  apps/rowtrack/audits/2026-07-13-ux-audit-rowtrack-alle-schermen.md
+  A  apps/rowtrack/briefings/2026-07-13-active-workout-redesign-snapshot.md
+  A  apps/rowtrack/briefings/2026-07-13-component-active-hero-labels.tcebc.md
+  A  apps/rowtrack/briefings/2026-07-13-screen-active-workout-redesign.tcebc.md
+  A  apps/rowtrack/briefings/2026-07-13-screen-active-workout-resync.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -88,3 +88,23 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Bevinding:** `best_2k_seconds` wordt bij opslaan berekend en opgeslagen (net als `best_split`). De ruwe `samples` staan er ook, dus herberekening is mogelijk — maar niets herberekent automatisch. Wijzigt de algoritme- of pauze-/moving-time-semantiek later, dan houden bestaande rijen hun oude waarde tot een expliciete backfill.
 - **Volgende zet:** Bij een semantiek-wijziging: een migratie/script dat `best_2k_seconds` (en toekomstige 500m/1k/5k) uit `samples` herberekent voor alle rijen. Nu niet nodig.
 - **Status:** open
+
+## 2026-07-13 — Actions read/write-rechten voor tokens-sync workflow · [next-step]
+- **Bevinding:** `tokens-sync.yml` (nu live op `main`, PR #106) commit de gegenereerde `constants/*` + CSS terug via `GITHUB_TOKEN` met `permissions: contents: write`. Dat wordt gecapt als de repo-instelling op read-only staat → de auto-commit-stap faalt bij de eerste échte Tokens Studio-push (een no-op run zonder diff slaagt wél, dus de blocker is nu nog onzichtbaar).
+- **Volgende zet:** GitHub → Settings → Actions → General → *Workflow permissions* → **"Read and write permissions"**. Jeroen-actie, buiten de repo. Optioneel daarna: één test-push vanuit Tokens Studio om de round-trip te bevestigen.
+- **Status:** open
+
+## 2026-07-13 — Active-workout redesign gemerged zonder live render-verify · [risico]
+- **Bevinding:** F3 hero-labels + KPI/subtitle-resync + de Albert Sans-typografie zijn naar main gemerged (PR #106), maar het active-fase-scherm zélf is nooit live gerenderd — de sim bereikt de active workout niet zonder verbonden erg (BLE bridget niet naar de sim). Verificatie leunde op spec-parity tegen de Figma-frame-dumps + tsc + de build-guard, niet op een render. Home/idle zijn wél sim-geverifieerd.
+- **Volgende zet:** De active workout op de fysieke iPhone met de erg doorlopen (5 doeltypes: hero-labels, KPI-rijen, de nieuwe Albert Sans op waardes/units), of het mock-pad hieronder bouwen. **#1 eerste zet.**
+- **Status:** resolved — 2026-07-13: via het mock-pad hieronder (`app/dev-active.tsx`) alle 5 doeltypes op de sim gerenderd en visueel geverifieerd tegen de Figma-frames — F3 hero-labels, resync-KPI-labels (Totaal afstand/Kcal), None-5-rijen (F7), distance-"m", Albert Sans-typografie, split=groene / watts=amber divider. Portrait; landscape nog niet (vereist sim-rotatie).
+
+## 2026-07-13 — __DEV__ mock-pad voor de active-fase ontbreekt (terugkerende blocker) · [idee]
+- **Bevinding:** De active-fase kan enkel met een verbonden erg gerenderd worden; er is geen pad om `phase='active'` + een doel + fake metrics te forceren. Dit blokkeerde deze sessie de render-verify van F3, de resync én de typografie-sync, en blokkeerde eerder al redesign-iteraties. Meermaals aangeboden, nooit gebouwd.
+- **Volgende zet:** Een klein `__DEV__`-mock-pad dat de active-fase (5 hero-varianten + KPI's) met testdata forceert, zodat elke active-workout-wijziging voortaan op de sim te verifiëren is zonder hardware.
+- **Status:** resolved — 2026-07-13: gebouwd als `app/dev-active.tsx` (__DEV__-route). Deep-link `rowtrack://dev-active?goal=none|duration|distance|split|watts` (param-gedreven, schone screenshots) + een switcher-balk. Bypasst de BLE-gate via `bleStatus:'connected'` + mock metrics; rendert `ActivePhase` standalone. Uitbreidbaar naar summary/idle op dezelfde manier.
+
+## 2026-07-13 — tokens-sync workflow nooit in echte CI gedraaid · [risico]
+- **Bevinding:** `tokens-sync.yml` is lokaal gevalideerd (YAML, pnpm-filters, beide token-builds idempotent, DTCG-guard, guard-vuurt-test) maar nooit op GitHub Actions uitgevoerd. Onbevestigd in de echte omgeving: dat de `GITHUB_TOKEN`-auto-commit lukt (hangt aan de Actions read/write-instelling), dat die push géén loop triggert (paths-filter zou dat moeten voorkomen), en het gedrag bij eventuele branch-protection op main.
+- **Volgende zet:** Ná het aanzetten van de Actions-schrijfrechten: één echte Tokens Studio-push observeren (Actions-tab) en bevestigen dat de constants correct terug-committen; faalt het → workflow-logs nakijken.
+- **Status:** open

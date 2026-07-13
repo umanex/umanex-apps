@@ -54,18 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4647b89 fix(rowtrack): voltooid-% via floor i.p.v. round
 6e1203a refactor(rowtrack): 500m-milestone popup verwijderd uit actieve training
 efe22cc chore(rowtrack): keep-alive functionaliteit verwijderd
 6b39463 docs(rowtrack): best-2000m end-to-end geverifieerd op echte ≥2k rit
 6eea8e2 docs(rowtrack): best-2000m capture geverifieerd op echte 657m rit
-814a87f docs(rowtrack): handoff-notities best-2000m sessie-reflectie
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/GoalProgressCard.tsx
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-   D apps/rowtrack/components/workout/ProgressBar.tsx
-   M apps/rowtrack/components/workout/index.ts
+  D  apps/rowtrack/components/workout/ProgressBar.tsx
+  M  apps/rowtrack/components/workout/index.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

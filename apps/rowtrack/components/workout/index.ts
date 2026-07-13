@@ -1,9 +1,6 @@
 export { GoalSetupModal } from '../GoalSetupModal';
 export type { GoalSetupModalProps } from '../GoalSetupModal';
 
-export { ProgressBar } from './ProgressBar';
-export type { ProgressBarProps } from './ProgressBar';
-
 export { MilestoneOverlay } from '../MilestoneOverlay';
 export type { MilestoneOverlayProps } from '../MilestoneOverlay';
 

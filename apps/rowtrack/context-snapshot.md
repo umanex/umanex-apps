@@ -54,16 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+40059ef feat(rowtrack): __DEV__ active-workout preview (mock-pad)
 e376b30 docs(rowtrack): UX-audit + active-workout TC-EBC briefings
 704f36f refactor(rowtrack): single-source font pipeline + build guard + Albert Sans typografie
 77de8a5 feat(rowtrack): active-workout hero labels + KPI/subtitle resync
 de84885 fix(rowtrack): guard absent ExpoScreenOrientation native module
-73555c6 button fonts
 ```
 
 ## Uncommitted wijzigingen
-   M apps/rowtrack/HANDOFF.md
-  A  apps/rowtrack/app/dev-active.tsx
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

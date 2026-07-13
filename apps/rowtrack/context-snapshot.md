@@ -54,18 +54,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+77de8a5 feat(rowtrack): active-workout hero labels + KPI/subtitle resync
 de84885 fix(rowtrack): guard absent ExpoScreenOrientation native module
 73555c6 button fonts
 882c8cd chore(rowtrack): ongebruikte ProgressBar component verwijderd
 4647b89 fix(rowtrack): voltooid-% via floor i.p.v. round
-6e1203a refactor(rowtrack): 500m-milestone popup verwijderd uit actieve training
 ```
 
 ## Uncommitted wijzigingen
-   M apps/rowtrack/app/_layout.tsx
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-   M apps/rowtrack/style-dictionary.config.mjs
-   M apps/rowtrack/tokens/tokens.json
+  M  apps/rowtrack/app/_layout.tsx
+  M  apps/rowtrack/style-dictionary.config.mjs
+  M  apps/rowtrack/tokens/tokens.json
   ?? apps/rowtrack/audits/
   ?? apps/rowtrack/briefings/2026-07-13-active-workout-redesign-snapshot.md
   ?? apps/rowtrack/briefings/2026-07-13-component-active-hero-labels.tcebc.md

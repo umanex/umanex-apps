@@ -2,36 +2,8 @@ import { useEffect } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts as useBarlowCondensed } from '@expo-google-fonts/barlow-condensed';
-import { useFonts as useInter } from '@expo-google-fonts/inter';
-import { useFonts as useJetBrainsMono } from '@expo-google-fonts/jetbrains-mono';
-import { useFonts as useSourceSerif4 } from '@expo-google-fonts/source-serif-4';
-import { useFonts as useAlbertSans } from '@expo-google-fonts/albert-sans';
-import {
-  BarlowCondensed_600SemiBold,
-  BarlowCondensed_700Bold,
-  BarlowCondensed_800ExtraBold,
-} from '@expo-google-fonts/barlow-condensed';
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
-import {
-  JetBrainsMono_400Regular,
-  JetBrainsMono_500Medium,
-} from '@expo-google-fonts/jetbrains-mono';
-import {
-  SourceSerif4_400Regular,
-  SourceSerif4_400Regular_Italic,
-  SourceSerif4_600SemiBold,
-  SourceSerif4_700Bold,
-} from '@expo-google-fonts/source-serif-4';
-import {
-  AlbertSans_500Medium,
-  AlbertSans_600SemiBold,
-} from '@expo-google-fonts/albert-sans';
+import { useFonts } from 'expo-font';
+import { fontMap } from '@/constants/fonts';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { startDeepLinkCapture } from '@/lib/recovery-link';
 import { lockPortrait } from '@/lib/orientation';
@@ -65,43 +37,22 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const [barlowLoaded] = useBarlowCondensed({
-    BarlowCondensed_600SemiBold,
-    BarlowCondensed_700Bold,
-    BarlowCondensed_800ExtraBold,
-  });
-
-  const [interLoaded] = useInter({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
-
-  const [jetbrainsLoaded] = useJetBrainsMono({
-    JetBrainsMono_400Regular,
-    JetBrainsMono_500Medium,
-  });
-
-  const [sourceSerifLoaded] = useSourceSerif4({
-    SourceSerif4_400Regular,
-    SourceSerif4_400Regular_Italic,
-    SourceSerif4_600SemiBold,
-    SourceSerif4_700Bold,
-  });
-
-  const [albertSansLoaded] = useAlbertSans({
-    AlbertSans_500Medium,
-    AlbertSans_600SemiBold,
-  });
-
-  const fontsLoaded = barlowLoaded && interLoaded && jetbrainsLoaded && sourceSerifLoaded && albertSansLoaded;
+  // Alle app-fonts uit één gegenereerde map (constants/fonts.ts, afgeleid van de
+  // FONTS-bron in style-dictionary.config.mjs). Een font toevoegen/wijzigen gebeurt
+  // daar + rebuild — dit blijft ongewijzigd.
+  const [fontsLoaded, fontError] = useFonts(fontMap);
 
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  // Font-laadfout is zeldzaam (gebundelde TTF's) maar niet stil laten: in dev loggen
+  // zodat een kapot/ontbrekend font-asset zichtbaar is i.p.v. een eeuwige splash.
+  useEffect(() => {
+    if (fontError && __DEV__) console.warn('[fonts] laden mislukt:', fontError);
+  }, [fontError]);
 
   // Vang deep links vanaf app-start op (o.a. de wachtwoord-reset-link), ook op
   // een warm start waar de router het 'url'-event vóór schermmontage consumeert.

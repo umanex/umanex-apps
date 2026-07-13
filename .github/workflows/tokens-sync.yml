@@ -1,0 +1,94 @@
+name: Tokens sync
+
+# Houdt de gegenereerde design-token-code in sync met Tokens Studio.
+# Tokens Studio pusht een bijgewerkte tokens.json naar main; deze workflow
+# herbouwt de outputs en commit ze automatisch terug, zodat code == Figma.
+#
+# Twee onafhankelijke token-sets, elk met een eigen bron + output:
+#   - RowTrack       : apps/rowtrack/tokens/tokens.json → apps/rowtrack/constants/*.ts
+#   - umanex (web)   : packages/tokens/tokens.json      → packages/tokens/build/* + packages/ui/globals.css
+#
+# Beide builds zijn deterministisch/idempotent — altijd allebei draaien is veilig;
+# git commit enkel de echte diffs. De paths-filter zorgt dat de workflow alleen
+# vuurt bij een tokens.json-wijziging (de teruggecommitte outputs raken tokens.json
+# niet → geen loop). GITHUB_TOKEN-pushes triggeren zelf geen workflows.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/rowtrack/tokens/tokens.json"
+      - "packages/tokens/tokens.json"
+  workflow_dispatch: {} # handmatige her-sync
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tokens-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Rebuild + commit generated tokens
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "store=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rebuild RowTrack tokens (style-dictionary → constants)
+        run: pnpm --filter rowtrack tokens:build
+
+      - name: Rebuild umanex web tokens (@umanex/tokens → build + ui globals)
+        run: pnpm --filter @umanex/tokens build
+
+      - name: Guard — geen DTCG $value-uitval in de output
+        run: |
+          HITS="$(grep -rnE ': undefined|\[object Object\]' \
+            apps/rowtrack/constants packages/tokens/build packages/ui/globals.css 2>/dev/null || true)"
+          if [ -n "$HITS" ]; then
+            echo "::error::Token-build produceerde undefined / [object Object] — DTCG \$value-valkuil. Niet gecommit."
+            echo "$HITS"
+            exit 1
+          fi
+
+      - name: Type-check RowTrack (valideert dat de constants compileren)
+        run: pnpm --filter rowtrack exec tsc --noEmit
+
+      - name: Commit gegenereerde output terug naar main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/rowtrack/constants packages/tokens/build packages/ui/globals.css
+          if git diff --cached --quiet; then
+            echo "Geen gegenereerde wijzigingen — code al in sync met de tokens."
+            exit 0
+          fi
+          git commit -m "chore(tokens): sync generated tokens from Tokens Studio"
+          git push

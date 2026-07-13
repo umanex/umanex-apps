@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-12_
+_Gegenereerd op 2026-07-13_
 
 ## Project
 - **App:** rowtrack
@@ -50,20 +50,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | WheelPicker | `apps/rowtrack/components/WheelPicker.tsx` | components | — | — | — |
 | ActivePhase | `apps/rowtrack/components/workout/ActivePhase.tsx` | workout | — | — | — |
 | IdlePhase | `apps/rowtrack/components/workout/IdlePhase.tsx` | workout | — | — | — |
-| ProgressBar | `apps/rowtrack/components/workout/ProgressBar.tsx` | workout | — | — | — |
 | WorkoutCard | `apps/rowtrack/components/WorkoutCard.tsx` | components | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+4647b89 fix(rowtrack): voltooid-% via floor i.p.v. round
+6e1203a refactor(rowtrack): 500m-milestone popup verwijderd uit actieve training
 efe22cc chore(rowtrack): keep-alive functionaliteit verwijderd
 6b39463 docs(rowtrack): best-2000m end-to-end geverifieerd op echte ≥2k rit
 6eea8e2 docs(rowtrack): best-2000m capture geverifieerd op echte 657m rit
-814a87f docs(rowtrack): handoff-notities best-2000m sessie-reflectie
-6180b69 feat(rowtrack): exacte beste-2000m op startscherm i.p.v. langste duur
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
+  D  apps/rowtrack/components/workout/ProgressBar.tsx
+  M  apps/rowtrack/components/workout/index.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

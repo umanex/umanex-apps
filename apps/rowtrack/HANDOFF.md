@@ -108,3 +108,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Bevinding:** `tokens-sync.yml` is lokaal gevalideerd (YAML, pnpm-filters, beide token-builds idempotent, DTCG-guard, guard-vuurt-test) maar nooit op GitHub Actions uitgevoerd. Onbevestigd in de echte omgeving: dat de `GITHUB_TOKEN`-auto-commit lukt (hangt aan de Actions read/write-instelling), dat die push géén loop triggert (paths-filter zou dat moeten voorkomen), en het gedrag bij eventuele branch-protection op main.
 - **Volgende zet:** Ná het aanzetten van de Actions-schrijfrechten: één echte Tokens Studio-push observeren (Actions-tab) en bevestigen dat de constants correct terug-committen; faalt het → workflow-logs nakijken.
 - **Status:** open
+
+## 2026-07-13 — Live Figma text-style re-verify nog niet gedaan · [onzekerheid]
+- **Bevinding:** De typografie-sync (8 typeStyles → Albert Sans) is bevestigd via mijn audit-lezing + jouw autoritaire `tokens.json`-push + de sim-render, maar niet tegen de *live* Figma text styles — de Desktop Bridge plugin was losgekoppeld. Delta klopte exact, dus laag risico, maar niet onafhankelijk tegen de huidige Figma gecheckt.
+- **Volgende zet:** Heropen de Desktop Bridge plugin in Figma (hangt aan geen server-instance; 3 draaien op 9223/9224/9225 door reconnect-churn) → `figma_get_text_styles` lezen en diffen tegen de code-typeStyles.
+- **Status:** open
+
+## 2026-07-13 — Split/Watts DOEL-pill copy: code ≠ Figma · [onzekerheid]
+- **Bevinding:** De frames tonen `DOEL | 2:20 split` en `DOEL | 180W`; de code houdt `2:20/500m` en `180 W` (`goalPillValue()` in ActivePhase.tsx). Bewust niet overgenomen — ambigue micro-copy op eerder-buiten-scope varianten, en `/500m` is preciezer. Render-geverifieerd dat de code de huidige format toont.
+- **Volgende zet:** Beslissen of de code de frame-copy overneemt of blijft. Eén plek: `goalPillValue()`.
+- **Status:** open
+
+## 2026-07-13 — Landscape active-workout niet render-geverifieerd · [next-step]
+- **Bevinding:** Het mock-pad (`app/dev-active.tsx`) rendert de active-fase in portrait; landscape (50/50-hero-kolom + verticale progress-bar) is niet gescreenshot — sim-rotatie is niet via `simctl` te automatiseren.
+- **Volgende zet:** In de sim roteren (Cmd+→) met het mock-pad open en de 5 varianten in landscape checken, of een `?orientation`-forcering aan het dev-pad toevoegen (override useWindowDimensions).
+- **Status:** open

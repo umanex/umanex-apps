@@ -181,7 +181,6 @@ export default function WorkoutDetailScreen() {
               <View style={[styles.kpiGridRow, styles.kpiGridRowBordered]}>
                 <KpiSingle
                   value={formatTimerFull(workout.duration_seconds)}
-                  unit={workout.duration_seconds >= 3600 ? 'uur' : 'min'}
                   label={'TOTALE\nDUUR'}
                   style={styles.kpiCell}
                 />
@@ -322,13 +321,11 @@ export default function WorkoutDetailScreen() {
               <View style={styles.kpiGridRow}>
                 <KpiSingle
                   value={workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—'}
-                  unit={workout.avg_heart_rate != null ? 'bpm' : ''}
                   label={'BPM\nGEMIDDELD'}
                   style={styles.kpiCell}
                 />
                 <KpiSingle
                   value={workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—'}
-                  unit={workout.max_heart_rate != null ? 'bpm' : ''}
                   label={'BPM\nMAXIMAAL'}
                   style={styles.kpiCell}
                 />

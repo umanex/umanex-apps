@@ -595,7 +595,6 @@ export function ActivePhase({
               />
               <KpiSingle
                 value={formatTimerFull(seconds)}
-                unit={seconds >= 3600 ? 'uur' : 'min'}
                 label="DUUR"
                 style={summaryStyles.kpiCell}
               />

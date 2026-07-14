@@ -3,7 +3,7 @@ import { fg, space, typeStyles } from '@/constants';
 
 type KpiSingleProps = {
   value: string;
-  unit: string;
+  unit?: string;
   label: string;
   style?: StyleProp<ViewStyle>;
 };
@@ -13,7 +13,7 @@ export function KpiSingle({ value, unit, label, style }: KpiSingleProps) {
     <View style={[styles.container, style]}>
       <View style={styles.valueRow}>
         <Text style={styles.value}>{value}</Text>
-        <Text style={styles.unit}>{unit}</Text>
+        {unit ? <Text style={styles.unit}>{unit}</Text> : null}
       </View>
       <Text style={styles.label}>{label}</Text>
     </View>

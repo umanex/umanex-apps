@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { bg, fg, accent, typeStyles, fontFamily, fontSize, componentRadius } from '@/constants';
+import { bg, fg, accent, achievement, typeStyles, fontFamily, fontSize, componentRadius } from '@/constants';
 
 const CONFETTI_COLORS = ['#F05454', '#3B82F6', '#22C55E', '#FFD700', '#FF69B4', '#FFFFFF'];
 const PARTICLE_COUNT = 60;
@@ -197,7 +197,9 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamily.bodyBold,
     fontSize: fontSize['24'],
-    color: '#FFD700',
+    // Titel-kleur via de achievement-ramp (was hardcoded #FFD700 fel goud;
+    // gelijkgetrokken met de crème PR-badge-ramp, beslissing 2026-07-14).
+    color: achievement.default,
     textAlign: 'center',
   },
   body: {

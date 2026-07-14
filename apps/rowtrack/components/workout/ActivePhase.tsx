@@ -675,11 +675,6 @@ export function ActivePhase({
   );
 }
 
-// Accent-tint 10% — gedeeld door de header-band (landscape) en de DOEL-pill (portrait).
-// TODO: token accent.subtle-10 (0.10) via Tokens Studio — accent.subtle=0.06 /
-// accent.muted=0.12 dekken deze fill niet.
-const ACCENT_TINT_10 = 'rgba(240, 84, 84, 0.10)';
-
 const activeStyles = StyleSheet.create({
   // Header: DOEL-pill links, compacte Stop-knop rechts (top-uitgelijnd).
   header: {
@@ -687,10 +682,11 @@ const activeStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: space['16'],
-    // Accent-band (Figma 290:2746): subtiele 10% accent-tint + sterkere onderrand
-    // (border/strong, i.t.t. de border/default hairlines van de KPI-rijen). Gedeeld
-    // door portrait en landscape.
-    backgroundColor: ACCENT_TINT_10,
+    // Accent-band (Figma 290:2746): subtiele accent-tint via accent.muted (12%). De
+    // Figma-waarde is 10%, bewust samengevouwen met muted — 2% delta is op donkere bg
+    // niet waarneembaar (beslissing 2026-07-14). Sterkere onderrand (border/strong,
+    // i.t.t. de border/default hairlines van de KPI-rijen). Gedeeld portrait + landscape.
+    backgroundColor: accent.muted,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: border.strong,
   },

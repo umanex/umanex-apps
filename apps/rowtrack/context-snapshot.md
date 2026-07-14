@@ -54,15 +54,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e786c7e docs(rowtrack): consolidate open todos into checkable TODO.md
 35b5cee chore(rowtrack): remove dead sync-tokens workflow
 3b223b2 feat(rowtrack): history rework with tenth-second splits, per-segment HR + strokes
 aeb6e5b feat(rowtrack): active-workout header accent-band + landscape column swap
 bb74d27 docs(rowtrack): open handoff-todos (Figma re-verify, pill copy, landscape)
-7d5f8ab docs(rowtrack): sessie-handoff — render-verify, mock-pad, tokens-sync follow-ups
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/TODO.md
+  M  apps/rowtrack/components/MotivationalToast.tsx
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

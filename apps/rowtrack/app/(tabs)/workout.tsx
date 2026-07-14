@@ -113,7 +113,9 @@ export default function WorkoutScreen() {
     // null wanneer de sessie < 2000m was. Samples compact als [t, d]-tuples opgeslagen.
     const samples = refs.samplesRef.current;
     const best2k = bestTimeForDistance(samples, 2000);
-    const sampleTuples = samples.length > 0 ? samples.map((s) => [s.t, s.d]) : null;
+    const sampleTuples = samples.length > 0
+      ? samples.map((s) => (s.hr != null ? [s.t, s.d, s.hr] : [s.t, s.d]))
+      : null;
 
     const { error } = await supabase.from('workouts').insert({
       user_id: user.id,
@@ -144,6 +146,7 @@ export default function WorkoutScreen() {
       is_pr: hasPR || null,
       samples: sampleTuples,
       best_2k_seconds: best2k,
+      total_strokes: refs.totalStrokesRef.current > 0 ? refs.totalStrokesRef.current : null,
     });
 
     setSaving(false);

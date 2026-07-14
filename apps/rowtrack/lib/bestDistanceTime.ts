@@ -35,7 +35,16 @@ export type Sample = {
   t: number;
   /** Cumulative meters since the start of the effort. Non-decreasing. */
   d: number;
+  /** Momentane hartslag (bpm) op dit sample, indien beschikbaar. Ontbreekt op
+   *  workouts van vóór de HR-in-samples-invoering. */
+  hr?: number;
 };
+
+/** Reconstrueer Sample[] uit de compacte [t,d]- of [t,d,hr]-tuples zoals opgeslagen in de DB. */
+export function samplesFromTuples(tuples: number[][] | null | undefined): Sample[] {
+  if (!tuples) return [];
+  return tuples.map(([t, d, hr]) => (hr != null ? { t, d, hr } : { t, d }));
+}
 
 export type BestTimeOptions = {
   /**
@@ -77,6 +86,23 @@ export function bestTimeForDistance(
 }
 
 /**
+ * Geïnterpoleerde cumulatieve tijd (fractionele seconden) op cumulatieve afstand
+ * `dMeters`. Null als de reeks die afstand nooit haalt. Interpoleert lineair over
+ * de gesaneerde reeks — dropout-splitsing wordt hier bewust genegeerd (goed genoeg
+ * voor per-split weergave; de zwaardere PR-logica gebruikt bestTimeForDistance).
+ */
+export function timeAtDistance(samples: Sample[], dMeters: number): number | null {
+  if (!(dMeters >= 0) || samples.length < 2) return null;
+  const clean = sanitize(samples);
+  if (clean.length < 2) return null;
+  if (dMeters < clean[0].d || dMeters > clean[clean.length - 1].d) return null;
+  for (let i = 1; i < clean.length; i++) {
+    if (clean[i].d >= dMeters) return interpTime(dMeters, clean[i - 1], clean[i]);
+  }
+  return clean[clean.length - 1].t;
+}
+
+/**
  * Drop non-finite points, enforce a non-decreasing series in both t and d
  * (BLE glitches can send a point that goes backwards), and collapse exact
  * duplicates. The result is monotone in both axes.
@@ -87,12 +113,12 @@ function sanitize(samples: Sample[]): Sample[] {
     if (!Number.isFinite(s.t) || !Number.isFinite(s.d)) continue;
     const prev = clean[clean.length - 1];
     if (!prev) {
-      clean.push({ t: s.t, d: s.d });
+      clean.push({ t: s.t, d: s.d, hr: s.hr });
       continue;
     }
     if (s.t < prev.t || s.d < prev.d) continue; // non-monotonic → drop
     if (s.t === prev.t && s.d === prev.d) continue; // exact duplicate → drop
-    clean.push({ t: s.t, d: s.d });
+    clean.push({ t: s.t, d: s.d, hr: s.hr });
   }
   return clean;
 }

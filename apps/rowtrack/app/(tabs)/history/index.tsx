@@ -12,13 +12,12 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { BottomFade, EmptyState, KpiSingle, TabItem, WorkoutCard } from '@/components';
-import { formatTimerFull, formatSplit, formatDistanceDynamic } from '@/lib/formatters';
+import { formatTimerFull, formatDistanceDynamic } from '@/lib/formatters';
 import {
   bg,
   fg,
   accent,
   border,
-  radii,
   space,
   typeStyles,
 } from '@/constants';
@@ -94,10 +93,7 @@ export default function HistoryScreen() {
   const totalDurSec = workouts.reduce((s, w) => s + w.duration_seconds, 0);
   const totalDistM = workouts.reduce((s, w) => s + w.distance_meters, 0);
   const totalDistFormatted = formatDistanceDynamic(totalDistM);
-  const splitsWithData = workouts.filter(w => w.avg_split_seconds != null);
-  const avgSplitSec = splitsWithData.length > 0
-    ? splitsWithData.reduce((s, w) => s + (w.avg_split_seconds ?? 0), 0) / splitsWithData.length
-    : 0;
+  const totalCalories = workouts.reduce((s, w) => s + (w.calories ?? 0), 0);
 
   return (
     <View style={styles.screen}>
@@ -144,9 +140,9 @@ export default function HistoryScreen() {
         </View>
         <View style={styles.kpiGridRow}>
           <KpiSingle
-            value={avgSplitSec > 0 ? formatSplit(Math.round(avgSplitSec)) : '—'}
-            unit={avgSplitSec > 0 ? '/500m' : ''}
-            label={'GEMIDDELDE\nSPLIT'}
+            value={`${totalCalories}`}
+            unit="kcal"
+            label={'TOTALE\nENERGIE'}
             style={styles.kpiCell}
           />
           <KpiSingle
@@ -193,10 +189,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: bg.base,
   },
+  // Sectie-afstanden via marginBottom/marginTop per blok (segments 28 onder de titel,
+  // KPI-band flush eronder) i.p.v. een uniforme gap — spiegelt de detail-flow.
   content: {
     paddingTop: space['20'],
     paddingBottom: space['40'],
-    gap: space['28'],
   },
   title: {
     ...typeStyles.sectionValue,
@@ -205,29 +202,32 @@ const styles = StyleSheet.create({
     paddingTop: space['8'],
   },
 
-  // Segment filter
+  // Segment filter — full-bleed edge-to-edge (Figma Segments/Historiek w=402), 28 boven,
+  // flush tegen de KPI-band eronder. Borders enkel top/bottom (1px 0), geen zijranden.
   segmentContainer: {
     flexDirection: 'row',
     backgroundColor: bg.elevated,
-    borderWidth: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: border.strong,
-    borderRadius: radii.xs,
     padding: space['4'],
     height: 52,
-    marginHorizontal: space['20'],
+    marginTop: space['28'],
   },
 
-  // KPI container — full-width bg.raised stripe
+  // KPI container — full-width bg.raised stripe, flush onder de segments. Bottom-only
+  // border (Figma KPI Row sides [0,1,0,0]); de segments-onderrand vormt de bovenlijn.
   kpiContainer: {
     backgroundColor: bg.raised,
-    borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: border.default,
     paddingHorizontal: space['20'],
+    marginBottom: space['16'],
   },
   kpiGridRow: {
     flexDirection: 'row',
     paddingVertical: space['16'],
+    gap: space['20'],
   },
   kpiGridRowBordered: {
     borderBottomWidth: 1,
@@ -235,7 +235,6 @@ const styles = StyleSheet.create({
   },
   kpiCell: {
     flex: 1,
-    paddingHorizontal: space['4'],
   },
 
   loader: {

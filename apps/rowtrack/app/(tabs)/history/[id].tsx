@@ -15,6 +15,8 @@ import { supabase } from '@/lib/supabase';
 import { BottomFade, Button, EmptyState, KpiSingle, TabItem } from '@/components';
 import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
+import { samplesFromTuples } from '@/lib/bestDistanceTime';
+import { segmentSplitTimes, fastestSplit, averageSplit, distanceSplits, segmentHeartRates } from '@/lib/workoutSegments';
 import {
   bg,
   fg,
@@ -48,7 +50,7 @@ export default function WorkoutDetailScreen() {
     async function load() {
       const { data } = await supabase
         .from('workouts')
-        .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, max_watts, max_spm, best_split, avg_heart_rate, max_heart_rate, resistance_level, notes, goal_type, goal_target, goal_reached, splits, is_pr')
+        .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, max_watts, max_spm, best_split, avg_heart_rate, max_heart_rate, resistance_level, notes, goal_type, goal_target, goal_reached, splits, is_pr, samples, total_strokes')
         .eq('id', id)
         .single();
 
@@ -69,6 +71,25 @@ export default function WorkoutDetailScreen() {
     }
     return t;
   }, [workout?.avg_heart_rate, workout?.max_heart_rate]);
+
+  // Afgeleide per-segment data uit de {t,d,hr}-samplereeks. Tienden waar de data
+  // het toelaat; lege arrays / null → de UI valt terug op opgeslagen integers.
+  const samples = useMemo(() => samplesFromTuples(workout?.samples ?? null), [workout?.samples]);
+  const splitTenthsByDist = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const s of segmentSplitTimes(samples, 500)) m.set(s.distance, s.seconds);
+    return m;
+  }, [samples]);
+  const avgSplitSec = useMemo(
+    () => (workout ? averageSplit(workout.duration_seconds, workout.distance_meters) : null),
+    [workout?.duration_seconds, workout?.distance_meters, workout],
+  );
+  const fastestSplitSec = useMemo(() => fastestSplit(samples, 500), [samples]);
+  const distSplits = useMemo(
+    () => (workout ? distanceSplits(samples, workout.duration_seconds, workout.distance_meters) : []),
+    [samples, workout],
+  );
+  const hrSegments = useMemo(() => segmentHeartRates(samples, 500), [samples]);
 
   const handleDelete = useCallback(async () => {
     setDeleting(true);
@@ -161,27 +182,27 @@ export default function WorkoutDetailScreen() {
                 <KpiSingle
                   value={formatTimerFull(workout.duration_seconds)}
                   unit={workout.duration_seconds >= 3600 ? 'uur' : 'min'}
-                  label="DUUR"
+                  label={'TOTALE\nDUUR'}
                   style={styles.kpiCell}
                 />
                 <KpiSingle
                   value={dist.value}
                   unit={dist.unit}
-                  label="AFSTAND"
+                  label={'TOTALE\nAFSTAND'}
                   style={styles.kpiCell}
                 />
               </View>
               <View style={styles.kpiGridRow}>
                 <KpiSingle
-                  value={workout.avg_split_seconds != null ? formatSplit(workout.avg_split_seconds) : '—'}
-                  unit={workout.avg_split_seconds != null ? '/500m' : ''}
-                  label={'GEMIDDELDE\nSPLIT'}
+                  value={workout.calories != null ? `${workout.calories}` : '—'}
+                  unit={workout.calories != null ? 'kcal' : ''}
+                  label={'TOTALE\nENERGIE'}
                   style={styles.kpiCell}
                 />
                 <KpiSingle
-                  value={workout.avg_spm != null ? `${correctSpm(workout.avg_spm, spmHalved)}` : '—'}
-                  unit={workout.avg_spm != null ? 'spm' : ''}
-                  label={'GEMIDDELDE\nSPM'}
+                  value={workout.total_strokes != null ? `${correctSpm(workout.total_strokes, spmHalved)}` : '—'}
+                  unit=""
+                  label={'TOTALE\nSLAGEN'}
                   style={styles.kpiCell}
                 />
               </View>
@@ -196,7 +217,6 @@ export default function WorkoutDetailScreen() {
               </View>
               <View style={styles.statsTable}>
                 {[
-                  { label: 'SPLIT /500M', gem: workout.avg_split_seconds != null ? formatSplit(workout.avg_split_seconds) : '—', piek: workout.best_split != null ? formatSplit(workout.best_split) : '—' },
                   { label: 'WATT', gem: workout.avg_watts != null ? `${workout.avg_watts}` : '—', piek: workout.max_watts != null ? `${workout.max_watts}` : '—' },
                   { label: 'SPM', gem: workout.avg_spm != null ? `${correctSpm(workout.avg_spm, spmHalved)}` : '—', piek: workout.max_spm != null ? `${correctSpm(workout.max_spm, spmHalved)}` : '—' },
                   { label: 'BPM', gem: workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—', piek: workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—' },
@@ -213,52 +233,135 @@ export default function WorkoutDetailScreen() {
               </View>
             </View>
 
+            {/* Afstand-splits GEM/BEST (500/1000/2000m, tienden uit samples) */}
+            <View style={styles.statsSection}>
+              <View style={styles.statsHeader}>
+                <View style={styles.statsLabelCol} />
+                <Text style={styles.statsColLabel}>GEM</Text>
+                <Text style={styles.statsColLabel}>BEST</Text>
+              </View>
+              <View style={styles.statsTable}>
+                {distSplits.map((row, i, arr) => (
+                  <View key={row.meters}>
+                    <View style={styles.statsRow}>
+                      <Text style={styles.statsRowLabel}>{`${row.meters}M`}</Text>
+                      <Text style={styles.statsRowValue}>{row.gem != null ? formatSplit(row.gem, false, true) : '—'}</Text>
+                      <Text style={styles.statsRowValue}>{row.best != null ? formatSplit(row.best, false, true) : '—'}</Text>
+                    </View>
+                    {i < arr.length - 1 && <View style={styles.statsRowDivider} />}
+                  </View>
+                ))}
+              </View>
+            </View>
+
           </>
         )}
 
         {/* Splits tab */}
         {activeTab === 'Splits' && (
-          workout.splits && workout.splits.length > 0 ? (
-            <View style={styles.splitsTable}>
-              <View style={styles.splitsHeaderRow}>
-                <View style={styles.splitsLabelCol} />
-                <Text style={styles.splitsColHeader}>SPLIT</Text>
-                <Text style={styles.splitsColHeader}>WATT</Text>
+          <>
+            {/* KPI: gemiddelde + snelste split (tienden waar afleidbaar) */}
+            <View style={styles.kpiContainer}>
+              <View style={styles.kpiGridRow}>
+                <KpiSingle
+                  value={
+                    avgSplitSec != null ? formatSplit(avgSplitSec, false, true)
+                    : workout.avg_split_seconds != null ? formatSplit(workout.avg_split_seconds)
+                    : '—'
+                  }
+                  unit={avgSplitSec != null || workout.avg_split_seconds != null ? '/500m' : ''}
+                  label={'GEMIDDELDE\nSPLIT'}
+                  style={styles.kpiCell}
+                />
+                <KpiSingle
+                  value={
+                    fastestSplitSec != null ? formatSplit(fastestSplitSec, false, true)
+                    : workout.best_split != null ? formatSplit(workout.best_split)
+                    : '—'
+                  }
+                  unit={fastestSplitSec != null || workout.best_split != null ? '/500m' : ''}
+                  label={'SNELSTE\nSPLIT'}
+                  style={styles.kpiCell}
+                />
               </View>
-              {workout.splits.map((s, i) => (
-                <View key={i}>
-                  <View style={styles.splitsDataRow}>
-                    <Text style={styles.splitsDistLabel}>{`${s.distance}M`}</Text>
-                    <Text style={styles.splitsValue}>{formatSplit(s.split)}</Text>
-                    <Text style={styles.splitsValue}>{s.watts != null ? `${s.watts}` : '—'}</Text>
-                  </View>
-                  {i < (workout.splits?.length ?? 0) - 1 && <View style={styles.splitsRowDivider} />}
-                </View>
-              ))}
             </View>
-          ) : (
-            <EmptyState icon="time-outline" title="Geen splits beschikbaar." />
-          )
+
+            {workout.splits && workout.splits.length > 0 ? (
+              <View style={styles.splitsTable}>
+                <View style={styles.splitsHeaderRow}>
+                  <View style={styles.splitsLabelCol} />
+                  <Text style={styles.splitsColHeader}>SPLIT</Text>
+                  <Text style={styles.splitsColHeader}>WATT</Text>
+                </View>
+                {workout.splits.map((s, i) => {
+                  const tenths = splitTenthsByDist.get(s.distance);
+                  return (
+                    <View key={i}>
+                      <View style={styles.splitsDataRow}>
+                        <Text style={styles.splitsDistLabel}>{`${s.distance}M`}</Text>
+                        <Text style={styles.splitsValue}>
+                          {tenths != null ? formatSplit(tenths, false, true) : formatSplit(s.split)}
+                        </Text>
+                        <Text style={styles.splitsValue}>{s.watts != null ? `${s.watts}` : '—'}</Text>
+                      </View>
+                      {i < (workout.splits?.length ?? 0) - 1 && <View style={styles.splitsRowDivider} />}
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <EmptyState icon="time-outline" title="Geen splits beschikbaar." />
+            )}
+          </>
         )}
 
         {/* Hartslag tab */}
         {activeTab === 'Hartslag' && (
-          <View style={styles.kpiContainer}>
-            <View style={styles.kpiGridRow}>
-              <KpiSingle
-                value={workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—'}
-                unit={workout.avg_heart_rate != null ? 'bpm' : ''}
-                label={'BPM\nGEMIDDELD'}
-                style={styles.kpiCell}
-              />
-              <KpiSingle
-                value={workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—'}
-                unit={workout.max_heart_rate != null ? 'bpm' : ''}
-                label={'BPM\nMAXIMAAL'}
-                style={styles.kpiCell}
-              />
+          <>
+            <View style={styles.kpiContainer}>
+              <View style={styles.kpiGridRow}>
+                <KpiSingle
+                  value={workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—'}
+                  unit={workout.avg_heart_rate != null ? 'bpm' : ''}
+                  label={'BPM\nGEMIDDELD'}
+                  style={styles.kpiCell}
+                />
+                <KpiSingle
+                  value={workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—'}
+                  unit={workout.max_heart_rate != null ? 'bpm' : ''}
+                  label={'BPM\nMAXIMAAL'}
+                  style={styles.kpiCell}
+                />
+              </View>
             </View>
-          </View>
+
+            {hrSegments.length > 0 ? (
+              <View style={styles.statsSection}>
+                <View style={styles.statsHeader}>
+                  <View style={styles.statsLabelCol} />
+                  <Text style={styles.statsColLabel}>GEM</Text>
+                  <Text style={styles.statsColLabel}>PIEK</Text>
+                </View>
+                <View style={styles.statsTable}>
+                  {hrSegments.map((row, i, arr) => (
+                    <View key={row.distance}>
+                      <View style={styles.statsRow}>
+                        <Text style={styles.statsRowLabel}>{`${row.distance}M`}</Text>
+                        <Text style={styles.statsRowValue}>{row.gem != null ? `${row.gem}` : '—'}</Text>
+                        <Text style={styles.statsRowValue}>{row.piek != null ? `${row.piek}` : '—'}</Text>
+                      </View>
+                      {i < arr.length - 1 && <View style={styles.statsRowDivider} />}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <EmptyState
+                icon="pulse-outline"
+                title="Geen hartslag-detail per segment. Beschikbaar vanaf je volgende training."
+              />
+            )}
+          </>
         )}
 
         </ScrollView>
@@ -306,8 +409,8 @@ const styles = StyleSheet.create({
   // Main header
   header: {
     paddingHorizontal: space['20'],
-    paddingTop: space['16'],
-    paddingBottom: space['12'],
+    paddingTop: space['28'],
+    paddingBottom: space['0'],
     gap: space['0'],
   },
   headerTop: {
@@ -348,38 +451,40 @@ const styles = StyleSheet.create({
     color: neutral['600'],
   },
 
-  // Tab bar
+  // Tab bar — full-bleed edge-to-edge (Figma Segments/WorkoutDetail w=402), 28 erboven
+  // en flush tegen de KPI Row eronder. Borders enkel top/bottom (1px 0), geen zijranden
+  // aan de schermrand.
   tabBar: {
     flexDirection: 'row',
     backgroundColor: bg.elevated,
-    borderWidth: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: border.strong,
-    borderRadius: radii.xs,
     padding: space['4'],
-    marginHorizontal: space['20'],
-    marginBottom: space['16'],
+    marginTop: space['28'],
   },
 
-  // Scroll content
+  // Scroll content. Sectie-afstanden staan op marginBottom per blok (KPI-band 28 naar
+  // de stats-tabellen, 20 tussen de tabellen) i.p.v. een uniforme gap.
   content: {
     flexGrow: 1,
     paddingHorizontal: space['20'],
     paddingBottom: space['40'],
-    gap: space['20'],
   },
 
   // 2×2 KPI container (Overzicht + Hartslag tabs) — full-width stripe
   kpiContainer: {
     backgroundColor: bg.raised,
-    borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: border.default,
     marginHorizontal: -space['20'],
     paddingHorizontal: space['20'],
+    marginBottom: space['28'],
   },
   kpiGridRow: {
     flexDirection: 'row',
-    paddingVertical: space['20'],
+    paddingVertical: space['16'],
+    gap: space['20'],
   },
   kpiGridRowBordered: {
     borderBottomWidth: 1,
@@ -387,12 +492,12 @@ const styles = StyleSheet.create({
   },
   kpiCell: {
     flex: 1,
-    paddingHorizontal: space['4'],
   },
 
-  // Stats table (GEM/PIEK)
+  // Stats table (GEM/PIEK). marginBottom = 20 tussen opeenvolgende tabellen.
   statsSection: {
     gap: space['8'],
+    marginBottom: space['20'],
   },
   statsHeader: {
     flexDirection: 'row',

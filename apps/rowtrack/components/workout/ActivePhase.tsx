@@ -295,6 +295,8 @@ export function ActivePhase({
   }
 
   // --- Header-inhoud: DOEL-pill + compacte Stop-knop (gedeeld) ---
+  // De accent-tint zit op de header-band (Figma 290:2746) → de DOEL-pill is
+  // outline-only, in beide oriëntaties.
   function headerChildren(): ReactNode {
     return (
       <>
@@ -528,24 +530,16 @@ export function ActivePhase({
             const gv = computeGoalView();
             return (
               <>
-                {/* Links: hero-paneel (bg.elevated) */}
-                <View style={[activeStyles.heroPanel, landColStyle, { paddingLeft: insets.left }]}>
-                  {renderHeroContent(gv)}
-                </View>
-
-                {/* Verticale progress-bar op de kolomscheiding */}
-                {renderProgressBarV(gv.fillPct, gv.fillKind)}
-
-                {/* Rechts: header (pill + Stop) boven de KPI-lijst */}
-                <View style={[landscapeStyles.rightCol, landColStyle]}>
+                {/* Links: header (pill + Stop) boven de KPI-lijst (Figma 290:2746) */}
+                <View style={[landscapeStyles.metricsCol, landColStyle]}>
                   <View
                     style={[
                       activeStyles.header,
                       {
                         paddingTop: Math.max(space['20'], insets.top),
                         paddingBottom: space['20'],
-                        paddingLeft: space['20'],
-                        paddingRight: Math.max(space['20'], insets.right),
+                        paddingLeft: Math.max(space['20'], insets.left),
+                        paddingRight: space['20'],
                       },
                     ]}
                   >
@@ -555,13 +549,21 @@ export function ActivePhase({
                     style={[
                       landscapeStyles.kpiList,
                       {
-                        paddingRight: Math.max(space['20'], insets.right),
+                        paddingLeft: Math.max(space['20'], insets.left),
                         paddingBottom: Math.max(space['8'], insets.bottom),
                       },
                     ]}
                   >
                     {renderKpiList(true)}
                   </View>
+                </View>
+
+                {/* Verticale progress-bar op de kolomscheiding */}
+                {renderProgressBarV(gv.fillPct, gv.fillKind)}
+
+                {/* Rechts: hero-paneel (bg.elevated) */}
+                <View style={[activeStyles.heroPanel, landColStyle, { paddingRight: insets.right }]}>
+                  {renderHeroContent(gv)}
                 </View>
               </>
             );
@@ -673,6 +675,11 @@ export function ActivePhase({
   );
 }
 
+// Accent-tint 10% — gedeeld door de header-band (landscape) en de DOEL-pill (portrait).
+// TODO: token accent.subtle-10 (0.10) via Tokens Studio — accent.subtle=0.06 /
+// accent.muted=0.12 dekken deze fill niet.
+const ACCENT_TINT_10 = 'rgba(240, 84, 84, 0.10)';
+
 const activeStyles = StyleSheet.create({
   // Header: DOEL-pill links, compacte Stop-knop rechts (top-uitgelijnd).
   header: {
@@ -680,14 +687,18 @@ const activeStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: space['16'],
+    // Accent-band (Figma 290:2746): subtiele 10% accent-tint + sterkere onderrand
+    // (border/strong, i.t.t. de border/default hairlines van de KPI-rijen). Gedeeld
+    // door portrait en landscape.
+    backgroundColor: ACCENT_TINT_10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: border.strong,
   },
-  // DOEL-pill: pill-vorm, hoogte 48, subtiele accent-fill.
+  // DOEL-pill: pill-vorm, hoogte 48, outline-only (de accent-tint zit op de band).
   doelPill: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 48,
-    // TODO: token accent.subtle-10 (0.10) via Tokens Studio — accent.subtle=0.06 / accent.muted=0.12 dekken deze fill niet.
-    backgroundColor: 'rgba(240, 84, 84, 0.10)',
     borderRadius: radii.full,
     borderWidth: 1,
     borderColor: accent.muted,
@@ -823,15 +834,16 @@ const landscapeStyles = StyleSheet.create({
     flexShrink: 1,
     flexBasis: 0,
   },
-  rightCol: {
+  // Metrics-kolom (header + KPI-lijst) — links (Figma 290:2746).
+  metricsCol: {
     minWidth: 0,
   },
   kpiList: {
     flex: 1,
-    // paddingRight + paddingBottom worden inline safe-area-aware gezet: de Dynamic
-    // Island/notch zit in landscape aan de zijkant (insets.right bij landscape-right),
-    // de home-indicator onderaan. paddingLeft grenst aan de progress-bar (midden) → vast.
-    paddingLeft: space['20'],
+    // paddingLeft (buitenrand) + paddingBottom worden inline safe-area-aware gezet: de
+    // Dynamic Island/notch zit in landscape aan de zijkant, de home-indicator onderaan.
+    // paddingRight grenst aan de progress-bar (midden) → vast.
+    paddingRight: space['20'],
   },
   // Verticale progress-bar op de kolomscheiding; fill onderaan verankerd (onder→boven).
   barTrackV: {

@@ -4,7 +4,7 @@ Single source of truth voor welke code-eenheid bij welk Figma frame hoort.
 Bijwerken bij elke Figma re-organisatie of nieuwe screen/component.
 
 **Figma file**: https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=0-1&t=k6rKeRyqVNPmF9Pn-1
-**Laatst gesynct**: 2026-05-11
+**Laatst gesynct**: 2026-07-14
 
 Lege `node-id` kolom = nog niet gemapt of nog niet in Figma. Verwijder rijen
 voor gedeprecate code.
@@ -31,8 +31,8 @@ voor gedeprecate code.
 
 | Code | url | Frame naam |
 |---|---|---|
-| `components/workout/ActivePhase.tsx` (portrait) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-3&t=k6rKeRyqVNPmF9Pn-4` | Active/Portrait/None (base; goal-varianten zie sectie hieronder) |
-| `components/workout/ActivePhase.tsx` (landscape) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-4&t=k6rKeRyqVNPmF9Pn-4` | Active/Landscape/None (base; goal-varianten zie sectie hieronder) |
+| `components/workout/ActivePhase.tsx` (portrait) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2400` | Active/Portrait/None (base; goal-varianten zie sectie hieronder) |
+| `components/workout/ActivePhase.tsx` (landscape) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2746` | Active/Landscape/None (base; goal-varianten zie sectie hieronder) |
 | `components/workout/ActivePhase.tsx` (summary) | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=43-8278&t=k6rKeRyqVNPmF9Pn-4` | Active/Summary |
 | `components/workout/ProgressBar.tsx` | `` | Workout / Progress Bar |
 | `components/workout/Confetti.tsx` | `` | Workout / Confetti (animatie) |
@@ -95,22 +95,26 @@ voor gedeprecate code.
 
 | Variant | url |
 |---|---|
-| `goalType=none` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-3&t=k6rKeRyqVNPmF9Pn-4` |
-| `goalType=duration` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5387&t=k6rKeRyqVNPmF9Pn-4` |
-| `goalType=distance` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5431&t=k6rKeRyqVNPmF9Pn-4` |
-| `goalType=split` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5463&t=k6rKeRyqVNPmF9Pn-1` |
-| `goalType=watts` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5495&t=k6rKeRyqVNPmF9Pn-4` |
+| `goalType=none` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2400` |
+| `goalType=duration` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2436` |
+| `goalType=distance` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2536` |
+| `goalType=split` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=296-1900` |
+| `goalType=watts` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=296-1947` |
 
 
 #### Landscape
 
 | Variant | url |
 |---|---|
-| `goalType=none` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-4&t=k6rKeRyqVNPmF9Pn-4` |
-| `goalType=duration` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5712&t=k6rKeRyqVNPmF9Pn-4` |
-| `goalType=distance` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5741&t=k6rKeRyqVNPmF9Pn-4` |
-| `goalType=split` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5770&t=k6rKeRyqVNPmF9Pn-4` |
-| `goalType=watts` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=42-5799&t=k6rKeRyqVNPmF9Pn-4` |
+| `goalType=none` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2746` |
+| `goalType=duration` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-3359` |
+| `goalType=distance` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-3406` |
+| `goalType=split` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=297-2068` |
+| `goalType=watts` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=297-2143` |
+
+> ⚠️ Het watts-frame (`297-2143`) heet in Figma momenteel **"Active/Landscape/Split"** — een naam-slip (er staan twee "Landscape/Split"-frames). Node-id klopt op kolompositie (Watts). Naam best rechttrekken in Figma.
+
+> Oude Active-node-ids (`5-3`, `5-4`, `42-53xx`/`42-57xx`) zijn vervallen — de hele Active-set is herbouwd in Figma-sectie **"Active workouts"** (`236:5088`) op 2026-07-14. `Active/Summary` (`43-8278`), Home, History, Profile en IdlePhase bleven ongewijzigd.
 
 
 ---

@@ -28,4 +28,7 @@ export type WorkoutDetail = WorkoutSummary & {
   splits: SplitEntry[] | null;
   is_pr: boolean | null;
   best_2k_seconds: number | null;
+  total_strokes: number | null;
+  /** Compacte [t,d]- of [t,d,hr]-tuples uit de DB; via samplesFromTuples → Sample[]. */
+  samples: number[][] | null;
 };

@@ -61,7 +61,9 @@ export interface AccumulatorRefs {
   startedAtRef: React.MutableRefObject<Date | null>;
   splitIntervalWattsSum: React.MutableRefObject<number>;
   splitIntervalWattsCount: React.MutableRefObject<number>;
-  /** {tijd, afstand}-tijdreeks (~1 Hz) voor de exacte beste-2000m-berekening. */
+  /** Totaal aantal slagen (FTMS stroke-count, gebaselined bij start). */
+  totalStrokesRef: React.MutableRefObject<number>;
+  /** {t, d, hr}-tijdreeks (~1 Hz) voor beste-2000m + per-segment afgeleiden. */
   samplesRef: React.MutableRefObject<Sample[]>;
 }
 
@@ -100,6 +102,8 @@ export function useWorkoutMetrics(
   const splitIntervalWattsCount = useRef(0);
   const samplesRef = useRef<Sample[]>([]);
   const lastSampleSecond = useRef(-1);
+  const initialStrokeCount = useRef<number | null>(null);
+  const totalStrokesRef = useRef(0);
 
   // --- Load profile weight ---
   const { user } = useAuth();
@@ -152,6 +156,11 @@ export function useWorkoutMetrics(
       if (initialDistance.current === null) initialDistance.current = bleMetrics.totalDistance;
       partial.distanceMeters = bleMetrics.totalDistance - initialDistance.current;
     }
+    if (bleMetrics.strokeCount != null) {
+      // Cumulatieve slagenteller → baselinen zoals distance; totaal = huidig − start.
+      if (initialStrokeCount.current === null) initialStrokeCount.current = bleMetrics.strokeCount;
+      totalStrokesRef.current = Math.max(0, bleMetrics.strokeCount - initialStrokeCount.current);
+    }
     if (bleMetrics.elapsedTime != null) {
       if (initialElapsed.current === null) initialElapsed.current = bleMetrics.elapsedTime;
       partial.seconds = bleMetrics.elapsedTime - initialElapsed.current;
@@ -192,7 +201,11 @@ export function useWorkoutMetrics(
       const whole = Math.floor(currentSecondsRef.current);
       if (whole !== lastSampleSecond.current) {
         lastSampleSecond.current = whole;
-        samplesRef.current.push({ t: currentSecondsRef.current, d: currentDistanceRef.current });
+        samplesRef.current.push({
+          t: currentSecondsRef.current,
+          d: currentDistanceRef.current,
+          ...(hr != null ? { hr } : {}),
+        });
       }
     }
 
@@ -237,6 +250,8 @@ export function useWorkoutMetrics(
     splitIntervalWattsCount.current = 0;
     samplesRef.current = [];
     lastSampleSecond.current = -1;
+    initialStrokeCount.current = null;
+    totalStrokesRef.current = 0;
     startedAtRef.current = new Date();
   }, []);
 
@@ -255,6 +270,7 @@ export function useWorkoutMetrics(
     startedAtRef,
     splitIntervalWattsSum,
     splitIntervalWattsCount,
+    totalStrokesRef,
     samplesRef,
   };
 

@@ -52,9 +52,23 @@ export function formatMetersDotted(meters: number): string {
   return String(m).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/** `padMinutes` pads the minutes to two digits ('02:10') — landscape-only; portrait keeps '2:10'. */
-export function formatSplit(splitSec: number, padMinutes = false): string {
+/**
+ * `padMinutes` pads the minutes to two digits ('02:10') — landscape-only; portrait keeps '2:10'.
+ * `tenths` toont één decimaal ('2:10.4') — enkel zinvol op fractionele split-tijden die uit
+ * `samples` zijn afgeleid; de live FTMS-pace is heel-seconde, daar zou de tiende nep zijn.
+ */
+export function formatSplit(splitSec: number, padMinutes = false, tenths = false): string {
   if (!Number.isFinite(splitSec)) return '—';
+  if (tenths) {
+    // Reken in tienden zodat 59,95 → 60,0 netjes naar de volgende minuut rolt.
+    const totalTenths = Math.round(splitSec * 10);
+    const m = Math.floor(totalTenths / 600);
+    const rem = totalTenths % 600;
+    const s = Math.floor(rem / 10);
+    const d = rem % 10;
+    const mm = padMinutes ? m.toString().padStart(2, '0') : m.toString();
+    return `${mm}:${s.toString().padStart(2, '0')}.${d}`;
+  }
   const m = Math.floor(splitSec / 60);
   const s = Math.round(splitSec % 60);
   const mm = padMinutes ? m.toString().padStart(2, '0') : m.toString();

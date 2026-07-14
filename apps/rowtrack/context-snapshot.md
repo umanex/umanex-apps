@@ -54,11 +54,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+47e379d fix(rowtrack): profile render round 2 — full-bleed goal, labels, sheet CTAs
 e33eca9 feat(rowtrack): landscape active-workout column padding for progress bar
 14aef68 fix(rowtrack): profile wheel render — typography, single band, pinned CTA
 8a3e8bb feat(rowtrack): profile parity polish (segmented tint, arrows, date, logout)
 6b185cf feat(rowtrack): unify profile numeric input on WheelPicker
-6519761 feat(rowtrack): wire active-workout hero to heroNumeric token (§3 ③)
 ```
 
 ## Uncommitted wijzigingen

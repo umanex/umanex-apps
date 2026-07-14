@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import * as schema from '@/lib/db/schema'
 import { adzunaSource } from '@/lib/sources/adzuna'
 import { kboSource } from '@/lib/sources/kbo'
@@ -20,6 +20,7 @@ type SourceStatus = {
 }
 
 export async function POST() {
+  const db = getDb()
   const startedAt = new Date().toISOString()
 
   const inserted = await db

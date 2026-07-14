@@ -127,7 +127,6 @@ export default function HistoryScreen() {
         <View style={[styles.kpiGridRow, styles.kpiGridRowBordered]}>
           <KpiSingle
             value={formatTimerFull(totalDurSec)}
-            unit={totalDurSec >= 3600 ? 'uur' : 'min'}
             label={'TOTALE\nDUUR'}
             style={styles.kpiCell}
           />

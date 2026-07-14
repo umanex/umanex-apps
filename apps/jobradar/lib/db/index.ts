@@ -5,16 +5,21 @@ import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import * as schema from './schema'
 
-const dbPath = process.env.JOBRADAR_DB_PATH ?? join(process.cwd(), '.data', 'jobradar.db')
+type DbClient = ReturnType<typeof createClient>
 
-mkdirSync(join(process.cwd(), '.data'), { recursive: true })
+let client: DbClient | undefined
 
-const sqlite = new Database(dbPath)
-sqlite.pragma('journal_mode = WAL')
-sqlite.pragma('foreign_keys = ON')
+function createClient() {
+  const dbPath = process.env.JOBRADAR_DB_PATH ?? join(process.cwd(), '.data', 'jobradar.db')
 
-// Auto-initialize schema on first run (idempotent via IF NOT EXISTS)
-sqlite.exec(`
+  mkdirSync(join(process.cwd(), '.data'), { recursive: true })
+
+  const sqlite = new Database(dbPath)
+  sqlite.pragma('journal_mode = WAL')
+  sqlite.pragma('foreign_keys = ON')
+
+  // Auto-initialize schema on first run (idempotent via IF NOT EXISTS)
+  sqlite.exec(`
   CREATE TABLE IF NOT EXISTS jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     external_id TEXT NOT NULL,
@@ -67,15 +72,28 @@ sqlite.exec(`
   );
 `)
 
-// Migrations for existing databases (idempotent via PRAGMA table_info check)
-type ColInfo = { name: string }
-const jobCols = (sqlite.prepare('PRAGMA table_info(jobs)').all() as ColInfo[]).map((c) => c.name)
-if (!jobCols.includes('job_status')) {
-  sqlite.exec("ALTER TABLE jobs ADD COLUMN job_status TEXT NOT NULL DEFAULT 'new'")
-}
-const companyCols = (sqlite.prepare('PRAGMA table_info(companies)').all() as ColInfo[]).map((c) => c.name)
-if (!companyCols.includes('lead_status')) {
-  sqlite.exec("ALTER TABLE companies ADD COLUMN lead_status TEXT NOT NULL DEFAULT 'new'")
+  // Migrations for existing databases (idempotent via PRAGMA table_info check)
+  type ColInfo = { name: string }
+  const jobCols = (sqlite.prepare('PRAGMA table_info(jobs)').all() as ColInfo[]).map((c) => c.name)
+  if (!jobCols.includes('job_status')) {
+    sqlite.exec("ALTER TABLE jobs ADD COLUMN job_status TEXT NOT NULL DEFAULT 'new'")
+  }
+  const companyCols = (sqlite.prepare('PRAGMA table_info(companies)').all() as ColInfo[]).map((c) => c.name)
+  if (!companyCols.includes('lead_status')) {
+    sqlite.exec("ALTER TABLE companies ADD COLUMN lead_status TEXT NOT NULL DEFAULT 'new'")
+  }
+
+  return drizzle(sqlite, { schema })
 }
 
-export const db = drizzle(sqlite, { schema })
+/**
+ * Lazily opens the SQLite connection on first use and memoizes it per process.
+ * Kept lazy so importing this module has no side effects — otherwise
+ * `next build` opens the database while collecting page data, and parallel
+ * build workers racing to create the same file throw
+ * `SqliteError: database is locked`.
+ */
+export function getDb() {
+  if (!client) client = createClient()
+  return client
+}

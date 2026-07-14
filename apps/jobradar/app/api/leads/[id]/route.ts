@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import * as schema from '@/lib/db/schema'
 import type { ItemStatus } from '@/lib/db/schema'
 
@@ -21,6 +21,7 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: 'Invalid status' }, { status: 400 })
   }
 
+  const db = getDb()
   await db.update(schema.companies).set({ leadStatus: status }).where(eq(schema.companies.id, id))
   return NextResponse.json({ ok: true })
 }

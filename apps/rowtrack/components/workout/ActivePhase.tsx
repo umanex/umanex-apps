@@ -892,7 +892,7 @@ const summaryStyles = StyleSheet.create({
   },
   kpiBandDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: border.default,
+    backgroundColor: border.strong,
   },
   // Stats-sectie (Frame 42 + 49)
   statsSection: {
@@ -915,6 +915,8 @@ const summaryStyles = StyleSheet.create({
   statsTable: {
     backgroundColor: bg.raised,
     borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: border.default,
     overflow: 'hidden',
   },
   statsRow: {

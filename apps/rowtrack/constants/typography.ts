@@ -47,7 +47,7 @@ export const fontSize = {
   '48': 48,
   '60': 60,
   '72': 72,
-  '124': 96,
+  '114': 114,
 } as const;
 
 export const lineHeight = {
@@ -71,9 +71,9 @@ export const letterSpacing = {
 
 export const typeStyles = {
   heroNumeric: {
-    fontFamily: 'SourceSerif4_700Bold',
-    fontSize: 96,
-    letterSpacing: -4.32,
+    fontFamily: 'AlbertSans_700Bold',
+    fontSize: 114,
+    letterSpacing: -5.13,
   },
   heroDisplay: {
     fontFamily: 'SourceSerif4_400Regular',

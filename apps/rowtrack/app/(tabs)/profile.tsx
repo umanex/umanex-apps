@@ -52,6 +52,18 @@ const DAY_ITEMS: WheelItem[] = Array.from({ length: 31 }, (_, i) => ({ label: St
 const MONTH_ITEMS: WheelItem[] = NL_MONTHS_SHORT.map((m, i) => ({ label: m, value: i + 1 }));
 const YEAR_ITEMS: WheelItem[] = BIRTH_YEARS.map(y => ({ label: String(y), value: y }));
 
+// Lengte/gewicht: single-column wheels met de unit binnen de wheel (value + unit).
+const HEIGHT_MIN = 100, HEIGHT_MAX = 250;
+const WEIGHT_MIN = 30, WEIGHT_MAX = 300;
+const HEIGHT_ITEMS: WheelItem[] = Array.from({ length: HEIGHT_MAX - HEIGHT_MIN + 1 }, (_, i) => {
+  const v = HEIGHT_MIN + i;
+  return { label: `${v} cm`, value: v, unit: 'cm' };
+});
+const WEIGHT_ITEMS: WheelItem[] = Array.from({ length: WEIGHT_MAX - WEIGHT_MIN + 1 }, (_, i) => {
+  const v = WEIGHT_MIN + i;
+  return { label: `${v} kg`, value: v, unit: 'kg' };
+});
+
 const DEFAULT_YEAR_IDX = Math.max(0, BIRTH_YEARS.indexOf(1990));
 
 function parseBirthDate(date: string | null): { dayIdx: number; monthIdx: number; yearIdx: number } {
@@ -599,23 +611,11 @@ export default function ProfileScreen() {
         onClose={closeSheet}
         title="Lengte"
       >
-        <View style={styles.stepperRow}>
-          <TouchableOpacity
-            style={styles.stepperBtn}
-            onPress={() => setDraftHeight(h => Math.max(100, h - 1))}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="remove" size={28} color={fg.primary} />
-          </TouchableOpacity>
-          <Text style={styles.stepperValue}>{draftHeight} cm</Text>
-          <TouchableOpacity
-            style={styles.stepperBtn}
-            onPress={() => setDraftHeight(h => Math.min(250, h + 1))}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={28} color={fg.primary} />
-          </TouchableOpacity>
-        </View>
+        <WheelPicker
+          items={HEIGHT_ITEMS}
+          selectedIndex={draftHeight - HEIGHT_MIN}
+          onIndexChange={(idx) => setDraftHeight(HEIGHT_MIN + idx)}
+        />
         <Button title="Opslaan" onPress={saveLengte} size="md" />
       </BottomSheet>
 
@@ -625,23 +625,11 @@ export default function ProfileScreen() {
         onClose={closeSheet}
         title="Gewicht"
       >
-        <View style={styles.stepperRow}>
-          <TouchableOpacity
-            style={styles.stepperBtn}
-            onPress={() => setDraftWeight(w => Math.max(30, w - 1))}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="remove" size={28} color={fg.primary} />
-          </TouchableOpacity>
-          <Text style={styles.stepperValue}>{draftWeight} kg</Text>
-          <TouchableOpacity
-            style={styles.stepperBtn}
-            onPress={() => setDraftWeight(w => Math.min(300, w + 1))}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={28} color={fg.primary} />
-          </TouchableOpacity>
-        </View>
+        <WheelPicker
+          items={WEIGHT_ITEMS}
+          selectedIndex={draftWeight - WEIGHT_MIN}
+          onIndexChange={(idx) => setDraftWeight(WEIGHT_MIN + idx)}
+        />
         <Button title="Opslaan" onPress={saveGewicht} size="md" />
       </BottomSheet>
 
@@ -653,15 +641,12 @@ export default function ProfileScreen() {
       >
         <View style={styles.datePickerRow}>
           <View style={styles.datePickerCol}>
-            <Text style={styles.datePickerColLabel}>DAG</Text>
             <WheelPicker items={DAY_ITEMS} selectedIndex={draftDayIdx} onIndexChange={setDraftDayIdx} />
           </View>
           <View style={styles.datePickerCol}>
-            <Text style={styles.datePickerColLabel}>MAAND</Text>
             <WheelPicker items={MONTH_ITEMS} selectedIndex={draftMonthIdx} onIndexChange={setDraftMonthIdx} />
           </View>
           <View style={styles.datePickerCol}>
-            <Text style={styles.datePickerColLabel}>JAAR</Text>
             <WheelPicker items={YEAR_ITEMS} selectedIndex={draftYearIdx} onIndexChange={setDraftYearIdx} />
           </View>
         </View>
@@ -864,27 +849,6 @@ const styles = StyleSheet.create({
     color: bg.base,
   },
 
-  // Sheet: stepper
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: space['8'],
-  },
-  stepperBtn: {
-    width: 56,
-    height: 56,
-    backgroundColor: bg.elevated,
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperValue: {
-    fontFamily: fontFamily.bodyBold,
-    fontSize: fontSize['24'],
-    color: fg.primary,
-  },
-
   // Sheet: date picker
   datePickerRow: {
     flexDirection: 'row',
@@ -892,15 +856,6 @@ const styles = StyleSheet.create({
   },
   datePickerCol: {
     flex: 1,
-    gap: space['8'],
-    alignItems: 'center',
-  },
-  datePickerColLabel: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['11'],
-    color: fg.secondary,
-    letterSpacing: 0.88,
-    textTransform: 'uppercase',
   },
 
   // Sheet: goal fields

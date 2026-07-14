@@ -98,6 +98,8 @@ const styles = StyleSheet.create({
   },
   actionText: {
     ...typeStyles.textLink,
-    color: fg.secondary,
+    // Actie-affordance in merk-accent (design cluster 7, 2026-07-14): Verbind/Verbreek
+    // in accent-rood. De connected-STATUS blijft groen (verkeerslicht) — status ≠ actie.
+    color: accent.default,
   },
 });

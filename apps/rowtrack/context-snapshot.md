@@ -54,16 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+5b6b967 feat(rowtrack): split DOEL-pill copy to '2:20 split', drop dead goal-label helper
 b6c92b9 docs(rowtrack): record hero-font decision (Albert Sans Bold) + token spec
 96a92a5 refactor(rowtrack): map accent-tint + toast-gold hardcodes to tokens
 e786c7e docs(rowtrack): consolidate open todos into checkable TODO.md
 35b5cee chore(rowtrack): remove dead sync-tokens workflow
-3b223b2 feat(rowtrack): history rework with tenth-second splits, per-segment HR + strokes
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/TODO.md
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

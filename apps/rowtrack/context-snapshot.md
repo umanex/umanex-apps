@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-13_
+_Gegenereerd op 2026-07-14_
 
 ## Project
 - **App:** rowtrack
@@ -54,15 +54,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+bb74d27 docs(rowtrack): open handoff-todos (Figma re-verify, pill copy, landscape)
 7d5f8ab docs(rowtrack): sessie-handoff — render-verify, mock-pad, tokens-sync follow-ups
 40059ef feat(rowtrack): __DEV__ active-workout preview (mock-pad)
 e376b30 docs(rowtrack): UX-audit + active-workout TC-EBC briefings
 704f36f refactor(rowtrack): single-source font pipeline + build guard + Albert Sans typografie
-77de8a5 feat(rowtrack): active-workout hero labels + KPI/subtitle resync
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+   M apps/rowtrack/app/(tabs)/history/[id].tsx
+   M apps/rowtrack/app/(tabs)/history/index.tsx
+   M apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/figma-map.md
+   M apps/rowtrack/lib/bestDistanceTime.ts
+   M apps/rowtrack/lib/formatters.ts
+   M apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
+   M apps/rowtrack/types/workout.ts
+  ?? apps/rowtrack/briefings/2026-07-14-flow-history-herwerk.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

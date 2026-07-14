@@ -521,7 +521,8 @@ export function ActivePhase({
                         paddingTop: Math.max(space['20'], insets.top),
                         paddingBottom: space['20'],
                         paddingLeft: Math.max(space['20'], insets.left),
-                        paddingRight: space['20'],
+                        // Binnenrand naar de progress-bar: 40 (design 290:2746) — geeft de bar ruimte.
+                        paddingRight: space['40'],
                       },
                     ]}
                   >
@@ -544,7 +545,7 @@ export function ActivePhase({
                 {renderProgressBarV(gv.fillPct, gv.fillKind)}
 
                 {/* Rechts: hero-paneel (bg.elevated) */}
-                <View style={[activeStyles.heroPanel, landColStyle, { paddingRight: insets.right }]}>
+                <View style={[activeStyles.heroPanel, landColStyle, { paddingLeft: space['40'], paddingRight: Math.max(space['20'], insets.right) }]}>
                   {renderHeroContent(gv)}
                 </View>
               </>
@@ -818,8 +819,8 @@ const landscapeStyles = StyleSheet.create({
     flex: 1,
     // paddingLeft (buitenrand) + paddingBottom worden inline safe-area-aware gezet: de
     // Dynamic Island/notch zit in landscape aan de zijkant, de home-indicator onderaan.
-    // paddingRight grenst aan de progress-bar (midden) → vast.
-    paddingRight: space['20'],
+    // paddingRight grenst aan de progress-bar (midden) → 40 (design 290:2746), geeft de bar ruimte.
+    paddingRight: space['40'],
   },
   // Verticale progress-bar op de kolomscheiding; fill onderaan verankerd (onder→boven).
   barTrackV: {

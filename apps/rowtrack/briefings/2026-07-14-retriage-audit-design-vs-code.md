@@ -67,8 +67,8 @@ Overblijvend na deze 7: een handvol echte kleine code-fixes (connector paddingBo
 - `[B]·L` Watts-variant KPI-label — code leidend-correct; Figma-cleanup.
 
 ### Workout — Samenvatting (4)
-- `[O]·L` KPI-band-divider `border.default`, design wil `border.strong` (`ActivePhase.tsx:894`).
-- `[O]·L` Stats-tabel mist 1px buitenborder (`ActivePhase.tsx:916`).
+- ✅ KPI-band-divider → `border.strong` (14-jul).
+- ✅ Stats-tabel 1px `border.default`-buitenborder toegevoegd (14-jul).
 - `[O]·L` GEM/PIEK-waardekolommen `flex:1` zonder vaste breedte + gap 16 (`ActivePhase.tsx:911/932`).
 - `[B]·L` DUUR-cel toont unit die design verbergt → **werkstroom 3**.
 

@@ -54,24 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+35b5cee chore(rowtrack): remove dead sync-tokens workflow
+3b223b2 feat(rowtrack): history rework with tenth-second splits, per-segment HR + strokes
 aeb6e5b feat(rowtrack): active-workout header accent-band + landscape column swap
 bb74d27 docs(rowtrack): open handoff-todos (Figma re-verify, pill copy, landscape)
 7d5f8ab docs(rowtrack): sessie-handoff — render-verify, mock-pad, tokens-sync follow-ups
-40059ef feat(rowtrack): __DEV__ active-workout preview (mock-pad)
-e376b30 docs(rowtrack): UX-audit + active-workout TC-EBC briefings
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/[id].tsx
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  A  apps/rowtrack/briefings/2026-07-14-flow-history-herwerk.tcebc.md
-  M  apps/rowtrack/lib/bestDistanceTime.ts
-  M  apps/rowtrack/lib/formatters.ts
-  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
-  A  apps/rowtrack/lib/workoutSegments.ts
-  A  apps/rowtrack/supabase/migrations/add_total_strokes.sql
-  M  apps/rowtrack/types/workout.ts
+  M  apps/rowtrack/TODO.md
 
 ## Bestanden met TODO/FIXME
   (geen)

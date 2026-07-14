@@ -29,7 +29,7 @@ Ontbrekende tokens die nu als hardcode / `// TODO` in code staan. Toevoegen via 
 ## 3. Openstaande design-beslissingen (knoop doorhakken)
 
 - [x] **Hero-font active workout → Albert Sans Bold** (beslist 14-jul). Vondst: de code (`activeStyles.heroText`) + alle 6 Figma-frames zijn al Albert Sans Bold 114; de Source Serif serif-hero leefde enkel nog als de **dode, ongebruikte** `heroNumeric`-token. Beslissing = token-laag uitlijnen op die realiteit. Implementatie = 2 Tokens Studio-edits (zie sectie 2, ③-blok) + code-wire door mij. `[briefing 2026-07-13-active-workout-redesign-snapshot]`
-- [ ] **Split/Watts DOEL-pill copy** — code `2:20/500m` · `180 W` vs Figma `2:20 split` · `180W`. Eén plek: `goalPillValue()`. `[HANDOFF · onzekerheid]`
+- [x] **Split/Watts DOEL-pill copy** — beslist 14-jul op het `{waarde} {eenheid}`-spatie-patroon: split → `2:20 split` (frame-copy overgenomen), watts → `180 W` behouden (Figma's `180W` verworpen als spatie-slip). Gewijzigd in `goalPillValue()`; de dode `buildGoalLabel`-formatter (oude copy, 0 usages) meteen verwijderd. tsc groen. `[HANDOFF · onzekerheid]`
 - [ ] **Pill-value bij niet-ronde waarden** — 25:30 → "25 min"? · 7.500m → "7,5 km"? (lowercase units staan vast). `[briefing 2026-07-13-active-workout-redesign-snapshot]`
 - [ ] **Cyaan (#00D4FF) vs rood accent** in Profile-sheets + Motivational Toast — welke bron wint (Figma bijwerken of cyaan als secundaire actie-kleur)? `[audit 2026-07-04 · cluster 2]`
 - [ ] **Connected-status: rood (Figma) vs groen (code)** incl. Verbreek-actie — merk-kleur of verkeerslicht-semantiek, en welke bron bijwerken? `[audit 2026-07-04 · cluster 7]`

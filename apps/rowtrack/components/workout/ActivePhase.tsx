@@ -31,25 +31,6 @@ import { styles } from './workout.styles';
 // --- Types ---
 type Phase = 'active' | 'summary';
 
-// --- Helpers ---
-function buildGoalLabel(goal: WorkoutGoal): string {
-  switch (goal.type) {
-    case 'duration': {
-      const m = Math.floor(goal.target / 60);
-      const s = goal.target % 60;
-      return `DOEL: ${m}:${String(s).padStart(2, '0')} MIN`;
-    }
-    case 'distance':
-      return goal.target >= 1000
-        ? `DOEL: ${(goal.target / 1000).toFixed(1).replace('.', ',')} KM`
-        : `DOEL: ${goal.target} M`;
-    case 'split':
-      return `DOEL: ${formatSplit(goal.target)}/500M`;
-    case 'watts':
-      return `DOEL: ${goal.target} W`;
-  }
-}
-
 // --- Props ---
 type ActivePhaseProps = {
   phase: Phase;
@@ -171,8 +152,9 @@ export function ActivePhase({
   const handleCloseGoalModal = useCallback(() => setShowGoalModal(false), []);
 
   // --- DOEL-pill waarde (nieuw compact/lowercase design) ---
-  // None="Geen", duration="20 min", distance="10 km". split/watts behouden hun
-  // huidige format (staan niet in de redesign-frames).
+  // Alle doeltypes volgen {waarde} {eenheid} met spatie: "Geen" / "20 min" /
+  // "10 km" / "2:20 split" / "180 W". Split neemt de frame-copy over; watts houdt
+  // bewust de spatie (Figma toont "180W", 2026-07-14 gelijkgetrokken op het patroon).
   function goalPillValue(): string {
     if (!goal) return 'Geen';
     switch (goal.type) {
@@ -189,7 +171,7 @@ export function ActivePhase({
         return `${goal.target} m`;
       }
       case 'split':
-        return `${formatSplit(goal.target, true)}/500m`;
+        return `${formatSplit(goal.target, true)} split`;
       case 'watts':
         return `${goal.target} W`;
     }

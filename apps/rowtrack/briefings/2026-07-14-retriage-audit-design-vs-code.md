@@ -37,7 +37,7 @@ Behandel deze, niet 85 losse regels.
 3. **Beslissing: eenheid tonen op KPI's? (± 5 items, één keuze)** — Samenvatting DUUR, History-lijst uur/min, History-detail DUUR + BPM tonen een unit die het design verbergt. Eén policy-call dekt alles. *(Default-voorstel: code-side unit behouden — semantisch duidelijker; Figma bijwerken.)*
 4. **Beslissing: code-only functionele states behouden? (± 8 items)** — loading/empty/error/not-found, versielabel, MIJN DOEL-sectielabel, DAG/MAAND/JAAR-koppen bestaan in code, niet in Figma. Per het *states-zijn-default*-principe: **code wint, Figma documenteren.** Eén principiële bevestiging sluit de reeks.
 5. **Beslissing: connected-indicator rood vs groen (Cluster 7)** — `BleStatusBar`/`HrStatusBar` zetten connected = `status.success` (groen #22C55E); design wil accent-rood. Verbreek-actie idem (code grijs, design rood). Merk-kleur vs verkeerslicht-semantiek — bewuste UX-keuze. *(Groen overleefde de DeviceRow-refactor bewust.)*
-6. **⚠️ CONFLICT: Chip active-state — solid vs tint** — de 4-jul audit wil een **solide** `#F05454` fill + lichte tekst, géén border. De code (en de **latere** IdlePhase goal-v2 van 13-jul, door Jeroen gevraagd) gebruikt een **0.20-tint** + rode border + rode tekst. Deze conflicteren, en het raakt direct **TODO §2 ① `accent.selected` (0.20)**: als de chip solid moet zijn, is dat token fout (dan `accent.default`). **Beslissen vóór ① wordt gebouwd.** *(Waarschijnlijk wint de latere idle-v2 tint-richting — de audit is hier stale — maar bevestig.)*
+6. **✅ BESLIST: Chip active-state = 0.20-tint** (14-jul). De 4-jul audit wilde een solide `#F05454` fill; de latere IdlePhase goal-v2 (13-jul, door Jeroen gevraagd) koos de **0.20-tint** + rode border + rode label — en dat wint. De audit-claim "solid" is hier stale. Geen visuele wijziging (code is al de tint). **Deblokkeert TODO §2 ①**: `accent.selected` = `{color.alpha.red-20}` (0.20) is bevestigd correct. Figma-zijde: de solid-fill-chip bijwerken naar de tint.
 7. **Off-token design-waarden → Figma tokeniseren (± 6 items)** — `#1A1F2E` (sheet/toast-bg), `#94A3B8` (units/labels), `#AAAAAA` (toast-body), cyaan (al beslist §3). Dit zijn **design-side** afwijkingen: de code volgt de tokens correct → **Figma bijwerken, code laten.**
 
 Overblijvend na deze 7: een handvol echte kleine code-fixes (connector paddingBottom-offset, summary divider-kleur/border, kolom-gaps, Chip/SectionHeader font, delete-knop pijl) + de dekkingsgaten (auth-schermen + GoalSetupModal + connection-overlay zonder Figma-design).
@@ -108,7 +108,7 @@ Overblijvend na deze 7: een handvol echte kleine code-fixes (connector paddingBo
 ### Gedeelde chrome (10)
 - `[B]·M` Connected-indicator groen vs design rood (BLE+HR) → **werkstroom 5** (`BleStatusBar.tsx:21`).
 - `[O]·M` Verbreek-actie grijs vs design accent-rood; nu is zelfs connect-actie grijs (`DeviceRow.tsx:99`).
-- `[O]·M` Chip active tint vs design solid → **⚠️ werkstroom 6 (conflict)**.
+- `[O]·M` Chip active tint vs design solid → **✅ werkstroom 6 beslist: tint wint** (Figma bijwerken).
 - `[B]·M` Button trailing-pijl: nu geïmplementeerd (`iconPosition`), mismatch grotendeels resolved — Figma-cleanup rest.
 - `[O]·L` Default Chip heeft border die design niet heeft; SectionHeader Inter i.p.v. Albert Sans; TabItem icon-variant niet gebouwd.
 - `[B]·L` (3×) status-bar scanning/error-states + Button destructive/ghost-varianten niet in Figma → **werkstroom 4**; default-Chip-labelkleur = Figma-side.

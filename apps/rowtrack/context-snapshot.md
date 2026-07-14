@@ -54,16 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6b185cf feat(rowtrack): unify profile numeric input on WheelPicker
 6519761 feat(rowtrack): wire active-workout hero to heroNumeric token (§3 ③)
 1b45aff chore(tokens): sync generated tokens from Tokens Studio
 3646cff font size & hero
 434781c feat(rowtrack): summary stats-table border + band-divider strength (audit)
-afae29b feat(rowtrack): profile-sheet design alignments (audit werkstroom 1)
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/app/(tabs)/profile.tsx
-  A  apps/rowtrack/briefings/2026-07-14-screen-profile-parity.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

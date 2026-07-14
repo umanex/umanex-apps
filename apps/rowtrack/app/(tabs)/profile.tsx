@@ -86,7 +86,7 @@ function indicesToDate(dayIdx: number, monthIdx: number, yearIdx: number): strin
 function formatBirthDate(date: string | null): string {
   if (!date) return '—';
   const [y, m, d] = date.split('-').map(Number);
-  return `${d} ${NL_MONTHS_SHORT[m - 1]} ${y}`;
+  return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
 }
 
 function genderLabel(g: string | null): string {
@@ -398,7 +398,7 @@ export default function ProfileScreen() {
           ) : (
             <TouchableOpacity style={styles.listRow} onPress={openDoel} activeOpacity={0.8}>
               <Text style={styles.listLabel}>Geen doel ingesteld</Text>
-              <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
+              <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
             </TouchableOpacity>
           )}
         </View>
@@ -411,15 +411,15 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Voornaam</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{nameLabel}</Text>
-                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
             <TouchableOpacity style={styles.listRow} onPress={openEmail} activeOpacity={0.8}>
-              <Text style={styles.listLabel}>E-mailadres</Text>
+              <Text style={styles.listLabel}>Email</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{user?.email ?? '—'}</Text>
-                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
           </View>
@@ -433,7 +433,7 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Geslacht</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{genderLabel(gender)}</Text>
-                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
@@ -441,7 +441,7 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Geboortedatum</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{formatBirthDate(birthDate)}</Text>
-                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
@@ -449,7 +449,7 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Lengte</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{heightLabel}</Text>
-                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
@@ -457,7 +457,7 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Gewicht</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{weightLabel}</Text>
-                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
           </View>
@@ -485,7 +485,7 @@ export default function ProfileScreen() {
 
         <Button title="Opslaan" onPress={handleSave} loading={saving} size="lg" />
 
-        <Button title="Uitloggen" onPress={handleLogout} variant="primary" size="lg" />
+        <Button title="Uitloggen" onPress={handleLogout} variant="primary" size="lg" icon="arrow-forward" iconPosition="trailing" />
 
         <Text style={styles.version}>RowTrack v1.0.0</Text>
       </ScrollView>
@@ -838,7 +838,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   },
   segmentBtnActive: {
-    backgroundColor: accent.default,
+    // Active = 0.20 accent-tint + border + rode tekst (matcht Chip; design 07-Profile).
+    // TODO: accent.selected-token ontbreekt nog (§2 ①) — zelfde hardcode als Chip/GoalSegments.
+    backgroundColor: 'rgba(240, 84, 84, 0.20)',
+    borderWidth: 1,
+    borderColor: accent.default,
   },
   segmentBtnText: {
     fontFamily: fontFamily.bodySemiBold,
@@ -846,7 +850,7 @@ const styles = StyleSheet.create({
     color: fg.secondary,
   },
   segmentBtnTextActive: {
-    color: bg.base,
+    color: accent.default,
   },
 
   // Sheet: date picker

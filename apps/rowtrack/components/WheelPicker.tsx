@@ -14,25 +14,27 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { bg, fg, fontFamily, fontSize, radii, space } from '@/constants';
+import { bg, fg, fontFamily, fontSize, radii } from '@/constants';
 import { wheelItemParts, type WheelItem } from '@/lib/formatters';
 
 const ITEM_H = 50;
-const VISIBLE = 5;
-const HALF = 2;                       // rows above/below the centre
-const PADDING = ITEM_H * HALF;        // 100 — centres the selected row
-const PICKER_H = ITEM_H * VISIBLE;    // 250
 const PILL_H = 60;
-const PILL_TOP = (PICKER_H - PILL_H) / 2; // 95
 const FADE_H = ITEM_H * 1.5;
-const FADE_OPAQUE = bg.base;
-const FADE_CLEAR = 'rgba(21, 23, 28, 0)'; // bg.base (#15171C) at 0 alpha
+
+// Fade + pill-surface per context: op het scherm (bg.base) of in een sheet (bg.elevated).
+// De gradient moet naar de omringende achtergrond faden, anders ontstaat een kleurrand.
+const SURFACE = {
+  base: { opaque: bg.base, clear: 'rgba(21, 23, 28, 0)' },     // #15171C
+  elevated: { opaque: bg.elevated, clear: 'rgba(26, 29, 36, 0)' }, // #1A1D24
+} as const;
+
+export type WheelSurface = keyof typeof SURFACE;
 
 function triggerHaptic() {
   Haptics.selectionAsync();
 }
 
-// --- Row: UI-thread cross-fade of a 34px and a 16px layer, driven by scrollY ---
+// --- Row: UI-thread cross-fade of a big (selected) and small (adjacent) layer ---
 
 type WheelRowProps = {
   item: WheelItem;
@@ -83,9 +85,28 @@ type WheelPickerProps = {
   items: WheelItem[];
   selectedIndex: number;
   onIndexChange: (index: number) => void;
+  /** Aantal zichtbare rijen (oneven). Default 5 (goal-wheel); sheets gebruiken 3. */
+  visibleRows?: number;
+  /** Toon de eigen pill-achtergrond. Zet op false wanneer de parent één gedeelde band tekent (date-picker). */
+  showPill?: boolean;
+  /** Achtergrond-context voor de fade + pill. 'base' = scherm, 'elevated' = sheet. */
+  surface?: WheelSurface;
 }
 
-export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPickerProps) {
+export function WheelPicker({
+  items,
+  selectedIndex,
+  onIndexChange,
+  visibleRows = 5,
+  showPill = true,
+  surface = 'base',
+}: WheelPickerProps) {
+  const half = (visibleRows - 1) / 2;
+  const padding = ITEM_H * half;        // centreert de geselecteerde rij
+  const pickerH = ITEM_H * visibleRows;
+  const pillTop = (pickerH - PILL_H) / 2;
+  const fadeColors = SURFACE[surface];
+
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useSharedValue(selectedIndex * ITEM_H);
   const lastHaptic = useSharedValue(selectedIndex);
@@ -138,9 +159,7 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
 
   // Land on the selected row once the content has actually been measured.
   // onLayout fires before the children are sized, so scrollTo there clamps to 0
-  // on a fresh mount (a goal picked straight from "Geen") — the wheel would sit
-  // at index 0 while the chip shows the real default. onContentSizeChange is the
-  // first point where the scroll offset is valid.
+  // on a fresh mount — onContentSizeChange is the first point where the offset is valid.
   const onContentSizeChange = useCallback(() => {
     if (initialized.value) return;
     initialized.value = true;
@@ -152,11 +171,13 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
   }, [initialized, scrollRef, scrollY, selectedIndex]);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.pill} pointerEvents="none" />
+    <View style={[styles.container, { height: pickerH }]}>
+      {showPill ? (
+        <View style={[styles.pill, { top: pillTop }]} pointerEvents="none" />
+      ) : null}
       <Animated.ScrollView
         ref={scrollRef}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{ paddingVertical: padding }}
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_H}
         decelerationRate="fast"
@@ -171,12 +192,12 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
         ))}
       </Animated.ScrollView>
       <LinearGradient
-        colors={[FADE_OPAQUE, FADE_CLEAR]}
+        colors={[fadeColors.opaque, fadeColors.clear]}
         style={[styles.fade, styles.fadeTop]}
         pointerEvents="none"
       />
       <LinearGradient
-        colors={[FADE_CLEAR, FADE_OPAQUE]}
+        colors={[fadeColors.clear, fadeColors.opaque]}
         style={[styles.fade, styles.fadeBottom]}
         pointerEvents="none"
       />
@@ -186,20 +207,15 @@ export function WheelPicker({ items, selectedIndex, onIndexChange }: WheelPicker
 
 const styles = StyleSheet.create({
   container: {
-    height: PICKER_H,
     overflow: 'hidden',
   },
   pill: {
     position: 'absolute',
-    top: PILL_TOP,
     left: 0,
     right: 0,
     height: PILL_H,
     backgroundColor: bg.raised,
     borderRadius: radii.md,
-  },
-  listContent: {
-    paddingVertical: PADDING,
   },
   fade: {
     position: 'absolute',
@@ -224,28 +240,28 @@ const styles = StyleSheet.create({
   valueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space['6'],
+    gap: 4,
   },
   bigValue: {
-    fontFamily: fontFamily.sourceSerifRegular,
+    fontFamily: fontFamily.albertSansBold,
     fontSize: fontSize['34'],
     letterSpacing: -1.02,
     color: fg.primary,
   },
   bigUnit: {
-    fontFamily: fontFamily.sourceSerifItalic,
+    fontFamily: fontFamily.albertSansRegular,
     fontSize: fontSize['16'],
     color: fg.primary,
   },
   smallValue: {
-    fontFamily: fontFamily.sourceSerifRegular,
-    fontSize: fontSize['16'],
+    fontFamily: fontFamily.albertSansRegular,
+    fontSize: fontSize['20'],
     letterSpacing: -0.4,
     color: fg.secondary,
   },
   smallUnit: {
-    fontFamily: fontFamily.sourceSerifItalic,
-    fontSize: fontSize['16'],
+    fontFamily: fontFamily.albertSansRegular,
+    fontSize: fontSize['14'],
     color: fg.secondary,
   },
 });

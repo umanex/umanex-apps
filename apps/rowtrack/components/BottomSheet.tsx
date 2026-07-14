@@ -28,6 +28,8 @@ export type BottomSheetProps = {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** Vaste actie onderaan (buiten de scroll) — blijft altijd zichtbaar, ook bij hoge content zoals een wheel. */
+  footer?: ReactNode;
 };
 
 const ANIM_MS = 220;
@@ -37,6 +39,7 @@ export const BottomSheet = memo(function BottomSheet({
   title,
   onClose,
   children,
+  footer,
 }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
   const slide = useRef(new Animated.Value(0)).current;
@@ -126,6 +129,8 @@ export const BottomSheet = memo(function BottomSheet({
             >
               {children}
             </ScrollView>
+
+            {footer ? <View style={styles.footer}>{footer}</View> : null}
           </Animated.View>
         </KeyboardAvoidingView>
       </View>
@@ -177,5 +182,8 @@ const styles = StyleSheet.create({
   bodyContent: {
     gap: space['16'],
     paddingBottom: space['8'],
+  },
+  footer: {
+    marginTop: space['16'],
   },
 });

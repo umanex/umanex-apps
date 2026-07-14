@@ -483,8 +483,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <Button title="Opslaan" onPress={handleSave} loading={saving} size="lg" />
-
         <Button title="Uitloggen" onPress={handleLogout} variant="primary" size="lg" icon="arrow-forward" iconPosition="trailing" />
 
         <Text style={styles.version}>RowTrack v1.0.0</Text>
@@ -610,13 +608,15 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'lengte'}
         onClose={closeSheet}
         title="Lengte"
+        footer={<Button title="Opslaan" onPress={saveLengte} size="md" />}
       >
         <WheelPicker
           items={HEIGHT_ITEMS}
           selectedIndex={draftHeight - HEIGHT_MIN}
           onIndexChange={(idx) => setDraftHeight(HEIGHT_MIN + idx)}
+          visibleRows={3}
+          surface="elevated"
         />
-        <Button title="Opslaan" onPress={saveLengte} size="md" />
       </BottomSheet>
 
       {/* Gewicht */}
@@ -624,13 +624,15 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'gewicht'}
         onClose={closeSheet}
         title="Gewicht"
+        footer={<Button title="Opslaan" onPress={saveGewicht} size="md" />}
       >
         <WheelPicker
           items={WEIGHT_ITEMS}
           selectedIndex={draftWeight - WEIGHT_MIN}
           onIndexChange={(idx) => setDraftWeight(WEIGHT_MIN + idx)}
+          visibleRows={3}
+          surface="elevated"
         />
-        <Button title="Opslaan" onPress={saveGewicht} size="md" />
       </BottomSheet>
 
       {/* Geboortedatum */}
@@ -638,19 +640,20 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'geboortedatum'}
         onClose={closeSheet}
         title="Geboortedatum"
+        footer={<Button title="Opslaan" onPress={saveGeboortedatum} size="md" />}
       >
         <View style={styles.datePickerRow}>
+          <View style={styles.datePickerBand} pointerEvents="none" />
           <View style={styles.datePickerCol}>
-            <WheelPicker items={DAY_ITEMS} selectedIndex={draftDayIdx} onIndexChange={setDraftDayIdx} />
+            <WheelPicker items={DAY_ITEMS} selectedIndex={draftDayIdx} onIndexChange={setDraftDayIdx} visibleRows={3} showPill={false} surface="elevated" />
           </View>
           <View style={styles.datePickerCol}>
-            <WheelPicker items={MONTH_ITEMS} selectedIndex={draftMonthIdx} onIndexChange={setDraftMonthIdx} />
+            <WheelPicker items={MONTH_ITEMS} selectedIndex={draftMonthIdx} onIndexChange={setDraftMonthIdx} visibleRows={3} showPill={false} surface="elevated" />
           </View>
           <View style={styles.datePickerCol}>
-            <WheelPicker items={YEAR_ITEMS} selectedIndex={draftYearIdx} onIndexChange={setDraftYearIdx} />
+            <WheelPicker items={YEAR_ITEMS} selectedIndex={draftYearIdx} onIndexChange={setDraftYearIdx} visibleRows={3} showPill={false} surface="elevated" />
           </View>
         </View>
-        <Button title="Opslaan" onPress={saveGeboortedatum} size="md" />
       </BottomSheet>
 
       {/* Doel bewerken */}
@@ -857,6 +860,17 @@ const styles = StyleSheet.create({
   datePickerRow: {
     flexDirection: 'row',
     gap: space['12'],
+  },
+  // Eén doorlopende selectie-band achter de 3 kolommen (i.p.v. 3 losse pills).
+  // top = (3×50 − 60)/2 = 45, centreert de band op de geselecteerde rij.
+  datePickerBand: {
+    position: 'absolute',
+    top: 45,
+    left: 0,
+    right: 0,
+    height: 60,
+    backgroundColor: bg.raised,
+    borderRadius: radii.md,
   },
   datePickerCol: {
     flex: 1,

@@ -54,15 +54,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+8a3e8bb feat(rowtrack): profile parity polish (segmented tint, arrows, date, logout)
 6b185cf feat(rowtrack): unify profile numeric input on WheelPicker
 6519761 feat(rowtrack): wire active-workout hero to heroNumeric token (§3 ③)
 1b45aff chore(tokens): sync generated tokens from Tokens Studio
 3646cff font size & hero
-434781c feat(rowtrack): summary stats-table border + band-divider strength (audit)
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/app/(tabs)/profile.tsx
+  M  apps/rowtrack/components/BottomSheet.tsx
+  M  apps/rowtrack/components/WheelPicker.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

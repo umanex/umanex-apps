@@ -394,7 +394,9 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>MIJN DOEL</Text>
           {goalProgress ? (
-            <GoalProgressCard progress={goalProgress} onEdit={openDoel} />
+            <View style={styles.goalCardBleed}>
+              <GoalProgressCard progress={goalProgress} onEdit={openDoel} />
+            </View>
           ) : (
             <TouchableOpacity style={styles.listRow} onPress={openDoel} activeOpacity={0.8}>
               <Text style={styles.listLabel}>Geen doel ingesteld</Text>
@@ -493,6 +495,7 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'voornaam'}
         onClose={closeSheet}
         title="Voornaam"
+        footer={<Button title="Opslaan" onPress={saveVoornaam} size="md" />}
       >
         <TextInput
           ref={nameInputRef}
@@ -506,7 +509,6 @@ export default function ProfileScreen() {
           onSubmitEditing={saveVoornaam}
           placeholderTextColor={fg.tertiary}
         />
-        <Button title="Opslaan" onPress={saveVoornaam} size="md" />
       </BottomSheet>
 
       {/* E-mail wijzigen */}
@@ -514,6 +516,15 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'email'}
         onClose={closeSheet}
         title="E-mail wijzigen"
+        footer={
+          <Button
+            title="E-mail wijzigen"
+            onPress={handleEmailChange}
+            disabled={!emailFormValid || emailChanging}
+            loading={emailChanging}
+            size="md"
+          />
+        }
       >
         <View style={styles.sheetFieldGroup}>
           <Text style={styles.sheetFieldLabel}>HUIDIG E-MAILADRES</Text>
@@ -570,14 +581,6 @@ export default function ProfileScreen() {
         </View>
 
         {emailError && <Text style={styles.emailError}>{emailError}</Text>}
-
-        <Button
-          title="E-mail wijzigen"
-          onPress={handleEmailChange}
-          disabled={!emailFormValid || emailChanging}
-          loading={emailChanging}
-          size="md"
-        />
       </BottomSheet>
 
       {/* Geslacht */}
@@ -585,6 +588,7 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'geslacht'}
         onClose={closeSheet}
         title="Geslacht"
+        footer={<Button title="Opslaan" onPress={saveGeslacht} size="md" />}
       >
         <View style={styles.segmentedRow}>
           {(['male', 'female', 'other'] as const).map(g => (
@@ -600,7 +604,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           ))}
         </View>
-        <Button title="Opslaan" onPress={saveGeslacht} size="md" />
       </BottomSheet>
 
       {/* Lengte */}
@@ -661,6 +664,7 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'doel'}
         onClose={closeSheet}
         title="Doel bewerken"
+        footer={<Button title="Opslaan" onPress={saveDoel} size="md" />}
       >
         <View style={styles.sheetFieldGroup}>
           <Text style={styles.sheetFieldLabel}>PERIODE</Text>
@@ -719,8 +723,6 @@ export default function ProfileScreen() {
             </View>
           </View>
         )}
-
-        <Button title="Opslaan" onPress={saveDoel} size="md" />
       </BottomSheet>
     </>
   );
@@ -750,9 +752,13 @@ const styles = StyleSheet.create({
   section: {
     gap: space['8'],
   },
+  // Doel-kaart breekt uit de content-padding (20) → volledige schermbreedte (band).
+  goalCardBleed: {
+    marginHorizontal: -space['20'],
+  },
   sectionLabel: {
     ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    color: fg.secondary,
   },
 
   // List card (grouped rows)
@@ -775,7 +781,7 @@ const styles = StyleSheet.create({
   },
   listLabel: {
     ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    color: fg.secondary,
   },
   listRight: {
     flexDirection: 'row',
@@ -830,6 +836,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: bg.elevated,
     borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: border.default,
     padding: 3,
     gap: 2,
   },
@@ -882,7 +890,7 @@ const styles = StyleSheet.create({
   },
   sheetFieldLabel: {
     ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
+    color: fg.secondary,
   },
   sheetInputRow: {
     flexDirection: 'row',

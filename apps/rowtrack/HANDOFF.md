@@ -45,7 +45,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-09 — 0.20 accent-selectie-fill zonder token · [debt]
 - **Bevinding:** De actieve chip (Chip.tsx) én het actieve segment (GoalSegments.tsx) gebruiken `rgba(240,84,84,0.20)` hardcoded; er bestaat enkel `accent.muted` (0.12) en `accent.subtle` (0.06). Twee `// TODO`-markers wijzen ernaar.
 - **Volgende zet:** Een `accent.selected` (0.20) token toevoegen via Tokens Studio → `tokens.json`, rebuilden, beide hardcodes vervangen.
-- **Status:** open
+- **Status:** open — 2026-07-14: tint-richting bevestigd (0.20 wint van de audit-"solid"); token nog NIET toegevoegd. Er is nu een DERDE hardcode bij: het active segment in `profile.tsx`. Zodra de alias gepusht is → 3 plekken vervangen (Chip, GoalSegments, segmented).
 
 ## 2026-07-09 — Chip value/unit-split is fragiele heuristiek · [risico]
 - **Bevinding:** IdlePhase splitst de chip-value/unit met `label.endsWith(' ${unit}')`. Dit is gekoppeld aan het exacte label-formaat van de formatters; een wijziging daar breekt stil de italic-unit-rendering (of toont een verkeerde unit).
@@ -67,7 +67,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-10 — Profile-datumpicker erft de wheel-restyle · [onzekerheid]
 - **Bevinding:** `WheelPicker` wordt gedeeld door de Geboortedatum-BottomSheet in `profile.tsx` (dag/maand/jaar). Die erft nu 5 rijen (i.p.v. 3, hoogte 132→250) én de edge-fade naar `bg.base`, terwijl de BottomSheet-surface `bg.elevated` is (fade ~ΔE 2-3, quasi onzichtbaar). Review flagde dit als cosmetisch, niet-blokkerend (BottomSheet scrollt, geen clipping).
 - **Volgende zet:** Bij Jeroen aftoetsen of de datumpicker de trainings-wheel-look mag erven, of een `surfaceColor`/`visibleRows`-prop verdient.
-- **Status:** open
+- **Status:** resolved — 2026-07-14: Jeroen koos de goal-wheel-look. WheelPicker kreeg exact de voorspelde `visibleRows` + `surface`-props (fade → bg.elevated in sheets) + `showPill`; datum = 3 kolommen zonder labels + één gedeelde band; lengte/gewicht ook naar wheels. Sim-geverifieerd (PR #124/#126).
 
 ## 2026-07-10 — Segment-breedte snapt (Fabric layout-animatie taboe) · [debt]
 - **Bevinding:** De actieve goal-segment verbreedt instant (snap) i.p.v. vloeiend te morphen. Zowel RN `LayoutAnimation` als Reanimated `LinearTransition` herintroduceren de Fabric stale-width clipping (gedeactiveerd segment houdt label-breedte). Enkel de remount ruimt die op, en remount sluit een layout-animatie uit. Verschijning (pill+label) is wél buttery via Reanimated `entering`.
@@ -92,7 +92,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-13 — Actions read/write-rechten voor tokens-sync workflow · [next-step]
 - **Bevinding:** `tokens-sync.yml` (nu live op `main`, PR #106) commit de gegenereerde `constants/*` + CSS terug via `GITHUB_TOKEN` met `permissions: contents: write`. Dat wordt gecapt als de repo-instelling op read-only staat → de auto-commit-stap faalt bij de eerste échte Tokens Studio-push (een no-op run zonder diff slaagt wél, dus de blocker is nu nog onzichtbaar).
 - **Volgende zet:** GitHub → Settings → Actions → General → *Workflow permissions* → **"Read and write permissions"**. Jeroen-actie, buiten de repo. Optioneel daarna: één test-push vanuit Tokens Studio om de round-trip te bevestigen.
-- **Status:** open
+- **Status:** resolved — 2026-07-14: Jeroen zette de repo op "Read and write permissions" (geverifieerd `default_workflow_permissions: "write"` via `gh api`).
 
 ## 2026-07-13 — Active-workout redesign gemerged zonder live render-verify · [risico]
 - **Bevinding:** F3 hero-labels + KPI/subtitle-resync + de Albert Sans-typografie zijn naar main gemerged (PR #106), maar het active-fase-scherm zélf is nooit live gerenderd — de sim bereikt de active workout niet zonder verbonden erg (BLE bridget niet naar de sim). Verificatie leunde op spec-parity tegen de Figma-frame-dumps + tsc + de build-guard, niet op een render. Home/idle zijn wél sim-geverifieerd.
@@ -107,7 +107,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-13 — tokens-sync workflow nooit in echte CI gedraaid · [risico]
 - **Bevinding:** `tokens-sync.yml` is lokaal gevalideerd (YAML, pnpm-filters, beide token-builds idempotent, DTCG-guard, guard-vuurt-test) maar nooit op GitHub Actions uitgevoerd. Onbevestigd in de echte omgeving: dat de `GITHUB_TOKEN`-auto-commit lukt (hangt aan de Actions read/write-instelling), dat die push géén loop triggert (paths-filter zou dat moeten voorkomen), en het gedrag bij eventuele branch-protection op main.
 - **Volgende zet:** Ná het aanzetten van de Actions-schrijfrechten: één echte Tokens Studio-push observeren (Actions-tab) en bevestigen dat de constants correct terug-committen; faalt het → workflow-logs nakijken.
-- **Status:** open
+- **Status:** resolved — 2026-07-14: eerst via `workflow_dispatch` groen (run 29327011562, schone no-op commit-back), daarna een échte Tokens Studio-push (hero-tokens, `3646cff`) → CI committe de constants terug (`1b45aff`). Round-trip volledig dicht.
 
 ## 2026-07-13 — Live Figma text-style re-verify nog niet gedaan · [onzekerheid]
 - **Bevinding:** De typografie-sync (8 typeStyles → Albert Sans) is bevestigd via mijn audit-lezing + jouw autoritaire `tokens.json`-push + de sim-render, maar niet tegen de *live* Figma text styles — de Desktop Bridge plugin was losgekoppeld. Delta klopte exact, dus laag risico, maar niet onafhankelijk tegen de huidige Figma gecheckt.
@@ -117,9 +117,29 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-13 — Split/Watts DOEL-pill copy: code ≠ Figma · [onzekerheid]
 - **Bevinding:** De frames tonen `DOEL | 2:20 split` en `DOEL | 180W`; de code houdt `2:20/500m` en `180 W` (`goalPillValue()` in ActivePhase.tsx). Bewust niet overgenomen — ambigue micro-copy op eerder-buiten-scope varianten, en `/500m` is preciezer. Render-geverifieerd dat de code de huidige format toont.
 - **Volgende zet:** Beslissen of de code de frame-copy overneemt of blijft. Eén plek: `goalPillValue()`.
-- **Status:** open
+- **Status:** resolved — 2026-07-14: beslist op het `{waarde} {eenheid}`-spatie-patroon: split → `2:20 split` (frame-copy overgenomen), watts → `180 W` behouden (Figma's `180W` verworpen als spatie-slip). Dode `buildGoalLabel` opgeruimd (PR #115).
 
 ## 2026-07-13 — Landscape active-workout niet render-geverifieerd · [next-step]
 - **Bevinding:** Het mock-pad (`app/dev-active.tsx`) rendert de active-fase in portrait; landscape (50/50-hero-kolom + verticale progress-bar) is niet gescreenshot — sim-rotatie is niet via `simctl` te automatiseren.
 - **Volgende zet:** In de sim roteren (Cmd+→) met het mock-pad open en de 5 varianten in landscape checken, of een `?orientation`-forcering aan het dev-pad toevoegen (override useWindowDimensions).
+- **Status:** resolved — 2026-07-14: landscape gerenderd via mock-pad + sim-rotatie tijdens de kolom-padding-fix (PR #127). Rotatie blijkt wél automatiseerbaar — via `osascript` System Events (Cmd+→), niet via `simctl`.
+
+## 2026-07-14 — Segmented control (Geslacht/Doel-sheets) layout niet geverifieerd · [onzekerheid]
+- **Bevinding:** Jeroen flagde "layout van de tabs binnen bottom sheets is niet correct". Zonder het sheet-design (Console was down) heb ik een best-guess container-`border.default`-frame op `segmentedRow` gezet. Niet getoetst tegen `52:9155` (Geslacht) / `52:9730` (Doel) — mogelijk fout of onvolledig.
+- **Volgende zet:** `52:9155` deep-readen (Console na herstart, of native `get_design_context`), de segmented-track + active-pill-spec vergelijken en de frame-keuze bevestigen/corrigeren.
+- **Status:** open
+
+## 2026-07-14 — sheetFieldLabel-token niet tegen sheet-design geverifieerd · [aanname]
+- **Bevinding:** `sheetFieldLabel` (PERIODE/TYPE/WACHTWOORD e.d.) teruggezet naar `fg.tertiary` op basis van het rij-label-patroon uit `52:8768` (main), niet tegen een sheet-frame. Sectie-labels bleken fg.secondary, rij-labels fg.tertiary — sheet-veld-labels zijn niet direct bevestigd.
+- **Volgende zet:** Bij de segmented-check (`52:9155`/`52:9730`) meteen de veld-label-kleur bevestigen.
+- **Status:** open
+
+## 2026-07-14 — figma-console (Desktop Bridge) MCP viel weg; native als fallback · [risico]
+- **Bevinding:** Midden in de sessie dropte de figma-console MCP-**server**-connectie (harness↔server), niet enkel de plugin. De tools verdwenen uit de toolset en herverbinden van de plugin bracht ze niet terug — dat vergt een Claude Code-**herstart**. Native Figma MCP (`claude_ai_Figma`, fileKey `T1bGrvIzSNeLyh5CbarATZ`) wérkte wél als fallback en gaf getokeniseerde design-context.
+- **Volgende zet:** Herstart Claude Code om Console (projectregel: primair) te herstellen vóór verder Figma-werk; anders bewust native gebruiken en het melden.
+- **Status:** open
+
+## 2026-07-14 — 4-jul audit-re-triage: resterende werkstromen · [next-step]
+- **Bevinding:** De re-triage (`briefings/2026-07-14-retriage-audit-design-vs-code.md`, PR #117) zette 130/215 items als obsoleet; van de 7 werkstromen zijn de beslissings-ws (3/4/5/6) genomen en WS1 (Profile-polish) grotendeels gedaan. Open: WS2 (component-tokenlaag exporteren → Tokens Studio), WS7 (off-token design-waarden → Figma tokeniseren) en de dekkingsgaten (auth-schermen login/register zonder Figma-design; GoalSetupModal; connection-overlay).
+- **Volgende zet:** WS2 + WS7 zijn grotendeels jouw Tokens Studio/Figma-hand; de coverage-gaten (auth-schermen designen) apart inplannen.
 - **Status:** open

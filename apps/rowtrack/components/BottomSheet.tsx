@@ -149,8 +149,8 @@ const styles = StyleSheet.create({
     backgroundColor: bg.elevated,
     borderTopLeftRadius: componentRadius.modal,
     borderTopRightRadius: componentRadius.modal,
-    paddingHorizontal: space['20'],
-    paddingTop: space['20'],
+    paddingHorizontal: space['32'],
+    paddingTop: space['32'],
     maxHeight: '90%',
   },
   header: {

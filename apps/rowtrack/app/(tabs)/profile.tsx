@@ -425,6 +425,14 @@ export default function ProfileScreen() {
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
+            <TouchableOpacity style={styles.listRow} onPress={openGeboortedatum} activeOpacity={0.8}>
+              <Text style={styles.listLabel}>Geboortedatum</Text>
+              <View style={styles.listRight}>
+                <Text style={styles.listValue}>{formatBirthDate(birthDate)}</Text>
+                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
+              </View>
+            </TouchableOpacity>
+            <View style={styles.listDivider} />
             <TouchableOpacity style={styles.listRow} onPress={openLengte} activeOpacity={0.8}>
               <Text style={styles.listLabel}>Lengte</Text>
               <View style={styles.listRight}>
@@ -437,14 +445,6 @@ export default function ProfileScreen() {
               <Text style={styles.listLabel}>Gewicht</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{weightLabel}</Text>
-                <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
-              </View>
-            </TouchableOpacity>
-            <View style={styles.listDivider} />
-            <TouchableOpacity style={styles.listRow} onPress={openGeboortedatum} activeOpacity={0.8}>
-              <Text style={styles.listLabel}>Geboortedatum</Text>
-              <View style={styles.listRight}>
-                <Text style={styles.listValue}>{formatBirthDate(birthDate)}</Text>
                 <Ionicons name="chevron-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
@@ -784,7 +784,6 @@ const styles = StyleSheet.create({
   listDivider: {
     height: 1,
     backgroundColor: fg.quaternary,
-    marginLeft: space['16'],
   },
   listLabel: {
     ...typeStyles.labelGoalPrefix,
@@ -819,7 +818,7 @@ const styles = StyleSheet.create({
     backgroundColor: bg.elevated,
     borderWidth: 1,
     borderColor: border.default,
-    borderRadius: radii.md,
+    borderRadius: componentRadius.cardSm,
     paddingHorizontal: space['16'],
     paddingVertical: space['12'],
   },
@@ -827,7 +826,7 @@ const styles = StyleSheet.create({
   // Sheet: current email display
   currentEmailText: {
     fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
+    fontSize: fontSize['18'],
     color: fg.secondary,
   },
 
@@ -918,7 +917,7 @@ const styles = StyleSheet.create({
     backgroundColor: bg.elevated,
     borderWidth: 1,
     borderColor: border.default,
-    borderRadius: radii.md,
+    borderRadius: componentRadius.cardSm,
     paddingHorizontal: space['16'],
     paddingVertical: space['12'],
     gap: space['8'],
@@ -931,7 +930,7 @@ const styles = StyleSheet.create({
   },
   sheetInputUnit: {
     fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
+    fontSize: fontSize['12'],
     color: fg.secondary,
   },
 

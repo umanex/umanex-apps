@@ -721,10 +721,9 @@ const activeStyles = StyleSheet.create({
     color: fg.onAccent,
   },
   heroText: {
-    fontFamily: fontFamily.albertSansBold,
-    // TODO: token fontSize.114 via Tokens Studio (grootste bestaande token = 96).
-    fontSize: 114,
-    letterSpacing: -5.13, // -4.5% van 114
+    // Hero-cijfer via de heroNumeric-typeStyle (Albert Sans Bold 114, ls -5.13).
+    // Token herbestemd in Tokens Studio 2026-07-14 (was Source Serif 96).
+    ...typeStyles.heroNumeric,
     color: fg.onAccent,
   },
   subtitleText: {

@@ -54,15 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+1b45aff chore(tokens): sync generated tokens from Tokens Studio
+3646cff font size & hero
+434781c feat(rowtrack): summary stats-table border + band-divider strength (audit)
 afae29b feat(rowtrack): profile-sheet design alignments (audit werkstroom 1)
 81e5723 feat(rowtrack): device action text to accent-red (audit werkstroom 5 / cluster 7)
-c2eed36 feat(rowtrack): drop redundant units on duration/BPM KPIs (audit werkstroom 3)
-4c0a46d docs(rowtrack): resolve chip active-state conflict (0.20 tint wins)
-d3c5051 docs(rowtrack): re-triage 4-jul design-vs-code audit against current code
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/briefings/2026-07-14-retriage-audit-design-vs-code.md
+  M  apps/rowtrack/TODO.md
   M  apps/rowtrack/components/workout/ActivePhase.tsx
 
 ## Bestanden met TODO/FIXME

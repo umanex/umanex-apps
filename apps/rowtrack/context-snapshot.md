@@ -54,15 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0b0b175 docs(rowtrack): resolve audit cluster 2 (red accent wins, cyan absent from code)
 5b6b967 feat(rowtrack): split DOEL-pill copy to '2:20 split', drop dead goal-label helper
 b6c92b9 docs(rowtrack): record hero-font decision (Albert Sans Bold) + token spec
 96a92a5 refactor(rowtrack): map accent-tint + toast-gold hardcodes to tokens
 e786c7e docs(rowtrack): consolidate open todos into checkable TODO.md
-35b5cee chore(rowtrack): remove dead sync-tokens workflow
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/TODO.md
+  A  apps/rowtrack/briefings/2026-07-14-retriage-audit-design-vs-code.md
 
 ## Bestanden met TODO/FIXME
   (geen)

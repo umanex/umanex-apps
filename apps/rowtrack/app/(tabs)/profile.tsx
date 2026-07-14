@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
 
   // List card (grouped rows)
   listCard: {
-    backgroundColor: bg.elevated,
+    backgroundColor: bg.raised,
     borderRadius: componentRadius.cardSm,
     overflow: 'hidden',
   },
@@ -777,11 +777,11 @@ const styles = StyleSheet.create({
   },
   listDivider: {
     height: 1,
-    backgroundColor: fg.quaternary,
+    backgroundColor: border.default,
   },
   listLabel: {
     ...typeStyles.labelGoalPrefix,
-    color: fg.secondary,
+    color: fg.tertiary,
   },
   listRight: {
     flexDirection: 'row',
@@ -890,7 +890,7 @@ const styles = StyleSheet.create({
   },
   sheetFieldLabel: {
     ...typeStyles.labelGoalPrefix,
-    color: fg.secondary,
+    color: fg.tertiary,
   },
   sheetInputRow: {
     flexDirection: 'row',

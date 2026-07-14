@@ -54,15 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e33eca9 feat(rowtrack): landscape active-workout column padding for progress bar
 14aef68 fix(rowtrack): profile wheel render — typography, single band, pinned CTA
 8a3e8bb feat(rowtrack): profile parity polish (segmented tint, arrows, date, logout)
 6b185cf feat(rowtrack): unify profile numeric input on WheelPicker
 6519761 feat(rowtrack): wire active-workout hero to heroNumeric token (§3 ③)
-1b45aff chore(tokens): sync generated tokens from Tokens Studio
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/app/(tabs)/profile.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

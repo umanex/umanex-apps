@@ -804,17 +804,17 @@ const styles = StyleSheet.create({
     color: fg.tertiary,
   },
 
-  // Sheet: text input
+  // Sheet: text input — bg/base + border/strong, radius 8 (Figma 52:9892).
   sheetInput: {
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['16'],
     color: fg.primary,
-    backgroundColor: bg.elevated,
+    backgroundColor: bg.base,
     borderWidth: 1,
-    borderColor: border.default,
-    borderRadius: componentRadius.cardSm,
+    borderColor: border.strong,
+    borderRadius: radii.sm,
     paddingHorizontal: space['16'],
-    paddingVertical: space['12'],
+    paddingVertical: space['14'],
   },
 
   // Sheet: current email display
@@ -832,21 +832,21 @@ const styles = StyleSheet.create({
   },
 
   // Sheet: segmented control
+  // Track: bg/base fill + border/strong, 4px padding, geen gap (Figma 52:9155 Container).
   segmentedRow: {
     flexDirection: 'row',
-    backgroundColor: bg.elevated,
+    backgroundColor: bg.base,
     borderRadius: radii.sm,
     borderWidth: 1,
-    borderColor: border.default,
-    padding: 3,
-    gap: 2,
+    borderColor: border.strong,
+    padding: space['4'],
   },
   segmentBtn: {
     flex: 1,
+    height: space['44'],
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: space['12'],
-    borderRadius: radii.sm,
+    borderRadius: radii.sm, // inactive = 8 (Figma borderRadius/sm)
   },
   segmentBtnActive: {
     // Active = 0.20 accent-tint + border + rode tekst (matcht Chip; design 07-Profile).
@@ -854,13 +854,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(240, 84, 84, 0.20)',
     borderWidth: 1,
     borderColor: accent.default,
+    // radius 4 = track-radius (8) − padding (4): pill nest exact, geen overflow (Figma borderRadius/xs).
+    borderRadius: radii.xs,
   },
   segmentBtnText: {
-    fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize['14'],
-    color: fg.secondary,
+    // Inactive: Albert Sans Regular 16, fg/tertiary (Figma).
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize['16'],
+    color: fg.tertiary,
   },
   segmentBtnTextActive: {
+    // Active: SemiBold + accent (Figma toont een rode gradient; solid accent is de RN-benadering).
+    fontFamily: fontFamily.bodySemiBold,
     color: accent.default,
   },
 
@@ -892,16 +897,17 @@ const styles = StyleSheet.create({
     ...typeStyles.labelGoalPrefix,
     color: fg.tertiary,
   },
+  // Streefwaarde-input — bg/base + border/strong, radius 8 (Figma 52:9892).
   sheetInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: bg.elevated,
+    backgroundColor: bg.base,
     borderWidth: 1,
-    borderColor: border.default,
-    borderRadius: componentRadius.cardSm,
+    borderColor: border.strong,
+    borderRadius: radii.sm,
     paddingHorizontal: space['16'],
-    paddingVertical: space['12'],
-    gap: space['8'],
+    paddingVertical: space['14'],
+    gap: space['20'],
   },
   sheetInputFlex: {
     flex: 1,

@@ -189,7 +189,7 @@ Om eerlijk te blijven — dit is geen zwakke codebase: **RLS live-geverifieerd c
 **P1 → naar `apps/rowtrack/HANDOFF.md`** (vooruitkijkend, apart in te plannen): P1-1 privacybeleid/consent en P1-2 account-verwijdering.
 
 **P2 → in code gefixt** (tsc groen):
-- **P2-1** Token-opslag: `expo-secure-store` (Keychain/Keystore) via een gechunkte adapter (`lib/secureStorage.ts`) i.p.v. platte AsyncStorage; valt veilig terug op AsyncStorage als de native module ontbreekt. ⚠️ **Vereist een native rebuild** (`expo run:ios --device` / prebuild) om echt te activeren; bestaande sessies loggen 1× opnieuw in.
+- **P2-1** ✅ **resolved (2026-07-15)** — Token-opslag: `expo-secure-store` (Keychain/Keystore) via een gechunkte adapter (`lib/secureStorage.ts`) i.p.v. platte AsyncStorage; valt veilig terug op AsyncStorage als de native module ontbreekt. **Native rebuild uitgevoerd** → encryptie actief (bestaande sessies logden 1× opnieuw in).
 - **P2-2** Stille leesfouten: distincte `ErrorState` (met retry) op History-lijst, home-recent en workout-detail; `PGRST116` (0 rijen) blijft "niet gevonden". Swallowed hook-fouten → `reportError()`.
 - **P2-3** Monitoring: **uitgesteld** (Sentry, jouw DSN) — console-gebaseerde `reportError()`-shim (`lib/monitoring.ts`) staat klaar; handoff-item toegevoegd.
 - **P2-4** Workout-dataverlies: mislukte opslag wordt lokaal bewaard (`lib/pendingWorkout.ts`) en bij de volgende home-focus gedrained. *Tradeoff:* geen idempotency-key → een zeldzame dubbele opslag bij een netwerk-blip ná een geslaagde write is mogelijk (bewust geaccepteerd voor deze app-schaal).
@@ -197,8 +197,8 @@ Om eerlijk te blijven — dit is geen zwakke codebase: **RLS live-geverifieerd c
 - **P2-7** User enumeration: neutrale signup-foutmelding.
 - **P2-8** Vrije-tekst: `maxLength={60}` op de voornaam-input (code) + CHECK-constraints migration (DB, zie onder).
 
-**P2 → migration-bestanden aangemaakt (jij past ze toe via de Supabase SQL Editor):**
-- `supabase/migrations/add_history_perf_indexes.sql` (P2-6): composite `(user_id, started_at DESC)` + partial PR-indexes.
-- `supabase/migrations/add_profile_field_constraints.sql` (P2-8): `display_name`-lengte + `gender`-enum CHECK (bestaande data geverifieerd compatibel).
+**P2 → migrations toegepast + geverifieerd (2026-07-15, via Supabase SQL Editor):**
+- **P2-6** ✅ `supabase/migrations/add_history_perf_indexes.sql`: composite `(user_id, started_at DESC)` + partial PR-indexes. Toegepast; 3 indexes geverifieerd via MCP.
+- **P2-8** ✅ `supabase/migrations/add_profile_field_constraints.sql`: `display_name`-lengte + `gender`-enum CHECK (bestaande data geverifieerd compatibel). Toegepast; beide CHECK-constraints geverifieerd via MCP.
 
-**Nog te doen (runtime/jouw hand):** native rebuild voor SecureStore · beide migrations toepassen · visuele check van de History-lijst na de FlatList-refactor · P3-lijst (backlog) · P1-compliance-werk.
+**Nog te doen (runtime/jouw hand):** ~~native rebuild voor SecureStore~~ ✅ (2026-07-15) · ~~beide migrations toepassen~~ ✅ (2026-07-15) · visuele check van de History-lijst na de FlatList-refactor · P2-3 Sentry-wiring (uitgesteld) · P3-lijst (backlog) · P1-compliance-werk.

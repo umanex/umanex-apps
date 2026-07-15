@@ -55,20 +55,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+490b703 fix(rowtrack): visible WheelPicker pill + surface-synced fade (Figma parity)
 f132568 docs(rowtrack): security audit report + hardening handoff/learnings
 c91e827 fix(rowtrack): neutral signup error + DB constraints/perf indexes (audit P2-6/7/8)
 1886e1c fix(rowtrack): surface read errors, persist/drain workouts, virtualize history (audit P2-2/4/5)
 44f0e72 feat(rowtrack): reportError shim, ErrorState + pendingWorkout helpers (audit P2-2/3/4)
-f701431 feat(rowtrack): encrypt Supabase auth tokens via expo-secure-store (audit P2-1)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  A  apps/rowtrack/briefings/2026-07-15-component-idlephase-goal-wheel.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-15-component-profile-metric-sheets.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-15-component-wheelpicker-pill-fade-sync.tcebc.md
-  M  apps/rowtrack/components/WheelPicker.tsx
-  M  apps/rowtrack/figma-map.md
+  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/audits/2026-07-15-security-audit-rowtrack.md
 
 ## Bestanden met TODO/FIXME
   (geen)

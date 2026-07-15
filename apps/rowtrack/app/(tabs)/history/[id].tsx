@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { BottomFade, Button, EmptyState, KpiSingle, TabItem } from '@/components';
+import { reportError } from '@/lib/monitoring';
+import { BottomFade, Button, EmptyState, ErrorState, KpiSingle, TabItem } from '@/components';
 import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import { samplesFromTuples } from '@/lib/bestDistanceTime';
@@ -41,28 +42,33 @@ export default function WorkoutDetailScreen() {
 
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<DetailTab>('Overzicht');
 
-  useEffect(() => {
-    let cancelled = false;
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    const { data, error: queryError } = await supabase
+      .from('workouts')
+      .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, max_watts, max_spm, best_split, avg_heart_rate, max_heart_rate, resistance_level, notes, goal_type, goal_target, goal_reached, splits, is_pr, samples, total_strokes')
+      .eq('id', id)
+      .single();
 
-    async function load() {
-      const { data } = await supabase
-        .from('workouts')
-        .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, max_watts, max_spm, best_split, avg_heart_rate, max_heart_rate, resistance_level, notes, goal_type, goal_target, goal_reached, splits, is_pr, samples, total_strokes')
-        .eq('id', id)
-        .single();
-
-      if (!cancelled) {
-        setWorkout(data as WorkoutDetail | null);
-        setLoading(false);
-      }
+    // PGRST116 = 0 rijen (verwijderd of RLS-gefilterd) → "niet gevonden", geen fout.
+    // Elke andere fout is een echte lees-/netwerkfout (security-audit P2-2).
+    if (queryError && queryError.code !== 'PGRST116') {
+      reportError(queryError, { where: 'detail.load', id });
+      setError(true);
+    } else {
+      setWorkout((data as WorkoutDetail | null) ?? null);
     }
-
-    load();
-    return () => { cancelled = true; };
+    setLoading(false);
   }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const tabs = useMemo<DetailTab[]>(() => {
     const t: DetailTab[] = ['Overzicht', 'Splits'];
@@ -117,6 +123,19 @@ export default function WorkoutDetailScreen() {
     return (
       <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
         <ActivityIndicator color={accent.default} size="large" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.notFoundHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={accent.default} />
+          </TouchableOpacity>
+        </View>
+        <ErrorState onRetry={load} size="lg" />
       </View>
     );
   }

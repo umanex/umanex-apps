@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
@@ -11,7 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { BottomFade, EmptyState, KpiSingle, TabItem, WorkoutCard } from '@/components';
+import { reportError } from '@/lib/monitoring';
+import { BottomFade, EmptyState, ErrorState, KpiSingle, TabItem, WorkoutCard } from '@/components';
 import { formatTimerFull, formatDistanceDynamic } from '@/lib/formatters';
 import {
   bg,
@@ -41,6 +42,7 @@ export default function HistoryScreen() {
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   const fetchWorkouts = useCallback(async () => {
     if (!user) return;
@@ -66,8 +68,16 @@ export default function HistoryScreen() {
       query = query.gte('started_at', from.toISOString());
     }
 
-    const { data } = await query;
-    setWorkouts((data ?? []) as WorkoutSummary[]);
+    // Leesfout onderscheiden van "geen data": een netwerk-/backendfout mag niet
+    // als lege lijst renderen (security-audit P2-2).
+    const { data, error: queryError } = await query;
+    if (queryError) {
+      reportError(queryError, { where: 'history.fetchWorkouts', filter });
+      setError(true);
+    } else {
+      setError(false);
+      setWorkouts((data ?? []) as WorkoutSummary[]);
+    }
     setLoading(false);
   }, [user, filter]);
 
@@ -95,19 +105,11 @@ export default function HistoryScreen() {
   const totalDistFormatted = formatDistanceDynamic(totalDistM);
   const totalCalories = workouts.reduce((s, w) => s + (w.calories ?? 0), 0);
 
-  return (
-    <View style={styles.screen}>
-    <ScrollView
-      style={[styles.container, { paddingTop: insets.top }]}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={accent.default}
-        />
-      }
-    >
+  // Header: titel + segment-filter + KPI-band. Als ListHeaderComponent van de
+  // FlatList, zodat de lijst gevirtualiseerd rendert (P2-5) i.p.v. alle rijen
+  // tegelijk in een ScrollView.
+  const listHeader = (
+    <>
       <Text style={styles.title} accessibilityRole="header">Historiek</Text>
 
       {/* Segment filter */}
@@ -152,31 +154,51 @@ export default function HistoryScreen() {
           />
         </View>
       </View>
+    </>
+  );
 
-      {/* Workout lijst */}
-      {loading ? (
-        <ActivityIndicator color={accent.default} style={styles.loader} />
-      ) : workouts.length === 0 ? (
-        <EmptyState
-          icon="time-outline"
-          title="Geen workouts in deze periode."
-        />
-      ) : (
-        <View style={styles.workoutList}>
-          {workouts.map((w, i) => (
+  const listEmpty = loading ? (
+    <ActivityIndicator color={accent.default} style={styles.loader} />
+  ) : error ? (
+    <ErrorState onRetry={fetchWorkouts} />
+  ) : (
+    <EmptyState icon="time-outline" title="Geen workouts in deze periode." />
+  );
+
+  return (
+    <View style={styles.screen}>
+      <FlatList
+        style={[styles.container, { paddingTop: insets.top }]}
+        contentContainerStyle={styles.content}
+        data={workouts}
+        keyExtractor={(w) => w.id}
+        renderItem={({ item, index }) => (
+          <View style={styles.cardWrap}>
             <WorkoutCard
-              key={w.id}
-              workout={w}
+              workout={item}
               onPress={handleWorkoutPress}
-              isLast={i === workouts.length - 1}
+              isLast={index === workouts.length - 1}
             />
-          ))}
-        </View>
-      )}
-    </ScrollView>
+          </View>
+        )}
+        ItemSeparatorComponent={ItemSeparator}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={listEmpty}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={accent.default}
+          />
+        }
+      />
       <BottomFade />
     </View>
   );
+}
+
+function ItemSeparator() {
+  return <View style={styles.itemSep} />;
 }
 
 const styles = StyleSheet.create({
@@ -239,8 +261,12 @@ const styles = StyleSheet.create({
   loader: {
     paddingVertical: space['40'],
   },
-  workoutList: {
-    gap: space['8'],
+  // Lijst-items: horizontale marge per rij (i.p.v. op de contentContainer, want
+  // de segments/KPI-band in de header zijn full-bleed).
+  cardWrap: {
     paddingHorizontal: space['20'],
+  },
+  itemSep: {
+    height: space['8'],
   },
 });

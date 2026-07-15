@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { reportError } from '@/lib/monitoring';
 
 export type PeriodGoalPeriod = 'week' | 'month';
 export type PeriodGoalMetric = 'distance' | 'duration' | 'workouts';
@@ -79,6 +80,13 @@ export function usePeriodGoal(userId: string | undefined) {
         .limit(1),
     ]);
 
+    // Leesfouten niet stil inslikken — melden voor observability (security-audit P2-2).
+    for (const res of [profileRes, prDistRes, prBest2kRes, prSplitRes]) {
+      if (res.error && res.error.code !== 'PGRST116') {
+        reportError(res.error, { where: 'usePeriodGoal.fetchAll' });
+      }
+    }
+
     // Personal records
     setRecords({
       longestDistance: prDistRes.data?.[0]?.distance_meters ?? null,
@@ -96,11 +104,12 @@ export function usePeriodGoal(userId: string | undefined) {
       };
 
       const periodStart = getPeriodStart(goal.period);
-      const { data: periodWorkouts } = await supabase
+      const { data: periodWorkouts, error: periodError } = await supabase
         .from('workouts')
         .select('distance_meters, duration_seconds')
         .eq('user_id', userId)
         .gte('started_at', periodStart);
+      if (periodError) reportError(periodError, { where: 'usePeriodGoal.periodWorkouts' });
 
       let current = 0;
       if (goal.metric === 'distance') {

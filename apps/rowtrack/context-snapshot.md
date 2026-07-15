@@ -55,24 +55,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+44f0e72 feat(rowtrack): reportError shim, ErrorState + pendingWorkout helpers (audit P2-2/3/4)
 f701431 feat(rowtrack): encrypt Supabase auth tokens via expo-secure-store (audit P2-1)
 0571845 docs(rowtrack): TC-EBC geslacht segmented control + sheet parity
 0a27e49 fix(rowtrack): segmented control + sheet-input parity (52:9155 / 52:9892)
 6120fa5 fix(rowtrack): bottomsheet body clip + keyboard-aware safe-area
-df8db3f docs(rowtrack): session reflection — resolve 5 handoff items, add 4 forward items
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
    M apps/rowtrack/app/(auth)/register.tsx
-   M apps/rowtrack/app/(tabs)/history/[id].tsx
-   M apps/rowtrack/app/(tabs)/history/index.tsx
-   M apps/rowtrack/app/(tabs)/index.tsx
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  M  apps/rowtrack/app/(tabs)/history/index.tsx
+  M  apps/rowtrack/app/(tabs)/index.tsx
    M apps/rowtrack/app/(tabs)/profile.tsx
-   M apps/rowtrack/app/(tabs)/workout.tsx
-  A  apps/rowtrack/components/ErrorState.tsx
+  M  apps/rowtrack/app/(tabs)/workout.tsx
    M apps/rowtrack/components/WheelPicker.tsx
-  M  apps/rowtrack/components/index.ts
+   M apps/rowtrack/figma-map.md
+  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

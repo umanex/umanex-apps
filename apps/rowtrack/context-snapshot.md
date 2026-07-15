@@ -54,16 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0a27e49 fix(rowtrack): segmented control + sheet-input parity (52:9155 / 52:9892)
 6120fa5 fix(rowtrack): bottomsheet body clip + keyboard-aware safe-area
 df8db3f docs(rowtrack): session reflection — resolve 5 handoff items, add 4 forward items
 0bd890e fix(rowtrack): profile list tokens per design (52:8768)
 47e379d fix(rowtrack): profile render round 2 — full-bleed goal, labels, sheet CTAs
-e33eca9 feat(rowtrack): landscape active-workout column padding for progress bar
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  ?? apps/rowtrack/briefings/2026-07-15-component-geslacht-segmented-control.tcebc.md
+  A  apps/rowtrack/briefings/2026-07-15-component-geslacht-segmented-control.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -4,7 +4,7 @@ Single source of truth voor welke code-eenheid bij welk Figma frame hoort.
 Bijwerken bij elke Figma re-organisatie of nieuwe screen/component.
 
 **Figma file**: https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=0-1&t=k6rKeRyqVNPmF9Pn-1
-**Laatst gesynct**: 2026-07-14
+**Laatst gesynct**: 2026-07-15
 
 Lege `node-id` kolom = nog niet gemapt of nog niet in Figma. Verwijder rijen
 voor gedeprecate code.
@@ -19,6 +19,22 @@ voor gedeprecate code.
 | `app/(tabs)/workout/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=35-1506&t=k6rKeRyqVNPmF9Pn-4` | IdlePhase |
 | `app/(tabs)/history/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-6&t=k6rKeRyqVNPmF9Pn-4` | History |
 | `app/(tabs)/profile/index.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=52-8768&t=k6rKeRyqVNPmF9Pn-4` | Profile |
+
+## Profile — sheet states (`app/(tabs)/profile.tsx`)
+
+Elke rij opent een `BottomSheet`-state boven het Profile-scherm. Node-ids in de `Profile`-sectie (`354:2004`).
+
+| Sheet | Figma node-id | Frame naam |
+|---|---|---|
+| Voornaam | `53:9905` | 07 – Profile/Voornaam |
+| E-mail | `53:10039` | 07 – Profile/Mail |
+| Geslacht | `52:9155` | 07 – Profile/Geslacht |
+| Lengte | `52:9286` | 07 – Profile/Lengte |
+| Gewicht | `52:9424` | 07 – Profile/Gewicht |
+| Geboortedatum | `52:9538` | 07 – Profile/Geboortedatum |
+| Doel bewerken | `52:9730` | 07 – Profile/Doel bewerken |
+
+Lengte/Gewicht = single-column `WheelPicker`; Geboortedatum = 3-koloms date-wheel. Bijgewerkt 2026-07-15 (code→Figma, wheel-redesign cf. PR #124/#126).
 
 ## History - Segments
 
@@ -73,6 +89,7 @@ voor gedeprecate code.
 | `components/BleStatusBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=21-485&t=k6rKeRyqVNPmF9Pn-4` | Status / BleStatusBar |
 | `components/HrStatusBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=21-515&t=k6rKeRyqVNPmF9Pn-4` | Status / HrStatusBar |
 | `components/WorkoutCard.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=56-13791&t=k6rKeRyqVNPmF9Pn-4` | Cards / WorkoutCard |
+| `components/WheelPicker.tsx` | `36:1956` (component) · `377:2552` (goal-export met fade) | IdlePhase/Wheel |
 | `components/GoalProgressCard.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=64-14031&t=k6rKeRyqVNPmF9Pn-4` | GoalProgressCard |
 | `components/TabBar.tsx` | `https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=5-9&t=k6rKeRyqVNPmF9Pn-4` | Cards / GoalProgressCard |
 

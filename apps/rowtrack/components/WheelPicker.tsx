@@ -14,18 +14,20 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { bg, fg, fontFamily, fontSize, radii } from '@/constants';
+import { bg, fg, border, fontFamily, fontSize, radii } from '@/constants';
 import { wheelItemParts, type WheelItem } from '@/lib/formatters';
 
 const ITEM_H = 50;
 const PILL_H = 60;
 const FADE_H = ITEM_H * 1.5;
 
-// Fade + pill-surface per context: op het scherm (bg.base) of in een sheet (bg.elevated).
-// De gradient moet naar de omringende achtergrond faden, anders ontstaat een kleurrand.
+// Fade + pill per context. De fade fadet naar de omringende achtergrond (anders een
+// kleurrand); de pill contrasteert met die achtergrond + een border.strong-rand.
+//   base   = op het scherm (bg.base)  → pill bg.raised (lichter, pops)
+//   raised = in een sheet (bg.raised) → pill bg.base   (donkerder inset)
 const SURFACE = {
-  base: { opaque: bg.base, clear: 'rgba(21, 23, 28, 0)' },     // #15171C
-  elevated: { opaque: bg.elevated, clear: 'rgba(26, 29, 36, 0)' }, // #1A1D24
+  base:   { opaque: bg.base,   clear: 'rgba(21, 23, 28, 0)', pill: bg.raised }, // #15171C
+  raised: { opaque: bg.raised, clear: 'rgba(33, 36, 44, 0)', pill: bg.base },   // #21242C
 } as const;
 
 export type WheelSurface = keyof typeof SURFACE;
@@ -173,7 +175,7 @@ export function WheelPicker({
   return (
     <View style={[styles.container, { height: pickerH }]}>
       {showPill ? (
-        <View style={[styles.pill, { top: pillTop }]} pointerEvents="none" />
+        <View style={[styles.pill, { top: pillTop, backgroundColor: fadeColors.pill }]} pointerEvents="none" />
       ) : null}
       <Animated.ScrollView
         ref={scrollRef}
@@ -214,8 +216,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: PILL_H,
-    backgroundColor: bg.raised,
-    borderRadius: radii.md,
+    // backgroundColor per surface (inline): bg.raised op het scherm, bg.base in een sheet.
+    borderWidth: 1,
+    borderColor: border.strong,
+    borderRadius: radii.sm,
   },
   fade: {
     position: 'absolute',

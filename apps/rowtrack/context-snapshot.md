@@ -55,16 +55,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+499935f docs(rowtrack): mark P2-1/P2-6/P2-8 resolved (native rebuild + migrations)
 490b703 fix(rowtrack): visible WheelPicker pill + surface-synced fade (Figma parity)
 f132568 docs(rowtrack): security audit report + hardening handoff/learnings
 c91e827 fix(rowtrack): neutral signup error + DB constraints/perf indexes (audit P2-6/7/8)
 1886e1c fix(rowtrack): surface read errors, persist/drain workouts, virtualize history (audit P2-2/4/5)
-44f0e72 feat(rowtrack): reportError shim, ErrorState + pendingWorkout helpers (audit P2-2/3/4)
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/audits/2026-07-15-security-audit-rowtrack.md
 
 ## Bestanden met TODO/FIXME
   (geen)

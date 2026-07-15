@@ -137,7 +137,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-14 — figma-console (Desktop Bridge) MCP viel weg; native als fallback · [risico]
 - **Bevinding:** Midden in de sessie dropte de figma-console MCP-**server**-connectie (harness↔server), niet enkel de plugin. De tools verdwenen uit de toolset en herverbinden van de plugin bracht ze niet terug — dat vergt een Claude Code-**herstart**. Native Figma MCP (`claude_ai_Figma`, fileKey `T1bGrvIzSNeLyh5CbarATZ`) wérkte wél als fallback en gaf getokeniseerde design-context.
 - **Volgende zet:** Herstart Claude Code om Console (projectregel: primair) te herstellen vóór verder Figma-werk; anders bewust native gebruiken en het melden.
-- **Status:** open
+- **Status:** resolved — 2026-07-15: na herstart werkte figma-console (Desktop Bridge, poort 9223) weer volledig — `figma_get_status`/`figma_capture_screenshot`/`figma_execute`/deep-read succesvol gebruikt voor de segmented + input parity (#131). Console is primair, geen native fallback nodig geweest.
 
 ## 2026-07-14 — 4-jul audit-re-triage: resterende werkstromen · [next-step]
 - **Bevinding:** De re-triage (`briefings/2026-07-14-retriage-audit-design-vs-code.md`, PR #117) zette 130/215 items als obsoleet; van de 7 werkstromen zijn de beslissings-ws (3/4/5/6) genomen en WS1 (Profile-polish) grotendeels gedaan. Open: WS2 (component-tokenlaag exporteren → Tokens Studio), WS7 (off-token design-waarden → Figma tokeniseren) en de dekkingsgaten (auth-schermen login/register zonder Figma-design; GoalSetupModal; connection-overlay).
@@ -157,4 +157,29 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-15 — Sentry error-/crash-monitoring: koppeling uitgesteld · [next-step]
 - **Bevinding:** Security-audit 2026-07-15 **P2-3** (geen error-/crash-monitoring). `@sentry/react-native` werd kort geïnstalleerd maar op vraag weer verwijderd — de eigenlijke Sentry-koppeling doen we in een **latere fase**. Er staat nu een console-gebaseerde `reportError()`-shim in `lib/monitoring.ts` die de voorheen stil ingeslikte read-/save-fouten opvangt (P2-2/P2-4); die functie is het aanhechtpunt.
 - **Volgende zet:** Later: `pnpm --filter rowtrack add @sentry/react-native@~7.2.0` + `@sentry/react-native/expo` config-plugin in `app.json` + `Sentry.init({ dsn })` in `initMonitoring()` (DSN via `EXPO_PUBLIC_SENTRY_DSN`, Jeroen levert) + `reportError()` laten doorschrijven naar `Sentry.captureException` + een global `ErrorBoundary` + **native rebuild** (`expo run:ios --device` — cf. de worklets-les: een native module zit anders niet in de dev-client-binary, [[rowtrack-verify-render-path]]).
+- **Status:** open
+
+## 2026-07-15 — Wheel-sheets (#131 flexShrink + #133 pill/fade) niet op toestel geverifieerd · [next-step]
+- **Bevinding:** De BottomSheet-herschrijving (`flexShrink:0`, #131) en de WheelPicker pill/fade-parity (#133) zijn naar main gemerged zonder dat ik de Lengte/Gewicht/Geboortedatum-sheets visueel heb gezien — enkel `tsc`-groen + Geslacht/Email geverifieerd.
+- **Volgende zet:** Lengte/Gewicht/Geboortedatum openen op toestel, naast Figma leggen; check dat de wheels niet clippen en de pill/fade klopt. **#1 eerste zet.**
+- **Status:** open
+
+## 2026-07-15 — BottomSheet flexShrink:0 — small-device keyboard-clip mogelijk · [risico]
+- **Bevinding:** `bodyScroll` staat op `flexShrink:0` (fix voor de hug-collapse-clip die de segmented-track onderaan afkapte). Bij een keyboard-open sheet met veel content (Email) wordt de sheet omhoog getild (paddingBottom = keyboardhoogte); op een klein toestel kan (content + lift) `maxHeight:90%` overschrijden → de top clipt, want `flexShrink:0` scrollt niet. Niet gezien op iPhone 13/17 Pro (past net).
+- **Volgende zet:** Email-sheet met keyboard testen op een klein toestel (SE); clipt het → body `flexShrink` conditioneel op 1 zetten wanneer keyboard open, of de lift cappen.
+- **Status:** open
+
+## 2026-07-15 — secureStorage chunking-wrapper ongetest + nu live · [risico]
+- **Bevinding:** De P2-1 `lib/secureStorage.ts` gechunkte Keychain-adapter is non-triviaal en zonder tests naar main gemerged (#132) op basis van `tsc`-groen + additief/degradeert-veilig-redenering; de native rebuild is intussen gedaan → hij is nu het actieve auth-storage-pad. Een bug in de chunk-read/write kan stil een sessie droppen (de AsyncStorage-fallback vangt enkel een ontbrekende native module op, geen logica-bug).
+- **Volgende zet:** Let op onverwachte uitlog-events bij dagelijks gebruik; bij twijfel de chunk-splitsing in `secureStorage.ts` reviewen/unit-testen.
+- **Status:** open
+
+## 2026-07-15 — CI Node-20-deprecation zit in de actions, niet in node-version · [onzekerheid]
+- **Bevinding:** De `node-version: 20 → 22`-bump (#135) verhoogt het build-runtime, maar de deprecation-annotatie ("forced to run on Node.js 24") gaat over de *actions* zelf (`actions/cache@v4`, `actions/setup-node@v4`, `pnpm/action-setup@v4`) die intern Node 20 bundelen — niet over `node-version`. Die annotatie blijft dus waarschijnlijk verschijnen. Ik heb dit richting Jeroen aanvankelijk verkeerd toegeschreven aan de bump.
+- **Volgende zet:** Monitoren; de action-majors bumpen zodra ze een Node-24-versie uitbrengen, of de niet-blokkerende warning bewust accepteren.
+- **Status:** open
+
+## 2026-07-15 — rowtrack CLAUDE.md Supabase-schema is stale · [next-step]
+- **Bevinding:** De schema-tabel in `apps/rowtrack/CLAUDE.md` lijst `created_at`/`distance_m`/`avg_split`; de echte kolommen zijn `started_at`/`distance_meters`/`best_split` (+ `best_2k_seconds`, `samples`) — bevestigd doordat de P2-6 perf-indexes op die kolommen zijn aangemaakt. De doc-tabel misleidt bij DB-werk.
+- **Volgende zet:** De Supabase-tabellen-sectie in `apps/rowtrack/CLAUDE.md` bijwerken naar de echte kolomnamen.
 - **Status:** open

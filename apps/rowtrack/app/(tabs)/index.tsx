@@ -13,7 +13,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { EmptyState, Dot, KpiSingle, Button } from '@/components';
+import { reportError } from '@/lib/monitoring';
+import { loadPendingWorkout, clearPendingWorkout } from '@/lib/pendingWorkout';
+import { EmptyState, ErrorState, Dot, KpiSingle, Button } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
@@ -109,11 +111,21 @@ export default function HomeScreen() {
   const [workouts, setWorkouts] = useState<HomeWorkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [workoutsError, setWorkoutsError] = useState(false);
 
   const { goalProgress, records, refetch: refetchGoal } = usePeriodGoal(user?.id);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
+
+    // Eerder mislukte (offline) workout-opslag alsnog wegschrijven vóór we lezen,
+    // zodat een gedrainede rit meteen in de lijst verschijnt (security-audit P2-4).
+    const pending = await loadPendingWorkout();
+    if (pending && pending.user_id === user.id) {
+      const { error: drainError } = await supabase.from('workouts').insert(pending);
+      if (drainError) reportError(drainError, { where: 'home.drainPendingWorkout' });
+      else await clearPendingWorkout();
+    }
 
     const [profileRes, workoutsRes] = await Promise.all([
       supabase
@@ -128,10 +140,19 @@ export default function HomeScreen() {
         .limit(3),
     ]);
 
+    if (profileRes.error) reportError(profileRes.error, { where: 'home.fetchProfile' });
     if (profileRes.data?.display_name) {
       setDisplayName(profileRes.data.display_name);
     }
-    setWorkouts((workoutsRes.data ?? []) as HomeWorkout[]);
+
+    // Leesfout onderscheiden van "geen workouts" (security-audit P2-2).
+    if (workoutsRes.error) {
+      reportError(workoutsRes.error, { where: 'home.fetchWorkouts' });
+      setWorkoutsError(true);
+    } else {
+      setWorkoutsError(false);
+      setWorkouts((workoutsRes.data ?? []) as HomeWorkout[]);
+    }
     setLoading(false);
   }, [user]);
 
@@ -234,6 +255,8 @@ export default function HomeScreen() {
 
           {loading ? (
             <ActivityIndicator color={accent.default} style={styles.loader} />
+          ) : workoutsError ? (
+            <ErrorState onRetry={fetchData} />
           ) : workouts.length === 0 ? (
             <EmptyState
               icon="water-outline"

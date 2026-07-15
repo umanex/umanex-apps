@@ -30,6 +30,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | Dot | `apps/rowtrack/components/Dot.tsx` | components | — | — | — |
 | EmptyState | `apps/rowtrack/components/EmptyState.tsx` | components | — | — | — |
 | ErrorMessage | `apps/rowtrack/components/ErrorMessage.tsx` | components | — | — | — |
+| ErrorState | `apps/rowtrack/components/ErrorState.tsx` | components | — | — | — |
 | FormField | `apps/rowtrack/components/FormField.tsx` | components | — | — | — |
 | GoalProgressCard | `apps/rowtrack/components/GoalProgressCard.tsx` | components | — | — | — |
 | GoalSegments | `apps/rowtrack/components/GoalSegments.tsx` | components | — | — | — |
@@ -54,15 +55,22 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-0a27e49 fix(rowtrack): segmented control + sheet-input parity (52:9155 / 52:9892)
-6120fa5 fix(rowtrack): bottomsheet body clip + keyboard-aware safe-area
-df8db3f docs(rowtrack): session reflection — resolve 5 handoff items, add 4 forward items
-0bd890e fix(rowtrack): profile list tokens per design (52:8768)
-47e379d fix(rowtrack): profile render round 2 — full-bleed goal, labels, sheet CTAs
+c91e827 fix(rowtrack): neutral signup error + DB constraints/perf indexes (audit P2-6/7/8)
+1886e1c fix(rowtrack): surface read errors, persist/drain workouts, virtualize history (audit P2-2/4/5)
+44f0e72 feat(rowtrack): reportError shim, ErrorState + pendingWorkout helpers (audit P2-2/3/4)
+f701431 feat(rowtrack): encrypt Supabase auth tokens via expo-secure-store (audit P2-1)
+0571845 docs(rowtrack): TC-EBC geslacht segmented control + sheet parity
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/briefings/2026-07-15-component-geslacht-segmented-control.tcebc.md
+  M  apps/rowtrack/HANDOFF.md
+   M apps/rowtrack/app/(tabs)/profile.tsx
+  A  apps/rowtrack/audits/2026-07-15-security-audit-rowtrack.md
+   M apps/rowtrack/components/WheelPicker.tsx
+   M apps/rowtrack/figma-map.md
+  ?? apps/rowtrack/briefings/2026-07-15-component-idlephase-goal-wheel.tcebc.md
+  ?? apps/rowtrack/briefings/2026-07-15-component-profile-metric-sheets.tcebc.md
+  ?? apps/rowtrack/briefings/2026-07-15-component-wheelpicker-pill-fade-sync.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

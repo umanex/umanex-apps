@@ -143,3 +143,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Bevinding:** De re-triage (`briefings/2026-07-14-retriage-audit-design-vs-code.md`, PR #117) zette 130/215 items als obsoleet; van de 7 werkstromen zijn de beslissings-ws (3/4/5/6) genomen en WS1 (Profile-polish) grotendeels gedaan. Open: WS2 (component-tokenlaag exporteren → Tokens Studio), WS7 (off-token design-waarden → Figma tokeniseren) en de dekkingsgaten (auth-schermen login/register zonder Figma-design; GoalSetupModal; connection-overlay).
 - **Volgende zet:** WS2 + WS7 zijn grotendeels jouw Tokens Studio/Figma-hand; de coverage-gaten (auth-schermen designen) apart inplannen.
 - **Status:** open
+
+## 2026-07-15 — Geen privacybeleid / rechtsgrond / consent voor (gezondheids)PII · [next-step]
+- **Bevinding:** Security-audit 2026-07-15 **P1-1** (`apps/rowtrack/audits/2026-07-15-security-audit-rowtrack.md`). RowTrack verzamelt e-mail + voornaam én gezondheids-nabije data (hartslag avg/max + volledige per-tick HR-tijdreeks in `workouts.samples`, gewicht/lengte/geboortedatum/geslacht in `profiles`) zonder privacybeleid, rechtsgrond (AVG art. 6), transparantie-notice (art. 13) of consent. Hartslag+biometrie kunnen als bijzondere categorie (art. 9) gelden.
+- **Volgende zet:** Privacybeleid schrijven (verantwoordelijke = umanex/Jeroen, datacategorieën incl. hartslag, rechtsgrond, retentie, verwerker = Supabase) + linken bij signup en in Profiel; expliciete opt-in voor de gezondheidsdata. Niet-code werk — bij Jeroen.
+- **Status:** open
+
+## 2026-07-15 — Geen in-app account-verwijdering (AVG art. 17 + store-blocker) · [next-step]
+- **Bevinding:** Security-audit 2026-07-15 **P1-2**. Geen verwijder-actie in de app; `profiles` heeft geen DELETE-RLS-policy, dus het datamodel ondersteunt het niet eens. AVG recht-op-vergetelheid niet invulbaar + **zekere** Apple (Guideline 5.1.1(v))/Play-afwijzing bij store-submission (niet enkel een risico). Vereist het eerste server-side stuk in dit project.
+- **Volgende zet:** `Account verwijderen`-actie (Profiel) → Supabase **Edge Function** met `supabase.auth.admin.deleteUser(user.id)` (client mag admin-API niet); de bestaande `ON DELETE CASCADE` op workouts/profiles ruimt de rest op. Apart inplannen (introduceert server-side + service-role-key).
+- **Status:** open
+
+## 2026-07-15 — Sentry error-/crash-monitoring: koppeling uitgesteld · [next-step]
+- **Bevinding:** Security-audit 2026-07-15 **P2-3** (geen error-/crash-monitoring). `@sentry/react-native` werd kort geïnstalleerd maar op vraag weer verwijderd — de eigenlijke Sentry-koppeling doen we in een **latere fase**. Er staat nu een console-gebaseerde `reportError()`-shim in `lib/monitoring.ts` die de voorheen stil ingeslikte read-/save-fouten opvangt (P2-2/P2-4); die functie is het aanhechtpunt.
+- **Volgende zet:** Later: `pnpm --filter rowtrack add @sentry/react-native@~7.2.0` + `@sentry/react-native/expo` config-plugin in `app.json` + `Sentry.init({ dsn })` in `initMonitoring()` (DSN via `EXPO_PUBLIC_SENTRY_DSN`, Jeroen levert) + `reportError()` laten doorschrijven naar `Sentry.captureException` + een global `ErrorBoundary` + **native rebuild** (`expo run:ios --device` — cf. de worklets-les: een native module zit anders niet in de dev-client-binary, [[rowtrack-verify-render-path]]).
+- **Status:** open

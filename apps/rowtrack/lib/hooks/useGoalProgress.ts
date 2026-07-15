@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/lib/supabase';
+import { reportError } from '@/lib/monitoring';
 import { calculateProgress } from '@/lib/workout-goals';
 import type { WorkoutGoal } from '@/lib/workout-goals';
 import { formatDistanceDynamic, formatSplit } from '@/lib/formatters';
@@ -126,13 +127,14 @@ export function useGoalProgress(
   // --- Fetch personal records ---
   const fetchPRs = useCallback(async () => {
     if (!userId) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('workouts')
       .select('avg_watts, avg_split_seconds, distance_meters')
       .eq('user_id', userId)
       .order('started_at', { ascending: false })
       .limit(100);
 
+    if (error) reportError(error, { where: 'useGoalProgress.fetchPRs' });
     if (data && data.length > 0) {
       let bestW: number | null = null;
       let bestS: number | null = null;

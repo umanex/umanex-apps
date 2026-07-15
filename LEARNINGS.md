@@ -30,3 +30,10 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ```
 
 <!-- De vastleggen skill voegt hieronder de juiste laag-header toe bij de eerste capture. -->
+
+# Klant — umanex
+
+## 2026-07-15 — Defensieve fallback bij een native module (Expo/RN)
+- **Input:** `apps/rowtrack/lib/secureStorage.ts` — de opzet met een static top-level `import * as SecureStore from 'expo-secure-store'` boven een `useSecureStore()`-probe-in-try/catch die zogenaamd terugvalt op AsyncStorage.
+- **Fout:** De static import evalueert bij module-load (Metro, eager), dus `requireNativeModule('ExpoSecureStore')` werpt vóór enige try/catch → de app crashte bij opstarten op een dev-client zonder de native module en de "defensieve fallback" schoot nooit in. De fallback werd als werkend gerapporteerd terwijl hij dat niet was; correcte aanpak = lazy `require()` binnen de try/catch (evalueert pas bij aanroep, dus opvangbaar).
+- **Status:** open

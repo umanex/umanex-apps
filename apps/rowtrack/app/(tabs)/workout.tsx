@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/auth-context';
 import { useBle } from '@/lib/ble/ble-context';
 import { useWorkoutPhase } from '@/lib/workout-phase-context';
 import { supabase } from '@/lib/supabase';
+import { reportError } from '@/lib/monitoring';
+import { savePendingWorkout, clearPendingWorkout } from '@/lib/pendingWorkout';
 import type { GoalType, WorkoutGoal } from '@/lib/workout-goals';
 import { userInputToTarget, targetToUserInput } from '@/lib/workout-goals';
 import { useWorkoutMetrics } from '@/lib/hooks/useWorkoutMetrics';
@@ -117,7 +119,7 @@ export default function WorkoutScreen() {
       ? samples.map((s) => (s.hr != null ? [s.t, s.d, s.hr] : [s.t, s.d]))
       : null;
 
-    const { error } = await supabase.from('workouts').insert({
+    const row = {
       user_id: user.id,
       started_at: refs.startedAtRef.current?.toISOString() ?? new Date().toISOString(),
       // Alle waardes die in integer-kolommen landen worden afgerond — de rauwe
@@ -147,12 +149,20 @@ export default function WorkoutScreen() {
       samples: sampleTuples,
       best_2k_seconds: best2k,
       total_strokes: refs.totalStrokesRef.current > 0 ? refs.totalStrokesRef.current : null,
-    });
+    };
+
+    const { error } = await supabase.from('workouts').insert(row);
 
     setSaving(false);
     if (error) {
-      Alert.alert('Opslaan mislukt', `Probeer opnieuw. (${error.message})`);
+      // Backstop tegen dataverlies: bewaar de rit lokaal zodat de home-focus hem
+      // later alsnog wegschrijft (security-audit P2-4). De gebruiker blijft op de
+      // summary en kan ook direct zelf opnieuw proberen.
+      await savePendingWorkout(row);
+      reportError(error, { where: 'workout.save' });
+      Alert.alert('Opslaan mislukt', `Je training is tijdelijk bewaard. Probeer opnieuw. (${error.message})`);
     } else {
+      await clearPendingWorkout();
       setPhase('idle');
       router.replace('/(tabs)');
     }

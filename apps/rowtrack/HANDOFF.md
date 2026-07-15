@@ -127,7 +127,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-14 — Segmented control (Geslacht/Doel-sheets) layout niet geverifieerd · [onzekerheid]
 - **Bevinding:** Jeroen flagde "layout van de tabs binnen bottom sheets is niet correct". Zonder het sheet-design (Console was down) heb ik een best-guess container-`border.default`-frame op `segmentedRow` gezet. Niet getoetst tegen `52:9155` (Geslacht) / `52:9730` (Doel) — mogelijk fout of onvolledig.
 - **Volgende zet:** `52:9155` deep-readen (Console na herstart, of native `get_design_context`), de segmented-track + active-pill-spec vergelijken en de frame-keuze bevestigen/corrigeren.
-- **Status:** open
+- **Status:** resolved — 2026-07-15: `52:9155`/`52:9730` + input `52:9892` deep-read via Desktop Bridge. Segmented gecorrigeerd naar de Figma-spec (track radius 8 / active-pill radius 4 genest, `bg.base`-fill + `border.strong`, inactief Regular `fg.tertiary`); inputs radius 12→8. Root cause van de "overflow" bleek de BottomSheet-`ScrollView` (hug-collapse, `flexShrink:0`), niet de radius. PR #131, op toestel geverifieerd (Geslacht + Email keyboard-open).
 
 ## 2026-07-14 — sheetFieldLabel-token niet tegen sheet-design geverifieerd · [aanname]
 - **Bevinding:** `sheetFieldLabel` (PERIODE/TYPE/WACHTWOORD e.d.) teruggezet naar `fg.tertiary` op basis van het rij-label-patroon uit `52:8768` (main), niet tegen een sheet-frame. Sectie-labels bleken fg.secondary, rij-labels fg.tertiary — sheet-veld-labels zijn niet direct bevestigd.

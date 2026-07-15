@@ -7,6 +7,9 @@ export type { FormFieldProps } from './FormField';
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 
+export { ErrorState } from './ErrorState';
+export type { ErrorStateProps } from './ErrorState';
+
 export { SectionHeader } from './SectionHeader';
 export type { SectionHeaderProps } from './SectionHeader';
 

@@ -55,11 +55,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+f701431 feat(rowtrack): encrypt Supabase auth tokens via expo-secure-store (audit P2-1)
 0571845 docs(rowtrack): TC-EBC geslacht segmented control + sheet parity
 0a27e49 fix(rowtrack): segmented control + sheet-input parity (52:9155 / 52:9892)
 6120fa5 fix(rowtrack): bottomsheet body clip + keyboard-aware safe-area
 df8db3f docs(rowtrack): session reflection — resolve 5 handoff items, add 4 forward items
-0bd890e fix(rowtrack): profile list tokens per design (52:8768)
 ```
 
 ## Uncommitted wijzigingen
@@ -70,9 +70,9 @@ df8db3f docs(rowtrack): session reflection — resolve 5 handoff items, add 4 fo
    M apps/rowtrack/app/(tabs)/index.tsx
    M apps/rowtrack/app/(tabs)/profile.tsx
    M apps/rowtrack/app/(tabs)/workout.tsx
+  A  apps/rowtrack/components/ErrorState.tsx
    M apps/rowtrack/components/WheelPicker.tsx
-   M apps/rowtrack/components/index.ts
-   M apps/rowtrack/figma-map.md
+  M  apps/rowtrack/components/index.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

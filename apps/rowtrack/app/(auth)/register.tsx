@@ -46,7 +46,18 @@ export default function RegisterScreen() {
     try {
       await signUp(email.trim(), password);
     } catch (e: any) {
-      setSubmitError(e.message ?? 'Registratie mislukt.');
+      // Neutrale foutmelding voor een reeds-bestaand adres — de rauwe Supabase-
+      // melding ("User already registered") verraadt anders of een account bestaat
+      // (user enumeration, security-audit P2-7).
+      const code = String(e?.code ?? '');
+      const raw = String(e?.message ?? '');
+      const revealsExisting =
+        code === 'user_already_exists' || /already registered|already exists/i.test(raw);
+      setSubmitError(
+        revealsExisting
+          ? 'Registratie mislukt. Log in als je al een account hebt, of probeer opnieuw.'
+          : raw || 'Registratie mislukt.',
+      );
     } finally {
       setLoading(false);
     }

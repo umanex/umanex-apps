@@ -505,6 +505,7 @@ export default function ProfileScreen() {
           placeholder="Je voornaam"
           autoCapitalize="words"
           autoCorrect={false}
+          maxLength={60}
           returnKeyType="done"
           onSubmitEditing={saveVoornaam}
           placeholderTextColor={fg.tertiary}
@@ -618,7 +619,7 @@ export default function ProfileScreen() {
           selectedIndex={draftHeight - HEIGHT_MIN}
           onIndexChange={(idx) => setDraftHeight(HEIGHT_MIN + idx)}
           visibleRows={3}
-          surface="elevated"
+          surface="raised"
         />
       </BottomSheet>
 
@@ -634,7 +635,7 @@ export default function ProfileScreen() {
           selectedIndex={draftWeight - WEIGHT_MIN}
           onIndexChange={(idx) => setDraftWeight(WEIGHT_MIN + idx)}
           visibleRows={3}
-          surface="elevated"
+          surface="raised"
         />
       </BottomSheet>
 
@@ -648,13 +649,13 @@ export default function ProfileScreen() {
         <View style={styles.datePickerRow}>
           <View style={styles.datePickerBand} pointerEvents="none" />
           <View style={styles.datePickerCol}>
-            <WheelPicker items={DAY_ITEMS} selectedIndex={draftDayIdx} onIndexChange={setDraftDayIdx} visibleRows={3} showPill={false} surface="elevated" />
+            <WheelPicker items={DAY_ITEMS} selectedIndex={draftDayIdx} onIndexChange={setDraftDayIdx} visibleRows={3} showPill={false} surface="raised" />
           </View>
           <View style={styles.datePickerCol}>
-            <WheelPicker items={MONTH_ITEMS} selectedIndex={draftMonthIdx} onIndexChange={setDraftMonthIdx} visibleRows={3} showPill={false} surface="elevated" />
+            <WheelPicker items={MONTH_ITEMS} selectedIndex={draftMonthIdx} onIndexChange={setDraftMonthIdx} visibleRows={3} showPill={false} surface="raised" />
           </View>
           <View style={styles.datePickerCol}>
-            <WheelPicker items={YEAR_ITEMS} selectedIndex={draftYearIdx} onIndexChange={setDraftYearIdx} visibleRows={3} showPill={false} surface="elevated" />
+            <WheelPicker items={YEAR_ITEMS} selectedIndex={draftYearIdx} onIndexChange={setDraftYearIdx} visibleRows={3} showPill={false} surface="raised" />
           </View>
         </View>
       </BottomSheet>
@@ -882,8 +883,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 60,
-    backgroundColor: bg.raised,
-    borderRadius: radii.md,
+    // Zichtbare pill: bg.base (donkerder inset op de bg.raised sheet) + border.strong-rand.
+    backgroundColor: bg.base,
+    borderWidth: 1,
+    borderColor: border.strong,
+    borderRadius: radii.sm,
   },
   datePickerCol: {
     flex: 1,

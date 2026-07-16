@@ -54,20 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b19f521 refactor(rowtrack): merge TabItem into shared Segmented, drop dead Segment
 3217a8d feat(rowtrack): sync GoalSheet to Figma — wheel target, delete button, shared Segmented
 731e66e docs(rowtrack): flag that profile handleSave is never called
 044a02b refactor(rowtrack): extract a shared, self-persisting GoalSheet
 1a916e3 feat(rowtrack): goal card label "Deze week/maand" + home WIJZIG opens the sheet
-4f63d59 fix(rowtrack): auth token keychain accessibility for background refresh
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/[id].tsx
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-  D  apps/rowtrack/components/Segment.tsx
-  M  apps/rowtrack/components/Segmented.tsx
-  D  apps/rowtrack/components/TabItem.tsx
-  M  apps/rowtrack/components/index.ts
+  M  apps/rowtrack/components/GoalSheet.tsx
+  M  apps/rowtrack/lib/formatters.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

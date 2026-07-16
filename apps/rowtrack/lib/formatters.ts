@@ -122,16 +122,23 @@ export function wheelItemParts(item: WheelItem): { value: string; unit?: string 
   return { value: item.label.slice(0, idx), unit: item.unit };
 }
 
+/**
+ * Duur-label: onder een uur "45 min", vanaf een uur "1 u" / "1 u 10 min".
+ * E\u00e9n bron voor de workout-duur-wheel (buildDurItems, seconden) en de
+ * periode-doel-wheel (GoalSheet.itemsFor, minuten), zodat ze niet driften.
+ */
+export function formatDurationLabel(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const min = totalMinutes % 60;
+  if (h === 0) return `${totalMinutes} min`;
+  return min === 0 ? `${h} u` : `${h} u ${min} min`;
+}
+
 /** 5\u2013180 minutes, step 5 min. value = total seconds. */
 export function buildDurItems(): WheelItem[] {
   const items: WheelItem[] = [];
   for (let m = 5; m <= GOAL_INPUT_BOUNDS.duration.max; m += 5) {
-    const h = Math.floor(m / 60);
-    const min = m % 60;
-    const label = h > 0
-      ? min === 0 ? `${h} u` : `${h} u ${min} min`
-      : `${m} min`;
-    items.push({ label, unit: 'min', value: m * 60 });
+    items.push({ label: formatDurationLabel(m), unit: 'min', value: m * 60 });
   }
   return items;
 }

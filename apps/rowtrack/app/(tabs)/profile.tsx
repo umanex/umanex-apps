@@ -16,7 +16,7 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { signOut } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { Button, WheelPicker, GoalSheet } from '@/components';
+import { Button, WheelPicker, GoalSheet, Segmented, type SegmentedOption } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { BottomSheet } from '@/components/BottomSheet';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
@@ -46,6 +46,12 @@ const BIRTH_YEARS = Array.from(
 );
 
 const NL_MONTHS_SHORT = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+
+const GENDER_OPTIONS: SegmentedOption<string>[] = [
+  { value: 'male', label: 'Man' },
+  { value: 'female', label: 'Vrouw' },
+  { value: 'other', label: 'Anders' },
+];
 
 const DAY_ITEMS: WheelItem[] = Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), value: i + 1 }));
 const MONTH_ITEMS: WheelItem[] = NL_MONTHS_SHORT.map((m, i) => ({ label: m, value: i + 1 }));
@@ -540,20 +546,7 @@ export default function ProfileScreen() {
         title="Geslacht"
         footer={<Button title="Opslaan" onPress={saveGeslacht} size="md" />}
       >
-        <View style={styles.segmentedRow}>
-          {(['male', 'female', 'other'] as const).map(g => (
-            <TouchableOpacity
-              key={g}
-              style={[styles.segmentBtn, draftGender === g && styles.segmentBtnActive]}
-              onPress={() => setDraftGender(g)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.segmentBtnText, draftGender === g && styles.segmentBtnTextActive]}>
-                {g === 'male' ? 'Man' : g === 'female' ? 'Vrouw' : 'Anders'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Segmented options={GENDER_OPTIONS} value={draftGender} onChange={setDraftGender} />
       </BottomSheet>
 
       {/* Lengte */}
@@ -722,44 +715,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodyRegular,
     fontSize: fontSize['14'],
     color: status.error,
-  },
-
-  // Sheet: segmented control
-  // Track: bg/base fill + border/strong, 4px padding, geen gap (Figma 52:9155 Container).
-  segmentedRow: {
-    flexDirection: 'row',
-    backgroundColor: bg.base,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: border.strong,
-    padding: space['4'],
-  },
-  segmentBtn: {
-    flex: 1,
-    height: space['44'],
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.sm, // inactive = 8 (Figma borderRadius/sm)
-  },
-  segmentBtnActive: {
-    // Active = 0.20 accent-tint + border + rode tekst (matcht Chip; design 07-Profile).
-    // TODO: accent.selected-token ontbreekt nog (§2 ①) — zelfde hardcode als Chip/GoalSegments.
-    backgroundColor: 'rgba(240, 84, 84, 0.20)',
-    borderWidth: 1,
-    borderColor: accent.default,
-    // radius 4 = track-radius (8) − padding (4): pill nest exact, geen overflow (Figma borderRadius/xs).
-    borderRadius: radii.xs,
-  },
-  segmentBtnText: {
-    // Inactive: Albert Sans Regular 16, fg/tertiary (Figma).
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
-    color: fg.tertiary,
-  },
-  segmentBtnTextActive: {
-    // Active: SemiBold + accent (Figma toont een rode gradient; solid accent is de RN-benadering).
-    fontFamily: fontFamily.bodySemiBold,
-    color: accent.default,
   },
 
   // Sheet: date picker

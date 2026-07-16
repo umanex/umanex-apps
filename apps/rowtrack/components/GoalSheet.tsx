@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, Alert, StyleSheet } from 'react-native';
 import { BottomSheet } from './BottomSheet';
 import { Button } from './Button';
+import { Segmented, type SegmentedOption } from './Segmented';
+import { WheelPicker } from './WheelPicker';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
+import type { WheelItem } from '@/lib/formatters';
 import type { PeriodGoal, PeriodGoalPeriod, PeriodGoalMetric } from '@/lib/hooks/usePeriodGoal';
-import { bg, fg, accent, border, space, radii, fontFamily, fontSize, typeStyles } from '@/constants';
+import { fg, space, fontFamily, fontSize, letterSpacing } from '@/constants';
 
 export type GoalSheetProps = {
   visible: boolean;
@@ -17,77 +20,89 @@ export type GoalSheetProps = {
   onSaved: () => void;
 };
 
-const PERIODS: PeriodGoalPeriod[] = ['week', 'month'];
-const METRICS: PeriodGoalMetric[] = ['distance', 'duration', 'workouts'];
+const PERIOD_OPTIONS: readonly SegmentedOption<PeriodGoalPeriod>[] = [
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Maand' },
+];
+const METRIC_OPTIONS: readonly SegmentedOption<PeriodGoalMetric>[] = [
+  { value: 'distance', label: 'Afstand' },
+  { value: 'duration', label: 'Duur' },
+  { value: 'workouts', label: 'Sessies' },
+];
 
-function periodLabel(p: PeriodGoalPeriod): string {
-  return p === 'week' ? 'Week' : 'Maand';
+// Streefwaarde-bereik + eenheid per doeltype (weergave-eenheden; save() converteert naar opslag).
+const RANGES: Record<PeriodGoalMetric, { min: number; max: number; step: number; unit: string }> = {
+  distance: { min: 1, max: 500, step: 1, unit: 'km' },
+  duration: { min: 5, max: 600, step: 5, unit: 'min' },
+  workouts: { min: 1, max: 100, step: 1, unit: 'sessies' },
+};
+const DEFAULTS: Record<PeriodGoalMetric, number> = { distance: 10, duration: 60, workouts: 4 };
+
+function itemsFor(metric: PeriodGoalMetric): WheelItem[] {
+  const { min, max, step, unit } = RANGES[metric];
+  const items: WheelItem[] = [];
+  for (let v = min; v <= max; v += step) items.push({ label: `${v} ${unit}`, value: v, unit });
+  return items;
 }
-function metricLabel(m: PeriodGoalMetric): string {
-  return m === 'distance' ? 'Afstand' : m === 'duration' ? 'Duur' : 'Sessies';
+// Opgeslagen doel (m / s / count) ↔ weergave-waarde (km / min / count)
+function toDisplay(metric: PeriodGoalMetric, stored: number): number {
+  if (metric === 'distance') return Math.round(stored / 1000);
+  if (metric === 'duration') return Math.round(stored / 60);
+  return stored;
 }
-function metricUnit(m: PeriodGoalMetric): string {
-  return m === 'distance' ? 'km' : m === 'duration' ? 'min' : 'sessies';
+function toStored(metric: PeriodGoalMetric, value: number): number {
+  if (metric === 'distance') return value * 1000;
+  if (metric === 'duration') return value * 60;
+  return value;
 }
+function indexFor(metric: PeriodGoalMetric, value: number): number {
+  const { min, max, step } = RANGES[metric];
+  const clamped = Math.min(Math.max(value, min), max);
+  return Math.round((clamped - min) / step);
+}
+
+const NO_GOAL = { period_goal_period: null, period_goal_metric: null, period_goal_target: null } as const;
 
 /**
  * Doel-instellen-bottomsheet. Zelf-persisterend: schrijft `period_goal_*` rechtstreeks
- * naar `profiles` en roept `onSaved` aan. Gedeeld door home + profiel, zodat de sheet
- * op beide plekken in-place opent zonder duplicatie (en de home niet meer hoeft te
- * redirecten naar het profiel).
+ * naar `profiles` en roept `onSaved` aan. Gedeeld door home + profiel (in-place, geen
+ * redirect). PERIODE/TYPE via de gedeelde Segmented; STREEFWAARDE via de WheelPicker.
  */
 export function GoalSheet({ visible, currentGoal, userId, onClose, onSaved }: GoalSheetProps) {
   const [period, setPeriod] = useState<PeriodGoalPeriod | null>(null);
   const [metric, setMetric] = useState<PeriodGoalMetric | null>(null);
-  const [target, setTarget] = useState('');
+  const [target, setTarget] = useState<number>(DEFAULTS.distance); // weergave-waarde
   const [saving, setSaving] = useState(false);
 
-  // Init de draft uit het huidige doel telkens de sheet opent (km/min/count → invoerwaarde).
+  // Init bij openen én wanneer currentGoal ná het openen binnenkomt (edge: sheet geopend
+  // vóór de fetch klaar was). currentGoal is stabiel zolang de sheet open staat.
   useEffect(() => {
     if (!visible) return;
     if (currentGoal) {
       setPeriod(currentGoal.period);
       setMetric(currentGoal.metric);
-      const raw = currentGoal.target;
-      setTarget(
-        currentGoal.metric === 'distance' ? String(raw / 1000)
-        : currentGoal.metric === 'duration' ? String(raw / 60)
-        : String(raw),
-      );
+      setTarget(toDisplay(currentGoal.metric, currentGoal.target));
     } else {
       setPeriod(null);
       setMetric(null);
-      setTarget('');
+      setTarget(DEFAULTS.distance);
     }
-    // Init bij openen én wanneer currentGoal ná het openen alsnog binnenkomt (edge: sheet
-    // geopend vóór de fetch klaar was). currentGoal is stabiel zolang de sheet open staat
-    // (geen refocus/refetch), dus dit klobbert geen edits.
   }, [visible, currentGoal]);
 
-  async function save() {
+  // Bij een ander doeltype: de streefwaarde naar een zinvolle default voor dat type zetten
+  // (een afstand-getal slaat nergens op als eenheid voor duur/sessies).
+  function handleMetric(m: PeriodGoalMetric) {
+    if (m !== metric) setTarget(DEFAULTS[m]);
+    setMetric(m);
+  }
+
+  async function persist(row: typeof NO_GOAL | { period_goal_period: PeriodGoalPeriod; period_goal_metric: PeriodGoalMetric; period_goal_target: number }) {
     if (!userId) return;
-    const hasGoal = period && metric && target;
-    let stored: number | null = null;
-    if (hasGoal) {
-      const raw = parseFloat(target);
-      if (metric === 'distance') stored = Math.round(raw * 1000);
-      else if (metric === 'duration') stored = Math.round(raw * 60);
-      else stored = Math.round(raw);
-    }
-
     setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        period_goal_period: hasGoal ? period : null,
-        period_goal_metric: hasGoal ? metric : null,
-        period_goal_target: stored,
-      })
-      .eq('id', userId);
+    const { error } = await supabase.from('profiles').update(row).eq('id', userId);
     setSaving(false);
-
     if (error) {
-      reportError(error, { where: 'GoalSheet.save' });
+      reportError(error, { where: 'GoalSheet.persist' });
       Alert.alert('Fout', `Opslaan mislukt: ${error.message}`);
       return;
     }
@@ -95,66 +110,66 @@ export function GoalSheet({ visible, currentGoal, userId, onClose, onSaved }: Go
     onClose();
   }
 
+  function save() {
+    if (period && metric) {
+      persist({ period_goal_period: period, period_goal_metric: metric, period_goal_target: toStored(metric, target) });
+    } else {
+      persist(NO_GOAL);
+    }
+  }
+  function removeGoal() {
+    persist(NO_GOAL);
+  }
+
   return (
     <BottomSheet
       visible={visible}
       onClose={onClose}
       title="Doel bewerken"
-      footer={<Button title="Opslaan" onPress={save} loading={saving} size="md" />}
-    >
-      <View style={styles.fieldGroup}>
-        <Text style={styles.fieldLabel}>PERIODE</Text>
-        <View style={styles.segmentedRow}>
-          {PERIODS.map(p => (
-            <TouchableOpacity
-              key={p}
-              style={[styles.segmentBtn, period === p && styles.segmentBtnActive]}
-              onPress={() => setPeriod(p)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.segmentBtnText, period === p && styles.segmentBtnTextActive]}>
-                {periodLabel(p)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      footer={
+        <View style={styles.footer}>
+          {currentGoal && (
+            <Button
+              title="Doel verwijderen"
+              variant="outline"
+              size="md"
+              icon="arrow-forward"
+              iconPosition="trailing"
+              onPress={removeGoal}
+              disabled={saving}
+            />
+          )}
+          <Button
+            title="Opslaan"
+            size="md"
+            icon="arrow-forward"
+            iconPosition="trailing"
+            onPress={save}
+            loading={saving}
+          />
         </View>
+      }
+    >
+      <View style={styles.group}>
+        <Text style={styles.label}>PERIODE</Text>
+        <Segmented options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
       </View>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.fieldLabel}>TYPE</Text>
-        <View style={styles.segmentedRow}>
-          {METRICS.map(m => (
-            <TouchableOpacity
-              key={m}
-              style={[styles.segmentBtn, metric === m && styles.segmentBtnActive]}
-              onPress={() => setMetric(m)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.segmentBtnText, metric === m && styles.segmentBtnTextActive]}>
-                {metricLabel(m)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <View style={styles.group}>
+        <Text style={styles.label}>TYPE</Text>
+        <Segmented options={METRIC_OPTIONS} value={metric} onChange={handleMetric} />
       </View>
 
       {metric && (
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>STREEFWAARDE</Text>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.inputFlex}
-              value={target}
-              onChangeText={setTarget}
-              keyboardType="numeric"
-              selectTextOnFocus
-              returnKeyType="done"
-              onSubmitEditing={save}
-              placeholderTextColor={fg.tertiary}
-              placeholder="0"
-            />
-            <Text style={styles.inputUnit}>{metricUnit(metric)}</Text>
-          </View>
+        <View style={styles.group}>
+          <Text style={styles.label}>STREEFWAARDE</Text>
+          <WheelPicker
+            items={itemsFor(metric)}
+            selectedIndex={indexFor(metric, target)}
+            onIndexChange={(idx) => setTarget(RANGES[metric].min + idx * RANGES[metric].step)}
+            visibleRows={3}
+            surface="raised"
+          />
         </View>
       )}
     </BottomSheet>
@@ -162,66 +177,18 @@ export function GoalSheet({ visible, currentGoal, userId, onClose, onSaved }: Go
 }
 
 const styles = StyleSheet.create({
-  fieldGroup: {
+  group: {
     gap: space['8'],
   },
-  fieldLabel: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
-  },
-  // Segmented control — track: bg.base + border.strong, 4px padding (Figma 52:9155).
-  segmentedRow: {
-    flexDirection: 'row',
-    backgroundColor: bg.base,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: border.strong,
-    padding: space['4'],
-  },
-  segmentBtn: {
-    flex: 1,
-    height: space['44'],
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.sm,
-  },
-  segmentBtnActive: {
-    // TODO: accent.selected-token (0.20) ontbreekt nog — zelfde hardcode als Chip/GoalSegments/geslacht.
-    backgroundColor: 'rgba(240, 84, 84, 0.20)',
-    borderWidth: 1,
-    borderColor: accent.default,
-    borderRadius: radii.xs, // 4 = track-radius (8) − padding (4): pill nest exact.
-  },
-  segmentBtnText: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
-    color: fg.tertiary,
-  },
-  segmentBtnTextActive: {
-    fontFamily: fontFamily.bodySemiBold,
-    color: accent.default,
-  },
-  // Streefwaarde-input — bg.base + border.strong, radius 8 (Figma 52:9892).
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: bg.base,
-    borderWidth: 1,
-    borderColor: border.strong,
-    borderRadius: radii.sm,
-    paddingHorizontal: space['16'],
-    paddingVertical: space['14'],
-    gap: space['20'],
-  },
-  inputFlex: {
-    flex: 1,
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
-    color: fg.primary,
-  },
-  inputUnit: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['12'],
+  // Veld-label (Figma 388:2256): Albert Sans SemiBold 13, 20% tracking, uppercase, fg.secondary.
+  label: {
+    fontFamily: fontFamily.albertSansSemiBold,
+    fontSize: fontSize['13'],
+    letterSpacing: letterSpacing.wide * fontSize['13'],
+    textTransform: 'uppercase',
     color: fg.secondary,
+  },
+  footer: {
+    gap: space['16'],
   },
 });

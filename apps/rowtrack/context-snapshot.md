@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-15_
+_Gegenereerd op 2026-07-16_
 
 ## Project
 - **App:** rowtrack
@@ -55,15 +55,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+727a881 docs(rowtrack): session reflection 2026-07-15 — resolve figma-console item, add 5 forward items
 499935f docs(rowtrack): mark P2-1/P2-6/P2-8 resolved (native rebuild + migrations)
 490b703 fix(rowtrack): visible WheelPicker pill + surface-synced fade (Figma parity)
 f132568 docs(rowtrack): security audit report + hardening handoff/learnings
 c91e827 fix(rowtrack): neutral signup error + DB constraints/perf indexes (audit P2-6/7/8)
-1886e1c fix(rowtrack): surface read errors, persist/drain workouts, virtualize history (audit P2-2/4/5)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  A  apps/rowtrack/briefings/2026-07-16-component-splits-tabel-header.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

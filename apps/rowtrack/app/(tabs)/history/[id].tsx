@@ -305,27 +305,30 @@ export default function WorkoutDetailScreen() {
             </View>
 
             {workout.splits && workout.splits.length > 0 ? (
-              <View style={styles.splitsTable}>
+              <View style={styles.splitsSection}>
+                {/* Kolomheaders buiten de card, zoals op de andere tabs (Overzicht/Hartslag) */}
                 <View style={styles.splitsHeaderRow}>
                   <View style={styles.splitsLabelCol} />
                   <Text style={styles.splitsColHeader}>SPLIT</Text>
                   <Text style={styles.splitsColHeader}>WATT</Text>
                 </View>
-                {workout.splits.map((s, i) => {
-                  const tenths = splitTenthsByDist.get(s.distance);
-                  return (
-                    <View key={i}>
-                      <View style={styles.splitsDataRow}>
-                        <Text style={styles.splitsDistLabel}>{`${s.distance}M`}</Text>
-                        <Text style={styles.splitsValue}>
-                          {tenths != null ? formatSplit(tenths, false, true) : formatSplit(s.split)}
-                        </Text>
-                        <Text style={styles.splitsValue}>{s.watts != null ? `${s.watts}` : '—'}</Text>
+                <View style={styles.splitsTable}>
+                  {workout.splits.map((s, i) => {
+                    const tenths = splitTenthsByDist.get(s.distance);
+                    return (
+                      <View key={i}>
+                        <View style={styles.splitsDataRow}>
+                          <Text style={styles.splitsDistLabel}>{`${s.distance}M`}</Text>
+                          <Text style={styles.splitsValue}>
+                            {tenths != null ? formatSplit(tenths, false, true) : formatSplit(s.split)}
+                          </Text>
+                          <Text style={styles.splitsValue}>{s.watts != null ? `${s.watts}` : '—'}</Text>
+                        </View>
+                        {i < (workout.splits?.length ?? 0) - 1 && <View style={styles.splitsRowDivider} />}
                       </View>
-                      {i < (workout.splits?.length ?? 0) - 1 && <View style={styles.splitsRowDivider} />}
-                    </View>
-                  );
-                })}
+                    );
+                  })}
+                </View>
               </View>
             ) : (
               <EmptyState icon="time-outline" title="Geen splits beschikbaar." />
@@ -556,7 +559,11 @@ const styles = StyleSheet.create({
     backgroundColor: border.default,
   },
 
-  // Splits table
+  // Splits table — kolomheaders staan buiten de card (zie splitsHeaderRow),
+  // consistent met de stats-tabellen op de andere tabs.
+  splitsSection: {
+    gap: space['8'],
+  },
   splitsTable: {
     backgroundColor: bg.raised,
     borderWidth: 1,
@@ -575,8 +582,8 @@ const styles = StyleSheet.create({
   },
   splitsHeaderRow: {
     flexDirection: 'row',
-    paddingLeft: space['16'],
-    paddingVertical: space['8'],
+    paddingHorizontal: space['16'],
+    paddingBottom: space['8'],
   },
   splitsLabelCol: {
     width: 165,

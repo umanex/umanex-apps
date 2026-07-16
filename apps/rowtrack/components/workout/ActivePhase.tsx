@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Modal,
-  ScrollView,
   ActivityIndicator,
   Animated,
   TouchableOpacity,
@@ -282,8 +281,8 @@ export function ActivePhase({
   }
 
   // --- Header-inhoud: DOEL-pill + compacte Stop-knop (gedeeld) ---
-  // De accent-tint zit op de header-band (Figma 290:2746) → de DOEL-pill is
-  // outline-only, in beide oriëntaties.
+  // De accent-tint zit op de DOEL-pill zelf (subtiele fill + border, Figma 290:2873);
+  // de band is bg.base. Gedeeld portrait + landscape.
   function headerChildren(): ReactNode {
     const goalParts = goalPillParts();
     return (

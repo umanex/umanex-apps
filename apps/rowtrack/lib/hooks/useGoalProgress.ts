@@ -142,11 +142,13 @@ export function useGoalProgress(
   useEffect(() => {
     if (phase !== 'active' || !goal || !goalProgress) return;
 
-    // Goal reached → toon de viering-toast
+    // Goal reached → toon de viering-toast + één Heavy haptic op het bereik-moment
+    // (bleef behouden toen de 25/50/75/100%-milestone-toasts verdwenen).
     if (goalProgress.reached && !goalReachedRef.current) {
       goalReachedRef.current = true;
       setGoalReached(true);
       setToastMsg(celebrationMessage(goal));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     }
 
     // Countdown haptics at 90%, 95%, 99% (geen toast — de 25/50/75%-milestone-toasts

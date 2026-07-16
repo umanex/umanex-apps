@@ -55,20 +55,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9b0bc5c feat(rowtrack): active-workout redesign — header, goal-reached flow, auto-save
 ed98986 fix(rowtrack): add bottom padding to history workout rows
 6aa357c feat(rowtrack): show current (smoothed) split/watt/spm during active workout
 028d06b fix(rowtrack): move Splits column headers outside the table card
 727a881 docs(rowtrack): session reflection 2026-07-15 — resolve figma-console item, add 5 forward items
-499935f docs(rowtrack): mark P2-1/P2-6/P2-8 resolved (native rebuild + migrations)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/app/dev-active.tsx
-  A  apps/rowtrack/briefings/2026-07-16-component-active-header-bar.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-16-flow-auto-save-summary.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-16-screen-achieved-landscape.tcebc.md
-  M  apps/rowtrack/components/MotivationalToast.tsx
+  M  apps/rowtrack/HANDOFF.md
   M  apps/rowtrack/components/workout/ActivePhase.tsx
   M  apps/rowtrack/lib/hooks/useGoalProgress.ts
 

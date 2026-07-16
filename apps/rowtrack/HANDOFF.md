@@ -184,6 +184,16 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Volgende zet:** De Supabase-tabellen-sectie in `apps/rowtrack/CLAUDE.md` bijwerken naar de echte kolomnamen.
 - **Status:** open
 
+## 2026-07-16 — Summary KPI-band toont ENERGIE dubbel (4e KPI ontbreekt) · [debt]
+- **Bevinding:** In het samenvattingsscherm (`ActivePhase.tsx`, summary Modal KPI-band) staan AFSTAND/DUUR bovenaan en ENERGIE/ENERGIE eronder — de calorieën-cel is een copy-paste, de 4e KPI ontbreekt. Pre-existing op main (niet in de flow-diff), maar sinds de auto-save-flow is dit hét eindscherm dat elke rit toont (stop én doel-bereikt), dus nu prominenter (review 2026-07-16 wf_d16eec5f-075, P2).
+- **Volgende zet:** Figma Summary (43:8278) KPI-band raadplegen voor de bedoelde 4e metriek (vermoedelijk SLAGEN of gem. iets) en de tweede ENERGIE-cel vervangen. Desktop Bridge viel weg tijdens deze sessie → niet geverifieerd tegen design.
+- **Status:** open
+
+## 2026-07-16 — MilestoneOverlay is dead code na verwijderen milestone-toasts · [debt]
+- **Bevinding:** De 25/50/75%-milestone-toasts zijn verwijderd; `components/MilestoneOverlay.tsx` + de barrel-export in `components/workout/index.ts` blijven achter zonder gebruiker. tsc/lint blijven groen, maar het is maintenance-debt.
+- **Volgende zet:** Bij bevestiging van Jeroen: `MilestoneOverlay.tsx` verwijderen + de export uit `components/workout/index.ts` halen (verwijderen vergt bevestiging, CLAUDE.md-regel).
+- **Status:** open
+
 ## 2026-07-16 — Live-metric "bevriest" bij rust i.p.v. → 0 · [onzekerheid]
 - **Bevinding:** Sinds de KPI/hero de huidige gesmoothe waarde tonen (i.p.v. gemiddelde), houden watts/spm/split hun laatste actieve waarde vast bij een mid-workout rust: ble-service nult watts/spm/pace bij idle, de EMA stapt dan niet, dus "Huidige kracht" blijft bv. 180 W tonen terwijl je rust. Matcht het pre-existing hero-hold-gedrag; opslag/summary zijn onaangeroerd (P3, review 2026-07-16 wf_5c5eced8-52c).
 - **Volgende zet:** Product-keuze bij Jeroen — wil je dat de "huidige" waarde bij een echte idle-transitie (beide 0) naar 0 zakt (waarheidsgetrouwer, maar toont 0 tijdens rust), of bewust vasthoudt? Zo "naar 0": bij het idle-packet (`instantaneousPower==null && strokeRate==null`) `wattsSmoothed/spmSmoothed` op 0 zetten + EMA-refs resetten; split kan vasthouden (pace ongedefinieerd bij stilstand).

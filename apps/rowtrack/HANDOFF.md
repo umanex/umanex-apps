@@ -192,6 +192,26 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — MilestoneOverlay is dead code na verwijderen milestone-toasts · [debt]
 - **Bevinding:** De 25/50/75%-milestone-toasts zijn verwijderd; `components/MilestoneOverlay.tsx` + de barrel-export in `components/workout/index.ts` blijven achter zonder gebruiker. tsc/lint blijven groen, maar het is maintenance-debt.
 - **Volgende zet:** Bij bevestiging van Jeroen: `MilestoneOverlay.tsx` verwijderen + de export uit `components/workout/index.ts` halen (verwijderen vergt bevestiging, CLAUDE.md-regel).
+- **Status:** resolved — 2026-07-16: Jeroen bevestigde, component + barrel-export verwijderd (PR #140).
+
+## 2026-07-16 — Auto-save flow end-to-end onbevestigd op echte erg · [next-step]
+- **Bevinding:** De nieuwe einde-flow (doel-bereikt → `disconnect()` + `saveWorkout()` → celebration → samenvatting → home; en handmatig stop → save → samenvatting) is per stuk geverifieerd (renders, tsc, adversariële review wf_d16eec5f-075, geen P0/P1), maar nooit als runtime-keten op een echte BLE-sessie gereden. Onbevestigd: exact-1×-opslaan, opgeslagen getallen == summary, BLE eindigt disconnected, en géén zichtbare "Zoeken naar roeier…"-flits achter de translucente celebration-card bij de disconnect.
+- **Volgende zet:** #1 eerste zet — een echte rit op de fysieke iPhone/erg: doel-bereikt én handmatig stop, en bovenstaande vier punten naast elkaar leggen.
+- **Status:** open
+
+## 2026-07-16 — Aanname: doel-bereikt beëindigt de rit (geen doorroeien) · [aanname]
+- **Bevinding:** Jeroen koos "doel-bereikt → celebration → samenvatting", maar dat de rit dáár stopt (`disconnect()` in de goal-reached-effect, je roeit niet verder) is een eigen invulling, niet expliciet bevestigd.
+- **Volgende zet:** Bij Jeroen aftoetsen. Wil hij ná het doel kunnen doorroeien → de goal-reached-effect (save + disconnect) herwerken (bv. save als checkpoint, pas stoppen op expliciete actie).
+- **Status:** open
+
+## 2026-07-16 — Translucente celebration-card gebruikt hardcoded rgba · [debt]
+- **Bevinding:** `MotivationalToast.tsx` card-bg is `rgba(33, 36, 44, 0.75)` (= `bg.raised` @ 75%) met `// TODO` — er is geen token voor een translucente `bg.raised`. Drift-gevoelig als `bg.raised` wijzigt.
+- **Volgende zet:** Een `bg.raised`-alpha-token (of overlay-token) toevoegen via Tokens Studio → `tokens.json`, rebuilden, de hardcode vervangen.
+- **Status:** open
+
+## 2026-07-16 — BLE-replay test-harness voor de workout-flow · [idee]
+- **Bevinding:** De workout→save→summary-flow is niet testbaar zonder fysieke erg; deze sessie liep daar herhaaldelijk tegenaan (auto-save flow enkel per stuk geverifieerd).
+- **Volgende zet:** Een harness die een opgenomen FTMS-packetreeks (fixture) door `useWorkoutMetrics` + `useGoalProgress` + de save-flow speelt, zodat dubbel-save/empty-guard/disconnect-timing deterministisch getest worden. Bouwt voort op de bestaande `dev-active`-harness.
 - **Status:** open
 
 ## 2026-07-16 — Live-metric "bevriest" bij rust i.p.v. → 0 · [onzekerheid]

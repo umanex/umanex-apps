@@ -54,16 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+1bb2a68 chore(rowtrack): remove orphaned MilestoneOverlay component
 ad56d40 fix(rowtrack): summary shows SLAGEN instead of a duplicate ENERGIE cell
 e79a1e5 fix(rowtrack): address review findings on the active-workout flow
 9b0bc5c feat(rowtrack): active-workout redesign — header, goal-reached flow, auto-save
 ed98986 fix(rowtrack): add bottom padding to history workout rows
-6aa357c feat(rowtrack): show current (smoothed) split/watt/spm during active workout
 ```
 
 ## Uncommitted wijzigingen
-  D  apps/rowtrack/components/MilestoneOverlay.tsx
-  M  apps/rowtrack/components/workout/index.ts
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

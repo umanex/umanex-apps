@@ -173,15 +173,12 @@ export default function HistoryScreen() {
         data={workouts}
         keyExtractor={(w) => w.id}
         renderItem={({ item, index }) => (
-          <View style={styles.cardWrap}>
-            <WorkoutCard
-              workout={item}
-              onPress={handleWorkoutPress}
-              isLast={index === workouts.length - 1}
-            />
-          </View>
+          <WorkoutCard
+            workout={item}
+            onPress={handleWorkoutPress}
+            index={index}
+          />
         )}
-        ItemSeparatorComponent={ItemSeparator}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={listEmpty}
         refreshControl={
@@ -195,10 +192,6 @@ export default function HistoryScreen() {
       <BottomFade />
     </View>
   );
-}
-
-function ItemSeparator() {
-  return <View style={styles.itemSep} />;
 }
 
 const styles = StyleSheet.create({
@@ -260,13 +253,5 @@ const styles = StyleSheet.create({
 
   loader: {
     paddingVertical: space['40'],
-  },
-  // Lijst-items: horizontale marge per rij (i.p.v. op de contentContainer, want
-  // de segments/KPI-band in de header zijn full-bleed).
-  cardWrap: {
-    paddingHorizontal: space['20'],
-  },
-  itemSep: {
-    height: space['8'],
   },
 });

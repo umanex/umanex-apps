@@ -54,16 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+acdcb14 fix(rowtrack): static spacer in active-workout "afgelegd" row
 ab03a2c refactor(rowtrack): drop Inter, unify body/label copy on Albert Sans
 06b19b9 docs(rowtrack): mark auto-save flow HANDOFF item resolved
 f3a16f3 feat(rowtrack): toon doel-duur als "1 u 10 min" vanaf een uur
 b19f521 refactor(rowtrack): merge TabItem into shared Segmented, drop dead Segment
-3217a8d feat(rowtrack): sync GoalSheet to Figma — wheel target, delete button, shared Segmented
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/briefings/2026-07-16-component-active-metric-alignment.tcebc.md
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  A  apps/rowtrack/audits/2026-07-16-ux-audit-rowtrack.md
 
 ## Bestanden met TODO/FIXME
   (geen)

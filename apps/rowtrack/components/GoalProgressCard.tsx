@@ -10,7 +10,7 @@ type GoalProgressCardProps = {
 };
 
 function periodLabel(period: PeriodGoalPeriod): string {
-  return period === 'week' ? 'Weekdoel' : 'Maanddoel';
+  return period === 'week' ? 'Deze week' : 'Deze maand';
 }
 
 function fmtDistance(meters: number): string {

@@ -55,19 +55,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e79a1e5 fix(rowtrack): address review findings on the active-workout flow
+9b0bc5c feat(rowtrack): active-workout redesign — header, goal-reached flow, auto-save
+ed98986 fix(rowtrack): add bottom padding to history workout rows
+6aa357c feat(rowtrack): show current (smoothed) split/watt/spm during active workout
 028d06b fix(rowtrack): move Splits column headers outside the table card
-727a881 docs(rowtrack): session reflection 2026-07-15 — resolve figma-console item, add 5 forward items
-499935f docs(rowtrack): mark P2-1/P2-6/P2-8 resolved (native rebuild + migrations)
-490b703 fix(rowtrack): visible WheelPicker pill + surface-synced fade (Figma parity)
-f132568 docs(rowtrack): security audit report + hardening handoff/learnings
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/app/(tabs)/workout.tsx
   M  apps/rowtrack/app/dev-active.tsx
   M  apps/rowtrack/components/workout/ActivePhase.tsx
-  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
-  A  apps/rowtrack/lib/smoothing.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

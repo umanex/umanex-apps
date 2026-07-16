@@ -10,15 +10,6 @@ import { getPaceZone } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import type { WorkoutMetricsState, AccumulatorRefs } from './useWorkoutMetrics';
 
-// --- Milestone messages ---
-
-const MILESTONE_MESSAGES: Record<number, string> = {
-  25: 'Op dreef! \u{1F4AA}',
-  50: 'Halverwege! Blijf gaan! \u{1F525}',
-  75: 'Bijna daar! Geef alles! \u{26A1}',
-  100: 'DOEL BEREIKT! \u{1F3C6}',
-};
-
 // --- Goal-reached celebration message (dynamisch per doeltype) ---
 
 function celebrationMessage(goal: WorkoutGoal): string {
@@ -60,7 +51,6 @@ export function useGoalProgress(
   const { seconds, distanceMeters, splitSeconds } = metricsState;
 
   // State
-  const [milestoneMsg, setMilestoneMsg] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [splits, setSplits] = useState<SplitEntry[]>([]);
   const [goalReached, setGoalReached] = useState(false);
@@ -152,24 +142,17 @@ export function useGoalProgress(
   useEffect(() => {
     if (phase !== 'active' || !goal || !goalProgress) return;
 
-    // Goal reached → toon de viering-toast
+    // Goal reached → toon de viering-toast + één Heavy haptic op het bereik-moment
+    // (bleef behouden toen de 25/50/75/100%-milestone-toasts verdwenen).
     if (goalProgress.reached && !goalReachedRef.current) {
       goalReachedRef.current = true;
       setGoalReached(true);
       setToastMsg(celebrationMessage(goal));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     }
 
-    // Percentage milestones
-    for (const pct of [25, 50, 75, 100]) {
-      const key = `pct_${pct}`;
-      if (goalProgress.percentage >= pct && !milestonesHit.current.has(key)) {
-        milestonesHit.current.add(key);
-        setMilestoneMsg(MILESTONE_MESSAGES[pct]);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      }
-    }
-
-    // Countdown haptics at 90%, 95%, 99%
+    // Countdown haptics at 90%, 95%, 99% (geen toast — de 25/50/75%-milestone-toasts
+    // zijn bewust verwijderd; enkel deze subtiele "bijna daar"-haptiek blijft).
     for (const pct of [90, 95, 99]) {
       const key = `countdown_${pct}`;
       if (goalProgress.percentage >= pct && !milestonesHit.current.has(key)) {
@@ -251,7 +234,6 @@ export function useGoalProgress(
   }, [phase, goal, goalProgress]); // pulseAnim is stable ref, excluded from deps
 
   // --- Dismiss callbacks ---
-  const dismissMilestone = useCallback(() => setMilestoneMsg(null), []);
   const dismissToast = useCallback(() => setToastMsg(null), []);
 
   // --- Reset gamification state ---
@@ -262,7 +244,6 @@ export function useGoalProgress(
     lastSplitDistance.current = 0;
     splitStartSeconds.current = 0;
     setSplits([]);
-    setMilestoneMsg(null);
     setToastMsg(null);
     setPrFlags({ watts: false, split: false, distance: false });
   }, []);
@@ -276,7 +257,6 @@ export function useGoalProgress(
 
   return {
     // State
-    milestoneMsg,
     toastMsg,
     splits,
     goalReached,
@@ -291,7 +271,6 @@ export function useGoalProgress(
     paceZone,
     hasPR,
     // Actions
-    dismissMilestone,
     dismissToast,
     fetchPRs,
     resetGameState,

@@ -11,11 +11,12 @@
 //     (goal = none | duration | distance | split | watts)
 //   - of interactief: de switcher-balk onderaan.
 // Niet in een tab-group; in productie rendert het niets.
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivePhase } from '@/components/workout/ActivePhase';
+import { allowAllOrientations, lockPortrait } from '@/lib/orientation';
 import { accent, bg, fg } from '@/constants';
 import type { WorkoutGoal } from '@/lib/workout-goals';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
@@ -45,9 +46,19 @@ const VARIANTS: { key: string; label: string; goal: WorkoutGoal | null }[] = [
 export default function DevActivePreview() {
   const insets = useSafeAreaInsets();
   const pulse = useRef(new Animated.Value(1)).current;
-  const params = useLocalSearchParams<{ goal?: string }>();
+  const params = useLocalSearchParams<{ goal?: string; toast?: string; summary?: string }>();
+
+  // Sta landscape toe in de harness (active-workout is landscape-capable), zodat de
+  // landscape-layouts + celebration hier te verifiëren zijn. Herstel portrait bij verlaten.
+  useEffect(() => {
+    allowAllOrientations();
+    return () => { lockPortrait(); };
+  }, []);
 
   if (!__DEV__) return null;
+
+  // ?toast=1 → toon de doel-bereikt celebration (MotivationalToast) voor visuele check.
+  const toastMsg = params.toast === '1' ? 'Je hebt 20 minuten geroeid. Geweldig gedaan! 💪' : null;
 
   // Param-gedreven (geen useState): zo schakelt zowel een deep-link (?goal=…)
   // als de switcher (router.setParams) de variant.
@@ -56,7 +67,7 @@ export default function DevActivePreview() {
   return (
     <View style={styles.root}>
       <ActivePhase
-        phase="active"
+        phase={params.summary === '1' ? 'summary' : 'active'}
         metricsState={MOCK_METRICS}
         bleStatus="connected"
         deviceName="MockErg"
@@ -65,10 +76,7 @@ export default function DevActivePreview() {
         goal={VARIANTS[i].goal}
         isCountdown={false}
         paceZone={null}
-        milestoneMsg={null}
-        toastMsg={null}
-        dismissMilestone={() => {}}
-        dismissToast={() => {}}
+        toastMsg={toastMsg}
         splits={[]}
         prFlags={{ watts: false, split: false, distance: false }}
         hasPR={false}
@@ -81,12 +89,12 @@ export default function DevActivePreview() {
         summaryAvgHr={null}
         summaryMaxSpm={null}
         summaryMaxHr={null}
+        summaryTotalStrokes={190}
         onStop={() => {}}
-        onSave={() => {}}
-        onDiscard={() => {}}
+        onContinue={() => {}}
+        onGoalContinue={() => {}}
         onSetGoal={() => {}}
         onClearGoal={() => {}}
-        saving={false}
         hasProfileWeight
         hrStatus="connected"
         hrBpm={140}

@@ -54,21 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ab03a2c refactor(rowtrack): drop Inter, unify body/label copy on Albert Sans
 06b19b9 docs(rowtrack): mark auto-save flow HANDOFF item resolved
 f3a16f3 feat(rowtrack): toon doel-duur als "1 u 10 min" vanaf een uur
 b19f521 refactor(rowtrack): merge TabItem into shared Segmented, drop dead Segment
 3217a8d feat(rowtrack): sync GoalSheet to Figma — wheel target, delete button, shared Segmented
-731e66e docs(rowtrack): flag that profile handleSave is never called
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  M  apps/rowtrack/components/workout/IdlePhase.tsx
-  M  apps/rowtrack/components/workout/workout.styles.ts
-  M  apps/rowtrack/constants/fonts.ts
-  M  apps/rowtrack/constants/typography.ts
-  M  apps/rowtrack/package.json
-  M  apps/rowtrack/style-dictionary.config.mjs
+  A  apps/rowtrack/briefings/2026-07-16-component-active-metric-alignment.tcebc.md
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

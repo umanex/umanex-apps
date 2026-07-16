@@ -37,6 +37,8 @@ export { KPI } from './KPI';
 export { KpiSingle } from './KPI_single';
 
 export { GoalProgressCard } from './GoalProgressCard';
+export { GoalSheet } from './GoalSheet';
+export type { GoalSheetProps } from './GoalSheet';
 export { Subtitle } from './Subtitle';
 export { BottomSheet } from './BottomSheet';
 export type { BottomSheetProps } from './BottomSheet';

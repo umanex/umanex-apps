@@ -190,11 +190,14 @@ export function ActivePhase({
     let fillKind: FillKind = 'none';
 
     // Subtitle-rij voor duration/distance: verstreken waarde · divider · "{n}%" (floor).
+    // Twee gelijk-brede kolommen (flex:1) met de linkerwaarde rechts- en de rechter-
+    // waarde links-uitgelijnd, zodat de cijfers naar buiten groeien en de 2px-divider
+    // statisch gecentreerd blijft bij wisselende live-cijfers (Figma 391:2436).
     const progressRow = (left: string, p: number) => (
       <View style={activeStyles.subtitleRow}>
-        <Text style={activeStyles.subtitleText}>{left}</Text>
+        <Text style={[activeStyles.subtitleText, activeStyles.subtitleValueLeft]}>{left}</Text>
         <View style={activeStyles.subtitleDivider} />
-        <Text style={activeStyles.subtitleText}>{`${Math.floor(p * 100)}%`}</Text>
+        <Text style={[activeStyles.subtitleText, activeStyles.subtitleValueRight]}>{`${Math.floor(p * 100)}%`}</Text>
       </View>
     );
 
@@ -729,6 +732,7 @@ const activeStyles = StyleSheet.create({
   },
   // Hero- en subtitle-groep: eyebrow-label boven zijn waarde (Figma Frame 130/132, gap 8).
   heroGroup: {
+    alignSelf: 'stretch', // vult het hero-paneel → subtitle-rij kan gelijk-brede kolommen maken
     alignItems: 'center',
     gap: space['8'],
   },
@@ -755,7 +759,18 @@ const activeStyles = StyleSheet.create({
   subtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'stretch',
     gap: space['20'],
+  },
+  // Linkerwaarde rechts-uitgelijnd, rechterwaarde links-uitgelijnd; elk flex:1 (gelijke
+  // kolommen) zodat de divider ertussen statisch blijft bij wisselende cijfers.
+  subtitleValueLeft: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  subtitleValueRight: {
+    flex: 1,
+    textAlign: 'left',
   },
   subtitleDivider: {
     width: 2,

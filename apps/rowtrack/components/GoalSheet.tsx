@@ -6,7 +6,7 @@ import { Segmented, type SegmentedOption } from './Segmented';
 import { WheelPicker } from './WheelPicker';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
-import type { WheelItem } from '@/lib/formatters';
+import { formatDurationLabel, type WheelItem } from '@/lib/formatters';
 import type { PeriodGoal, PeriodGoalPeriod, PeriodGoalMetric } from '@/lib/hooks/usePeriodGoal';
 import { fg, space, fontFamily, fontSize, letterSpacing } from '@/constants';
 
@@ -41,7 +41,11 @@ const DEFAULTS: Record<PeriodGoalMetric, number> = { distance: 10, duration: 60,
 function itemsFor(metric: PeriodGoalMetric): WheelItem[] {
   const { min, max, step, unit } = RANGES[metric];
   const items: WheelItem[] = [];
-  for (let v = min; v <= max; v += step) items.push({ label: `${v} ${unit}`, value: v, unit });
+  for (let v = min; v <= max; v += step) {
+    // Duur vanaf een uur als "1 u 10 min" (gedeelde helper, gelijk aan de workout-wheel).
+    const label = metric === 'duration' ? formatDurationLabel(v) : `${v} ${unit}`;
+    items.push({ label, value: v, unit });
+  }
   return items;
 }
 // Opgeslagen doel (m / s / count) ↔ weergave-waarde (km / min / count)

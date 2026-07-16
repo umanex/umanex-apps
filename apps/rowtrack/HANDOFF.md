@@ -197,7 +197,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — Auto-save flow end-to-end onbevestigd op echte erg · [next-step]
 - **Bevinding:** De nieuwe einde-flow (doel-bereikt → `disconnect()` + `saveWorkout()` → celebration → samenvatting → home; en handmatig stop → save → samenvatting) is per stuk geverifieerd (renders, tsc, adversariële review wf_d16eec5f-075, geen P0/P1), maar nooit als runtime-keten op een echte BLE-sessie gereden. Onbevestigd: exact-1×-opslaan, opgeslagen getallen == summary, BLE eindigt disconnected, en géén zichtbare "Zoeken naar roeier…"-flits achter de translucente celebration-card bij de disconnect.
 - **Volgende zet:** #1 eerste zet — een echte rit op de fysieke iPhone/erg: doel-bereikt én handmatig stop, en bovenstaande vier punten naast elkaar leggen.
-- **Status:** open
+- **Status:** resolved (2026-07-16 — Jeroen reed beide paden op de echte erg: doel-bereikt én handmatig stop, beide slaan correct op via de auto-save)
 
 ## 2026-07-16 — Aanname: doel-bereikt beëindigt de rit (geen doorroeien) · [aanname]
 - **Bevinding:** Jeroen koos "doel-bereikt → celebration → samenvatting", maar dat de rit dáár stopt (`disconnect()` in de goal-reached-effect, je roeit niet verder) is een eigen invulling, niet expliciet bevestigd.

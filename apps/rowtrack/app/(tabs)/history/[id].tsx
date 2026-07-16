@@ -13,7 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
-import { BottomFade, Button, EmptyState, ErrorState, KpiSingle, TabItem } from '@/components';
+import { BottomFade, Button, EmptyState, ErrorState, KpiSingle, Segmented } from '@/components';
 import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import { samplesFromTuples } from '@/lib/bestDistanceTime';
@@ -181,16 +181,13 @@ export default function WorkoutDetailScreen() {
       </View>
 
       {/* Tab bar */}
-      <View style={styles.tabBar}>
-        {tabs.map(tab => (
-          <TabItem
-            key={tab}
-            label={tab}
-            active={activeTab === tab}
-            onPress={() => setActiveTab(tab)}
-          />
-        ))}
-      </View>
+      <Segmented
+        variant="band"
+        style={styles.tabBar}
+        options={tabs.map((tab) => ({ value: tab, label: tab }))}
+        value={activeTab}
+        onChange={setActiveTab}
+      />
 
       <View style={styles.scrollWrap}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -471,16 +468,9 @@ const styles = StyleSheet.create({
     color: neutral['600'],
   },
 
-  // Tab bar — full-bleed edge-to-edge (Figma Segments/WorkoutDetail w=402), 28 erboven
-  // en flush tegen de KPI Row eronder. Borders enkel top/bottom (1px 0), geen zijranden
-  // aan de schermrand.
+  // Tab bar — positionering; de band-visual (bg.elevated, top/bottom-divider, full-bleed)
+  // zit in Segmented variant="band". 28 erboven, flush tegen de KPI Row eronder.
   tabBar: {
-    flexDirection: 'row',
-    backgroundColor: bg.elevated,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: border.strong,
-    padding: space['4'],
     marginTop: space['28'],
   },
 

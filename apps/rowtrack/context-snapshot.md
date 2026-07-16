@@ -43,11 +43,9 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | MotivationalToast | `apps/rowtrack/components/MotivationalToast.tsx` | components | — | — | — |
 | PaceZone | `apps/rowtrack/components/PaceZone.tsx` | components | — | — | — |
 | SectionHeader | `apps/rowtrack/components/SectionHeader.tsx` | components | — | — | — |
-| Segment | `apps/rowtrack/components/Segment.tsx` | components | — | — | — |
 | Segmented | `apps/rowtrack/components/Segmented.tsx` | components | — | — | — |
 | SplitsList | `apps/rowtrack/components/SplitsList.tsx` | components | — | — | — |
 | Subtitle | `apps/rowtrack/components/Subtitle.tsx` | components | — | — | — |
-| TabItem | `apps/rowtrack/components/TabItem.tsx` | components | — | — | — |
 | TabLabel | `apps/rowtrack/components/TabLabel.tsx` | components | — | — | — |
 | WheelPicker | `apps/rowtrack/components/WheelPicker.tsx` | components | — | — | — |
 | ActivePhase | `apps/rowtrack/components/workout/ActivePhase.tsx` | workout | — | — | — |
@@ -56,18 +54,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+3217a8d feat(rowtrack): sync GoalSheet to Figma — wheel target, delete button, shared Segmented
 731e66e docs(rowtrack): flag that profile handleSave is never called
 044a02b refactor(rowtrack): extract a shared, self-persisting GoalSheet
 1a916e3 feat(rowtrack): goal card label "Deze week/maand" + home WIJZIG opens the sheet
 4f63d59 fix(rowtrack): auth token keychain accessibility for background refresh
-9148e87 fix(rowtrack): goal progress card background to bg.raised per Figma
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  A  apps/rowtrack/briefings/2026-07-16-component-goalsheet-figma-sync.tcebc.md
-  M  apps/rowtrack/components/GoalSheet.tsx
-  A  apps/rowtrack/components/Segmented.tsx
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  M  apps/rowtrack/app/(tabs)/history/index.tsx
+  D  apps/rowtrack/components/Segment.tsx
+  M  apps/rowtrack/components/Segmented.tsx
+  D  apps/rowtrack/components/TabItem.tsx
   M  apps/rowtrack/components/index.ts
 
 ## Bestanden met TODO/FIXME

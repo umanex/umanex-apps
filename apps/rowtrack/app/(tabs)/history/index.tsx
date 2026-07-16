@@ -12,7 +12,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
-import { BottomFade, EmptyState, ErrorState, KpiSingle, TabItem, WorkoutCard } from '@/components';
+import { BottomFade, EmptyState, ErrorState, KpiSingle, Segmented, WorkoutCard } from '@/components';
 import { formatTimerFull, formatDistanceDynamic } from '@/lib/formatters';
 import {
   bg,
@@ -26,11 +26,11 @@ import type { WorkoutSummary } from '@/types/workout';
 
 type HistoryFilter = 'week' | 'maand' | 'jaar' | 'alle';
 
-const FILTERS: { key: HistoryFilter; label: string }[] = [
-  { key: 'week',  label: 'Week'  },
-  { key: 'maand', label: 'Maand' },
-  { key: 'jaar',  label: 'Jaar'  },
-  { key: 'alle',  label: 'Alle'  },
+const FILTERS: { value: HistoryFilter; label: string }[] = [
+  { value: 'week',  label: 'Week'  },
+  { value: 'maand', label: 'Maand' },
+  { value: 'jaar',  label: 'Jaar'  },
+  { value: 'alle',  label: 'Alle'  },
 ];
 
 export default function HistoryScreen() {
@@ -113,16 +113,13 @@ export default function HistoryScreen() {
       <Text style={styles.title} accessibilityRole="header">Historiek</Text>
 
       {/* Segment filter */}
-      <View style={styles.segmentContainer}>
-        {FILTERS.map(({ key, label }) => (
-          <TabItem
-            key={key}
-            label={label}
-            active={filter === key}
-            onPress={() => setFilter(key)}
-          />
-        ))}
-      </View>
+      <Segmented
+        variant="band"
+        style={styles.segmentContainer}
+        options={FILTERS}
+        value={filter}
+        onChange={setFilter}
+      />
 
       {/* KPI container — full width, bg.raised, border top+bottom */}
       <View style={styles.kpiContainer}>
@@ -216,16 +213,9 @@ const styles = StyleSheet.create({
     paddingTop: space['8'],
   },
 
-  // Segment filter — full-bleed edge-to-edge (Figma Segments/Historiek w=402), 28 boven,
-  // flush tegen de KPI-band eronder. Borders enkel top/bottom (1px 0), geen zijranden.
+  // Segment filter — positionering; de band-visual (bg.elevated, top/bottom-divider,
+  // full-bleed) zit in Segmented variant="band". 28 boven, flush tegen de KPI-band eronder.
   segmentContainer: {
-    flexDirection: 'row',
-    backgroundColor: bg.elevated,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: border.strong,
-    padding: space['4'],
-    height: 52,
     marginTop: space['28'],
   },
 

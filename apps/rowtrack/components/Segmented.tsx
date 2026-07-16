@@ -1,22 +1,39 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { bg, fg, accent, border, space, radii, fontFamily, fontSize } from '@/constants';
+import { View, Text, TouchableOpacity, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { bg, fg, accent, border, space, radii, typeStyles } from '@/constants';
 
 export type SegmentedOption<T extends string> = { value: T; label: string };
+
+/**
+ * `filled` = zelf-bevattende bg.base-track met border rondom (sheets: PERIODE/TYPE, Geslacht).
+ * `band`   = volle-breedte bg.elevated-band met enkel top/bottom-divider (scherm-tabs:
+ *            detail Overzicht/Splits/Hartslag, historiek-filter). De parent geeft de
+ *            positionering (bv. marginTop) via `style`.
+ */
+export type SegmentedVariant = 'filled' | 'band';
 
 export type SegmentedProps<T extends string> = {
   options: readonly SegmentedOption<T>[];
   value: T | null;
   onChange: (value: T) => void;
+  variant?: SegmentedVariant;
+  style?: StyleProp<ViewStyle>;
 };
 
 /**
- * Gedeeld segmented control (track: bg.base + border.strong, actief = 0.20 accent-pill +
- * border + SemiBold accent-tekst). Eén bron voor het Geslacht-veld én de PERIODE/TYPE-tabs
- * in de doel-sheet, zodat ze niet kunnen driften.
+ * Gedeeld segmented control. Eén bron voor de sheet-segmenten (Geslacht, PERIODE/TYPE)
+ * én de scherm-tabs (detail, historiek-filter), zodat ze niet kunnen driften. Actief =
+ * 0.20 accent-pill + border + SemiBold accent-tekst; de `variant` bepaalt enkel de
+ * container (zelf-bevattende box vs. volle-breedte band).
  */
-export function Segmented<T extends string>({ options, value, onChange }: SegmentedProps<T>) {
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  variant = 'filled',
+  style,
+}: SegmentedProps<T>) {
   return (
-    <View style={styles.row}>
+    <View style={[variant === 'band' ? styles.band : styles.filled, style]}>
       {options.map((opt) => {
         const active = value === opt.value;
         return (
@@ -26,7 +43,9 @@ export function Segmented<T extends string>({ options, value, onChange }: Segmen
             onPress={() => onChange(opt.value)}
             activeOpacity={0.8}
           >
-            <Text style={[styles.btnText, active && styles.btnTextActive]}>{opt.label}</Text>
+            <Text style={active ? styles.btnTextActive : styles.btnText} numberOfLines={1}>
+              {opt.label}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -35,12 +54,22 @@ export function Segmented<T extends string>({ options, value, onChange }: Segmen
 }
 
 const styles = StyleSheet.create({
-  // Track: bg.base + border.strong, 4px padding (Figma 52:9155).
-  row: {
+  // Track: bg.base + border.strong rondom, 4px padding (Figma 52:9155).
+  filled: {
     flexDirection: 'row',
     backgroundColor: bg.base,
     borderRadius: radii.sm,
     borderWidth: 1,
+    borderColor: border.strong,
+    padding: space['4'],
+  },
+  // Band: bg.elevated, enkel top/bottom 1px (geen zijranden), 4px padding — full-bleed
+  // edge-to-edge tegen de schermrand (Figma Segments/WorkoutDetail + /Historiek w=402).
+  band: {
+    flexDirection: 'row',
+    backgroundColor: bg.elevated,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: border.strong,
     padding: space['4'],
   },
@@ -59,12 +88,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.xs, // 4 = track-radius (8) − padding (4): pill nest exact.
   },
   btnText: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
+    ...typeStyles.segmentInactive,
     color: fg.tertiary,
   },
   btnTextActive: {
-    fontFamily: fontFamily.bodySemiBold,
+    ...typeStyles.segmentActive,
     color: accent.default,
   },
 });

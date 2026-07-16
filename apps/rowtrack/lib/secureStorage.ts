@@ -96,9 +96,17 @@ export const secureStorageAdapter = {
   setItem: async (key: string, value: string): Promise<void> => {
     if (!(await useSecureStore())) return AsyncStorage.setItem(key, value);
     const base = sanitize(key);
+    // AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: leesbaar na de eerste unlock sinds boot, óók
+    // wanneer het toestel daarna weer vergrendeld is. De GoTrue auto-refresh tick draait
+    // op de achtergrond en las de token met de default WHEN_UNLOCKED-accessibility niet
+    // bij een gelockt scherm → "User interaction is not allowed". `THIS_DEVICE_ONLY` houdt
+    // het item bovendien uit device-backups (versterkt het anti-diefstal-doel van deze
+    // wrapper). Accessibility wordt op WRITE gezet: bestaande items schuiven mee bij de
+    // eerstvolgende token-write (refresh terwijl ontgrendeld, of re-login).
+    const opts = { keychainAccessible: ss!.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY };
     await removeChunks(base); // oude staat opruimen vóór herschrijven
     if (value.length <= CHUNK_SIZE) {
-      await ss!.setItemAsync(base, value);
+      await ss!.setItemAsync(base, value, opts);
       return;
     }
     const n = Math.ceil(value.length / CHUNK_SIZE);
@@ -106,9 +114,10 @@ export const secureStorageAdapter = {
       await ss!.setItemAsync(
         `${base}__${i}`,
         value.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE),
+        opts,
       );
     }
-    await ss!.setItemAsync(`${base}__n`, String(n));
+    await ss!.setItemAsync(`${base}__n`, String(n), opts);
   },
 
   removeItem: async (key: string): Promise<void> => {

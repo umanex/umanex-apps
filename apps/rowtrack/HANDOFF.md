@@ -218,3 +218,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Bevinding:** Sinds de KPI/hero de huidige gesmoothe waarde tonen (i.p.v. gemiddelde), houden watts/spm/split hun laatste actieve waarde vast bij een mid-workout rust: ble-service nult watts/spm/pace bij idle, de EMA stapt dan niet, dus "Huidige kracht" blijft bv. 180 W tonen terwijl je rust. Matcht het pre-existing hero-hold-gedrag; opslag/summary zijn onaangeroerd (P3, review 2026-07-16 wf_5c5eced8-52c).
 - **Volgende zet:** Product-keuze bij Jeroen — wil je dat de "huidige" waarde bij een echte idle-transitie (beide 0) naar 0 zakt (waarheidsgetrouwer, maar toont 0 tijdens rust), of bewust vasthoudt? Zo "naar 0": bij het idle-packet (`instantaneousPower==null && strokeRate==null`) `wattsSmoothed/spmSmoothed` op 0 zetten + EMA-refs resetten; split kan vasthouden (pace ongedefinieerd bij stilstand).
 - **Status:** open
+
+## 2026-07-16 — Keychain-accessibility auth-refresh-fix nog device-verificatie nodig · [next-step]
+- **Bevinding:** De red-box "Calling 'getValueWithKeyAsync' has failed → User interaction is not allowed" bij de GoTrue auto-refresh (gelockt scherm) is gefixt: de auth-token wordt nu geschreven met `keychainAccessible: AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` (`lib/secureStorage.ts`, PR #146). Op de sim niet reproduceerbaar (geen echt keychain-lock-gedrag); enkel geverifieerd dat auth niet regresseert (app boot ingelogd).
+- **Volgende zet:** Op de fysieke iPhone bevestigen: inloggen → app één keer op de voorgrond laten verversen (zodat bestaande items met de nieuwe accessibility herschreven worden) → scherm vergrendelen → wachten op een refresh-tick → red-box mag niet meer verschijnen.
+- **Status:** open

@@ -1,10 +1,8 @@
 import { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Dot } from './Dot';
-import { formatTimerFull } from '@/lib/formatters';
-import { fg, accent, border, space, typeStyles } from '@/constants';
-import type { WorkoutSummary } from '@/types/workout';
+import { bg, fg, accent, space, typeStyles } from '@/constants';
 
 const NL_MONTHS = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'] as const;
 
@@ -26,6 +24,15 @@ function fmtDate(iso: string): string {
   return `${d.getDate()} ${NL_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function fmtDuration(sec: number | null): { value: string; unit: string } | null {
+  if (sec == null) return null;
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.round(sec % 60);
+  if (h > 0) return { value: `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`, unit: 'uur' };
+  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: 'min' };
+}
+
 function fmtMetersVU(m: number): { value: string; unit: string } {
   if (m >= 1000) {
     const t = Math.floor(m / 1000);
@@ -35,34 +42,51 @@ function fmtMetersVU(m: number): { value: string; unit: string } {
   return { value: `${m}`, unit: 'm' };
 }
 
-export type WorkoutCardProps = {
-  workout: WorkoutSummary;
-  onPress: (id: string) => void;
-  isLast?: boolean;
-}
+/** Minimale rij-data — zowel WorkoutSummary (historiek) als HomeWorkout (home) voldoen. */
+export type WorkoutRowData = {
+  id: string;
+  started_at: string;
+  duration_seconds: number | null;
+  distance_meters: number | null;
+  calories: number | null;
+};
 
+export type WorkoutCardProps = {
+  workout: WorkoutRowData;
+  onPress: (id: string) => void;
+  /** Rij-index voor zebra-striping — oneven rijen (1, 3, …) krijgen de raised tile. */
+  index: number;
+};
+
+// Full-bleed zebra-tile trainingsrij (Figma "Workout / Variant2"). Gedeeld door de home-
+// en historiek-lijst. De parent zorgt dat de rij edge-to-edge staat: home legt een
+// negatieve marge op de lijst-container, de historiek-FlatList-content is al full-bleed.
 export const WorkoutCard = memo(function WorkoutCard({
   workout: w,
   onPress,
-  isLast = false,
+  index,
 }: WorkoutCardProps) {
-  const durStr = formatTimerFull(w.duration_seconds);
-  const durUnit = w.duration_seconds >= 3600 ? 'uur' : '';
+  const dur = fmtDuration(w.duration_seconds);
   const dist = w.distance_meters != null ? fmtMetersVU(w.distance_meters) : null;
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
+    <Pressable
       onPress={() => onPress(w.id)}
-      style={[styles.row, isLast && styles.rowLast]}
+      style={({ pressed }) => [
+        styles.row,
+        index % 2 === 1 && styles.rowAlt,
+        pressed && styles.rowPressed,
+      ]}
     >
       <View style={styles.left}>
         <Text style={styles.date}>{fmtDate(w.started_at)}</Text>
         <View style={styles.statsRow}>
-          <View style={styles.durGroup}>
-            <Text style={styles.value}>{durStr}</Text>
-            {!!durUnit && <Text style={styles.unit}>{durUnit}</Text>}
-          </View>
+          {dur != null && (
+            <View style={styles.durGroup}>
+              <Text style={styles.value}>{dur.value}</Text>
+              <Text style={styles.unit}>{dur.unit}</Text>
+            </View>
+          )}
           {w.calories != null && (
             <>
               <View style={styles.dotWrapper}>
@@ -85,7 +109,7 @@ export const WorkoutCard = memo(function WorkoutCard({
         )}
         <Ionicons name="arrow-forward" size={16} color={accent.default} />
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 });
 
@@ -94,14 +118,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: space['20'],
-    // 12px verticale padding (Figma "Workout"-rij 72:15598, pad 12/20/12/20) i.p.v. 4 —
-    // gaf te weinig ruimte onder de trainingsregel richting de divider.
     paddingVertical: space['12'],
-    borderBottomWidth: 1,
-    borderBottomColor: border.default,
+    paddingHorizontal: space['20'],
   },
-  rowLast: {
-    borderBottomWidth: 0,
+  // Zebra-striping: oneven rijen krijgen de raised tile; idem bij press.
+  rowAlt: {
+    backgroundColor: bg.raised,
+  },
+  rowPressed: {
+    backgroundColor: bg.raised,
   },
   left: {
     flex: 1,
@@ -116,22 +141,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space['6'],
   },
-  value: {
-    ...typeStyles.kpiValue,
-    color: fg.primary,
-  },
-  dotWrapper: {
-    paddingBottom: 3,
-  },
   durGroup: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 3,
-  },
-  caloriesGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+  },
+  value: {
+    ...typeStyles.kpiValue,
+    color: fg.primary,
   },
   unit: {
     ...typeStyles.kpiUnit,
@@ -144,7 +161,15 @@ const styles = StyleSheet.create({
   },
   distRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
+    gap: 2,
+  },
+  dotWrapper: {
+    paddingBottom: 3,
+  },
+  caloriesGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 2,
   },
   distValue: {

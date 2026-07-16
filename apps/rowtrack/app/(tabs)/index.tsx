@@ -6,16 +6,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Pressable,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { loadPendingWorkout, clearPendingWorkout } from '@/lib/pendingWorkout';
-import { EmptyState, ErrorState, Dot, KpiSingle, Button } from '@/components';
+import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
@@ -42,8 +40,6 @@ type HomeWorkout = {
   calories: number | null;
 };
 
-const NL_MONTHS = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'] as const;
-
 function getGreeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return 'Goedemorgen,';
@@ -51,41 +47,6 @@ function getGreeting(): string {
   return 'Goedenavond,';
 }
 
-function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  const now = new Date();
-  const isToday =
-    d.getDate() === now.getDate() &&
-    d.getMonth() === now.getMonth() &&
-    d.getFullYear() === now.getFullYear();
-  if (isToday) return 'Vandaag';
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  const isYesterday =
-    d.getDate() === yesterday.getDate() &&
-    d.getMonth() === yesterday.getMonth() &&
-    d.getFullYear() === yesterday.getFullYear();
-  if (isYesterday) return 'Gisteren';
-  return `${d.getDate()} ${NL_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function fmtDuration(sec: number | null): { value: string; unit: string } | null {
-  if (sec == null) return null;
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = Math.round(sec % 60);
-  if (h > 0) return { value: `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`, unit: 'uur' };
-  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: 'min' };
-}
-
-function fmtMetersVU(m: number): { value: string; unit: string } {
-  if (m >= 1000) {
-    const t = Math.floor(m / 1000);
-    const r = m % 1000;
-    return { value: `${t}.${String(r).padStart(3, '0')}`, unit: 'm' };
-  }
-  return { value: `${m}`, unit: 'm' };
-}
 
 function fmtPrDistance(m: number): { value: string; unit: string } {
   if (m >= 1000) {
@@ -264,54 +225,14 @@ export default function HomeScreen() {
             />
           ) : (
             <View style={styles.workoutList}>
-              {workouts.map((w, i) => {
-                const dur = fmtDuration(w.duration_seconds);
-                const distVU = w.distance_meters != null ? fmtMetersVU(w.distance_meters) : null;
-
-                return (
-                  <Pressable
-                    key={w.id}
-                    style={({ pressed }) => [
-                      styles.workoutRow,
-                      i % 2 === 1 && styles.workoutRowAlt,
-                      pressed && styles.workoutRowPressed,
-                    ]}
-                    onPress={() => handleWorkoutPress(w.id)}
-                  >
-                    <View style={styles.workoutLeft}>
-                      <Text style={styles.workoutDay}>{fmtDate(w.started_at)}</Text>
-                      <View style={styles.workoutStatsRow}>
-                        {dur != null && (
-                          <View style={styles.durationGroup}>
-                            <Text style={styles.workoutValue}>{dur.value}</Text>
-                            <Text style={styles.workoutUnit}>{dur.unit}</Text>
-                          </View>
-                        )}
-                        {w.calories != null && (
-                          <>
-                            <View style={styles.dotWrapper}>
-                              <Dot />
-                            </View>
-                            <View style={styles.caloriesGroup}>
-                              <Text style={styles.workoutValue}>{w.calories}</Text>
-                              <Text style={styles.workoutUnit}>kcal</Text>
-                            </View>
-                          </>
-                        )}
-                      </View>
-                    </View>
-                    <View style={styles.workoutRight}>
-                      {distVU != null && (
-                        <View style={styles.workoutDistRow}>
-                          <Text style={styles.workoutDistValue}>{distVU.value}</Text>
-                          <Text style={styles.workoutDistUnit}>{distVU.unit}</Text>
-                        </View>
-                      )}
-                      <Ionicons name="arrow-forward" size={16} color={accent.default} />
-                    </View>
-                  </Pressable>
-                );
-              })}
+              {workouts.map((w, i) => (
+                <WorkoutCard
+                  key={w.id}
+                  workout={w}
+                  onPress={handleWorkoutPress}
+                  index={i}
+                />
+              ))}
             </View>
           )}
         </View>
@@ -338,14 +259,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: space['20'],
     paddingBottom: space['28'],
   },
+  // Eyebrow boven de naam (Figma 16:159): Albert Sans SemiBold 13, 20% tracking, uppercase,
+  // uitgelijnd met de naam. (Was Source Serif italic — week af van het design.)
   greeting: {
-    fontFamily: fontFamily.sourceSerifItalic,
-    fontSize: fontSize['14'],
-    lineHeight: 21,
-    letterSpacing: letterSpacing.subtle * fontSize['14'],
+    fontFamily: fontFamily.albertSansSemiBold,
+    fontSize: fontSize['13'],
+    letterSpacing: letterSpacing.wide * fontSize['13'],
+    textTransform: 'uppercase',
     color: fg.secondary,
-    marginBottom: -2,
-    paddingLeft: space['20'],
   },
   name: {
     ...typeStyles.sectionValue,
@@ -385,75 +306,9 @@ const styles = StyleSheet.create({
     paddingVertical: space['40'],
   },
 
-  // Workout list — full-bleed flush tiles, alternating row bg + highlight on press (design 167:2365)
+  // Recente-trainingen-lijst — full-bleed zebra-tiles (gedeelde WorkoutCard). De negatieve
+  // marge laat de tiles edge-to-edge lopen binnen de horizontaal gepadde sectie.
   workoutList: {
-    gap: space['0'],
-  },
-  workoutRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: space['20'],
-    paddingVertical: space['12'],
-    paddingHorizontal: space['20'],
     marginHorizontal: -space['20'],
-  },
-  // Zebra-striping: odd rows (index 1, 3, …) get the raised tile — Figma "Workout / Variant2"
-  workoutRowAlt: {
-    backgroundColor: bg.raised,
-  },
-  workoutRowPressed: {
-    backgroundColor: bg.raised,
-  },
-  workoutLeft: {
-    flex: 1,
-    gap: space['6'],
-  },
-  workoutDay: {
-    ...typeStyles.labelGoalPrefix,
-    color: fg.tertiary,
-  },
-  workoutStatsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['6'],
-  },
-  durationGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  workoutValue: {
-    ...typeStyles.kpiValue,
-    color: fg.primary,
-  },
-  workoutUnit: {
-    ...typeStyles.kpiUnit,
-    color: fg.primary,
-  },
-  workoutRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['8'],
-  },
-  workoutDistRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  dotWrapper: {
-    paddingBottom: 3,
-  },
-  caloriesGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  workoutDistValue: {
-    ...typeStyles.kpiValue,
-    color: fg.onAccent,
-  },
-  workoutDistUnit: {
-    ...typeStyles.kpiUnit,
-    color: fg.onAccent,
   },
 });

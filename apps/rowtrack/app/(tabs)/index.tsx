@@ -172,7 +172,8 @@ export default function HomeScreen() {
       {goalProgress && (
         <GoalProgressCard
           progress={goalProgress}
-          onEdit={() => router.push('/(tabs)/profile')}
+          // Wijzigen opent meteen de doel-bottomsheet op het profiel (?openGoal=1).
+          onEdit={() => router.push('/(tabs)/profile?openGoal=1')}
         />
       )}
 

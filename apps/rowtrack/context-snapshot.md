@@ -54,16 +54,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4f63d59 fix(rowtrack): auth token keychain accessibility for background refresh
 9148e87 fix(rowtrack): goal progress card background to bg.raised per Figma
 03607d0 feat(rowtrack): make the detail date title tappable to go back
 a5e7742 fix(rowtrack): goal progress bar — drop end dot, 4px height per Figma
 8e3d658 fix(rowtrack): full-bleed weekdoel progress bar
-ed9d145 feat(rowtrack): share zebra WorkoutCard row + fix home greeting to design
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/lib/secureStorage.ts
+  M  apps/rowtrack/app/(tabs)/index.tsx
+  M  apps/rowtrack/app/(tabs)/profile.tsx
+  A  apps/rowtrack/briefings/2026-07-16-feature-goal-card-flow.tcebc.md
+  M  apps/rowtrack/components/GoalProgressCard.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

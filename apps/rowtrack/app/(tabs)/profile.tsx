@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { signOut } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -103,8 +103,10 @@ type SheetType = 'none' | 'voornaam' | 'email' | 'geslacht' | 'lengte' | 'gewich
 export default function ProfileScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ openGoal?: string }>();
 
-  const { goalProgress, refetch: refetchGoal } = usePeriodGoal(user?.id);
+  const { goalProgress, loading: goalLoading, refetch: refetchGoal } = usePeriodGoal(user?.id);
 
   // --- Profile state ---
   const [displayName, setDisplayName] = useState('');
@@ -205,6 +207,18 @@ export default function ProfileScreen() {
       }
     }, [goalProgress]),
   );
+
+  // Home "WIJZIG" navigeert hierheen met ?openGoal=1 → open meteen de doel-sheet, maar pas
+  // wanneer de goal-state gesynct is (has-goal: goalPeriod gezet; no-goal: laden klaar), zodat
+  // openDoel de juiste draft toont. Param wordt geconsumeerd zodat een re-focus niet opnieuw
+  // opent en een tweede WIJZIG-tik wél weer werkt.
+  useEffect(() => {
+    if (params.openGoal !== '1') return;
+    const ready = goalPeriod !== null || (!goalLoading && goalProgress === null);
+    if (!ready) return;
+    openDoel();
+    router.setParams({ openGoal: '' });
+  }, [params.openGoal, goalPeriod, goalLoading, goalProgress, router]);
 
   // --- Sheet openers ---
   function openVoornaam() {
@@ -390,9 +404,8 @@ export default function ProfileScreen() {
       >
         <Text style={styles.title}>Profiel</Text>
 
-        {/* MIJN DOEL */}
+        {/* Doel */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>MIJN DOEL</Text>
           {goalProgress ? (
             <View style={styles.goalCardBleed}>
               <GoalProgressCard progress={goalProgress} onEdit={openDoel} />

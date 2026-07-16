@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { loadPendingWorkout, clearPendingWorkout } from '@/lib/pendingWorkout';
-import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard } from '@/components';
+import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard, GoalSheet } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
@@ -75,6 +75,7 @@ export default function HomeScreen() {
   const [workoutsError, setWorkoutsError] = useState(false);
 
   const { goalProgress, records, refetch: refetchGoal } = usePeriodGoal(user?.id);
+  const [goalSheetOpen, setGoalSheetOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -141,6 +142,7 @@ export default function HomeScreen() {
     records.best2k != null;
 
   return (
+    <>
     <ScrollView
       style={[styles.container, { paddingTop: insets.top }]}
       contentContainerStyle={styles.content}
@@ -172,8 +174,8 @@ export default function HomeScreen() {
       {goalProgress && (
         <GoalProgressCard
           progress={goalProgress}
-          // Wijzigen opent meteen de doel-bottomsheet op het profiel (?openGoal=1).
-          onEdit={() => router.push('/(tabs)/profile?openGoal=1')}
+          // Wijzigen opent de doel-bottomsheet in-place (gedeelde GoalSheet, geen redirect).
+          onEdit={() => setGoalSheetOpen(true)}
         />
       )}
 
@@ -239,6 +241,15 @@ export default function HomeScreen() {
         </View>
       </View>
     </ScrollView>
+
+    <GoalSheet
+      visible={goalSheetOpen}
+      currentGoal={goalProgress?.goal ?? null}
+      userId={user?.id}
+      onClose={() => setGoalSheetOpen(false)}
+      onSaved={refetchGoal}
+    />
+    </>
   );
 }
 

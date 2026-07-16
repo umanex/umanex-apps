@@ -12,15 +12,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { signOut } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { Button, WheelPicker } from '@/components';
+import { Button, WheelPicker, GoalSheet } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { BottomSheet } from '@/components/BottomSheet';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
-import type { PeriodGoalPeriod, PeriodGoalMetric } from '@/lib/hooks/usePeriodGoal';
 import {
   bg,
   fg,
@@ -103,10 +102,8 @@ type SheetType = 'none' | 'voornaam' | 'email' | 'geslacht' | 'lengte' | 'gewich
 export default function ProfileScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const params = useLocalSearchParams<{ openGoal?: string }>();
 
-  const { goalProgress, loading: goalLoading, refetch: refetchGoal } = usePeriodGoal(user?.id);
+  const { goalProgress, refetch: refetchGoal } = usePeriodGoal(user?.id);
 
   // --- Profile state ---
   const [displayName, setDisplayName] = useState('');
@@ -115,9 +112,6 @@ export default function ProfileScreen() {
   const [weightKg, setWeightKg] = useState<number | null>(null);
   const [birthDate, setBirthDate] = useState<string | null>(null);
   const [spmHalved, setSpmHalved] = useState(false);
-  const [goalPeriod, setGoalPeriod] = useState<PeriodGoalPeriod | null>(null);
-  const [goalMetric, setGoalMetric] = useState<PeriodGoalMetric | null>(null);
-  const [goalTarget, setGoalTarget] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -141,11 +135,6 @@ export default function ProfileScreen() {
   const [draftDayIdx, setDraftDayIdx] = useState(0);
   const [draftMonthIdx, setDraftMonthIdx] = useState(0);
   const [draftYearIdx, setDraftYearIdx] = useState(DEFAULT_YEAR_IDX);
-
-  // Goal draft
-  const [draftGoalPeriod, setDraftGoalPeriod] = useState<PeriodGoalPeriod | null>(null);
-  const [draftGoalMetric, setDraftGoalMetric] = useState<PeriodGoalMetric | null>(null);
-  const [draftGoalTarget, setDraftGoalTarget] = useState('');
 
   // --- Input refs for autofocus and field chaining ---
   const nameInputRef = useRef<TextInput>(null);
@@ -189,37 +178,6 @@ export default function ProfileScreen() {
     }, [fetchProfile]),
   );
 
-  // Sync goal editable state from usePeriodGoal
-  useFocusEffect(
-    useCallback(() => {
-      if (goalProgress) {
-        setGoalPeriod(goalProgress.goal.period);
-        setGoalMetric(goalProgress.goal.metric);
-        const m = goalProgress.goal.metric;
-        const raw = goalProgress.goal.target;
-        if (m === 'distance') setGoalTarget(String(raw / 1000));
-        else if (m === 'duration') setGoalTarget(String(raw / 60));
-        else setGoalTarget(String(raw));
-      } else {
-        setGoalPeriod(null);
-        setGoalMetric(null);
-        setGoalTarget('');
-      }
-    }, [goalProgress]),
-  );
-
-  // Home "WIJZIG" navigeert hierheen met ?openGoal=1 → open meteen de doel-sheet, maar pas
-  // wanneer de goal-state gesynct is (has-goal: goalPeriod gezet; no-goal: laden klaar), zodat
-  // openDoel de juiste draft toont. Param wordt geconsumeerd zodat een re-focus niet opnieuw
-  // opent en een tweede WIJZIG-tik wél weer werkt.
-  useEffect(() => {
-    if (params.openGoal !== '1') return;
-    const ready = goalPeriod !== null || (!goalLoading && goalProgress === null);
-    if (!ready) return;
-    openDoel();
-    router.setParams({ openGoal: '' });
-  }, [params.openGoal, goalPeriod, goalLoading, goalProgress, router]);
-
   // --- Sheet openers ---
   function openVoornaam() {
     setDraftName(displayName);
@@ -258,9 +216,6 @@ export default function ProfileScreen() {
   }
 
   function openDoel() {
-    setDraftGoalPeriod(goalPeriod);
-    setDraftGoalMetric(goalMetric);
-    setDraftGoalTarget(goalTarget);
     setSheetOpen('doel');
   }
 
@@ -291,13 +246,6 @@ export default function ProfileScreen() {
 
   function saveGeboortedatum() {
     setBirthDate(indicesToDate(draftDayIdx, draftMonthIdx, draftYearIdx));
-    setSheetOpen('none');
-  }
-
-  function saveDoel() {
-    setGoalPeriod(draftGoalPeriod);
-    setGoalMetric(draftGoalMetric);
-    setGoalTarget(draftGoalTarget);
     setSheetOpen('none');
   }
 
@@ -343,15 +291,8 @@ export default function ProfileScreen() {
     if (!user) return;
     setSaving(true);
 
-    const hasGoal = goalPeriod && goalMetric && goalTarget;
-    let goalTargetStored: number | null = null;
-    if (hasGoal) {
-      const raw = parseFloat(goalTarget);
-      if (goalMetric === 'distance') goalTargetStored = Math.round(raw * 1000);
-      else if (goalMetric === 'duration') goalTargetStored = Math.round(raw * 60);
-      else goalTargetStored = Math.round(raw);
-    }
-
+    // Het doel wordt niet meer hier geschreven — de GoalSheet persisteert period_goal_*
+    // zelf (gedeeld door home + profiel). Deze save dekt enkel de overige profiel-velden.
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -361,9 +302,6 @@ export default function ProfileScreen() {
         weight_kg: weightKg,
         birth_date: birthDate,
         spm_halved: spmHalved,
-        period_goal_period: hasGoal ? goalPeriod : null,
-        period_goal_metric: hasGoal ? goalMetric : null,
-        period_goal_target: goalTargetStored,
       })
       .eq('id', user.id);
 
@@ -371,8 +309,6 @@ export default function ProfileScreen() {
 
     if (error) {
       Alert.alert('Fout', `Opslaan mislukt: ${error.message}`);
-    } else {
-      await refetchGoal();
     }
   }
 
@@ -673,71 +609,14 @@ export default function ProfileScreen() {
         </View>
       </BottomSheet>
 
-      {/* Doel bewerken */}
-      <BottomSheet
+      {/* Doel bewerken — gedeelde, zelf-persisterende sheet (ook op home in-place). */}
+      <GoalSheet
         visible={sheetOpen === 'doel'}
+        currentGoal={goalProgress?.goal ?? null}
+        userId={user?.id}
         onClose={closeSheet}
-        title="Doel bewerken"
-        footer={<Button title="Opslaan" onPress={saveDoel} size="md" />}
-      >
-        <View style={styles.sheetFieldGroup}>
-          <Text style={styles.sheetFieldLabel}>PERIODE</Text>
-          <View style={styles.segmentedRow}>
-            {(['week', 'month'] as PeriodGoalPeriod[]).map(p => (
-              <TouchableOpacity
-                key={p}
-                style={[styles.segmentBtn, draftGoalPeriod === p && styles.segmentBtnActive]}
-                onPress={() => setDraftGoalPeriod(p)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.segmentBtnText, draftGoalPeriod === p && styles.segmentBtnTextActive]}>
-                  {p === 'week' ? 'Week' : 'Maand'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.sheetFieldGroup}>
-          <Text style={styles.sheetFieldLabel}>TYPE</Text>
-          <View style={styles.segmentedRow}>
-            {(['distance', 'duration', 'workouts'] as PeriodGoalMetric[]).map(m => (
-              <TouchableOpacity
-                key={m}
-                style={[styles.segmentBtn, draftGoalMetric === m && styles.segmentBtnActive]}
-                onPress={() => setDraftGoalMetric(m)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.segmentBtnText, draftGoalMetric === m && styles.segmentBtnTextActive]}>
-                  {m === 'distance' ? 'Afstand' : m === 'duration' ? 'Duur' : 'Sessies'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {draftGoalMetric && (
-          <View style={styles.sheetFieldGroup}>
-            <Text style={styles.sheetFieldLabel}>STREEFWAARDE</Text>
-            <View style={styles.sheetInputRow}>
-              <TextInput
-                style={styles.sheetInputFlex}
-                value={draftGoalTarget}
-                onChangeText={setDraftGoalTarget}
-                keyboardType="numeric"
-                selectTextOnFocus
-                returnKeyType="done"
-                onSubmitEditing={saveDoel}
-                placeholderTextColor={fg.tertiary}
-                placeholder="0"
-              />
-              <Text style={styles.sheetInputUnit}>
-                {draftGoalMetric === 'distance' ? 'km' : draftGoalMetric === 'duration' ? 'min' : 'sessies'}
-              </Text>
-            </View>
-          </View>
-        )}
-      </BottomSheet>
+        onSaved={refetchGoal}
+      />
     </>
   );
 }
@@ -914,30 +793,6 @@ const styles = StyleSheet.create({
     ...typeStyles.labelGoalPrefix,
     color: fg.tertiary,
   },
-  // Streefwaarde-input — bg/base + border/strong, radius 8 (Figma 52:9892).
-  sheetInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: bg.base,
-    borderWidth: 1,
-    borderColor: border.strong,
-    borderRadius: radii.sm,
-    paddingHorizontal: space['16'],
-    paddingVertical: space['14'],
-    gap: space['20'],
-  },
-  sheetInputFlex: {
-    flex: 1,
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['16'],
-    color: fg.primary,
-  },
-  sheetInputUnit: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize['12'],
-    color: fg.secondary,
-  },
-
   version: {
     ...body.xs,
     color: fg.secondary,

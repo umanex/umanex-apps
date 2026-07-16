@@ -64,9 +64,7 @@ export function GoalProgressCard({ progress, onEdit }: GoalProgressCardProps) {
 
       <View style={styles.progressSection}>
         <View style={styles.trackOuter}>
-          <View style={[styles.trackFill, { width: fillWidth }]}>
-            <View style={styles.trackDot} />
-          </View>
+          <View style={[styles.trackFill, { width: fillWidth }]} />
         </View>
         <View style={styles.statusRow}>
           <Text style={styles.statusPct}>{pct}%</Text>
@@ -113,26 +111,18 @@ const styles = StyleSheet.create({
     gap: space['16'],
   },
   // Full-bleed: de track loopt edge-to-edge (Figma ProgressBar w=402, x=0) door de
-  // card-padding heen; de statusRow-tekst eronder blijft wél gepad.
+  // card-padding heen; de statusRow-tekst eronder blijft wél gepad. Hoogte 4px (Figma
+  // ProgressBar h=4), geen dot meer aan het einde van de fill.
   trackOuter: {
-    height: 2,
+    height: 4,
     backgroundColor: progressBar.trackColor,
     borderRadius: radii.lg,
     marginHorizontal: -space['20'],
   },
   trackFill: {
-    height: 2,
+    height: 4,
     backgroundColor: accent.default,
     borderRadius: radii.xs,
-  },
-  trackDot: {
-    position: 'absolute',
-    right: 0,
-    top: -2,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: accent.default,
   },
 
   statusRow: {

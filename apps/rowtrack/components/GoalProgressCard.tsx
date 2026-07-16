@@ -112,10 +112,13 @@ const styles = StyleSheet.create({
   progressSection: {
     gap: space['16'],
   },
+  // Full-bleed: de track loopt edge-to-edge (Figma ProgressBar w=402, x=0) door de
+  // card-padding heen; de statusRow-tekst eronder blijft wél gepad.
   trackOuter: {
     height: 2,
     backgroundColor: progressBar.trackColor,
     borderRadius: radii.lg,
+    marginHorizontal: -space['20'],
   },
   trackFill: {
     height: 2,

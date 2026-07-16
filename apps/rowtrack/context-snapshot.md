@@ -54,19 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ed9d145 feat(rowtrack): share zebra WorkoutCard row + fix home greeting to design
 3ec597e docs(rowtrack): session reflection 2026-07-16 — HANDOFF updates
 1bb2a68 chore(rowtrack): remove orphaned MilestoneOverlay component
 ad56d40 fix(rowtrack): summary shows SLAGEN instead of a duplicate ENERGIE cell
 e79a1e5 fix(rowtrack): address review findings on the active-workout flow
-9b0bc5c feat(rowtrack): active-workout redesign — header, goal-reached flow, auto-save
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  A  apps/rowtrack/briefings/2026-07-16-component-history-rows-match-home.tcebc.md
-   M apps/rowtrack/components/GoalProgressCard.tsx
-  M  apps/rowtrack/components/WorkoutCard.tsx
+  M  apps/rowtrack/components/GoalProgressCard.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

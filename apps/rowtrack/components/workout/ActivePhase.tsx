@@ -19,7 +19,6 @@ import { Button, KpiSingle } from '@/components';
 import {
   GoalSetupModal,
   MotivationalToast,
-  MilestoneOverlay,
 } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatMetersDotted, correctSpm } from '@/lib/formatters';
@@ -42,10 +41,7 @@ type ActivePhaseProps = {
   goal: WorkoutGoal | null;
   isCountdown: boolean;
   paceZone: PaceZoneLevel | null;
-  milestoneMsg: string | null;
   toastMsg: string | null;
-  dismissMilestone: () => void;
-  dismissToast: () => void;
   splits: SplitEntry[];
   prFlags: { watts: boolean; split: boolean; distance: boolean };
   hasPR: boolean;
@@ -59,11 +55,10 @@ type ActivePhaseProps = {
   summaryMaxSpm: number | null;
   summaryMaxHr: number | null;
   onStop: () => void;
-  onSave: () => void;
-  onDiscard: () => void;
+  onContinue: () => void;
+  onGoalContinue: () => void;
   onSetGoal: (g: WorkoutGoal) => void;
   onClearGoal: () => void;
-  saving: boolean;
   hasProfileWeight: boolean;
   hrStatus: HRStatus;
   hrBpm: number | null;
@@ -80,10 +75,7 @@ export function ActivePhase({
   bleError,
   startScan,
   goal,
-  milestoneMsg,
   toastMsg,
-  dismissMilestone,
-  dismissToast,
   splits,
   hasPR,
   avgWatts,
@@ -95,11 +87,10 @@ export function ActivePhase({
   summaryMaxSpm,
   summaryMaxHr,
   onStop,
-  onSave,
-  onDiscard,
+  onContinue,
+  onGoalContinue,
   onSetGoal,
   onClearGoal,
-  saving,
   hasProfileWeight,
   hrStatus,
   hrBpm,
@@ -160,25 +151,27 @@ export function ActivePhase({
   // Alle doeltypes volgen {waarde} {eenheid} met spatie: "Geen" / "20 min" /
   // "10 km" / "2:20 split" / "180 W". Split neemt de frame-copy over; watts houdt
   // bewust de spatie (Figma toont "180W", 2026-07-14 gelijkgetrokken op het patroon).
-  function goalPillValue(): string {
-    if (!goal) return 'Geen';
+  // Doel-pill: waarde en eenheid gesplitst — waarde bold, eenheid ernaast in italic
+  // (Figma header 290:2873, bv. "180" + "W"). "Geen" heeft geen eenheid.
+  function goalPillParts(): { value: string; unit: string | null } {
+    if (!goal) return { value: 'Geen', unit: null };
     switch (goal.type) {
       case 'duration': {
         const m = Math.floor(goal.target / 60);
         const s = goal.target % 60;
-        return s === 0 ? `${m} min` : `${m}:${String(s).padStart(2, '0')} min`;
+        return { value: s === 0 ? `${m}` : `${m}:${String(s).padStart(2, '0')}`, unit: 'min' };
       }
       case 'distance': {
         if (goal.target >= 1000) {
           const km = goal.target / 1000;
-          return Number.isInteger(km) ? `${km} km` : `${km.toFixed(1).replace('.', ',')} km`;
+          return { value: Number.isInteger(km) ? `${km}` : `${km.toFixed(1).replace('.', ',')}`, unit: 'km' };
         }
-        return `${goal.target} m`;
+        return { value: `${goal.target}`, unit: 'm' };
       }
       case 'split':
-        return `${formatSplit(goal.target, true)} split`;
+        return { value: formatSplit(goal.target, true), unit: 'split' };
       case 'watts':
-        return `${goal.target} W`;
+        return { value: `${goal.target}`, unit: 'W' };
     }
   }
 
@@ -292,12 +285,18 @@ export function ActivePhase({
   // De accent-tint zit op de header-band (Figma 290:2746) → de DOEL-pill is
   // outline-only, in beide oriëntaties.
   function headerChildren(): ReactNode {
+    const goalParts = goalPillParts();
     return (
       <>
         <View style={activeStyles.doelPill}>
           <Text style={activeStyles.doelPillLabel}>DOEL</Text>
           <View style={activeStyles.doelPillDivider} />
-          <Text style={activeStyles.doelPillValue}>{goalPillValue()}</Text>
+          <View style={activeStyles.doelPillValueRow}>
+            <Text style={activeStyles.doelPillValue}>{goalParts.value}</Text>
+            {goalParts.unit != null && (
+              <Text style={activeStyles.doelPillUnit}>{goalParts.unit}</Text>
+            )}
+          </View>
         </View>
         <Button
           title="Stop"
@@ -484,9 +483,6 @@ export function ActivePhase({
 
   return (
     <View style={[styles.container, { paddingHorizontal: 0 }]}>
-      {/* Milestone overlay */}
-      <MilestoneOverlay message={milestoneMsg} onDismiss={dismissMilestone} />
-
       {/* Connection status overlay */}
       {isConnecting && (
         <View style={[styles.connectionOverlay, { paddingHorizontal: padH }]}>
@@ -658,14 +654,13 @@ export function ActivePhase({
 
           {/* Knoppen — onderaan */}
           <View style={[summaryStyles.buttonsArea, { paddingBottom: Math.max(space['28'], insets.bottom) }]}>
-            <Button title="Annuleren" onPress={onDiscard} variant="outline" disabled={saving} size="lg" />
-            <Button title="Opslaan" onPress={onSave} loading={saving} size="lg" icon="arrow-forward" iconPosition="trailing" />
+            <Button title="Ga verder" onPress={onContinue} size="lg" icon="arrow-forward" iconPosition="trailing" />
           </View>
         </View>
       </Modal>
 
-      {/* Goal-reached viering */}
-      <MotivationalToast message={toastMsg} onDismiss={dismissToast} />
+      {/* Goal-reached viering → "Ga verder" leidt naar de samenvatting */}
+      <MotivationalToast message={toastMsg} onDismiss={onGoalContinue} />
     </View>
   );
 }
@@ -677,15 +672,14 @@ const activeStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: space['16'],
-    // Accent-band (Figma 290:2746): subtiele accent-tint via accent.muted (12%). De
-    // Figma-waarde is 10%, bewust samengevouwen met muted — 2% delta is op donkere bg
-    // niet waarneembaar (beslissing 2026-07-14). Sterkere onderrand (border/strong,
-    // i.t.t. de border/default hairlines van de KPI-rijen). Gedeeld portrait + landscape.
-    backgroundColor: accent.muted,
+    // Header-band op bg.base met sterke onderrand (Figma 290:2873). De accent-tint zit
+    // nu op de DOEL-pill zelf, niet meer op de band. Gedeeld portrait + landscape.
+    backgroundColor: bg.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: border.strong,
   },
-  // DOEL-pill: pill-vorm, hoogte 48, outline-only (de accent-tint zit op de band).
+  // DOEL-pill: pill-vorm, hoogte 48, subtiele accent-fill + accent-border (Figma 290:2874,
+  // fill 10% / border 12% — samengevouwen naar accent.muted, cf. 2026-07-14).
   doelPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -693,6 +687,7 @@ const activeStyles = StyleSheet.create({
     borderRadius: radii.full,
     borderWidth: 1,
     borderColor: accent.muted,
+    backgroundColor: accent.muted,
     paddingHorizontal: space['20'],
     gap: space['16'],
   },
@@ -708,10 +703,21 @@ const activeStyles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: fg.secondary,
   },
+  // Waarde bold, eenheid ernaast in italic (gap 2, Figma Frame 106).
+  doelPillValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
   doelPillValue: {
-    fontFamily: fontFamily.albertSansRegular,
+    fontFamily: fontFamily.albertSansBold,
     fontSize: fontSize['18'],
     letterSpacing: -0.45, // -2.5% van 18
+    color: accent.default,
+  },
+  doelPillUnit: {
+    fontFamily: fontFamily.albertSansItalic,
+    fontSize: fontSize['16'],
     color: accent.default,
   },
   // Hero-paneel (bg.elevated); flex/stretch worden per oriëntatie toegevoegd.

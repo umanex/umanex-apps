@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Platform, UIManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -32,7 +32,6 @@ export default function WorkoutScreen() {
 
   // --- Core state ---
   const { phase, setPhase } = useWorkoutPhase();
-  const [saving, setSaving] = useState(false);
   const [goal, setGoal] = useState<WorkoutGoal | null>(null);
 
   // Idle goal setup state
@@ -44,10 +43,14 @@ export default function WorkoutScreen() {
   // --- Hooks ---
   const { state: metricsState, refs, resetAll, hasProfileWeight } = useWorkoutMetrics(phase, bleMetrics, hrBpm);
   const {
-    milestoneMsg, toastMsg, splits, goalReached, prFlags, pulseAnim,
+    toastMsg, splits, goalReached, prFlags, pulseAnim,
     avgWatts, avgSpm, avgSplit, isCountdown, paceZone, hasPR,
-    dismissMilestone, dismissToast, fetchPRs, resetGameState, resetGoalReached,
+    dismissToast, fetchPRs, resetGameState, resetGoalReached,
   } = useGoalProgress(phase, goal, metricsState, refs, user?.id);
+
+  // Einde-van-rit guards: rit exact één keer opslaan, doel-einde exact één keer afhandelen.
+  const savedRef = useRef(false);
+  const goalEndedRef = useRef(false);
 
   // --- Sync idle goal inputs from goal state ---
   useEffect(() => {
@@ -86,27 +89,22 @@ export default function WorkoutScreen() {
     resetAll();
     resetGameState();
     fetchPRs();
+    savedRef.current = false;
+    goalEndedRef.current = false;
 
     // Already connected — no startScan needed
     setPhase('active');
   }, [status, fetchPRs, resetAll, resetGameState, idleGoalType, idleDurMin, idleDurSec, idleGoalInput]);
 
-  const handleStop = useCallback(() => {
-    disconnect();
-    setPhase('summary');
-  }, [disconnect]);
-
-  const handleDiscard = useCallback(() => {
-    setPhase('idle');
-  }, []);
-
-  const handleSave = useCallback(async () => {
+  // Slaat de rit op de achtergrond op — exact één keer (savedRef). Een lege rit (geen
+  // tick-data) wordt overgeslagen. Bij netwerkfout vangt de pendingWorkout-backstop +
+  // home-focus-retry het op (security-audit P2-4); géén alert, want dit draait op de
+  // achtergrond terwijl de gebruiker al richting de samenvatting is.
+  const saveWorkout = useCallback(async () => {
     if (!user) return;
-    if (refs.tickCount.current === 0) {
-      Alert.alert('Geen data', 'Er zijn geen roeigegevens opgeslagen. Verbind de trainer en roei een stukje voor je stopt.');
-      return;
-    }
-    setSaving(true);
+    if (savedRef.current) return;
+    if (refs.tickCount.current === 0) return;
+    savedRef.current = true;
 
     const t = refs.tickCount.current;
     const avgW = Math.round(refs.wattsSum.current / t);
@@ -152,21 +150,43 @@ export default function WorkoutScreen() {
     };
 
     const { error } = await supabase.from('workouts').insert(row);
-
-    setSaving(false);
     if (error) {
-      // Backstop tegen dataverlies: bewaar de rit lokaal zodat de home-focus hem
-      // later alsnog wegschrijft (security-audit P2-4). De gebruiker blijft op de
-      // summary en kan ook direct zelf opnieuw proberen.
       await savePendingWorkout(row);
       reportError(error, { where: 'workout.save' });
-      Alert.alert('Opslaan mislukt', `Je training is tijdelijk bewaard. Probeer opnieuw. (${error.message})`);
     } else {
       await clearPendingWorkout();
-      setPhase('idle');
-      router.replace('/(tabs)');
     }
-  }, [user, metricsState, router, goal, goalReached, splits, refs, hasPR]);
+  }, [user, metricsState, goal, goalReached, splits, refs, hasPR]);
+
+  // Handmatig stoppen → rit opslaan (achtergrond) + BLE stoppen + naar de samenvatting.
+  const handleStop = useCallback(() => {
+    saveWorkout();
+    disconnect();
+    setPhase('summary');
+  }, [saveWorkout, disconnect]);
+
+  // Samenvatting "Ga verder" → naar huis (de rit is al op de achtergrond opgeslagen).
+  const handleContinue = useCallback(() => {
+    setPhase('idle');
+    router.replace('/(tabs)');
+  }, [router]);
+
+  // Celebration "Ga verder" → naar de samenvatting (rit al opgeslagen + BLE al gestopt).
+  const handleCelebrationContinue = useCallback(() => {
+    dismissToast();
+    setPhase('summary');
+  }, [dismissToast]);
+
+  // Doel bereikt → rit meteen op de achtergrond opslaan + BLE stoppen (net als een
+  // handmatige stop). De celebration (toastMsg uit useGoalProgress) verschijnt; "Ga
+  // verder" leidt naar de samenvatting. Exact één keer via goalEndedRef.
+  useEffect(() => {
+    if (phase === 'active' && goalReached && !goalEndedRef.current) {
+      goalEndedRef.current = true;
+      saveWorkout();
+      disconnect();
+    }
+  }, [phase, goalReached, saveWorkout, disconnect]);
 
   const handleSetGoal = useCallback((g: WorkoutGoal) => {
     setGoal(g);
@@ -229,10 +249,7 @@ export default function WorkoutScreen() {
       goal={goal}
       isCountdown={isCountdown}
       paceZone={paceZone}
-      milestoneMsg={milestoneMsg}
       toastMsg={toastMsg}
-      dismissMilestone={dismissMilestone}
-      dismissToast={dismissToast}
       splits={splits}
       prFlags={prFlags}
       hasPR={hasPR}
@@ -246,11 +263,10 @@ export default function WorkoutScreen() {
       summaryMaxSpm={summaryMaxSpm}
       summaryMaxHr={summaryMaxHr}
       onStop={handleStop}
-      onSave={handleSave}
-      onDiscard={handleDiscard}
+      onContinue={handleContinue}
+      onGoalContinue={handleCelebrationContinue}
       onSetGoal={handleSetGoal}
       onClearGoal={handleClearGoal}
-      saving={saving}
       hasProfileWeight={hasProfileWeight}
       hrStatus={hrStatus}
       hrBpm={hrBpm}

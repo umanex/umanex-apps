@@ -55,19 +55,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+044a02b refactor(rowtrack): extract a shared, self-persisting GoalSheet
 1a916e3 feat(rowtrack): goal card label "Deze week/maand" + home WIJZIG opens the sheet
 4f63d59 fix(rowtrack): auth token keychain accessibility for background refresh
 9148e87 fix(rowtrack): goal progress card background to bg.raised per Figma
 03607d0 feat(rowtrack): make the detail date title tappable to go back
-a5e7742 fix(rowtrack): goal progress bar — drop end dot, 4px height per Figma
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  A  apps/rowtrack/briefings/2026-07-16-component-goalsheet-shared.tcebc.md
-  A  apps/rowtrack/components/GoalSheet.tsx
-  M  apps/rowtrack/components/index.ts
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -223,3 +223,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Bevinding:** De red-box "Calling 'getValueWithKeyAsync' has failed → User interaction is not allowed" bij de GoTrue auto-refresh (gelockt scherm) is gefixt: de auth-token wordt nu geschreven met `keychainAccessible: AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` (`lib/secureStorage.ts`, PR #146). Op de sim niet reproduceerbaar (geen echt keychain-lock-gedrag); enkel geverifieerd dat auth niet regresseert (app boot ingelogd).
 - **Volgende zet:** Op de fysieke iPhone bevestigen: inloggen → app één keer op de voorgrond laten verversen (zodat bestaande items met de nieuwe accessibility herschreven worden) → scherm vergrendelen → wachten op een refresh-tick → red-box mag niet meer verschijnen.
 - **Status:** open
+
+## 2026-07-16 — Profiel-`handleSave` wordt nergens aangeroepen (velden persisteren mogelijk niet) · [risico]
+- **Bevinding:** Ontdekt tijdens de GoalSheet-refactor: `handleSave()` in `app/(tabs)/profile.tsx` (de enige `supabase.from('profiles').update(...)` voor naam/geslacht/lengte/gewicht/geboortedatum/spm_halved) heeft **geen call-site** — de veld-sheets (saveVoornaam/…) stpage'n enkel naar state, er is geen hoofd-save-knop. Enkel email persisteert apart (handleEmailChange). Vermoedelijk persisteren die profiel-velden dus **niet**. Het doel is nu wél veilig (de nieuwe zelf-persisterende GoalSheet, PR ná #147). Grep-geverifieerd, niet op toestel getest.
+- **Volgende zet:** Op toestel testen: een profielveld (bv. lengte) wijzigen → app herstarten → blijft de wijziging? Zo nee: elke veld-sheet zelf laten persisteren (zoals GoalSheet), of een hoofd-save toevoegen die `handleSave` aanroept. Buiten scope van de GoalSheet-taak.
+- **Status:** open

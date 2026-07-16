@@ -183,3 +183,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Bevinding:** De schema-tabel in `apps/rowtrack/CLAUDE.md` lijst `created_at`/`distance_m`/`avg_split`; de echte kolommen zijn `started_at`/`distance_meters`/`best_split` (+ `best_2k_seconds`, `samples`) — bevestigd doordat de P2-6 perf-indexes op die kolommen zijn aangemaakt. De doc-tabel misleidt bij DB-werk.
 - **Volgende zet:** De Supabase-tabellen-sectie in `apps/rowtrack/CLAUDE.md` bijwerken naar de echte kolomnamen.
 - **Status:** open
+
+## 2026-07-16 — Live-metric "bevriest" bij rust i.p.v. → 0 · [onzekerheid]
+- **Bevinding:** Sinds de KPI/hero de huidige gesmoothe waarde tonen (i.p.v. gemiddelde), houden watts/spm/split hun laatste actieve waarde vast bij een mid-workout rust: ble-service nult watts/spm/pace bij idle, de EMA stapt dan niet, dus "Huidige kracht" blijft bv. 180 W tonen terwijl je rust. Matcht het pre-existing hero-hold-gedrag; opslag/summary zijn onaangeroerd (P3, review 2026-07-16 wf_5c5eced8-52c).
+- **Volgende zet:** Product-keuze bij Jeroen — wil je dat de "huidige" waarde bij een echte idle-transitie (beide 0) naar 0 zakt (waarheidsgetrouwer, maar toont 0 tijdens rust), of bewust vasthoudt? Zo "naar 0": bij het idle-packet (`instantaneousPower==null && strokeRate==null`) `wattsSmoothed/spmSmoothed` op 0 zetten + EMA-refs resetten; split kan vasthouden (pace ongedefinieerd bij stilstand).
+- **Status:** open

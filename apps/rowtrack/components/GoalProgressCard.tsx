@@ -79,7 +79,7 @@ export function GoalProgressCard({ progress, onEdit }: GoalProgressCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: bg.elevated,
+    backgroundColor: bg.raised,
     padding: space['20'],
     borderTopWidth: 1,
     borderBottomWidth: 1,

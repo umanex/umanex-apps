@@ -54,16 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+03607d0 feat(rowtrack): make the detail date title tappable to go back
 a5e7742 fix(rowtrack): goal progress bar — drop end dot, 4px height per Figma
 8e3d658 fix(rowtrack): full-bleed weekdoel progress bar
 ed9d145 feat(rowtrack): share zebra WorkoutCard row + fix home greeting to design
 3ec597e docs(rowtrack): session reflection 2026-07-16 — HANDOFF updates
-1bb2a68 chore(rowtrack): remove orphaned MilestoneOverlay component
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/[id].tsx
-  A  apps/rowtrack/briefings/2026-07-16-component-detail-back-taps.tcebc.md
+  A  apps/rowtrack/briefings/2026-07-16-component-goalprogress-bg.tcebc.md
+  M  apps/rowtrack/components/GoalProgressCard.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -54,16 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+f3a16f3 feat(rowtrack): toon doel-duur als "1 u 10 min" vanaf een uur
 b19f521 refactor(rowtrack): merge TabItem into shared Segmented, drop dead Segment
 3217a8d feat(rowtrack): sync GoalSheet to Figma — wheel target, delete button, shared Segmented
 731e66e docs(rowtrack): flag that profile handleSave is never called
 044a02b refactor(rowtrack): extract a shared, self-persisting GoalSheet
-1a916e3 feat(rowtrack): goal card label "Deze week/maand" + home WIJZIG opens the sheet
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/GoalSheet.tsx
-  M  apps/rowtrack/lib/formatters.ts
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

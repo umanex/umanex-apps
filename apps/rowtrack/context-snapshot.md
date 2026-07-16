@@ -39,7 +39,6 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | Icon | `apps/rowtrack/components/Icon.tsx` | components | — | — | — |
 | KPI_single | `apps/rowtrack/components/KPI_single.tsx` | components | — | — | — |
 | KPI | `apps/rowtrack/components/KPI.tsx` | components | — | — | — |
-| MilestoneOverlay | `apps/rowtrack/components/MilestoneOverlay.tsx` | components | — | — | — |
 | MotivationalToast | `apps/rowtrack/components/MotivationalToast.tsx` | components | — | — | — |
 | PaceZone | `apps/rowtrack/components/PaceZone.tsx` | components | — | — | — |
 | SectionHeader | `apps/rowtrack/components/SectionHeader.tsx` | components | — | — | — |
@@ -55,18 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ad56d40 fix(rowtrack): summary shows SLAGEN instead of a duplicate ENERGIE cell
 e79a1e5 fix(rowtrack): address review findings on the active-workout flow
 9b0bc5c feat(rowtrack): active-workout redesign — header, goal-reached flow, auto-save
 ed98986 fix(rowtrack): add bottom padding to history workout rows
 6aa357c feat(rowtrack): show current (smoothed) split/watt/spm during active workout
-028d06b fix(rowtrack): move Splits column headers outside the table card
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/app/dev-active.tsx
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  D  apps/rowtrack/components/MilestoneOverlay.tsx
+  M  apps/rowtrack/components/workout/index.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

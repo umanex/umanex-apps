@@ -23,7 +23,7 @@ export const styles = StyleSheet.create({
     gap: space['16'],
   },
   connectionText: {
-    fontFamily: fontFamily.bodyRegular,
+    fontFamily: fontFamily.albertSansRegular,
     fontSize: fontSize['16'],
     color: fg.secondary,
     textAlign: 'center',

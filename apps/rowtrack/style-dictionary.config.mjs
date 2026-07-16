@@ -137,15 +137,6 @@ const FONTS = {
       { key: 'displayExtraBold', w: 800 },
     ],
   },
-  body: {
-    tokenFamily: 'Inter', expoBase: 'Inter', pkg: '@expo-google-fonts/inter',
-    variants: [
-      { key: 'bodyRegular',  w: 400 },
-      { key: 'bodyMedium',   w: 500 },
-      { key: 'bodySemiBold', w: 600 },
-      { key: 'bodyBold',     w: 700 },
-    ],
-  },
   mono: {
     tokenFamily: 'JetBrains Mono', expoBase: 'JetBrainsMono', pkg: '@expo-google-fonts/jetbrains-mono',
     variants: [
@@ -251,17 +242,17 @@ const SEMANTIC_TYPOGRAPHY = {
     { size: 'sm',  ff: 'displaySemiBold', fs: 30, lh: 1.25, ls: 0 },
   ],
   body: [
-    { size: 'xl', ff: 'bodyRegular', fs: 20, lh: 1.5 },
-    { size: 'lg', ff: 'bodyRegular', fs: 18, lh: 1.5 },
-    { size: 'md', ff: 'bodyRegular', fs: 16, lh: 1.5 },
-    { size: 'sm', ff: 'bodyRegular', fs: 14, lh: 1.5 },
-    { size: 'xs', ff: 'bodyRegular', fs: 12, lh: 1.5 },
+    { size: 'xl', ff: 'albertSansRegular', fs: 20, lh: 1.5 },
+    { size: 'lg', ff: 'albertSansRegular', fs: 18, lh: 1.5 },
+    { size: 'md', ff: 'albertSansRegular', fs: 16, lh: 1.5 },
+    { size: 'sm', ff: 'albertSansRegular', fs: 14, lh: 1.5 },
+    { size: 'xs', ff: 'albertSansRegular', fs: 12, lh: 1.5 },
   ],
   label: [
-    { size: 'lg',   ff: 'bodySemiBold', fs: 18, lh: 1.25 },
-    { size: 'md',   ff: 'bodySemiBold', fs: 16, lh: 1.25 },
-    { size: 'sm',   ff: 'bodyMedium',   fs: 14, lh: 1.25 },
-    { size: 'caps', ff: 'bodySemiBold', fs: 12, lh: 1.25, ls: 0.15, tt: 'uppercase' },
+    { size: 'lg',   ff: 'albertSansSemiBold', fs: 18, lh: 1.25 },
+    { size: 'md',   ff: 'albertSansSemiBold', fs: 16, lh: 1.25 },
+    { size: 'sm',   ff: 'albertSansMedium',   fs: 14, lh: 1.25 },
+    { size: 'caps', ff: 'albertSansSemiBold', fs: 12, lh: 1.25, ls: 0.15, tt: 'uppercase' },
   ],
   mono: [
     { size: 'xl', ff: 'monoMedium',  fs: 20, lh: 1.1 },

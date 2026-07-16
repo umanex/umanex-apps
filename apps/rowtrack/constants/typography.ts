@@ -14,10 +14,6 @@ export const fontFamily = {
   displaySemiBold: 'BarlowCondensed_600SemiBold',
   displayBold: 'BarlowCondensed_700Bold',
   displayExtraBold: 'BarlowCondensed_800ExtraBold',
-  bodyRegular: 'Inter_400Regular',
-  bodyMedium: 'Inter_500Medium',
-  bodySemiBold: 'Inter_600SemiBold',
-  bodyBold: 'Inter_700Bold',
   monoRegular: 'JetBrainsMono_400Regular',
   monoMedium: 'JetBrainsMono_500Medium',
 } as const;
@@ -202,27 +198,27 @@ export const display = {
 
 export const body = {
   'xl': {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'AlbertSans_400Regular',
     fontSize: 20,
     lineHeight: 30,
   },
   lg: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'AlbertSans_400Regular',
     fontSize: 18,
     lineHeight: 27,
   },
   md: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'AlbertSans_400Regular',
     fontSize: 16,
     lineHeight: 24,
   },
   sm: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'AlbertSans_400Regular',
     fontSize: 14,
     lineHeight: 21,
   },
   xs: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'AlbertSans_400Regular',
     fontSize: 12,
     lineHeight: 18,
   },
@@ -230,22 +226,22 @@ export const body = {
 
 export const label = {
   lg: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'AlbertSans_600SemiBold',
     fontSize: 18,
     lineHeight: 22.5,
   },
   md: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'AlbertSans_600SemiBold',
     fontSize: 16,
     lineHeight: 20,
   },
   sm: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'AlbertSans_500Medium',
     fontSize: 14,
     lineHeight: 17.5,
   },
   caps: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'AlbertSans_600SemiBold',
     fontSize: 12,
     lineHeight: 15,
     letterSpacing: 1.8,

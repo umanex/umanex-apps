@@ -153,10 +153,10 @@ const modalStyles = StyleSheet.create({
   sheet: { backgroundColor: bg.elevated, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 24, paddingBottom: 40, paddingHorizontal: 20 },
   title: { color: fg.primary, fontSize: fontSize['18'], fontFamily: fontFamily.displayBold, marginBottom: 16, textAlign: 'center' },
   deviceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: bg.raised, borderRadius: componentRadius.cardSm, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 8 },
-  deviceName: { color: fg.primary, fontSize: fontSize['15'], fontFamily: fontFamily.bodyMedium },
-  deviceSignal: { fontSize: fontSize['13'], fontFamily: fontFamily.bodyMedium },
+  deviceName: { color: fg.primary, fontSize: fontSize['15'], fontFamily: fontFamily.albertSansMedium },
+  deviceSignal: { fontSize: fontSize['13'], fontFamily: fontFamily.albertSansMedium },
   cancelBtn: { marginTop: 8, paddingVertical: 14, borderRadius: componentRadius.cardSm, alignItems: 'center' },
-  cancelText: { color: fg.tertiary, fontSize: fontSize['15'], fontFamily: fontFamily.bodySemiBold },
+  cancelText: { color: fg.tertiary, fontSize: fontSize['15'], fontFamily: fontFamily.albertSansSemiBold },
 });
 
 // --- Component ---

@@ -39,6 +39,8 @@ export { KpiSingle } from './KPI_single';
 export { GoalProgressCard } from './GoalProgressCard';
 export { GoalSheet } from './GoalSheet';
 export type { GoalSheetProps } from './GoalSheet';
+export { Segmented } from './Segmented';
+export type { SegmentedOption, SegmentedProps } from './Segmented';
 export { Subtitle } from './Subtitle';
 export { BottomSheet } from './BottomSheet';
 export type { BottomSheetProps } from './BottomSheet';

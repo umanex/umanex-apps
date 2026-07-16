@@ -44,6 +44,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | PaceZone | `apps/rowtrack/components/PaceZone.tsx` | components | — | — | — |
 | SectionHeader | `apps/rowtrack/components/SectionHeader.tsx` | components | — | — | — |
 | Segment | `apps/rowtrack/components/Segment.tsx` | components | — | — | — |
+| Segmented | `apps/rowtrack/components/Segmented.tsx` | components | — | — | — |
 | SplitsList | `apps/rowtrack/components/SplitsList.tsx` | components | — | — | — |
 | Subtitle | `apps/rowtrack/components/Subtitle.tsx` | components | — | — | — |
 | TabItem | `apps/rowtrack/components/TabItem.tsx` | components | — | — | — |
@@ -55,15 +56,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+731e66e docs(rowtrack): flag that profile handleSave is never called
 044a02b refactor(rowtrack): extract a shared, self-persisting GoalSheet
 1a916e3 feat(rowtrack): goal card label "Deze week/maand" + home WIJZIG opens the sheet
 4f63d59 fix(rowtrack): auth token keychain accessibility for background refresh
 9148e87 fix(rowtrack): goal progress card background to bg.raised per Figma
-03607d0 feat(rowtrack): make the detail date title tappable to go back
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/app/(tabs)/profile.tsx
+  A  apps/rowtrack/briefings/2026-07-16-component-goalsheet-figma-sync.tcebc.md
+  M  apps/rowtrack/components/GoalSheet.tsx
+  A  apps/rowtrack/components/Segmented.tsx
+  M  apps/rowtrack/components/index.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

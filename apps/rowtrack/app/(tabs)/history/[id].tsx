@@ -164,7 +164,9 @@ export default function WorkoutDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.headerDate}>{formatDateTitle(workout.started_at)}</Text>
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+            <Text style={styles.headerDate}>{formatDateTitle(workout.started_at)}</Text>
+          </TouchableOpacity>
           {workout.is_pr && (
             <View style={styles.prBadge}>
               <Text style={styles.prBadgeEmoji}>🏅</Text>
@@ -438,7 +440,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerDate: {
-    flex: 1,
     ...typeStyles.sectionValue,
     color: fg.primary,
   },

@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
     gap: space['8'],
   },
   listValue: {
-    fontFamily: fontFamily.bodyRegular,
+    fontFamily: fontFamily.albertSansRegular,
     fontSize: fontSize['16'],
     color: fg.primary,
   },
@@ -685,14 +685,14 @@ const styles = StyleSheet.create({
     paddingRight: space['16'],
   },
   listHint: {
-    fontFamily: fontFamily.bodyRegular,
+    fontFamily: fontFamily.albertSansRegular,
     fontSize: fontSize['13'],
     color: fg.tertiary,
   },
 
   // Sheet: text input — bg/base + border/strong, radius 8 (Figma 52:9892).
   sheetInput: {
-    fontFamily: fontFamily.bodyRegular,
+    fontFamily: fontFamily.albertSansRegular,
     fontSize: fontSize['16'],
     color: fg.primary,
     backgroundColor: bg.base,
@@ -705,14 +705,14 @@ const styles = StyleSheet.create({
 
   // Sheet: current email display
   currentEmailText: {
-    fontFamily: fontFamily.bodyRegular,
+    fontFamily: fontFamily.albertSansRegular,
     fontSize: fontSize['18'],
     color: fg.secondary,
   },
 
   // Sheet: error message
   emailError: {
-    fontFamily: fontFamily.bodyRegular,
+    fontFamily: fontFamily.albertSansRegular,
     fontSize: fontSize['14'],
     color: status.error,
   },

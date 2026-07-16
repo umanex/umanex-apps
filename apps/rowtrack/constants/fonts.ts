@@ -22,12 +22,6 @@ import {
   BarlowCondensed_800ExtraBold,
 } from '@expo-google-fonts/barlow-condensed';
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
-import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
@@ -46,10 +40,6 @@ export const fontMap = {
   BarlowCondensed_600SemiBold,
   BarlowCondensed_700Bold,
   BarlowCondensed_800ExtraBold,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } as const;

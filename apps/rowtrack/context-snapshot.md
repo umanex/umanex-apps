@@ -55,19 +55,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6aa357c feat(rowtrack): show current (smoothed) split/watt/spm during active workout
 028d06b fix(rowtrack): move Splits column headers outside the table card
 727a881 docs(rowtrack): session reflection 2026-07-15 — resolve figma-console item, add 5 forward items
 499935f docs(rowtrack): mark P2-1/P2-6/P2-8 resolved (native rebuild + migrations)
 490b703 fix(rowtrack): visible WheelPicker pill + surface-synced fade (Figma parity)
-f132568 docs(rowtrack): security audit report + hardening handoff/learnings
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/dev-active.tsx
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
-  A  apps/rowtrack/lib/smoothing.ts
+   M apps/rowtrack/app/(tabs)/workout.tsx
+   M apps/rowtrack/app/dev-active.tsx
+   M apps/rowtrack/components/MotivationalToast.tsx
+  M  apps/rowtrack/components/WorkoutCard.tsx
+   M apps/rowtrack/components/workout/ActivePhase.tsx
+   M apps/rowtrack/lib/hooks/useGoalProgress.ts
+  ?? apps/rowtrack/briefings/2026-07-16-component-active-header-bar.tcebc.md
+  ?? apps/rowtrack/briefings/2026-07-16-flow-auto-save-summary.tcebc.md
+  ?? apps/rowtrack/briefings/2026-07-16-screen-achieved-landscape.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

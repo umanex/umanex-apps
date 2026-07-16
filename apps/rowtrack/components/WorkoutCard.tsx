@@ -94,7 +94,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: space['20'],
-    paddingVertical: space['4'],
+    // 12px verticale padding (Figma "Workout"-rij 72:15598, pad 12/20/12/20) i.p.v. 4 —
+    // gaf te weinig ruimte onder de trainingsregel richting de divider.
+    paddingVertical: space['12'],
     borderBottomWidth: 1,
     borderBottomColor: border.default,
   },

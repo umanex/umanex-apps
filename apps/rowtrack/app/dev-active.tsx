@@ -89,6 +89,7 @@ export default function DevActivePreview() {
         summaryAvgHr={null}
         summaryMaxSpm={null}
         summaryMaxHr={null}
+        summaryTotalStrokes={190}
         onStop={() => {}}
         onContinue={() => {}}
         onGoalContinue={() => {}}

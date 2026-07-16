@@ -53,6 +53,7 @@ type ActivePhaseProps = {
   summaryAvgHr: number | null;
   summaryMaxSpm: number | null;
   summaryMaxHr: number | null;
+  summaryTotalStrokes: number | null;
   onStop: () => void;
   onContinue: () => void;
   onGoalContinue: () => void;
@@ -85,6 +86,7 @@ export function ActivePhase({
   summaryAvgHr,
   summaryMaxSpm,
   summaryMaxHr,
+  summaryTotalStrokes,
   onStop,
   onContinue,
   onGoalContinue,
@@ -617,9 +619,8 @@ export function ActivePhase({
                 style={summaryStyles.kpiCell}
               />
               <KpiSingle
-                value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}
-                unit="kcal"
-                label="ENERGIE"
+                value={summaryTotalStrokes != null ? `${correctSpm(summaryTotalStrokes, spmHalved)}` : '—'}
+                label="SLAGEN"
                 style={summaryStyles.kpiCell}
               />
             </View>

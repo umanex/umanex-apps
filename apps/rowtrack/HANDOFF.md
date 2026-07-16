@@ -186,8 +186,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 ## 2026-07-16 — Summary KPI-band toont ENERGIE dubbel (4e KPI ontbreekt) · [debt]
 - **Bevinding:** In het samenvattingsscherm (`ActivePhase.tsx`, summary Modal KPI-band) staan AFSTAND/DUUR bovenaan en ENERGIE/ENERGIE eronder — de calorieën-cel is een copy-paste, de 4e KPI ontbreekt. Pre-existing op main (niet in de flow-diff), maar sinds de auto-save-flow is dit hét eindscherm dat elke rit toont (stop én doel-bereikt), dus nu prominenter (review 2026-07-16 wf_d16eec5f-075, P2).
-- **Volgende zet:** Figma Summary (43:8278) KPI-band raadplegen voor de bedoelde 4e metriek (vermoedelijk SLAGEN of gem. iets) en de tweede ENERGIE-cel vervangen. Desktop Bridge viel weg tijdens deze sessie → niet geverifieerd tegen design.
-- **Status:** open
+- **Volgende zet:** Figma Summary (43:8278) KPI-band raadplegen voor de bedoelde 4e metriek en de tweede ENERGIE-cel vervangen.
+- **Status:** resolved — Figma 43:8278 bevestigt de 4e KPI = **totale slagen**; tweede ENERGIE-cel vervangen door SLAGEN (`summaryTotalStrokes` + `correctSpm`, sim-geverifieerd → 95). Bridge was toen weer open.
 
 ## 2026-07-16 — MilestoneOverlay is dead code na verwijderen milestone-toasts · [debt]
 - **Bevinding:** De 25/50/75%-milestone-toasts zijn verwijderd; `components/MilestoneOverlay.tsx` + de barrel-export in `components/workout/index.ts` blijven achter zonder gebruiker. tsc/lint blijven groen, maar het is maintenance-debt.

@@ -206,6 +206,7 @@ export default function WorkoutScreen() {
     : null;
   const summaryMaxSpm = refs.maxSpmRef.current > 0 ? Math.round(refs.maxSpmRef.current) : null;
   const summaryMaxHr = refs.maxHeartRateRef.current > 0 ? refs.maxHeartRateRef.current : null;
+  const summaryTotalStrokes = refs.totalStrokesRef.current > 0 ? refs.totalStrokesRef.current : null;
 
   // --- Render ---
 
@@ -262,6 +263,7 @@ export default function WorkoutScreen() {
       summaryAvgHr={summaryAvgHr}
       summaryMaxSpm={summaryMaxSpm}
       summaryMaxHr={summaryMaxHr}
+      summaryTotalStrokes={summaryTotalStrokes}
       onStop={handleStop}
       onContinue={handleContinue}
       onGoalContinue={handleCelebrationContinue}

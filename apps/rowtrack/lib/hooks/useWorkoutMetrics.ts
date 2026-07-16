@@ -4,6 +4,7 @@ import type { Sample } from '@/lib/bestDistanceTime';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { calculateCalories } from '@/lib/calories';
+import { ema, SMOOTHING } from '@/lib/smoothing';
 
 const log: (...args: unknown[]) => void = __DEV__
   ? (...args: unknown[]) => console.log('[kcal]', ...args)
@@ -19,6 +20,11 @@ export interface WorkoutMetricsState {
   distanceMeters: number;
   calories: number;
   resistanceLevel: number | null;
+  // Gesmoothe huidige waarden (EMA) — enkel voor live weergave. De rauwe
+  // watts/spm/splitSeconds hierboven blijven de bron voor opslag/accumulatie.
+  wattsSmoothed: number;
+  spmSmoothed: number;
+  splitSmoothed: number;
 }
 
 type MetricsAction =
@@ -33,6 +39,9 @@ const initialState: WorkoutMetricsState = {
   distanceMeters: 0,
   calories: 0,
   resistanceLevel: null,
+  wattsSmoothed: 0,
+  spmSmoothed: 0,
+  splitSmoothed: 0,
 };
 
 function metricsReducer(state: WorkoutMetricsState, action: MetricsAction): WorkoutMetricsState {
@@ -104,6 +113,13 @@ export function useWorkoutMetrics(
   const lastSampleSecond = useRef(-1);
   const initialStrokeCount = useRef<number | null>(null);
   const totalStrokesRef = useRef(0);
+  // EMA-state voor de gesmoothe live-weergave (null = nog niet geseed).
+  const wattsEmaRef = useRef<number | null>(null);
+  const spmEmaRef = useRef<number | null>(null);
+  const splitEmaRef = useRef<number | null>(null);
+  // Laatst-verwerkte bleMetrics-referentie: dit effect her-draait ook op hrBpm-
+  // wijzigingen (HR-accumulatie), en dan is bleMetrics dezelfde gemergede referentie.
+  const lastProcessedMetricsRef = useRef<RowerMetrics | null>(null);
 
   // --- Load profile weight ---
   const { user } = useAuth();
@@ -124,6 +140,16 @@ export function useWorkoutMetrics(
   useEffect(() => {
     if (phase !== 'active' || !bleMetrics) return;
 
+    // De EMA is orde-afhankelijk: stapt hij tweemaal op hetzelfde sample, dan
+    // ~verdubbelt de effectieve alpha en verzwakt de smoothing. Dit effect her-
+    // draait echter óók op een hrBpm-update (HR zit in de dep-array), terwijl
+    // bleMetrics dan dezelfde gemergede referentie is en de rower-velden non-null
+    // blijven. Stap de EMA's daarom enkel op een écht nieuw rower-packet. (De rauwe
+    // sommen mogen dubbel-tellen — ze zelf-corrigeren via tickCount; enkel de
+    // orde-afhankelijke EMA heeft deze gate nodig.)
+    const isNewRowerPacket = bleMetrics !== lastProcessedMetricsRef.current;
+    lastProcessedMetricsRef.current = bleMetrics;
+
     const partial: Partial<WorkoutMetricsState> = {};
 
     if (bleMetrics.instantaneousPower != null) {
@@ -134,6 +160,10 @@ export function useWorkoutMetrics(
       if (bleMetrics.instantaneousPower > maxWattsRef.current) {
         maxWattsRef.current = bleMetrics.instantaneousPower;
       }
+      if (isNewRowerPacket) {
+        wattsEmaRef.current = ema(wattsEmaRef.current, bleMetrics.instantaneousPower, SMOOTHING.watts);
+        partial.wattsSmoothed = wattsEmaRef.current;
+      }
     }
     if (bleMetrics.strokeRate != null) {
       // Rauwe SPM opslaan; de 'SPM halveren'-correctie gebeurt bij weergave
@@ -143,6 +173,10 @@ export function useWorkoutMetrics(
       if (bleMetrics.strokeRate > maxSpmRef.current) {
         maxSpmRef.current = bleMetrics.strokeRate;
       }
+      if (isNewRowerPacket) {
+        spmEmaRef.current = ema(spmEmaRef.current, bleMetrics.strokeRate, SMOOTHING.spm);
+        partial.spmSmoothed = spmEmaRef.current;
+      }
     }
     if (bleMetrics.instantaneousPace != null && bleMetrics.instantaneousPace > 0) {
       partial.splitSeconds = bleMetrics.instantaneousPace;
@@ -150,6 +184,10 @@ export function useWorkoutMetrics(
       splitTickCount.current += 1;
       if (bleMetrics.instantaneousPace < bestSplitRef.current) {
         bestSplitRef.current = bleMetrics.instantaneousPace;
+      }
+      if (isNewRowerPacket) {
+        splitEmaRef.current = ema(splitEmaRef.current, bleMetrics.instantaneousPace, SMOOTHING.split);
+        partial.splitSmoothed = splitEmaRef.current;
       }
     }
     if (bleMetrics.totalDistance != null) {
@@ -252,6 +290,10 @@ export function useWorkoutMetrics(
     lastSampleSecond.current = -1;
     initialStrokeCount.current = null;
     totalStrokesRef.current = 0;
+    wattsEmaRef.current = null;
+    spmEmaRef.current = null;
+    splitEmaRef.current = null;
+    lastProcessedMetricsRef.current = null;
     startedAtRef.current = new Date();
   }, []);
 

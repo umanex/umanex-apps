@@ -28,6 +28,10 @@ const MOCK_METRICS: WorkoutMetricsState = {
   distanceMeters: 2500,
   calories: 48,
   resistanceLevel: null,
+  // Gesmoothe huidige waarden (EMA) — de KPI-lijst + split/watts-hero tonen deze.
+  wattsSmoothed: 170,
+  spmSmoothed: 38,
+  splitSmoothed: 140, // 2:20/500m
 };
 
 const VARIANTS: { key: string; label: string; goal: WorkoutGoal | null }[] = [

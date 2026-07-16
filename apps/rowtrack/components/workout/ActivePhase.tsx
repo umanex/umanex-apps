@@ -106,7 +106,12 @@ export function ActivePhase({
   startHRScan,
   insets,
 }: ActivePhaseProps) {
-  const { seconds, watts, spm, splitSeconds, distanceMeters, calories } = metricsState;
+  const { seconds, distanceMeters, calories } = metricsState;
+  // Live weergave: gesmoothe huidige metingen (EMA), niet de sessie-gemiddelden.
+  // De rauwe watts/spm/splitSeconds in metricsState blijven de opslag-/doel-bron.
+  const wattsDisplay = metricsState.wattsSmoothed;
+  const spmDisplay = metricsState.spmSmoothed;
+  const splitDisplay = metricsState.splitSmoothed;
 
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
@@ -223,13 +228,18 @@ export function ActivePhase({
       case 'split': {
         heroLabel = 'Huidige split 500/m';
         subLabel = null;
-        heroText = formatSplit(splitSeconds, true);
+        // Rond de gesmoothe split één keer af naar heel-seconde en gebruik díe waarde
+        // voor weergave, fill-tint én coaching. Zo kan het getoonde getal (heel-seconde)
+        // nooit tegenspreken met de kleur/tekst (die anders de ongeronde float vergeleek),
+        // en toont een fractie net onder een minuut geen "1:60".
+        const split = Math.round(splitDisplay);
+        heroText = formatSplit(split, true);
         fillPct = 1;
-        fillKind = splitSeconds > 0 && splitSeconds <= goal!.target ? 'success' : 'warning';
+        fillKind = split > 0 && split <= goal!.target ? 'success' : 'warning';
         let sub = 'Begin met roeien...';
-        if (splitSeconds !== 0) {
-          const diff = goal!.target - splitSeconds;
-          const absDiff = Math.abs(Math.round(diff));
+        if (split > 0) {
+          const diff = goal!.target - split;
+          const absDiff = Math.abs(diff);
           sub = diff >= 0 ? `Je bent ${absDiff} seconden sneller` : `Je bent ${absDiff} seconden trager`;
         }
         subtitle = <Text style={activeStyles.subtitleText}>{sub}</Text>;
@@ -238,13 +248,15 @@ export function ActivePhase({
       case 'watts': {
         heroLabel = 'Huidige kracht';
         subLabel = null;
-        heroText = `${watts} W`;
+        // Idem watts: één keer afronden, dan weergave/tint/coaching op dezelfde waarde.
+        const w = Math.round(wattsDisplay);
+        heroText = `${w} W`;
         fillPct = 1;
-        fillKind = watts >= goal!.target ? 'success' : 'warning';
+        fillKind = w >= goal!.target ? 'success' : 'warning';
         let sub = 'Begin met roeien...';
-        if (watts !== 0) {
-          const diff = watts - goal!.target;
-          const absDiff = Math.abs(Math.round(diff));
+        if (w > 0) {
+          const diff = w - goal!.target;
+          const absDiff = Math.abs(diff);
           sub = diff >= 0 ? `Je levert ${absDiff} W meer` : `Je levert ${absDiff} W minder dan je doel`;
         }
         subtitle = <Text style={activeStyles.subtitleText}>{sub}</Text>;
@@ -381,9 +393,10 @@ export function ActivePhase({
     // Waarden zonder redundante unit (het label draagt de eenheid); Afstand houdt "m".
     function kpiValue(key: KPIKey): string {
       switch (key) {
-        case 'SPLIT': return formatSplit(avgSplit, true);
-        case 'WATT': return `${avgWatts}`;
-        case 'SPM': return `${correctSpm(avgSpm, spmHalved)}`;
+        // Huidige (gesmoothe) waarde tijdens de rit — niet het sessie-gemiddelde.
+        case 'SPLIT': return formatSplit(Math.round(splitDisplay), true);
+        case 'WATT': return `${Math.round(wattsDisplay)}`;
+        case 'SPM': return `${correctSpm(spmDisplay, spmHalved)}`;
         case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
         case 'AFSTAND': return `${formatMetersDotted(distanceMeters)}m`;
         case 'TIJD': return formattedTimer;

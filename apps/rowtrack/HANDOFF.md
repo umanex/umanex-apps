@@ -160,8 +160,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Status:** open
 
 ## 2026-07-15 — Wheel-sheets (#131 flexShrink + #133 pill/fade) niet op toestel geverifieerd · [next-step]
-- **Bevinding:** De BottomSheet-herschrijving (`flexShrink:0`, #131) en de WheelPicker pill/fade-parity (#133) zijn naar main gemerged zonder dat ik de Lengte/Gewicht/Geboortedatum-sheets visueel heb gezien — enkel `tsc`-groen + Geslacht/Email geverifieerd.
-- **Volgende zet:** Lengte/Gewicht/Geboortedatum openen op toestel, naast Figma leggen; check dat de wheels niet clippen en de pill/fade klopt. **#1 eerste zet.**
+- **Bevinding:** De BottomSheet-herschrijving (`flexShrink:0`, #131) en de WheelPicker pill/fade-parity (#133) zijn naar main gemerged zonder dat ik de Lengte/Gewicht/Geboortedatum-sheets visueel heb gezien — enkel `tsc`-groen + Geslacht/Email geverifieerd. 2026-07-16: de Lengte-sheet is tijdens de UX-audit op de **sim** gezien — wheels clippen niet, pill/fade ok.
+- **Volgende zet:** Op **toestel** Lengte/Gewicht/Geboortedatum naast Figma leggen (sim-check is gedaan, device-check blijft de open helft).
 - **Status:** open
 
 ## 2026-07-15 — BottomSheet flexShrink:0 — small-device keyboard-clip mogelijk · [risico]
@@ -201,7 +201,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 ## 2026-07-16 — Aanname: doel-bereikt beëindigt de rit (geen doorroeien) · [aanname]
 - **Bevinding:** Jeroen koos "doel-bereikt → celebration → samenvatting", maar dat de rit dáár stopt (`disconnect()` in de goal-reached-effect, je roeit niet verder) is een eigen invulling, niet expliciet bevestigd.
-- **Volgende zet:** Bij Jeroen aftoetsen. Wil hij ná het doel kunnen doorroeien → de goal-reached-effect (save + disconnect) herwerken (bv. save als checkpoint, pas stoppen op expliciete actie).
+- **Volgende zet:** Bij Jeroen aftoetsen. Wil hij ná het doel kunnen doorroeien → de goal-reached-effect (save + disconnect) herwerken (bv. save als checkpoint, pas stoppen op expliciete actie). UX-audit 2026-07-16 (**F7**) voegt toe: de celebration-knop "Ga verder" verhult dat de rit al beëindigd is — minstens de copy expliciet maken ("Bekijk samenvatting"), of de doorroei-optie bouwen.
 - **Status:** open
 
 ## 2026-07-16 — Translucente celebration-card gebruikt hardcoded rgba · [debt]
@@ -212,6 +212,61 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — BLE-replay test-harness voor de workout-flow · [idee]
 - **Bevinding:** De workout→save→summary-flow is niet testbaar zonder fysieke erg; deze sessie liep daar herhaaldelijk tegenaan (auto-save flow enkel per stuk geverifieerd).
 - **Volgende zet:** Een harness die een opgenomen FTMS-packetreeks (fixture) door `useWorkoutMetrics` + `useGoalProgress` + de save-flow speelt, zodat dubbel-save/empty-guard/disconnect-timing deterministisch getest worden. Bouwt voort op de bestaande `dev-active`-harness.
+- **Status:** open
+
+## 2026-07-16 — UX-audit P1: WIJZIG-doellink onraakbaar/mogelijk dood + sub-44pt targets · [risico]
+- **Bevinding:** UX-audit 2026-07-16 **F3** (`audits/2026-07-16-ux-audit-rowtrack.md`). De Subtitle-action (WIJZIG op de doel-kaart) is ±16pt hoog zonder padding/hitSlop (`components/Subtitle.tsx:44-53`) en vuurde in 5+ pixel-precieze robot-kliks op Home én Profiel nooit, terwijl het identieke "ALLE" wél werkte. Ook sub-44: chevron-backs 40×40, password-reveal 36×36, Chips 40pt.
+- **Volgende zet:** Eerst op toestel met een vinger checken of WIJZIG überhaupt werkt; daarna Subtitle-action padding + hitSlop ≥44pt geven (of de hele doel-kaart tappable maken) en de overige sub-44-targets meenemen.
+- **Status:** open
+
+## 2026-07-16 — UX-audit P1: a11y-pass (contrast + labels + dynamic type) · [next-step]
+- **Bevinding:** UX-audit 2026-07-16 **F4**, exact berekend: inactieve tab-labels `fg.quaternary` op `bg.raised` = 2.47:1 (fail), witte 18px-knoptekst op `accent.default` = 3.44:1 (fail AA-klein), `status.error` op raised = 4.12:1, quaternary-chevrons 2.85:1 (non-text 3:1 fail). Accessibility-props op 6 van ±79 touchables; `Button.tsx` heeft er geen; geen `maxFontSizeMultiplier`-vangnet bij vaste hoogtes.
+- **Volgende zet:** Inactieve tabs → `fg.tertiary` (4.73:1 ✓); knoptekst zwaarder/donkerder óf accent verdiepen (token-keuze Jeroen); `accessibilityRole/Label` op Button/TabLabel/rijen/backs; VoiceOver-pass op toestel.
+- **Status:** open
+
+## 2026-07-16 — UX-audit P1: vergelijkingszin split/watt loopt tegen de schermrand · [next-step]
+- **Bevinding:** UX-audit 2026-07-16 **F5**, live gezien: de coaching-zin ("Je levert 10 W minder dan je doel", 36px) rendert edge-to-edge — `subtitleText` zonder horizontale padding in een `heroPanel` zonder paddingHorizontal (`ActivePhase.tsx` activeStyles). Copy-randje: "Je bent 0 seconden sneller" op exact doeltempo.
+- **Volgende zet:** `paddingHorizontal: space['20']` op de zin of het paneel; copy-variant "Op doeltempo" bij verschil 0. Effort XS.
+- **Status:** open
+
+## 2026-07-16 — UX-audit P2: stille fouten rond het periode-doel · [next-step]
+- **Bevinding:** UX-audit 2026-07-16 **F6**. `usePeriodGoal` exposeert geen error en Home leest ook `loading` niet — een gefaalde fetch is identiek aan "geen doel" (sectie verdwijnt stil); Home mist een "stel een doel in"-CTA (Profiel heeft die wél); GoalSheet-Opslaan zonder periode/type-keuze schrijft stil `NO_GOAL` (geen `disabled={!isValid}` zoals GoalSetupModal).
+- **Volgende zet:** `error`/`loading` uit `usePeriodGoal` consumeren op Home (+ ErrorState/skeleton), doel-CTA op Home, validatie-guard op GoalSheet-Opslaan.
+- **Status:** open
+
+## 2026-07-16 — UX-audit P2: "Week/Maand" = rollend op Historiek vs kalender in het doel · [onzekerheid]
+- **Bevinding:** UX-audit 2026-07-16 **F8**. Historiek filtert rollend (laatste 7 dagen/maand, `history/index.tsx:57-64`); `usePeriodGoal` rekent kalenderweek/-maand. Live staat "DEZE MAAND 22.3 km" naast Historiek-"Week 22.33 km" — leest als dezelfde stat met andere precisie.
+- **Volgende zet:** Productkeuze Jeroen: één definitie kiezen, of de Historiek-labels expliciteren ("Laatste 7 dagen").
+- **Status:** open
+
+## 2026-07-16 — UX-audit P2: laad-flits "roeier" + sectie-pop-in op Home · [next-step]
+- **Bevinding:** UX-audit 2026-07-16 **F9**, live gezien: cold start toont "GOEDEMIDDAG, roeier" (fallback) die naar de echte naam flitst; DEZE MAAND- en PR-secties ontbreken tijdens de fetch en poppen in (layout-shift). Alleen de trainingslijst heeft een spinner.
+- **Volgende zet:** Naam pas tonen ná de fetch (of skeleton), sectie-skeletons voor doel/PR-blok.
+- **Status:** open
+
+## 2026-07-16 — UX-audit P2: getal-/unitformattering inconsistent · [next-step]
+- **Bevinding:** UX-audit 2026-07-16 **F10**. Decimaalpunt ("22.3 km", "9:10 min") naast duizendtal-punt ("7.515 m") — zelfde teken, twee betekenissen (NL zou komma-decimaal zijn); "0:17 min" voor een 17-seconden-rit; "2.500m" (zonder spatie) vs "7.515 m" (met).
+- **Volgende zet:** Eén formatter-conventie kiezen (komma-decimaal of consequent punt-duizendtal) + unit-spatie gelijktrekken; zit geconcentreerd in `lib/formatters.ts`.
+- **Status:** open
+
+## 2026-07-16 — UX-audit P2: geen datavisualisatie (HR-verloop, split-trend) · [idee]
+- **Bevinding:** UX-audit 2026-07-16 **F11** (was F8 op 13/07): nul grafieken in een data-product, terwijl `workouts.samples` (1Hz t/d/hr-reeks) er al ligt. Grootste zichtbare waardesprong na de P0's: Useful 4→5, Desirable 4→5.
+- **Volgende zet:** Detail-Hartslag: HR-over-tijd + zones; Detail-Splits: staafjes per 500m; Home: mini-trend. Design eerst (Figma), dan `figma-naar-code`.
+- **Status:** open
+
+## 2026-07-16 — UX-audit P2: mid-workout doel wijzigen is gebouwd maar onbereikbaar · [onzekerheid]
+- **Bevinding:** UX-audit 2026-07-16 **F12**. `GoalSetupModal` is volledig bedraad in `ActivePhase` (state, handlers, render), maar niets roept `setShowGoalModal(true)` aan — de DOEL-pill is een kale View. Feature bestaat in code, geen gebruiker kan hem triggeren.
+- **Volgende zet:** Productkeuze Jeroen: DOEL-pill tappable maken (feature aan) óf het pad verwijderen (dead weight weg).
+- **Status:** open
+
+## 2026-07-16 — Lopende BLE-scan overleeft disconnect() (ghost-reconnect mogelijk) · [risico]
+- **Bevinding:** Review-vondst bij de P0-fixes (cross-file tracer): `RowerBleService.disconnect()/cleanup()` roept nooit `manager.stopDeviceScan()` aan — dat gebeurt alleen ín de scan-callback. Pre-existing gat, maar de nieuwe overlay-Stop naast "Opnieuw proberen" geeft het een tweede ingang: Retry-scan starten → meteen Stop → de scan loopt door en kan later alsnog verbinden → spook-status 'connected' op het Idle-scherm.
+- **Volgende zet:** `stopDeviceScan()` toevoegen aan `cleanup()`/`disconnect()` in `lib/ble/ble-service.ts` (klein, maar dat bestand is nu in de i18n-flight — na die merge oppakken); daarna Retry→Stop-scenario op toestel naspelen.
+- **Status:** open
+
+## 2026-07-16 — UX-audit P3-verzamellijst (F13–F19) · [next-step]
+- **Bevinding:** UX-audit 2026-07-16, §5 P3: "← OVERZICHT"-backlink botst met de tab "Overzicht" (F13); icon-only inactieve doelsegmenten (F14); BPM-rij is onzichtbaar tappable (F15); Android-back genegeerd op 3 modals (F16); geen-doel-variant toont afstand dubbel (F17); dode/ongebruikte UX-lagen — paceZone/pulseAnim/prFlags-props, KPI.tsx, SectionHeader.tsx, live SplitsList, 3× rgba-0.20-hardcode, confetti-kleuren (F18); kcal-asterisk zonder legende (F19).
+- **Volgende zet:** Backlog — oppakken per gelegenheid; details en aanbevelingen staan per item in `audits/2026-07-16-ux-audit-rowtrack.md`.
 - **Status:** open
 
 ## 2026-07-16 — Live-metric "bevriest" bij rust i.p.v. → 0 · [onzekerheid]
@@ -227,4 +282,4 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — Profiel-`handleSave` wordt nergens aangeroepen (velden persisteren mogelijk niet) · [risico]
 - **Bevinding:** Ontdekt tijdens de GoalSheet-refactor: `handleSave()` in `app/(tabs)/profile.tsx` (de enige `supabase.from('profiles').update(...)` voor naam/geslacht/lengte/gewicht/geboortedatum/spm_halved) heeft **geen call-site** — de veld-sheets (saveVoornaam/…) stpage'n enkel naar state, er is geen hoofd-save-knop. Enkel email persisteert apart (handleEmailChange). Vermoedelijk persisteren die profiel-velden dus **niet**. Het doel is nu wél veilig (de nieuwe zelf-persisterende GoalSheet, PR ná #147). Grep-geverifieerd, niet op toestel getest.
 - **Volgende zet:** Op toestel testen: een profielveld (bv. lengte) wijzigen → app herstarten → blijft de wijziging? Zo nee: elke veld-sheet zelf laten persisteren (zoals GoalSheet), of een hoofd-save toevoegen die `handleSave` aanroept. Buiten scope van de GoalSheet-taak.
-- **Status:** open
+- **Status:** resolved — 2026-07-16: bevestigd als UX-audit **P0-F1** en gefixt (branch `fix/rowtrack-audit-p0`): per-sheet `persistProfile`-write (patroon GoalSheet), sheet sluit pas na succes, `loading` op de Opslaan-knoppen, SPM-switch optimistic + rollback; dode `handleSave` verwijderd. Live geverifieerd op de sim: Voornaam-Opslaan bumpte `profiles.xmin` 1882→2084 + `updated_at` → nu (write bewezen), sheet sloot. Device-check (wheel-waarde wijzigen → herstart) blijft nuttig als na-controle.

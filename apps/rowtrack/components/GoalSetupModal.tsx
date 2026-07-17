@@ -19,6 +19,7 @@ import {
   userInputToTarget,
   targetToUserInput,
 } from '@/lib/workout-goals';
+import { t } from '@/i18n';
 import {
   bg,
   fg,
@@ -38,21 +39,6 @@ export type GoalSetupModalProps = {
   onClose: () => void;
 };
 
-// Mapping tussen de doel-domeintypes en de GoalSegments-labels. 'Geen' = doel wissen.
-const SEGMENT_BY_GOAL: Record<GoalType, GoalSegmentType> = {
-  duration: 'Duur',
-  distance: 'Afstand',
-  split: 'Split',
-  watts: 'Watt',
-};
-const GOAL_BY_SEGMENT: Record<GoalSegmentType, GoalType | null> = {
-  Geen: null,
-  Duur: 'duration',
-  Afstand: 'distance',
-  Split: 'split',
-  Watt: 'watts',
-};
-
 /** Toont de toegestane invoer-range in de eenheid die het veld ook accepteert
  *  (rauwe seconden voor split, meters voor afstand) — anders zou de hint een
  *  waarde tonen die op het numerieke toetsenbord niet typbaar is (review P2). */
@@ -68,22 +54,22 @@ export const GoalSetupModal = memo(function GoalSetupModal({
   onClearGoal,
   onClose,
 }: GoalSetupModalProps) {
-  const [selectedSegment, setSelectedSegment] = useState<GoalSegmentType>('Geen');
+  const [selectedSegment, setSelectedSegment] = useState<GoalSegmentType>('none');
   const [inputValue, setInputValue] = useState('');
 
   useEffect(() => {
     if (visible) {
       if (currentGoal) {
-        setSelectedSegment(SEGMENT_BY_GOAL[currentGoal.type]);
+        setSelectedSegment(currentGoal.type);
         setInputValue(String(targetToUserInput(currentGoal.type, currentGoal.target)));
       } else {
-        setSelectedSegment('Geen');
+        setSelectedSegment('none');
         setInputValue('');
       }
     }
   }, [visible, currentGoal]);
 
-  const selectedType = GOAL_BY_SEGMENT[selectedSegment];
+  const selectedType: GoalType | null = selectedSegment === 'none' ? null : selectedSegment;
   const bounds = selectedType ? GOAL_INPUT_BOUNDS[selectedType] : null;
   const numericValue = parseFloat(inputValue);
   const hasInput = inputValue.trim().length > 0;
@@ -130,7 +116,7 @@ export const GoalSetupModal = memo(function GoalSetupModal({
       </Text>
     </>
   ) : (
-    <Text style={styles.noGoalNote}>Geen doel voor deze training.</Text>
+    <Text style={styles.noGoalNote}>{t.goals.setupNoGoalNote}</Text>
   );
 
   return (
@@ -142,8 +128,8 @@ export const GoalSetupModal = memo(function GoalSetupModal({
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Stel doel in</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={8} accessibilityLabel="Sluiten" accessibilityRole="button">
+            <Text style={styles.title}>{t.goals.setupTitle}</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={8} accessibilityLabel={t.common.close} accessibilityRole="button">
               <Ionicons name="close" size={24} color={fg.secondary} />
             </TouchableOpacity>
           </View>
@@ -154,7 +140,7 @@ export const GoalSetupModal = memo(function GoalSetupModal({
           {typeBlock}
 
           <Button
-            title="Stel in"
+            title={t.goals.setupButton}
             onPress={handleConfirm}
             disabled={!isValid}
             size="lg"

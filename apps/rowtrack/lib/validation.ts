@@ -1,3 +1,5 @@
+import { t } from '@/i18n';
+
 /** Minimale wachtwoordlengte — spiegelt de Supabase-drempel. */
 export const MIN_PASSWORD_LENGTH = 6;
 
@@ -17,8 +19,8 @@ export function isValidPassword(password: string): boolean {
 
 export function emailFieldError(value: string, touched: boolean): string | undefined {
   if (!touched) return undefined;
-  if (!value.trim()) return 'Vul je e-mailadres in';
-  if (!isValidEmail(value)) return 'Ongeldig e-mailadres';
+  if (!value.trim()) return t.validation.emailRequired;
+  if (!isValidEmail(value)) return t.validation.emailInvalid;
   return undefined;
 }
 
@@ -28,8 +30,8 @@ export function passwordFieldError(
   requireLength = false,
 ): string | undefined {
   if (!touched) return undefined;
-  if (!value) return 'Vul je wachtwoord in';
-  if (requireLength && !isValidPassword(value)) return `Minstens ${MIN_PASSWORD_LENGTH} tekens`;
+  if (!value) return t.validation.passwordRequired;
+  if (requireLength && !isValidPassword(value)) return t.validation.passwordMinLength(MIN_PASSWORD_LENGTH);
   return undefined;
 }
 
@@ -39,7 +41,7 @@ export function confirmFieldError(
   touched: boolean,
 ): string | undefined {
   if (!touched) return undefined;
-  if (!confirm) return 'Bevestig je wachtwoord';
-  if (confirm !== password) return 'Wachtwoorden komen niet overeen';
+  if (!confirm) return t.validation.confirmRequired;
+  if (confirm !== password) return t.validation.confirmMismatch;
   return undefined;
 }

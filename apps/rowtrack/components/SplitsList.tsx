@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { formatSplit } from '@/lib/formatters';
+import { t } from '@/i18n';
 import {
   bg,
   fg,
@@ -27,7 +28,7 @@ export const SplitsList = memo(function SplitsList({ splits }: SplitsListProps) 
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>SPLITS</Text>
+      <Text style={styles.header}>{t.workout.splitsListHeader}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {splits.map((s, i) => (
           <View key={i} style={styles.chip}>

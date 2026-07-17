@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-16_
+_Gegenereerd op 2026-07-17_
 
 ## Project
 - **App:** rowtrack
@@ -54,23 +54,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+af5ffc9 feat(rowtrack): add typed i18n layer with Dutch translations
 e264914 docs(rowtrack): add 2026-07-16 live-app UX audit
 acdcb14 fix(rowtrack): static spacer in active-workout "afgelegd" row
 ab03a2c refactor(rowtrack): drop Inter, unify body/label copy on Albert Sans
 06b19b9 docs(rowtrack): mark auto-save flow HANDOFF item resolved
-f3a16f3 feat(rowtrack): toon doel-duur als "1 u 10 min" vanaf een uur
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
-   M apps/rowtrack/app/(auth)/forgot-password.tsx
-   M apps/rowtrack/app/(auth)/login.tsx
-   M apps/rowtrack/app/(auth)/register.tsx
-   M apps/rowtrack/app/(auth)/reset-password.tsx
-   M apps/rowtrack/app/(tabs)/_layout.tsx
-   M apps/rowtrack/app/(tabs)/history/[id].tsx
-   M apps/rowtrack/app/(tabs)/history/index.tsx
-   M apps/rowtrack/app/(tabs)/index.tsx
+  M  apps/rowtrack/app/(auth)/forgot-password.tsx
+  M  apps/rowtrack/app/(auth)/login.tsx
+  M  apps/rowtrack/app/(auth)/register.tsx
+  M  apps/rowtrack/app/(auth)/reset-password.tsx
+  M  apps/rowtrack/app/(tabs)/_layout.tsx
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  M  apps/rowtrack/app/(tabs)/history/index.tsx
+  M  apps/rowtrack/app/(tabs)/index.tsx
    M apps/rowtrack/app/(tabs)/profile.tsx
 
 ## Bestanden met TODO/FIXME

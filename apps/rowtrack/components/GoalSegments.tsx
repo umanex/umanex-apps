@@ -2,6 +2,8 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { withTiming, Easing } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import type { GoalType } from '@/lib/workout-goals';
+import { t } from '@/i18n';
 import { bg, fg, accent, border, radii, space, typeStyles } from '@/constants';
 
 // Custom enter: the pill + label fade and spring-pop in on the (remounted)
@@ -21,34 +23,35 @@ function pillEnter() {
   };
 }
 
-export type GoalSegmentType = 'Geen' | 'Duur' | 'Afstand' | 'Split' | 'Watt';
+/** Segment-waarde = doeltype of 'none' (geen doel). Labels komen uit de i18n-laag. */
+export type GoalSegmentType = GoalType | 'none';
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const GOAL_ICONS: Record<GoalSegmentType, IoniconsName> = {
-  'Geen':    'infinite-outline',
-  'Duur':    'time-outline',
-  'Afstand': 'location-outline',
-  'Split':   'stopwatch-outline',
-  'Watt':    'flash-outline',
+  none:     'infinite-outline',
+  duration: 'time-outline',
+  distance: 'location-outline',
+  split:    'stopwatch-outline',
+  watts:    'flash-outline',
 };
 
 const SEGMENT_LABELS: Record<GoalSegmentType, string> = {
-  'Geen':    'Geen',
-  'Duur':    'Duur',
-  'Afstand': 'Afstand',
-  'Split':   'Split',
-  'Watt':    'Watt',
+  none:     t.goals.segmentNone,
+  duration: t.goals.segmentDuration,
+  distance: t.goals.segmentDistance,
+  split:    t.goals.segmentSplit,
+  watts:    t.goals.segmentWatts,
 };
 
 const ACCESSIBILITY_LABELS: Record<GoalSegmentType, string> = {
-  'Geen':    'Geen doel',
-  'Duur':    'Duur, doel',
-  'Afstand': 'Afstand, doel',
-  'Split':   'Split, doel',
-  'Watt':    'Watt, doel',
+  none:     t.goals.segmentNoneA11y,
+  duration: t.goals.segmentDurationA11y,
+  distance: t.goals.segmentDistanceA11y,
+  split:    t.goals.segmentSplitA11y,
+  watts:    t.goals.segmentWattsA11y,
 };
 
-const GOAL_TYPES: GoalSegmentType[] = ['Geen', 'Duur', 'Afstand', 'Split', 'Watt'];
+const GOAL_TYPES: GoalSegmentType[] = ['none', 'duration', 'distance', 'split', 'watts'];
 
 // --- Per-segment button with its own label animation lifecycle ---
 

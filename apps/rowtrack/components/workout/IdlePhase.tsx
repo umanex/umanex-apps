@@ -45,23 +45,7 @@ import {
 } from '@/constants';
 import { useAuth } from '@/lib/auth-context';
 import { useRecentGoals } from '@/lib/hooks/useRecentGoals';
-
-// --- Goal type mapping ---
-
-const SEGMENT_TO_GOAL: Record<GoalSegmentType, GoalType | null> = {
-  'Geen': null,
-  'Duur': 'duration',
-  'Afstand': 'distance',
-  'Split': 'split',
-  'Watt': 'watts',
-};
-
-const GOAL_TO_SEGMENT: Record<string, GoalSegmentType> = {
-  'duration': 'Duur',
-  'distance': 'Afstand',
-  'split': 'Split',
-  'watts': 'Watt',
-};
+import { t } from '@/i18n';
 
 // --- Default picker indices (spec: 30 min, 5 km, 2:00, 180 W) ---
 
@@ -100,9 +84,9 @@ type IdlePhaseProps = {
 // --- Signal strength ---
 
 function rssiLabel(rssi: number): { text: string; color: string } {
-  if (rssi > -60) return { text: 'Sterk', color: status.success };
-  if (rssi >= -80) return { text: 'Goed', color: accent.default };
-  return { text: 'Zwak', color: status.error };
+  if (rssi > -60) return { text: t.workout.hrModal.signalStrong, color: status.success };
+  if (rssi >= -80) return { text: t.workout.hrModal.signalGood, color: accent.default };
+  return { text: t.workout.hrModal.signalWeak, color: status.error };
 }
 
 // --- HR Selection Modal ---
@@ -122,7 +106,7 @@ function HRSelectionModal({
     <Modal visible={visible} transparent animationType="slide">
       <View style={modalStyles.backdrop}>
         <View style={modalStyles.sheet}>
-          <Text style={modalStyles.title}>Kies hartslagmeter</Text>
+          <Text style={modalStyles.title}>{t.workout.hrModal.title}</Text>
           <FlatList
             data={devices}
             keyExtractor={(item) => item.id}
@@ -140,7 +124,7 @@ function HRSelectionModal({
             }}
           />
           <TouchableOpacity onPress={onCancel} style={modalStyles.cancelBtn}>
-            <Text style={modalStyles.cancelText}>Annuleer</Text>
+            <Text style={modalStyles.cancelText}>{t.workout.hrModal.cancel}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -186,9 +170,7 @@ export function IdlePhase({
   const recents = useRecentGoals(user?.id, idleGoalType);
   const { width: screenWidth } = useWindowDimensions();
 
-  const selectedSegment: GoalSegmentType = idleGoalType
-    ? GOAL_TO_SEGMENT[idleGoalType] ?? 'Geen'
-    : 'Geen';
+  const selectedSegment: GoalSegmentType = idleGoalType ?? 'none';
 
   const durItems   = useMemo(() => buildDurItems(), []);
   const distItems  = useMemo(() => buildDistItems(), []);
@@ -243,7 +225,7 @@ export function IdlePhase({
   // --- Segment change ---
 
   function handleSegmentChange(segment: GoalSegmentType) {
-    const goalType = SEGMENT_TO_GOAL[segment];
+    const goalType: GoalType | null = segment === 'none' ? null : segment;
     setIdleGoalType(goalType);
     setGoalTouched(false);
     setDurIdx(DEFAULT_DUR_IDX);
@@ -275,10 +257,10 @@ export function IdlePhase({
   // --- Goal input rendering ---
 
   function renderGoalInput() {
-    if (selectedSegment === 'Geen') {
+    if (selectedSegment === 'none') {
       return (
         <Text style={styles.geenText}>
-          Vrije training zonder vooraf bepaald doel.
+          {t.workout.idle.freeTraining}
         </Text>
       );
     }
@@ -337,12 +319,12 @@ export function IdlePhase({
         {/* Fixed top group: header, devices, goal segments */}
         <View style={styles.topGroup}>
           <View>
-            <Text style={styles.header}>Nieuwe training</Text>
+            <Text style={styles.header}>{t.workout.idle.title}</Text>
           </View>
 
           {/* Toestellen */}
           <View style={styles.toestelSection}>
-            <Text style={styles.sectionLabel}>TOESTELLEN</Text>
+            <Text style={styles.sectionLabel}>{t.workout.idle.devicesLabel}</Text>
             <View style={styles.deviceCard}>
               <BleStatusBar
                 bleStatus={bleStatus}
@@ -362,7 +344,7 @@ export function IdlePhase({
 
           {/* Doel header + segments */}
           <View style={styles.doelHeader}>
-            <Text style={styles.sectionLabel}>DOEL</Text>
+            <Text style={styles.sectionLabel}>{t.workout.idle.goalLabel}</Text>
             {/* Full-bleed: definite screen width so the segments distribute evenly */}
             <View style={{ width: screenWidth, marginLeft: -layout.screenHorizontal }}>
               <GoalSegments selected={selectedSegment} onChange={handleSegmentChange} />
@@ -372,7 +354,7 @@ export function IdlePhase({
 
         {/* Picker — vertically centred in the remaining space, responsive to
             height. "Geen" is a static line, so it hugs the top instead. */}
-        <View style={[styles.pickerCenter, selectedSegment === 'Geen' && styles.pickerTop]}>
+        <View style={[styles.pickerCenter, selectedSegment === 'none' && styles.pickerTop]}>
           {renderGoalInput()}
         </View>
       </ScrollView>
@@ -380,7 +362,7 @@ export function IdlePhase({
       {/* Fixed CTA */}
       <View style={styles.ctaArea}>
         <Button
-          title="Start training"
+          title={t.workout.idle.startButton}
           variant="primary"
           icon="arrow-forward"
           iconPosition="trailing"

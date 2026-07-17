@@ -1,4 +1,5 @@
 import { GOAL_INPUT_BOUNDS } from './workout-goals';
+import { t } from '@/i18n';
 
 export function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -77,30 +78,19 @@ export function formatSplit(splitSec: number, padMinutes = false, tenths = false
 
 export function formatDate(iso: string): string {
   const date = new Date(iso);
-  const days = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
-  const months = [
-    'jan', 'feb', 'mrt', 'apr', 'mei', 'jun',
-    'jul', 'aug', 'sep', 'okt', 'nov', 'dec',
-  ];
-  return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+  return `${t.dates.daysShort[date.getDay()]} ${date.getDate()} ${t.dates.monthsShort[date.getMonth()]}`;
 }
 
 export function formatDateTitle(iso: string): string {
   const date = new Date(iso);
-  const months = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  return `${date.getDate()} ${t.dates.monthsShort[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 export function formatDateLong(iso: string): string {
   const date = new Date(iso);
-  const days = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
-  const months = [
-    'januari', 'februari', 'maart', 'april', 'mei', 'juni',
-    'juli', 'augustus', 'september', 'oktober', 'november', 'december',
-  ];
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()} \u2022 ${hours}:${minutes}`;
+  return `${t.dates.daysLong[date.getDay()]} ${date.getDate()} ${t.dates.monthsLong[date.getMonth()]} ${date.getFullYear()} \u2022 ${hours}:${minutes}`;
 }
 
 // --- Wheel picker item builders ---
@@ -130,8 +120,10 @@ export function wheelItemParts(item: WheelItem): { value: string; unit?: string 
 export function formatDurationLabel(totalMinutes: number): string {
   const h = Math.floor(totalMinutes / 60);
   const min = totalMinutes % 60;
-  if (h === 0) return `${totalMinutes} min`;
-  return min === 0 ? `${h} u` : `${h} u ${min} min`;
+  if (h === 0) return `${totalMinutes} ${t.units.minuteShort}`;
+  return min === 0
+    ? `${h} ${t.units.hourShort}`
+    : `${h} ${t.units.hourShort} ${min} ${t.units.minuteShort}`;
 }
 
 /** 5\u2013180 minutes, step 5 min. value = total seconds. */
@@ -156,7 +148,7 @@ export function buildDistItems(): WheelItem[] {
       const km = m / 1000;
       label = Number.isInteger(km)
         ? `${km} km`
-        : `${km.toFixed(1).replace('.', ',')} km`;
+        : `${km.toFixed(1).replace('.', t.format.decimalSeparator)} km`;
       unit = 'km';
     }
     items.push({ label, unit, value: m });

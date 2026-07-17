@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { bg, fg, accent, border, progressBar, typeStyles, space, radii } from '@/constants';
 import { Subtitle } from './Subtitle';
 import { Dot } from './Dot';
+import { t } from '@/i18n';
 import type { PeriodGoalMetric, PeriodGoalPeriod, PeriodGoalProgress } from '@/lib/hooks/usePeriodGoal';
 
 type GoalProgressCardProps = {
@@ -10,7 +11,7 @@ type GoalProgressCardProps = {
 };
 
 function periodLabel(period: PeriodGoalPeriod): string {
-  return period === 'week' ? 'Deze week' : 'Deze maand';
+  return period === 'week' ? t.goals.thisWeek : t.goals.thisMonth;
 }
 
 function fmtDistance(meters: number): string {
@@ -25,8 +26,8 @@ function fmtDistance(meters: number): string {
 function fmtDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}u${m > 0 ? ` ${m} min` : ''}`;
-  return `${m} min`;
+  if (h > 0) return `${h}${t.units.hourShort}${m > 0 ? ` ${m} ${t.units.minuteShort}` : ''}`;
+  return `${m} ${t.units.minuteShort}`;
 }
 
 function fmtValue(metric: PeriodGoalMetric, value: number): string {
@@ -37,9 +38,9 @@ function fmtValue(metric: PeriodGoalMetric, value: number): string {
 
 function fmtRemaining(metric: PeriodGoalMetric, current: number, target: number): string {
   const remaining = Math.max(target - current, 0);
-  if (metric === 'distance') return `${fmtDistance(remaining)} resterend`;
-  if (metric === 'duration') return `${fmtDuration(remaining)} resterend`;
-  return `${Math.round(remaining)} trainingen resterend`;
+  if (metric === 'distance') return t.goals.remaining(fmtDistance(remaining));
+  if (metric === 'duration') return t.goals.remaining(fmtDuration(remaining));
+  return t.goals.remainingWorkouts(Math.round(remaining));
 }
 
 export function GoalProgressCard({ progress, onEdit }: GoalProgressCardProps) {
@@ -53,12 +54,12 @@ export function GoalProgressCard({ progress, onEdit }: GoalProgressCardProps) {
     <View style={styles.card}>
       <Subtitle
         label={periodLabel(goal.period)}
-        action={onEdit ? { label: 'wijzig', onPress: onEdit } : undefined}
+        action={onEdit ? { label: t.goals.editAction, onPress: onEdit } : undefined}
       />
 
       <View style={styles.valuesRow}>
         <Text style={styles.currentValue}>{fmtValue(goal.metric, current)}</Text>
-        <Text style={styles.connector}>van</Text>
+        <Text style={styles.connector}>{t.goals.of}</Text>
         <Text style={styles.targetValue}>{fmtValue(goal.metric, goal.target)}</Text>
       </View>
 
@@ -68,7 +69,7 @@ export function GoalProgressCard({ progress, onEdit }: GoalProgressCardProps) {
         </View>
         <View style={styles.statusRow}>
           <Text style={styles.statusPct}>{pct}%</Text>
-          <Text style={styles.statusLabel}>voldaan</Text>
+          <Text style={styles.statusLabel}>{t.goals.done}</Text>
           <Dot />
           <Text style={styles.statusRemaining}>{fmtRemaining(goal.metric, current, goal.target)}</Text>
         </View>

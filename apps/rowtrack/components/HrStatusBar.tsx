@@ -1,5 +1,6 @@
 import type { HRStatus } from '@/lib/ble/types';
 import { accent, status } from '@/constants';
+import { t } from '@/i18n';
 import { DeviceRow } from './DeviceRow';
 
 type HrStatusBarProps = {
@@ -18,8 +19,8 @@ export function HrStatusBar({ hrStatus, hrDeviceName, onConnect, onDisconnect }:
       <DeviceRow
         icon="heart"
         iconColor={status.success}
-        label={hrDeviceName || 'HR verbonden'}
-        action="Verbreken"
+        label={hrDeviceName || t.devices.hrConnected}
+        action={t.devices.disconnect}
         onPress={onDisconnect}
       />
     );
@@ -30,8 +31,8 @@ export function HrStatusBar({ hrStatus, hrDeviceName, onConnect, onDisconnect }:
       <DeviceRow
         icon="heart"
         iconColor={accent.default}
-        label="Hartslagmeter"
-        action="Zoeken…"
+        label={t.devices.heartRateMonitor}
+        action={t.devices.searching}
         onPress={onConnect}
         loading
         actionDisabled
@@ -43,8 +44,8 @@ export function HrStatusBar({ hrStatus, hrDeviceName, onConnect, onDisconnect }:
     <DeviceRow
       icon="heart"
       iconColor={accent.default}
-      label="Hartslagmeter"
-      action="Verbinden"
+      label={t.devices.heartRateMonitor}
+      action={t.devices.connect}
       onPress={onConnect}
     />
   );

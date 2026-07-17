@@ -18,6 +18,7 @@ import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, c
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import { samplesFromTuples } from '@/lib/bestDistanceTime';
 import { segmentSplitTimes, fastestSplit, averageSplit, distanceSplits, segmentHeartRates } from '@/lib/workoutSegments';
+import { t } from '@/i18n';
 import {
   bg,
   fg,
@@ -32,7 +33,13 @@ import {
 } from '@/constants';
 import type { WorkoutDetail } from '@/types/workout';
 
-type DetailTab = 'Overzicht' | 'Splits' | 'Hartslag';
+type DetailTab = 'overview' | 'splits' | 'heartrate';
+
+const TAB_LABELS: Record<DetailTab, string> = {
+  overview: t.detail.tabOverview,
+  splits: t.detail.tabSplits,
+  heartrate: t.detail.tabHeartRate,
+};
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,7 +51,7 @@ export default function WorkoutDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<DetailTab>('Overzicht');
+  const [activeTab, setActiveTab] = useState<DetailTab>('overview');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,11 +78,11 @@ export default function WorkoutDetailScreen() {
   }, [load]);
 
   const tabs = useMemo<DetailTab[]>(() => {
-    const t: DetailTab[] = ['Overzicht', 'Splits'];
+    const result: DetailTab[] = ['overview', 'splits'];
     if (workout?.avg_heart_rate != null || workout?.max_heart_rate != null) {
-      t.push('Hartslag');
+      result.push('heartrate');
     }
-    return t;
+    return result;
   }, [workout?.avg_heart_rate, workout?.max_heart_rate]);
 
   // Afgeleide per-segment data uit de {t,d,hr}-samplereeks. Tienden waar de data
@@ -102,7 +109,7 @@ export default function WorkoutDetailScreen() {
     const { error } = await supabase.from('workouts').delete().eq('id', id);
     setDeleting(false);
     if (error) {
-      Alert.alert('Fout', 'Verwijderen mislukt. Probeer opnieuw.');
+      Alert.alert(t.common.error, t.detail.deleteFailed);
     } else {
       router.back();
     }
@@ -110,11 +117,11 @@ export default function WorkoutDetailScreen() {
 
   const confirmDelete = useCallback(() => {
     Alert.alert(
-      'Training verwijderen',
-      'Ben je zeker dat je deze training wil verwijderen? Dit kan niet ongedaan gemaakt worden.',
+      t.detail.deleteConfirmTitle,
+      t.detail.deleteConfirmBody,
       [
-        { text: 'Annuleren', style: 'cancel' },
-        { text: 'Verwijderen', style: 'destructive', onPress: handleDelete },
+        { text: t.common.cancel, style: 'cancel' },
+        { text: t.detail.delete, style: 'destructive', onPress: handleDelete },
       ],
     );
   }, [handleDelete]);
@@ -150,7 +157,7 @@ export default function WorkoutDetailScreen() {
         </View>
         <EmptyState
           icon="alert-circle-outline"
-          title="Workout niet gevonden"
+          title={t.detail.notFound}
           size="lg"
         />
       </View>
@@ -170,13 +177,13 @@ export default function WorkoutDetailScreen() {
           {workout.is_pr && (
             <View style={styles.prBadge}>
               <Text style={styles.prBadgeEmoji}>🏅</Text>
-              <Text style={styles.prBadgeText}>PR</Text>
+              <Text style={styles.prBadgeText}>{t.detail.prBadge}</Text>
             </View>
           )}
         </View>
         <TouchableOpacity onPress={() => router.back()} style={styles.backLink}>
           <Ionicons name="arrow-back" size={14} color={accent.default} />
-          <Text style={styles.backLinkText}>OVERZICHT</Text>
+          <Text style={styles.backLinkText}>{t.detail.backLink}</Text>
         </TouchableOpacity>
       </View>
 
@@ -184,7 +191,7 @@ export default function WorkoutDetailScreen() {
       <Segmented
         variant="band"
         style={styles.tabBar}
-        options={tabs.map((tab) => ({ value: tab, label: tab }))}
+        options={tabs.map((tab) => ({ value: tab, label: TAB_LABELS[tab] }))}
         value={activeTab}
         onChange={setActiveTab}
       />
@@ -192,20 +199,20 @@ export default function WorkoutDetailScreen() {
       <View style={styles.scrollWrap}>
         <ScrollView contentContainerStyle={styles.content}>
         {/* Overzicht tab */}
-        {activeTab === 'Overzicht' && (
+        {activeTab === 'overview' && (
           <>
             {/* 2×2 KPI container */}
             <View style={styles.kpiContainer}>
               <View style={[styles.kpiGridRow, styles.kpiGridRowBordered]}>
                 <KpiSingle
                   value={formatTimerFull(workout.duration_seconds)}
-                  label={'TOTALE\nDUUR'}
+                  label={t.kpi.totalDuration}
                   style={styles.kpiCell}
                 />
                 <KpiSingle
                   value={dist.value}
                   unit={dist.unit}
-                  label={'TOTALE\nAFSTAND'}
+                  label={t.kpi.totalDistance}
                   style={styles.kpiCell}
                 />
               </View>
@@ -213,13 +220,13 @@ export default function WorkoutDetailScreen() {
                 <KpiSingle
                   value={workout.calories != null ? `${workout.calories}` : '—'}
                   unit={workout.calories != null ? 'kcal' : ''}
-                  label={'TOTALE\nENERGIE'}
+                  label={t.kpi.totalEnergy}
                   style={styles.kpiCell}
                 />
                 <KpiSingle
                   value={workout.total_strokes != null ? `${correctSpm(workout.total_strokes, spmHalved)}` : '—'}
                   unit=""
-                  label={'TOTALE\nSLAGEN'}
+                  label={t.kpi.totalStrokes}
                   style={styles.kpiCell}
                 />
               </View>
@@ -229,14 +236,14 @@ export default function WorkoutDetailScreen() {
             <View style={styles.statsSection}>
               <View style={styles.statsHeader}>
                 <View style={styles.statsLabelCol} />
-                <Text style={styles.statsColLabel}>GEM</Text>
-                <Text style={styles.statsColLabel}>PIEK</Text>
+                <Text style={styles.statsColLabel}>{t.detail.colAvg}</Text>
+                <Text style={styles.statsColLabel}>{t.detail.colPeak}</Text>
               </View>
               <View style={styles.statsTable}>
                 {[
-                  { label: 'WATT', gem: workout.avg_watts != null ? `${workout.avg_watts}` : '—', piek: workout.max_watts != null ? `${workout.max_watts}` : '—' },
-                  { label: 'SPM', gem: workout.avg_spm != null ? `${correctSpm(workout.avg_spm, spmHalved)}` : '—', piek: workout.max_spm != null ? `${correctSpm(workout.max_spm, spmHalved)}` : '—' },
-                  { label: 'BPM', gem: workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—', piek: workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—' },
+                  { label: t.detail.statWatt, gem: workout.avg_watts != null ? `${workout.avg_watts}` : '—', piek: workout.max_watts != null ? `${workout.max_watts}` : '—' },
+                  { label: t.detail.statSpm, gem: workout.avg_spm != null ? `${correctSpm(workout.avg_spm, spmHalved)}` : '—', piek: workout.max_spm != null ? `${correctSpm(workout.max_spm, spmHalved)}` : '—' },
+                  { label: t.detail.statBpm, gem: workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—', piek: workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—' },
                 ].map((row, i, arr) => (
                   <View key={row.label}>
                     <View style={styles.statsRow}>
@@ -254,8 +261,8 @@ export default function WorkoutDetailScreen() {
             <View style={styles.statsSection}>
               <View style={styles.statsHeader}>
                 <View style={styles.statsLabelCol} />
-                <Text style={styles.statsColLabel}>GEM</Text>
-                <Text style={styles.statsColLabel}>BEST</Text>
+                <Text style={styles.statsColLabel}>{t.detail.colAvg}</Text>
+                <Text style={styles.statsColLabel}>{t.detail.colBest}</Text>
               </View>
               <View style={styles.statsTable}>
                 {distSplits.map((row, i, arr) => (
@@ -275,7 +282,7 @@ export default function WorkoutDetailScreen() {
         )}
 
         {/* Splits tab */}
-        {activeTab === 'Splits' && (
+        {activeTab === 'splits' && (
           <>
             {/* KPI: gemiddelde + snelste split (tienden waar afleidbaar) */}
             <View style={styles.kpiContainer}>
@@ -287,7 +294,7 @@ export default function WorkoutDetailScreen() {
                     : '—'
                   }
                   unit={avgSplitSec != null || workout.avg_split_seconds != null ? '/500m' : ''}
-                  label={'GEMIDDELDE\nSPLIT'}
+                  label={t.kpi.avgSplit}
                   style={styles.kpiCell}
                 />
                 <KpiSingle
@@ -297,7 +304,7 @@ export default function WorkoutDetailScreen() {
                     : '—'
                   }
                   unit={fastestSplitSec != null || workout.best_split != null ? '/500m' : ''}
-                  label={'SNELSTE\nSPLIT'}
+                  label={t.kpi.fastestSplit}
                   style={styles.kpiCell}
                 />
               </View>
@@ -308,8 +315,8 @@ export default function WorkoutDetailScreen() {
                 {/* Kolomheaders buiten de card, zoals op de andere tabs (Overzicht/Hartslag) */}
                 <View style={styles.splitsHeaderRow}>
                   <View style={styles.splitsLabelCol} />
-                  <Text style={styles.splitsColHeader}>SPLIT</Text>
-                  <Text style={styles.splitsColHeader}>WATT</Text>
+                  <Text style={styles.splitsColHeader}>{t.detail.colSplit}</Text>
+                  <Text style={styles.splitsColHeader}>{t.detail.colWatt}</Text>
                 </View>
                 <View style={styles.splitsTable}>
                   {workout.splits.map((s, i) => {
@@ -330,24 +337,24 @@ export default function WorkoutDetailScreen() {
                 </View>
               </View>
             ) : (
-              <EmptyState icon="time-outline" title="Geen splits beschikbaar." />
+              <EmptyState icon="time-outline" title={t.detail.emptySplits} />
             )}
           </>
         )}
 
         {/* Hartslag tab */}
-        {activeTab === 'Hartslag' && (
+        {activeTab === 'heartrate' && (
           <>
             <View style={styles.kpiContainer}>
               <View style={styles.kpiGridRow}>
                 <KpiSingle
                   value={workout.avg_heart_rate != null ? `${workout.avg_heart_rate}` : '—'}
-                  label={'BPM\nGEMIDDELD'}
+                  label={t.kpi.bpmAvg}
                   style={styles.kpiCell}
                 />
                 <KpiSingle
                   value={workout.max_heart_rate != null ? `${workout.max_heart_rate}` : '—'}
-                  label={'BPM\nMAXIMAAL'}
+                  label={t.kpi.bpmMax}
                   style={styles.kpiCell}
                 />
               </View>
@@ -357,8 +364,8 @@ export default function WorkoutDetailScreen() {
               <View style={styles.statsSection}>
                 <View style={styles.statsHeader}>
                   <View style={styles.statsLabelCol} />
-                  <Text style={styles.statsColLabel}>GEM</Text>
-                  <Text style={styles.statsColLabel}>PIEK</Text>
+                  <Text style={styles.statsColLabel}>{t.detail.colAvg}</Text>
+                  <Text style={styles.statsColLabel}>{t.detail.colPeak}</Text>
                 </View>
                 <View style={styles.statsTable}>
                   {hrSegments.map((row, i, arr) => (
@@ -376,7 +383,7 @@ export default function WorkoutDetailScreen() {
             ) : (
               <EmptyState
                 icon="pulse-outline"
-                title="Geen hartslag-detail per segment. Beschikbaar vanaf je volgende training."
+                title={t.detail.emptyHeartRate}
               />
             )}
           </>
@@ -390,7 +397,7 @@ export default function WorkoutDetailScreen() {
       {/* Vaste verwijder-knop onderaan */}
       <View style={[styles.buttonSection, { paddingBottom: Math.max(space['20'], insets.bottom) }]}>
         <Button
-          title="Training verwijderen"
+          title={t.detail.deleteButton}
           variant="outline"
           onPress={confirmDelete}
           loading={deleting}

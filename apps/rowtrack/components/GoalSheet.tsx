@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { formatDurationLabel, type WheelItem } from '@/lib/formatters';
 import type { PeriodGoal, PeriodGoalPeriod, PeriodGoalMetric } from '@/lib/hooks/usePeriodGoal';
+import { t } from '@/i18n';
 import { fg, space, fontFamily, fontSize, letterSpacing } from '@/constants';
 
 export type GoalSheetProps = {
@@ -21,20 +22,20 @@ export type GoalSheetProps = {
 };
 
 const PERIOD_OPTIONS: readonly SegmentedOption<PeriodGoalPeriod>[] = [
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Maand' },
+  { value: 'week', label: t.goals.periodWeek },
+  { value: 'month', label: t.goals.periodMonth },
 ];
 const METRIC_OPTIONS: readonly SegmentedOption<PeriodGoalMetric>[] = [
-  { value: 'distance', label: 'Afstand' },
-  { value: 'duration', label: 'Duur' },
-  { value: 'workouts', label: 'Sessies' },
+  { value: 'distance', label: t.goals.metricDistance },
+  { value: 'duration', label: t.goals.metricDuration },
+  { value: 'workouts', label: t.goals.metricWorkouts },
 ];
 
 // Streefwaarde-bereik + eenheid per doeltype (weergave-eenheden; save() converteert naar opslag).
 const RANGES: Record<PeriodGoalMetric, { min: number; max: number; step: number; unit: string }> = {
   distance: { min: 1, max: 500, step: 1, unit: 'km' },
-  duration: { min: 5, max: 600, step: 5, unit: 'min' },
-  workouts: { min: 1, max: 100, step: 1, unit: 'sessies' },
+  duration: { min: 5, max: 600, step: 5, unit: t.units.minuteShort },
+  workouts: { min: 1, max: 100, step: 1, unit: t.units.sessions },
 };
 const DEFAULTS: Record<PeriodGoalMetric, number> = { distance: 10, duration: 60, workouts: 4 };
 
@@ -107,7 +108,7 @@ export function GoalSheet({ visible, currentGoal, userId, onClose, onSaved }: Go
     setSaving(false);
     if (error) {
       reportError(error, { where: 'GoalSheet.persist' });
-      Alert.alert('Fout', `Opslaan mislukt: ${error.message}`);
+      Alert.alert(t.common.error, t.common.saveFailed(error.message));
       return;
     }
     onSaved();
@@ -129,12 +130,12 @@ export function GoalSheet({ visible, currentGoal, userId, onClose, onSaved }: Go
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      title="Doel bewerken"
+      title={t.goals.sheetTitle}
       footer={
         <View style={styles.footer}>
           {currentGoal && (
             <Button
-              title="Doel verwijderen"
+              title={t.goals.sheetRemoveButton}
               variant="outline"
               size="md"
               icon="arrow-forward"
@@ -144,7 +145,7 @@ export function GoalSheet({ visible, currentGoal, userId, onClose, onSaved }: Go
             />
           )}
           <Button
-            title="Opslaan"
+            title={t.common.save}
             size="md"
             icon="arrow-forward"
             iconPosition="trailing"
@@ -155,18 +156,18 @@ export function GoalSheet({ visible, currentGoal, userId, onClose, onSaved }: Go
       }
     >
       <View style={styles.group}>
-        <Text style={styles.label}>PERIODE</Text>
+        <Text style={styles.label}>{t.goals.sheetPeriodLabel}</Text>
         <Segmented options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
       </View>
 
       <View style={styles.group}>
-        <Text style={styles.label}>TYPE</Text>
+        <Text style={styles.label}>{t.goals.sheetTypeLabel}</Text>
         <Segmented options={METRIC_OPTIONS} value={metric} onChange={handleMetric} />
       </View>
 
       {metric && (
         <View style={styles.group}>
-          <Text style={styles.label}>STREEFWAARDE</Text>
+          <Text style={styles.label}>{t.goals.sheetTargetLabel}</Text>
           <WheelPicker
             items={itemsFor(metric)}
             selectedIndex={indexFor(metric, target)}

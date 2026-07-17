@@ -18,6 +18,7 @@ import {
   confirmFieldError,
 } from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
+import { t } from '@/i18n';
 import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
 export default function RegisterScreen() {
@@ -54,9 +55,7 @@ export default function RegisterScreen() {
       const revealsExisting =
         code === 'user_already_exists' || /already registered|already exists/i.test(raw);
       setSubmitError(
-        revealsExisting
-          ? 'Registratie mislukt. Log in als je al een account hebt, of probeer opnieuw.'
-          : raw || 'Registratie mislukt.',
+        revealsExisting ? t.auth.register.failedNeutral : raw || t.auth.register.failed,
       );
     } finally {
       setLoading(false);
@@ -69,14 +68,14 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-        <Text style={styles.title}>Account aanmaken</Text>
-        <Text style={styles.subtitle}>Begin met roeien</Text>
+        <Text style={styles.title}>{t.auth.register.title}</Text>
+        <Text style={styles.subtitle}>{t.auth.register.subtitle}</Text>
 
         <ErrorMessage message={submitError} />
 
         <FormField
-          label="E-mail"
-          placeholder="naam@voorbeeld.be"
+          label={t.auth.emailLabel}
+          placeholder={t.auth.emailPlaceholder}
           value={email}
           onChangeText={setEmail}
           onBlur={() => setTouched((t) => ({ ...t, email: true }))}
@@ -88,8 +87,8 @@ export default function RegisterScreen() {
         />
 
         <FormField
-          label="Wachtwoord"
-          placeholder={`Minstens ${MIN_PASSWORD_LENGTH} tekens`}
+          label={t.auth.passwordLabel}
+          placeholder={t.validation.passwordMinLength(MIN_PASSWORD_LENGTH)}
           value={password}
           onChangeText={setPassword}
           onBlur={() => setTouched((t) => ({ ...t, password: true }))}
@@ -99,7 +98,7 @@ export default function RegisterScreen() {
         />
 
         <FormField
-          label="Bevestig wachtwoord"
+          label={t.auth.confirmPasswordLabel}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
@@ -109,7 +108,7 @@ export default function RegisterScreen() {
         />
 
         <Button
-          title="Maak account"
+          title={t.auth.register.button}
           onPress={handleRegister}
           disabled={!canSubmit}
           loading={loading}
@@ -119,8 +118,8 @@ export default function RegisterScreen() {
         <Link href="/(auth)/login" asChild>
           <TouchableOpacity style={styles.linkContainer}>
             <Text style={styles.linkText}>
-              Al een account?{' '}
-              <Text style={styles.linkAccent}>Log in</Text>
+              {t.auth.register.haveAccount}{' '}
+              <Text style={styles.linkAccent}>{t.auth.register.loginLink}</Text>
             </Text>
           </TouchableOpacity>
         </Link>

@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { sendPasswordReset } from '@/lib/auth';
 import { isValidEmail, emailFieldError } from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
+import { t } from '@/i18n';
 import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
 export default function ForgotPasswordScreen() {
@@ -33,7 +34,7 @@ export default function ForgotPasswordScreen() {
       await sendPasswordReset(email);
       setSent(true);
     } catch (e: any) {
-      setSubmitError(e.message ?? 'Kon geen reset-link versturen.');
+      setSubmitError(e.message ?? t.auth.forgot.failed);
     } finally {
       setLoading(false);
     }
@@ -48,31 +49,26 @@ export default function ForgotPasswordScreen() {
         {sent ? (
           <>
             <Ionicons name="mail-outline" size={48} color={accent.default} style={styles.icon} />
-            <Text style={styles.title}>Check je mail</Text>
-            <Text style={styles.subtitle}>
-              We stuurden een reset-link naar {email.trim()}. Volg de link om een nieuw
-              wachtwoord in te stellen.
-            </Text>
+            <Text style={styles.title}>{t.auth.forgot.sentTitle}</Text>
+            <Text style={styles.subtitle}>{t.auth.forgot.sentBody(email.trim())}</Text>
             <Link href="/(auth)/login" asChild>
               <TouchableOpacity style={styles.linkContainer}>
                 <Text style={styles.linkText}>
-                  <Text style={styles.linkAccent}>Terug naar inloggen</Text>
+                  <Text style={styles.linkAccent}>{t.auth.forgot.backToLogin}</Text>
                 </Text>
               </TouchableOpacity>
             </Link>
           </>
         ) : (
           <>
-            <Text style={styles.title}>Wachtwoord vergeten</Text>
-            <Text style={styles.subtitle}>
-              Vul je e-mailadres in en we sturen je een reset-link.
-            </Text>
+            <Text style={styles.title}>{t.auth.forgot.title}</Text>
+            <Text style={styles.subtitle}>{t.auth.forgot.subtitle}</Text>
 
             <ErrorMessage message={submitError} />
 
             <FormField
-              label="E-mail"
-              placeholder="naam@voorbeeld.be"
+              label={t.auth.emailLabel}
+              placeholder={t.auth.emailPlaceholder}
               value={email}
               onChangeText={setEmail}
               onBlur={() => setTouched(true)}
@@ -84,7 +80,7 @@ export default function ForgotPasswordScreen() {
             />
 
             <Button
-              title="Stuur reset-link"
+              title={t.auth.forgot.button}
               onPress={handleSend}
               disabled={!canSubmit}
               loading={loading}
@@ -94,7 +90,7 @@ export default function ForgotPasswordScreen() {
             <Link href="/(auth)/login" asChild>
               <TouchableOpacity style={styles.linkContainer}>
                 <Text style={styles.linkText}>
-                  Weet je het weer? <Text style={styles.linkAccent}>Log in</Text>
+                  {t.auth.forgot.rememberAgain} <Text style={styles.linkAccent}>{t.auth.forgot.loginLink}</Text>
                 </Text>
               </TouchableOpacity>
             </Link>

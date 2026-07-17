@@ -14,7 +14,7 @@ import {
   MAX_RECONNECT_ATTEMPTS,
 } from './constants';
 import { parseRowerData } from './ftms-parser';
-import type { RowerMetrics, ConnectionStatus } from './types';
+import type { RowerMetrics, ConnectionStatus, RowerBleError } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
   ? (...args: unknown[]) => console.log('[BLE]', ...args)
@@ -45,7 +45,7 @@ function mergeMetrics(base: RowerMetrics, incoming: RowerMetrics): RowerMetrics 
 
 type StatusListener = (
   status: ConnectionStatus,
-  error?: string,
+  error?: RowerBleError,
   deviceName?: string,
 ) => void;
 type MetricsListener = (metrics: RowerMetrics) => void;
@@ -103,11 +103,11 @@ export class RowerBleService {
 
       if (state !== State.PoweredOn) {
         if (state === State.PoweredOff) {
-          this.onStatusChange('error', 'Bluetooth staat uit. Schakel Bluetooth in.');
+          this.onStatusChange('error', { code: 'bluetooth_off' });
           return;
         }
         if (state === State.Unauthorized) {
-          this.onStatusChange('error', 'Bluetooth toestemming is vereist.');
+          this.onStatusChange('error', { code: 'bluetooth_unauthorized' });
           return;
         }
         this.stateSub = manager.onStateChange((s) => {
@@ -123,14 +123,14 @@ export class RowerBleService {
       if (Platform.OS === 'android') {
         const ok = await this.requestAndroidPermissions();
         if (!ok) {
-          this.onStatusChange('error', 'Bluetooth toestemming geweigerd.');
+          this.onStatusChange('error', { code: 'permission_denied' });
           return;
         }
       }
 
       this.scanTimeout = setTimeout(() => {
         manager.stopDeviceScan();
-        this.onStatusChange('error', 'Geen roeier gevonden. Controleer of de roeier aan staat.');
+        this.onStatusChange('error', { code: 'rower_not_found' });
       }, SCAN_TIMEOUT_MS);
 
       log(' scan started (filter: name prefix "' + ROWER_NAME_PREFIX + '")');
@@ -138,7 +138,7 @@ export class RowerBleService {
         if (err) {
           this.clearScanTimeout();
           log(' scan error:', err.message);
-          this.onStatusChange('error', `Scanfout: ${err.message}`);
+          this.onStatusChange('error', { code: 'scan_error', detail: err.message });
           return;
         }
         if (!dev) return;
@@ -158,9 +158,9 @@ export class RowerBleService {
         }
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'BLE scan mislukt';
-      log(' startScan error:', msg);
-      this.onStatusChange('error', msg);
+      const detail = e instanceof Error ? e.message : undefined;
+      log(' startScan error:', detail);
+      this.onStatusChange('error', { code: 'scan_failed', detail });
     }
   }
 
@@ -244,7 +244,7 @@ export class RowerBleService {
       this.isConnecting = false;
       const bleErr = e as { message?: string; errorCode?: number };
       log(' connect error:', bleErr.message, 'code:', bleErr.errorCode);
-      this.onStatusChange('error', bleErr.message || 'Verbinding mislukt');
+      this.onStatusChange('error', { code: 'connect_failed', detail: bleErr.message });
       return false;
     }
   }
@@ -278,7 +278,7 @@ export class RowerBleService {
           // 403 on fallback too → give up
           if (bleErr.errorCode === 403) {
             log(' 403 on both characteristics');
-            this.onStatusChange('error', 'Kan geen data ontvangen. Herstart de app.');
+            this.onStatusChange('error', { code: 'no_data' });
             return;
           }
 
@@ -341,7 +341,7 @@ export class RowerBleService {
     if (this.intentionalDisconnect) return;
 
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      this.onStatusChange('error', 'Verbinding verloren. Probeer opnieuw.');
+      this.onStatusChange('error', { code: 'connection_lost' });
       this.cleanup();
       this.device = null;
       return;

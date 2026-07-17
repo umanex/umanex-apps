@@ -2,6 +2,7 @@ import { type ComponentProps, memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fg, display, body, space } from '@/constants';
+import { t } from '@/i18n';
 import { Button } from './Button';
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
@@ -20,10 +21,10 @@ export type ErrorStateProps = {
  * een netwerk-/backendfout niet als "geen data" leest (security-audit P2-2).
  */
 export const ErrorState = memo(function ErrorState({
-  title = 'Kon niet laden',
-  subtitle = 'Controleer je verbinding en probeer opnieuw.',
+  title = t.states.errorTitle,
+  subtitle = t.states.errorSubtitle,
   onRetry,
-  retryLabel = 'Opnieuw proberen',
+  retryLabel = t.common.retry,
   icon = 'cloud-offline-outline',
   size = 'sm',
 }: ErrorStateProps) {

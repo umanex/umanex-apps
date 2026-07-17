@@ -19,6 +19,7 @@ import {
 } from '@/lib/validation';
 import { useDeepLink } from '@/lib/recovery-link';
 import { Button, FormField, ErrorMessage } from '@/components';
+import { t } from '@/i18n';
 import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
 type RecoveryTokens = { access_token: string; refresh_token: string };
@@ -67,7 +68,7 @@ export default function ResetPasswordScreen() {
       await completePasswordReset(tokens, password);
       setDone(true);
     } catch (e: any) {
-      setSubmitError(e.message ?? 'Kon het wachtwoord niet wijzigen. Vraag een nieuwe link aan.');
+      setSubmitError(e.message ?? t.auth.reset.failed);
     } finally {
       setSaving(false);
     }
@@ -84,10 +85,10 @@ export default function ResetPasswordScreen() {
         ) : done ? (
           <>
             <Ionicons name="checkmark-circle-outline" size={48} color={accent.default} style={styles.icon} />
-            <Text style={styles.title}>Wachtwoord gewijzigd</Text>
-            <Text style={styles.subtitle}>Je kunt nu inloggen met je nieuwe wachtwoord.</Text>
+            <Text style={styles.title}>{t.auth.reset.doneTitle}</Text>
+            <Text style={styles.subtitle}>{t.auth.reset.doneBody}</Text>
             <Button
-              title="Naar inloggen"
+              title={t.auth.reset.toLogin}
               onPress={() => router.replace('/(auth)/login')}
               style={styles.button}
             />
@@ -95,28 +96,26 @@ export default function ResetPasswordScreen() {
         ) : !tokens ? (
           <>
             <Ionicons name="alert-circle-outline" size={48} color={accent.default} style={styles.icon} />
-            <Text style={styles.title}>Link ongeldig of verlopen</Text>
-            <Text style={styles.subtitle}>
-              Vraag een nieuwe reset-link aan om verder te gaan.
-            </Text>
+            <Text style={styles.title}>{t.auth.reset.invalidTitle}</Text>
+            <Text style={styles.subtitle}>{t.auth.reset.invalidBody}</Text>
             <Link href="/(auth)/forgot-password" asChild>
               <TouchableOpacity style={styles.linkContainer}>
                 <Text style={styles.linkText}>
-                  <Text style={styles.linkAccent}>Nieuwe link aanvragen</Text>
+                  <Text style={styles.linkAccent}>{t.auth.reset.requestNewLink}</Text>
                 </Text>
               </TouchableOpacity>
             </Link>
           </>
         ) : (
           <>
-            <Text style={styles.title}>Nieuw wachtwoord</Text>
-            <Text style={styles.subtitle}>Kies een nieuw wachtwoord voor je account.</Text>
+            <Text style={styles.title}>{t.auth.reset.title}</Text>
+            <Text style={styles.subtitle}>{t.auth.reset.subtitle}</Text>
 
             <ErrorMessage message={submitError} />
 
             <FormField
-              label="Nieuw wachtwoord"
-              placeholder={`Minstens ${MIN_PASSWORD_LENGTH} tekens`}
+              label={t.auth.reset.newPasswordLabel}
+              placeholder={t.validation.passwordMinLength(MIN_PASSWORD_LENGTH)}
               value={password}
               onChangeText={setPassword}
               onBlur={() => setTouched((t) => ({ ...t, password: true }))}
@@ -126,7 +125,7 @@ export default function ResetPasswordScreen() {
             />
 
             <FormField
-              label="Bevestig wachtwoord"
+              label={t.auth.confirmPasswordLabel}
               value={confirm}
               onChangeText={setConfirm}
               onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
@@ -136,7 +135,7 @@ export default function ResetPasswordScreen() {
             />
 
             <Button
-              title="Wachtwoord opslaan"
+              title={t.auth.reset.button}
               onPress={handleSave}
               disabled={!canSubmit}
               loading={saving}

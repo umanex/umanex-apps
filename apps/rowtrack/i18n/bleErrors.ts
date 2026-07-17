@@ -18,10 +18,12 @@ export function rowerErrorMessage(error: RowerBleError): string {
       return t.errors.rower.rowerNotFound;
     case 'scan_error':
       return t.errors.rower.scanError(error.detail ?? '');
+    // `||` (niet `??`): een lege BLE-message valt terug op de vaste melding,
+    // net als het oude `bleErr.message || 'Verbinding mislukt'`-pad.
     case 'scan_failed':
-      return error.detail ?? t.errors.rower.scanFailed;
+      return error.detail || t.errors.rower.scanFailed;
     case 'connect_failed':
-      return error.detail ?? t.errors.rower.connectFailed;
+      return error.detail || t.errors.rower.connectFailed;
     case 'no_data':
       return t.errors.rower.noData;
     case 'connection_lost':

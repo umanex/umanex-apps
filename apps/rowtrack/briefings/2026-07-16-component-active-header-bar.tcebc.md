@@ -4,7 +4,7 @@
 **Type:** component
 **Project:** rowtrack
 **Klant:** umanex
-**Status:** gepland
+**Status:** gevalideerd
 
 ---
 
@@ -19,11 +19,11 @@ ELEMENTS:    Header-band, DOEL-pill (DOEL-label · divider · doelwaarde+eenheid
 BEHAVIOUR:   Statisch weergegeven; Stop → stopt de workout (bestaand). Pill toont het
              actieve doel ("Geen" / "20 min" / "10 km" / "2:20 split" / "180 W").
 CONSTRAINTS: React Native/Expo, RowTrack-tokens, StyleSheet. Dark mode. Safe-area-aware.
-             Let op verschillende paddings portrait vs landscape. Figma portrait 290:2872,
-             landscape 290:2785 = bron (deep-read paddings in build).
+             Let op verschillende paddings portrait vs landscape. Bijgewerkte bron:
+             Figma 297:2227 (deep-read paddings in build). Eerdere bron 290:2872/290:2785.
 ```
 
-Figma: [Portrait 290-2872](https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2872) · [Landscape 290-2785](https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2785)
+Figma (iteratie 2026-07-17): [297-2227](https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=297-2227) · eerder [Portrait 290-2872](https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2872) · [Landscape 290-2785](https://www.figma.com/design/T1bGrvIzSNeLyh5CbarATZ/RowTrack?node-id=290-2785)
 
 ---
 
@@ -39,13 +39,17 @@ _(geen blokkerende — redesign van bestaande header met behoud van gedrag)_
 
 ## Acceptatie
 
-- [ ] Header-band + DOEL-pill + Stop matchen Figma 290:2872 (portrait)
-- [ ] Header matcht 290:2785 (landscape) met de juiste landscape-paddings
-- [ ] Doelwaarde+eenheid renderen correct per doeltype (min/km/split/W/Geen)
-- [ ] Paddings/spacing exact uit Figma (portrait ≠ landscape), safe-area-aware
-- [ ] Tokens only (geen hardcoded values); dark mode correct
-- [ ] Stop-gedrag ongewijzigd
+- [x] Band met accent-tint + platte DOEL (geen pill-border) + Stop matchen Figma 297:2227 (portrait sim-geverifieerd)
+- [x] Landscape matcht met eigen paddings (left safe-area, right 40 naar de progress-bar); band-tint + platte DOEL toegepast
+- [x] Doelwaarde+eenheid beide bold ("180W"), gap 2 — per 297:2227
+- [x] Band-padding 20 (portrait top/bottom van 28→20; landscape 20 + pr 40), safe-area-aware
+- [x] Tokens only (accent.muted 0.12 ≈ Figma 0.10, TODO genoteerd); dark mode correct
+- [x] Stop-gedrag ongewijzigd
 
 ## Beslissingsgeschiedenis
 
 - 2026-07-16: Aangemaakt — header-bar redesign portrait + landscape.
+- 2026-07-17: Iteratie — nieuwe bron 297:2227 (native Figma MCP, Console-bridge losgekoppeld):
+  accent-tint van de DOEL-pill terug naar de **band** (accent.muted); pill wordt **plat**
+  (geen fill/border, px 0); band-padding 20 (portrait 28→20); eenheid van italic → bold
+  ("180W"). Landscape houdt zijn eigen paddings (left safe-area, right 40 naar de bar).

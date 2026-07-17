@@ -8,6 +8,7 @@ import {
   space,
   layout,
   componentRadius,
+  typeStyles,
 } from '@/constants';
 
 export const styles = StyleSheet.create({
@@ -27,6 +28,10 @@ export const styles = StyleSheet.create({
     fontSize: fontSize['16'],
     color: fg.secondary,
     textAlign: 'center',
+  },
+  connectionElapsed: {
+    ...typeStyles.italicConnector,
+    color: fg.secondary,
   },
   modalOverlay: {
     flex: 1,

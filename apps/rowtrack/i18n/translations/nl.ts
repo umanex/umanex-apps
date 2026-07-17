@@ -12,6 +12,7 @@ export const nl = {
     continue: 'Ga verder',
     error: 'Fout',
     saveFailed: (detail: string) => `Opslaan mislukt: ${detail}`,
+    saveFailedConnection: 'Opslaan mislukt. Controleer je verbinding.',
   },
 
   format: {

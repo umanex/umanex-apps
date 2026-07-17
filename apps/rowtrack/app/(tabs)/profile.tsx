@@ -21,6 +21,7 @@ import { Button, WheelPicker, GoalSheet, Segmented, type SegmentedOption } from 
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { BottomSheet } from '@/components/BottomSheet';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
+import { t } from '@/i18n';
 import {
   bg,
   fg,
@@ -46,16 +47,14 @@ const BIRTH_YEARS = Array.from(
   (_, i) => BIRTH_YEAR_MIN + i,
 );
 
-const NL_MONTHS_SHORT = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
-
 const GENDER_OPTIONS: SegmentedOption<string>[] = [
-  { value: 'male', label: 'Man' },
-  { value: 'female', label: 'Vrouw' },
-  { value: 'other', label: 'Anders' },
+  { value: 'male', label: t.profile.genderMale },
+  { value: 'female', label: t.profile.genderFemale },
+  { value: 'other', label: t.profile.genderOther },
 ];
 
 const DAY_ITEMS: WheelItem[] = Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), value: i + 1 }));
-const MONTH_ITEMS: WheelItem[] = NL_MONTHS_SHORT.map((m, i) => ({ label: m, value: i + 1 }));
+const MONTH_ITEMS: WheelItem[] = t.dates.monthsShort.map((m, i) => ({ label: m, value: i + 1 }));
 const YEAR_ITEMS: WheelItem[] = BIRTH_YEARS.map(y => ({ label: String(y), value: y }));
 
 // Lengte/gewicht: single-column wheels met de unit binnen de wheel (value + unit).
@@ -96,9 +95,9 @@ function formatBirthDate(date: string | null): string {
 }
 
 function genderLabel(g: string | null): string {
-  if (g === 'male') return 'Man';
-  if (g === 'female') return 'Vrouw';
-  if (g === 'other') return 'Anders';
+  if (g === 'male') return t.profile.genderMale;
+  if (g === 'female') return t.profile.genderFemale;
+  if (g === 'other') return t.profile.genderOther;
   return '—';
 }
 
@@ -244,7 +243,7 @@ export default function ProfileScreen() {
       const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
       if (error) {
         reportError(error, { where: 'profile.save' });
-        Alert.alert('Fout', `Opslaan mislukt: ${error.message}`);
+        Alert.alert(t.common.error, t.common.saveFailed(error.message));
         return false;
       }
       return true;
@@ -252,7 +251,7 @@ export default function ProfileScreen() {
       // postgrest-js resolvet fouten normaal als { error }; dit vangt enkel
       // transport-throws zodat `saving` nooit blijft hangen.
       reportError(e, { where: 'profile.save' });
-      Alert.alert('Fout', 'Opslaan mislukt. Controleer je verbinding.');
+      Alert.alert(t.common.error, t.common.saveFailedConnection);
       return false;
     } finally {
       setSaving(false);
@@ -320,7 +319,7 @@ export default function ProfileScreen() {
     });
 
     if (signInError) {
-      setEmailError('Wachtwoord klopt niet.');
+      setEmailError(t.profile.emailSheet.wrongPassword);
       setEmailChanging(false);
       return;
     }
@@ -335,15 +334,15 @@ export default function ProfileScreen() {
 
     setSheetOpen('none');
     Alert.alert(
-      'Bevestiging verstuurd',
-      `Controleer je inbox op ${draftEmail} om de wijziging te bevestigen.`,
+      t.profile.emailSheet.confirmationSentTitle,
+      t.profile.emailSheet.confirmationSentBody(draftEmail),
     );
   }
 
   function handleLogout() {
-    Alert.alert('Uitloggen', 'Weet je zeker dat je wilt uitloggen?', [
-      { text: 'Annuleren', style: 'cancel' },
-      { text: 'Uitloggen', style: 'destructive', onPress: signOut },
+    Alert.alert(t.profile.logout, t.profile.logoutConfirmBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      { text: t.profile.logout, style: 'destructive', onPress: signOut },
     ]);
   }
 
@@ -366,7 +365,7 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Profiel</Text>
+        <Text style={styles.title}>{t.profile.title}</Text>
 
         {/* Doel */}
         <View style={styles.section}>
@@ -376,7 +375,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <TouchableOpacity style={styles.listRow} onPress={openDoel} activeOpacity={0.8}>
-              <Text style={styles.listLabel}>Geen doel ingesteld</Text>
+              <Text style={styles.listLabel}>{t.profile.noGoal}</Text>
               <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
             </TouchableOpacity>
           )}
@@ -384,10 +383,10 @@ export default function ProfileScreen() {
 
         {/* ACCOUNT */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>ACCOUNT</Text>
+          <Text style={styles.sectionLabel}>{t.profile.sectionAccount}</Text>
           <View style={styles.listCard}>
             <TouchableOpacity style={styles.listRow} onPress={openVoornaam} activeOpacity={0.8}>
-              <Text style={styles.listLabel}>Voornaam</Text>
+              <Text style={styles.listLabel}>{t.profile.firstName}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{nameLabel}</Text>
                 <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
@@ -395,7 +394,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <View style={styles.listDivider} />
             <TouchableOpacity style={styles.listRow} onPress={openEmail} activeOpacity={0.8}>
-              <Text style={styles.listLabel}>Email</Text>
+              <Text style={styles.listLabel}>{t.profile.email}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{user?.email ?? '—'}</Text>
                 <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
@@ -406,10 +405,10 @@ export default function ProfileScreen() {
 
         {/* LICHAAMSGEGEVENS */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>LICHAAMSGEGEVENS</Text>
+          <Text style={styles.sectionLabel}>{t.profile.sectionBody}</Text>
           <View style={styles.listCard}>
             <TouchableOpacity style={styles.listRow} onPress={openGeslacht} activeOpacity={0.8}>
-              <Text style={styles.listLabel}>Geslacht</Text>
+              <Text style={styles.listLabel}>{t.profile.gender}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{genderLabel(gender)}</Text>
                 <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
@@ -417,7 +416,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <View style={styles.listDivider} />
             <TouchableOpacity style={styles.listRow} onPress={openGeboortedatum} activeOpacity={0.8}>
-              <Text style={styles.listLabel}>Geboortedatum</Text>
+              <Text style={styles.listLabel}>{t.profile.birthDate}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{formatBirthDate(birthDate)}</Text>
                 <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
@@ -425,7 +424,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <View style={styles.listDivider} />
             <TouchableOpacity style={styles.listRow} onPress={openLengte} activeOpacity={0.8}>
-              <Text style={styles.listLabel}>Lengte</Text>
+              <Text style={styles.listLabel}>{t.profile.height}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{heightLabel}</Text>
                 <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
@@ -433,7 +432,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <View style={styles.listDivider} />
             <TouchableOpacity style={styles.listRow} onPress={openGewicht} activeOpacity={0.8}>
-              <Text style={styles.listLabel}>Gewicht</Text>
+              <Text style={styles.listLabel}>{t.profile.weight}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{weightLabel}</Text>
                 <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
@@ -444,12 +443,12 @@ export default function ProfileScreen() {
 
         {/* ROEITRAINER */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>ROEITRAINER</Text>
+          <Text style={styles.sectionLabel}>{t.profile.sectionRower}</Text>
           <View style={styles.listCard}>
             <View style={styles.listRow}>
               <View style={styles.spmToggleLabel}>
-                <Text style={styles.listLabel}>SPM halveren</Text>
-                <Text style={styles.listHint}>Voor trainers die de slagfrequentie dubbel tellen</Text>
+                <Text style={styles.listLabel}>{t.profile.spmHalved}</Text>
+                <Text style={styles.listHint}>{t.profile.spmHalvedHint}</Text>
               </View>
               <Switch
                 value={spmHalved}
@@ -463,7 +462,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <Button title="Uitloggen" onPress={handleLogout} variant="primary" size="lg" icon="arrow-forward" iconPosition="trailing" />
+        <Button title={t.profile.logout} onPress={handleLogout} variant="primary" size="lg" icon="arrow-forward" iconPosition="trailing" />
 
         <Text style={styles.version}>RowTrack v1.0.0</Text>
       </ScrollView>
@@ -472,15 +471,15 @@ export default function ProfileScreen() {
       <BottomSheet
         visible={sheetOpen === 'voornaam'}
         onClose={closeSheet}
-        title="Voornaam"
-        footer={<Button title="Opslaan" onPress={saveVoornaam} loading={saving} size="md" />}
+        title={t.profile.firstName}
+        footer={<Button title={t.common.save} onPress={saveVoornaam} loading={saving} size="md" />}
       >
         <TextInput
           ref={nameInputRef}
           style={styles.sheetInput}
           value={draftName}
           onChangeText={setDraftName}
-          placeholder="Je voornaam"
+          placeholder={t.profile.firstNamePlaceholder}
           autoCapitalize="words"
           autoCorrect={false}
           editable={!saving}
@@ -495,10 +494,10 @@ export default function ProfileScreen() {
       <BottomSheet
         visible={sheetOpen === 'email'}
         onClose={closeSheet}
-        title="E-mail wijzigen"
+        title={t.profile.emailSheet.title}
         footer={
           <Button
-            title="E-mail wijzigen"
+            title={t.profile.emailSheet.title}
             onPress={handleEmailChange}
             disabled={!emailFormValid || emailChanging}
             loading={emailChanging}
@@ -507,12 +506,12 @@ export default function ProfileScreen() {
         }
       >
         <View style={styles.sheetFieldGroup}>
-          <Text style={styles.sheetFieldLabel}>HUIDIG E-MAILADRES</Text>
+          <Text style={styles.sheetFieldLabel}>{t.profile.emailSheet.currentEmail}</Text>
           <Text style={styles.currentEmailText}>{user?.email ?? ''}</Text>
         </View>
 
         <View style={styles.sheetFieldGroup}>
-          <Text style={styles.sheetFieldLabel}>NIEUW E-MAILADRES</Text>
+          <Text style={styles.sheetFieldLabel}>{t.profile.emailSheet.newEmail}</Text>
           <TextInput
             ref={newEmailRef}
             style={styles.sheetInput}
@@ -523,13 +522,13 @@ export default function ProfileScreen() {
             autoCorrect={false}
             returnKeyType="next"
             onSubmitEditing={() => repeatEmailRef.current?.focus()}
-            placeholder="nieuw@email.com"
+            placeholder={t.profile.emailSheet.emailPlaceholder}
             placeholderTextColor={fg.tertiary}
           />
         </View>
 
         <View style={styles.sheetFieldGroup}>
-          <Text style={styles.sheetFieldLabel}>HERHAAL E-MAILADRES</Text>
+          <Text style={styles.sheetFieldLabel}>{t.profile.emailSheet.repeatEmail}</Text>
           <TextInput
             ref={repeatEmailRef}
             style={styles.sheetInput}
@@ -540,13 +539,13 @@ export default function ProfileScreen() {
             autoCorrect={false}
             returnKeyType="next"
             onSubmitEditing={() => passwordRef.current?.focus()}
-            placeholder="nieuw@email.com"
+            placeholder={t.profile.emailSheet.emailPlaceholder}
             placeholderTextColor={fg.tertiary}
           />
         </View>
 
         <View style={styles.sheetFieldGroup}>
-          <Text style={styles.sheetFieldLabel}>WACHTWOORD</Text>
+          <Text style={styles.sheetFieldLabel}>{t.profile.emailSheet.password}</Text>
           <TextInput
             ref={passwordRef}
             style={styles.sheetInput}
@@ -555,7 +554,7 @@ export default function ProfileScreen() {
             secureTextEntry
             returnKeyType="done"
             onSubmitEditing={emailFormValid ? handleEmailChange : undefined}
-            placeholder="Je huidige wachtwoord"
+            placeholder={t.profile.emailSheet.passwordPlaceholder}
             placeholderTextColor={fg.tertiary}
           />
         </View>
@@ -567,8 +566,8 @@ export default function ProfileScreen() {
       <BottomSheet
         visible={sheetOpen === 'geslacht'}
         onClose={closeSheet}
-        title="Geslacht"
-        footer={<Button title="Opslaan" onPress={saveGeslacht} loading={saving} size="md" />}
+        title={t.profile.gender}
+        footer={<Button title={t.common.save} onPress={saveGeslacht} loading={saving} size="md" />}
       >
         <Segmented options={GENDER_OPTIONS} value={draftGender} onChange={setDraftGender} />
       </BottomSheet>
@@ -577,8 +576,8 @@ export default function ProfileScreen() {
       <BottomSheet
         visible={sheetOpen === 'lengte'}
         onClose={closeSheet}
-        title="Lengte"
-        footer={<Button title="Opslaan" onPress={saveLengte} loading={saving} size="md" />}
+        title={t.profile.height}
+        footer={<Button title={t.common.save} onPress={saveLengte} loading={saving} size="md" />}
       >
         <WheelPicker
           items={HEIGHT_ITEMS}
@@ -593,8 +592,8 @@ export default function ProfileScreen() {
       <BottomSheet
         visible={sheetOpen === 'gewicht'}
         onClose={closeSheet}
-        title="Gewicht"
-        footer={<Button title="Opslaan" onPress={saveGewicht} loading={saving} size="md" />}
+        title={t.profile.weight}
+        footer={<Button title={t.common.save} onPress={saveGewicht} loading={saving} size="md" />}
       >
         <WheelPicker
           items={WEIGHT_ITEMS}
@@ -609,8 +608,8 @@ export default function ProfileScreen() {
       <BottomSheet
         visible={sheetOpen === 'geboortedatum'}
         onClose={closeSheet}
-        title="Geboortedatum"
-        footer={<Button title="Opslaan" onPress={saveGeboortedatum} loading={saving} size="md" />}
+        title={t.profile.birthDate}
+        footer={<Button title={t.common.save} onPress={saveGeboortedatum} loading={saving} size="md" />}
       >
         <View style={styles.datePickerRow}>
           <View style={styles.datePickerBand} pointerEvents="none" />

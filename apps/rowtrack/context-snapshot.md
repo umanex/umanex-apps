@@ -54,22 +54,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+272fcba Merge remote-tracking branch 'origin/main' into refactor/rowtrack-i18n-extract
+387aa31 fix(rowtrack): active-workout header conform Figma 297:2227
 90f0ec3 refactor(rowtrack): route user-facing strings through the i18n layer
-af5ffc9 feat(rowtrack): add typed i18n layer with Dutch translations
-e264914 docs(rowtrack): add 2026-07-16 live-app UX audit
-acdcb14 fix(rowtrack): static spacer in active-workout "afgelegd" row
-ab03a2c refactor(rowtrack): drop Inter, unify body/label copy on Albert Sans
+7464a0e docs(rowtrack): resolve profile-save handoff item, add UX-audit todos
+97c8d8f fix(rowtrack): add elapsed time and Stop exit to BLE connect overlay (audit P0-F2)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
   M  apps/rowtrack/app/(tabs)/profile.tsx
-  M  apps/rowtrack/app/dev-active.tsx
-  M  apps/rowtrack/briefings/2026-07-16-component-active-header-bar.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-16-component-active-overlay-stop.tcebc.md
   M  apps/rowtrack/components/workout/ActivePhase.tsx
-  M  apps/rowtrack/components/workout/workout.styles.ts
-  M  apps/rowtrack/context-snapshot.md
+  M  apps/rowtrack/i18n/translations/nl.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

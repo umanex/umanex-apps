@@ -448,8 +448,9 @@ export function ActivePhase({
           style={[
             activeStyles.header,
             {
-              paddingTop: Math.max(space['28'], insets.top),
-              paddingBottom: space['28'],
+              // Band-padding 20 (Figma 297:2227); paddingTop respecteert de notch.
+              paddingTop: Math.max(space['20'], insets.top),
+              paddingBottom: space['20'],
               paddingHorizontal: padH,
             },
           ]}
@@ -679,23 +680,19 @@ const activeStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: space['16'],
-    // Header-band op bg.base met sterke onderrand (Figma 290:2873). De accent-tint zit
-    // nu op de DOEL-pill zelf, niet meer op de band. Gedeeld portrait + landscape.
-    backgroundColor: bg.base,
+    // Header-band met accent-tint + sterke onderrand (Figma 297:2227). De tint zit op de
+    // band zelf; de DOEL-pill is plat (geen fill/border). Gedeeld portrait + landscape.
+    // TODO: token accent.muted = 0.12; Figma-band = 0.10 (verschil verwaarloosbaar, geen 0.10-token).
+    backgroundColor: accent.muted,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: border.strong,
   },
-  // DOEL-pill: pill-vorm, hoogte 48, subtiele accent-fill + accent-border (Figma 290:2874,
-  // fill 10% / border 12% — samengevouwen naar accent.muted, cf. 2026-07-14).
+  // DOEL: plat inline (label · divider · waarde) — geen fill/border meer, de tint zit op
+  // de band (Figma 297:2227). Hoogte 48 (lijnt met de Stop-knop), px 0, gap 16.
   doelPill: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 48,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: accent.muted,
-    backgroundColor: accent.muted,
-    paddingHorizontal: space['20'],
     gap: space['16'],
   },
   doelPillLabel: {
@@ -710,7 +707,7 @@ const activeStyles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: fg.secondary,
   },
-  // Waarde bold, eenheid ernaast in italic (gap 2, Figma Frame 106).
+  // Waarde + eenheid beide bold, strak naast elkaar (gap 2) — "180W" (Figma 297:2227).
   doelPillValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -723,7 +720,7 @@ const activeStyles = StyleSheet.create({
     color: accent.default,
   },
   doelPillUnit: {
-    fontFamily: fontFamily.albertSansItalic,
+    fontFamily: fontFamily.albertSansBold,
     fontSize: fontSize['16'],
     color: accent.default,
   },

@@ -508,6 +508,10 @@ export function ActivePhase({
               <Button title="Opnieuw proberen" onPress={startScan} size="md" variant="ghost" />
             </>
           )}
+          {/* Uitgang tijdens reconnect/error: de overlay verbergt de header-Stop en de
+              tabbar is al verborgen — zonder deze knop zit de roeier vast (audit P0-F2). */}
+          <Text style={styles.connectionElapsed}>{`verstreken ${formattedTimer}`}</Text>
+          <Button title="Stop training" onPress={onStop} size="md" />
         </View>
       )}
 

@@ -16,6 +16,7 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { signOut } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { reportError } from '@/lib/monitoring';
 import { Button, WheelPicker, GoalSheet, Segmented, type SegmentedOption } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -229,30 +230,77 @@ export default function ProfileScreen() {
     setSheetOpen('none');
   }
 
-  // --- Sheet savers (stage to profile state) ---
-  function saveVoornaam() {
-    setDisplayName(draftName.trim());
-    setSheetOpen('none');
+  // --- Sheet savers: persisteren direct naar Supabase (per veld, zoals GoalSheet).
+  // Lokale state + sheet-sluiten pas ná een geslaagde write; bij een fout blijft de
+  // sheet open zodat de gebruiker kan herproberen — de focus-refetch zou een enkel
+  // lokaal gestagede waarde anders stil terugdraaien (UX-audit 2026-07-16, P0-F1).
+
+  // Single-flight: één profiel-write tegelijk. De sheet-Buttons zijn al gegate via
+  // loading, maar onSubmitEditing (Voornaam) en de Switch hebben geen eigen lock.
+  const persistProfile = useCallback(async (patch: Record<string, unknown>): Promise<boolean> => {
+    if (!user || saving) return false;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
+      if (error) {
+        reportError(error, { where: 'profile.save' });
+        Alert.alert('Fout', `Opslaan mislukt: ${error.message}`);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      // postgrest-js resolvet fouten normaal als { error }; dit vangt enkel
+      // transport-throws zodat `saving` nooit blijft hangen.
+      reportError(e, { where: 'profile.save' });
+      Alert.alert('Fout', 'Opslaan mislukt. Controleer je verbinding.');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [user, saving]);
+
+  // Sluit enkel de eigen sheet: resolvet een trage write nadat de gebruiker al een
+  // ándere sheet opende, dan mag die niet dichtklappen.
+  function closeOwnSheet(own: SheetType) {
+    setSheetOpen(cur => (cur === own ? 'none' : cur));
   }
 
-  function saveGeslacht() {
+  async function saveVoornaam() {
+    const name = draftName.trim();
+    if (!(await persistProfile({ display_name: name || null }))) return;
+    setDisplayName(name);
+    closeOwnSheet('voornaam');
+  }
+
+  async function saveGeslacht() {
+    if (!(await persistProfile({ gender: draftGender }))) return;
     setGender(draftGender);
-    setSheetOpen('none');
+    closeOwnSheet('geslacht');
   }
 
-  function saveLengte() {
+  async function saveLengte() {
+    if (!(await persistProfile({ height_cm: draftHeight }))) return;
     setHeightCm(draftHeight);
-    setSheetOpen('none');
+    closeOwnSheet('lengte');
   }
 
-  function saveGewicht() {
+  async function saveGewicht() {
+    if (!(await persistProfile({ weight_kg: draftWeight }))) return;
     setWeightKg(draftWeight);
-    setSheetOpen('none');
+    closeOwnSheet('gewicht');
   }
 
-  function saveGeboortedatum() {
-    setBirthDate(indicesToDate(draftDayIdx, draftMonthIdx, draftYearIdx));
-    setSheetOpen('none');
+  async function saveGeboortedatum() {
+    const date = indicesToDate(draftDayIdx, draftMonthIdx, draftYearIdx);
+    if (!(await persistProfile({ birth_date: date }))) return;
+    setBirthDate(date);
+    closeOwnSheet('geboortedatum');
+  }
+
+  // Switch heeft geen save-knop: optimistic togglen, terugrollen bij een gefaalde write.
+  async function handleSpmToggle(value: boolean) {
+    setSpmHalved(value);
+    if (!(await persistProfile({ spm_halved: value }))) setSpmHalved(!value);
   }
 
   // --- Email change (direct Supabase auth write, not staged) ---
@@ -290,32 +338,6 @@ export default function ProfileScreen() {
       'Bevestiging verstuurd',
       `Controleer je inbox op ${draftEmail} om de wijziging te bevestigen.`,
     );
-  }
-
-  // --- Main profile save ---
-  async function handleSave() {
-    if (!user) return;
-    setSaving(true);
-
-    // Het doel wordt niet meer hier geschreven — de GoalSheet persisteert period_goal_*
-    // zelf (gedeeld door home + profiel). Deze save dekt enkel de overige profiel-velden.
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        display_name: displayName || null,
-        gender: gender || null,
-        height_cm: heightCm,
-        weight_kg: weightKg,
-        birth_date: birthDate,
-        spm_halved: spmHalved,
-      })
-      .eq('id', user.id);
-
-    setSaving(false);
-
-    if (error) {
-      Alert.alert('Fout', `Opslaan mislukt: ${error.message}`);
-    }
   }
 
   function handleLogout() {
@@ -431,7 +453,8 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={spmHalved}
-                onValueChange={setSpmHalved}
+                onValueChange={handleSpmToggle}
+                disabled={saving}
                 trackColor={{ false: border.strong, true: accent.default }}
                 thumbColor={fg.primary}
                 ios_backgroundColor={border.strong}
@@ -450,7 +473,7 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'voornaam'}
         onClose={closeSheet}
         title="Voornaam"
-        footer={<Button title="Opslaan" onPress={saveVoornaam} size="md" />}
+        footer={<Button title="Opslaan" onPress={saveVoornaam} loading={saving} size="md" />}
       >
         <TextInput
           ref={nameInputRef}
@@ -460,6 +483,7 @@ export default function ProfileScreen() {
           placeholder="Je voornaam"
           autoCapitalize="words"
           autoCorrect={false}
+          editable={!saving}
           maxLength={60}
           returnKeyType="done"
           onSubmitEditing={saveVoornaam}
@@ -544,7 +568,7 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'geslacht'}
         onClose={closeSheet}
         title="Geslacht"
-        footer={<Button title="Opslaan" onPress={saveGeslacht} size="md" />}
+        footer={<Button title="Opslaan" onPress={saveGeslacht} loading={saving} size="md" />}
       >
         <Segmented options={GENDER_OPTIONS} value={draftGender} onChange={setDraftGender} />
       </BottomSheet>
@@ -554,7 +578,7 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'lengte'}
         onClose={closeSheet}
         title="Lengte"
-        footer={<Button title="Opslaan" onPress={saveLengte} size="md" />}
+        footer={<Button title="Opslaan" onPress={saveLengte} loading={saving} size="md" />}
       >
         <WheelPicker
           items={HEIGHT_ITEMS}
@@ -570,7 +594,7 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'gewicht'}
         onClose={closeSheet}
         title="Gewicht"
-        footer={<Button title="Opslaan" onPress={saveGewicht} size="md" />}
+        footer={<Button title="Opslaan" onPress={saveGewicht} loading={saving} size="md" />}
       >
         <WheelPicker
           items={WEIGHT_ITEMS}
@@ -586,7 +610,7 @@ export default function ProfileScreen() {
         visible={sheetOpen === 'geboortedatum'}
         onClose={closeSheet}
         title="Geboortedatum"
-        footer={<Button title="Opslaan" onPress={saveGeboortedatum} size="md" />}
+        footer={<Button title="Opslaan" onPress={saveGeboortedatum} loading={saving} size="md" />}
       >
         <View style={styles.datePickerRow}>
           <View style={styles.datePickerBand} pointerEvents="none" />

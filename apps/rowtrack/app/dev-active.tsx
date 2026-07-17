@@ -20,6 +20,17 @@ import { allowAllOrientations, lockPortrait } from '@/lib/orientation';
 import { accent, bg, fg } from '@/constants';
 import type { WorkoutGoal } from '@/lib/workout-goals';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
+import type { ConnectionStatus } from '@/lib/ble/types';
+
+// ?ble=… → forceer een niet-connected status om de connect-overlay (spinner/error +
+// verstreken tijd + Stop-uitgang) zonder hardware te renderen.
+// Record over de volledige union: komt er een ConnectionStatus bij, dan breekt de
+// build hier — de harness kan dan geen status stil missen.
+const BLE_STATUS_SET: Record<ConnectionStatus, true> = {
+  idle: true, scanning: true, connecting: true, discovering: true,
+  connected: true, reconnecting: true, disconnecting: true, error: true,
+};
+const BLE_STATUSES = Object.keys(BLE_STATUS_SET) as ConnectionStatus[];
 
 const MOCK_METRICS: WorkoutMetricsState = {
   seconds: 300, // 05:00 verstreken
@@ -46,7 +57,7 @@ const VARIANTS: { key: string; label: string; goal: WorkoutGoal | null }[] = [
 export default function DevActivePreview() {
   const insets = useSafeAreaInsets();
   const pulse = useRef(new Animated.Value(1)).current;
-  const params = useLocalSearchParams<{ goal?: string; toast?: string; summary?: string }>();
+  const params = useLocalSearchParams<{ goal?: string; toast?: string; summary?: string; ble?: string }>();
 
   // Sta landscape toe in de harness (active-workout is landscape-capable), zodat de
   // landscape-layouts + celebration hier te verifiëren zijn. Herstel portrait bij verlaten.
@@ -64,14 +75,19 @@ export default function DevActivePreview() {
   // als de switcher (router.setParams) de variant.
   const i = Math.max(0, VARIANTS.findIndex(v => v.key === (params.goal ?? 'duration')));
 
+  // expo-router kan bij herhaalde query-keys een string[] geven — enkel een kale
+  // string telt; alles anders valt terug op 'connected'.
+  const bleParam = typeof params.ble === 'string' ? params.ble : undefined;
+  const bleStatus: ConnectionStatus = BLE_STATUSES.find(s => s === bleParam) ?? 'connected';
+
   return (
     <View style={styles.root}>
       <ActivePhase
         phase={params.summary === '1' ? 'summary' : 'active'}
         metricsState={MOCK_METRICS}
-        bleStatus="connected"
+        bleStatus={bleStatus}
         deviceName="MockErg"
-        bleError={null}
+        bleError={bleStatus === 'error' ? 'Verbinding verloren. Probeer opnieuw.' : null}
         startScan={() => {}}
         goal={VARIANTS[i].goal}
         isCountdown={false}

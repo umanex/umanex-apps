@@ -54,24 +54,22 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+90f0ec3 refactor(rowtrack): route user-facing strings through the i18n layer
 af5ffc9 feat(rowtrack): add typed i18n layer with Dutch translations
 e264914 docs(rowtrack): add 2026-07-16 live-app UX audit
 acdcb14 fix(rowtrack): static spacer in active-workout "afgelegd" row
 ab03a2c refactor(rowtrack): drop Inter, unify body/label copy on Albert Sans
-06b19b9 docs(rowtrack): mark auto-save flow HANDOFF item resolved
 ```
 
 ## Uncommitted wijzigingen
-   M apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/(auth)/forgot-password.tsx
-  M  apps/rowtrack/app/(auth)/login.tsx
-  M  apps/rowtrack/app/(auth)/register.tsx
-  M  apps/rowtrack/app/(auth)/reset-password.tsx
-  M  apps/rowtrack/app/(tabs)/_layout.tsx
-  M  apps/rowtrack/app/(tabs)/history/[id].tsx
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-  M  apps/rowtrack/app/(tabs)/index.tsx
-   M apps/rowtrack/app/(tabs)/profile.tsx
+  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/app/(tabs)/profile.tsx
+  M  apps/rowtrack/app/dev-active.tsx
+  M  apps/rowtrack/briefings/2026-07-16-component-active-header-bar.tcebc.md
+  A  apps/rowtrack/briefings/2026-07-16-component-active-overlay-stop.tcebc.md
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/components/workout/workout.styles.ts
+  M  apps/rowtrack/context-snapshot.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -13,6 +13,7 @@ import {
   type KeyboardEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from '@/i18n';
 import { useSafeAreaInsets, initialWindowMetrics } from 'react-native-safe-area-context';
 import {
   bg,
@@ -146,7 +147,7 @@ export const BottomSheet = memo(function BottomSheet({
                 styles.closeBtn,
                 pressed && { opacity: 0.6 },
               ]}
-              accessibilityLabel="Sluiten"
+              accessibilityLabel={t.common.close}
               accessibilityRole="button"
             >
               <Ionicons name="close" size={24} color={fg.primary} />

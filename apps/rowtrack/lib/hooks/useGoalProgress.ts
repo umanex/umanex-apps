@@ -6,6 +6,7 @@ import { reportError } from '@/lib/monitoring';
 import { calculateProgress } from '@/lib/workout-goals';
 import type { WorkoutGoal } from '@/lib/workout-goals';
 import { formatDistanceDynamic, formatSplit } from '@/lib/formatters';
+import { t } from '@/i18n';
 import { getPaceZone } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import type { WorkoutMetricsState, AccumulatorRefs } from './useWorkoutMetrics';
@@ -14,18 +15,16 @@ import type { WorkoutMetricsState, AccumulatorRefs } from './useWorkoutMetrics';
 
 function celebrationMessage(goal: WorkoutGoal): string {
   switch (goal.type) {
-    case 'duration': {
-      const min = Math.round(goal.target / 60);
-      return `Je hebt ${min} ${min === 1 ? 'minuut' : 'minuten'} geroeid. Geweldig gedaan! 💪`;
-    }
+    case 'duration':
+      return t.workout.celebration.duration(Math.round(goal.target / 60));
     case 'distance': {
       const { value, unit } = formatDistanceDynamic(goal.target);
-      return `Je hebt ${value.replace('.', ',')} ${unit} geroeid. Geweldig gedaan! 💪`;
+      return t.workout.celebration.distance(value.replace('.', t.format.decimalSeparator), unit);
     }
     case 'split':
-      return `Je hebt je split-doel van ${formatSplit(goal.target)}/500m gehaald. Geweldig gedaan! 💪`;
+      return t.workout.celebration.split(formatSplit(goal.target));
     case 'watts':
-      return `Je hebt je doel van ${goal.target} watt gehaald. Geweldig gedaan! 💪`;
+      return t.workout.celebration.watts(goal.target);
   }
 }
 

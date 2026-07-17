@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Button } from '@/components';
+import { t } from '@/i18n';
 import { bg, fg, fontFamily, fontSize, componentRadius, space } from '@/constants';
 
 const CONFETTI_COLORS = ['#F05454', '#3B82F6', '#22C55E', '#FFD700', '#FF69B4', '#FFFFFF'];
@@ -163,10 +164,10 @@ export const MotivationalToast = memo(function MotivationalToast({
 
         <Animated.View style={[styles.card, { opacity, transform: [{ scale }] }]}>
           <Text style={styles.trophy}>🏆</Text>
-          <Text style={styles.title}>Doel bereikt!</Text>
+          <Text style={styles.title}>{t.workout.celebration.title}</Text>
           {message && <Text style={styles.body}>{message}</Text>}
           <Button
-            title="Ga verder"
+            title={t.common.continue}
             variant="primary"
             size="md"
             icon="arrow-forward"

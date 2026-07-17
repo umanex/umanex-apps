@@ -8,6 +8,7 @@ import {
   type TextInputProps as RNTextInputProps,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from '@/i18n';
 import {
   bg,
   fg,
@@ -87,7 +88,7 @@ export const FormField = memo(function FormField({
             onPress={() => setRevealed((r) => !r)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={revealed ? 'Verberg wachtwoord' : 'Toon wachtwoord'}
+            accessibilityLabel={revealed ? t.a11y.hidePassword : t.a11y.showPassword}
           >
             <Ionicons
               name={revealed ? 'eye-off-outline' : 'eye-outline'}

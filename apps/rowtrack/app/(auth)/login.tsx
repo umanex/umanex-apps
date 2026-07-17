@@ -11,6 +11,7 @@ import { Link } from 'expo-router';
 import { signIn } from '@/lib/auth';
 import { isValidEmail, emailFieldError, passwordFieldError } from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
+import { t } from '@/i18n';
 import { bg, fg, accent, typeStyles, space, layout } from '@/constants';
 
 export default function LoginScreen() {
@@ -32,7 +33,7 @@ export default function LoginScreen() {
     try {
       await signIn(email.trim(), password);
     } catch (e: any) {
-      setSubmitError(e.message ?? 'Inloggen mislukt.');
+      setSubmitError(e.message ?? t.auth.login.failed);
     } finally {
       setLoading(false);
     }
@@ -45,13 +46,13 @@ export default function LoginScreen() {
     >
       <View style={styles.inner}>
         <Text style={styles.title}>RowTrack</Text>
-        <Text style={styles.subtitle}>Log in om verder te gaan</Text>
+        <Text style={styles.subtitle}>{t.auth.login.subtitle}</Text>
 
         <ErrorMessage message={submitError} />
 
         <FormField
-          label="E-mail"
-          placeholder="naam@voorbeeld.be"
+          label={t.auth.emailLabel}
+          placeholder={t.auth.emailPlaceholder}
           value={email}
           onChangeText={setEmail}
           onBlur={() => setTouched((t) => ({ ...t, email: true }))}
@@ -63,7 +64,7 @@ export default function LoginScreen() {
         />
 
         <FormField
-          label="Wachtwoord"
+          label={t.auth.passwordLabel}
           value={password}
           onChangeText={setPassword}
           onBlur={() => setTouched((t) => ({ ...t, password: true }))}
@@ -74,12 +75,12 @@ export default function LoginScreen() {
 
         <Link href="/(auth)/forgot-password" asChild>
           <TouchableOpacity style={styles.forgot} accessibilityRole="link">
-            <Text style={styles.forgotText}>Wachtwoord vergeten?</Text>
+            <Text style={styles.forgotText}>{t.auth.login.forgotPassword}</Text>
           </TouchableOpacity>
         </Link>
 
         <Button
-          title="Log in"
+          title={t.auth.login.button}
           onPress={handleLogin}
           disabled={!canSubmit}
           loading={loading}
@@ -89,8 +90,8 @@ export default function LoginScreen() {
         <Link href="/(auth)/register" asChild>
           <TouchableOpacity style={styles.linkContainer}>
             <Text style={styles.linkText}>
-              Nog geen account?{' '}
-              <Text style={styles.linkAccent}>Registreer</Text>
+              {t.auth.login.noAccount}{' '}
+              <Text style={styles.linkAccent}>{t.auth.login.registerLink}</Text>
             </Text>
           </TouchableOpacity>
         </Link>

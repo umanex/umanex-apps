@@ -2,9 +2,8 @@ import { memo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Dot } from './Dot';
+import { t } from '@/i18n';
 import { bg, fg, accent, space, typeStyles } from '@/constants';
-
-const NL_MONTHS = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'] as const;
 
 function fmtDate(iso: string): string {
   const d = new Date(iso);
@@ -13,15 +12,15 @@ function fmtDate(iso: string): string {
     d.getDate() === now.getDate() &&
     d.getMonth() === now.getMonth() &&
     d.getFullYear() === now.getFullYear();
-  if (isToday) return 'Vandaag';
+  if (isToday) return t.dates.today;
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   const isYesterday =
     d.getDate() === yesterday.getDate() &&
     d.getMonth() === yesterday.getMonth() &&
     d.getFullYear() === yesterday.getFullYear();
-  if (isYesterday) return 'Gisteren';
-  return `${d.getDate()} ${NL_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  if (isYesterday) return t.dates.yesterday;
+  return `${d.getDate()} ${t.dates.monthsShort[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function fmtDuration(sec: number | null): { value: string; unit: string } | null {
@@ -29,8 +28,8 @@ function fmtDuration(sec: number | null): { value: string; unit: string } | null
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = Math.round(sec % 60);
-  if (h > 0) return { value: `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`, unit: 'uur' };
-  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: 'min' };
+  if (h > 0) return { value: `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`, unit: t.units.hourLong };
+  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: t.units.minuteShort };
 }
 
 function fmtMetersVU(m: number): { value: string; unit: string } {

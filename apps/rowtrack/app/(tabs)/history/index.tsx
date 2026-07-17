@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { BottomFade, EmptyState, ErrorState, KpiSingle, Segmented, WorkoutCard } from '@/components';
 import { formatTimerFull, formatDistanceDynamic } from '@/lib/formatters';
+import { t } from '@/i18n';
 import {
   bg,
   fg,
@@ -24,13 +25,13 @@ import {
 } from '@/constants';
 import type { WorkoutSummary } from '@/types/workout';
 
-type HistoryFilter = 'week' | 'maand' | 'jaar' | 'alle';
+type HistoryFilter = 'week' | 'month' | 'year' | 'all';
 
 const FILTERS: { value: HistoryFilter; label: string }[] = [
-  { value: 'week',  label: 'Week'  },
-  { value: 'maand', label: 'Maand' },
-  { value: 'jaar',  label: 'Jaar'  },
-  { value: 'alle',  label: 'Alle'  },
+  { value: 'week',  label: t.history.filterWeek  },
+  { value: 'month', label: t.history.filterMonth },
+  { value: 'year',  label: t.history.filterYear  },
+  { value: 'all',   label: t.history.filterAll   },
 ];
 
 export default function HistoryScreen() {
@@ -58,11 +59,11 @@ export default function HistoryScreen() {
       const from = new Date(now);
       from.setDate(from.getDate() - 7);
       query = query.gte('started_at', from.toISOString());
-    } else if (filter === 'maand') {
+    } else if (filter === 'month') {
       const from = new Date(now);
       from.setMonth(from.getMonth() - 1);
       query = query.gte('started_at', from.toISOString());
-    } else if (filter === 'jaar') {
+    } else if (filter === 'year') {
       const from = new Date(now);
       from.setFullYear(from.getFullYear() - 1);
       query = query.gte('started_at', from.toISOString());
@@ -110,7 +111,7 @@ export default function HistoryScreen() {
   // tegelijk in een ScrollView.
   const listHeader = (
     <>
-      <Text style={styles.title} accessibilityRole="header">Historiek</Text>
+      <Text style={styles.title} accessibilityRole="header">{t.history.title}</Text>
 
       {/* Segment filter */}
       <Segmented
@@ -126,13 +127,13 @@ export default function HistoryScreen() {
         <View style={[styles.kpiGridRow, styles.kpiGridRowBordered]}>
           <KpiSingle
             value={formatTimerFull(totalDurSec)}
-            label={'TOTALE\nDUUR'}
+            label={t.kpi.totalDuration}
             style={styles.kpiCell}
           />
           <KpiSingle
             value={totalDistFormatted.value}
             unit={totalDistFormatted.unit}
-            label={'TOTALE\nAFSTAND'}
+            label={t.kpi.totalDistance}
             style={styles.kpiCell}
           />
         </View>
@@ -140,13 +141,13 @@ export default function HistoryScreen() {
           <KpiSingle
             value={`${totalCalories}`}
             unit="kcal"
-            label={'TOTALE\nENERGIE'}
+            label={t.kpi.totalEnergy}
             style={styles.kpiCell}
           />
           <KpiSingle
             value={`${totalWorkouts}`}
             unit=""
-            label={'AANTAL\nTRAININGEN'}
+            label={t.kpi.totalWorkouts}
             style={styles.kpiCell}
           />
         </View>
@@ -159,7 +160,7 @@ export default function HistoryScreen() {
   ) : error ? (
     <ErrorState onRetry={fetchWorkouts} />
   ) : (
-    <EmptyState icon="time-outline" title="Geen workouts in deze periode." />
+    <EmptyState icon="time-outline" title={t.history.emptyTitle} />
   );
 
   return (

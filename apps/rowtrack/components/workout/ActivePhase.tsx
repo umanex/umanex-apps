@@ -22,6 +22,7 @@ import {
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatMetersDotted, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
+import { t } from '@/i18n';
 import { bg, fg, accent, border, progressBar, status, buttonTokens, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
 import { styles } from './workout.styles';
@@ -133,7 +134,7 @@ export function ActivePhase({
     const now = new Date();
     const h = String(now.getHours());
     const m = String(now.getMinutes()).padStart(2, '0');
-    return `Vandaag - ${h}:${m}`;
+    return t.workout.summary.todayAt(`${h}:${m}`);
   }, [phase]);
 
   const handleSetGoal = useCallback((g: WorkoutGoal) => {
@@ -155,7 +156,7 @@ export function ActivePhase({
   // Doel-pill: waarde en eenheid gesplitst — waarde bold, eenheid ernaast in italic
   // (Figma header 290:2873, bv. "180" + "W"). "Geen" heeft geen eenheid.
   function goalPillParts(): { value: string; unit: string | null } {
-    if (!goal) return { value: 'Geen', unit: null };
+    if (!goal) return { value: t.workout.active.goalNone, unit: null };
     switch (goal.type) {
       case 'duration': {
         const m = Math.floor(goal.target / 60);
@@ -165,12 +166,12 @@ export function ActivePhase({
       case 'distance': {
         if (goal.target >= 1000) {
           const km = goal.target / 1000;
-          return { value: Number.isInteger(km) ? `${km}` : `${km.toFixed(1).replace('.', ',')}`, unit: 'km' };
+          return { value: Number.isInteger(km) ? `${km}` : `${km.toFixed(1).replace('.', t.format.decimalSeparator)}`, unit: 'km' };
         }
         return { value: `${goal.target}`, unit: 'm' };
       }
       case 'split':
-        return { value: formatSplit(goal.target, true), unit: 'split' };
+        return { value: formatSplit(goal.target, true), unit: t.workout.active.goalUnitSplit };
       case 'watts':
         return { value: `${goal.target}`, unit: 'W' };
     }
@@ -182,9 +183,9 @@ export function ActivePhase({
     const goalType = goal?.type ?? null;
     // Eyebrow-labels maken het hero-getal ondubbelzinnig: bij een doel telt de hero
     // AF (resterend), zonder label leest dat verkeerd (audit F3). Defaults = geen doel.
-    let heroLabel: string | null = 'Totale tijd';
+    let heroLabel: string | null = t.workout.active.totalTime;
     let heroText = formattedTimer;
-    let subLabel: string | null = 'Totale afstand';
+    let subLabel: string | null = t.workout.active.totalDistance;
     let subtitle: ReactNode = null;
     let fillPct = 0;
     let fillKind: FillKind = 'none';
@@ -206,9 +207,9 @@ export function ActivePhase({
         const target = goal!.target;
         fillPct = target > 0 ? Math.min(1, seconds / target) : 0;
         fillKind = 'gradient';
-        heroLabel = 'Resterende tijd';
+        heroLabel = t.workout.active.remainingTime;
         heroText = formatTimer(Math.max(0, target - seconds));
-        subLabel = 'Afgelegd';
+        subLabel = t.workout.active.covered;
         subtitle = progressRow(formatTimer(seconds), fillPct);
         break;
       }
@@ -216,14 +217,14 @@ export function ActivePhase({
         const target = goal!.target;
         fillPct = target > 0 ? Math.min(1, distanceMeters / target) : 0;
         fillKind = 'gradient';
-        heroLabel = 'Resterende afstand';
+        heroLabel = t.workout.active.remainingDistance;
         heroText = formatMetersDotted(Math.max(0, target - distanceMeters));
-        subLabel = 'Afgelegd';
+        subLabel = t.workout.active.covered;
         subtitle = progressRow(`${formatMetersDotted(distanceMeters)}m`, fillPct);
         break;
       }
       case 'split': {
-        heroLabel = 'Huidige split 500/m';
+        heroLabel = t.workout.active.currentSplit;
         subLabel = null;
         // Rond de gesmoothe split één keer af naar heel-seconde en gebruik díe waarde
         // voor weergave, fill-tint én coaching. Zo kan het getoonde getal (heel-seconde)
@@ -233,28 +234,28 @@ export function ActivePhase({
         heroText = formatSplit(split, true);
         fillPct = 1;
         fillKind = split > 0 && split <= goal!.target ? 'success' : 'warning';
-        let sub = 'Begin met roeien...';
+        let sub = t.workout.active.startRowing;
         if (split > 0) {
           const diff = goal!.target - split;
           const absDiff = Math.abs(diff);
-          sub = diff >= 0 ? `Je bent ${absDiff} seconden sneller` : `Je bent ${absDiff} seconden trager`;
+          sub = diff >= 0 ? t.workout.active.splitFaster(absDiff) : t.workout.active.splitSlower(absDiff);
         }
         subtitle = <Text style={activeStyles.subtitleText}>{sub}</Text>;
         break;
       }
       case 'watts': {
-        heroLabel = 'Huidige kracht';
+        heroLabel = t.workout.active.currentPower;
         subLabel = null;
         // Idem watts: één keer afronden, dan weergave/tint/coaching op dezelfde waarde.
         const w = Math.round(wattsDisplay);
         heroText = `${w} W`;
         fillPct = 1;
         fillKind = w >= goal!.target ? 'success' : 'warning';
-        let sub = 'Begin met roeien...';
+        let sub = t.workout.active.startRowing;
         if (w > 0) {
           const diff = w - goal!.target;
           const absDiff = Math.abs(diff);
-          sub = diff >= 0 ? `Je levert ${absDiff} W meer` : `Je levert ${absDiff} W minder dan je doel`;
+          sub = diff >= 0 ? t.workout.active.wattsMore(absDiff) : t.workout.active.wattsLess(absDiff);
         }
         subtitle = <Text style={activeStyles.subtitleText}>{sub}</Text>;
         break;
@@ -293,7 +294,7 @@ export function ActivePhase({
     return (
       <>
         <View style={activeStyles.doelPill}>
-          <Text style={activeStyles.doelPillLabel}>DOEL</Text>
+          <Text style={activeStyles.doelPillLabel}>{t.workout.active.goalPillLabel}</Text>
           <View style={activeStyles.doelPillDivider} />
           <View style={activeStyles.doelPillValueRow}>
             <Text style={activeStyles.doelPillValue}>{goalParts.value}</Text>
@@ -303,7 +304,7 @@ export function ActivePhase({
           </View>
         </View>
         <Button
-          title="Stop"
+          title={t.workout.active.stopButton}
           variant="primary"
           size="md"
           icon="arrow-forward"
@@ -383,13 +384,13 @@ export function ActivePhase({
     // Natuurlijke casing (design): labels niet uppercase; SPM/BPM blijven acroniemen.
     function kpiLabel(key: KPIKey): string {
       switch (key) {
-        case 'SPLIT': return 'Split 500/m';
-        case 'WATT': return 'Watt';
-        case 'SPM': return 'SPM';
-        case 'BPM': return 'BPM';
-        case 'AFSTAND': return 'Totaal afstand';
-        case 'TIJD': return 'Tijd';
-        case 'KCAL': return 'Totaal Kcal';
+        case 'SPLIT': return t.workout.active.kpiSplit;
+        case 'WATT': return t.workout.active.kpiWatt;
+        case 'SPM': return t.workout.active.kpiSpm;
+        case 'BPM': return t.workout.active.kpiBpm;
+        case 'AFSTAND': return t.workout.active.kpiDistance;
+        case 'TIJD': return t.workout.active.kpiTime;
+        case 'KCAL': return t.workout.active.kpiKcal;
       }
     }
 
@@ -418,7 +419,7 @@ export function ActivePhase({
           if (key === 'BPM') {
             return (
               <TouchableOpacity key="BPM" style={rowStyle} onPress={startHRScan} activeOpacity={0.8}>
-                <Text style={activeStyles.kpiLabel}>BPM</Text>
+                <Text style={activeStyles.kpiLabel}>{t.workout.active.kpiBpm}</Text>
                 {hrStatus === 'scanning' ? (
                   <ActivityIndicator size="small" color={fg.secondary} />
                 ) : (
@@ -495,24 +496,24 @@ export function ActivePhase({
             <>
               <ActivityIndicator color={accent.default} size="large" />
               <Text style={styles.connectionText}>
-                {(bleStatus === 'idle' || bleStatus === 'scanning') && 'Zoeken naar roeier...'}
-                {bleStatus === 'connecting' && 'Verbinden...'}
-                {bleStatus === 'discovering' && 'Services ontdekken...'}
-                {bleStatus === 'reconnecting' && 'Opnieuw verbinden...'}
-                {bleStatus === 'disconnecting' && 'Verbinding verbreken...'}
+                {(bleStatus === 'idle' || bleStatus === 'scanning') && t.workout.connection.searching}
+                {bleStatus === 'connecting' && t.workout.connection.connecting}
+                {bleStatus === 'discovering' && t.workout.connection.discovering}
+                {bleStatus === 'reconnecting' && t.workout.connection.reconnecting}
+                {bleStatus === 'disconnecting' && t.workout.connection.disconnecting}
               </Text>
             </>
           ) : (
             <>
               <Ionicons name="warning-outline" size={40} color={fg.secondary} />
               <Text style={styles.connectionText}>{bleError}</Text>
-              <Button title="Opnieuw proberen" onPress={startScan} size="md" variant="ghost" />
+              <Button title={t.common.retry} onPress={startScan} size="md" variant="ghost" />
             </>
           )}
           {/* Uitgang tijdens reconnect/error: de overlay verbergt de header-Stop en de
               tabbar is al verborgen — zonder deze knop zit de roeier vast (audit P0-F2). */}
-          <Text style={styles.connectionElapsed}>{`verstreken ${formattedTimer}`}</Text>
-          <Button title="Stop training" onPress={onStop} size="md" />
+          <Text style={styles.connectionElapsed}>{t.workout.connection.elapsed(formattedTimer)}</Text>
+          <Button title={t.workout.connection.stopButton} onPress={onStop} size="md" />
         </View>
       )}
 
@@ -590,14 +591,14 @@ export function ActivePhase({
           {/* Top: titel + datum + PR-banner */}
           <View style={summaryStyles.topSection}>
             <View style={[summaryStyles.titleBlock, { paddingTop: Math.max(space['28'], insets.top) }]}>
-              <Text style={summaryStyles.title}>Samenvatting</Text>
+              <Text style={summaryStyles.title}>{t.workout.summary.title}</Text>
               <Text style={summaryStyles.dateText}>{summaryDateLabel}</Text>
             </View>
             {hasPR && (
               <View style={summaryStyles.prWrapper}>
                 <View style={summaryStyles.prBanner}>
                   <Text style={summaryStyles.prEmoji}>🏅</Text>
-                  <Text style={summaryStyles.prText}>Nieuw persoonlijk record. Proficiat!</Text>
+                  <Text style={summaryStyles.prText}>{t.workout.summary.prBanner}</Text>
                 </View>
               </View>
             )}
@@ -609,12 +610,12 @@ export function ActivePhase({
               <KpiSingle
                 value={formattedDistance.value}
                 unit={formattedDistance.unit}
-                label="AFSTAND"
+                label={t.workout.summary.kpiDistance}
                 style={summaryStyles.kpiCell}
               />
               <KpiSingle
                 value={formatTimerFull(seconds)}
-                label="DUUR"
+                label={t.workout.summary.kpiDuration}
                 style={summaryStyles.kpiCell}
               />
             </View>
@@ -623,12 +624,12 @@ export function ActivePhase({
               <KpiSingle
                 value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}
                 unit="kcal"
-                label="ENERGIE"
+                label={t.workout.summary.kpiEnergy}
                 style={summaryStyles.kpiCell}
               />
               <KpiSingle
                 value={summaryTotalStrokes != null ? `${correctSpm(summaryTotalStrokes, spmHalved)}` : '—'}
-                label="SLAGEN"
+                label={t.workout.summary.kpiStrokes}
                 style={summaryStyles.kpiCell}
               />
             </View>
@@ -638,15 +639,15 @@ export function ActivePhase({
           <View style={summaryStyles.statsSection}>
             <View style={summaryStyles.statsHeader}>
               <View style={summaryStyles.statsLabelCol} />
-              <Text style={summaryStyles.statsColLabel}>GEM</Text>
-              <Text style={summaryStyles.statsColLabel}>PIEK</Text>
+              <Text style={summaryStyles.statsColLabel}>{t.detail.colAvg}</Text>
+              <Text style={summaryStyles.statsColLabel}>{t.detail.colPeak}</Text>
             </View>
             <View style={summaryStyles.statsTable}>
               {[
-                { label: 'SPLIT /500M', gem: formatSplit(avgSplit), piek: summaryBestSplit != null ? formatSplit(summaryBestSplit) : '—' },
-                { label: 'WATT', gem: `${avgWatts}`, piek: summaryMaxWatts != null ? `${summaryMaxWatts}` : '—' },
-                { label: 'SPM', gem: `${correctSpm(avgSpm, spmHalved)}`, piek: summaryMaxSpm != null ? `${correctSpm(summaryMaxSpm, spmHalved)}` : '—' },
-                { label: 'BPM', gem: summaryAvgHr != null ? `${summaryAvgHr}` : '—', piek: summaryMaxHr != null ? `${summaryMaxHr}` : '—' },
+                { label: t.workout.summary.statSplit, gem: formatSplit(avgSplit), piek: summaryBestSplit != null ? formatSplit(summaryBestSplit) : '—' },
+                { label: t.workout.summary.statWatt, gem: `${avgWatts}`, piek: summaryMaxWatts != null ? `${summaryMaxWatts}` : '—' },
+                { label: t.workout.summary.statSpm, gem: `${correctSpm(avgSpm, spmHalved)}`, piek: summaryMaxSpm != null ? `${correctSpm(summaryMaxSpm, spmHalved)}` : '—' },
+                { label: t.workout.summary.statBpm, gem: summaryAvgHr != null ? `${summaryAvgHr}` : '—', piek: summaryMaxHr != null ? `${summaryMaxHr}` : '—' },
               ].map((row, i, arr) => (
                 <View key={row.label}>
                   <View style={summaryStyles.statsRow}>
@@ -662,7 +663,7 @@ export function ActivePhase({
 
           {/* Knoppen — onderaan */}
           <View style={[summaryStyles.buttonsArea, { paddingBottom: Math.max(space['28'], insets.bottom) }]}>
-            <Button title="Ga verder" onPress={onContinue} size="lg" icon="arrow-forward" iconPosition="trailing" />
+            <Button title={t.common.continue} onPress={onContinue} size="lg" icon="arrow-forward" iconPosition="trailing" />
           </View>
         </View>
       </Modal>

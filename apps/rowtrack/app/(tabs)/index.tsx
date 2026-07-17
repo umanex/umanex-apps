@@ -17,6 +17,7 @@ import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard, GoalSheet } fro
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
+import { t } from '@/i18n';
 import {
   bg,
   fg,
@@ -42,9 +43,9 @@ type HomeWorkout = {
 
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Goedemorgen,';
-  if (hour < 18) return 'Goedemiddag,';
-  return 'Goedenavond,';
+  if (hour < 12) return t.home.greetingMorning;
+  if (hour < 18) return t.home.greetingAfternoon;
+  return t.home.greetingEvening;
 }
 
 
@@ -135,7 +136,7 @@ export default function HomeScreen() {
   }, [router]);
 
   const greeting = getGreeting();
-  const name = displayName || 'roeier';
+  const name = displayName || t.home.nameFallback;
 
   const hasPrRecords =
     records.longestDistance != null ||
@@ -163,7 +164,7 @@ export default function HomeScreen() {
         <Button
           variant="primary"
           size="lg"
-          title="Start"
+          title={t.home.startButton}
           icon="arrow-forward"
           iconPosition="trailing"
           onPress={() => router.push('/(tabs)/workout')}
@@ -183,7 +184,7 @@ export default function HomeScreen() {
       <View style={styles.body}>
         {hasPrRecords && (
           <View style={styles.prSection}>
-            <Subtitle label="Persoonlijke records" />
+            <Subtitle label={t.home.prSectionTitle} />
             <View style={styles.prRow}>
               {records.longestDistance != null && (() => {
                 const { value, unit } = fmtPrDistance(records.longestDistance!);
@@ -192,7 +193,7 @@ export default function HomeScreen() {
                     style={styles.prCell}
                     value={value}
                     unit={unit}
-                    label={'Maximale\nafstand'}
+                    label={t.home.prMaxDistance}
                   />
                 );
               })()}
@@ -203,7 +204,7 @@ export default function HomeScreen() {
                     style={styles.prCell}
                     value={value}
                     unit={unit}
-                    label={'Beste tijd\n2000m'}
+                    label={t.home.prBest2k}
                   />
                 );
               })()}
@@ -213,8 +214,8 @@ export default function HomeScreen() {
 
         <View style={[styles.recentSection, hasPrRecords && styles.recentSectionBorder]}>
           <Subtitle
-            label="Recente trainingen"
-            action={{ label: 'alle', onPress: () => router.push('/(tabs)/history') }}
+            label={t.home.recentTitle}
+            action={{ label: t.home.allAction, onPress: () => router.push('/(tabs)/history') }}
           />
 
           {loading ? (
@@ -224,7 +225,7 @@ export default function HomeScreen() {
           ) : workouts.length === 0 ? (
             <EmptyState
               icon="water-outline"
-              title="Nog geen workouts — tijd om te beginnen!"
+              title={t.home.emptyTitle}
             />
           ) : (
             <View style={styles.workoutList}>

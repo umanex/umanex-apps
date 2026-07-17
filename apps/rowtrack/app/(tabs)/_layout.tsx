@@ -6,6 +6,7 @@ import { BleProvider } from '@/lib/ble/ble-context';
 import { WorkoutPhaseProvider, useWorkoutPhase } from '@/lib/workout-phase-context';
 import { TabLabel } from '@/components/TabLabel';
 import { lockPortrait, allowAllOrientations } from '@/lib/orientation';
+import { t } from '@/i18n';
 import { bg, fg, accent, border, space } from '@/constants';
 
 function TabsInner() {
@@ -49,7 +50,7 @@ function TabsInner() {
         name="index"
         options={{
           tabBarLabel: ({ focused, color }) => (
-            <TabLabel label="Home" focused={focused} color={color} />
+            <TabLabel label={t.tabs.home} focused={focused} color={color} />
           ),
           tabBarIcon: ({ color }) => (
             <Ionicons name="home-outline" size={22} color={color} />
@@ -60,7 +61,7 @@ function TabsInner() {
         name="workout"
         options={{
           tabBarLabel: ({ focused, color }) => (
-            <TabLabel label="Training" focused={focused} color={color} />
+            <TabLabel label={t.tabs.training} focused={focused} color={color} />
           ),
           tabBarIcon: ({ color }) => (
             <Ionicons name="barbell-outline" size={22} color={color} />
@@ -71,7 +72,7 @@ function TabsInner() {
         name="history"
         options={{
           tabBarLabel: ({ focused, color }) => (
-            <TabLabel label="Historiek" focused={focused} color={color} />
+            <TabLabel label={t.tabs.history} focused={focused} color={color} />
           ),
           tabBarIcon: ({ color }) => (
             <Ionicons name="time-outline" size={22} color={color} />
@@ -82,7 +83,7 @@ function TabsInner() {
         name="profile"
         options={{
           tabBarLabel: ({ focused, color }) => (
-            <TabLabel label="Profiel" focused={focused} color={color} />
+            <TabLabel label={t.tabs.profile} focused={focused} color={color} />
           ),
           tabBarIcon: ({ color }) => (
             <Ionicons name="person-outline" size={22} color={color} />

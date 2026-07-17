@@ -15,6 +15,7 @@ import { useGoalProgress } from '@/lib/hooks/useGoalProgress';
 import { bestTimeForDistance } from '@/lib/bestDistanceTime';
 import { IdlePhase } from '@/components/workout/IdlePhase';
 import { ActivePhase } from '@/components/workout/ActivePhase';
+import { t } from '@/i18n';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -69,7 +70,7 @@ export default function WorkoutScreen() {
 
   const handleStart = useCallback(() => {
     if (status !== 'connected') {
-      Alert.alert('Niet verbonden', 'Verbind eerst de roeitrainer via de knop bovenaan.');
+      Alert.alert(t.workout.notConnectedTitle, t.workout.notConnectedBody);
       return;
     }
 

@@ -5,6 +5,7 @@ import type {
 } from 'react-native-ble-plx';
 import { Platform, PermissionsAndroid } from 'react-native';
 import { base64ToBytes } from './base64';
+import type { HrBleError } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
   ? (...args: unknown[]) => console.log('[HR]', ...args)
@@ -36,7 +37,7 @@ async function loadBlePlx() {
 
 type StatusListener = (
   status: HRStatus,
-  error?: string,
+  error?: HrBleError,
   deviceName?: string,
 ) => void;
 type HRListener = (bpm: number) => void;
@@ -79,14 +80,14 @@ export class HRBleService {
       const state = await manager.state();
 
       if (state !== State.PoweredOn) {
-        this.onStatusChange('error', 'Bluetooth staat uit.');
+        this.onStatusChange('error', { code: 'bluetooth_off' });
         return;
       }
 
       if (Platform.OS === 'android') {
         const ok = await this.requestAndroidPermissions();
         if (!ok) {
-          this.onStatusChange('error', 'Bluetooth toestemming geweigerd.');
+          this.onStatusChange('error', { code: 'permission_denied' });
           return;
         }
       }
@@ -104,7 +105,7 @@ export class HRBleService {
         if (err) {
           this.clearScanTimeout();
           log('scan error:', err.message);
-          this.onStatusChange('error', `Scanfout: ${err.message}`);
+          this.onStatusChange('error', { code: 'scan_error', detail: err.message });
           return;
         }
         if (!dev) return;
@@ -117,15 +118,15 @@ export class HRBleService {
         foundDevices.push({ id: dev.id, name, rssi: dev.rssi ?? -100 });
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'HR scan mislukt';
-      log('startScan error:', msg);
-      this.onStatusChange('error', msg);
+      const detail = e instanceof Error ? e.message : undefined;
+      log('startScan error:', detail);
+      this.onStatusChange('error', { code: 'scan_failed', detail });
     }
   }
 
   private handleScanComplete(devices: HRFoundDevice[]): void {
     if (devices.length === 0) {
-      this.onStatusChange('error', 'Geen hartslagmeter gevonden.');
+      this.onStatusChange('error', { code: 'hr_not_found' });
     } else if (devices.length === 1) {
       // Single device: connect automatically
       this.connectToDeviceById(devices[0].id, devices[0].name);
@@ -152,7 +153,7 @@ export class HRBleService {
           if (error) {
             log('monitor error:', error.message);
             if (!this.intentionalDisconnect) {
-              this.onStatusChange('error', 'HR verbinding verloren.');
+              this.onStatusChange('error', { code: 'connection_lost', detail: error.message });
             }
             return;
           }
@@ -170,7 +171,7 @@ export class HRBleService {
         if (!this.intentionalDisconnect) {
           this.cleanup();
           this.device = null;
-          this.onStatusChange('error', 'HR verbinding verloren.');
+          this.onStatusChange('error', { code: 'connection_lost' });
         }
       });
 
@@ -179,7 +180,7 @@ export class HRBleService {
     } catch (e: unknown) {
       const bleErr = e as { message?: string };
       log('connect error:', bleErr.message);
-      this.onStatusChange('error', bleErr.message || 'HR verbinding mislukt');
+      this.onStatusChange('error', { code: 'connect_failed', detail: bleErr.message });
     }
   }
 

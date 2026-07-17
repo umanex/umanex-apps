@@ -1,4 +1,5 @@
 import type { IoniconsName } from '@/components/Icon';
+import { t } from '@/i18n';
 
 // --- Types ---
 
@@ -35,7 +36,7 @@ function fmtTime(sec: number): string {
 
 export const GOAL_TYPES: Record<GoalType, GoalTypeConfig> = {
   duration: {
-    label: 'Tijd',
+    label: t.goals.typeDuration,
     icon: 'time-outline',
     unit: 'min',
     placeholder: '30',
@@ -43,7 +44,7 @@ export const GOAL_TYPES: Record<GoalType, GoalTypeConfig> = {
     formatCurrent: (v) => fmtTime(v),
   },
   distance: {
-    label: 'Afstand',
+    label: t.goals.typeDistance,
     icon: 'navigate-outline',
     unit: 'm',
     placeholder: '5000',
@@ -51,7 +52,7 @@ export const GOAL_TYPES: Record<GoalType, GoalTypeConfig> = {
     formatCurrent: (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)} km` : `${Math.round(v)} m`),
   },
   split: {
-    label: 'Split',
+    label: t.goals.typeSplit,
     icon: 'speedometer-outline',
     unit: 'sec/500m',
     placeholder: '120',
@@ -59,7 +60,7 @@ export const GOAL_TYPES: Record<GoalType, GoalTypeConfig> = {
     formatCurrent: (v) => `${fmtTime(v)}/500m`,
   },
   watts: {
-    label: 'Watt',
+    label: t.goals.typeWatts,
     icon: 'flash-outline',
     unit: 'W',
     placeholder: '180',

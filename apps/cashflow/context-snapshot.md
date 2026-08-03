@@ -48,20 +48,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+5c858c1 fix(cashflow): one source of truth for pot balances, tighten buffer draw cap
 800488b feat(cashflow): buffer pot absorbs a negative end balance
 a482ebc chore: seed HANDOFF.md staging files (root + apps)
 7d0d1bc fix(tokens): correcte DTCG-build + verwijder ongebruikte tailwind.js-export
 cea9181 Convert to W3C DTCG format, read more at https://docs.tokens.studio/convert-to-dtcg-format
-f55a171 fix(cashflow): allow finalizing spaardoel with leftover balance
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
-  M  apps/cashflow/components/cashflow/ReservationSection.tsx
-  M  apps/cashflow/components/cashflow/ReservationSidepanel.tsx
-  M  apps/cashflow/hooks/useCashflow.ts
-  M  apps/cashflow/lib/cashflow/calculator.ts
-  A  apps/cashflow/scripts/buffer-scenarios.ts
+  M  apps/cashflow/scripts/buffer-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

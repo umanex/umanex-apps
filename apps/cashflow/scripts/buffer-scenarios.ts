@@ -1,4 +1,5 @@
 import { calculateMonths, computeAnchorState } from '../lib/cashflow/calculator';
+import type { AnchorState } from '../lib/cashflow/calculator';
 import type {
   ExpenseItem,
   IncomeItem,
@@ -355,26 +356,30 @@ console.log('\nS11 — doorrol over de ankermaand heen (P0-regressie)');
 {
   const buf: ReservationItem = { ...BUFFER, monthlyAmount: 400, startMonth: '2025-10' };
   const expenses: ExpenseItem[] = [{ id: 'e1', monthKey: '2026-01', label: 'kost', amount: 900, paid: false }];
-  const args = [expenses, [], [], [buf], [], [], [], [], []] as const;
+
+  const anchorState = (anchor: string, pots: ReservationItem[]) =>
+    computeAnchorState(1000, '2026-01', anchor, expenses, [], [], pots, [], [], [], [], [], []);
+  const window = (anchor: string, pots: ReservationItem[], state: AnchorState) =>
+    calculateMonths(anchor, state.startBalance, expenses, [], [], pots, [], [], [], [], [], 2, state.potBalances);
 
   // Zicht vanaf januari: pot 1200 in, opname −1100, eindsaldo 0, pot 100 over.
-  const jan = computeAnchorState(1000, '2026-01', '2026-01', ...args, []);
-  const janMonths = calculateMonths('2026-01', jan.startBalance, ...args, 2, jan.potBalances);
+  const jan = anchorState('2026-01', [buf]);
+  const janMonths = window('2026-01', [buf], jan);
   const janBuf = bufferPot(janMonths[0]!)!;
   check('S11 · januari opname', janBuf.deficitCoverage!, -1100);
   check('S11 · januari eindsaldo', janMonths[0]!.endBalance, 0);
   check('S11 · pot na januari', janBuf.potBalance, 100);
 
   // Eén maand later schuift het anker op zonder dat er data verandert.
-  const feb = computeAnchorState(1000, '2026-01', '2026-02', ...args, []);
+  const feb = anchorState('2026-02', [buf]);
   check('S11 · banksaldo bij start februari', feb.startBalance, 100);
   check('S11 · potstand bij start februari', feb.potBalances.get('buffer') ?? -1, 100);
 
   // Controle: zonder buffer moeten beide vensters ook overeenkomen (bestaand gedrag).
-  const argsOff = [expenses, [], [], [{ ...buf, coversDeficit: false }], [], [], [], [], []] as const;
-  const janOff = computeAnchorState(1000, '2026-01', '2026-01', ...argsOff, []);
-  const janOffMonths = calculateMonths('2026-01', janOff.startBalance, ...argsOff, 2, janOff.potBalances);
-  const febOff = computeAnchorState(1000, '2026-01', '2026-02', ...argsOff, []);
+  const off: ReservationItem[] = [{ ...buf, coversDeficit: false }];
+  const janOff = anchorState('2026-01', off);
+  const janOffMonths = window('2026-01', off, janOff);
+  const febOff = anchorState('2026-02', off);
   check('S11 · controle zonder buffer', febOff.startBalance, janOffMonths[0]!.endBalance
     + (janOffMonths[1]!.reservationPots.find((p) => p.reservationId === 'buffer')?.deferredFromPrevious ?? 0));
 }

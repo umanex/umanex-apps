@@ -22,6 +22,23 @@ function getMonthsInRange(anchorMonth: MonthKey, count: number): MonthKey[] {
   );
 }
 
+/**
+ * Uitkomst van één maandberekening voor een gegeven buffer-storting. De maand wordt
+ * meermaals doorgerekend om de bufferopname te bepalen (zie `evaluateMonth`), dus deze
+ * berekening mag niets muteren — de nieuwe potstanden komen als resultaat terug.
+ */
+type MonthEvaluation = {
+  endBalance: number;
+  availableBudget: number;
+  totalReservationDeductions: number;
+  reservationPots: ReservationPotBalance[];
+  nextPotBalances: Map<string, number>;
+  nextDeferred: Map<string, number>;
+};
+
+/** Onder deze drempel is een saldo afrondingsruis, geen echt tekort. */
+const EPSILON = 0.005;
+
 export function calcPotBalance(
   reservation: ReservationItem,
   payments: ReservationPayment[],
@@ -105,6 +122,10 @@ export function calculateMonths(
     }
   }
 
+  // Bufferpot: vangt een negatief eindsaldo op. Enkel een spaardoel kan buffer zijn —
+  // een maandelijks budget reset elke maand en heeft dus geen saldo om uit te putten.
+  const bufferId =
+    reservations.find((r) => r.coversDeficit && r.type === 'spaardoel')?.id ?? null;
 
   for (const monthKey of months) {
     const monthExpenseItems = expenseItems.filter((i) => i.monthKey === monthKey);
@@ -171,106 +192,8 @@ export function calculateMonths(
     };
 
     const getDeferred = (resId: string) => deferredRemainingMap.get(resId) ?? 0;
-    const getTotalProvision = (res: ReservationItem) => res.monthlyAmount + getDeferred(res.id);
-    const getProvisionThisMonth = (res: ReservationItem): number => {
-      const settlement = reservationSettlements.find(
-        (s) => s.reservationId === res.id && s.monthKey === monthKey,
-      );
-      return settlement ? settlement.effectiveAmount : res.monthlyAmount;
-    };
-
-    for (const res of billableReservations) {
-      potBalanceMap.set(res.id, (potBalanceMap.get(res.id) ?? 0) + getProvisionThisMonth(res));
-    }
-    for (const d of arrivingReservationDefers) {
-      const res = reservations.find((r) => r.id === d.reservationId);
-      if (res) potBalanceMap.set(res.id, (potBalanceMap.get(res.id) ?? 0) + getEffectiveAmount(res));
-    }
 
     const monthReservationPayments = reservationPayments.filter((p) => p.monthKey === monthKey);
-    for (const payment of monthReservationPayments) {
-      potBalanceMap.set(
-        payment.reservationId,
-        (potBalanceMap.get(payment.reservationId) ?? 0) - payment.fromReservation,
-      );
-    }
-    // Als er cash bijbetaald werd, is de pot volledig benut — saldo naar 0
-    for (const payment of monthReservationPayments) {
-      if (payment.fromCash > 0) {
-        potBalanceMap.set(payment.reservationId, 0);
-      }
-    }
-
-    // Prudent budget-model: onbesteed maandbudget wordt NIET teruggestort naar het
-    // vrije saldo — we nemen aan dat het budget besteed wordt. De kost van een budget
-    // = provisie − betaald uit pot, identiek in de huidige én toekomstige maanden (en
-    // aan de sectie-kop die dat via displayContribution al toont). Een betaling uit een
-    // budget verhoogt zo, net als bij een provisie, het eindsaldo van die maand.
-    const budgetPaidFromReservation = billableReservations
-      .filter((r) => r.type === 'maandelijks_budget')
-      .reduce(
-        (s, r) =>
-          s +
-          monthReservationPayments
-            .filter((p) => p.reservationId === r.id)
-            .reduce((ps, p) => ps + p.fromReservation, 0),
-        0,
-      );
-
-    // Gefinaliseerde spaardoelen: de pot is afgesloten, het restsaldo
-    // (overgedragen + storting − betaald uit pot) valt vrij in deze maand.
-    // Netto kost van de afsluitmaand = betaald − overgedragen, onafhankelijk
-    // van de storting — over de hele cyclus is de kost dan exact wat betaald is.
-    const spaardoelReleases = new Map<string, number>();
-    for (const res of billableReservations) {
-      if (res.type !== 'spaardoel') continue;
-      const settlement = reservationSettlements.find(
-        (s) => s.reservationId === res.id && s.monthKey === monthKey,
-      );
-      if (!settlement?.finalized) continue;
-      const paidFromReservation = monthReservationPayments
-        .filter((p) => p.reservationId === res.id)
-        .reduce((s, p) => s + p.fromReservation, 0);
-      const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
-      spaardoelReleases.set(res.id, remaining > 0 ? remaining : 0);
-    }
-    const totalSpaardoelReleased = Array.from(spaardoelReleases.values()).reduce((s, v) => s + v, 0);
-
-    const totalReservationDeductions =
-      billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) +
-      deferredReservationAmount -
-      budgetPaidFromReservation -
-      totalSpaardoelReleased;
-    const totalReservationCashPayments = monthReservationPayments.reduce((s, p) => s + p.fromCash, 0);
-
-    const reservationPots: ReservationPotBalance[] = billableReservations.map((r) => {
-      const settlement = reservationSettlements.find(
-        (s) => s.reservationId === r.id && s.monthKey === monthKey,
-      );
-      const paymentsThisMonth = monthReservationPayments.filter((p) => p.reservationId === r.id);
-      const paidFromReservation = paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
-      const provision = getProvisionThisMonth(r);
-      const deferred = getDeferred(r.id);
-      const displayContribution = r.type === 'maandelijks_budget'
-        ? provision - paidFromReservation
-        : provision;
-      return {
-        reservationId: r.id,
-        label: r.label,
-        monthlyAmount: r.monthlyAmount,
-        effectiveAmount: settlement ? settlement.effectiveAmount : r.monthlyAmount,
-        hasSettlement: !!settlement,
-        finalized: settlement?.finalized ?? false,
-        potBalance: potBalanceMap.get(r.id) ?? 0,
-        paymentsThisMonth,
-        provisionThisMonth: provision,
-        deferredFromPrevious: deferred,
-        potType: r.type,
-        releasedThisMonth: spaardoelReleases.get(r.id) ?? 0,
-        displayContribution,
-      };
-    });
-
     const monthSettlements = recurringSettlements.filter((s) => s.monthKey === monthKey);
 
     // --- BESCHIKBAAR / OPENSTAAND / EINDSALDO ---
@@ -301,17 +224,6 @@ export function calculateMonths(
     const paidExpenses = monthExpenseItems.filter((i) => i.paid).reduce((s, i) => s + i.amount, 0);
     const unpaidExpenses = monthExpenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0);
 
-    // Spaarpot stortingen zijn altijd "betaald" (geld gaat naar de pot)
-    // en horen in paidThisMonth, NIET in openstaand
-    const paidThisMonth =
-      paidRecurringAmount +
-      deferredRecurringAmount +
-      totalReservationDeductions +   // ← was missing: spaarpot stortingen
-      totalReservationCashPayments +
-      paidExpenses;
-
-    const availableBudget = runningBalance + totalIncome - paidThisMonth;
-
     const unpaidRecurringAmount = monthRecurringItems.reduce((s, item) => {
       const settlement = recurringSettlements.find(
         (st) => st.recurringId === item.id && st.monthKey === monthKey,
@@ -323,24 +235,225 @@ export function calculateMonths(
     // Openstaand bevat GEEN spaarpot stortingen meer — die zitten in paidThisMonth
     const totalOutstandingCosts = unpaidRecurringAmount + unpaidExpenses;
 
-    // Maand 0: eindsaldo = zelfde formule als MonthCard (onbetaald + sectie-subtotalen)
-    // zodat het startsaldo van maand 1 overeenkomt met het getoonde eindsaldo.
-    const endBalance = monthIndex === 0
-      ? (() => {
-          const unpaidDeferred = deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
-          const overflowCash = reservationPots
-            .filter((p) => !p.finalized)
-            .reduce((s, p) => s + p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0), 0);
-          const budgetSub = reservationPots
-            .filter((p) => p.potType === 'maandelijks_budget' && !p.finalized)
-            .reduce((s, p) => s + p.provisionThisMonth - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0);
-          const provisieSub = reservationPots
-            .filter((p) => p.potType === 'spaardoel' && !p.finalized)
-            .reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth
-              - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0) + deferredReservationAmount;
-          return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferred - unpaidExpenses - overflowCash - budgetSub - provisieSub;
-        })()
-      : availableBudget - totalOutstandingCosts;
+    // Prudent budget-model: onbesteed maandbudget wordt NIET teruggestort naar het
+    // vrije saldo — we nemen aan dat het budget besteed wordt. De kost van een budget
+    // = provisie − betaald uit pot, identiek in de huidige én toekomstige maanden (en
+    // aan de sectie-kop die dat via displayContribution al toont). Een betaling uit een
+    // budget verhoogt zo, net als bij een provisie, het eindsaldo van die maand.
+    const budgetPaidFromReservation = billableReservations
+      .filter((r) => r.type === 'maandelijks_budget')
+      .reduce(
+        (s, r) =>
+          s +
+          monthReservationPayments
+            .filter((p) => p.reservationId === r.id)
+            .reduce((ps, p) => ps + p.fromReservation, 0),
+        0,
+      );
+
+    const totalReservationCashPayments = monthReservationPayments.reduce((s, p) => s + p.fromCash, 0);
+
+    const isFirstMonth = monthIndex === 0;
+
+    /**
+     * Rekent de maand door voor een gegeven buffer-storting. `bufferProvision === null`
+     * betekent: gebruik de normale storting (settlement of maandbedrag). Zuiver — muteert
+     * potBalanceMap/deferredRemainingMap niet, zodat dezelfde maand meermaals doorgerekend
+     * kan worden om de bufferopname op te lossen.
+     */
+    const evaluateMonth = (bufferProvision: number | null): MonthEvaluation => {
+      const getProvisionThisMonth = (res: ReservationItem): number => {
+        if (bufferProvision !== null && res.id === bufferId) return bufferProvision;
+        const settlement = reservationSettlements.find(
+          (s) => s.reservationId === res.id && s.monthKey === monthKey,
+        );
+        return settlement ? settlement.effectiveAmount : res.monthlyAmount;
+      };
+
+      const potBalances = new Map(potBalanceMap);
+      for (const res of billableReservations) {
+        potBalances.set(res.id, (potBalances.get(res.id) ?? 0) + getProvisionThisMonth(res));
+      }
+      for (const d of arrivingReservationDefers) {
+        const res = reservations.find((r) => r.id === d.reservationId);
+        if (res) potBalances.set(res.id, (potBalances.get(res.id) ?? 0) + getEffectiveAmount(res));
+      }
+
+      for (const payment of monthReservationPayments) {
+        potBalances.set(
+          payment.reservationId,
+          (potBalances.get(payment.reservationId) ?? 0) - payment.fromReservation,
+        );
+      }
+      // Als er cash bijbetaald werd, is de pot volledig benut — saldo naar 0
+      for (const payment of monthReservationPayments) {
+        if (payment.fromCash > 0) {
+          potBalances.set(payment.reservationId, 0);
+        }
+      }
+
+      // Gefinaliseerde spaardoelen: de pot is afgesloten, het restsaldo
+      // (overgedragen + storting − betaald uit pot) valt vrij in deze maand.
+      // Netto kost van de afsluitmaand = betaald − overgedragen, onafhankelijk
+      // van de storting — over de hele cyclus is de kost dan exact wat betaald is.
+      const spaardoelReleases = new Map<string, number>();
+      for (const res of billableReservations) {
+        if (res.type !== 'spaardoel') continue;
+        const settlement = reservationSettlements.find(
+          (s) => s.reservationId === res.id && s.monthKey === monthKey,
+        );
+        if (!settlement?.finalized) continue;
+        const paidFromReservation = monthReservationPayments
+          .filter((p) => p.reservationId === res.id)
+          .reduce((s, p) => s + p.fromReservation, 0);
+        const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
+        spaardoelReleases.set(res.id, remaining > 0 ? remaining : 0);
+      }
+      const totalSpaardoelReleased = Array.from(spaardoelReleases.values()).reduce((s, v) => s + v, 0);
+
+      const totalReservationDeductions =
+        billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) +
+        deferredReservationAmount -
+        budgetPaidFromReservation -
+        totalSpaardoelReleased;
+
+      const reservationPots: ReservationPotBalance[] = billableReservations.map((r) => {
+        const settlement = reservationSettlements.find(
+          (s) => s.reservationId === r.id && s.monthKey === monthKey,
+        );
+        const paymentsThisMonth = monthReservationPayments.filter((p) => p.reservationId === r.id);
+        const paidFromReservation = paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
+        const provision = getProvisionThisMonth(r);
+        const deferred = getDeferred(r.id);
+        const displayContribution = r.type === 'maandelijks_budget'
+          ? provision - paidFromReservation
+          : provision;
+        return {
+          reservationId: r.id,
+          label: r.label,
+          monthlyAmount: r.monthlyAmount,
+          effectiveAmount: settlement ? settlement.effectiveAmount : r.monthlyAmount,
+          hasSettlement: !!settlement,
+          finalized: settlement?.finalized ?? false,
+          potBalance: potBalances.get(r.id) ?? 0,
+          paymentsThisMonth,
+          provisionThisMonth: provision,
+          deferredFromPrevious: deferred,
+          potType: r.type,
+          releasedThisMonth: spaardoelReleases.get(r.id) ?? 0,
+          displayContribution,
+          isDeficitBuffer: r.id === bufferId,
+          deficitCoverage: null,
+          deficitUncovered: 0,
+        };
+      });
+
+      // Spaarpot stortingen zijn altijd "betaald" (geld gaat naar de pot)
+      // en horen in paidThisMonth, NIET in openstaand
+      const paidThisMonth =
+        paidRecurringAmount +
+        deferredRecurringAmount +
+        totalReservationDeductions +   // ← was missing: spaarpot stortingen
+        totalReservationCashPayments +
+        paidExpenses;
+
+      const availableBudget = runningBalance + totalIncome - paidThisMonth;
+
+      // Maand 0: eindsaldo = zelfde formule als MonthCard (onbetaald + sectie-subtotalen)
+      // zodat het startsaldo van maand 1 overeenkomt met het getoonde eindsaldo.
+      const endBalance = isFirstMonth
+        ? (() => {
+            const unpaidDeferred = deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
+            const overflowCash = reservationPots
+              .filter((p) => !p.finalized)
+              .reduce((s, p) => s + p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0), 0);
+            const budgetSub = reservationPots
+              .filter((p) => p.potType === 'maandelijks_budget' && !p.finalized)
+              .reduce((s, p) => s + p.provisionThisMonth - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0);
+            const provisieSub = reservationPots
+              .filter((p) => p.potType === 'spaardoel' && !p.finalized)
+              .reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth
+                - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0) + deferredReservationAmount;
+            return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferred - unpaidExpenses - overflowCash - budgetSub - provisieSub;
+          })()
+        : availableBudget - totalOutstandingCosts;
+
+      // Doorrol naar de volgende maand. Niet-billable potten behouden hun stand,
+      // vandaar een kopie van de bestaande maps als vertrekpunt.
+      const nextDeferred = new Map(deferredRemainingMap);
+      const nextPotBalances = new Map(potBalances);
+      for (const res of billableReservations) {
+        if (res.type === 'maandelijks_budget') {
+          nextDeferred.set(res.id, 0);
+          continue;
+        }
+        // Gefinaliseerde spaardoel-maand: pot is afgesloten, restsaldo is
+        // vrijgegeven — opbouw herstart de volgende maand op nul.
+        if (spaardoelReleases.has(res.id)) {
+          nextDeferred.set(res.id, 0);
+          nextPotBalances.set(res.id, 0);
+          continue;
+        }
+        const paidFromReservation = monthReservationPayments
+          .filter((p) => p.reservationId === res.id)
+          .reduce((s, p) => s + p.fromReservation, 0);
+        const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
+        nextDeferred.set(res.id, remaining > 0 ? remaining : 0);
+      }
+
+      return {
+        endBalance,
+        availableBudget,
+        totalReservationDeductions,
+        reservationPots,
+        nextPotBalances,
+        nextDeferred,
+      };
+    };
+
+    // --- BUFFER: tekortdekking ---
+    //
+    // Het eindsaldo is lineair in de buffer-storting x: E(x) = E(0) − x. Komt de maand
+    // met de normale storting negatief uit, dan is de storting die het eindsaldo exact
+    // op €0 zet dus x = E(0) — negatief bij een echte opname, verlaagd-positief wanneer
+    // het volstaat om minder te storten. De opname kan nooit groter zijn dan wat er in
+    // de pot zit; het restant blijft als negatief eindsaldo zichtbaar staan.
+    let evaluation = evaluateMonth(null);
+    let bufferCoverage: number | null = null;
+    let bufferUncovered = 0;
+
+    const bufferIsBillable = bufferId !== null && billableReservations.some((r) => r.id === bufferId);
+    const bufferIsFinalized =
+      bufferId !== null &&
+      reservationSettlements.some(
+        (s) => s.reservationId === bufferId && s.monthKey === monthKey && s.finalized,
+      );
+
+    if (bufferId !== null && bufferIsBillable && !bufferIsFinalized && evaluation.endBalance < -EPSILON) {
+      const potAvailable = getDeferred(bufferId);
+      const target = Math.max(evaluateMonth(0).endBalance, -potAvailable);
+      const covered = evaluateMonth(target);
+      bufferCoverage = target;
+      bufferUncovered = covered.endBalance < -EPSILON ? -covered.endBalance : 0;
+      evaluation = covered;
+    }
+
+    const {
+      endBalance,
+      availableBudget,
+      totalReservationDeductions,
+      nextPotBalances,
+      nextDeferred,
+    } = evaluation;
+
+    const reservationPots =
+      bufferCoverage === null
+        ? evaluation.reservationPots
+        : evaluation.reservationPots.map((p) =>
+            p.reservationId === bufferId
+              ? { ...p, deficitCoverage: bufferCoverage, deficitUncovered: bufferUncovered }
+              : p,
+          );
 
     result.push({
       monthKey,
@@ -366,24 +479,8 @@ export function calculateMonths(
       recurringSettlements: monthSettlements,
     });
 
-    for (const res of billableReservations) {
-      if (res.type === 'maandelijks_budget') {
-        deferredRemainingMap.set(res.id, 0);
-        continue;
-      }
-      // Gefinaliseerde spaardoel-maand: pot is afgesloten, restsaldo is
-      // vrijgegeven — opbouw herstart de volgende maand op nul.
-      if (spaardoelReleases.has(res.id)) {
-        deferredRemainingMap.set(res.id, 0);
-        potBalanceMap.set(res.id, 0);
-        continue;
-      }
-      const paidFromReservation = monthReservationPayments
-        .filter((p) => p.reservationId === res.id)
-        .reduce((s, p) => s + p.fromReservation, 0);
-      const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
-      deferredRemainingMap.set(res.id, remaining > 0 ? remaining : 0);
-    }
+    for (const [id, balance] of nextPotBalances) potBalanceMap.set(id, balance);
+    for (const [id, remaining] of nextDeferred) deferredRemainingMap.set(id, remaining);
 
     runningBalance = endBalance;
     monthIndex++;

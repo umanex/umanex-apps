@@ -162,6 +162,7 @@ export function useReservationActions() {
     addReservation: useCashflowStore((s) => s.addReservation),
     updateReservation: useCashflowStore((s) => s.updateReservation),
     removeReservation: useCashflowStore((s) => s.removeReservation),
+    setDeficitBuffer: useCashflowStore((s) => s.setDeficitBuffer),
     addReservationPayment: useCashflowStore((s) => s.addReservationPayment),
     updateReservationPayment: useCashflowStore((s) => s.updateReservationPayment),
     removeReservationPayment: useCashflowStore((s) => s.removeReservationPayment),

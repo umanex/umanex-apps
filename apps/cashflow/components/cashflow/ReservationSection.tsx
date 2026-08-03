@@ -69,6 +69,10 @@ function DraggablePotRow({
   // bij finalisatie vrijgegeven en de opbouw herstart de maand erna.
   const canShowFinalize = pot.potType === 'maandelijks_budget' || hasPayments;
   const isBudgetCurrentMonth = pot.potType === 'maandelijks_budget' && isCurrentMonth;
+  // Bufferpot die deze maand een tekort opvangt: het bedrag is volledig afgeleid
+  // uit het eindsaldo, dus read-only — net als het budgetveld in de huidige maand.
+  const isAutoBuffer = pot.deficitCoverage !== null;
+  const isComputed = isBudgetCurrentMonth || isAutoBuffer;
 
   const syncValue = isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth;
   const [localAmount, setLocalAmount] = useState(String(roundTo2(syncValue)));
@@ -155,6 +159,15 @@ function DraggablePotRow({
               </span>
             </div>
           )}
+          {isAutoBuffer && (
+            <span className="text-[11px] leading-tight text-[var(--umanexNeutral500)]">
+              {pot.deficitUncovered > 0
+                ? `Buffer ontoereikend — ${formatCurrency(pot.deficitUncovered)} tekort blijft open`
+                : (pot.deficitCoverage ?? 0) < 0
+                  ? `Dekt tekort — ${formatCurrency(-(pot.deficitCoverage ?? 0))} uit de pot`
+                  : 'Storting verlaagd om het tekort te dekken'}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
@@ -162,23 +175,29 @@ function DraggablePotRow({
             type="text"
             inputMode="decimal"
             value={localAmount}
-            disabled={isBudgetCurrentMonth}
+            disabled={isComputed}
             onChange={(e) => {
               const v = limitDecimals(e.target.value);
               setLocalAmount(v);
               const parsed = parseFloat(v.replace(',', '.'));
               onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
             }}
-            onBlur={isBudgetCurrentMonth ? undefined : handleAmountBlur}
+            onBlur={isComputed ? undefined : handleAmountBlur}
             onPointerDown={(e) => e.stopPropagation()}
             className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] focus:outline-none focus:ring-1 focus:ring-ring ${
-              isBudgetCurrentMonth
-                ? `bg-[var(--umanexNeutral50)] cursor-default ${displayAmount < 0 ? 'text-[var(--umanexPrimary500)] font-medium' : 'text-emerald-600'}`
-                : `bg-white ${pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'}`
+              isComputed
+                ? `bg-[var(--umanexNeutral50)] cursor-default ${syncValue < 0 ? 'text-[var(--umanexPrimary500)] font-medium' : 'text-emerald-600'}`
+                : `bg-white text-amber-600 ${pot.hasSettlement ? 'font-medium' : ''}`
             }`}
-            aria-label={isBudgetCurrentMonth ? 'Resterende provisie' : 'Stortingsbedrag'}
+            aria-label={
+              isBudgetCurrentMonth
+                ? 'Resterende provisie'
+                : isAutoBuffer
+                  ? 'Automatische bufferstorting'
+                  : 'Stortingsbedrag'
+            }
           />
-          {!isBudgetCurrentMonth && pot.hasSettlement && (
+          {!isComputed && pot.hasSettlement && (
             <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">
               ({formatCurrency(pot.monthlyAmount)})
             </span>
@@ -313,7 +332,10 @@ function PotSubgroup({
     <div className="flex flex-col gap-2 w-full">
       <SectionBar
         label={label}
-        subtotaal={subtotaal > 0 ? formatCurrency(subtotaal) : undefined}
+        // Een bufferopname maakt het subtotaal negatief — dan is het geld dat terugkomt,
+        // dus groen. Alleen exact 0 blijft verborgen.
+        subtotaal={Math.abs(subtotaal) >= 0.005 ? formatCurrency(subtotaal) : undefined}
+        subtotaalColor={subtotaal < 0 ? 'green' : 'red'}
         showPaid={finalizedPots.length > 0 ? showFinalized : undefined}
         onFilterToggle={finalizedPots.length > 0 ? () => setShowFinalized((v) => !v) : undefined}
         onAdd={() => onRegisterPayment(potType)}

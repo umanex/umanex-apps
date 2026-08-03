@@ -18,6 +18,7 @@ interface ReservationRowProps {
   onUpdate: (patch: Partial<ReservationItem>) => void;
   onRemove: () => void;
   onRemovePayment: (id: string) => void;
+  onSetBuffer: (enabled: boolean) => void;
 }
 
 function ReservationRow({
@@ -27,6 +28,7 @@ function ReservationRow({
   onUpdate,
   onRemove,
   onRemovePayment,
+  onSetBuffer,
 }: ReservationRowProps) {
   const currentBalance = calcPotBalance(reservation, payments, settlements, getCurrentMonthKey());
   const ownPayments = [...payments.filter((p) => p.reservationId === reservation.id)].sort(
@@ -94,6 +96,24 @@ function ReservationRow({
           </span>
         </div>
       </div>
+
+      {reservation.type === 'spaardoel' && (
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={reservation.coversDeficit ?? false}
+            onChange={(e) => onSetBuffer(e.target.checked)}
+            className="mt-0.5 size-4 shrink-0 accent-[var(--umanexPrimary500)]"
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className="text-sm leading-tight">Vangt tekorten op</span>
+            <span className="text-xs text-muted-foreground leading-tight">
+              Bij een negatief eindsaldo verlaagt of keert deze pot zijn storting om, tot
+              het saldo op €0 staat. Slechts één pot tegelijk.
+            </span>
+          </span>
+        </label>
+      )}
 
       {ownPayments.length > 0 && (
         <div className="flex flex-col gap-1 pt-1 border-t border-border">
@@ -197,6 +217,7 @@ export function ReservationSidepanel({ open, onClose }: ReservationSidepanelProp
     updateReservation,
     removeReservation,
     removeReservationPayment,
+    setDeficitBuffer,
   } = useReservationActions();
 
   function handleAddReservation() {
@@ -249,6 +270,7 @@ export function ReservationSidepanel({ open, onClose }: ReservationSidepanelProp
               onUpdate={(patch) => updateReservation(reservation.id, patch)}
               onRemove={() => removeReservation(reservation.id)}
               onRemovePayment={removeReservationPayment}
+              onSetBuffer={(enabled) => setDeficitBuffer(reservation.id, enabled)}
             />
           ))}
 

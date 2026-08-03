@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-07-07_
+_Gegenereerd op 2026-08-03_
 
 ## Project
 - **App:** cashflow
@@ -16,19 +16,53 @@ _Gegenereerd op 2026-07-07_
 - **@umanex/tokens:** 0.0.1
 - **@umanex/ui:** 0.0.1
 
+## Componenten
+_Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers + co-located `.design-snapshot.md` sidecars._
+
+| Component | Pad | Categorie | Figma-node | Snapshot | Status |
+|---|---|---|---|---|---|
+| AddBtwForm | `apps/cashflow/components/cashflow/AddBtwForm.tsx` | cashflow | — | — | — |
+| AddItemForm | `apps/cashflow/components/cashflow/AddItemForm.tsx` | cashflow | — | — | — |
+| BalanceBadge | `apps/cashflow/components/cashflow/BalanceBadge.tsx` | cashflow | — | — | — |
+| BtwList | `apps/cashflow/components/cashflow/BtwList.tsx` | cashflow | — | — | — |
+| BtwRow | `apps/cashflow/components/cashflow/BtwRow.tsx` | cashflow | — | — | — |
+| CashflowDndContext | `apps/cashflow/components/cashflow/CashflowDndContext.tsx` | cashflow | — | — | — |
+| ExpenseSection | `apps/cashflow/components/cashflow/ExpenseSection.tsx` | cashflow | — | — | — |
+| IncomeSection | `apps/cashflow/components/cashflow/IncomeSection.tsx` | cashflow | — | — | — |
+| ItemList | `apps/cashflow/components/cashflow/ItemList.tsx` | cashflow | — | — | — |
+| ItemRow | `apps/cashflow/components/cashflow/ItemRow.tsx` | cashflow | — | — | — |
+| MonthCard | `apps/cashflow/components/cashflow/MonthCard.tsx` | cashflow | — | — | — |
+| MonthHeader | `apps/cashflow/components/cashflow/MonthHeader.tsx` | cashflow | — | — | — |
+| MonthSummary | `apps/cashflow/components/cashflow/MonthSummary.tsx` | cashflow | — | — | — |
+| RecurringSection | `apps/cashflow/components/cashflow/RecurringSection.tsx` | cashflow | — | — | — |
+| RecurringSidepanel | `apps/cashflow/components/cashflow/RecurringSidepanel.tsx` | cashflow | — | — | — |
+| RecurringTriggerButton | `apps/cashflow/components/cashflow/RecurringTriggerButton.tsx` | cashflow | — | — | — |
+| ReservationPaymentModal | `apps/cashflow/components/cashflow/ReservationPaymentModal.tsx` | cashflow | — | — | — |
+| ReservationPotCard | `apps/cashflow/components/cashflow/ReservationPotCard.tsx` | cashflow | — | — | — |
+| ReservationSection | `apps/cashflow/components/cashflow/ReservationSection.tsx` | cashflow | — | — | — |
+| ReservationSidepanel | `apps/cashflow/components/cashflow/ReservationSidepanel.tsx` | cashflow | — | — | — |
+| ReservationTriggerButton | `apps/cashflow/components/cashflow/ReservationTriggerButton.tsx` | cashflow | — | — | — |
+| SectionBar | `apps/cashflow/components/cashflow/SectionBar.tsx` | cashflow | — | — | — |
+| StartBalanceInput | `apps/cashflow/components/cashflow/StartBalanceInput.tsx` | cashflow | — | — | — |
+| YearlyRow | `apps/cashflow/components/cashflow/YearlyRow.tsx` | cashflow | — | — | — |
+
 ## Recente commits (app + packages)
 ```
+a482ebc chore: seed HANDOFF.md staging files (root + apps)
+7d0d1bc fix(tokens): correcte DTCG-build + verwijder ongebruikte tailwind.js-export
+cea9181 Convert to W3C DTCG format, read more at https://docs.tokens.studio/convert-to-dtcg-format
+f55a171 fix(cashflow): allow finalizing spaardoel with leftover balance
 f42fe26 feat(cashflow): prudent budget-model, geen release van onbesteed budget
-9083da0 feat(cashflow): resterende provisie in huidige maand
-2f68049 fix(cashflow): corrigeer dubbele spaarpot-aftrek bij maandovergang
-51abcde docs(cashflow): documenteer PM2 build/restart flow
-bddd4d5 feat(cashflow): finaliseer maandelijks budget zonder betaling
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/components/cashflow/MonthCard.tsx
+  A  apps/cashflow/briefings/2026-08-03-feature-buffer-tekortdekking.tcebc.md
   M  apps/cashflow/components/cashflow/ReservationSection.tsx
+  M  apps/cashflow/components/cashflow/ReservationSidepanel.tsx
+  M  apps/cashflow/hooks/useCashflow.ts
   M  apps/cashflow/lib/cashflow/calculator.ts
+  M  apps/cashflow/lib/cashflow/types.ts
+  M  apps/cashflow/store/cashflow.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

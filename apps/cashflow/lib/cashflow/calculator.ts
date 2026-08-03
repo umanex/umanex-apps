@@ -103,6 +103,13 @@ export function calculateMonths(
   reservationDefers: ReservationDefer[],
   reservationSettlements: ReservationSettlement[],
   count = 3,
+  /**
+   * Potstanden aan het begin van de ankermaand. Nodig zodra een bufferpot in het
+   * verleden een opname deed: die opname is afgeleid en staat dus niet in de store,
+   * waardoor `calcPotBalance` (die enkel stortingen en betalingen optelt) de pot
+   * opnieuw zou vullen. De aanroeper levert hier de doorgerolde stand aan.
+   */
+  initialPotBalances?: Map<string, number>,
 ): MonthData[] {
   const months = getMonthsInRange(anchorMonth, count);
   const result: MonthData[] = [];
@@ -116,7 +123,9 @@ export function calculateMonths(
   const prevMonth = format(addMonths(parseISO(`${anchorMonth}-01`), -1), 'yyyy-MM');
   for (const res of reservations) {
     if (res.type === 'spaardoel' && res.startMonth <= prevMonth) {
-      const historical = calcPotBalance(res, reservationPayments, reservationSettlements, prevMonth);
+      const historical =
+        initialPotBalances?.get(res.id) ??
+        calcPotBalance(res, reservationPayments, reservationSettlements, prevMonth);
       potBalanceMap.set(res.id, historical);
       deferredRemainingMap.set(res.id, historical);
     }
@@ -192,6 +201,16 @@ export function calculateMonths(
     };
 
     const getDeferred = (resId: string) => deferredRemainingMap.get(resId) ?? 0;
+
+    // Een uitgestelde storting die deze maand toekomt, wordt aan de pot gecrediteerd —
+    // dus telt hij ook mee in de stand die naar volgende maand doorrolt.
+    const arrivingCredit = new Map<string, number>();
+    for (const d of arrivingReservationDefers) {
+      const res = reservations.find((r) => r.id === d.reservationId);
+      if (res) {
+        arrivingCredit.set(res.id, (arrivingCredit.get(res.id) ?? 0) + getEffectiveAmount(res));
+      }
+    }
 
     const monthReservationPayments = reservationPayments.filter((p) => p.monthKey === monthKey);
     const monthSettlements = recurringSettlements.filter((s) => s.monthKey === monthKey);
@@ -274,9 +293,8 @@ export function calculateMonths(
       for (const res of billableReservations) {
         potBalances.set(res.id, (potBalances.get(res.id) ?? 0) + getProvisionThisMonth(res));
       }
-      for (const d of arrivingReservationDefers) {
-        const res = reservations.find((r) => r.id === d.reservationId);
-        if (res) potBalances.set(res.id, (potBalances.get(res.id) ?? 0) + getEffectiveAmount(res));
+      for (const [resId, credit] of arrivingCredit) {
+        potBalances.set(resId, (potBalances.get(resId) ?? 0) + credit);
       }
 
       for (const payment of monthReservationPayments) {
@@ -397,8 +415,20 @@ export function calculateMonths(
         const paidFromReservation = monthReservationPayments
           .filter((p) => p.reservationId === res.id)
           .reduce((s, p) => s + p.fromReservation, 0);
-        const remaining = getProvisionThisMonth(res) + getDeferred(res.id) - paidFromReservation;
+        const remaining =
+          getProvisionThisMonth(res) + getDeferred(res.id) +
+          (arrivingCredit.get(res.id) ?? 0) - paidFromReservation;
         nextDeferred.set(res.id, remaining > 0 ? remaining : 0);
+      }
+      // Een pot die deze maand niet aangerekend wordt (vertrokken via een uitstel) maar
+      // wél een uitgestelde storting ontvangt, moet die storting toch bijgeschreven zien.
+      for (const [resId, credit] of arrivingCredit) {
+        if (billableReservations.some((r) => r.id === resId)) continue;
+        const paidFromReservation = monthReservationPayments
+          .filter((p) => p.reservationId === resId)
+          .reduce((s, p) => s + p.fromReservation, 0);
+        const remaining = getDeferred(resId) + credit - paidFromReservation;
+        nextDeferred.set(resId, remaining > 0 ? remaining : 0);
       }
 
       return {
@@ -430,8 +460,28 @@ export function calculateMonths(
       );
 
     if (bufferId !== null && bufferIsBillable && !bufferIsFinalized && evaluation.endBalance < -EPSILON) {
-      const potAvailable = getDeferred(bufferId);
-      const target = Math.max(evaluateMonth(0).endBalance, -potAvailable);
+      // Wat de pot deze maand echt kan missen: het overgedragen saldo plus een
+      // uitgestelde storting die nu toekomt, minus wat er deze maand al uit betaald is.
+      // Nooit negatief — een overtrokken pot leent niets uit.
+      const paidFromBuffer = monthReservationPayments
+        .filter((p) => p.reservationId === bufferId)
+        .reduce((s, p) => s + p.fromReservation, 0);
+      const potAvailable = Math.max(
+        0,
+        getDeferred(bufferId) + (arrivingCredit.get(bufferId) ?? 0) - paidFromBuffer,
+      );
+      // De buffer mag de maand nooit slechter maken dan de normale storting al doet,
+      // dus is die storting de bovengrens.
+      const bufferSettlement = reservationSettlements.find(
+        (s) => s.reservationId === bufferId && s.monthKey === monthKey,
+      );
+      const normalProvision = bufferSettlement
+        ? bufferSettlement.effectiveAmount
+        : (reservations.find((r) => r.id === bufferId)?.monthlyAmount ?? 0);
+      const target = Math.min(
+        normalProvision,
+        Math.max(evaluateMonth(0).endBalance, -potAvailable),
+      );
       const covered = evaluateMonth(target);
       bufferCoverage = target;
       bufferUncovered = covered.endBalance < -EPSILON ? -covered.endBalance : 0;
@@ -489,7 +539,18 @@ export function calculateMonths(
   return result;
 }
 
-export function computeHistoricalBalance(
+/**
+ * Toestand aan het begin van de ankermaand: het banksaldo én de potstanden die de
+ * ankerberekening als vertrekpunt moet gebruiken. Beide komen uit dezelfde
+ * voorwaartse simulatie — een tweede reconstructie zou uit de pas lopen zodra een
+ * bufferpot een afgeleide opname deed (die staat immers niet in de store).
+ */
+export type AnchorState = {
+  startBalance: number;
+  potBalances: Map<string, number>;
+};
+
+export function computeAnchorState(
   referenceBalance: number,
   referenceMonth: MonthKey,
   anchorMonth: MonthKey,
@@ -503,12 +564,30 @@ export function computeHistoricalBalance(
   reservationDefers: ReservationDefer[],
   reservationSettlements: ReservationSettlement[],
   balanceOverrides: BalanceOverride[],
-): number {
-  // Directe override voor anchorMonth heeft prioriteit
-  const anchorOverride = balanceOverrides.find((o) => o.monthKey === anchorMonth);
-  if (anchorOverride) return anchorOverride.balance;
+): AnchorState {
+  const anchorPrevMonth = format(addMonths(parseISO(`${anchorMonth}-01`), -1), 'yyyy-MM');
 
-  if (anchorMonth <= referenceMonth) return referenceBalance;
+  // Zonder simulatie is de historische opbouw het enige dat we hebben. Vóór de
+  // referentiemaand is er ook niets gesimuleerd, dus is dit daar de juiste bron.
+  const historicalPotBalances = (): Map<string, number> => {
+    const map = new Map<string, number>();
+    for (const r of reservations) {
+      if (r.type !== 'spaardoel' || r.startMonth > anchorPrevMonth) continue;
+      map.set(r.id, calcPotBalance(r, reservationPayments, reservationSettlements, anchorPrevMonth));
+    }
+    return map;
+  };
+
+  // Directe override voor anchorMonth heeft prioriteit voor het saldo — de potstanden
+  // komen nog steeds uit de simulatie, want die staan los van het banksaldo.
+  const anchorOverride = balanceOverrides.find((o) => o.monthKey === anchorMonth);
+
+  if (anchorMonth <= referenceMonth) {
+    return {
+      startBalance: anchorOverride ? anchorOverride.balance : referenceBalance,
+      potBalances: historicalPotBalances(),
+    };
+  }
 
   // Meest recente override vóór anchorMonth fungeert als effectief referentiepunt
   const priorOverrides = balanceOverrides
@@ -523,7 +602,12 @@ export function computeHistoricalBalance(
     parseISO(`${anchorMonth}-01`),
     parseISO(`${effectiveMonth}-01`),
   );
-  if (monthCount <= 0) return effectiveBalance;
+  if (monthCount <= 0) {
+    return {
+      startBalance: anchorOverride ? anchorOverride.balance : effectiveBalance,
+      potBalances: historicalPotBalances(),
+    };
+  }
 
   // Gebruik calculateMonths voor consistente carry-forward formule.
   // We vragen monthCount+1 maanden; de laatste maand IS anchorMonth
@@ -543,6 +627,18 @@ export function computeHistoricalBalance(
     monthCount + 1,
   );
 
+  const anchorMonthData = months[monthCount];
+
+  // `deferredFromPrevious` van de ankermaand in de simulatie IS de potstand aan het
+  // begin van die maand — inclusief elke bufferopname onderweg. Potten die niet in de
+  // simulatie voorkomen (bv. vertrokken via een uitstel) vallen terug op de historiek.
+  const potBalances = historicalPotBalances();
+  for (const p of anchorMonthData?.reservationPots ?? []) {
+    if (p.potType === 'spaardoel') potBalances.set(p.reservationId, p.deferredFromPrevious);
+  }
+
+  if (anchorOverride) return { startBalance: anchorOverride.balance, potBalances };
+
   // months[monthCount].startBalance is het doorgerolde VRIJE saldo aan het begin
   // van anchorMonth (de opgebouwde spaarpotten zijn er in de voorgaande maand-0
   // al uitgehaald). De ankermaand-berekening (calculateMonths maand 0) verwacht
@@ -550,32 +646,37 @@ export function computeHistoricalBalance(
   // correctie wordt de volledige pot dus dubbel afgetrokken. We tellen daarom de
   // opgebouwde spaarpot t/m de maand vóór anchorMonth terug op — exact hetzelfde
   // bedrag als calculateMonths initialiseert in deferredRemainingMap.
-  const rolledFreeBalance = months[monthCount]?.startBalance ?? effectiveBalance;
-  const anchorPrevMonth = format(addMonths(parseISO(`${anchorMonth}-01`), -1), 'yyyy-MM');
-  // We tellen enkel de potten terug waarvan calculateMonths maand-0 de opgebouwde
-  // pot (deferredFromPrevious) ook effectief aftrekt. Maand-0 slaat twee groepen
-  // over: potten die de ankermaand verlaten (reservationDefer.fromMonth === anchor,
-  // vallen uit billableReservations) en potten die in de ankermaand gefinaliseerd
-  // zijn (!p.finalized filter). Die tellen we dus óók niet terug — anders over-telling.
-  const departingAtAnchor = new Set(
-    reservationDefers.filter((d) => d.fromMonth === anchorMonth).map((d) => d.reservationId),
-  );
-  const finalizedAtAnchor = new Set(
-    reservationSettlements
-      .filter((st) => st.monthKey === anchorMonth && st.finalized)
-      .map((st) => st.reservationId),
-  );
-  const reservedAtAnchorStart = reservations
-    .filter(
-      (r) =>
-        r.type === 'spaardoel' &&
-        r.startMonth <= anchorPrevMonth &&
-        !departingAtAnchor.has(r.id) &&
-        !finalizedAtAnchor.has(r.id),
-    )
-    .reduce(
-      (sum, r) => sum + calcPotBalance(r, reservationPayments, reservationSettlements, anchorPrevMonth),
-      0,
-    );
-  return rolledFreeBalance + reservedAtAnchorStart;
+  //
+  // Potten die de ankermaand verlaten (uitstel) of er gefinaliseerd worden, slaat
+  // maand-0 over; die tellen we dus ook niet terug. Beide groepen vallen vanzelf weg:
+  // vertrokken potten staan niet in reservationPots, gefinaliseerde filteren we hier.
+  const rolledFreeBalance = anchorMonthData?.startBalance ?? effectiveBalance;
+  const reservedAtAnchorStart = (anchorMonthData?.reservationPots ?? [])
+    .filter((p) => p.potType === 'spaardoel' && !p.finalized)
+    .reduce((sum, p) => sum + p.deferredFromPrevious, 0);
+
+  return { startBalance: rolledFreeBalance + reservedAtAnchorStart, potBalances };
+}
+
+/** Alleen het banksaldo aan het begin van de ankermaand. Zie `computeAnchorState`. */
+export function computeHistoricalBalance(
+  referenceBalance: number,
+  referenceMonth: MonthKey,
+  anchorMonth: MonthKey,
+  expenseItems: ExpenseItem[],
+  incomeItems: IncomeItem[],
+  recurringItems: RecurringItem[],
+  reservations: ReservationItem[],
+  reservationPayments: ReservationPayment[],
+  recurringDefers: RecurringDefer[],
+  recurringSettlements: RecurringSettlement[],
+  reservationDefers: ReservationDefer[],
+  reservationSettlements: ReservationSettlement[],
+  balanceOverrides: BalanceOverride[],
+): number {
+  return computeAnchorState(
+    referenceBalance, referenceMonth, anchorMonth, expenseItems, incomeItems,
+    recurringItems, reservations, reservationPayments, recurringDefers,
+    recurringSettlements, reservationDefers, reservationSettlements, balanceOverrides,
+  ).startBalance;
 }

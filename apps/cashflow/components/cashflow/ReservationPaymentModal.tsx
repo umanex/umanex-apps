@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useCashflowStore } from '../../store/cashflow';
-import { useReservationActions } from '../../hooks/useCashflow';
+import { useMonths, useReservationActions } from '../../hooks/useCashflow';
 import { calcPotBalance } from '../../lib/cashflow/calculator';
 import { generateId, formatCurrency } from '../../lib/cashflow/recurring';
 import type { MonthKey, ReservationPotType } from '../../lib/cashflow/types';
@@ -30,10 +30,19 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
   const [fromCashStr, setFromCashStr] = useState('');
   const [error, setError] = useState('');
 
+  // Potstand uit dezelfde berekening als de maandkaart. Een bufferopname is afgeleid en
+  // staat niet in de store, dus calcPotBalance zou hier te veel beschikbaar tonen —
+  // enkel als terugval voor een maand buiten het venster.
+  const months = useMonths(3);
   const selectedReservation = reservations.find((r) => r.id === reservationId);
-  const availableSaldo = selectedReservation
-    ? calcPotBalance(selectedReservation, reservationPayments, reservationSettlements, monthKey)
-    : 0;
+  const simulatedPot = months
+    .find((m) => m.monthKey === monthKey)
+    ?.reservationPots.find((p) => p.reservationId === reservationId);
+  const availableSaldo = simulatedPot
+    ? simulatedPot.potBalance
+    : selectedReservation
+      ? calcPotBalance(selectedReservation, reservationPayments, reservationSettlements, monthKey)
+      : 0;
 
   function syncFromReservation(value: string) {
     setFromResStr(value);
@@ -55,7 +64,7 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
     setInvoiceStr(value);
     setError('');
     const inv = parseFloat(value.replace(',', '.')) || 0;
-    const fromPot = Math.min(inv, availableSaldo);
+    const fromPot = Math.min(inv, Math.max(0, availableSaldo));
     setFromResStr(String(fromPot));
     setFromCashStr(String(Math.max(0, inv - fromPot)));
   }

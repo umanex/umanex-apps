@@ -48,21 +48,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+800488b feat(cashflow): buffer pot absorbs a negative end balance
 a482ebc chore: seed HANDOFF.md staging files (root + apps)
 7d0d1bc fix(tokens): correcte DTCG-build + verwijder ongebruikte tailwind.js-export
 cea9181 Convert to W3C DTCG format, read more at https://docs.tokens.studio/convert-to-dtcg-format
 f55a171 fix(cashflow): allow finalizing spaardoel with leftover balance
-f42fe26 feat(cashflow): prudent budget-model, geen release van onbesteed budget
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/cashflow/briefings/2026-08-03-feature-buffer-tekortdekking.tcebc.md
+  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
   M  apps/cashflow/components/cashflow/ReservationSection.tsx
   M  apps/cashflow/components/cashflow/ReservationSidepanel.tsx
   M  apps/cashflow/hooks/useCashflow.ts
   M  apps/cashflow/lib/cashflow/calculator.ts
-  M  apps/cashflow/lib/cashflow/types.ts
-  M  apps/cashflow/store/cashflow.ts
+  A  apps/cashflow/scripts/buffer-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

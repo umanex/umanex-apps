@@ -128,14 +128,26 @@ function DraggablePotRow({
     <div ref={setNodeRef} className={`${isDragging ? 'opacity-30' : ''}`}>
       {/* Pot hoofdrij — altijd label + beschikbare provisie */}
       <div className={`flex gap-2 pl-1 rounded-[4px] w-full items-start py-1 ${zebra ? 'bg-[var(--umanexNeutral50)]' : ''}`}>
-        <button
-          {...listeners}
-          {...attributes}
-          className="text-[var(--umanexNeutral500)] hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0 mt-0.5"
-          aria-label="Versleep spaarpot bijdrage"
-        >
-          ⠿
-        </button>
+        {/* Een buffer die deze maand een tekort dekt, mag niet verplaatst worden: de
+            rij zou uit de maand verdwijnen en de dekking stil met zich meenemen. */}
+        {isAutoBuffer ? (
+          <span
+            className="text-[var(--umanexNeutral300)] text-sm leading-none select-none shrink-0 mt-0.5"
+            title="Buffer dekt deze maand een tekort — niet verplaatsbaar"
+            aria-hidden="true"
+          >
+            ⠿
+          </span>
+        ) : (
+          <button
+            {...listeners}
+            {...attributes}
+            className="text-[var(--umanexNeutral500)] hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0 mt-0.5"
+            aria-label="Versleep spaarpot bijdrage"
+          >
+            ⠿
+          </button>
+        )}
 
         <div className="flex-1 flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -325,6 +337,7 @@ function PotSubgroup({
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
   const subtotaal = calcSubtotaal(activePots, overrideAmounts, isCurrentMonth);
+  const hasBufferDraw = activePots.some((p) => (p.deficitCoverage ?? 0) < 0);
 
   if (activePots.length === 0 && finalizedPots.length === 0) return null;
 
@@ -332,9 +345,14 @@ function PotSubgroup({
     <div className="flex flex-col gap-2 w-full">
       <SectionBar
         label={label}
-        // Een bufferopname maakt het subtotaal negatief — dan is het geld dat terugkomt,
-        // dus groen. Alleen exact 0 blijft verborgen.
-        subtotaal={Math.abs(subtotaal) >= 0.005 ? formatCurrency(subtotaal) : undefined}
+        // Een bufferopname maakt het subtotaal negatief — dat is geld dat terugkomt, dus
+        // groen. Een negatief subtotaal zonder opname betekent een overtrokken pot; dat
+        // blijft verborgen zoals voorheen, want de rij zelf waarschuwt er al voor.
+        subtotaal={
+          subtotaal > 0 || (hasBufferDraw && subtotaal < -0.005)
+            ? formatCurrency(subtotaal)
+            : undefined
+        }
         subtotaalColor={subtotaal < 0 ? 'green' : 'red'}
         showPaid={finalizedPots.length > 0 ? showFinalized : undefined}
         onFilterToggle={finalizedPots.length > 0 ? () => setShowFinalized((v) => !v) : undefined}

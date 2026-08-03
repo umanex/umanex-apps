@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { useCashflowStore } from '../store/cashflow';
-import { calculateMonths, computeHistoricalBalance } from '../lib/cashflow/calculator';
+import { calculateMonths, computeAnchorState } from '../lib/cashflow/calculator';
+import type { AnchorState } from '../lib/cashflow/calculator';
 import type { MonthData } from '../lib/cashflow/types';
 
 // Verwijder verouderde defers en settlements die volledig in het verleden liggen.
@@ -68,7 +69,7 @@ export function useHydrated(): boolean {
   return hydrated;
 }
 
-export function useComputedStartBalance(): number {
+export function useAnchorState(): AnchorState {
   const referenceBalance = useCashflowStore((s) => s.referenceBalance);
   const referenceMonth = useCashflowStore((s) => s.referenceMonth);
   const anchorMonth = useCashflowStore((s) => s.anchorMonth);
@@ -83,7 +84,7 @@ export function useComputedStartBalance(): number {
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
   const balanceOverrides = useCashflowStore((s) => s.balanceOverrides);
 
-  return computeHistoricalBalance(
+  return computeAnchorState(
     referenceBalance,
     referenceMonth,
     anchorMonth,
@@ -100,6 +101,10 @@ export function useComputedStartBalance(): number {
   );
 }
 
+export function useComputedStartBalance(): number {
+  return useAnchorState().startBalance;
+}
+
 export function useMonths(count = 3): MonthData[] {
   const anchorMonth = useCashflowStore((s) => s.anchorMonth);
   const expenseItems = useCashflowStore((s) => s.expenseItems);
@@ -111,7 +116,7 @@ export function useMonths(count = 3): MonthData[] {
   const recurringSettlements = useCashflowStore((s) => s.recurringSettlements);
   const reservationDefers = useCashflowStore((s) => s.reservationDefers);
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
-  const startBalance = useComputedStartBalance();
+  const { startBalance, potBalances } = useAnchorState();
 
   return calculateMonths(
     anchorMonth,
@@ -126,6 +131,7 @@ export function useMonths(count = 3): MonthData[] {
     reservationDefers,
     reservationSettlements,
     count,
+    potBalances,
   );
 }
 

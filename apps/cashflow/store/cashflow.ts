@@ -15,10 +15,11 @@ import type {
   ReservationDefer,
   BalanceOverride,
   MonthKey,
+  MonthSnapshot,
 } from '../lib/cashflow/types';
 
 // Verhoog bij elke schema-uitbreiding + voeg het nieuwe veld toe in migrate.
-const STORE_VERSION = 12;
+const STORE_VERSION = 13;
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
@@ -39,6 +40,24 @@ export const useCashflowStore = create<CashflowStore>()(
       recurringSettlements: [] as RecurringSettlement[],
       reservationSettlements: [] as ReservationSettlement[],
       reservationDefers: [] as ReservationDefer[],
+      monthSnapshots: [] as MonthSnapshot[],
+      reopenedMonths: [] as MonthKey[],
+
+      closeMonth: (snapshot) =>
+        set((state) => {
+          state.monthSnapshots = state.monthSnapshots.filter(
+            (s) => s.monthKey !== snapshot.monthKey,
+          );
+          state.monthSnapshots.push(snapshot);
+          // Opnieuw afsluiten heft een eerdere heropening op.
+          state.reopenedMonths = state.reopenedMonths.filter((m) => m !== snapshot.monthKey);
+        }),
+
+      reopenMonth: (monthKey) =>
+        set((state) => {
+          state.monthSnapshots = state.monthSnapshots.filter((s) => s.monthKey !== monthKey);
+          if (!state.reopenedMonths.includes(monthKey)) state.reopenedMonths.push(monthKey);
+        }),
 
       setReferenceBalance: (balance, month) =>
         set((state) => {
@@ -305,6 +324,8 @@ export const useCashflowStore = create<CashflowStore>()(
                 .map((rs) => ({ ...rs, finalized: rs.finalized ?? false }))
             : [],
           reservationDefers: Array.isArray(s.reservationDefers) ? s.reservationDefers : [],
+          monthSnapshots: Array.isArray(s.monthSnapshots) ? s.monthSnapshots : [],
+          reopenedMonths: Array.isArray(s.reopenedMonths) ? s.reopenedMonths : [],
         };
       },
       storage: createJSONStorage(() => localStorage),

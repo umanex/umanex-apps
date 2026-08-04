@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { format } from 'date-fns';
+import { addMonths, format } from 'date-fns';
 import { useCashflowStore } from '../store/cashflow';
 import { calculateMonths, computeAnchorState } from '../lib/cashflow/calculator';
 import type { AnchorState } from '../lib/cashflow/calculator';
 import type { MonthData, MonthKey } from '../lib/cashflow/types';
+import { buildSnapshot, snapshotMap } from '../lib/cashflow/snapshot';
 
 // Verwijder verouderde defers en settlements die volledig in het verleden liggen.
 // Wordt eenmalig uitgevoerd na rehydratie.
@@ -105,6 +106,7 @@ export function useAnchorState(): AnchorState {
   const reservationDefers = useCashflowStore((s) => s.reservationDefers);
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
   const balanceOverrides = useCashflowStore((s) => s.balanceOverrides);
+  const monthSnapshots = useCashflowStore((s) => s.monthSnapshots);
 
   return computeAnchorState(
     referenceBalance,
@@ -120,6 +122,7 @@ export function useAnchorState(): AnchorState {
     reservationDefers,
     reservationSettlements,
     balanceOverrides,
+    monthSnapshots,
   );
 }
 
@@ -138,6 +141,7 @@ export function useMonths(count = 3): MonthData[] {
   const recurringSettlements = useCashflowStore((s) => s.recurringSettlements);
   const reservationDefers = useCashflowStore((s) => s.reservationDefers);
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
+  const monthSnapshots = useCashflowStore((s) => s.monthSnapshots);
   const { startBalance, potBalances } = useAnchorState();
 
   return calculateMonths(
@@ -154,7 +158,53 @@ export function useMonths(count = 3): MonthData[] {
     reservationSettlements,
     count,
     potBalances,
+    snapshotMap(monthSnapshots),
   );
+}
+
+/**
+ * Sluit de maand die net voorbij is automatisch af, één keer per sessie.
+ *
+ * Bewust alleen die ene maand. Zou de app bij het eerste gebruik alle oudere maanden
+ * bevriezen, dan legt hij een herberekening vast als historie — precies wat een snapshot
+ * moet voorkomen. Twee rails daarbij: vóór de referentiemaand is er geen echt banksaldo
+ * om van te vertrekken, en een maand die je bewust heropend hebt blijft open.
+ */
+export function useAutoCloseMonth(enabled: boolean): void {
+  const done = useRef(false);
+
+  useEffect(() => {
+    if (!enabled || done.current) return;
+    done.current = true;
+
+    const state = useCashflowStore.getState();
+    const prevMonth = format(addMonths(new Date(), -1), 'yyyy-MM');
+
+    if (prevMonth < state.referenceMonth) return;
+    if (state.reopenedMonths.includes(prevMonth)) return;
+    if (state.monthSnapshots.some((s) => s.monthKey === prevMonth)) return;
+
+    const hasData =
+      state.incomeItems.some((i) => i.monthKey === prevMonth) ||
+      state.expenseItems.some((i) => i.monthKey === prevMonth) ||
+      state.recurringItems.some((i) => i.startMonth <= prevMonth) ||
+      state.reservations.some((r) => r.startMonth <= prevMonth);
+    if (!hasData) return;
+
+    const anchor = computeAnchorState(
+      state.referenceBalance, state.referenceMonth, prevMonth, state.expenseItems,
+      state.incomeItems, state.recurringItems, state.reservations, state.reservationPayments,
+      state.recurringDefers, state.recurringSettlements, state.reservationDefers,
+      state.reservationSettlements, state.balanceOverrides, state.monthSnapshots,
+    );
+    const [data] = calculateMonths(
+      prevMonth, anchor.startBalance, state.expenseItems, state.incomeItems,
+      state.recurringItems, state.reservations, state.reservationPayments,
+      state.recurringDefers, state.recurringSettlements, state.reservationDefers,
+      state.reservationSettlements, 1, anchor.potBalances,
+    );
+    if (data) state.closeMonth(buildSnapshot(data, new Date().toISOString()));
+  }, [enabled]);
 }
 
 export function useCashflowActions() {
@@ -182,6 +232,8 @@ export function useCashflowActions() {
     upsertReservationSettlement: useCashflowStore((s) => s.upsertReservationSettlement),
     removeReservationSettlement: useCashflowStore((s) => s.removeReservationSettlement),
     finalizeReservation: useCashflowStore((s) => s.finalizeReservation),
+    closeMonth: useCashflowStore((s) => s.closeMonth),
+    reopenMonth: useCashflowStore((s) => s.reopenMonth),
   };
 }
 

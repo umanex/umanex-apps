@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { useCashflowStore } from '../store/cashflow';
 import { calculateMonths, computeAnchorState } from '../lib/cashflow/calculator';
 import type { AnchorState } from '../lib/cashflow/calculator';
-import type { MonthData } from '../lib/cashflow/types';
+import type { MonthData, MonthKey } from '../lib/cashflow/types';
 
 // Verwijder verouderde defers en settlements die volledig in het verleden liggen.
 // Wordt eenmalig uitgevoerd na rehydratie.
@@ -67,6 +67,28 @@ export function useHydrated(): boolean {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return hydrated;
+}
+
+/**
+ * Vroegste maand waarvoor er iets bekend is. Verder terug navigeren toont enkel lege
+ * maanden, dus daar ligt de ondergrens van het venster.
+ */
+export function useEarliestDataMonth(): MonthKey {
+  const referenceMonth = useCashflowStore((s) => s.referenceMonth);
+  const incomeItems = useCashflowStore((s) => s.incomeItems);
+  const expenseItems = useCashflowStore((s) => s.expenseItems);
+  const recurringItems = useCashflowStore((s) => s.recurringItems);
+  const reservations = useCashflowStore((s) => s.reservations);
+
+  const candidates: MonthKey[] = [
+    referenceMonth,
+    ...incomeItems.map((i) => i.monthKey),
+    ...expenseItems.map((i) => i.monthKey),
+    ...recurringItems.map((i) => i.startMonth),
+    ...reservations.map((r) => r.startMonth),
+  ];
+
+  return candidates.reduce((min, m) => (m < min ? m : min), referenceMonth);
 }
 
 export function useAnchorState(): AnchorState {

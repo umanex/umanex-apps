@@ -21,6 +21,11 @@ interface MonthCardProps {
   /** Gelijk voor alle maanden, zodat de drie footers even hoog blijven. */
   showReserved: boolean;
   showBuffer: boolean;
+  /**
+   * Deze maand ligt in het verleden en is nooit afgesloten, dus wat je ziet is opnieuw
+   * doorgerekend uit je huidige gegevens — geen vastgelegde historie.
+   */
+  isReconstruction: boolean;
 }
 
 export function MonthCard({
@@ -31,6 +36,7 @@ export function MonthCard({
   isFirst,
   showReserved,
   showBuffer,
+  isReconstruction,
 }: MonthCardProps) {
   const {
     addIncomeItem,
@@ -95,9 +101,19 @@ export function MonthCard({
     >
       {/* Vaste maandheader — blijft staan terwijl de ledger scrollt. */}
       <div className="shrink-0 flex items-center justify-between gap-2 px-6 py-3 bg-[var(--umanexNeutral100)]">
-        <h2 className="font-semibold text-base text-[var(--umanexNeutral800)]">
-          {getMonthLabel(monthKey)}
-        </h2>
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="font-semibold text-base text-[var(--umanexNeutral800)] truncate">
+            {getMonthLabel(monthKey)}
+          </h2>
+          {isReconstruction && (
+            <span
+              title="Deze maand is nooit afgesloten. Wat je ziet is opnieuw doorgerekend uit je huidige gegevens, niet wat er destijds stond."
+              className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-[11px] font-medium bg-[var(--umanexNeutral200)] text-[var(--umanexNeutral600)]"
+            >
+              reconstructie
+            </span>
+          )}
+        </div>
         <button
           onClick={onRepeatMonth}
           title={`Posten van ${getMonthLabel(addMonth(monthKey, -1))} overnemen`}

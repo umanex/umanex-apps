@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useHydrated, useMonths } from '../hooks/useCashflow';
+import { useHydrated, useMonths, useEarliestDataMonth, useCashflowActions } from '../hooks/useCashflow';
+import { useCashflowStore } from '../store/cashflow';
+import { getCurrentMonthKey } from '../lib/cashflow/recurring';
 import { MonthCard } from '../components/cashflow/MonthCard';
 import { CashflowDndContext } from '../components/cashflow/CashflowDndContext';
 import { RecurringSidepanel } from '../components/cashflow/RecurringSidepanel';
@@ -9,6 +11,7 @@ import { ReservationSidepanel } from '../components/cashflow/ReservationSidepane
 import { ReservationPaymentModal } from '../components/cashflow/ReservationPaymentModal';
 import { RepeatMonthModal } from '../components/cashflow/RepeatMonthModal';
 import { MonthCardSkeleton } from '../components/feedback/MonthCardSkeleton';
+import { MonthNavigator } from '../components/cashflow/MonthNavigator';
 import type { MonthKey, ReservationPotType } from '../lib/cashflow/types';
 
 export default function Page() {
@@ -17,6 +20,12 @@ export default function Page() {
   // uitzien — en de eerste client-render met de server-HTML overeenkomt.
   const hydrated = useHydrated();
   const months = useMonths(3);
+  const anchorMonth = useCashflowStore((s) => s.anchorMonth);
+  const { setAnchorMonth } = useCashflowActions();
+  const earliestMonth = useEarliestDataMonth();
+  // Een voorbije maand is nog geen historie: zolang er geen snapshot is, wordt hij
+  // opnieuw doorgerekend uit de huidige gegevens. Dat moet zichtbaar zijn.
+  const currentMonth = getCurrentMonthKey();
   // Gelijk voor alle kolommen: anders staan de drie footers niet meer op één lijn.
   const showReserved = months.some((m) =>
     m.reservationPots.some((p) => p.potType === 'spaardoel' && !p.isDeficitBuffer),
@@ -32,6 +41,15 @@ export default function Page() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight">Cashflow prognose</h1>
         <div className="flex items-center gap-2 flex-wrap">
+          {hydrated && (
+            <MonthNavigator
+              anchorMonth={anchorMonth}
+              earliestMonth={earliestMonth}
+              currentMonth={currentMonth}
+              monthCount={3}
+              onNavigate={setAnchorMonth}
+            />
+          )}
           <button
             onClick={() => setRecurringOpen(true)}
             className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
@@ -66,6 +84,7 @@ export default function Page() {
                   isFirst={index === 0}
                   showReserved={showReserved}
                   showBuffer={showBuffer}
+                isReconstruction={month.monthKey < currentMonth}
                   onRegisterPayment={(filterType) => setPaymentState({ monthKey: month.monthKey, filterType })}
                   onOpenRecurringSidepanel={() => setRecurringOpen(true)}
                   onRepeatMonth={() => setRepeatMonth(month.monthKey)}

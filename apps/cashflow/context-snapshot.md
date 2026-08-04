@@ -34,6 +34,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | ItemRow | `apps/cashflow/components/cashflow/ItemRow.tsx` | cashflow | — | — | — |
 | MonthCard | `apps/cashflow/components/cashflow/MonthCard.tsx` | cashflow | — | — | — |
 | MonthHeader | `apps/cashflow/components/cashflow/MonthHeader.tsx` | cashflow | — | — | — |
+| MonthNavigator | `apps/cashflow/components/cashflow/MonthNavigator.tsx` | cashflow | — | — | — |
 | MonthSummary | `apps/cashflow/components/cashflow/MonthSummary.tsx` | cashflow | — | — | — |
 | RecurringSection | `apps/cashflow/components/cashflow/RecurringSection.tsx` | cashflow | — | — | — |
 | RecurringSidepanel | `apps/cashflow/components/cashflow/RecurringSidepanel.tsx` | cashflow | — | — | — |
@@ -52,21 +53,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+eff161c feat(cashflow): skelet tijdens hydratatie in plaats van nullen
 d2e6fd4 docs(cashflow): CSV-import geschrapt, fase 2 afgerond
 b9a4757 feat(cashflow): herhaal de posten van de vorige maand
 3ab6af9 feat(cashflow): buffer krijgt een eigen regel in de saldo-footer
 a5d5291 feat(cashflow): maandkolom wordt een ledger met saldo-footer
-6a4caa4 fix(cashflow): budget is een inschatting, provisie rolt door
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/app/page.tsx
-  M  apps/cashflow/briefings/2026-08-04-feature-herhaal-vorige-maand.tcebc.md
-  M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
-  M  apps/cashflow/components/cashflow/IncomeSection.tsx
-  M  apps/cashflow/components/cashflow/SectionBar.tsx
-  A  apps/cashflow/components/feedback/MonthCardSkeleton.tsx
-  M  apps/cashflow/lib/cashflow/recurring.ts
+  A  apps/cashflow/briefings/2026-08-04-feature-maandsnapshots.tcebc.md
+  M  apps/cashflow/components/cashflow/MonthCard.tsx
+  A  apps/cashflow/components/cashflow/MonthNavigator.tsx
+  M  apps/cashflow/hooks/useCashflow.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

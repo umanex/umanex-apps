@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ExpenseItem, MonthKey } from '../../lib/cashflow/types';
 import { formatCurrency, generateId, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
+import { expenseSectionTotal } from '../../lib/cashflow/subtotals';
 import { SectionBar } from './SectionBar';
 
 interface ExpenseSectionProps {
@@ -113,9 +114,7 @@ export function ExpenseSection({
   const paidItems = items.filter((i) => i.paid);
   const visibleItems = showPaid ? items : unpaidItems;
 
-  const overflowSubtotaal = overflowItems.reduce((s, i) => s + i.amount, 0);
-  const subtotaal =
-    unpaidItems.reduce((s, i) => s + i.amount, 0) + overflowSubtotaal;
+  const subtotaal = expenseSectionTotal(items, overflowItems);
 
   function handleAdd() {
     const parsed = parseFloat(amount.replace(',', '.'));

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ReservationPotBalance, ReservationPayment, MonthKey, ReservationPotType } from '../../lib/cashflow/types';
 import { formatCurrency, getMonthLabel, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
+import { potSectionTotal } from '../../lib/cashflow/subtotals';
 import { SectionBar } from './SectionBar';
 
 interface DeferredReservationDisplayItem {
@@ -278,30 +279,6 @@ function DraggablePotRow({
   );
 }
 
-function calcSubtotaal(
-  activePots: ReservationPotBalance[],
-  overrideAmounts: Record<string, number>,
-  isCurrentMonth: boolean,
-): number {
-  return activePots.reduce((s, p) => {
-    if (isCurrentMonth) {
-      if (p.potType === 'maandelijks_budget') {
-        const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
-        return s + p.provisionThisMonth - paid;
-      }
-      // Huidige maand: provisie-kop = som van de RESTERENDE provisies
-      // (deferred + provisie deze maand − betaald uit pot). Zo daalt de kop bij een
-      // betaling en telt de sectie op tot de Uitgaves-tegel. Zelfde formule als
-      // MonthCard/calculator maand-0, zodat kop en tegel consistent blijven.
-      if (p.potType === 'spaardoel') {
-        const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
-        return s + p.deferredFromPrevious + p.provisionThisMonth - paid;
-      }
-    }
-    return s + (overrideAmounts[p.reservationId] ?? p.displayContribution);
-  }, 0);
-}
-
 function PotSubgroup({
   label,
   potType,
@@ -336,7 +313,7 @@ function PotSubgroup({
   onAmountChange: (reservationId: string, amount: number | null) => void;
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
-  const subtotaal = calcSubtotaal(activePots, overrideAmounts, isCurrentMonth);
+  const subtotaal = potSectionTotal(activePots, overrideAmounts, isCurrentMonth);
   const hasBufferDraw = activePots.some((p) => (p.deficitCoverage ?? 0) < 0);
 
   if (activePots.length === 0 && finalizedPots.length === 0) return null;

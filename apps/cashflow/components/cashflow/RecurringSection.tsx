@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { RecurringItem, RecurringSettlement, MonthKey } from '../../lib/cashflow/types';
 import { formatCurrency, getMonthLabel } from '../../lib/cashflow/recurring';
+import { recurringSectionTotal } from '../../lib/cashflow/subtotals';
 import { SectionBar } from './SectionBar';
 
 interface DeferredDisplayItem {
@@ -266,12 +267,7 @@ export function RecurringSection({
   const totalPaidCount = paidItems.length + paidDeferredCount;
   const visibleItems = showPaid ? items : unpaidItems;
 
-  const subtotaal =
-    unpaidItems.reduce((s, item) => {
-      const budgeted = item.frequency === 'yearly' ? item.amount / 12 : item.amount;
-      return s + budgeted;
-    }, 0) +
-    deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
+  const subtotaal = recurringSectionTotal(items, settlements, deferredItems);
 
   if (items.length === 0 && deferredItems.length === 0) return null;
 

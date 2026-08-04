@@ -5,7 +5,9 @@ import type {
   IncomeItem,
   MonthData,
   RecurringItem,
+  RecurringSettlement,
   ReservationItem,
+  ReservationPotBalance,
 } from '../lib/cashflow/types';
 
 let failures = 0;
@@ -35,32 +37,56 @@ function checkBool(name: string, actual: boolean, expected: boolean) {
   }
 }
 
-/** Exacte spiegel van de eindsaldo-formule in MonthCard.tsx — invariant-check. */
-function monthCardEindsaldo(m: MonthData, isFirst: boolean): number {
-  const overflowItems = m.reservationPots
-    .filter((p) => !p.finalized)
-    .flatMap((p) => p.paymentsThisMonth.filter((pay) => pay.fromCash > 0).map((pay) => pay.fromCash));
-  const unpaidExpensesTotal = m.expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0);
-  const vastSubtotaal =
-    m.totalOutstandingCosts - unpaidExpensesTotal +
-    m.deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
-  const expenseSubtotaal = unpaidExpensesTotal + overflowItems.reduce((s, a) => s + a, 0);
-  const budgetSubtotaal = m.reservationPots
-    .filter((p) => p.potType === 'maandelijks_budget' && (!isFirst || !p.finalized))
-    .reduce((s, p) => {
-      const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
-      return s + (p.provisionThisMonth - paid);
+/**
+ * Onafhankelijke herberekening van het eindsaldo uit de rauwe maanddata — de toetssteen
+ * voor `lib/cashflow/subtotals.ts`. Leest bewust niet `m.subtotals`, anders zou de check
+ * de implementatie tegen zichzelf houden.
+ *
+ * Ankermaand: het beginsaldo is het echte banksaldo, dus een betaalde kost is er al af en
+ * de tot dan opgebouwde potten zitten er nog in. Latere maanden: het beginsaldo is een
+ * projectie, dus vertrekt élke kost — betaald gemarkeerd of niet — en is de opbouw in een
+ * eerdere maand al afgetrokken.
+ */
+function recomputeEindsaldo(m: MonthData, isFirst: boolean): number {
+  const paidFromPot = (p: ReservationPotBalance) =>
+    p.paymentsThisMonth.reduce((s, pay) => s + pay.fromReservation, 0);
+
+  const recurring =
+    m.recurringItems.reduce((s, item) => {
+      const settlement = m.recurringSettlements.find((st) => st.recurringId === item.id);
+      if (settlement?.paid) return isFirst ? s : s + settlement.actualAmount;
+      return s + (item.frequency === 'yearly' ? item.amount / 12 : item.amount);
+    }, 0) +
+    m.deferredItems.reduce((s, d) => {
+      if (d.paid) return isFirst ? s : s + d.paidAmount;
+      return s + d.amount;
     }, 0);
-  const provisieSubtotaal =
+
+  const expenses = m.expenseItems.reduce((s, i) => (i.paid && isFirst ? s : s + i.amount), 0);
+
+  const cash = isFirst
+    ? m.reservationPots
+        .filter((p) => !p.finalized)
+        .reduce((s, p) => s + p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0), 0)
+    : m.reservationPayments.reduce((s, pay) => s + pay.fromCash, 0);
+
+  const budgets = m.reservationPots
+    .filter((p) => p.potType === 'maandelijks_budget' && (!isFirst || !p.finalized))
+    .reduce((s, p) => s + p.provisionThisMonth - paidFromPot(p), 0);
+
+  const provisions =
     m.reservationPots
       .filter((p) => p.potType === 'spaardoel' && (!isFirst || !p.finalized))
-      .reduce((s, p) => {
-        const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
-        return s + (isFirst
-          ? p.deferredFromPrevious + p.provisionThisMonth - paid
-          : p.provisionThisMonth - p.releasedThisMonth);
-      }, 0) + m.deferredReservationItems.reduce((s, d) => s + d.amount, 0);
-  return (m.startBalance + m.totalIncome) - (vastSubtotaal + expenseSubtotaal + budgetSubtotaal + provisieSubtotaal);
+      .reduce(
+        (s, p) =>
+          s +
+          (isFirst
+            ? p.deferredFromPrevious + p.provisionThisMonth - paidFromPot(p)
+            : p.provisionThisMonth - p.releasedThisMonth),
+        0,
+      ) + m.deferredReservationItems.reduce((s, d) => s + d.amount, 0);
+
+  return (m.startBalance + m.totalIncome) - (recurring + expenses + cash + budgets + provisions);
 }
 
 type Scenario = {
@@ -95,7 +121,9 @@ function bufferPot(m: MonthData) {
 
 function invariant(months: MonthData[], label: string) {
   months.forEach((m, i) => {
-    check(`${label} · MonthCard-invariant ${m.monthKey}`, monthCardEindsaldo(m, i === 0), m.endBalance);
+    check(`${label} · eindsaldo-invariant ${m.monthKey}`, recomputeEindsaldo(m, i === 0), m.endBalance);
+    // De kaart toont `subtotals`; die moet hetzelfde getal geven als de doorrol.
+    check(`${label} · kaart == doorrol ${m.monthKey}`, m.subtotals.endBalance, m.endBalance);
   });
   // Doorrol: eindsaldo maand N == startsaldo maand N+1
   for (let i = 0; i < months.length - 1; i++) {
@@ -403,6 +431,34 @@ console.log('\nS12 — uitgestelde storting crediteert de pot');
   check('S12 · pot in april', aprilPot?.potBalance ?? 0, 200);
   check('S12 · overgedragen naar mei', meiPot.deferredFromPrevious, 200);
   invariant(months, 'S12');
+}
+
+// ── S13: betaald gemarkeerd in een toekomstige maand telt tóch als kost ─────────
+console.log('\nS13 — betaalde post in een toekomstige maand');
+{
+  const huur: RecurringItem = {
+    id: 'huur', label: 'Huur', amount: 500, type: 'expense', frequency: 'monthly', startMonth: '2026-03',
+  };
+
+  // April staat als betaald gemarkeerd. Het geld moet nog steeds vertrekken: het
+  // beginsaldo van april is een projectie waar niets van afgetrokken is.
+  const later: RecurringSettlement[] = [
+    { id: 's1', recurringId: 'huur', monthKey: '2026-04', paid: true, actualAmount: 500 },
+  ];
+  const months = calculateMonths('2026-03', 5000, [], [], [huur], [], [], [], later, [], [], 3);
+  check('S13 · eindsaldo april', months[1]!.endBalance, 4000);
+  check('S13 · kaart toont hetzelfde', months[1]!.subtotals.endBalance, 4000);
+  check('S13 · beginsaldo mei', months[2]!.startBalance, 4000);
+  invariant(months, 'S13');
+
+  // Spiegelbeeld: in de ankermaand is een betaalde kost al van het banksaldo af en mag
+  // ze er niet nog eens af.
+  const anchor: RecurringSettlement[] = [
+    { id: 's2', recurringId: 'huur', monthKey: '2026-03', paid: true, actualAmount: 500 },
+  ];
+  const anchorMonths = calculateMonths('2026-03', 5000, [], [], [huur], [], [], [], anchor, [], [], 3);
+  check('S13 · ankermaand telt betaalde kost niet dubbel', anchorMonths[0]!.endBalance, 5000);
+  invariant(anchorMonths, 'S13b');
 }
 
 console.log(`\n${checks - failures}/${checks} checks geslaagd${failures ? ` — ${failures} FOUT` : ''}`);

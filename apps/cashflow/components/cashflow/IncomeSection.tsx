@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { IncomeItem, MonthKey } from '../../lib/cashflow/types';
 import { formatCurrency, generateId, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
+import { incomeSectionTotal } from '../../lib/cashflow/subtotals';
 import { SectionBar } from './SectionBar';
 
 interface IncomeSectionProps {
@@ -176,7 +177,7 @@ export function IncomeSection({
     }
   }
 
-  const subtotaal = startBalance + items.reduce((s, i) => s + i.amount, 0);
+  const subtotaal = incomeSectionTotal(startBalance, items);
 
   return (
     <div className="flex flex-col gap-2 w-full">

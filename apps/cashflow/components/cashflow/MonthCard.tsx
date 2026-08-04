@@ -26,6 +26,11 @@ interface MonthCardProps {
    * doorgerekend uit je huidige gegevens — geen vastgelegde historie.
    */
   isReconstruction: boolean;
+  /** Deze maand is afgesloten: de kolom toont het snapshot en is niet bewerkbaar. */
+  locked: boolean;
+  /** Beschikbaar voor een voorbije maand die nog niet afgesloten is. */
+  onCloseMonth?: () => void;
+  onReopenMonth?: () => void;
 }
 
 export function MonthCard({
@@ -37,6 +42,9 @@ export function MonthCard({
   showReserved,
   showBuffer,
   isReconstruction,
+  locked,
+  onCloseMonth,
+  onReopenMonth,
 }: MonthCardProps) {
   const {
     addIncomeItem,
@@ -95,9 +103,9 @@ export function MonthCard({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col h-full min-h-0 rounded-xl border bg-card overflow-hidden transition-colors ${
-        isOver ? 'border-primary ring-2 ring-primary/30' : 'border-[var(--umanexPrimary50)]'
-      }`}
+      className={`flex flex-col h-full min-h-0 rounded-xl border overflow-hidden transition-colors ${
+        locked ? 'bg-[var(--umanexNeutral50)]' : 'bg-card'
+      } ${isOver ? 'border-primary ring-2 ring-primary/30' : 'border-[var(--umanexPrimary50)]'}`}
     >
       {/* Vaste maandheader — blijft staan terwijl de ledger scrollt. */}
       <div className="shrink-0 flex items-center justify-between gap-2 px-6 py-3 bg-[var(--umanexNeutral100)]">
@@ -105,7 +113,15 @@ export function MonthCard({
           <h2 className="font-semibold text-base text-[var(--umanexNeutral800)] truncate">
             {getMonthLabel(monthKey)}
           </h2>
-          {isReconstruction && (
+          {locked && (
+            <span
+              title={'Afgesloten maand. Wat je ziet is vastgelegd op het moment van afsluiten en verandert niet meer mee met je gegevens.'}
+              className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-[11px] font-medium bg-[var(--umanexNeutral800)] text-[var(--umanexNeutral50)]"
+            >
+              afgesloten
+            </span>
+          )}
+          {!locked && isReconstruction && (
             <span
               title="Deze maand is nooit afgesloten. Wat je ziet is opnieuw doorgerekend uit je huidige gegevens, niet wat er destijds stond."
               className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-[11px] font-medium bg-[var(--umanexNeutral200)] text-[var(--umanexNeutral600)]"
@@ -114,17 +130,41 @@ export function MonthCard({
             </span>
           )}
         </div>
-        <button
-          onClick={onRepeatMonth}
-          title={`Posten van ${getMonthLabel(addMonth(monthKey, -1))} overnemen`}
-          className="shrink-0 h-7 px-2 rounded-[4px] text-[13px] text-[var(--umanexNeutral500)] hover:text-[var(--umanexNeutral800)] hover:bg-[var(--umanexNeutral200)] transition-colors whitespace-nowrap"
-        >
-          ↻ Herhaal
-        </button>
+        {locked ? (
+          <button
+            onClick={onReopenMonth}
+            title="Afsluiting opheffen: de maand rekent daarna weer mee met je huidige gegevens."
+            className="shrink-0 h-7 px-2 rounded-[4px] text-[13px] text-[var(--umanexNeutral500)] hover:text-[var(--umanexNeutral800)] hover:bg-[var(--umanexNeutral200)] transition-colors whitespace-nowrap"
+          >
+            Heropenen
+          </button>
+        ) : (
+          <div className="flex items-center gap-1 shrink-0">
+            {onCloseMonth && (
+              <button
+                onClick={onCloseMonth}
+                title="Deze maand bevriezen zoals ze nu staat, zodat latere wijzigingen de historie niet meer veranderen."
+                className="h-7 px-2 rounded-[4px] text-[13px] text-[var(--umanexNeutral500)] hover:text-[var(--umanexNeutral800)] hover:bg-[var(--umanexNeutral200)] transition-colors whitespace-nowrap"
+              >
+                Afsluiten
+              </button>
+            )}
+            <button
+              onClick={onRepeatMonth}
+              title={`Posten van ${getMonthLabel(addMonth(monthKey, -1))} overnemen`}
+              className="h-7 px-2 rounded-[4px] text-[13px] text-[var(--umanexNeutral500)] hover:text-[var(--umanexNeutral800)] hover:bg-[var(--umanexNeutral200)] transition-colors whitespace-nowrap"
+            >
+              ↻ Herhaal
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Ledger: beginsaldo, dan de vier kostenstappen in volgorde van de kernformule. */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-5">
+      <fieldset
+        disabled={locked}
+        className="flex-1 min-h-0 overflow-y-auto p-4 m-0 border-0 flex flex-col gap-5"
+      >
         <StartBalanceRow
           balance={startBalance}
           onChange={isFirst ? (balance) => {
@@ -202,7 +242,7 @@ export function MonthCard({
             }
           }}
         />
-      </div>
+      </fieldset>
 
       <BalanceFooter
         available={subtotals.endBalance}

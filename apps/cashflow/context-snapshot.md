@@ -53,19 +53,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+2dd02b1 feat(cashflow): navigeer door het maandvenster
 eff161c feat(cashflow): skelet tijdens hydratatie in plaats van nullen
 d2e6fd4 docs(cashflow): CSV-import geschrapt, fase 2 afgerond
 b9a4757 feat(cashflow): herhaal de posten van de vorige maand
 3ab6af9 feat(cashflow): buffer krijgt een eigen regel in de saldo-footer
-a5d5291 feat(cashflow): maandkolom wordt een ledger met saldo-footer
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/app/page.tsx
-  A  apps/cashflow/briefings/2026-08-04-feature-maandsnapshots.tcebc.md
+  M  apps/cashflow/briefings/2026-08-04-feature-maandsnapshots.tcebc.md
   M  apps/cashflow/components/cashflow/MonthCard.tsx
-  A  apps/cashflow/components/cashflow/MonthNavigator.tsx
+  M  apps/cashflow/components/cashflow/SectionBar.tsx
   M  apps/cashflow/hooks/useCashflow.ts
+  M  apps/cashflow/lib/cashflow/calculator.ts
+  A  apps/cashflow/lib/cashflow/snapshot.ts
+  M  apps/cashflow/lib/cashflow/types.ts
+  M  apps/cashflow/store/cashflow.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

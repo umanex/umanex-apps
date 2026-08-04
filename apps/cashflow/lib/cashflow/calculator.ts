@@ -13,9 +13,11 @@ import type {
   ReservationDefer,
   BalanceOverride,
   MonthSubtotals,
+  MonthSnapshot,
 } from './types';
 import { addMonths, format, parseISO, differenceInMonths } from 'date-fns';
 import { collectCashOverflowItems, computeMonthSubtotals } from './subtotals';
+import { latestSnapshotBefore } from './snapshot';
 
 function getMonthsInRange(anchorMonth: MonthKey, count: number): MonthKey[] {
   const base = parseISO(`${anchorMonth}-01`);
@@ -113,6 +115,11 @@ export function calculateMonths(
    * opnieuw zou vullen. De aanroeper levert hier de doorgerolde stand aan.
    */
   initialPotBalances?: Map<string, number>,
+  /**
+   * Afgesloten maanden. Een maand met een snapshot wordt niet doorgerekend maar
+   * overgenomen: historie mag niet verschuiven wanneer stamdata wijzigt.
+   */
+  snapshots?: Map<MonthKey, MonthSnapshot>,
 ): MonthData[] {
   const months = getMonthsInRange(anchorMonth, count);
   const result: MonthData[] = [];
@@ -140,6 +147,23 @@ export function calculateMonths(
     reservations.find((r) => r.coversDeficit && r.type === 'spaardoel')?.id ?? null;
 
   for (const monthKey of months) {
+    // Afgesloten maand: overnemen zoals ze bevroren is, en de volgende maand daarop
+    // laten voortbouwen. Geen herberekening — dat is precies wat een snapshot voorkomt.
+    const snapshot = snapshots?.get(monthKey);
+    if (snapshot) {
+      result.push(snapshot.data);
+      runningBalance = snapshot.data.endBalance;
+      for (const pot of snapshot.data.reservationPots) {
+        potBalanceMap.set(pot.reservationId, pot.potBalance);
+        deferredRemainingMap.set(
+          pot.reservationId,
+          pot.potType === 'spaardoel' ? pot.potBalance : 0,
+        );
+      }
+      monthIndex++;
+      continue;
+    }
+
     const monthExpenseItems = expenseItems.filter((i) => i.monthKey === monthKey);
     const monthIncomeItems = incomeItems.filter((i) => i.monthKey === monthKey);
     const allActiveRecurring = recurringItems.filter((i) => i.startMonth <= monthKey);
@@ -582,8 +606,44 @@ export function computeAnchorState(
   reservationDefers: ReservationDefer[],
   reservationSettlements: ReservationSettlement[],
   balanceOverrides: BalanceOverride[],
+  snapshots: MonthSnapshot[] = [],
 ): AnchorState {
   const anchorPrevMonth = format(addMonths(parseISO(`${anchorMonth}-01`), -1), 'yyyy-MM');
+
+  // Is er een afgesloten maand vóór het venster, dan is die het vertrekpunt: alles
+  // daarvóór is al vastgelegd en hoeft niet opnieuw doorgerekend te worden.
+  const lastClosed = latestSnapshotBefore(snapshots, anchorMonth);
+  if (lastClosed) {
+    const potBalances = new Map<string, number>();
+    for (const pot of lastClosed.data.reservationPots) {
+      if (pot.potType === 'spaardoel') potBalances.set(pot.reservationId, pot.potBalance);
+    }
+    const override = balanceOverrides.find((o) => o.monthKey === anchorMonth);
+    // Vanaf de maand ná de afsluiting tot de ankermaand kan er nog niet-afgesloten
+    // ruimte zitten; die rekenen we vooruit door met dezelfde motor.
+    const gap = differenceInMonths(parseISO(`${anchorMonth}-01`), parseISO(`${lastClosed.monthKey}-01`));
+    if (gap <= 1) {
+      return {
+        startBalance: override ? override.balance : lastClosed.data.endBalance,
+        potBalances,
+      };
+    }
+    const bridged = calculateMonths(
+      lastClosed.monthKey, lastClosed.data.startBalance, expenseItems, incomeItems,
+      recurringItems, reservations, reservationPayments, recurringDefers,
+      recurringSettlements, reservationDefers, reservationSettlements, gap + 1,
+      potBalances, new Map(snapshots.map((s) => [s.monthKey, s])),
+    );
+    const anchorData = bridged[gap];
+    const bridgedPots = new Map<string, number>();
+    for (const p of anchorData?.reservationPots ?? []) {
+      if (p.potType === 'spaardoel') bridgedPots.set(p.reservationId, p.deferredFromPrevious);
+    }
+    return {
+      startBalance: override ? override.balance : (anchorData?.startBalance ?? lastClosed.data.endBalance),
+      potBalances: bridgedPots.size > 0 ? bridgedPots : potBalances,
+    };
+  }
 
   // Zonder simulatie is de historische opbouw het enige dat we hebben. Vóór de
   // referentiemaand is er ook niets gesimuleerd, dus is dit daar de juiste bron.

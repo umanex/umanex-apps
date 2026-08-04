@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** in schijven — schijf 1 (navigatie) gebouwd en gevalideerd
+- **Status:** in schijven — schijf 1 en 2 gebouwd en gevalideerd, schijf 3 open
 
 ---
 
@@ -54,9 +54,10 @@ Alle vier beantwoord op 2026-08-04:
 - **Schijf 1 — navigatie.** Gebouwd. Het venster schuift per maand, met een ondergrens op
   de vroegste maand met gegevens en een "Vandaag"-knop zodra je elders zit. Elke voorbije
   maand zonder snapshot draagt het label *reconstructie*.
-- **Schijf 2 — snapshots.** Store-uitbreiding, automatisch afsluiten van de voorbije maand,
-  vergrendelde weergave, en `computeAnchorState` dat van het meest recente snapshot
-  vertrekt.
+- **Schijf 2 — snapshots.** Gebouwd. Store-versie 13 met `monthSnapshots` en
+  `reopenedMonths`, automatisch afsluiten van de maand die net voorbij is, een expliciete
+  afsluitknop voor oudere maanden, vergrendelde weergave via een uitgeschakelde
+  `fieldset`, en `computeAnchorState` dat van het meest recente snapshot vertrekt.
 - **Schijf 3 — begroot naast werkelijk** in de vergrendelde maand.
 
 ## Aannames
@@ -84,18 +85,27 @@ Alle vier beantwoord op 2026-08-04:
       augustus als beginsaldo, en dezelfde maand levert een ander eindsaldo naargelang waar
       het venster begint (augustus: € 4.170,00 als ankermaand, € 4.670,00 als derde kolom).
       Schijf 2 lost dat op; tot dan is het gemarkeerd in plaats van verzwegen.
-- [ ] Een maand afsluiten bevriest beginsaldo, eindsaldo, subtotalen, gereserveerd en
-      buffer in een snapshot.
-- [ ] Een afgesloten maand toont exact het snapshot, ook nadat stamdata wijzigt: een
-      hernoemde categorie of een gewijzigd maandbedrag verandert de historie niet.
-- [ ] Een afgesloten maand is niet bewerkbaar en is als zodanig herkenbaar.
-- [ ] De maand ná een afgesloten maand vertrekt van het bevroren eindsaldo.
-- [ ] Waar het model twee bedragen kent, toont de afgesloten maand begroot naast werkelijk.
-- [ ] Een afsluiting kan opgeheven worden; daarna rekent de maand weer live mee.
-- [ ] De store-migratie laat bestaande data intact — geen snapshots betekent gedrag als
-      vandaag.
-- [ ] `buffer-scenarios.ts` blijft groen en de baseline verschuift alleen waar snapshots
-      in het spel zijn.
+- [x] Een maand afsluiten bevriest de volledige doorrekening. Niet alleen de totalen: de
+      hele `MonthData` gaat mee, anders zou een hernoemde categorie de historie alsnog
+      wijzigen.
+- [x] Een afgesloten maand toont exact het snapshot, ook nadat stamdata wijzigt. Getest:
+      huur hernoemd naar "Huur bureau (geindexeerd)" en verhoogd van € 600 naar € 900.
+      Juli bleef op "Huur bureau" en € 4.800,00 staan; augustus en september verwerkten de
+      wijziging wél.
+- [x] Een afgesloten maand is niet bewerkbaar en herkenbaar: grijze achtergrond, chip
+      "afgesloten", en de ledger zit in een uitgeschakelde `fieldset` die elk veld en elke
+      knop erin native uitschakelt.
+- [x] De maand ná een afgesloten maand vertrekt van het bevroren eindsaldo: augustus
+      begon op € 4.800,00, exact het snapshot van juli.
+- [x] Een afsluiting kan opgeheven worden; daarna rekent de maand weer live mee. Getest:
+      juli viel terug op € 4.200,00 met de geïndexeerde huur, en het label wisselde van
+      "afgesloten" naar "reconstructie". `reopenedMonths` voorkomt dat de automatische
+      afsluiting hem meteen weer bevriest.
+- [x] De store-migratie laat bestaande data intact: versie 13 voegt twee lege arrays toe.
+- [x] `buffer-scenarios.ts` groen (145/145) en de baseline exact identiek — zonder
+      snapshots verandert er niets aan de motor.
+- [ ] Waar het model twee bedragen kent, toont de afgesloten maand begroot naast werkelijk
+      — schijf 3.
 
 ## Beslissingsgeschiedenis
 

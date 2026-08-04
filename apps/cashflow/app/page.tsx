@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useHydrated, useMonths, useEarliestDataMonth, useCashflowActions } from '../hooks/useCashflow';
+import { useHydrated, useMonths, useEarliestDataMonth, useCashflowActions, useAutoCloseMonth } from '../hooks/useCashflow';
 import { useCashflowStore } from '../store/cashflow';
 import { getCurrentMonthKey } from '../lib/cashflow/recurring';
+import { buildSnapshot } from '../lib/cashflow/snapshot';
 import { MonthCard } from '../components/cashflow/MonthCard';
 import { CashflowDndContext } from '../components/cashflow/CashflowDndContext';
 import { RecurringSidepanel } from '../components/cashflow/RecurringSidepanel';
@@ -21,7 +22,9 @@ export default function Page() {
   const hydrated = useHydrated();
   const months = useMonths(3);
   const anchorMonth = useCashflowStore((s) => s.anchorMonth);
-  const { setAnchorMonth } = useCashflowActions();
+  const { setAnchorMonth, closeMonth, reopenMonth } = useCashflowActions();
+  const monthSnapshots = useCashflowStore((s) => s.monthSnapshots);
+  useAutoCloseMonth(hydrated);
   const earliestMonth = useEarliestDataMonth();
   // Een voorbije maand is nog geen historie: zolang er geen snapshot is, wordt hij
   // opnieuw doorgerekend uit de huidige gegevens. Dat moet zichtbaar zijn.
@@ -85,6 +88,13 @@ export default function Page() {
                   showReserved={showReserved}
                   showBuffer={showBuffer}
                 isReconstruction={month.monthKey < currentMonth}
+                locked={monthSnapshots.some((s) => s.monthKey === month.monthKey)}
+                onCloseMonth={
+                  month.monthKey < currentMonth
+                    ? () => closeMonth(buildSnapshot(month, new Date().toISOString()))
+                    : undefined
+                }
+                onReopenMonth={() => reopenMonth(month.monthKey)}
                   onRegisterPayment={(filterType) => setPaymentState({ monthKey: month.monthKey, filterType })}
                   onOpenRecurringSidepanel={() => setRecurringOpen(true)}
                   onRepeatMonth={() => setRepeatMonth(month.monthKey)}

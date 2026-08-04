@@ -172,6 +172,21 @@ export interface MonthData {
   }>;
 }
 
+/**
+ * Een afgesloten maand, bevroren. `data` is de volledige doorrekening zoals ze op het
+ * moment van afsluiten was — nooit opnieuw afgeleid uit actuele stamdata.
+ */
+export interface MonthSnapshot {
+  monthKey: MonthKey;
+  /** ISO-tijdstip van afsluiten. */
+  closedAt: string;
+  data: MonthData;
+  /** Provisies die op dat moment gereserveerd stonden, buffer niet meegeteld. */
+  reserved: number;
+  /** Stand van de bufferpot op dat moment. */
+  buffer: number;
+}
+
 export interface BalanceOverride {
   id: string;
   monthKey: MonthKey;
@@ -192,6 +207,16 @@ export interface CashflowStore {
   reservationPayments: ReservationPayment[];
   recurringDefers: RecurringDefer[];
   reservationDefers: ReservationDefer[];
+  /** Afgesloten maanden. Leidend boven elke herberekening van die maand. */
+  monthSnapshots: MonthSnapshot[];
+  /**
+   * Maanden waarvan de afsluiting bewust opgeheven is. Zonder deze vlag zou de
+   * automatische afsluiting ze meteen weer bevriezen.
+   */
+  reopenedMonths: MonthKey[];
+
+  closeMonth: (snapshot: MonthSnapshot) => void;
+  reopenMonth: (monthKey: MonthKey) => void;
 
   setReferenceBalance: (balance: number, month: MonthKey) => void;
   upsertBalanceOverride: (monthKey: MonthKey, balance: number) => void;

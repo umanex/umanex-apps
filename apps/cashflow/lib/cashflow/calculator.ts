@@ -338,10 +338,12 @@ export function calculateMonths(
       }
       const totalSpaardoelReleased = Array.from(spaardoelReleases.values()).reduce((s, v) => s + v, 0);
 
+      // Zie de toelichting bij `budgets` in subtotals.ts: een betaling uit een budget
+      // verlaagt de kost alleen in de ankermaand, waar ze al van het banksaldo af is.
       const totalReservationDeductions =
         billableReservations.reduce((s, r) => s + getProvisionThisMonth(r), 0) +
         deferredReservationAmount -
-        budgetPaidFromReservation -
+        (isFirstMonth ? budgetPaidFromReservation : 0) -
         totalSpaardoelReleased;
 
       const reservationPots: ReservationPotBalance[] = billableReservations.map((r) => {
@@ -352,7 +354,7 @@ export function calculateMonths(
         const paidFromReservation = paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
         const provision = getProvisionThisMonth(r);
         const deferred = getDeferred(r.id);
-        const displayContribution = r.type === 'maandelijks_budget'
+        const displayContribution = r.type === 'maandelijks_budget' && isFirstMonth
           ? provision - paidFromReservation
           : provision;
         return {
@@ -362,7 +364,9 @@ export function calculateMonths(
           effectiveAmount: settlement ? settlement.effectiveAmount : r.monthlyAmount,
           hasSettlement: !!settlement,
           finalized: settlement?.finalized ?? false,
-          potBalance: potBalances.get(r.id) ?? 0,
+          // Een gefinaliseerde spaarpot is deze maand leeggemaakt: het restsaldo is al
+          // in het vrije saldo terechtgekomen, dus staat er niets meer gereserveerd.
+          potBalance: (potBalances.get(r.id) ?? 0) - (spaardoelReleases.get(r.id) ?? 0),
           paymentsThisMonth,
           provisionThisMonth: provision,
           deferredFromPrevious: deferred,
@@ -409,7 +413,10 @@ export function calculateMonths(
       const nextPotBalances = new Map(potBalances);
       for (const res of billableReservations) {
         if (res.type === 'maandelijks_budget') {
+          // Een budget rolt niet door: wat je niet opmaakt blijft op je rekening staan in
+          // plaats van gereserveerd te blijven. Volgende maand start dus weer op nul.
           nextDeferred.set(res.id, 0);
+          nextPotBalances.set(res.id, 0);
           continue;
         }
         // Gefinaliseerde spaardoel-maand: pot is afgesloten, restsaldo is

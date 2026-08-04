@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCashflowStore } from '../../store/cashflow';
-import { formatCurrency } from '../../lib/cashflow/recurring';
+import { formatAmount } from '../../lib/cashflow/recurring';
 import type { MonthKey, RecurringDefer, ReservationDefer } from '../../lib/cashflow/types';
 
 interface ActiveItem {
@@ -103,7 +103,7 @@ export function CashflowDndContext({ children }: CashflowDndContextProps) {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background border border-border shadow-lg text-sm font-medium opacity-90">
             <span className="truncate max-w-[140px]">{activeItem.label}</span>
             <span className="tabular-nums">
-              {formatCurrency(activeItem.amount)}
+              {formatAmount(activeItem.amount)}
               {activeItem.type === 'reservation-pot' ? '/m' : ''}
             </span>
           </div>

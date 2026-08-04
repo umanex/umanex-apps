@@ -7,7 +7,9 @@ import type {
   RecurringItem,
   RecurringSettlement,
   ReservationItem,
+  ReservationPayment,
   ReservationPotBalance,
+  ReservationSettlement,
 } from '../lib/cashflow/types';
 
 let failures = 0;
@@ -70,9 +72,11 @@ function recomputeEindsaldo(m: MonthData, isFirst: boolean): number {
         .reduce((s, p) => s + p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0), 0)
     : m.reservationPayments.reduce((s, pay) => s + pay.fromCash, 0);
 
+  // Een budget is een inschatting: in de ankermaand resteert wat je nog niet opmaakte,
+  // in een latere maand staat de volledige inschatting nog te vertrekken.
   const budgets = m.reservationPots
     .filter((p) => p.potType === 'maandelijks_budget' && (!isFirst || !p.finalized))
-    .reduce((s, p) => s + p.provisionThisMonth - paidFromPot(p), 0);
+    .reduce((s, p) => s + p.provisionThisMonth - (isFirst ? paidFromPot(p) : 0), 0);
 
   const provisions =
     m.reservationPots
@@ -459,6 +463,50 @@ console.log('\nS13 — betaalde post in een toekomstige maand');
   const anchorMonths = calculateMonths('2026-03', 5000, [], [], [huur], [], [], [], anchor, [], [], 3);
   check('S13 · ankermaand telt betaalde kost niet dubbel', anchorMonths[0]!.endBalance, 5000);
   invariant(anchorMonths, 'S13b');
+}
+
+// ── S14: budget is een inschatting, geen opzijgezet geld ───────────────────────
+console.log('\nS14 — budget: betaling in een toekomstige maand');
+{
+  const budget: ReservationItem = {
+    id: 'boodschappen', label: 'Boodschappen', monthlyAmount: 300,
+    startMonth: '2026-03', type: 'maandelijks_budget',
+  };
+  const betaling: ReservationPayment[] = [{
+    id: 'p1', reservationId: 'boodschappen', monthKey: '2026-04', label: 'Winkel',
+    invoiceAmount: 180, fromReservation: 180, fromCash: 0,
+  }];
+  const months = calculateMonths('2026-03', 1000, [], [], [], [budget], betaling, [], [], [], [], 3);
+  const potIn = (i: number) =>
+    months[i]!.reservationPots.find((p) => p.reservationId === 'boodschappen')!;
+
+  // April is een prognose: er is nog niets vertrokken, dus blijft de volle inschatting
+  // staan. Zou de geboekte betaling de kost verlagen, dan maakt uitgeven je rijker.
+  check('S14 · kost april', months[0]!.endBalance - months[1]!.endBalance, 300);
+  check('S14 · potstand april', potIn(1).potBalance, 120);
+  // Wat je niet opmaakt blijft op je rekening staan in plaats van door te rollen.
+  check('S14 · potstand mei rolt niet door', potIn(2).potBalance, 300);
+  invariant(months, 'S14');
+}
+
+// ── S15: gefinaliseerde spaarpot staat leeg in de afsluitmaand ─────────────────
+console.log('\nS15 — spaarpot afsluiten');
+{
+  const pot: ReservationItem = {
+    id: 'btw', label: 'Btw', monthlyAmount: 300, startMonth: '2026-03', type: 'spaardoel',
+  };
+  const settlements: ReservationSettlement[] = [{
+    id: 's1', reservationId: 'btw', monthKey: '2026-05', effectiveAmount: 300, finalized: true,
+  }];
+  const months = calculateMonths('2026-03', 1000, [], [], [], [pot], [], [], [], [], settlements, 4);
+  const potIn = (i: number) => months[i]!.reservationPots.find((p) => p.reservationId === 'btw')!;
+
+  check('S15 · opbouw tot april', potIn(1).potBalance, 600);
+  // Het restsaldo valt vrij in het eindsaldo; wat er nog gereserveerd zou staan is nul.
+  check('S15 · potstand in de afsluitmaand', potIn(2).potBalance, 0);
+  check('S15 · vrij saldo na vrijgave', months[2]!.endBalance, 1000);
+  check('S15 · opbouw herstart in juni', potIn(3).potBalance, 300);
+  invariant(months, 'S15');
 }
 
 console.log(`\n${checks - failures}/${checks} checks geslaagd${failures ? ` — ${failures} FOUT` : ''}`);

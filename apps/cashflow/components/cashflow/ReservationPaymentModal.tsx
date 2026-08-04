@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useCashflowStore } from '../../store/cashflow';
 import { useMonths, useReservationActions } from '../../hooks/useCashflow';
 import { calcPotBalance } from '../../lib/cashflow/calculator';
-import { generateId, formatCurrency } from '../../lib/cashflow/recurring';
+import { generateId, formatAmount } from '../../lib/cashflow/recurring';
 import type { MonthKey, ReservationPotType } from '../../lib/cashflow/types';
 
 interface ReservationPaymentModalProps {
@@ -78,7 +78,7 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
     if (isNaN(inv) || inv <= 0) { setError('Geldig factuurbedrag vereist.'); return; }
     if (Math.abs(res + cash - inv) > 0.01) {
       setError(
-        `Uit pot (${formatCurrency(res)}) + cash (${formatCurrency(cash)}) ≠ factuur (${formatCurrency(inv)})`,
+        `Uit pot (${formatAmount(res)}) + cash (${formatAmount(cash)}) ≠ factuur (${formatAmount(inv)})`,
       );
       return;
     }
@@ -135,7 +135,7 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
               >
                 {activeReservations.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.label || 'Naamloos'} — beschikbaar {formatCurrency(
+                    {r.label || 'Naamloos'} — beschikbaar {formatAmount(
                       calcPotBalance(r, reservationPayments, reservationSettlements, monthKey),
                     )}
                   </option>
@@ -144,7 +144,7 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
             )}
             {selectedReservation && (
               <p className="text-xs text-muted-foreground">
-                Beschikbaar saldo: <span className="font-medium tabular-nums">{formatCurrency(availableSaldo)}</span>
+                Beschikbaar saldo: <span className="font-medium tabular-nums">{formatAmount(availableSaldo)}</span>
               </p>
             )}
           </div>

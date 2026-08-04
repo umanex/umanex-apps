@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { RecurringItem, RecurringSettlement, MonthKey } from '../../lib/cashflow/types';
-import { formatCurrency, getMonthLabel } from '../../lib/cashflow/recurring';
-import { recurringSectionTotal } from '../../lib/cashflow/subtotals';
+import { formatAmount, getMonthLabel } from '../../lib/cashflow/recurring';
 import { SectionBar } from './SectionBar';
 
 interface DeferredDisplayItem {
@@ -20,6 +19,8 @@ interface DeferredDisplayItem {
 interface RecurringSectionProps {
   items: RecurringItem[];
   monthKey: MonthKey;
+  /** Stapbedrag van deze ledger-regel, uit de calculator. */
+  amount: number;
   deferredItems: DeferredDisplayItem[];
   settlements: RecurringSettlement[];
   onRemoveDefer: (deferId: string) => void;
@@ -120,8 +121,8 @@ function DraggableRecurringItem({
           aria-label="Werkelijk bedrag"
         />
         {hasDeviation && (
-          <span className="text-xs text-amber-500 tabular-nums shrink-0" title={`Begroot: ${formatCurrency(budgeted)}`}>
-            ({formatCurrency(budgeted)})
+          <span className="text-xs text-amber-500 tabular-nums shrink-0" title={`Begroot: ${formatAmount(budgeted)}`}>
+            ({formatAmount(budgeted)})
           </span>
         )}
       </div>
@@ -210,11 +211,11 @@ function DeferredRecurringItem({
       ) : (
         <>
           <span className={`text-sm tabular-nums shrink-0 ${item.paid ? 'text-muted-foreground' : 'font-medium text-[var(--umanexPrimary500)]'}`}>
-            {formatCurrency(item.paid ? item.paidAmount : item.amount)}
+            {formatAmount(item.paid ? item.paidAmount : item.amount)}
           </span>
           {hasDeviation && (
-            <span className="text-xs text-muted-foreground tabular-nums shrink-0" title={`Begroot: ${formatCurrency(item.amount)}`}>
-              ({formatCurrency(item.amount)})
+            <span className="text-xs text-muted-foreground tabular-nums shrink-0" title={`Begroot: ${formatAmount(item.amount)}`}>
+              ({formatAmount(item.amount)})
             </span>
           )}
         </>
@@ -245,6 +246,7 @@ function DeferredRecurringItem({
 export function RecurringSection({
   items,
   monthKey,
+  amount,
   deferredItems,
   settlements,
   onRemoveDefer,
@@ -267,15 +269,12 @@ export function RecurringSection({
   const totalPaidCount = paidItems.length + paidDeferredCount;
   const visibleItems = showPaid ? items : unpaidItems;
 
-  const subtotaal = recurringSectionTotal(items, settlements, deferredItems);
-
-  if (items.length === 0 && deferredItems.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-2 w-full">
       <SectionBar
         label="Vaste uitgaves"
-        subtotaal={subtotaal > 0 ? formatCurrency(subtotaal) : undefined}
+        amount={amount}
         showPaid={totalPaidCount > 0 ? showPaid : undefined}
         onFilterToggle={totalPaidCount > 0 ? () => setShowPaid((v) => !v) : undefined}
         onAdd={onOpenSidepanel}
@@ -283,6 +282,9 @@ export function RecurringSection({
       />
 
       <div className="flex flex-col gap-1 w-full">
+        {items.length === 0 && deferredItems.length === 0 && (
+          <p className="pl-2 text-sm text-[var(--umanexNeutral500)] italic">Geen vaste uitgaven</p>
+        )}
         {visibleItems.map((item, index) => (
           <DraggableRecurringItem
             key={item.id}

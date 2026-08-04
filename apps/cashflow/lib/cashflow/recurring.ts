@@ -17,12 +17,47 @@ export function addMonth(monthKey: MonthKey, count = 1): MonthKey {
   return format(addMonths(base, count), 'yyyy-MM');
 }
 
+/** Overzichtsgetal zonder centen — KPI's en chart-labels. */
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('nl-BE', {
     style: 'currency',
     currency: 'EUR',
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+/**
+ * Bedrag mét centen — ledgerregels, detailregels en de saldo-footer. Daar moeten de
+ * getoonde getallen exact optellen tot het getoonde totaal; afronden per regel zou de
+ * som zichtbaar een euro doen missen.
+ */
+export function formatAmount(amount: number): string {
+  return new Intl.NumberFormat('nl-BE', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+/** Richting van een bedrag in de ledger. `neutral` is een saldo, geen mutatie. */
+export type AmountDirection = 'in' | 'out' | 'neutral';
+
+/**
+ * Bedrag met een expliciet teken vóór het symbool. Kleur mag nooit de enige drager van
+ * betekenis zijn (WCAG 1.4.1) — het teken is de tweede codering. Een bedrag dat tegen
+ * zijn richting in gaat (een bufferopname op een uitgavenregel) draait mee: dat is geld
+ * dat terugkomt, en dat hoort ook zo te lezen.
+ */
+export function formatSigned(amount: number, direction: AmountDirection): string {
+  if (direction === 'neutral') return formatAmount(amount);
+  const inflow = direction === 'in' ? amount >= 0 : amount < 0;
+  return `${inflow ? '+' : '−'}${formatAmount(Math.abs(amount))}`;
+}
+
+/** Loopt dit bedrag als geld naar binnen? Bepaalt teken én kleur. */
+export function isInflow(amount: number, direction: AmountDirection): boolean {
+  return direction === 'in' ? amount >= 0 : amount < 0;
 }
 
 export function generateId(): string {

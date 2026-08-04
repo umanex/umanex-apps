@@ -11,6 +11,11 @@ import type { MonthKey, ReservationPotType } from '../lib/cashflow/types';
 
 export default function Page() {
   const months = useMonths(3);
+  // Gelijk voor alle kolommen: anders staan de drie footers niet meer op één lijn.
+  const showReserved = months.some((m) =>
+    m.reservationPots.some((p) => p.potType === 'spaardoel' && !p.isDeficitBuffer),
+  );
+  const showBuffer = months.some((m) => m.reservationPots.some((p) => p.isDeficitBuffer));
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [reservationOpen, setReservationOpen] = useState(false);
   const [paymentState, setPaymentState] = useState<{ monthKey: MonthKey; filterType: ReservationPotType } | null>(null);
@@ -35,14 +40,18 @@ export default function Page() {
         </div>
       </header>
 
-      <section>
+      {/* Vaste hoogte: elke kolom scrollt binnen zichzelf, zodat de drie saldo-footers
+          op één horizontale lijn blijven staan. */}
+      <section className="h-[calc(100vh-11rem)] min-h-[24rem]">
         <CashflowDndContext>
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-3 gap-5 h-full">
             {months.map((month, index) => (
               <MonthCard
                 key={month.monthKey}
                 monthData={month}
                 isFirst={index === 0}
+                showReserved={showReserved}
+                showBuffer={showBuffer}
                 onRegisterPayment={(filterType) => setPaymentState({ monthKey: month.monthKey, filterType })}
                 onOpenRecurringSidepanel={() => setRecurringOpen(true)}
               />

@@ -3,21 +3,18 @@
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { IncomeItem, MonthKey } from '../../lib/cashflow/types';
-import { formatCurrency, generateId, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
-import { incomeSectionTotal } from '../../lib/cashflow/subtotals';
+import { formatSigned, generateId, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
 import { SectionBar } from './SectionBar';
 
 interface IncomeSectionProps {
   monthKey: MonthKey;
   items: IncomeItem[];
-  startBalance: number;
-  computedStartBalance?: number;
-  isFirstMonth?: boolean;
+  /** Stapbedrag van deze ledger-regel, uit de calculator. */
+  amount: number;
   onAdd: (item: IncomeItem) => void;
   onUpdate: (id: string, patch: Partial<IncomeItem>) => void;
   onToggleReceived: (id: string, received: boolean) => void;
   onRemove: (id: string) => void;
-  onSetStartBalance?: (balance: number) => void;
 }
 
 function DraggableIncomeItem({
@@ -118,11 +115,11 @@ function DraggableIncomeItem({
       </span>
       <span
         className={`text-sm font-semibold tabular-nums whitespace-nowrap cursor-pointer shrink-0 ${
-          item.amount >= 0 ? 'text-emerald-600' : 'text-[var(--umanexPrimary500)]'
+          item.amount >= 0 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
         }`}
         onClick={() => { setLabel(item.label); setAmount(String(item.amount)); setEditing(true); }}
       >
-        {formatCurrency(item.amount)}
+        {formatSigned(item.amount, 'in')}
       </span>
       <button
         onClick={() => onRemove(item.id)}
@@ -138,23 +135,18 @@ function DraggableIncomeItem({
 export function IncomeSection({
   monthKey,
   items,
-  startBalance,
-  computedStartBalance,
-  isFirstMonth,
+  amount,
   onAdd,
   onUpdate,
   onToggleReceived: _onToggleReceived,
   onRemove,
-  onSetStartBalance,
 }: IncomeSectionProps) {
   const [adding, setAdding] = useState(false);
-  const [editingBalance, setEditingBalance] = useState(false);
-  const [balanceInput, setBalanceInput] = useState('');
   const [label, setLabel] = useState('');
-  const [amount, setAmount] = useState('');
+  const [newAmount, setNewAmount] = useState('');
 
   function handleAdd() {
-    const parsed = parseFloat(amount.replace(',', '.'));
+    const parsed = parseFloat(newAmount.replace(',', '.'));
     if (!label.trim() || isNaN(parsed)) return;
     onAdd({
       id: generateId(),
@@ -164,7 +156,7 @@ export function IncomeSection({
       received: false,
     });
     setLabel('');
-    setAmount('');
+    setNewAmount('');
     setAdding(false);
   }
 
@@ -173,68 +165,24 @@ export function IncomeSection({
     if (e.key === 'Escape') {
       setAdding(false);
       setLabel('');
-      setAmount('');
+      setNewAmount('');
     }
   }
-
-  const subtotaal = incomeSectionTotal(startBalance, items);
 
   return (
     <div className="flex flex-col gap-2 w-full">
       <SectionBar
         label="Inkomsten"
-        subtotaal={subtotaal !== 0 ? formatCurrency(subtotaal) : undefined}
-        subtotaalColor="green"
+        amount={amount}
+        direction="in"
         onAdd={() => setAdding(true)}
         addAriaLabel="Inkomst toevoegen"
       />
 
       <div className="flex flex-col gap-1 w-full">
-        {/* Beginsaldo / Vorig saldo */}
-        {isFirstMonth && onSetStartBalance && (
-          <div className="flex items-center h-7 pl-2 w-full">
-            <span className="flex-1 text-sm truncate text-[var(--umanexNeutral500)] italic">Beginsaldo</span>
-            {editingBalance ? (
-              <input
-                autoFocus
-                type="text"
-                inputMode="decimal"
-                value={balanceInput}
-                onChange={(e) => setBalanceInput(limitDecimals(e.target.value))}
-                onBlur={() => {
-                  const parsed = parseFloat(balanceInput.replace(',', '.'));
-                  if (!isNaN(parsed)) onSetStartBalance(parsed);
-                  setEditingBalance(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                  if (e.key === 'Escape') setEditingBalance(false);
-                }}
-                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            ) : (
-              <span
-                className={`text-sm font-semibold tabular-nums whitespace-nowrap cursor-pointer hover:underline shrink-0 ${
-                  startBalance >= 0 ? 'text-emerald-600' : 'text-[var(--umanexPrimary500)]'
-                }`}
-                onClick={() => { setBalanceInput(String(roundTo2(startBalance))); setEditingBalance(true); }}
-                title="Klik om aan te passen"
-              >
-                {formatCurrency(startBalance)}
-              </span>
-            )}
-          </div>
-        )}
-
-        {!isFirstMonth && (
-          <div className="flex items-center h-7 pl-2 w-full">
-            <span className="flex-1 text-sm truncate text-[var(--umanexNeutral500)] italic">Vorig saldo</span>
-            <span className={`text-sm font-semibold tabular-nums whitespace-nowrap shrink-0 ${
-              startBalance >= 0 ? 'text-emerald-600' : 'text-[var(--umanexPrimary500)]'
-            }`}>
-              {formatCurrency(startBalance)}
-            </span>
-          </div>
+        {/* Het beginsaldo staat als eigen ledger-regel boven deze sectie. */}
+        {items.length === 0 && !adding && (
+          <p className="pl-2 text-sm text-[var(--umanexNeutral500)] italic">Geen inkomsten</p>
         )}
 
         {items.map((item, index) => (
@@ -261,15 +209,15 @@ export function IncomeSection({
               <input
                 type="text"
                 inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(limitDecimals(e.target.value))}
+                value={newAmount}
+                onChange={(e) => setNewAmount(limitDecimals(e.target.value))}
                 placeholder="€"
                 className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <div className="flex gap-2 items-center">
                 <button onClick={handleAdd} className="text-xs font-semibold text-[var(--umanexNeutral800)]">OK</button>
                 <button
-                  onClick={() => { setAdding(false); setLabel(''); setAmount(''); }}
+                  onClick={() => { setAdding(false); setLabel(''); setNewAmount(''); }}
                   className="text-xs text-muted-foreground hover:text-foreground"
                 >
                   ✕

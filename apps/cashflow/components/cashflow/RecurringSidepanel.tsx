@@ -2,7 +2,7 @@
 
 import { useCashflowStore } from '../../store/cashflow';
 import { useCashflowActions } from '../../hooks/useCashflow';
-import { generateId, getCurrentMonthKey, formatCurrency } from '../../lib/cashflow/recurring';
+import { generateId, getCurrentMonthKey, formatAmount } from '../../lib/cashflow/recurring';
 import type { RecurringItem } from '../../lib/cashflow/types';
 
 interface RecurringSidepanelProps {
@@ -19,7 +19,7 @@ interface ItemEditRowProps {
 function ItemEditRow({ item, onUpdate, onRemove }: ItemEditRowProps) {
   const monthlyHint =
     item.frequency === 'yearly' && item.amount > 0
-      ? `≈ ${formatCurrency(Math.round(item.amount / 12))}/maand`
+      ? `≈ ${formatAmount(Math.round(item.amount / 12))}/maand`
       : null;
 
   return (

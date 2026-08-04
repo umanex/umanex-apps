@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useHydrated, useMonths, useEarliestDataMonth, useCashflowActions, useAutoCloseMonth } from '../hooks/useCashflow';
 import { useCashflowStore } from '../store/cashflow';
 import { getCurrentMonthKey } from '../lib/cashflow/recurring';
@@ -65,6 +66,12 @@ export default function Page() {
           >
             Spaarpotten
           </button>
+          <Link
+            href="/analyse"
+            className="inline-flex items-center h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
+          >
+            Analyse
+          </Link>
         </div>
       </header>
 

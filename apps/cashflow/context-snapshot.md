@@ -46,6 +46,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | ReservationSection | `apps/cashflow/components/cashflow/ReservationSection.tsx` | cashflow | — | — | — |
 | ReservationSidepanel | `apps/cashflow/components/cashflow/ReservationSidepanel.tsx` | cashflow | — | — | — |
 | ReservationTriggerButton | `apps/cashflow/components/cashflow/ReservationTriggerButton.tsx` | cashflow | — | — | — |
+| RunwayCard | `apps/cashflow/components/cashflow/RunwayCard.tsx` | cashflow | — | — | — |
 | SectionBar | `apps/cashflow/components/cashflow/SectionBar.tsx` | cashflow | — | — | — |
 | StartBalanceInput | `apps/cashflow/components/cashflow/StartBalanceInput.tsx` | cashflow | — | — | — |
 | StartBalanceRow | `apps/cashflow/components/cashflow/StartBalanceRow.tsx` | cashflow | — | — | — |
@@ -54,18 +55,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+7a2ef1e feat(cashflow): begroot naast werkelijk in een afgesloten maand
 94833fa feat(cashflow): afgesloten maanden als onveranderlijk snapshot
 2dd02b1 feat(cashflow): navigeer door het maandvenster
 eff161c feat(cashflow): skelet tijdens hydratatie in plaats van nullen
 d2e6fd4 docs(cashflow): CSV-import geschrapt, fase 2 afgerond
-b9a4757 feat(cashflow): herhaal de posten van de vorige maand
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-08-04-feature-maandsnapshots.tcebc.md
-  M  apps/cashflow/components/cashflow/MonthCard.tsx
-  A  apps/cashflow/components/cashflow/MonthVariance.tsx
-  A  apps/cashflow/lib/cashflow/variance.ts
+  A  apps/cashflow/app/analyse/page.tsx
+  M  apps/cashflow/app/page.tsx
+  A  apps/cashflow/briefings/2026-08-04-feature-analyse-en-charts.tcebc.md
+  A  apps/cashflow/components/cashflow/RunwayCard.tsx
+  A  apps/cashflow/lib/cashflow/analysis.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

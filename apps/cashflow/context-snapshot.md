@@ -48,15 +48,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6ca2c7c docs(cashflow): plan voor implementatie adviesrapporten
 fa9bba2 test(cashflow): type-clean buffer scenario harness
 5c858c1 fix(cashflow): one source of truth for pot balances, tighten buffer draw cap
 800488b feat(cashflow): buffer pot absorbs a negative end balance
 a482ebc chore: seed HANDOFF.md staging files (root + apps)
-7d0d1bc fix(tokens): correcte DTCG-build + verwijder ongebruikte tailwind.js-export
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/cashflow/briefings/2026-08-04-plan-advies-implementatie.md
+  M  apps/cashflow/lib/cashflow/calculator.ts
+  A  apps/cashflow/lib/cashflow/subtotals.ts
+  M  apps/cashflow/lib/cashflow/types.ts
+  A  apps/cashflow/scripts/calc-baseline.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

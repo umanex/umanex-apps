@@ -7,6 +7,7 @@ import { CashflowDndContext } from '../components/cashflow/CashflowDndContext';
 import { RecurringSidepanel } from '../components/cashflow/RecurringSidepanel';
 import { ReservationSidepanel } from '../components/cashflow/ReservationSidepanel';
 import { ReservationPaymentModal } from '../components/cashflow/ReservationPaymentModal';
+import { RepeatMonthModal } from '../components/cashflow/RepeatMonthModal';
 import type { MonthKey, ReservationPotType } from '../lib/cashflow/types';
 
 export default function Page() {
@@ -19,6 +20,7 @@ export default function Page() {
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [reservationOpen, setReservationOpen] = useState(false);
   const [paymentState, setPaymentState] = useState<{ monthKey: MonthKey; filterType: ReservationPotType } | null>(null);
+  const [repeatMonth, setRepeatMonth] = useState<MonthKey | null>(null);
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 space-y-8">
@@ -54,6 +56,7 @@ export default function Page() {
                 showBuffer={showBuffer}
                 onRegisterPayment={(filterType) => setPaymentState({ monthKey: month.monthKey, filterType })}
                 onOpenRecurringSidepanel={() => setRecurringOpen(true)}
+                onRepeatMonth={() => setRepeatMonth(month.monthKey)}
               />
             ))}
           </div>
@@ -62,6 +65,9 @@ export default function Page() {
 
       <RecurringSidepanel open={recurringOpen} onClose={() => setRecurringOpen(false)} />
       <ReservationSidepanel open={reservationOpen} onClose={() => setReservationOpen(false)} />
+      {repeatMonth && (
+        <RepeatMonthModal monthKey={repeatMonth} onClose={() => setRepeatMonth(null)} />
+      )}
       {paymentState && (
         <ReservationPaymentModal
           monthKey={paymentState.monthKey}

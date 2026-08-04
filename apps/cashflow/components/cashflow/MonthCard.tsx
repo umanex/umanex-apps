@@ -2,7 +2,7 @@
 
 import { useDroppable } from '@dnd-kit/core';
 import type { MonthData, ReservationPotType } from '../../lib/cashflow/types';
-import { getMonthLabel } from '../../lib/cashflow/recurring';
+import { addMonth, getMonthLabel } from '../../lib/cashflow/recurring';
 import { BalanceFooter } from './BalanceFooter';
 import { StartBalanceRow } from './StartBalanceRow';
 import { IncomeSection } from './IncomeSection';
@@ -16,6 +16,7 @@ interface MonthCardProps {
   monthData: MonthData;
   onRegisterPayment: (filterType: ReservationPotType) => void;
   onOpenRecurringSidepanel: () => void;
+  onRepeatMonth: () => void;
   isFirst?: boolean;
   /** Gelijk voor alle maanden, zodat de drie footers even hoog blijven. */
   showReserved: boolean;
@@ -26,6 +27,7 @@ export function MonthCard({
   monthData,
   onRegisterPayment,
   onOpenRecurringSidepanel,
+  onRepeatMonth,
   isFirst,
   showReserved,
   showBuffer,
@@ -92,10 +94,17 @@ export function MonthCard({
       }`}
     >
       {/* Vaste maandheader — blijft staan terwijl de ledger scrollt. */}
-      <div className="shrink-0 px-6 py-3 bg-[var(--umanexNeutral100)]">
+      <div className="shrink-0 flex items-center justify-between gap-2 px-6 py-3 bg-[var(--umanexNeutral100)]">
         <h2 className="font-semibold text-base text-[var(--umanexNeutral800)]">
           {getMonthLabel(monthKey)}
         </h2>
+        <button
+          onClick={onRepeatMonth}
+          title={`Posten van ${getMonthLabel(addMonth(monthKey, -1))} overnemen`}
+          className="shrink-0 h-7 px-2 rounded-[4px] text-[13px] text-[var(--umanexNeutral500)] hover:text-[var(--umanexNeutral800)] hover:bg-[var(--umanexNeutral200)] transition-colors whitespace-nowrap"
+        >
+          ↻ Herhaal
+        </button>
       </div>
 
       {/* Ledger: beginsaldo, dan de vier kostenstappen in volgorde van de kernformule. */}

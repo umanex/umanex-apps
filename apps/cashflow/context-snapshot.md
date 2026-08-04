@@ -38,6 +38,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | RecurringSection | `apps/cashflow/components/cashflow/RecurringSection.tsx` | cashflow | — | — | — |
 | RecurringSidepanel | `apps/cashflow/components/cashflow/RecurringSidepanel.tsx` | cashflow | — | — | — |
 | RecurringTriggerButton | `apps/cashflow/components/cashflow/RecurringTriggerButton.tsx` | cashflow | — | — | — |
+| RepeatMonthModal | `apps/cashflow/components/cashflow/RepeatMonthModal.tsx` | cashflow | — | — | — |
 | ReservationPaymentModal | `apps/cashflow/components/cashflow/ReservationPaymentModal.tsx` | cashflow | — | — | — |
 | ReservationPotCard | `apps/cashflow/components/cashflow/ReservationPotCard.tsx` | cashflow | — | — | — |
 | ReservationSection | `apps/cashflow/components/cashflow/ReservationSection.tsx` | cashflow | — | — | — |
@@ -50,18 +51,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+3ab6af9 feat(cashflow): buffer krijgt een eigen regel in de saldo-footer
 a5d5291 feat(cashflow): maandkolom wordt een ledger met saldo-footer
 6a4caa4 fix(cashflow): budget is een inschatting, provisie rolt door
 0aa048e docs(cashflow): bevindingen uit fase 0 vastgelegd voor fase 1
 173440e fix(cashflow): maandkaart toont hetzelfde eindsaldo als de doorrol
-55e0346 refactor(cashflow): één bron voor de maandsubtotalen
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/app/page.tsx
-  M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
-  M  apps/cashflow/components/cashflow/BalanceFooter.tsx
+  A  apps/cashflow/briefings/2026-08-04-feature-herhaal-vorige-maand.tcebc.md
   M  apps/cashflow/components/cashflow/MonthCard.tsx
+  A  apps/cashflow/components/cashflow/RepeatMonthModal.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-07-17_
+_Gegenereerd op 2026-08-04_
 
 ## Project
 - **App:** rowtrack
@@ -54,15 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-8f49f41 refactor(rowtrack): extract remaining profile and active-workout strings to i18n
-272fcba Merge remote-tracking branch 'origin/main' into refactor/rowtrack-i18n-extract
+cd09074 refactor(rowtrack): i18n-ready — typed Dutch translation layer + string extraction (#157)
 387aa31 fix(rowtrack): active-workout header conform Figma 297:2227
-90f0ec3 refactor(rowtrack): route user-facing strings through the i18n layer
 7464a0e docs(rowtrack): resolve profile-save handoff item, add UX-audit todos
+97c8d8f fix(rowtrack): add elapsed time and Stop exit to BLE connect overlay (audit P0-F2)
+7ac1be8 fix(rowtrack): persist profile fields per sheet (audit P0-F1)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/i18n/bleErrors.ts
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

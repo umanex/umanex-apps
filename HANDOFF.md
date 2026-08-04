@@ -26,7 +26,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
     ## YYYY-MM-DD — {korte titel} · [{type}]
     - **Bevinding:** {1-2 zinnen}
     - **Volgende zet:** {concreet actiepunt of "-"}
-    - **Status:** open
+    - **Status:** resolved — root `.npmrc` en het symlink-postinstall zijn weg; elke Next-app
+  resolvet nu zijn eigen react 18.3.1 + react-dom 18.3.1 en rowtrack houdt 19.1.0. Eén
+  open punt: `node-linker=hoisted` in `apps/rowtrack/.npmrc` wordt níét gehonoreerd —
+  pnpm behandelt die instelling workspace-breed — dus rowtrack draait nu op de
+  geïsoleerde layout. De Next-kant is volledig geverifieerd; of Metro daarmee overweg
+  kan moet één keer op een toestel bevestigd worden.
 
 <!-- De sessie-reflectie skill voegt hieronder de juiste laag-header toe bij de eerste entry. -->
 

@@ -58,15 +58,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9b81846 docs(cashflow): sessie-reflectie 2026-08-04
 9383669 feat(cashflow): historie begint bij de huidige maand
 a441c1c feat(cashflow): bullet charts voor begroot tegenover werkelijk
 64e7902 fix(cashflow): begrens de hoogte van de SVG-grafieken
 2c72697 feat(cashflow): bufferopbouw en waterfall als inline SVG
-729f2d8 feat(cashflow): runway-kaart op een eigen analysepagina
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/HANDOFF.md
+  M  apps/cashflow/app/analyse/page.tsx
+  M  apps/cashflow/hooks/useCashflow.ts
+  M  apps/cashflow/lib/cashflow/analysis.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

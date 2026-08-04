@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useHydrated, useMonths } from '../../hooks/useCashflow';
 import { useCashflowStore } from '../../store/cashflow';
+import { getCurrentMonthKey } from '../../lib/cashflow/recurring';
 import { bufferSeries, computeRunway } from '../../lib/cashflow/analysis';
 import { RunwayCard } from '../../components/cashflow/RunwayCard';
 import { BufferChart } from '../../components/cashflow/BufferChart';
@@ -11,7 +12,9 @@ import { VarianceChart } from '../../components/cashflow/VarianceChart';
 
 export default function AnalysePage() {
   const hydrated = useHydrated();
-  const months = useMonths(3);
+  // Altijd vanaf vandaag rekenen: de analyse mag niet meebewegen met waar je op de
+  // prognosepagina naartoe genavigeerd bent.
+  const months = useMonths(3, getCurrentMonthKey());
   const monthSnapshots = useCashflowStore((s) => s.monthSnapshots);
 
   const runway = computeRunway(monthSnapshots, months[0]);

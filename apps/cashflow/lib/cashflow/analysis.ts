@@ -33,21 +33,15 @@ function bufferBalance(data: MonthData): number {
     .reduce((s, p) => s + p.potBalance, 0);
 }
 
-function bufferContribution(data: MonthData): number {
-  return data.reservationPots
-    .filter((p) => p.isDeficitBuffer)
-    .reduce((s, p) => s + p.provisionThisMonth, 0);
-}
-
 /**
  * Netto tekort van één maand: wat eruit ging min wat erin kwam.
  *
- * De storting naar de bufferpot telt niet mee als kost. Die is geen uitgave maar een
- * verplaatsing naar precies de pot waartegen we hier afzetten — hem meetellen zou de
- * buffer zichzelf laten opeten.
+ * De storting naar de bufferpot telt gewoon mee als kost van die maand — het geld is die
+ * maand van je vrije saldo af, ongeacht waar het naartoe ging. De runway wordt daardoor
+ * korter dan wanneer je de storting eruit zou laten, en dat is het voorzichtige antwoord.
  */
 export function netBurn(data: MonthData): number {
-  return data.subtotals.costs - bufferContribution(data) - data.totalIncome;
+  return data.subtotals.costs - data.totalIncome;
 }
 
 /**

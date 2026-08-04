@@ -19,7 +19,7 @@ import type {
 } from '../lib/cashflow/types';
 
 // Verhoog bij elke schema-uitbreiding + voeg het nieuwe veld toe in migrate.
-const STORE_VERSION = 13;
+const STORE_VERSION = 14;
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
@@ -40,6 +40,7 @@ export const useCashflowStore = create<CashflowStore>()(
       recurringSettlements: [] as RecurringSettlement[],
       reservationSettlements: [] as ReservationSettlement[],
       reservationDefers: [] as ReservationDefer[],
+      historyStartMonth: currentMonth(),
       monthSnapshots: [] as MonthSnapshot[],
       reopenedMonths: [] as MonthKey[],
 
@@ -324,7 +325,18 @@ export const useCashflowStore = create<CashflowStore>()(
                 .map((rs) => ({ ...rs, finalized: rs.finalized ?? false }))
             : [],
           reservationDefers: Array.isArray(s.reservationDefers) ? s.reservationDefers : [],
-          monthSnapshots: Array.isArray(s.monthSnapshots) ? s.monthSnapshots : [],
+          // Historie begint bij de huidige maand. Wat er vóór dit punt aan snapshots
+          // stond, was afgeleid uit een reconstructie van maanden die de app nooit
+          // gezien heeft; dat is geen historie en wordt niet meegesleept.
+          historyStartMonth:
+            typeof s.historyStartMonth === 'string' ? s.historyStartMonth : currentMonth(),
+          monthSnapshots: Array.isArray(s.monthSnapshots)
+            ? (s.monthSnapshots as MonthSnapshot[]).filter(
+                (snap) =>
+                  snap.monthKey >=
+                  (typeof s.historyStartMonth === 'string' ? s.historyStartMonth : currentMonth()),
+              )
+            : [],
           reopenedMonths: Array.isArray(s.reopenedMonths) ? s.reopenedMonths : [],
         };
       },

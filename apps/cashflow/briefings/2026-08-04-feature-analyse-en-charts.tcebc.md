@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** in schijven — runway gebouwd, grafieken geblokkeerd op de React-opzet
+- **Status:** gebouwd — bullet charts open, twee grafieken nog niet visueel geverifieerd
 
 ---
 
@@ -46,13 +46,12 @@ Gevolg van 2 en 3 samen: dit getal antwoordt niet op "hoelang overleef ik" maar 
 "hoelang dekt mijn bufferpot mijn maandtekort". Strenger, en het label zegt dat ook. De
 storting náár de buffer telt niet als kost in de noemer — anders eet de buffer zichzelf op.
 
-## Blokkade
+## Geen chart-library
 
-De grafieken wachten op het gelijktrekken van react en react-dom in de monorepo. Zie de
-entry van 2026-08-04 in de root `HANDOFF.md`: `pnpm add recharts` brak elke Next-build
-doordat de workspace één platte `node_modules` deelt met react 19 uit rowtrack naast
-react-dom 18. De runway-kaart heeft geen library nodig en is daarom wél gebouwd; de
-bufferopbouw-grafiek staat geparkeerd.
+Recharts brak elke Next-build: de workspace deelt één platte `node_modules` met react 19
+uit rowtrack naast react-dom 18. Vastgelegd in `apps/rowtrack/HANDOFF.md`. De grafieken
+zijn daarom met de hand in SVG getekend — geen dependency, `/analyse` is 3,65 kB. Dat
+kost meer code maar levert volledige tokencontrole en nul risico voor het fundament.
 
 ## Aannames
 
@@ -60,22 +59,28 @@ bufferopbouw-grafiek staat geparkeerd.
   van de fiscus, niet van jou. Dat is de kern van het BE-onderscheid uit beide rapporten.
 - `[ASSUMPTION]` De begroot-vs-werkelijk-grafiek leest het variantiepaneel uit fase 3, niet
   de ledger-regels — zie de bevinding onderaan de snapshot-briefing.
-- `[ASSUMPTION]` Recharts, zoals eerder gekozen; de waterfall bouwen we met de
-  stacked-bar-truc (onzichtbare basis-serie).
+- `[ASSUMPTION]` Inline SVG in plaats van een library; de waterfall is met zwevende
+  staven getekend in plaats van de stacked-bar-truc, wat zonder library eenvoudiger is.
 - `[ASSUMPTION]` Chart-labels tonen geen centen (`formatCurrency`); de datatabel eronder
   wel (`formatAmount`).
 
 ## Acceptatie
 
-- [ ] De runway-kaart toont een getal met een lineaire balk, geen gauge.
-- [ ] De bufferopbouw toont een expliciete nullijn en een niet-afgekapte y-as.
-- [ ] Historie is doorlopend, toekomst gestippeld, met een marker op de grens.
-- [ ] Elke grafiek heeft een uitklapbare datatabel met dezelfde waarden.
-- [ ] Onder de drempel verschijnt een "nog niet genoeg gegevens"-staat die zegt hoeveel
-      maanden er nog nodig zijn.
-- [ ] Kleur is nergens de enige drager van betekenis.
-- [ ] `prefers-reduced-motion` wordt gerespecteerd.
-- [ ] De bundel groeit met ongeveer de aangekondigde 150 kB, niet meer.
+- [x] De runway-kaart toont een getal met een lineaire balk, geen gauge.
+- [x] De bufferopbouw toont een expliciete nullijn en een y-as die op nul begint.
+- [x] Historie is doorlopend met gevulde punten, toekomst gestippeld met open punten, en
+      er staat een verticale marker op de grens.
+- [x] Beide grafieken hebben een uitklapbare datatabel met dezelfde waarden, plus een
+      `aria-label` op de SVG die naar die tabel verwijst.
+- [x] Onder de drempel verschijnt een staat die zegt hoeveel maanden er nog nodig zijn.
+- [x] Kleur is nergens de enige drager: de waterfall zet het teken onder elke staaf, de
+      bufferlijn onderscheidt zich door streepjes en open punten.
+- [x] `prefers-reduced-motion`: er zijn geen animaties, dus er valt niets te degraderen.
+- [x] Geen dependency; `/analyse` is 3,65 kB.
+- [ ] **Niet visueel geverifieerd**: de bufferopbouw en de waterfall. De Chrome-extensie
+      raakte losgekoppeld voor ik kon kijken. De runway-kaart is wel gezien.
+- [ ] Bullet charts voor begroot-vs-werkelijk per categorie — laatste stuk van fase 4. De
+      cijfers bestaan al in het variantiepaneel van fase 3; alleen de visualisatie ontbreekt.
 
 ## Beslissingsgeschiedenis
 

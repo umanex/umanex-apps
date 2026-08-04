@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { useHydrated, useMonths } from '../../hooks/useCashflow';
 import { useCashflowStore } from '../../store/cashflow';
-import { computeRunway } from '../../lib/cashflow/analysis';
+import { bufferSeries, computeRunway } from '../../lib/cashflow/analysis';
 import { RunwayCard } from '../../components/cashflow/RunwayCard';
+import { BufferChart } from '../../components/cashflow/BufferChart';
+import { WaterfallChart } from '../../components/cashflow/WaterfallChart';
 
 export default function AnalysePage() {
   const hydrated = useHydrated();
@@ -12,6 +14,8 @@ export default function AnalysePage() {
   const monthSnapshots = useCashflowStore((s) => s.monthSnapshots);
 
   const runway = computeRunway(monthSnapshots, months[0]);
+  const points = bufferSeries(monthSnapshots, months);
+  const currentMonth = months[0];
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 space-y-8">
@@ -26,14 +30,15 @@ export default function AnalysePage() {
       </header>
 
       {!hydrated ? (
-        <div className="h-40 rounded-xl border border-[var(--umanexPrimary50)] bg-card animate-pulse" />
+        <div className="space-y-5">
+          <div className="h-40 rounded-xl border border-[var(--umanexPrimary50)] bg-card animate-pulse" />
+          <div className="h-80 rounded-xl border border-[var(--umanexPrimary50)] bg-card animate-pulse" />
+        </div>
       ) : (
         <div className="space-y-5">
           <RunwayCard runway={runway} />
-          <p className="text-sm text-[var(--umanexNeutral500)]">
-            De bufferopbouw-grafiek wacht op het gelijktrekken van react en react-dom in de
-            monorepo — zie de briefing.
-          </p>
+          {currentMonth && <WaterfallChart month={currentMonth} />}
+          <BufferChart points={points} closedMonths={runway.closedMonths} />
         </div>
       )}
     </main>

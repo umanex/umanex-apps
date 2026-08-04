@@ -58,16 +58,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+687d500 fix(cashflow): afgesloten maand trok de provisiepotten dubbel af
 fea17f8 fix(cashflow): bufferstorting telt mee als kost, analyse rekent vanaf vandaag
 9b81846 docs(cashflow): sessie-reflectie 2026-08-04
 9383669 feat(cashflow): historie begint bij de huidige maand
 a441c1c feat(cashflow): bullet charts voor begroot tegenover werkelijk
-64e7902 fix(cashflow): begrens de hoogte van de SVG-grafieken
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/components/cashflow/MonthCard.tsx
-  M  apps/cashflow/lib/cashflow/calculator.ts
+  M  apps/cashflow/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gebouwd — modal-interactie niet visueel geverifieerd
+- **Status:** gevalideerd
 
 ---
 
@@ -70,9 +70,10 @@ Alle drie beantwoord op 2026-08-04:
       modal voegt gewone inkomsten en uitgaven toe, die de calculator al meerekent. De
       modal toont dat saldo-effect vooraf.
 - [x] `buffer-scenarios.ts` groen (145/145); de calculator is niet geraakt.
-- [ ] **Niet visueel geverifieerd**: het openen van de modal, de checkbox-interactie en de
-      lijstweergave. De Chrome-extensie is niet verbonden; de trigger zelf staat wel
-      aantoonbaar in alle drie de kolommen.
+- [x] Visueel gevalideerd op 2026-08-04: de modal opent met bron- en doelmaand in de kop,
+      toont beide posten aangevinkt met hun teken, en meldt het saldo-effect. Overnemen
+      voegde ze toe aan de doelmaand en het beschikbaar saldo verschoof met exact het
+      voorspelde bedrag (€ 1.429,50 → € 2.079,00, verschil € 649,50).
 
 ## Beslissingsgeschiedenis
 

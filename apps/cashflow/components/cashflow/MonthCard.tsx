@@ -44,8 +44,8 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
   const {
     monthKey,
     startBalance,
-    totalIncome,
-    totalOutstandingCosts,
+    subtotals,
+    cashOverflowItems,
     incomeItems,
     recurringItems,
     reservationPots,
@@ -55,49 +55,12 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     expenseItems,
   } = monthData;
 
-  const overflowItems = reservationPots
-    .filter((p) => !p.finalized)
-    .flatMap((p) =>
-      p.paymentsThisMonth
-        .filter((pay) => pay.fromCash > 0)
-        .map((pay) => ({ label: pay.label, amount: pay.fromCash })),
-    );
-
-  const unpaidExpensesTotal = expenseItems.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0);
-
-  const vastSubtotaal =
-    (totalOutstandingCosts - unpaidExpensesTotal) +
-    deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
-
-  const expenseSubtotaal =
-    unpaidExpensesTotal +
-    overflowItems.reduce((s, i) => s + i.amount, 0);
-
-  const budgetSubtotaal = reservationPots
-    .filter((p) => p.potType === 'maandelijks_budget' && (!isFirst || !p.finalized))
-    .reduce((s, p) => {
-      // Prudent: budget-kost = provisie − betaald, zowel huidige als toekomstige maand.
-      const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
-      return s + (p.provisionThisMonth - paid);
-    }, 0);
-
-  const provisieSubtotaal =
-    reservationPots
-      .filter((p) => p.potType === 'spaardoel' && (!isFirst || !p.finalized))
-      .reduce((s, p) => {
-        // Huidige maand: resterende provisie (deferred + provisie − betaald uit pot).
-        // Latere maanden: storting minus wat een finalisatie die maand vrijgeeft
-        // (spiegel van totalReservationDeductions in de calculator).
-        const paid = p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0);
-        return s + (isFirst
-          ? p.deferredFromPrevious + p.provisionThisMonth - paid
-          : p.provisionThisMonth - p.releasedThisMonth);
-      }, 0) +
-    deferredReservationItems.reduce((s, d) => s + d.amount, 0);
-
-  const totaalInkomsten = startBalance + totalIncome;
-  const totaalKosten = vastSubtotaal + expenseSubtotaal + budgetSubtotaal + provisieSubtotaal;
-  const eindsaldo = totaalInkomsten - totaalKosten;
+  // Eén bron: de calculator rekent deze maand door, de kaart toont enkel.
+  const {
+    incoming: totaalInkomsten,
+    costs: totaalKosten,
+    endBalance: eindsaldo,
+  } = subtotals;
 
   const { setNodeRef, isOver } = useDroppable({
     id: `month-${monthKey}`,
@@ -177,7 +140,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
         <ExpenseSection
           monthKey={monthKey}
           items={expenseItems}
-          overflowItems={overflowItems}
+          overflowItems={cashOverflowItems}
           onAdd={addExpenseItem}
           onUpdate={(id, patch) => updateExpenseItem(id, patch)}
           onRemove={removeExpenseItem}

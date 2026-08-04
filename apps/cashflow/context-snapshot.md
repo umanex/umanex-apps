@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-08-03_
+_Gegenereerd op 2026-08-04_
 
 ## Project
 - **App:** cashflow
@@ -48,15 +48,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+173440e fix(cashflow): maandkaart toont hetzelfde eindsaldo als de doorrol
+55e0346 refactor(cashflow): één bron voor de maandsubtotalen
+6ca2c7c docs(cashflow): plan voor implementatie adviesrapporten
+fa9bba2 test(cashflow): type-clean buffer scenario harness
 5c858c1 fix(cashflow): one source of truth for pot balances, tighten buffer draw cap
-800488b feat(cashflow): buffer pot absorbs a negative end balance
-a482ebc chore: seed HANDOFF.md staging files (root + apps)
-7d0d1bc fix(tokens): correcte DTCG-build + verwijder ongebruikte tailwind.js-export
-cea9181 Convert to W3C DTCG format, read more at https://docs.tokens.studio/convert-to-dtcg-format
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/scripts/buffer-scenarios.ts
+  M  apps/cashflow/briefings/2026-08-04-plan-advies-implementatie.md
 
 ## Bestanden met TODO/FIXME
   (geen)

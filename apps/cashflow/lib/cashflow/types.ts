@@ -109,10 +109,35 @@ export interface ReservationPotBalance {
   deficitUncovered: number;
 }
 
+/**
+ * De vijf koppen van de kernformule voor één maand. Berekend in
+ * `lib/cashflow/subtotals.ts` en van daaruit zowel doorgerold als getoond.
+ */
+export interface MonthSubtotals {
+  /** Beginsaldo + inkomsten van deze maand. */
+  incoming: number;
+  /** Vaste uitgaven, inclusief uitgestelde die deze maand toekomen. */
+  recurring: number;
+  /** Eenmalige uitgaven, inclusief cash-bijbetalingen bovenop een pot. */
+  oneOff: number;
+  /** Maandelijkse budgetten: storting − wat er deze maand uit betaald is. */
+  budgets: number;
+  /** Spaardoelen: storting, plus uitgestelde stortingen die deze maand toekomen. */
+  provisions: number;
+  /** Som van de vier kostenposten. */
+  costs: number;
+  /** `incoming − costs` — hetzelfde getal als `MonthData.endBalance`. */
+  endBalance: number;
+}
+
 export interface MonthData {
   monthKey: MonthKey;
   startBalance: number;
   endBalance: number;
+  /** Sectie-subtotalen van deze maand. Enige bron voor kaart én doorrol. */
+  subtotals: MonthSubtotals;
+  /** Cash-bijbetalingen bovenop een pot, als losse regels voor de uitgavensectie. */
+  cashOverflowItems: Array<{ label: string; amount: number }>;
   totalIncome: number;
   totalRecurring: number;
   totalReservationDeductions: number;

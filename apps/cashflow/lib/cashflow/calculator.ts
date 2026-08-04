@@ -12,8 +12,10 @@ import type {
   ReservationSettlement,
   ReservationDefer,
   BalanceOverride,
+  MonthSubtotals,
 } from './types';
 import { addMonths, format, parseISO, differenceInMonths } from 'date-fns';
+import { collectCashOverflowItems, computeMonthSubtotals } from './subtotals';
 
 function getMonthsInRange(anchorMonth: MonthKey, count: number): MonthKey[] {
   const base = parseISO(`${anchorMonth}-01`);
@@ -29,6 +31,7 @@ function getMonthsInRange(anchorMonth: MonthKey, count: number): MonthKey[] {
  */
 type MonthEvaluation = {
   endBalance: number;
+  subtotals: MonthSubtotals;
   availableBudget: number;
   totalReservationDeductions: number;
   reservationPots: ReservationPotBalance[];
@@ -167,7 +170,13 @@ export function calculateMonths(
       return s + (settlement?.paid ? settlement.actualAmount : budgeted);
     }, 0);
 
-    const deferredRecurringAmount = deferredItems.reduce((s, d) => s + (d.paid ? d.paidAmount : d.amount), 0);
+    const paidDeferredRecurring = deferredItems
+      .filter((d) => d.paid)
+      .reduce((s, d) => s + d.paidAmount, 0);
+    const unpaidDeferredRecurring = deferredItems
+      .filter((d) => !d.paid)
+      .reduce((s, d) => s + d.amount, 0);
+    const deferredRecurringAmount = paidDeferredRecurring + unpaidDeferredRecurring;
     const totalRecurring = totalNormalRecurring + deferredRecurringAmount;
 
     const activeReservations = reservations.filter((r) => r.startMonth <= monthKey);
@@ -377,24 +386,22 @@ export function calculateMonths(
 
       const availableBudget = runningBalance + totalIncome - paidThisMonth;
 
-      // Maand 0: eindsaldo = zelfde formule als MonthCard (onbetaald + sectie-subtotalen)
-      // zodat het startsaldo van maand 1 overeenkomt met het getoonde eindsaldo.
-      const endBalance = isFirstMonth
-        ? (() => {
-            const unpaidDeferred = deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
-            const overflowCash = reservationPots
-              .filter((p) => !p.finalized)
-              .reduce((s, p) => s + p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0), 0);
-            const budgetSub = reservationPots
-              .filter((p) => p.potType === 'maandelijks_budget' && !p.finalized)
-              .reduce((s, p) => s + p.provisionThisMonth - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0);
-            const provisieSub = reservationPots
-              .filter((p) => p.potType === 'spaardoel' && !p.finalized)
-              .reduce((s, p) => s + p.deferredFromPrevious + p.provisionThisMonth
-                - p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromReservation, 0), 0) + deferredReservationAmount;
-            return runningBalance + totalIncome - unpaidRecurringAmount - unpaidDeferred - unpaidExpenses - overflowCash - budgetSub - provisieSub;
-          })()
-        : availableBudget - totalOutstandingCosts;
+      // Eén formule voor kaart én doorrol — zie lib/cashflow/subtotals.ts.
+      const subtotals = computeMonthSubtotals({
+        startBalance: runningBalance,
+        totalIncome,
+        unpaidRecurring: unpaidRecurringAmount,
+        paidRecurring: paidRecurringAmount,
+        unpaidExpenses,
+        paidExpenses,
+        unpaidDeferredRecurring,
+        paidDeferredRecurring,
+        reservationPots,
+        totalCashPayments: totalReservationCashPayments,
+        deferredReservationAmount,
+        isFirstMonth,
+      });
+      const endBalance = subtotals.endBalance;
 
       // Doorrol naar de volgende maand. Niet-billable potten behouden hun stand,
       // vandaar een kopie van de bestaande maps als vertrekpunt.
@@ -433,6 +440,7 @@ export function calculateMonths(
 
       return {
         endBalance,
+        subtotals,
         availableBudget,
         totalReservationDeductions,
         reservationPots,
@@ -490,6 +498,7 @@ export function calculateMonths(
 
     const {
       endBalance,
+      subtotals,
       availableBudget,
       totalReservationDeductions,
       nextPotBalances,
@@ -509,6 +518,8 @@ export function calculateMonths(
       monthKey,
       startBalance: runningBalance,
       endBalance,
+      subtotals,
+      cashOverflowItems: collectCashOverflowItems(reservationPots, isFirstMonth),
       totalIncome,
       totalRecurring,
       totalReservationDeductions,

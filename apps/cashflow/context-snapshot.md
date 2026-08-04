@@ -48,15 +48,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0aa048e docs(cashflow): bevindingen uit fase 0 vastgelegd voor fase 1
 173440e fix(cashflow): maandkaart toont hetzelfde eindsaldo als de doorrol
 55e0346 refactor(cashflow): één bron voor de maandsubtotalen
 6ca2c7c docs(cashflow): plan voor implementatie adviesrapporten
 fa9bba2 test(cashflow): type-clean buffer scenario harness
-5c858c1 fix(cashflow): one source of truth for pot balances, tighten buffer draw cap
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-08-04-plan-advies-implementatie.md
+  A  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
+  M  apps/cashflow/lib/cashflow/calculator.ts
+  M  apps/cashflow/lib/cashflow/subtotals.ts
+  M  apps/cashflow/scripts/buffer-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

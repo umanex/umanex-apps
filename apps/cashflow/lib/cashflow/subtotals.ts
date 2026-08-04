@@ -79,9 +79,14 @@ export function computeMonthSubtotals(input: MonthSubtotalInput): MonthSubtotals
   const oneOff =
     (isFirstMonth ? input.unpaidExpenses : input.unpaidExpenses + input.paidExpenses) + cashOverflow;
 
+  // Een budget is een inschatting van wat die maand vertrekt, geen opzijgezet geld: wat
+  // je niet opmaakt blijft gewoon op je rekening staan (in tegenstelling tot een provisie,
+  // die doorrolt). In de ankermaand is een betaling uit het budget al van je banksaldo af,
+  // dus resteert enkel het onbestede deel. In een latere maand is er nog niets vertrokken
+  // en blijft de volledige inschatting staan — een geboekte betaling zit daar al in.
   const budgets = reservationPots
     .filter((p) => p.potType === 'maandelijks_budget' && (!isFirstMonth || !p.finalized))
-    .reduce((s, p) => s + p.provisionThisMonth - paidFromPot(p), 0);
+    .reduce((s, p) => s + p.provisionThisMonth - (isFirstMonth ? paidFromPot(p) : 0), 0);
 
   // Ankermaand: de volledige resterende provisie moet uit het banksaldo, inclusief wat er
   // in eerdere maanden al opgebouwd werd (`deferredFromPrevious`). Latere maanden: die

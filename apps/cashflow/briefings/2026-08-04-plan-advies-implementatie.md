@@ -40,6 +40,30 @@ identieke uitkomsten geven vóór en na.
 
 **Effort:** ~1 dag. **Blokkeert:** alles hieronder.
 
+**Uitgevoerd op 2026-08-04.** De formule bleek niet op twee maar op zes plaatsen te staan:
+elke sectie rekende zijn eigen kop uit, `MonthCard` de vier subtotalen nog eens voor de
+KPI-tegel en het eindsaldo, en de calculator nog eens voor maand 0. Alles leest nu
+`lib/cashflow/subtotals.ts`. `scripts/calc-baseline.ts` dumpt elke berekende waarde over
+300 gegenereerde scenario's (1200 maanden) en bewijst met een lege diff dat de motor niet
+verschoven is; `scripts/buffer-scenarios.ts` groeide van 77 naar 119 checks.
+
+### Bevindingen uit fase 0 — mee te nemen in fase 1
+
+1. **Sectiekoppen tellen niet op tot het kostentotaal.** Gemeten in 122 van 1200 maanden
+   (~10%), telkens door een gefinaliseerde pot in een toekomstige maand of door een
+   uitgestelde storting die die maand toekomt. De koppen tonen bewust wat er nog openstaat
+   (aansluitend bij de Open/Alle-filter), het totaal telt de volledige kost. In een
+   running-subtotal-ledger kan dat niet blijven: rijen die niet optellen tot hun totaal
+   maken de ledger waardeloos. Fase 1 moet kiezen welke van de twee de rij wordt.
+2. **De ankermaand telt cash-bijbetalingen bij een gefinaliseerde of uitgestelde pot niet
+   mee**, latere maanden wel. Bestaand gedrag, bewust ongemoeid gelaten in een refactor.
+   Vermoedelijk verdedigbaar (in de ankermaand is zo'n betaling al van het banksaldo af),
+   maar dan zou hetzelfde voor élke bijbetaling moeten gelden — nu geldt het maar voor een
+   deel. Uit te klaren bij de footer-herwerking.
+3. **"Betaald" in een toekomstige maand** is een wankel begrip: het geld is er nog niet af,
+   dus de kost telt mee, maar de rij verdwijnt wel achter de Open-filter. Overwegen of de
+   betaalvlag in een toekomstige maand überhaupt aanklikbaar moet zijn.
+
 ---
 
 ## Fase 1 — Kolom-leesbaarheid (WS1 + WS2-footer)

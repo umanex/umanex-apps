@@ -48,18 +48,25 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | StartBalanceInput | `apps/cashflow/components/cashflow/StartBalanceInput.tsx` | cashflow | — | — | — |
 | StartBalanceRow | `apps/cashflow/components/cashflow/StartBalanceRow.tsx` | cashflow | — | — | — |
 | YearlyRow | `apps/cashflow/components/cashflow/YearlyRow.tsx` | cashflow | — | — | — |
+| MonthCardSkeleton | `apps/cashflow/components/feedback/MonthCardSkeleton.tsx` | feedback | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+d2e6fd4 docs(cashflow): CSV-import geschrapt, fase 2 afgerond
 b9a4757 feat(cashflow): herhaal de posten van de vorige maand
 3ab6af9 feat(cashflow): buffer krijgt een eigen regel in de saldo-footer
 a5d5291 feat(cashflow): maandkolom wordt een ledger met saldo-footer
 6a4caa4 fix(cashflow): budget is een inschatting, provisie rolt door
-0aa048e docs(cashflow): bevindingen uit fase 0 vastgelegd voor fase 1
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-08-04-plan-advies-implementatie.md
+  M  apps/cashflow/app/page.tsx
+  M  apps/cashflow/briefings/2026-08-04-feature-herhaal-vorige-maand.tcebc.md
+  M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
+  M  apps/cashflow/components/cashflow/IncomeSection.tsx
+  M  apps/cashflow/components/cashflow/SectionBar.tsx
+  A  apps/cashflow/components/feedback/MonthCardSkeleton.tsx
+  M  apps/cashflow/lib/cashflow/recurring.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

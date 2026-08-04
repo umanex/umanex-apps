@@ -1,16 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { useMonths } from '../hooks/useCashflow';
+import { useHydrated, useMonths } from '../hooks/useCashflow';
 import { MonthCard } from '../components/cashflow/MonthCard';
 import { CashflowDndContext } from '../components/cashflow/CashflowDndContext';
 import { RecurringSidepanel } from '../components/cashflow/RecurringSidepanel';
 import { ReservationSidepanel } from '../components/cashflow/ReservationSidepanel';
 import { ReservationPaymentModal } from '../components/cashflow/ReservationPaymentModal';
 import { RepeatMonthModal } from '../components/cashflow/RepeatMonthModal';
+import { MonthCardSkeleton } from '../components/feedback/MonthCardSkeleton';
 import type { MonthKey, ReservationPotType } from '../lib/cashflow/types';
 
 export default function Page() {
+  // De server kent localStorage niet en rendert dus een lege prognose. Tot de store
+  // geladen is tonen we het skelet, zodat er geen nullen flitsen die er daarna anders
+  // uitzien — en de eerste client-render met de server-HTML overeenkomt.
+  const hydrated = useHydrated();
   const months = useMonths(3);
   // Gelijk voor alle kolommen: anders staan de drie footers niet meer op één lijn.
   const showReserved = months.some((m) =>
@@ -45,22 +50,30 @@ export default function Page() {
       {/* Vaste hoogte: elke kolom scrollt binnen zichzelf, zodat de drie saldo-footers
           op één horizontale lijn blijven staan. */}
       <section className="h-[calc(100vh-11rem)] min-h-[24rem]">
-        <CashflowDndContext>
+        {!hydrated ? (
           <div className="grid grid-cols-3 gap-5 h-full">
-            {months.map((month, index) => (
-              <MonthCard
-                key={month.monthKey}
-                monthData={month}
-                isFirst={index === 0}
-                showReserved={showReserved}
-                showBuffer={showBuffer}
-                onRegisterPayment={(filterType) => setPaymentState({ monthKey: month.monthKey, filterType })}
-                onOpenRecurringSidepanel={() => setRecurringOpen(true)}
-                onRepeatMonth={() => setRepeatMonth(month.monthKey)}
-              />
+            {[0, 1, 2].map((i) => (
+              <MonthCardSkeleton key={i} />
             ))}
           </div>
-        </CashflowDndContext>
+        ) : (
+          <CashflowDndContext>
+            <div className="grid grid-cols-3 gap-5 h-full">
+              {months.map((month, index) => (
+                <MonthCard
+                  key={month.monthKey}
+                  monthData={month}
+                  isFirst={index === 0}
+                  showReserved={showReserved}
+                  showBuffer={showBuffer}
+                  onRegisterPayment={(filterType) => setPaymentState({ monthKey: month.monthKey, filterType })}
+                  onOpenRecurringSidepanel={() => setRecurringOpen(true)}
+                  onRepeatMonth={() => setRepeatMonth(month.monthKey)}
+                />
+              ))}
+            </div>
+          </CashflowDndContext>
+        )}
       </section>
 
       <RecurringSidepanel open={recurringOpen} onClose={() => setRecurringOpen(false)} />

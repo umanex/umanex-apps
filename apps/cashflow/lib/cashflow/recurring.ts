@@ -50,7 +50,8 @@ export type AmountDirection = 'in' | 'out' | 'neutral';
  * dat terugkomt, en dat hoort ook zo te lezen.
  */
 export function formatSigned(amount: number, direction: AmountDirection): string {
-  if (direction === 'neutral') return formatAmount(amount);
+  // Nul beweegt niet: daar zou een teken suggereren dat er iets gebeurt.
+  if (direction === 'neutral' || Math.abs(amount) < 0.005) return formatAmount(Math.abs(amount));
   const inflow = direction === 'in' ? amount >= 0 : amount < 0;
   return `${inflow ? '+' : '−'}${formatAmount(Math.abs(amount))}`;
 }

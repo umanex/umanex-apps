@@ -26,6 +26,7 @@ export function SectionBar({
 }: SectionBarProps) {
   const hasFilter = showPaid !== undefined && onFilterToggle !== undefined;
   const inflow = amount === undefined ? false : isInflow(amount, direction);
+  const isZero = amount !== undefined && Math.abs(amount) < 0.005;
 
   return (
     <div className="flex items-center justify-between gap-2 pl-2 bg-[var(--umanexNeutral100)] rounded-[4px] shrink-0 w-full">
@@ -36,7 +37,7 @@ export function SectionBar({
         {amount !== undefined && (
           <span
             className={`text-sm font-semibold tabular-nums whitespace-nowrap ${
-              direction === 'neutral'
+              direction === 'neutral' || isZero
                 ? 'text-[var(--umanexNeutral800)]'
                 : inflow
                   ? 'text-emerald-700'

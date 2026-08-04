@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gebouwd — wacht op visuele validatie en de finance-tokens
+- **Status:** gevalideerd — wacht enkel nog op de finance-tokens
 
 ---
 
@@ -79,9 +79,9 @@ waardes en contrastcijfers staat in het plan.
       geld dat je aan iemand anders schuldig bent, de buffer is eigen geld dat achter de
       hand blijft. Zo zie je de buffer slinken terwijl de provisies onaangeroerd blijven.
 - [x] De maandheader staat buiten het scrollgebied.
-- [ ] De drie eindsaldi staan op één horizontale lijn — structureel geregeld (kolommen
-      strekken tot gelijke hoogte, alleen de ledger-body scrollt), maar **niet visueel
-      geverifieerd**: de Chrome-extensie was niet verbonden.
+- [x] De drie eindsaldi staan op één horizontale lijn. Visueel bevestigd op 2026-08-04 met
+      drie kolommen van ongelijke inhoud: de footers staan gelijk, alleen de ledger-body
+      scrollt.
 - [x] Kleur is nergens de enige drager van betekenis. De ledger-regels, de
       gereserveerd-regel en de inkomstenregels dragen een expliciet `+` of `−`. Binnen een
       homogene sectie (alle rijen zijn kosten) draagt de kleur geen onderscheid en blijft
@@ -91,13 +91,14 @@ waardes en contrastcijfers staat in het plan.
       de KPI's en chart-labels van fase 4.
 - [x] Detailregels staan open (beslissing 2); de +-knop en de Open/Alle-filter zitten in de
       ledger-regel zelf.
-- [ ] Drag & drop tussen maanden werkt nog, ook met toetsenbord — **niet getest**, de
-      dnd-kit-opzet is ongemoeid gebleven maar de kolommen scrollen nu binnen zichzelf.
+- [ ] Drag & drop tussen maanden werkt nog, ook met toetsenbord — **niet getest**. De
+      sleepgrepen renderen, maar een sleep tussen twee kolommen is niet uitgevoerd.
 - [x] Een lege categorie toont een lege staat in plaats van te verdwijnen (inkomsten, vaste
       uitgaven, eenmalige uitgaven). De pot-secties blijven verborgen zonder potten, gelijk
       met de gereserveerd-regel in de footer.
-- [ ] Vóór hydratatie toont de kolom een skeleton, geen nullen — **niet gebouwd**,
-      `useHydrated()` wordt nog steeds nergens aangeroepen.
+- [x] Vóór hydratatie toont de kolom een skeleton, geen nullen. `useHydrated()` wordt nu
+      aangeroepen in `app/page.tsx`; de server rendert hetzelfde skelet, dus de eerste
+      client-render komt ermee overeen. Console toont geen hydratatie-waarschuwing meer.
 - [x] Een bufferopname leest als teruggave: `formatSigned` draait teken én kleur om zodra
       het bedrag tegen de richting van zijn regel ingaat.
 - [x] `buffer-scenarios.ts` groen (145/145) en de baseline ongewijzigd t.o.v. de fix-commit.

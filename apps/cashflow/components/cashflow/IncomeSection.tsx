@@ -181,10 +181,6 @@ export function IncomeSection({
 
       <div className="flex flex-col gap-1 w-full">
         {/* Het beginsaldo staat als eigen ledger-regel boven deze sectie. */}
-        {items.length === 0 && !adding && (
-          <p className="pl-2 text-sm text-[var(--umanexNeutral500)] italic">Geen inkomsten</p>
-        )}
-
         {items.map((item, index) => (
           <DraggableIncomeItem
             key={item.id}
@@ -228,7 +224,7 @@ export function IncomeSection({
         )}
 
         {items.length === 0 && !adding && (
-          <p className="text-xs text-muted-foreground italic py-0.5 pl-2">Geen inkomsten deze maand</p>
+          <p className="pl-2 text-sm text-[var(--umanexNeutral500)] italic">Geen inkomsten</p>
         )}
       </div>
     </div>

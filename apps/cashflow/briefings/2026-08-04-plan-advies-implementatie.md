@@ -19,7 +19,7 @@ Dit is het overkoepelende plan. Per fase volgt een aparte TC-EBC in deze map, ge
 | Charts | Recharts, waterfall via stacked-bar-truc |
 | Finance-tokens | Afgeleid van de bestaande umanex-schaal, niet uit de PDF-paletten |
 | Centen | Tonen in ledgerregels en invoervelden, verbergen in KPI's, subtotalen en chart-labels |
-| WS3-scope | "Herhaal vorige maand" + CSV-import. Geen command palette |
+| WS3-scope | Alleen "herhaal vorige maand". CSV-import geschrapt op 2026-08-04 |
 
 **Geparkeerd:** mobiele scroll-snap layout, dark mode, command palette, fiscaal model, insight cards,
 what-if scenario-sandbox, zoom-niveaus (jaar → 3 maanden → maand). Het WCAG-kritische deel van
@@ -111,13 +111,17 @@ grafische objecten (1.4.11), tekst heeft de diepere variant nodig.
 
 ---
 
-## Fase 2 — Invoerfrictie (WS3)
+## Fase 2 — Invoerfrictie (WS3) — **afgerond 2026-08-04**
 
-1. **Herhaal vorige maand** (~halve dag) — één actie die inkomsten en eenmalige uitgaven van de
-   vorige maand kopieert naar de huidige, met bevestiging en de mogelijkheid om per regel af te vinken.
-2. **CSV-import** (~3 dagen) — bestand inlezen, kolommen mappen (datum / omschrijving / bedrag),
-   trefwoordregels naar categorie, duplicaatdetectie, preview vóór commit. De mapping- en
-   trefwoordregels worden in de store bewaard, dus store-versie omhoog + migrate.
+1. **Herhaal vorige maand** — gebouwd. Elke maandkolom neemt met één klik de inkomsten en
+   eenmalige uitgaven van zijn voorganger over, als afvinklijst met duplicaatmarkering.
+   Briefing: `2026-08-04-feature-herhaal-vorige-maand.tcebc.md`.
+2. **CSV-import** — **geschrapt.** Een bankexport beschrijft het verleden, terwijl de app
+   vooruitkijkt: regels landen ofwel in een maand waar ze niet thuishoren, ofwel in maanden
+   die pas met fase 3 zichtbaar worden. Beide adviesrapporten noemen de import een must,
+   maar geen van beide beantwoordt in welke tijdsemmer de regels terechtkomen. Zonder dat
+   antwoord is het drie dagen bouwen aan iets waarvan het nut niet vaststaat. Herzien zodra
+   er historiek is, als de behoefte er dan nog is.
 
 ---
 
@@ -163,7 +167,6 @@ Deze landen in de TC-EBC van de betreffende fase, niet nu:
 
 - **Fase 1** — Krijgt de gearceerde band alleen de footer, of ook elke potregel? Welke states heeft de
   ledger bij nul posten in een categorie?
-- **Fase 2** — Van welke bank komt de CSV-export? Het formaat bepaalt de parser volledig.
 - **Fase 3** — Sluit een maand automatisch af bij de maandwissel, of expliciet met een actie? Wat
   gebeurt er als je een afgesloten maand achteraf wil corrigeren?
 - **Fase 4** — Komen de charts onder het 3-maandenvenster, of op een aparte analyse-pagina?
@@ -173,11 +176,18 @@ Deze landen in de TC-EBC van de betreffende fase, niet nu:
 ## Volgorde en afhankelijkheden
 
 ```
-Fase 0 (calculator, 1d)
-   └── Fase 1 (ledger + footer + tokens, 3d)  ←── tokens van Jeroen
-          ├── Fase 2 (invoer, 3,5d)
-          └── Fase 3 (snapshots, 3d)
-                 └── Fase 4 (charts, 4d)
+Fase 0 (calculator)          ✔ gemerged — PR #161
+   └── Fase 1 (ledger + footer)  ✔ gemerged — PR #162
+          ├── Fase 2 (herhaal vorige maand)  ✔ gemerged — PR #163
+          └── Fase 3 (snapshots, ~3d)
+                 └── Fase 4 (charts, ~4d)
 ```
 
-Elke fase is een eigen feature branch met PR. Totaal ~15 werkdagen.
+Elke fase is een eigen feature branch met PR.
+
+**Open na fase 1**, los van de fasering:
+- De finance-tokens moeten in Tokens Studio aangemaakt worden; tot dan blijven de
+  hardcoded `emerald`/`amber`-klassen staan.
+- De hydratatie-skeleton is niet gebouwd: `useHydrated()` bestaat maar wordt nergens
+  aangeroepen, dus bij het laden verschijnen kort nullen.
+- De ledger en de modals zijn niet visueel geverifieerd (Chrome-extensie niet verbonden).

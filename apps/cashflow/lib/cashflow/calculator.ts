@@ -622,9 +622,15 @@ export function computeAnchorState(
     // Vanaf de maand ná de afsluiting tot de ankermaand kan er nog niet-afgesloten
     // ruimte zitten; die rekenen we vooruit door met dezelfde motor.
     const gap = differenceInMonths(parseISO(`${anchorMonth}-01`), parseISO(`${lastClosed.monthKey}-01`));
+    // `endBalance` van een snapshot is het VRIJE saldo; maand 0 verwacht een BANKsaldo en
+    // trekt de opgebouwde potten er nog eens volledig uit. Zonder deze correctie wordt elke
+    // provisiepot dubbel afgetrokken zodra er één maand afgesloten is — dezelfde optelling
+    // die het niet-snapshot-pad hieronder als `reservedAtAnchorStart` doet.
+    const reservedAtClose = [...potBalances.values()].reduce((sum, v) => sum + v, 0);
+
     if (gap <= 1) {
       return {
-        startBalance: override ? override.balance : lastClosed.data.endBalance,
+        startBalance: override ? override.balance : lastClosed.data.endBalance + reservedAtClose,
         potBalances,
       };
     }
@@ -639,8 +645,14 @@ export function computeAnchorState(
     for (const p of anchorData?.reservationPots ?? []) {
       if (p.potType === 'spaardoel') bridgedPots.set(p.reservationId, p.deferredFromPrevious);
     }
+    // Zelfde correctie voor de overbrugde tak: `startBalance` uit de simulatie is het vrije
+    // saldo aan het begin van de ankermaand, dus de dan opgebouwde potten moeten er weer bij.
+    const reservedAtAnchor = [...(bridgedPots.size > 0 ? bridgedPots : potBalances).values()]
+      .reduce((sum, v) => sum + v, 0);
     return {
-      startBalance: override ? override.balance : (anchorData?.startBalance ?? lastClosed.data.endBalance),
+      startBalance: override
+        ? override.balance
+        : (anchorData ? anchorData.startBalance + reservedAtAnchor : lastClosed.data.endBalance + reservedAtClose),
       potBalances: bridgedPots.size > 0 ? bridgedPots : potBalances,
     };
   }

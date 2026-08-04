@@ -58,18 +58,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+fea17f8 fix(cashflow): bufferstorting telt mee als kost, analyse rekent vanaf vandaag
 9b81846 docs(cashflow): sessie-reflectie 2026-08-04
 9383669 feat(cashflow): historie begint bij de huidige maand
 a441c1c feat(cashflow): bullet charts voor begroot tegenover werkelijk
 64e7902 fix(cashflow): begrens de hoogte van de SVG-grafieken
-2c72697 feat(cashflow): bufferopbouw en waterfall als inline SVG
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/HANDOFF.md
-  M  apps/cashflow/app/analyse/page.tsx
-  M  apps/cashflow/hooks/useCashflow.ts
-  M  apps/cashflow/lib/cashflow/analysis.ts
+  M  apps/cashflow/components/cashflow/MonthCard.tsx
+  M  apps/cashflow/lib/cashflow/calculator.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

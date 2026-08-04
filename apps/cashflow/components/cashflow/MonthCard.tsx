@@ -99,6 +99,9 @@ export function MonthCard({
   const { setNodeRef, isOver } = useDroppable({
     id: `month-${monthKey}`,
     data: { monthKey },
+    // De uitgeschakelde fieldset blokkeert alleen formulierelementen; zonder dit kon je een
+    // post nog steeds in een afgesloten maand laten vallen en zo de historie wijzigen.
+    disabled: locked,
   });
 
   return (

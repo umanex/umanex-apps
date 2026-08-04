@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** in schijven — schijf 1 en 2 gebouwd en gevalideerd, schijf 3 open
+- **Status:** gevalideerd — alle drie de schijven gebouwd
 
 ---
 
@@ -58,7 +58,9 @@ Alle vier beantwoord op 2026-08-04:
   `reopenedMonths`, automatisch afsluiten van de maand die net voorbij is, een expliciete
   afsluitknop voor oudere maanden, vergrendelde weergave via een uitgeschakelde
   `fieldset`, en `computeAnchorState` dat van het meest recente snapshot vertrekt.
-- **Schijf 3 — begroot naast werkelijk** in de vergrendelde maand.
+- **Schijf 3 — begroot naast werkelijk.** Gebouwd. Een afgesloten maand opent met een
+  paneel dat per categorie het begrote bedrag naast het werkelijke zet, plus het effect op
+  je saldo. Alleen categorieën die afweken; liep alles gelijk, dan zegt het dat.
 
 ## Aannames
 
@@ -104,8 +106,16 @@ Alle vier beantwoord op 2026-08-04:
 - [x] De store-migratie laat bestaande data intact: versie 13 voegt twee lege arrays toe.
 - [x] `buffer-scenarios.ts` groen (145/145) en de baseline exact identiek — zonder
       snapshots verandert er niets aan de motor.
-- [ ] Waar het model twee bedragen kent, toont de afgesloten maand begroot naast werkelijk
-      — schijf 3.
+- [x] Waar het model twee bedragen kent, toont de afgesloten maand begroot naast werkelijk.
+      Getest: huur begroot € 600,00, afgerekend € 780,00, effect −€ 180,00.
+
+## Bevinding voor fase 4
+
+In een afgesloten maand toont de ledger-regel "Vaste uitgaves" wat er nog openstond (nul,
+want betaald), terwijl het variantiepaneel toont wat de maand kostte (€ 780,00). Beide zijn
+waar — de ankermaand-semantiek trekt betaalde kosten niet nog eens af — maar voor een
+historische maand is "wat kostte het" de relevantere vraag. De begroot-vs-werkelijk-grafiek
+van fase 4 moet dus het variantiepaneel als bron nemen, niet de ledger-regels.
 
 ## Beslissingsgeschiedenis
 

@@ -36,6 +36,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | MonthHeader | `apps/cashflow/components/cashflow/MonthHeader.tsx` | cashflow | — | — | — |
 | MonthNavigator | `apps/cashflow/components/cashflow/MonthNavigator.tsx` | cashflow | — | — | — |
 | MonthSummary | `apps/cashflow/components/cashflow/MonthSummary.tsx` | cashflow | — | — | — |
+| MonthVariance | `apps/cashflow/components/cashflow/MonthVariance.tsx` | cashflow | — | — | — |
 | RecurringSection | `apps/cashflow/components/cashflow/RecurringSection.tsx` | cashflow | — | — | — |
 | RecurringSidepanel | `apps/cashflow/components/cashflow/RecurringSidepanel.tsx` | cashflow | — | — | — |
 | RecurringTriggerButton | `apps/cashflow/components/cashflow/RecurringTriggerButton.tsx` | cashflow | — | — | — |
@@ -53,23 +54,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+94833fa feat(cashflow): afgesloten maanden als onveranderlijk snapshot
 2dd02b1 feat(cashflow): navigeer door het maandvenster
 eff161c feat(cashflow): skelet tijdens hydratatie in plaats van nullen
 d2e6fd4 docs(cashflow): CSV-import geschrapt, fase 2 afgerond
 b9a4757 feat(cashflow): herhaal de posten van de vorige maand
-3ab6af9 feat(cashflow): buffer krijgt een eigen regel in de saldo-footer
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/app/page.tsx
   M  apps/cashflow/briefings/2026-08-04-feature-maandsnapshots.tcebc.md
   M  apps/cashflow/components/cashflow/MonthCard.tsx
-  M  apps/cashflow/components/cashflow/SectionBar.tsx
-  M  apps/cashflow/hooks/useCashflow.ts
-  M  apps/cashflow/lib/cashflow/calculator.ts
-  A  apps/cashflow/lib/cashflow/snapshot.ts
-  M  apps/cashflow/lib/cashflow/types.ts
-  M  apps/cashflow/store/cashflow.ts
+  A  apps/cashflow/components/cashflow/MonthVariance.tsx
+  A  apps/cashflow/lib/cashflow/variance.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

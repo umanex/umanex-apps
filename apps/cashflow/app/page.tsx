@@ -13,8 +13,9 @@ export default function Page() {
   const months = useMonths(3);
   // Gelijk voor alle kolommen: anders staan de drie footers niet meer op één lijn.
   const showReserved = months.some((m) =>
-    m.reservationPots.some((p) => p.potType === 'spaardoel'),
+    m.reservationPots.some((p) => p.potType === 'spaardoel' && !p.isDeficitBuffer),
   );
+  const showBuffer = months.some((m) => m.reservationPots.some((p) => p.isDeficitBuffer));
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [reservationOpen, setReservationOpen] = useState(false);
   const [paymentState, setPaymentState] = useState<{ monthKey: MonthKey; filterType: ReservationPotType } | null>(null);
@@ -50,6 +51,7 @@ export default function Page() {
                 monthData={month}
                 isFirst={index === 0}
                 showReserved={showReserved}
+                showBuffer={showBuffer}
                 onRegisterPayment={(filterType) => setPaymentState({ monthKey: month.monthKey, filterType })}
                 onOpenRecurringSidepanel={() => setRecurringOpen(true)}
               />

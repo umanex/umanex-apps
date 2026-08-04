@@ -50,24 +50,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a5d5291 feat(cashflow): maandkolom wordt een ledger met saldo-footer
 6a4caa4 fix(cashflow): budget is een inschatting, provisie rolt door
 0aa048e docs(cashflow): bevindingen uit fase 0 vastgelegd voor fase 1
 173440e fix(cashflow): maandkaart toont hetzelfde eindsaldo als de doorrol
 55e0346 refactor(cashflow): één bron voor de maandsubtotalen
-6ca2c7c docs(cashflow): plan voor implementatie adviesrapporten
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/app/page.tsx
   M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
-  A  apps/cashflow/components/cashflow/BalanceFooter.tsx
-  M  apps/cashflow/components/cashflow/CashflowDndContext.tsx
-  M  apps/cashflow/components/cashflow/ExpenseSection.tsx
-  M  apps/cashflow/components/cashflow/IncomeSection.tsx
+  M  apps/cashflow/components/cashflow/BalanceFooter.tsx
   M  apps/cashflow/components/cashflow/MonthCard.tsx
-  M  apps/cashflow/components/cashflow/RecurringSection.tsx
-  M  apps/cashflow/components/cashflow/RecurringSidepanel.tsx
-  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

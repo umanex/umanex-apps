@@ -19,6 +19,7 @@ interface MonthCardProps {
   isFirst?: boolean;
   /** Gelijk voor alle maanden, zodat de drie footers even hoog blijven. */
   showReserved: boolean;
+  showBuffer: boolean;
 }
 
 export function MonthCard({
@@ -27,6 +28,7 @@ export function MonthCard({
   onOpenRecurringSidepanel,
   isFirst,
   showReserved,
+  showBuffer,
 }: MonthCardProps) {
   const {
     addIncomeItem,
@@ -67,8 +69,14 @@ export function MonthCard({
 
   // Alleen provisies staan écht gereserveerd op de rekening. Een budget is een
   // inschatting van wat er nog vertrekt, geen opzijgezet geld — zie subtotals.ts.
+  // De buffer telt apart: dat is geen schuld aan iemand anders maar eigen geld dat
+  // achter de hand blijft, en het is precies de pot die een tekort opvangt.
   const reserved = reservationPots
-    .filter((p) => p.potType === 'spaardoel')
+    .filter((p) => p.potType === 'spaardoel' && !p.isDeficitBuffer)
+    .reduce((s, p) => s + p.potBalance, 0);
+
+  const buffer = reservationPots
+    .filter((p) => p.isDeficitBuffer)
     .reduce((s, p) => s + p.potBalance, 0);
 
   const { setNodeRef, isOver } = useDroppable({
@@ -174,7 +182,9 @@ export function MonthCard({
       <BalanceFooter
         available={subtotals.endBalance}
         reserved={reserved}
+        buffer={buffer}
         showReserved={showReserved}
+        showBuffer={showBuffer}
       />
     </div>
   );

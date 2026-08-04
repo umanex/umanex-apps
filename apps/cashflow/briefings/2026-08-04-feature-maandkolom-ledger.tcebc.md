@@ -74,8 +74,10 @@ waardes en contrastcijfers staat in het plan.
 - [x] De som van de zichtbare ledger-regels is exact het eindsaldo. Per constructie: elke
       regel leest zijn bedrag uit `MonthData.subtotals`, en `endBalance = incoming − costs`.
       De vier losse sectiekop-formules zijn verdwenen.
-- [x] De saldo-footer toont bankstand, gereserveerd en beschikbaar, en staat buiten het
-      scrollgebied.
+- [x] De saldo-footer toont bankstand, gereserveerd, buffer en beschikbaar, en staat
+      buiten het scrollgebied. De buffer staat apart van de provisies: een provisie is
+      geld dat je aan iemand anders schuldig bent, de buffer is eigen geld dat achter de
+      hand blijft. Zo zie je de buffer slinken terwijl de provisies onaangeroerd blijven.
 - [x] De maandheader staat buiten het scrollgebied.
 - [ ] De drie eindsaldi staan op één horizontale lijn — structureel geregeld (kolommen
       strekken tot gelijke hoogte, alleen de ledger-body scrollt), maar **niet visueel
@@ -105,3 +107,7 @@ waardes en contrastcijfers staat in het plan.
 - 2026-08-04: aangemaakt als fase 1 van het adviesplan. WS2 (bankstand vs beschikbaar) is
   op 2026-08-04 in deze fase opgenomen omdat dezelfde footer anders twee keer gebouwd
   wordt.
+- 2026-08-04: de bufferpot krijgt een eigen footer-regel in plaats van mee te tellen in
+  gereserveerd. Een provisie moet weg, de buffer is eigen geld dat een tekort opvangt —
+  in één regel betekende "gereserveerd" twee dingen tegelijk. Buiten de oorspronkelijke
+  scope; het plan had de buffer pas in fase 4 als runway-metric staan.

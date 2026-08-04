@@ -33,6 +33,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 # Klant — umanex
 
 ## 2026-08-04 — React 18 en 19 delen één platte node_modules · [risico]
+- **Verplaatst:** dit punt hoort bij RowTrack, want die app dwingt de platte layout af. De volledige bevinding — inclusief de mislukte poging met de geïsoleerde layout (alle Next-builds groen, Metro valt op de phantom dependency `@expo/metro-runtime`) en de drie uitwegen — staat in `apps/rowtrack/HANDOFF.md`, entry van dezelfde datum. Hieronder de oorspronkelijke, inmiddels achterhaalde formulering.
 - **Bevinding:** De root `.npmrc` zet `node-linker=hoisted` en `shamefully-hoist=true`, dus
   de hele workspace deelt één platte `node_modules` met één `react`. Rowtrack pint
   `react@19.1.0` (Expo 54), de vier Next 14-apps en `packages/ui` willen `^18`. React 19
@@ -49,5 +50,4 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   rowtrack uit de pnpm-workspace halen (eigen lockfile) het gangbare alternatief voor een
   React Native-app in een gemengde monorepo. Verifieer met een schone install plus een
   build van alle vier de Next-apps én een Metro-start van rowtrack.
-- **Status:** open
-
+- **Status:** resolved — verplaatst naar `apps/rowtrack/HANDOFF.md` (2026-08-04)

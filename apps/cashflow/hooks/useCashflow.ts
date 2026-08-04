@@ -80,10 +80,16 @@ export function useEarliestDataMonth(): MonthKey {
   return useCashflowStore((s) => s.historyStartMonth);
 }
 
-export function useAnchorState(): AnchorState {
+/**
+ * `anchorOverride` laat een scherm rekenen vanaf een eigen maand in plaats van vanaf het
+ * venster waar de gebruiker naartoe genavigeerd is. De analyse gebruikt dat: die hoort
+ * altijd over vandaag te gaan, ook als je op de prognosepagina terugbladert.
+ */
+export function useAnchorState(anchorOverride?: MonthKey): AnchorState {
   const referenceBalance = useCashflowStore((s) => s.referenceBalance);
   const referenceMonth = useCashflowStore((s) => s.referenceMonth);
-  const anchorMonth = useCashflowStore((s) => s.anchorMonth);
+  const storeAnchor = useCashflowStore((s) => s.anchorMonth);
+  const anchorMonth = anchorOverride ?? storeAnchor;
   const expenseItems = useCashflowStore((s) => s.expenseItems);
   const incomeItems = useCashflowStore((s) => s.incomeItems);
   const recurringItems = useCashflowStore((s) => s.recurringItems);
@@ -118,8 +124,9 @@ export function useComputedStartBalance(): number {
   return useAnchorState().startBalance;
 }
 
-export function useMonths(count = 3): MonthData[] {
-  const anchorMonth = useCashflowStore((s) => s.anchorMonth);
+export function useMonths(count = 3, anchorOverride?: MonthKey): MonthData[] {
+  const storeAnchor = useCashflowStore((s) => s.anchorMonth);
+  const anchorMonth = anchorOverride ?? storeAnchor;
   const expenseItems = useCashflowStore((s) => s.expenseItems);
   const incomeItems = useCashflowStore((s) => s.incomeItems);
   const recurringItems = useCashflowStore((s) => s.recurringItems);
@@ -130,7 +137,7 @@ export function useMonths(count = 3): MonthData[] {
   const reservationDefers = useCashflowStore((s) => s.reservationDefers);
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
   const monthSnapshots = useCashflowStore((s) => s.monthSnapshots);
-  const { startBalance, potBalances } = useAnchorState();
+  const { startBalance, potBalances } = useAnchorState(anchorMonth);
 
   return calculateMonths(
     anchorMonth,

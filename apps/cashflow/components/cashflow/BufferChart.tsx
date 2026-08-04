@@ -87,7 +87,8 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
 
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="mt-4 w-full h-auto"
+        className="mt-4 w-full h-auto max-h-[240px]"
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={`Bufferopbouw van ${getMonthLabel(points[0]?.monthKey ?? '')} tot ${getMonthLabel(points[points.length - 1]?.monthKey ?? '')}. De tabel eronder bevat dezelfde waarden.`}
       >

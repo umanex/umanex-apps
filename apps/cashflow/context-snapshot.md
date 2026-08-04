@@ -57,18 +57,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+2c72697 feat(cashflow): bufferopbouw en waterfall als inline SVG
 729f2d8 feat(cashflow): runway-kaart op een eigen analysepagina
 7a2ef1e feat(cashflow): begroot naast werkelijk in een afgesloten maand
 94833fa feat(cashflow): afgesloten maanden als onveranderlijk snapshot
 2dd02b1 feat(cashflow): navigeer door het maandvenster
-eff161c feat(cashflow): skelet tijdens hydratatie in plaats van nullen
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/app/analyse/page.tsx
-  M  apps/cashflow/briefings/2026-08-04-feature-analyse-en-charts.tcebc.md
-  A  apps/cashflow/components/cashflow/BufferChart.tsx
-  A  apps/cashflow/components/cashflow/WaterfallChart.tsx
+  M  apps/cashflow/components/cashflow/BufferChart.tsx
+  M  apps/cashflow/components/cashflow/WaterfallChart.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

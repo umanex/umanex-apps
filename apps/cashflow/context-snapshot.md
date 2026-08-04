@@ -58,17 +58,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9383669 feat(cashflow): historie begint bij de huidige maand
+a441c1c feat(cashflow): bullet charts voor begroot tegenover werkelijk
 64e7902 fix(cashflow): begrens de hoogte van de SVG-grafieken
 2c72697 feat(cashflow): bufferopbouw en waterfall als inline SVG
 729f2d8 feat(cashflow): runway-kaart op een eigen analysepagina
-7a2ef1e feat(cashflow): begroot naast werkelijk in een afgesloten maand
-94833fa feat(cashflow): afgesloten maanden als onveranderlijk snapshot
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/app/analyse/page.tsx
-  M  apps/cashflow/briefings/2026-08-04-feature-analyse-en-charts.tcebc.md
-  A  apps/cashflow/components/cashflow/VarianceChart.tsx
+  M  apps/cashflow/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

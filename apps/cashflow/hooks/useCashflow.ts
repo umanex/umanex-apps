@@ -75,21 +75,9 @@ export function useHydrated(): boolean {
  * maanden, dus daar ligt de ondergrens van het venster.
  */
 export function useEarliestDataMonth(): MonthKey {
-  const referenceMonth = useCashflowStore((s) => s.referenceMonth);
-  const incomeItems = useCashflowStore((s) => s.incomeItems);
-  const expenseItems = useCashflowStore((s) => s.expenseItems);
-  const recurringItems = useCashflowStore((s) => s.recurringItems);
-  const reservations = useCashflowStore((s) => s.reservations);
-
-  const candidates: MonthKey[] = [
-    referenceMonth,
-    ...incomeItems.map((i) => i.monthKey),
-    ...expenseItems.map((i) => i.monthKey),
-    ...recurringItems.map((i) => i.startMonth),
-    ...reservations.map((r) => r.startMonth),
-  ];
-
-  return candidates.reduce((min, m) => (m < min ? m : min), referenceMonth);
+  // Verder terug dan het startpunt van de historie is er niets waargenomen; wat je daar
+  // zou zien is een herberekening uit je huidige gegevens, geen verleden.
+  return useCashflowStore((s) => s.historyStartMonth);
 }
 
 export function useAnchorState(): AnchorState {
@@ -180,7 +168,7 @@ export function useAutoCloseMonth(enabled: boolean): void {
     const state = useCashflowStore.getState();
     const prevMonth = format(addMonths(new Date(), -1), 'yyyy-MM');
 
-    if (prevMonth < state.referenceMonth) return;
+    if (prevMonth < state.historyStartMonth) return;
     if (state.reopenedMonths.includes(prevMonth)) return;
     if (state.monthSnapshots.some((s) => s.monthKey === prevMonth)) return;
 

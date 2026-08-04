@@ -207,6 +207,12 @@ export interface CashflowStore {
   reservationPayments: ReservationPayment[];
   recurringDefers: RecurringDefer[];
   reservationDefers: ReservationDefer[];
+  /**
+   * Eerste maand waarvoor historie opgebouwd mag worden. Alles daarvóór is nooit door de
+   * app waargenomen en zou dus een herberekening zijn, geen historie — daar wordt niet
+   * naar terug genavigeerd en niets van afgesloten.
+   */
+  historyStartMonth: MonthKey;
   /** Afgesloten maanden. Leidend boven elke herberekening van die maand. */
   monthSnapshots: MonthSnapshot[];
   /**

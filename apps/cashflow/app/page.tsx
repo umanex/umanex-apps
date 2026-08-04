@@ -97,7 +97,7 @@ export default function Page() {
                 isReconstruction={month.monthKey < currentMonth}
                 locked={monthSnapshots.some((s) => s.monthKey === month.monthKey)}
                 onCloseMonth={
-                  month.monthKey < currentMonth
+                  month.monthKey < currentMonth && month.monthKey >= earliestMonth
                     ? () => closeMonth(buildSnapshot(month, new Date().toISOString()))
                     : undefined
                 }

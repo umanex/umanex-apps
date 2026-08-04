@@ -2,7 +2,7 @@
 
 import { useCashflowStore } from '../../store/cashflow';
 import { useMonths, useReservationActions } from '../../hooks/useCashflow';
-import { generateId, getCurrentMonthKey, formatCurrency } from '../../lib/cashflow/recurring';
+import { generateId, getCurrentMonthKey, formatAmount } from '../../lib/cashflow/recurring';
 import { calcPotBalance } from '../../lib/cashflow/calculator';
 import type { ReservationItem, ReservationPayment, ReservationSettlement, ReservationPotType } from '../../lib/cashflow/types';
 
@@ -97,7 +97,7 @@ function ReservationRow({
           <span
             className={`text-sm font-semibold tabular-nums ${currentBalance >= 0 ? 'text-teal-600' : 'text-destructive'}`}
           >
-            {formatCurrency(currentBalance)}
+            {formatAmount(currentBalance)}
           </span>
         </div>
       </div>
@@ -143,17 +143,17 @@ function ReservationRow({
                     <span className="font-medium truncate">{payment.label}</span>
                   </div>
                   <div className="text-muted-foreground mt-0.5">
-                    {formatCurrency(payment.invoiceAmount)}
+                    {formatAmount(payment.invoiceAmount)}
                     {payment.fromReservation > 0 && (
-                      <span> · pot: {formatCurrency(payment.fromReservation)}</span>
+                      <span> · pot: {formatAmount(payment.fromReservation)}</span>
                     )}
                     {payment.fromCash > 0 && (
-                      <span> · cash: {formatCurrency(payment.fromCash)}</span>
+                      <span> · cash: {formatAmount(payment.fromCash)}</span>
                     )}
                     <span
                       className={`ml-2 font-medium ${balanceAfter >= 0 ? 'text-teal-600' : 'text-destructive'}`}
                     >
-                      → {formatCurrency(balanceAfter)}
+                      → {formatAmount(balanceAfter)}
                     </span>
                   </div>
                 </div>
@@ -179,13 +179,13 @@ function ReservationRow({
           <div className="mt-1 pt-2 border-t border-border/50 space-y-0.5 text-xs">
             <div className="flex justify-between text-muted-foreground">
               <span>Totaal gereserveerd</span>
-              <span className="tabular-nums">{formatCurrency(totalReserved)}</span>
+              <span className="tabular-nums">{formatAmount(totalReserved)}</span>
             </div>
             {totalPaidFromReservation > 0 && (
               <div className="flex justify-between text-muted-foreground">
                 <span>Totaal betaald uit pot</span>
                 <span className="tabular-nums text-destructive">
-                  -{formatCurrency(totalPaidFromReservation)}
+                  -{formatAmount(totalPaidFromReservation)}
                 </span>
               </div>
             )}
@@ -194,7 +194,7 @@ function ReservationRow({
               <span
                 className={`tabular-nums ${currentBalance < 0 ? 'text-destructive' : 'text-emerald-600'}`}
               >
-                {formatCurrency(currentBalance)}
+                {formatAmount(currentBalance)}
                 {currentBalance < 0 && ' ⚠'}
               </span>
             </div>
@@ -202,7 +202,7 @@ function ReservationRow({
               <div className="flex justify-between text-muted-foreground">
                 <span>Extra betaald uit cash</span>
                 <span className="tabular-nums text-destructive">
-                  -{formatCurrency(totalPaidFromCash)}
+                  -{formatAmount(totalPaidFromCash)}
                 </span>
               </div>
             )}

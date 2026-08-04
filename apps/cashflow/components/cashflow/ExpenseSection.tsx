@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ExpenseItem, MonthKey } from '../../lib/cashflow/types';
-import { formatCurrency, generateId, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
-import { expenseSectionTotal } from '../../lib/cashflow/subtotals';
+import { formatAmount, generateId, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
 import { SectionBar } from './SectionBar';
 
 interface ExpenseSectionProps {
   monthKey: MonthKey;
   items: ExpenseItem[];
+  /** Stapbedrag van deze ledger-regel, uit de calculator. */
+  amount: number;
   overflowItems?: { label: string; amount: number }[];
   onAdd: (item: ExpenseItem) => void;
   onUpdate: (id: string, patch: Partial<ExpenseItem>) => void;
@@ -100,6 +101,7 @@ function DraggableExpenseItem({
 export function ExpenseSection({
   monthKey,
   items,
+  amount,
   overflowItems = [],
   onAdd,
   onUpdate,
@@ -108,16 +110,15 @@ export function ExpenseSection({
   const [adding, setAdding] = useState(false);
   const [showPaid, setShowPaid] = useState(false);
   const [label, setLabel] = useState('');
-  const [amount, setAmount] = useState('');
+  const [newAmount, setNewAmount] = useState('');
 
   const unpaidItems = items.filter((i) => !i.paid);
   const paidItems = items.filter((i) => i.paid);
   const visibleItems = showPaid ? items : unpaidItems;
 
-  const subtotaal = expenseSectionTotal(items, overflowItems);
 
   function handleAdd() {
-    const parsed = parseFloat(amount.replace(',', '.'));
+    const parsed = parseFloat(newAmount.replace(',', '.'));
     if (!label.trim() || isNaN(parsed) || parsed <= 0) return;
     onAdd({
       id: generateId(),
@@ -127,7 +128,7 @@ export function ExpenseSection({
       paid: false,
     });
     setLabel('');
-    setAmount('');
+    setNewAmount('');
     setAdding(false);
   }
 
@@ -136,7 +137,7 @@ export function ExpenseSection({
     if (e.key === 'Escape') {
       setAdding(false);
       setLabel('');
-      setAmount('');
+      setNewAmount('');
     }
   }
 
@@ -144,7 +145,7 @@ export function ExpenseSection({
     <div className="flex flex-col gap-2 w-full">
       <SectionBar
         label="Niet recurrent"
-        subtotaal={subtotaal > 0 ? formatCurrency(subtotaal) : undefined}
+        amount={amount}
         showPaid={paidItems.length > 0 ? showPaid : undefined}
         onFilterToggle={paidItems.length > 0 ? () => setShowPaid((v) => !v) : undefined}
         onAdd={() => setAdding(true)}
@@ -152,6 +153,9 @@ export function ExpenseSection({
       />
 
       <div className="flex flex-col gap-1 w-full">
+        {items.length === 0 && overflowItems.length === 0 && !adding && (
+          <p className="pl-2 text-sm text-[var(--umanexNeutral500)] italic">Geen eenmalige uitgaven</p>
+        )}
         {visibleItems.map((item, index) => (
           <DraggableExpenseItem
             key={item.id}
@@ -174,7 +178,7 @@ export function ExpenseSection({
               <span className="ml-1 text-[11px] text-muted-foreground/60">– resterend</span>
             </span>
             <span className="w-[92px] text-sm tabular-nums text-emerald-600 text-right shrink-0">
-              {formatCurrency(item.amount)}
+              {formatAmount(item.amount)}
             </span>
             <span className="w-3 shrink-0" />
           </div>
@@ -194,15 +198,15 @@ export function ExpenseSection({
               <input
                 type="text"
                 inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(limitDecimals(e.target.value))}
+                value={newAmount}
+                onChange={(e) => setNewAmount(limitDecimals(e.target.value))}
                 placeholder="€"
                 className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <div className="flex gap-2 items-center">
                 <button onClick={handleAdd} className="text-xs font-semibold text-[var(--umanexNeutral800)]">OK</button>
                 <button
-                  onClick={() => { setAdding(false); setLabel(''); setAmount(''); }}
+                  onClick={() => { setAdding(false); setLabel(''); setNewAmount(''); }}
                   className="text-xs text-muted-foreground hover:text-foreground"
                 >
                   ✕

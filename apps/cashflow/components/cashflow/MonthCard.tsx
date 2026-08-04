@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { MonthData, ReservationPotType } from '../../lib/cashflow/types';
-import { formatCurrency, getMonthLabel } from '../../lib/cashflow/recurring';
+import { getMonthLabel } from '../../lib/cashflow/recurring';
+import { BalanceFooter } from './BalanceFooter';
+import { StartBalanceRow } from './StartBalanceRow';
 import { IncomeSection } from './IncomeSection';
 import { RecurringSection } from './RecurringSection';
 import { ReservationSection } from './ReservationSection';
@@ -16,9 +17,17 @@ interface MonthCardProps {
   onRegisterPayment: (filterType: ReservationPotType) => void;
   onOpenRecurringSidepanel: () => void;
   isFirst?: boolean;
+  /** Gelijk voor alle maanden, zodat de drie footers even hoog blijven. */
+  showReserved: boolean;
 }
 
-export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepanel, isFirst }: MonthCardProps) {
+export function MonthCard({
+  monthData,
+  onRegisterPayment,
+  onOpenRecurringSidepanel,
+  isFirst,
+  showReserved,
+}: MonthCardProps) {
   const {
     addIncomeItem,
     updateIncomeItem,
@@ -44,6 +53,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
   const {
     monthKey,
     startBalance,
+    totalIncome,
     subtotals,
     cashOverflowItems,
     incomeItems,
@@ -55,66 +65,36 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
     expenseItems,
   } = monthData;
 
-  // Eén bron: de calculator rekent deze maand door, de kaart toont enkel.
-  const {
-    incoming: totaalInkomsten,
-    costs: totaalKosten,
-    endBalance: eindsaldo,
-  } = subtotals;
+  // Alleen provisies staan écht gereserveerd op de rekening. Een budget is een
+  // inschatting van wat er nog vertrekt, geen opzijgezet geld — zie subtotals.ts.
+  const reserved = reservationPots
+    .filter((p) => p.potType === 'spaardoel')
+    .reduce((s, p) => s + p.potBalance, 0);
 
   const { setNodeRef, isOver } = useDroppable({
     id: `month-${monthKey}`,
     data: { monthKey },
   });
 
-  const balanceColor = eindsaldo >= 0 ? 'text-emerald-600' : 'text-destructive';
-
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-xl border bg-card overflow-hidden transition-colors ${
+      className={`flex flex-col h-full min-h-0 rounded-xl border bg-card overflow-hidden transition-colors ${
         isOver ? 'border-primary ring-2 ring-primary/30' : 'border-[var(--umanexPrimary50)]'
       }`}
     >
-      {/* Gekleurde header strip: maandnaam + eindsaldo */}
-      <div className="flex items-center justify-between px-6 py-3 bg-[var(--umanexNeutral100)]">
+      {/* Vaste maandheader — blijft staan terwijl de ledger scrollt. */}
+      <div className="shrink-0 px-6 py-3 bg-[var(--umanexNeutral100)]">
         <h2 className="font-semibold text-base text-[var(--umanexNeutral800)]">
           {getMonthLabel(monthKey)}
         </h2>
-        <span className={`text-base font-bold tabular-nums ${balanceColor}`}>
-          {formatCurrency(eindsaldo)}
-        </span>
       </div>
 
-      {/* Content */}
-      <div className="p-4 flex flex-col gap-5">
-        {/* 2 KPI tiles: Inkomsten + Uitgaves */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg bg-[var(--umanexNeutral50)] border border-[var(--umanexNeutral200)] px-3 py-3 flex items-center justify-between">
-            <p className="text-sm text-[var(--umanexNeutral800)]">Inkomsten</p>
-            <p className={`text-lg font-bold tabular-nums whitespace-nowrap ${totaalInkomsten >= 0 ? 'text-emerald-600' : 'text-[var(--umanexPrimary500)]'}`}>
-              {formatCurrency(totaalInkomsten)}
-            </p>
-          </div>
-          <div className="rounded-lg bg-[var(--umanexNeutral50)] border border-[var(--umanexNeutral200)] px-3 py-3 flex items-center justify-between">
-            <p className="text-sm text-[var(--umanexNeutral800)]">Uitgaves</p>
-            <p className={`text-lg font-bold tabular-nums whitespace-nowrap ${totaalKosten > 0 ? 'text-[var(--umanexPrimary500)]' : 'text-muted-foreground'}`}>
-              {formatCurrency(totaalKosten)}
-            </p>
-          </div>
-        </div>
-
-        <IncomeSection
-          monthKey={monthKey}
-          items={incomeItems}
-          startBalance={startBalance}
-          computedStartBalance={computedStartBalance}
-          isFirstMonth={isFirst}
-          onAdd={addIncomeItem}
-          onUpdate={(id, patch) => updateIncomeItem(id, patch)}
-          onToggleReceived={(id, received) => updateIncomeItem(id, { received })}
-          onRemove={removeIncomeItem}
-          onSetStartBalance={isFirst ? (balance) => {
+      {/* Ledger: beginsaldo, dan de vier kostenstappen in volgorde van de kernformule. */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-5">
+        <StartBalanceRow
+          balance={startBalance}
+          onChange={isFirst ? (balance) => {
             if (Math.abs(balance - computedStartBalance) < 0.01) {
               removeBalanceOverride(monthKey);
             } else {
@@ -123,9 +103,20 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
           } : undefined}
         />
 
+        <IncomeSection
+          monthKey={monthKey}
+          items={incomeItems}
+          amount={totalIncome}
+          onAdd={addIncomeItem}
+          onUpdate={(id, patch) => updateIncomeItem(id, patch)}
+          onToggleReceived={(id, received) => updateIncomeItem(id, { received })}
+          onRemove={removeIncomeItem}
+        />
+
         <RecurringSection
           items={recurringItems}
           monthKey={monthKey}
+          amount={subtotals.recurring}
           deferredItems={deferredItems}
           settlements={recurringSettlements ?? []}
           onRemoveDefer={removeRecurringDefer}
@@ -140,6 +131,7 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
         <ExpenseSection
           monthKey={monthKey}
           items={expenseItems}
+          amount={subtotals.oneOff}
           overflowItems={cashOverflowItems}
           onAdd={addExpenseItem}
           onUpdate={(id, patch) => updateExpenseItem(id, patch)}
@@ -150,6 +142,8 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
           monthKey={monthKey}
           isCurrentMonth={isFirst}
           pots={reservationPots}
+          budgetAmount={subtotals.budgets}
+          provisionAmount={subtotals.provisions}
           deferredReservationItems={deferredReservationItems}
           onRegisterPayment={onRegisterPayment}
           onRemovePayment={removeReservationPayment}
@@ -177,13 +171,11 @@ export function MonthCard({ monthData, onRegisterPayment, onOpenRecurringSidepan
         />
       </div>
 
-      {/* Footer eindsaldo (Q3: behouden) */}
-      <div className="border-t border-[var(--umanexPrimary50)] px-4 py-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-[var(--umanexNeutral800)]">Eindsaldo</span>
-        <span className={`text-lg font-bold tabular-nums ${balanceColor}`}>
-          {formatCurrency(eindsaldo)}
-        </span>
-      </div>
+      <BalanceFooter
+        available={subtotals.endBalance}
+        reserved={reserved}
+        showReserved={showReserved}
+      />
     </div>
   );
 }

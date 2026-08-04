@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ReservationPotBalance, ReservationPayment, MonthKey, ReservationPotType } from '../../lib/cashflow/types';
-import { formatCurrency, getMonthLabel, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
-import { potSectionTotal } from '../../lib/cashflow/subtotals';
+import { formatAmount, getMonthLabel, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
+import { pendingOverrideDelta } from '../../lib/cashflow/subtotals';
 import { SectionBar } from './SectionBar';
 
 interface DeferredReservationDisplayItem {
@@ -19,6 +19,9 @@ interface ReservationSectionProps {
   monthKey: MonthKey;
   isCurrentMonth?: boolean;
   pots: ReservationPotBalance[];
+  /** Stapbedragen van de twee ledger-regels, uit de calculator. */
+  budgetAmount: number;
+  provisionAmount: number;
   deferredReservationItems: DeferredReservationDisplayItem[];
   onRegisterPayment: (filterType: ReservationPotType) => void;
   onRemovePayment: (id: string) => void;
@@ -167,7 +170,7 @@ function DraggablePotRow({
             <div className="flex items-center gap-1">
               <span className="text-[11px] text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
               <span className={`text-[11px] font-semibold tabular-nums ${displayAmount < 0 ? 'text-[var(--umanexPrimary500)]' : 'text-emerald-600'}`}>
-                {formatCurrency(displayAmount)}
+                {formatAmount(displayAmount)}
                 {displayAmount < 0 && ' ⚠'}
               </span>
             </div>
@@ -175,9 +178,9 @@ function DraggablePotRow({
           {isAutoBuffer && (
             <span className="text-[11px] leading-tight text-[var(--umanexNeutral500)]">
               {pot.deficitUncovered > 0
-                ? `Buffer ontoereikend — ${formatCurrency(pot.deficitUncovered)} tekort blijft open`
+                ? `Buffer ontoereikend — ${formatAmount(pot.deficitUncovered)} tekort blijft open`
                 : (pot.deficitCoverage ?? 0) < 0
-                  ? `Dekt tekort — ${formatCurrency(-(pot.deficitCoverage ?? 0))} uit de pot`
+                  ? `Dekt tekort — ${formatAmount(-(pot.deficitCoverage ?? 0))} uit de pot`
                   : 'Storting verlaagd om het tekort te dekken'}
             </span>
           )}
@@ -212,7 +215,7 @@ function DraggablePotRow({
           />
           {!isComputed && pot.hasSettlement && (
             <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">
-              ({formatCurrency(pot.monthlyAmount)})
+              ({formatAmount(pot.monthlyAmount)})
             </span>
           )}
         </div>
@@ -252,22 +255,22 @@ function DraggablePotRow({
               <div className="flex items-center gap-2 text-[11px]">
                 {payment.fromCash === 0 ? (
                   <span className="text-emerald-600 font-semibold tabular-nums">
-                    {formatCurrency(payment.invoiceAmount)} betaald met provisie
+                    {formatAmount(payment.invoiceAmount)} betaald met provisie
                   </span>
                 ) : (
                   <>
                     <span className="text-[var(--umanexNeutral500)] opacity-70">Betaald:</span>
-                    <span className="font-semibold text-[var(--umanexNeutral800)] tabular-nums">{formatCurrency(payment.invoiceAmount)}</span>
+                    <span className="font-semibold text-[var(--umanexNeutral800)] tabular-nums">{formatAmount(payment.invoiceAmount)}</span>
                     {payment.fromReservation > 0 && (
                       <>
                         <span className="text-muted-foreground/40">·</span>
                         <span className="text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
-                        <span className="font-semibold text-emerald-600 tabular-nums">{formatCurrency(payment.fromReservation)}</span>
+                        <span className="font-semibold text-emerald-600 tabular-nums">{formatAmount(payment.fromReservation)}</span>
                       </>
                     )}
                     <span className="text-muted-foreground/40">·</span>
                     <span className="text-[var(--umanexNeutral500)] opacity-70">Cash:</span>
-                    <span className="font-semibold text-[var(--umanexPrimary500)] tabular-nums">{formatCurrency(payment.fromCash)}</span>
+                    <span className="font-semibold text-[var(--umanexPrimary500)] tabular-nums">{formatAmount(payment.fromCash)}</span>
                   </>
                 )}
               </div>
@@ -284,6 +287,7 @@ function PotSubgroup({
   potType,
   activePots,
   finalizedPots,
+  amount,
   monthKey,
   isCurrentMonth,
   overrideAmounts,
@@ -300,6 +304,7 @@ function PotSubgroup({
   potType: ReservationPotType;
   activePots: ReservationPotBalance[];
   finalizedPots: ReservationPotBalance[];
+  amount: number;
   monthKey: MonthKey;
   isCurrentMonth: boolean;
   overrideAmounts: Record<string, number>;
@@ -313,7 +318,9 @@ function PotSubgroup({
   onAmountChange: (reservationId: string, amount: number | null) => void;
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
-  const subtotaal = potSectionTotal(activePots, overrideAmounts, isCurrentMonth);
+  // Het bedrag komt uit de calculator; alleen wat je op dit moment aan het typen bent
+  // — nog niet opgeslagen — wordt er lokaal bovenop gelegd, zodat de kop meebeweegt.
+  const subtotaal = amount + pendingOverrideDelta(activePots, overrideAmounts, isCurrentMonth);
   const hasBufferDraw = activePots.some((p) => (p.deficitCoverage ?? 0) < 0);
 
   if (activePots.length === 0 && finalizedPots.length === 0) return null;
@@ -322,15 +329,9 @@ function PotSubgroup({
     <div className="flex flex-col gap-2 w-full">
       <SectionBar
         label={label}
-        // Een bufferopname maakt het subtotaal negatief — dat is geld dat terugkomt, dus
-        // groen. Een negatief subtotaal zonder opname betekent een overtrokken pot; dat
-        // blijft verborgen zoals voorheen, want de rij zelf waarschuwt er al voor.
-        subtotaal={
-          subtotaal > 0 || (hasBufferDraw && subtotaal < -0.005)
-            ? formatCurrency(subtotaal)
-            : undefined
-        }
-        subtotaalColor={subtotaal < 0 ? 'green' : 'red'}
+        // Een bufferopname maakt het bedrag negatief — dat is geld dat terugkomt, en
+        // formatSigned draait teken en kleur daar vanzelf voor om.
+        amount={subtotaal}
         showPaid={finalizedPots.length > 0 ? showFinalized : undefined}
         onFilterToggle={finalizedPots.length > 0 ? () => setShowFinalized((v) => !v) : undefined}
         onAdd={() => onRegisterPayment(potType)}
@@ -364,7 +365,7 @@ function PotSubgroup({
             >
               <span className="flex-1 text-sm truncate min-w-0">{pot.label}</span>
               <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                {formatCurrency(pot.effectiveAmount)} / {formatCurrency(pot.monthlyAmount)}
+                {formatAmount(pot.effectiveAmount)} / {formatAmount(pot.monthlyAmount)}
               </span>
               <button
                 onClick={() => onUnfinalize(pot.reservationId)}
@@ -384,6 +385,8 @@ export function ReservationSection({
   monthKey,
   isCurrentMonth = false,
   pots,
+  budgetAmount,
+  provisionAmount,
   deferredReservationItems,
   onRegisterPayment,
   onRemovePayment,
@@ -440,6 +443,7 @@ export function ReservationSection({
         potType="maandelijks_budget"
         activePots={budgetActive}
         finalizedPots={budgetFinalized}
+        amount={budgetAmount}
         {...sharedProps}
       />
       <PotSubgroup
@@ -447,6 +451,7 @@ export function ReservationSection({
         potType="spaardoel"
         activePots={spaardoelActive}
         finalizedPots={spaardoelFinalized}
+        amount={provisionAmount}
         {...sharedProps}
       />
 
@@ -460,7 +465,7 @@ export function ReservationSection({
             </span>
           </span>
           <span className="text-sm font-medium text-amber-600 tabular-nums shrink-0">
-            -{formatCurrency(d.amount)}
+            -{formatAmount(d.amount)}
           </span>
           <button
             onClick={() => onRemoveReservationDefer(d.deferId)}

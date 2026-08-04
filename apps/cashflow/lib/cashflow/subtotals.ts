@@ -1,11 +1,4 @@
-import type {
-  ExpenseItem,
-  IncomeItem,
-  MonthSubtotals,
-  RecurringItem,
-  RecurringSettlement,
-  ReservationPotBalance,
-} from './types';
+import type { MonthSubtotals, ReservationPotBalance } from './types';
 
 /**
  * De kernformule van één maand, op één plek.
@@ -126,59 +119,26 @@ export function collectCashOverflowItems(
 
 // ── Sectiekoppen ──────────────────────────────────────────────────────────────
 //
-// Wat een sectiebalk toont is bewust iets anders dan wat de sectie kost: de koppen
-// vatten samen wat er nog openstaat, zodat ze aansluiten bij de zichtbare rijen (de
-// Open/Alle-filter). Ze tellen daardoor niet op tot `costs` hierboven — gemeten op 300
-// gegenereerde scenario's wijkt de som af in ~10% van de maanden, telkens door een
-// gefinaliseerde pot in een toekomstige maand of door een toekomende uitgestelde
-// storting. Fase 1 (running-subtotal-ledger) beslist welke van de twee de sectiekop
-// wordt; tot dan blijft de weergave zoals ze was.
-
-export function incomeSectionTotal(startBalance: number, items: IncomeItem[]): number {
-  return startBalance + items.reduce((s, i) => s + i.amount, 0);
-}
-
-export function recurringSectionTotal(
-  items: RecurringItem[],
-  settlements: RecurringSettlement[],
-  deferredItems: Array<{ amount: number; paid: boolean }>,
-): number {
-  const unpaid = items.filter(
-    (item) => !settlements.find((s) => s.recurringId === item.id && s.paid),
-  );
-  return (
-    unpaid.reduce((s, item) => s + (item.frequency === 'yearly' ? item.amount / 12 : item.amount), 0) +
-    deferredItems.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0)
-  );
-}
-
-export function expenseSectionTotal(
-  items: ExpenseItem[],
-  cashOverflowItems: Array<{ amount: number }>,
-): number {
-  return (
-    items.filter((i) => !i.paid).reduce((s, i) => s + i.amount, 0) +
-    cashOverflowItems.reduce((s, i) => s + i.amount, 0)
-  );
-}
+// De ledger-regels tonen de kostensubtotalen hierboven, dus tellen de zichtbare regels
+// per constructie op tot het eindsaldo. Vóór fase 1 rekende elke sectie zijn eigen kop
+// uit op basis van wat er nog openstond; die liepen in ~10% van de maanden niet op tot
+// het totaal (gefinaliseerde pot in een toekomstige maand, of een toekomende uitgestelde
+// storting). Die tweede reeks formules is daarmee verdwenen.
 
 /**
- * Kop van een pot-subgroep. `overrides` bevat bedragen die de gebruiker aan het typen is
- * maar nog niet opgeslagen heeft; in de ankermaand telt zo'n override niet mee, want daar
- * toont de kop de resterende provisie in plaats van de storting.
+ * Verschil tussen het bedrag dat op dit moment in een veld getypt wordt en de opgeslagen
+ * storting. Alleen daarmee beweegt de kop van een pot-subgroep mee vóór het opslaan. In
+ * de ankermaand telt een override niet mee: daar toont de kop de resterende provisie,
+ * niet de storting.
  */
-export function potSectionTotal(
+export function pendingOverrideDelta(
   activePots: ReservationPotBalance[],
   overrides: Record<string, number>,
   isCurrentMonth: boolean,
 ): number {
+  if (isCurrentMonth) return 0;
   return activePots.reduce((s, p) => {
-    if (isCurrentMonth) {
-      if (p.potType === 'maandelijks_budget') return s + p.provisionThisMonth - paidFromPot(p);
-      if (p.potType === 'spaardoel') {
-        return s + p.deferredFromPrevious + p.provisionThisMonth - paidFromPot(p);
-      }
-    }
-    return s + (overrides[p.reservationId] ?? p.displayContribution);
+    const override = overrides[p.reservationId];
+    return override === undefined ? s : s + (override - p.displayContribution);
   }, 0);
 }

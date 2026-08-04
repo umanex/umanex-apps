@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gepland
+- **Status:** gebouwd — wacht op visuele validatie en de finance-tokens
 
 ---
 
@@ -35,17 +35,19 @@ CONSTRAINTS: Desktop 3-koloms — mobiel is bewust geparkeerd. Elk bedrag dubbel
 
 ## Open vragen
 
-1. **Gereserveerd-lijn** — telt die alleen de provisies (spaardoelen), of ook het
-   resterende saldo van de maandelijkse budgetten? Het prudente model beschouwt een
-   onbesteed budget als uitgegeven; tel je het mee, dan staat er een bankstand die
-   dichter bij je echte rekening ligt, maar die het model tegenspreekt.
-2. **Detailregels** — standaard ingeklapt (alleen de zes ledger-regels zichtbaar) of
-   standaard open zoals vandaag?
-3. **KPI-tegels** — de twee tegels (Inkomsten / Uitgaves) bovenaan de kaart worden
-   overbodig zodra de ledger met beginsaldo begint en op het kostentotaal uitkomt.
-   Weg, of behouden?
-4. **Lopend saldo** — een tweede getalkolom die na elke stap het lopende saldo toont,
-   of alleen de stapbedragen met het eindsaldo in de footer?
+Alle vier beantwoord op 2026-08-04:
+
+1. **Gereserveerd-lijn** — alleen de provisies. Een budget is een inschatting van een
+   maandelijkse kost; wat je niet opmaakt blijft gewoon op je rekening staan. Alleen een
+   provisie rolt door als opzijgezet geld. Meetbaar gevolg: `vrij + provisiepotten` komt
+   exact uit op het banksaldo, budgetten niet — die horen dus niet in die regel.
+2. **Detailregels** — standaard open, zoals vandaag.
+3. **KPI-tegels** — weg; de ledger toont dezelfde twee getallen.
+4. **Lopend saldo** — alleen stapbedragen, eindsaldo in de footer.
+
+Nog te beslissen buiten deze fase: de finance-tokens moeten in Tokens Studio aangemaakt
+worden voor de hardcoded `emerald`/`amber`-klassen kunnen verdwijnen. De lijst met paden,
+waardes en contrastcijfers staat in het plan.
 
 ## Aannames
 
@@ -67,23 +69,36 @@ CONSTRAINTS: Desktop 3-koloms — mobiel is bewust geparkeerd. Elk bedrag dubbel
 
 ## Acceptatie
 
-- [ ] De ledger toont beginsaldo, vier kostenstappen en het eindsaldo in de volgorde van
+- [x] De ledger toont beginsaldo, vier kostenstappen en het eindsaldo in de volgorde van
       de kernformule.
-- [ ] De som van de zichtbare ledger-regels is exact het eindsaldo — geen enkele maand
-      waarin rijen en totaal uit elkaar lopen.
-- [ ] De saldo-footer toont bankstand, gereserveerd en beschikbaar, en blijft staan bij
-      verticaal scrollen.
-- [ ] De maandheader blijft staan bij verticaal scrollen.
-- [ ] De drie eindsaldi staan op één horizontale lijn, ongeacht kolomhoogte.
-- [ ] Elk bedrag draagt een expliciet `+` of `−` naast zijn kleur.
-- [ ] Ledgerregels en invoervelden tonen centen; footer en tegels niet.
-- [ ] Detailregels klappen open en dicht per categorie, met de +-knop en de Open/Alle
-      filter in de uitgeklapte staat.
-- [ ] Drag & drop tussen maanden werkt nog, ook met toetsenbord.
-- [ ] Een lege categorie toont een lege staat in plaats van te verdwijnen.
-- [ ] Vóór hydratatie toont de kolom een skeleton, geen nullen.
-- [ ] Een bufferopname is als teruggave leesbaar, niet als negatieve kost.
-- [ ] `buffer-scenarios.ts` en de baseline-diff blijven groen.
+- [x] De som van de zichtbare ledger-regels is exact het eindsaldo. Per constructie: elke
+      regel leest zijn bedrag uit `MonthData.subtotals`, en `endBalance = incoming − costs`.
+      De vier losse sectiekop-formules zijn verdwenen.
+- [x] De saldo-footer toont bankstand, gereserveerd en beschikbaar, en staat buiten het
+      scrollgebied.
+- [x] De maandheader staat buiten het scrollgebied.
+- [ ] De drie eindsaldi staan op één horizontale lijn — structureel geregeld (kolommen
+      strekken tot gelijke hoogte, alleen de ledger-body scrollt), maar **niet visueel
+      geverifieerd**: de Chrome-extensie was niet verbonden.
+- [x] Kleur is nergens de enige drager van betekenis. De ledger-regels, de
+      gereserveerd-regel en de inkomstenregels dragen een expliciet `+` of `−`. Binnen een
+      homogene sectie (alle rijen zijn kosten) draagt de kleur geen onderscheid en blijft
+      het teken weg; een bedrag in een bewerkbaar invoerveld kan er sowieso geen dragen.
+- [x] Ledgerregels, detailregels en de footer tonen centen, zodat de getoonde regels exact
+      optellen tot het getoonde totaal. `formatCurrency` (zonder centen) blijft staan voor
+      de KPI's en chart-labels van fase 4.
+- [x] Detailregels staan open (beslissing 2); de +-knop en de Open/Alle-filter zitten in de
+      ledger-regel zelf.
+- [ ] Drag & drop tussen maanden werkt nog, ook met toetsenbord — **niet getest**, de
+      dnd-kit-opzet is ongemoeid gebleven maar de kolommen scrollen nu binnen zichzelf.
+- [x] Een lege categorie toont een lege staat in plaats van te verdwijnen (inkomsten, vaste
+      uitgaven, eenmalige uitgaven). De pot-secties blijven verborgen zonder potten, gelijk
+      met de gereserveerd-regel in de footer.
+- [ ] Vóór hydratatie toont de kolom een skeleton, geen nullen — **niet gebouwd**,
+      `useHydrated()` wordt nog steeds nergens aangeroepen.
+- [x] Een bufferopname leest als teruggave: `formatSigned` draait teken én kleur om zodra
+      het bedrag tegen de richting van zijn regel ingaat.
+- [x] `buffer-scenarios.ts` groen (145/145) en de baseline ongewijzigd t.o.v. de fix-commit.
 
 ## Beslissingsgeschiedenis
 

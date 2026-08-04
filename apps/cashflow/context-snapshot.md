@@ -24,6 +24,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | AddBtwForm | `apps/cashflow/components/cashflow/AddBtwForm.tsx` | cashflow | — | — | — |
 | AddItemForm | `apps/cashflow/components/cashflow/AddItemForm.tsx` | cashflow | — | — | — |
 | BalanceBadge | `apps/cashflow/components/cashflow/BalanceBadge.tsx` | cashflow | — | — | — |
+| BalanceFooter | `apps/cashflow/components/cashflow/BalanceFooter.tsx` | cashflow | — | — | — |
 | BtwList | `apps/cashflow/components/cashflow/BtwList.tsx` | cashflow | — | — | — |
 | BtwRow | `apps/cashflow/components/cashflow/BtwRow.tsx` | cashflow | — | — | — |
 | CashflowDndContext | `apps/cashflow/components/cashflow/CashflowDndContext.tsx` | cashflow | — | — | — |
@@ -44,22 +45,29 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | ReservationTriggerButton | `apps/cashflow/components/cashflow/ReservationTriggerButton.tsx` | cashflow | — | — | — |
 | SectionBar | `apps/cashflow/components/cashflow/SectionBar.tsx` | cashflow | — | — | — |
 | StartBalanceInput | `apps/cashflow/components/cashflow/StartBalanceInput.tsx` | cashflow | — | — | — |
+| StartBalanceRow | `apps/cashflow/components/cashflow/StartBalanceRow.tsx` | cashflow | — | — | — |
 | YearlyRow | `apps/cashflow/components/cashflow/YearlyRow.tsx` | cashflow | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+6a4caa4 fix(cashflow): budget is een inschatting, provisie rolt door
 0aa048e docs(cashflow): bevindingen uit fase 0 vastgelegd voor fase 1
 173440e fix(cashflow): maandkaart toont hetzelfde eindsaldo als de doorrol
 55e0346 refactor(cashflow): één bron voor de maandsubtotalen
 6ca2c7c docs(cashflow): plan voor implementatie adviesrapporten
-fa9bba2 test(cashflow): type-clean buffer scenario harness
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
-  M  apps/cashflow/lib/cashflow/calculator.ts
-  M  apps/cashflow/lib/cashflow/subtotals.ts
-  M  apps/cashflow/scripts/buffer-scenarios.ts
+  M  apps/cashflow/app/page.tsx
+  M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
+  A  apps/cashflow/components/cashflow/BalanceFooter.tsx
+  M  apps/cashflow/components/cashflow/CashflowDndContext.tsx
+  M  apps/cashflow/components/cashflow/ExpenseSection.tsx
+  M  apps/cashflow/components/cashflow/IncomeSection.tsx
+  M  apps/cashflow/components/cashflow/MonthCard.tsx
+  M  apps/cashflow/components/cashflow/RecurringSection.tsx
+  M  apps/cashflow/components/cashflow/RecurringSidepanel.tsx
+  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -65,6 +65,11 @@ export interface ReservationItem {
   monthlyAmount: number;
   startMonth: MonthKey;
   type: ReservationPotType;
+  /**
+   * Bufferpot: vangt een negatief eindsaldo automatisch op door de storting van die
+   * maand te verlagen of om te keren naar een opname. Maximaal één pot tegelijk.
+   */
+  coversDeficit?: boolean;
 }
 
 export interface ReservationPayment {
@@ -92,6 +97,16 @@ export interface ReservationPotBalance {
   potType: ReservationPotType;
   releasedThisMonth: number;
   displayContribution: number;
+  /** Deze pot is de bufferpot (coversDeficit). */
+  isDeficitBuffer: boolean;
+  /**
+   * De automatisch bepaalde storting van deze maand wanneer de buffer een tekort
+   * opvangt — negatief bij een opname, verlaagd-positief wanneer enkel de storting
+   * gekort wordt. `null` zodra er niets op te vangen valt (normale storting geldt).
+   */
+  deficitCoverage: number | null;
+  /** Deel van het tekort dat de buffer níét kon dekken omdat de pot leeg raakte. */
+  deficitUncovered: number;
 }
 
 export interface MonthData {
@@ -169,6 +184,7 @@ export interface CashflowStore {
   addReservation: (item: ReservationItem) => void;
   updateReservation: (id: string, patch: Partial<ReservationItem>) => void;
   removeReservation: (id: string) => void;
+  setDeficitBuffer: (id: string, enabled: boolean) => void;
 
   addReservationPayment: (payment: ReservationPayment) => void;
   updateReservationPayment: (id: string, patch: Partial<ReservationPayment>) => void;

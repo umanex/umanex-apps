@@ -69,6 +69,10 @@ function DraggablePotRow({
   // bij finalisatie vrijgegeven en de opbouw herstart de maand erna.
   const canShowFinalize = pot.potType === 'maandelijks_budget' || hasPayments;
   const isBudgetCurrentMonth = pot.potType === 'maandelijks_budget' && isCurrentMonth;
+  // Bufferpot die deze maand een tekort opvangt: het bedrag is volledig afgeleid
+  // uit het eindsaldo, dus read-only — net als het budgetveld in de huidige maand.
+  const isAutoBuffer = pot.deficitCoverage !== null;
+  const isComputed = isBudgetCurrentMonth || isAutoBuffer;
 
   const syncValue = isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth;
   const [localAmount, setLocalAmount] = useState(String(roundTo2(syncValue)));
@@ -124,14 +128,26 @@ function DraggablePotRow({
     <div ref={setNodeRef} className={`${isDragging ? 'opacity-30' : ''}`}>
       {/* Pot hoofdrij — altijd label + beschikbare provisie */}
       <div className={`flex gap-2 pl-1 rounded-[4px] w-full items-start py-1 ${zebra ? 'bg-[var(--umanexNeutral50)]' : ''}`}>
-        <button
-          {...listeners}
-          {...attributes}
-          className="text-[var(--umanexNeutral500)] hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0 mt-0.5"
-          aria-label="Versleep spaarpot bijdrage"
-        >
-          ⠿
-        </button>
+        {/* Een buffer die deze maand een tekort dekt, mag niet verplaatst worden: de
+            rij zou uit de maand verdwijnen en de dekking stil met zich meenemen. */}
+        {isAutoBuffer ? (
+          <span
+            className="text-[var(--umanexNeutral300)] text-sm leading-none select-none shrink-0 mt-0.5"
+            title="Buffer dekt deze maand een tekort — niet verplaatsbaar"
+            aria-hidden="true"
+          >
+            ⠿
+          </span>
+        ) : (
+          <button
+            {...listeners}
+            {...attributes}
+            className="text-[var(--umanexNeutral500)] hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0 mt-0.5"
+            aria-label="Versleep spaarpot bijdrage"
+          >
+            ⠿
+          </button>
+        )}
 
         <div className="flex-1 flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -155,6 +171,15 @@ function DraggablePotRow({
               </span>
             </div>
           )}
+          {isAutoBuffer && (
+            <span className="text-[11px] leading-tight text-[var(--umanexNeutral500)]">
+              {pot.deficitUncovered > 0
+                ? `Buffer ontoereikend — ${formatCurrency(pot.deficitUncovered)} tekort blijft open`
+                : (pot.deficitCoverage ?? 0) < 0
+                  ? `Dekt tekort — ${formatCurrency(-(pot.deficitCoverage ?? 0))} uit de pot`
+                  : 'Storting verlaagd om het tekort te dekken'}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
@@ -162,23 +187,29 @@ function DraggablePotRow({
             type="text"
             inputMode="decimal"
             value={localAmount}
-            disabled={isBudgetCurrentMonth}
+            disabled={isComputed}
             onChange={(e) => {
               const v = limitDecimals(e.target.value);
               setLocalAmount(v);
               const parsed = parseFloat(v.replace(',', '.'));
               onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
             }}
-            onBlur={isBudgetCurrentMonth ? undefined : handleAmountBlur}
+            onBlur={isComputed ? undefined : handleAmountBlur}
             onPointerDown={(e) => e.stopPropagation()}
             className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] focus:outline-none focus:ring-1 focus:ring-ring ${
-              isBudgetCurrentMonth
-                ? `bg-[var(--umanexNeutral50)] cursor-default ${displayAmount < 0 ? 'text-[var(--umanexPrimary500)] font-medium' : 'text-emerald-600'}`
-                : `bg-white ${pot.hasSettlement ? 'text-amber-600 font-medium' : 'text-amber-600'}`
+              isComputed
+                ? `bg-[var(--umanexNeutral50)] cursor-default ${syncValue < 0 ? 'text-[var(--umanexPrimary500)] font-medium' : 'text-emerald-600'}`
+                : `bg-white text-amber-600 ${pot.hasSettlement ? 'font-medium' : ''}`
             }`}
-            aria-label={isBudgetCurrentMonth ? 'Resterende provisie' : 'Stortingsbedrag'}
+            aria-label={
+              isBudgetCurrentMonth
+                ? 'Resterende provisie'
+                : isAutoBuffer
+                  ? 'Automatische bufferstorting'
+                  : 'Stortingsbedrag'
+            }
           />
-          {!isBudgetCurrentMonth && pot.hasSettlement && (
+          {!isComputed && pot.hasSettlement && (
             <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">
               ({formatCurrency(pot.monthlyAmount)})
             </span>
@@ -306,6 +337,7 @@ function PotSubgroup({
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
   const subtotaal = calcSubtotaal(activePots, overrideAmounts, isCurrentMonth);
+  const hasBufferDraw = activePots.some((p) => (p.deficitCoverage ?? 0) < 0);
 
   if (activePots.length === 0 && finalizedPots.length === 0) return null;
 
@@ -313,7 +345,15 @@ function PotSubgroup({
     <div className="flex flex-col gap-2 w-full">
       <SectionBar
         label={label}
-        subtotaal={subtotaal > 0 ? formatCurrency(subtotaal) : undefined}
+        // Een bufferopname maakt het subtotaal negatief — dat is geld dat terugkomt, dus
+        // groen. Een negatief subtotaal zonder opname betekent een overtrokken pot; dat
+        // blijft verborgen zoals voorheen, want de rij zelf waarschuwt er al voor.
+        subtotaal={
+          subtotaal > 0 || (hasBufferDraw && subtotaal < -0.005)
+            ? formatCurrency(subtotaal)
+            : undefined
+        }
+        subtotaalColor={subtotaal < 0 ? 'green' : 'red'}
         showPaid={finalizedPots.length > 0 ? showFinalized : undefined}
         onFilterToggle={finalizedPots.length > 0 ? () => setShowFinalized((v) => !v) : undefined}
         onAdd={() => onRegisterPayment(potType)}

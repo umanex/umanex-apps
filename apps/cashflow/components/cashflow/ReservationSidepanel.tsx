@@ -1,7 +1,7 @@
 'use client';
 
 import { useCashflowStore } from '../../store/cashflow';
-import { useReservationActions } from '../../hooks/useCashflow';
+import { useMonths, useReservationActions } from '../../hooks/useCashflow';
 import { generateId, getCurrentMonthKey, formatCurrency } from '../../lib/cashflow/recurring';
 import { calcPotBalance } from '../../lib/cashflow/calculator';
 import type { ReservationItem, ReservationPayment, ReservationSettlement, ReservationPotType } from '../../lib/cashflow/types';
@@ -13,22 +13,29 @@ interface ReservationSidepanelProps {
 
 interface ReservationRowProps {
   reservation: ReservationItem;
+  /** Potstand uit de maandberekening; valt terug op de historiek buiten het venster. */
+  simulatedBalance?: number;
   payments: ReservationPayment[];
   settlements: ReservationSettlement[];
   onUpdate: (patch: Partial<ReservationItem>) => void;
   onRemove: () => void;
   onRemovePayment: (id: string) => void;
+  onSetBuffer: (enabled: boolean) => void;
 }
 
 function ReservationRow({
   reservation,
+  simulatedBalance,
   payments,
   settlements,
   onUpdate,
   onRemove,
   onRemovePayment,
+  onSetBuffer,
 }: ReservationRowProps) {
-  const currentBalance = calcPotBalance(reservation, payments, settlements, getCurrentMonthKey());
+  const currentBalance =
+    simulatedBalance ??
+    calcPotBalance(reservation, payments, settlements, getCurrentMonthKey());
   const ownPayments = [...payments.filter((p) => p.reservationId === reservation.id)].sort(
     (a, b) => a.monthKey.localeCompare(b.monthKey),
   );
@@ -94,6 +101,24 @@ function ReservationRow({
           </span>
         </div>
       </div>
+
+      {reservation.type === 'spaardoel' && (
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={reservation.coversDeficit ?? false}
+            onChange={(e) => onSetBuffer(e.target.checked)}
+            className="mt-0.5 size-4 shrink-0 accent-[var(--umanexPrimary500)]"
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className="text-sm leading-tight">Vangt tekorten op</span>
+            <span className="text-xs text-muted-foreground leading-tight">
+              Bij een negatief eindsaldo verlaagt of keert deze pot zijn storting om, tot
+              het saldo op €0 staat. Slechts één pot tegelijk.
+            </span>
+          </span>
+        </label>
+      )}
 
       {ownPayments.length > 0 && (
         <div className="flex flex-col gap-1 pt-1 border-t border-border">
@@ -189,6 +214,12 @@ function ReservationRow({
 }
 
 export function ReservationSidepanel({ open, onClose }: ReservationSidepanelProps) {
+  // Potstanden uit dezelfde berekening als de maandkaarten — een bufferopname is
+  // afgeleid en zit niet in de betalingen die calcPotBalance optelt.
+  const months = useMonths(3);
+  const simulatedBalances = new Map(
+    (months[0]?.reservationPots ?? []).map((p) => [p.reservationId, p.potBalance]),
+  );
   const reservations = useCashflowStore((s) => s.reservations);
   const reservationPayments = useCashflowStore((s) => s.reservationPayments);
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
@@ -197,6 +228,7 @@ export function ReservationSidepanel({ open, onClose }: ReservationSidepanelProp
     updateReservation,
     removeReservation,
     removeReservationPayment,
+    setDeficitBuffer,
   } = useReservationActions();
 
   function handleAddReservation() {
@@ -244,11 +276,13 @@ export function ReservationSidepanel({ open, onClose }: ReservationSidepanelProp
             <ReservationRow
               key={reservation.id}
               reservation={reservation}
+              simulatedBalance={simulatedBalances.get(reservation.id)}
               payments={reservationPayments}
               settlements={reservationSettlements}
               onUpdate={(patch) => updateReservation(reservation.id, patch)}
               onRemove={() => removeReservation(reservation.id)}
               onRemovePayment={removeReservationPayment}
+              onSetBuffer={(enabled) => setDeficitBuffer(reservation.id, enabled)}
             />
           ))}
 

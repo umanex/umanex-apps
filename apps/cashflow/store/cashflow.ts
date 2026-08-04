@@ -18,7 +18,7 @@ import type {
 } from '../lib/cashflow/types';
 
 // Verhoog bij elke schema-uitbreiding + voeg het nieuwe veld toe in migrate.
-const STORE_VERSION = 11;
+const STORE_VERSION = 12;
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
@@ -112,7 +112,20 @@ export const useCashflowStore = create<CashflowStore>()(
       updateReservation: (id, patch) =>
         set((state) => {
           const item = state.reservations.find((r) => r.id === id);
-          if (item) Object.assign(item, patch);
+          if (!item) return;
+          Object.assign(item, patch);
+          // Enkel een spaardoel kan buffer zijn — een maandelijks budget reset elke
+          // maand en heeft geen saldo om een tekort uit op te vangen.
+          if (item.type !== 'spaardoel') item.coversDeficit = false;
+        }),
+
+      setDeficitBuffer: (id, enabled) =>
+        set((state) => {
+          // Maximaal één bufferpot: een tekort over meerdere potten verdelen is
+          // ondefinieerd, dus markeren zet de vlag elders uit.
+          for (const r of state.reservations) {
+            r.coversDeficit = enabled && r.id === id;
+          }
         }),
 
       removeReservation: (id) =>
@@ -274,6 +287,7 @@ export const useCashflowStore = create<CashflowStore>()(
             ? (s.reservations as ReservationItem[]).filter(Boolean).map((r) => ({
                 ...r,
                 type: r.type ?? 'spaardoel',
+                coversDeficit: (r.type ?? 'spaardoel') === 'spaardoel' && (r.coversDeficit ?? false),
               }))
             : [],
           reservationPayments: Array.isArray(s.reservationPayments) ? s.reservationPayments : [],

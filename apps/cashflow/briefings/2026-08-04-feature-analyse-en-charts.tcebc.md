@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gebouwd — bullet charts open, twee grafieken nog niet visueel geverifieerd
+- **Status:** gebouwd — runway, waterfall en bufferopbouw gevalideerd; bullet charts gebouwd maar niet gezien
 
 ---
 
@@ -77,10 +77,13 @@ kost meer code maar levert volledige tokencontrole en nul risico voor het fundam
       bufferlijn onderscheidt zich door streepjes en open punten.
 - [x] `prefers-reduced-motion`: er zijn geen animaties, dus er valt niets te degraderen.
 - [x] Geen dependency; `/analyse` is 3,65 kB.
-- [ ] **Niet visueel geverifieerd**: de bufferopbouw en de waterfall. De Chrome-extensie
-      raakte losgekoppeld voor ik kon kijken. De runway-kaart is wel gezien.
-- [ ] Bullet charts voor begroot-vs-werkelijk per categorie — laatste stuk van fase 4. De
-      cijfers bestaan al in het variantiepaneel van fase 3; alleen de visualisatie ontbreekt.
+- [x] Bufferopbouw en waterfall visueel gevalideerd met drie afgesloten maanden aan
+      demodata. Daarbij één fout gevonden en gefixt: zonder hoogtebegrenzing schaalde de
+      SVG mee met de volle breedte en werd de waterfall 672px hoog, met labels buiten beeld.
+- [x] Bullet charts voor begroot-vs-werkelijk per categorie, opgeteld over de afgesloten
+      maanden: dunne baan voor begroot, dikke balk voor werkelijk, streepje op de doellijn.
+- [ ] **Niet visueel geverifieerd**: alleen de bullet charts. Het browser-tabblad sloot
+      voor ik ernaar kon kijken; build, type-check en lint zijn groen.
 
 ## Beslissingsgeschiedenis
 

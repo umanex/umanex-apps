@@ -51,22 +51,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | SectionBar | `apps/cashflow/components/cashflow/SectionBar.tsx` | cashflow | — | — | — |
 | StartBalanceInput | `apps/cashflow/components/cashflow/StartBalanceInput.tsx` | cashflow | — | — | — |
 | StartBalanceRow | `apps/cashflow/components/cashflow/StartBalanceRow.tsx` | cashflow | — | — | — |
+| VarianceChart | `apps/cashflow/components/cashflow/VarianceChart.tsx` | cashflow | — | — | — |
 | WaterfallChart | `apps/cashflow/components/cashflow/WaterfallChart.tsx` | cashflow | — | — | — |
 | YearlyRow | `apps/cashflow/components/cashflow/YearlyRow.tsx` | cashflow | — | — | — |
 | MonthCardSkeleton | `apps/cashflow/components/feedback/MonthCardSkeleton.tsx` | feedback | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+64e7902 fix(cashflow): begrens de hoogte van de SVG-grafieken
 2c72697 feat(cashflow): bufferopbouw en waterfall als inline SVG
 729f2d8 feat(cashflow): runway-kaart op een eigen analysepagina
 7a2ef1e feat(cashflow): begroot naast werkelijk in een afgesloten maand
 94833fa feat(cashflow): afgesloten maanden als onveranderlijk snapshot
-2dd02b1 feat(cashflow): navigeer door het maandvenster
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/components/cashflow/BufferChart.tsx
-  M  apps/cashflow/components/cashflow/WaterfallChart.tsx
+  M  apps/cashflow/app/analyse/page.tsx
+  M  apps/cashflow/briefings/2026-08-04-feature-analyse-en-charts.tcebc.md
+  A  apps/cashflow/components/cashflow/VarianceChart.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

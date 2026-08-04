@@ -4,6 +4,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { MonthData, ReservationPotType } from '../../lib/cashflow/types';
 import { addMonth, getMonthLabel } from '../../lib/cashflow/recurring';
 import { BalanceFooter } from './BalanceFooter';
+import { MonthVariance } from './MonthVariance';
 import { StartBalanceRow } from './StartBalanceRow';
 import { IncomeSection } from './IncomeSection';
 import { RecurringSection } from './RecurringSection';
@@ -165,6 +166,8 @@ export function MonthCard({
         disabled={locked}
         className="flex-1 min-h-0 overflow-y-auto p-4 m-0 border-0 flex flex-col gap-5"
       >
+        {locked && <MonthVariance data={monthData} />}
+
         <StartBalanceRow
           balance={startBalance}
           onChange={isFirst ? (balance) => {

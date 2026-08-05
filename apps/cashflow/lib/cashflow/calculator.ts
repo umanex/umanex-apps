@@ -188,11 +188,13 @@ export function calculateMonths(
       result.push(snapshot.data);
       runningBalance = snapshot.data.endBalance;
       for (const pot of snapshot.data.reservationPots) {
-        potBalanceMap.set(pot.reservationId, pot.potBalance);
-        deferredRemainingMap.set(
-          pot.reservationId,
-          pot.potType === 'spaardoel' ? pot.potBalance : 0,
-        );
+        // Een budget rolt niet door — wat je niet opmaakt blijft gewoon op je rekening
+        // staan. De normale doorrol zegt dat ook (zie `nextPotBalances` verderop); zonder
+        // dezelfde regel hier lekte het restant van een afgesloten maand de maand erna in,
+        // en bood de betaalmodal een potstand aan die er niet meer was.
+        const carried = pot.potType === 'spaardoel' ? pot.potBalance : 0;
+        potBalanceMap.set(pot.reservationId, carried);
+        deferredRemainingMap.set(pot.reservationId, carried);
       }
       monthIndex++;
       continue;
@@ -260,23 +262,20 @@ export function calculateMonths(
     });
     const deferredReservationAmount = deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 
-    const getEffectiveAmount = (res: ReservationItem): number => {
-      const settlement = activeSettlements.find(
-        (s) => s.reservationId === res.id && s.monthKey === monthKey,
-      );
-      return settlement ? settlement.effectiveAmount : res.monthlyAmount;
-    };
-
     const getDeferred = (resId: string) => deferredRemainingMap.get(resId) ?? 0;
 
     // Een uitgestelde storting die deze maand toekomt, wordt aan de pot gecrediteerd —
     // dus telt hij ook mee in de stand die naar volgende maand doorrolt.
+    // Uit dezelfde bron als de kost (`deferredReservationItems`), zodat er precies
+    // evenveel in de pot landt als er van het saldo af gaat. Werd de creditering apart
+    // berekend, dan liep ze uit de pas zodra de aankomstmaand een eigen afrekening had:
+    // een storting van 100 als kost, en 50 of 250 in de pot.
     const arrivingCredit = new Map<string, number>();
-    for (const d of arrivingReservationDefers) {
-      const res = reservations.find((r) => r.id === d.reservationId);
-      if (res) {
-        arrivingCredit.set(res.id, (arrivingCredit.get(res.id) ?? 0) + getEffectiveAmount(res));
-      }
+    for (const item of deferredReservationItems) {
+      arrivingCredit.set(
+        item.reservationId,
+        (arrivingCredit.get(item.reservationId) ?? 0) + item.amount,
+      );
     }
 
     const monthReservationPayments = reservationPayments.filter((p) => p.monthKey === monthKey);
@@ -716,16 +715,54 @@ export function computeAnchorState(
   );
 
   /**
+   * Alles wat in de ankermaand al betaald geregistreerd staat. De maandberekening
+   * behandelt dat als "er al af" en rekent enkel wat nog moet vertrekken — dus moet een
+   * gesimuleerd banksaldo die bedragen ook missen. Zonder deze aftrek vertrekt de
+   * ankermaand van een saldo van vóór de maand terwijl ze rekent alsof de maand al
+   * halverwege is, en valt het eindsaldo te hoog uit met precies wat je afvinkte.
+   */
+  const paidInAnchorMonth = (): number => {
+    const departingRecurring = new Set(
+      recurringDefers.filter((d) => d.fromMonth === anchorMonth).map((d) => d.recurringId),
+    );
+    const recurringPaid = recurringItems
+      .filter((i) => i.startMonth <= anchorMonth && !departingRecurring.has(i.id))
+      .reduce((sum, i) => {
+        const settlement = recurringSettlements.find(
+          (st) => st.recurringId === i.id && st.monthKey === anchorMonth && st.paid,
+        );
+        return sum + (settlement ? settlement.actualAmount : 0);
+      }, 0);
+
+    const deferredPaid = recurringDefers
+      .filter((d) => d.toMonth === anchorMonth && d.paid)
+      .reduce((sum, d) => sum + (d.paidAmount ?? 0), 0);
+
+    const expensesPaid = expenseItems
+      .filter((i) => i.monthKey === anchorMonth && i.paid)
+      .reduce((sum, i) => sum + i.amount, 0);
+
+    // Beide poten van een potbetaling: de pot-poot verlaagt de resterende provisie, de
+    // cash-poot is een gewone uitgave. Allebei zijn ze van de rekening af.
+    const potPaid = reservationPayments
+      .filter((p) => p.monthKey === anchorMonth && !departingAtAnchor.has(p.reservationId))
+      .reduce((sum, p) => sum + p.fromReservation + p.fromCash, 0);
+
+    return recurringPaid + deferredPaid + expensesPaid + potPaid;
+  };
+
+  /**
    * Het banksaldo is het vrije saldo plus wat er in de spaardoelen zit — dat staat samen
-   * op de rekening. Bewust afgeleid uit dezelfde map als degene die we teruggeven: kwamen
-   * de twee uit verschillende bronnen, dan verdween er geld zodra één pot in de ene bron
-   * wél en in de andere niet voorkwam.
+   * op de rekening — min wat er deze maand al betaald is. Bewust afgeleid uit dezelfde map
+   * als degene die we teruggeven: kwamen de twee uit verschillende bronnen, dan verdween
+   * er geld zodra één pot in de ene bron wél en in de andere niet voorkwam.
    */
   const bankFromFree = (freeBalance: number, pots: Map<string, number>): number =>
     freeBalance +
     [...pots.entries()]
       .filter(([id]) => !departingAtAnchor.has(id))
-      .reduce((sum, [, v]) => sum + v, 0);
+      .reduce((sum, [, v]) => sum + v, 0) -
+    paidInAnchorMonth();
 
   /** Meest recente saldocorrectie in een venster, of `undefined`. */
   const latestOverrideIn = (after: MonthKey | null, before: MonthKey) =>

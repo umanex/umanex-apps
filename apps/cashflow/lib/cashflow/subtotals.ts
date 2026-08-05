@@ -63,15 +63,13 @@ export function computeMonthSubtotals(input: MonthSubtotalInput): MonthSubtotals
     : input.unpaidRecurring + input.paidRecurring +
       input.unpaidDeferredRecurring + input.paidDeferredRecurring;
 
-  // Ankermaand: alleen de bijbetalingen bij een pot die deze maand aangerekend én niet
-  // gefinaliseerd is. Latere maanden: élke bijbetaling van die maand. Dat verschil is
-  // bestaand gedrag, hier bewust ongemoeid gelaten — een bijbetaling bij een
-  // gefinaliseerde of uitgestelde pot telt in de ankermaand dus niet mee. Genoteerd als
-  // openstaand punt voor fase 1; nu vastleggen zou een tweede gedragswijziging in een
-  // refactor smokkelen.
-  const cashOverflow = isFirstMonth
-    ? reservationPots.filter((p) => !p.finalized).reduce((s, p) => s + cashFromPot(p), 0)
-    : input.totalCashPayments;
+  // Ankermaand: een geregistreerde bijbetaling is al van het echte banksaldo af, net als
+  // een betaalde vaste kost of uitgave. Ze telt hier dus niet nog eens mee. Deed ze dat
+  // wel, dan sprak de ankermaand zichzelf tegen: de pot-poot van diezelfde betaling wordt
+  // hieronder wél als "al gebeurd" behandeld (de provisiekost gaat er met `paidFromPot`
+  // vanaf), waardoor het cash-deel er twee keer af ging. Latere maanden vertrekken van een
+  // projectie waar nog niets van betaald is — daar telt élke bijbetaling.
+  const cashOverflow = isFirstMonth ? 0 : input.totalCashPayments;
 
   const oneOff =
     (isFirstMonth ? input.unpaidExpenses : input.unpaidExpenses + input.paidExpenses) + cashOverflow;
@@ -89,10 +87,18 @@ export function computeMonthSubtotals(input: MonthSubtotalInput): MonthSubtotals
   // in eerdere maanden al opgebouwd werd (`deferredFromPrevious`). Latere maanden: die
   // opbouw is er in een eerdere maand al afgetrokken, dus telt enkel de nieuwe storting,
   // verminderd met wat een finalisatie deze maand vrijgeeft.
-  const spaardoelCost = (p: ReservationPotBalance): number =>
-    isFirstMonth
-      ? p.deferredFromPrevious + p.provisionThisMonth - paidFromPot(p)
-      : p.provisionThisMonth - p.releasedThisMonth;
+  //
+  // Beide takken kennen een ondergrens. Zonder die grens levert een betaling die groter is
+  // dan de pot in de ankermaand een negatieve kost op — geld dat niet bestaat — en gaat
+  // hetzelfde teveel in een latere maand juist nooit van het saldo af. Wat een pot niet
+  // kan dragen, komt van de rekening, en dat is precies de tweede term hieronder.
+  const spaardoelCost = (p: ReservationPotBalance): number => {
+    const beschikbaar = p.deferredFromPrevious + p.provisionThisMonth;
+    const teveel = Math.max(0, paidFromPot(p) - beschikbaar);
+    return isFirstMonth
+      ? Math.max(0, beschikbaar - paidFromPot(p))
+      : p.provisionThisMonth - p.releasedThisMonth + teveel;
+  };
 
   const spaardoelen = reservationPots.filter(
     (p) => p.potType === 'spaardoel' && (!isFirstMonth || !p.finalized),
@@ -130,8 +136,11 @@ export function collectCashOverflowItems(
   reservationPots: ReservationPotBalance[],
   isFirstMonth: boolean,
 ): Array<{ label: string; amount: number }> {
+  // In de ankermaand is de bijbetaling al van het banksaldo af en telt ze niet meer als
+  // kost. Ze hier dan tóch als regel tonen zou de sectie laten optellen tot een ander
+  // bedrag dan de kop — de betaling blijft zichtbaar op de potrij zelf.
+  if (isFirstMonth) return [];
   return reservationPots
-    .filter((p) => !isFirstMonth || !p.finalized)
     .flatMap((p) =>
       p.paymentsThisMonth
         .filter((pay) => pay.fromCash > 0)

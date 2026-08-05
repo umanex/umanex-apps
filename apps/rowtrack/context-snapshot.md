@@ -54,15 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9ed52bf docs(rowtrack): pod install nodig bij de eerste native build na de layout-wissel
 a32f778 fix(monorepo): Metro werkt onder de geïsoleerde pnpm-layout
 b884027 docs(rowtrack): cluster 8 briefings + auth/forms figma-mapping
 7372b7e docs: trim derivable and stale content from CLAUDE.md files
 e623640 docs(rowtrack): monorepo-hoisting als openstaand punt vastgelegd
-cd09074 refactor(rowtrack): i18n-ready — typed Dutch translation layer + string extraction (#157)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/CLAUDE.md
 
 ## Bestanden met TODO/FIXME
   (geen)

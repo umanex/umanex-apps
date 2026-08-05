@@ -35,7 +35,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-08-05 — Unieke index op workouts staat nog niet in de database · [next-step]
 - **Bevinding:** `supabase/migrations/add_workouts_unique_started_at.sql` staat op main maar is niet toegepast. Zolang die index ontbreekt, dekt de client alleen de race binnen één app-run: wordt de app afgesloten tussen een geslaagde insert en het wissen van de pending-slot, dan schrijft de volgende start dezelfde rit nog een keer weg en telt elke KPI-som hem dubbel.
 - **Volgende zet:** Het bestand in de Supabase SQL Editor draaien (deze repo past migrations handmatig toe). Daarna controleren dat een tweede drain-poging netjes foutcode 23505 geeft in plaats van een tweede rij.
-- **Status:** open
+- **Status:** resolved — 2026-08-05: door Jeroen gedraaid in de SQL Editor. Geverifieerd via `pg_indexes`: `workouts_user_started_at_key` staat als UNIQUE btree op (user_id, started_at). De client vertaalt een tweede poging nu in foutcode 23505 en ruimt de pending-slot op in plaats van een duplicaat te schrijven.
 
 ## 2026-07-09 — IdlePhase merge + resterende varianten verifiëren · [next-step]
 - **Bevinding:** IdlePhase goal-redesign zit op branch `feature/idlephase-goal-redesign` (commit `5635f6f`), niet gemerged. Enkel de Duur-variant is live op de simulator geverifieerd; none/distance/split/watts leunen op gedeelde-componenten-redenering.

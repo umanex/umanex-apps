@@ -46,3 +46,10 @@ jobs:
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          # Placeholders, geen secrets: cashflow inlineert deze NEXT_PUBLIC-waardes
+          # tijdens de build, dus zonder waarde faalt het prerenderen. CI bouwt een
+          # wegwerp-artefact en deployt niet — de echte waardes staan bij Vercel,
+          # waar de hard-fail in lib/supabase/client.ts een misconfiguratie blijft
+          # tegenhouden.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key

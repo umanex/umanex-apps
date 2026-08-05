@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
 import { cleanupStaleData } from '../../hooks/useCashflow';
 import { errorMessage } from '../../lib/cashflow/error-message';
 import { hydrateFromRemote, resetSync, startSync } from '../../lib/cashflow/sync';
@@ -33,7 +32,7 @@ export function DataGate({ userId, children }: { userId: string; children: React
         // Pas luisteren nadat de stand staat: anders zou het laden zelf als wijziging
         // gelden en meteen teruggeschreven worden.
         stopSync = startSync();
-        cleanupStaleData(format(new Date(), 'yyyy-MM'));
+        cleanupStaleData();
         setPhase('ready');
       })
       .catch((error: unknown) => {

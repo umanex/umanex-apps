@@ -27,6 +27,7 @@ export function selectCashflowData(state: CashflowStore): CashflowData {
     reservationDefers: state.reservationDefers,
     historyStartMonth: state.historyStartMonth,
     reopenedMonths: state.reopenedMonths,
+    lastSeenMonth: state.lastSeenMonth,
   };
 }
 
@@ -52,6 +53,13 @@ export const useCashflowStore = create<CashflowStore>()(
         state.monthSnapshots.push(snapshot);
         // Opnieuw afsluiten heft een eerdere heropening op.
         state.reopenedMonths = state.reopenedMonths.filter((m) => m !== snapshot.monthKey);
+      }),
+
+    markMonthSeen: (monthKey) =>
+      set((state) => {
+        // Alleen vooruit: terugbladeren naar een oude maand betekent niet dat je de app
+        // toen open had.
+        if (monthKey > state.lastSeenMonth) state.lastSeenMonth = monthKey;
       }),
 
     reopenMonth: (monthKey) =>

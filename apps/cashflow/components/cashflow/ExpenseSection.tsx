@@ -15,6 +15,8 @@ interface ExpenseSectionProps {
   onAdd: (item: ExpenseItem) => void;
   onUpdate: (id: string, patch: Partial<ExpenseItem>) => void;
   onRemove: (id: string) => void;
+  /** Afgesloten maand: alles staat vast, dus mag de filter niets verbergen. */
+  locked?: boolean;
 }
 
 function DraggableExpenseItem({
@@ -106,15 +108,19 @@ export function ExpenseSection({
   onAdd,
   onUpdate,
   onRemove,
+  locked,
 }: ExpenseSectionProps) {
   const [adding, setAdding] = useState(false);
   const [showPaid, setShowPaid] = useState(false);
+  // Zie RecurringSection: in een afgesloten maand is de filterknop dood, dus mag hij
+  // niets meer verbergen.
+  const showAll = locked || showPaid;
   const [label, setLabel] = useState('');
   const [newAmount, setNewAmount] = useState('');
 
   const unpaidItems = items.filter((i) => !i.paid);
   const paidItems = items.filter((i) => i.paid);
-  const visibleItems = showPaid ? items : unpaidItems;
+  const visibleItems = showAll ? items : unpaidItems;
 
 
   function handleAdd() {
@@ -146,7 +152,7 @@ export function ExpenseSection({
       <SectionBar
         label="Niet recurrent"
         amount={amount}
-        showPaid={paidItems.length > 0 ? showPaid : undefined}
+        showPaid={paidItems.length > 0 ? showAll : undefined}
         onFilterToggle={paidItems.length > 0 ? () => setShowPaid((v) => !v) : undefined}
         onAdd={() => setAdding(true)}
         addAriaLabel="Kost toevoegen"

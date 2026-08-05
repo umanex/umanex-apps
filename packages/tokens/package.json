@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     "./theme.css": "./build/theme.css",
-    "./variables.css": "./build/variables.css"
+    "./variables.css": "./build/variables.css",
+    "./roles": "./build/roles.mjs"
   },
   "scripts": {
     "build": "node build.mjs"

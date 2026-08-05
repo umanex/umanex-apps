@@ -400,6 +400,10 @@ importers:
         version: 5.9.3
 
   packages/config:
+    dependencies:
+      '@umanex/tokens':
+        specifier: workspace:^
+        version: link:../tokens
     devDependencies:
       tailwindcss:
         specifier: ^3

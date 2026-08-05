@@ -32,7 +32,12 @@ export function RunwayCard({ runway }: RunwayCardProps) {
     );
   }
 
-  const filled = months === null ? 1 : Math.min(months / BAR_MAX_MONTHS, 1);
+  // Een negatieve bufferstand is geen korte runway maar een pot die al leeg is. Zonder
+  // ondergrens leverde dat bovendien een negatieve CSS-breedte op: de browser verwerpt
+  // die, de balk valt terug op auto en vult het hele spoor — maximale runway tonen bij
+  // een pot in het rood.
+  const leeg = buffer < 0;
+  const filled = months === null ? 1 : Math.min(Math.max(months / BAR_MAX_MONTHS, 0), 1);
 
   return (
     <div className="rounded-xl border border-[var(--umanexPrimary50)] bg-card p-5">
@@ -42,7 +47,9 @@ export function RunwayCard({ runway }: RunwayCardProps) {
       </p>
 
       <p className="mt-3 text-3xl font-bold tabular-nums text-[var(--umanexNeutral800)]">
-        {months === null ? (
+        {leeg ? (
+          <span className="text-[var(--umanexPrimary700)]">Buffer staat negatief</span>
+        ) : months === null ? (
           <span className="text-emerald-700">Geen tekort</span>
         ) : (
           <>
@@ -58,14 +65,22 @@ export function RunwayCard({ runway }: RunwayCardProps) {
         className="mt-3 h-2 w-full rounded-full bg-[var(--umanexNeutral200)] overflow-hidden"
         role="img"
         aria-label={
-          months === null
-            ? 'Geen maandelijks tekort'
-            : `Runway ${months.toFixed(1)} maanden van maximaal ${BAR_MAX_MONTHS}`
+          leeg
+            ? 'Bufferpot staat negatief'
+            : months === null
+              ? 'Geen maandelijks tekort'
+              : `Runway ${months.toFixed(1)} maanden van maximaal ${BAR_MAX_MONTHS}`
         }
       >
         <div
-          className={`h-full rounded-full ${months === null ? 'bg-emerald-700' : 'bg-[var(--umanexNeutral800)]'}`}
-          style={{ width: `${filled * 100}%` }}
+          className={`h-full rounded-full ${
+            leeg
+              ? 'bg-[var(--umanexPrimary700)]'
+              : months === null
+                ? 'bg-emerald-700'
+                : 'bg-[var(--umanexNeutral800)]'
+          }`}
+          style={{ width: `${(leeg ? 1 : filled) * 100}%` }}
         />
       </div>
 

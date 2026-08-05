@@ -24,6 +24,9 @@ function shortLabel(monthKey: string): string {
 }
 
 /** Ronde bovengrens, zodat de as op leesbare bedragen eindigt. */
+/** Bovengrens voor het aantal maandlabels op de x-as; daarboven lopen ze over elkaar. */
+const MAX_LABELS = 12;
+
 function niceMax(value: number): number {
   if (value <= 0) return 100;
   const magnitude = 10 ** Math.floor(Math.log10(value));
@@ -46,11 +49,20 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
     );
   }
 
-  // De y-as begint altijd op nul: een afgekapte as dramatiseert kleine bewegingen.
-  const maxValue = niceMax(Math.max(...points.map((p) => p.buffer), 0));
+  // De y-as bevat altijd nul: een afgekapte as dramatiseert kleine bewegingen. Maar ook
+  // altijd de laagste stand — een pot die onder nul staat viel anders buiten de viewBox
+  // en verdween geruisloos uit de grafiek, terwijl de tabel eronder het bedrag wél toonde.
+  const buffers = points.map((p) => p.buffer);
+  const maxValue = niceMax(Math.max(...buffers, 0));
+  // `niceMax` rondt een nul-invoer op naar 100; dat mag hier niet doorwerken, anders
+  // krijgt een reeks zonder negatieve stand tóch een ondergrens van −100 en staat er een
+  // spooklabel over de nullijn heen.
+  const laagste = Math.min(...buffers, 0);
+  const minValue = laagste < 0 ? -niceMax(-laagste) : 0;
+  const span = maxValue - minValue || 1;
   const stepX = points.length > 1 ? PLOT_W / (points.length - 1) : 0;
   const x = (i: number) => PAD.left + i * stepX;
-  const y = (value: number) => PAD.top + PLOT_H - (value / maxValue) * PLOT_H;
+  const y = (value: number) => PAD.top + PLOT_H - ((value - minValue) / span) * PLOT_H;
 
   const lastHistoryIndex = points.reduce((last, p, i) => (p.isForecast ? last : i), -1);
   // Het grenspunt hoort bij beide lijnen, anders valt er een gat tussen historie en prognose.
@@ -65,7 +77,20 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
       ? `M ${x(0)},${y(0)} L ${historyPoints.map((p, i) => `${x(i)},${y(p.buffer)}`).join(' L ')} L ${x(historyPoints.length - 1)},${y(0)} Z`
       : '';
 
-  const ticks = [0, maxValue / 2, maxValue];
+  // Ontdubbeld: zonder negatieve stand valt de ondergrens samen met de nullijn, en dan
+  // zouden twee tekens over elkaar staan met dezelfde React-key.
+  const ticks = [...new Set([minValue, 0, maxValue / 2, maxValue])];
+
+  // Elke maand een label wordt onleesbaar zodra er meer dan een jaar historie is: bij
+  // ~20 punten is er minder ruimte dan een label breed is. Dunnen dus, maar de eerste, de
+  // laatste en de grens tussen historie en prognose blijven altijd staan.
+  const stride = Math.ceil(points.length / MAX_LABELS);
+  const labelVisible = (i: number) => {
+    if (i === 0 || i === points.length - 1) return true;
+    if (i % stride !== 0) return false;
+    // Vlak vóór het laatste label past er niets meer: dat staat er sowieso al.
+    return points.length - 1 - i >= stride;
+  };
 
   return (
     <section className="rounded-xl border border-[var(--umanexPrimary50)] bg-card p-5">
@@ -79,6 +104,7 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
         <button
           onClick={() => setShowTable((v) => !v)}
           aria-expanded={showTable}
+          aria-controls="bufferchart-tabel"
           className="shrink-0 h-8 px-3 rounded-md border border-input text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           {showTable ? 'Verberg tabel' : 'Toon tabel'}
@@ -90,7 +116,7 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
         className="mt-4 w-full h-auto max-h-[240px]"
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label={`Bufferopbouw van ${getMonthLabel(points[0]?.monthKey ?? '')} tot ${getMonthLabel(points[points.length - 1]?.monthKey ?? '')}. De tabel eronder bevat dezelfde waarden.`}
+        aria-label={`Bufferopbouw van ${getMonthLabel(points[0]?.monthKey ?? '')} tot ${getMonthLabel(points[points.length - 1]?.monthKey ?? '')}.${showTable ? ' De tabel eronder bevat dezelfde waarden.' : ' Gebruik "Toon tabel" voor dezelfde waarden als tekst.'}`}
       >
         {ticks.map((tick) => (
           <g key={tick}>
@@ -166,22 +192,24 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
           />
         ))}
 
-        {points.map((p, i) => (
-          <text
-            key={p.monthKey}
-            x={x(i)}
-            y={H - 8}
-            textAnchor="middle"
-            fontSize={11}
-            fill="var(--umanexNeutral500)"
-          >
-            {shortLabel(p.monthKey)}
-          </text>
-        ))}
+        {points.map((p, i) =>
+          labelVisible(i) ? (
+            <text
+              key={p.monthKey}
+              x={x(i)}
+              y={H - 8}
+              textAnchor="middle"
+              fontSize={11}
+              fill="var(--umanexNeutral500)"
+            >
+              {shortLabel(p.monthKey)}
+            </text>
+          ) : null,
+        )}
       </svg>
 
       {showTable && (
-        <table className="mt-4 w-full text-sm">
+        <table id="bufferchart-tabel" className="mt-4 w-full text-sm">
           <caption className="sr-only">Bufferstand per maand</caption>
           <thead>
             <tr className="text-left text-[var(--umanexNeutral500)]">

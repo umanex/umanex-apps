@@ -41,6 +41,8 @@
   --umanexWarning500: #f59e0b;
   --umanexWarning600: #d97706;
   --umanexWarning700: #b45309;
+  --umanexFontSans: Fira Sans;
+  --umanexFontSerif: Merriweather;
   --umanexFinancePositive: #047857;
   --umanexFinanceNegative: #c43737;
   --umanexFinanceNegativeSurface: #f05454;
@@ -48,6 +50,4 @@
   --umanexFinanceDeferredStrong: #b45309;
   --umanexFinanceTotal: #1d2939;
   --umanexOverlayScrim: rgba(10, 10, 10, 0.5);
-  --umanexFontSans: Fira Sans;
-  --umanexFontSerif: Merriweather;
 }

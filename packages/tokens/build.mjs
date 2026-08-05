@@ -12,74 +12,42 @@ import { hexToHslTriplet } from './lib/hslTriplet.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const R = (...p) => join(HERE, ...p);
 
-// Register Tokens Studio transforms
 register(StyleDictionary, { excludeParentKeys: true });
 
-// Custom transform: hex -> bare HSL triplet "H S% L%" for the shadcn :root/.dark
-// layer. Applied ONLY to the Semantic/shadcn color tokens (path starts light|dark);
-// primitives stay hex and the borderRadius `radius` token is left untouched.
-// `transitive` so it runs after Tokens Studio aliases resolve to a hex value.
-StyleDictionary.registerTransform({
-  name: 'color/hslTriplet',
-  type: 'value',
-  transitive: true,
-  filter: (token) => {
-    const type = token.$type ?? token.type;
-    return type === 'color' && (token.path[0] === 'light' || token.path[0] === 'dark');
-  },
-  transform: (token) => hexToHslTriplet(token.$value ?? token.value),
-});
+// ---------------------------------------------------------------------------
+// Set-conventie
+//
+// De mode komt uit de SET-NAAM, niet uit het token-pad. Dat is de kern van deze
+// opzet. Voorheen waren light/dark groepen bínnen één set, en haakten drie plekken
+// in de build op `token.path[0] === 'light' | 'dark' | 'radius'` — magic strings die
+// stil kapotgaan zodra iemand een semantische groep 'light' noemt. Bovendien maakte
+// het Figma variable modes onmogelijk: light/dark als padsegment levert 64 losse
+// variabelen op in plaats van 32 met twee mode-waarden.
+//
+//   Theme/light, Theme/dark        -> rollaag, per mode
+//   Theme/base                     -> rollaag, mode-blind (alleen in :root)
+//   Semantic/light, Semantic/dark  -> domeinlaag, per mode
+//   al de rest                     -> primitives (variables.css)
+//
+// De build leest $themes NIET voor de mode-keuze. Tokens Studio's multi-theme zit
+// achter een betaald plan; door de conventie in de set-naam te leggen werkt deze
+// pipeline op elk plan, en blijft de structuur klaar voor Figma-modes.
+// ---------------------------------------------------------------------------
 
-// Transform group = full Tokens Studio pipeline + our hex->HSL triplet step.
-StyleDictionary.registerTransformGroup({
-  name: 'shadcn',
-  transforms: [...StyleDictionary.hooks.transformGroups['tokens-studio'], 'color/hslTriplet'],
-});
+const MODES = ['light', 'dark'];
+const MODE_SELECTOR = { light: ':root', dark: '.dark' };
+const ROLE_GROUPS = ['Theme', 'Semantic'];
 
-// Custom format: write the Semantic/shadcn set as shadcn-v3 :root / .dark blocks.
-// Color tokens arrive as bare HSL triplets (via color/hslTriplet); --radius stays a
-// rem length and is emitted in :root only (mode-independent, never a triplet).
-StyleDictionary.registerFormat({
-  name: 'css/shadcn',
-  format: ({ dictionary }) => {
-    const light = [];
-    const dark = [];
-    let radius = '0.5rem';
-    for (const token of dictionary.allTokens) {
-      const group = token.path[0];
-      const name = token.path[token.path.length - 1];
-      const val = token.$value ?? token.value; // DTCG: de getransformeerde waarde staat op $value, niet op value
-      if (group === 'light') light.push([name, val]);
-      else if (group === 'dark') dark.push([name, val]);
-      else if (group === 'radius' || name === 'radius') {
-        const v = String(val);
-        radius = v.includes('rem') ? v : `${parseFloat(v) / 16}rem`;
-      }
-    }
-    const block = (pairs) => pairs.map(([k, v]) => `    --${k}: ${v};`).join('\n');
-    return [
-      '@layer base {',
-      '  :root {',
-      block(light),
-      `    --radius: ${radius};`,
-      '  }',
-      '',
-      '  .dark {',
-      block(dark),
-      '  }',
-      '}',
-      '',
-    ].join('\n');
-  },
-});
+function classifySet(name) {
+  const [group, leaf] = name.split('/');
+  if (!ROLE_GROUPS.includes(group)) return { kind: 'primitive' };
+  if (leaf === undefined) return { kind: 'primitive' }; // 'Semantic' zonder mode-suffix
+  if (MODES.includes(leaf)) return { kind: 'role', mode: leaf };
+  return { kind: 'role', mode: null }; // Theme/base
+}
 
-// Read tokens.json
 const raw = JSON.parse(await readFile(R('tokens.json'), 'utf-8'));
 const { $themes, $metadata, ...tokenSets } = raw;
-
-// Find umanex theme
-const umanexTheme = $themes.find(t => t.name === 'umanex');
-if (!umanexTheme) throw new Error('Theme "umanex" not found in $themes');
 
 // Resolutievolgorde komt uit $metadata.tokenSetOrder — dat is wat Tokens Studio als
 // canoniek hanteert. De sleutelvolgorde van selectedTokenSets is een toevallige
@@ -91,19 +59,60 @@ for (const name of Object.keys(tokenSets)) {
     throw new Error(`[tokens] set "${name}" ontbreekt in $metadata.tokenSetOrder`);
   }
 }
+for (const name of ORDER) {
+  if (!tokenSets[name]) throw new Error(`[tokens] $metadata.tokenSetOrder noemt onbekende set "${name}"`);
+}
 
-// Tokens Studio kent drie statussen, niet twee. `source` betekent: wel meenemen om
-// aliassen te resolven, niet exporteren. Wie een primitives-set in de plugin op
-// `source` zet — de idiomatische keuze — kreeg met de oude `=== 'enabled'` filter
-// een set die volledig wegviel, en dus tientallen onopgeloste referenties.
-const RESOLVE = new Set(['enabled', 'source']);
-const enabledSets = ORDER.filter(name => RESOLVE.has(umanexTheme.selectedTokenSets[name]));
+const SETS = ORDER.map((name) => ({ name, ...classifySet(name), tokens: tokenSets[name] }));
+const primitiveSets = SETS.filter((s) => s.kind === 'primitive');
+// Sets die geresolved moeten worden voor deze mode: de mode-eigen sets plus de
+// mode-blinde. Los van de vraag of ze ook geëmit worden.
+const roleSetsFor = (mode) =>
+  [...SETS.filter((s) => s.kind === 'role' && s.mode === mode),
+   ...SETS.filter((s) => s.kind === 'role' && s.mode === null)];
+
+// Wat er daadwerkelijk in het mode-blok terechtkomt. Een mode-blinde set (Theme/base
+// met --radius) hoort ALLEEN in :root: hij per mode herhalen zet dezelfde waarde
+// nog eens in .dark, wat suggereert dat hij per mode kan verschillen. Mode-set
+// eerst, mode-blinde daarna — zo staat --radius achteraan in :root.
+const emitSetsFor = (mode) =>
+  [...SETS.filter((s) => s.kind === 'role' && s.mode === mode),
+   ...(mode === MODES[0] ? SETS.filter((s) => s.kind === 'role' && s.mode === null) : [])];
+
+// --- Guard: mode-symmetrie --------------------------------------------------
+// Een vergeten dark-tegenhanger is anders een bug die je pas ziet als je de toggle
+// omzet. Dit is precies de faalklasse die we uitroeien, dus hij faalt hard.
+function leafPaths(node, prefix = []) {
+  const out = [];
+  for (const [k, v] of Object.entries(node)) {
+    if (isLeaf(v)) out.push([...prefix, k].join('.'));
+    else if (v && typeof v === 'object') out.push(...leafPaths(v, [...prefix, k]));
+  }
+  return out;
+}
+for (const group of ROLE_GROUPS) {
+  const light = tokenSets[`${group}/light`];
+  const dark = tokenSets[`${group}/dark`];
+  if (!light || !dark) continue;
+  const kl = leafPaths(light).sort();
+  const kd = leafPaths(dark).sort();
+  if (kl.join() !== kd.join()) {
+    const diff = [
+      ...kl.filter((k) => !kd.includes(k)).map((k) => `alleen in light: ${k}`),
+      ...kd.filter((k) => !kl.includes(k)).map((k) => `alleen in dark: ${k}`),
+    ];
+    throw new Error(`[tokens] ${group}/light en ${group}/dark zijn niet symmetrisch:\n  ${diff.join('\n  ')}`);
+  }
+}
 
 // DTCG-leaves dragen $value, niet value. De oude guard testte op `'value' in value`
 // en was daardoor bij elk DTCG-token false: elke leaf werd als GROEP behandeld en
 // veld-per-veld gemerged in plaats van vervangen. Onschadelijk zolang geen twee sets
-// dezelfde key dragen (vandaag zo), fataal bij de eerste override.
-const isLeaf = (v) => v && typeof v === 'object' && ('$value' in v || 'value' in v);
+// dezelfde key dragen, fataal bij de eerste override — en met Theme/light naast
+// Theme/dark is die situatie er nu.
+function isLeaf(v) {
+  return v && typeof v === 'object' && ('$value' in v || 'value' in v);
+}
 
 function deepMerge(target, source) {
   for (const [key, value] of Object.entries(source)) {
@@ -116,22 +125,22 @@ function deepMerge(target, source) {
   }
 }
 
-const mergedTokens = {};
-for (const setName of enabledSets) {
-  const setTokens = tokenSets[setName];
-  if (setTokens) deepMerge(mergedTokens, setTokens);
+function mergeSets(sets) {
+  const merged = {};
+  for (const set of sets) deepMerge(merged, set.tokens);
+  return merged;
 }
 
 if (!existsSync(R('build'))) await mkdir(R('build'), { recursive: true });
-await writeFile(R('build/_merged.json'), JSON.stringify(mergedTokens, null, 2));
 
+// --- Pass 1: primitives -> variables.css ------------------------------------
+// Ongewijzigd gedrag: de primitives (en voorlopig de mode-blinde Semantic-set)
+// gaan met het umanex-prefix naar variables.css.
 const ALLOWED_TYPES = ['color', 'spacing', 'borderRadius', 'fontFamilies', 'fontSizes', 'lineHeights', 'fontWeights'];
 
-// Semantic/shadcn tokens (light/dark color + radius) are emitted by the shadcn
-// platform; keep them out of the primitive variables.css / tailwind.js outputs.
-const isShadcn = (token) => ['light', 'dark', 'radius'].includes(token.path[0]);
+await writeFile(R('build/_merged.json'), JSON.stringify(mergeSets(primitiveSets), null, 2));
 
-const sd = new StyleDictionary({
+const sdPrimitives = new StyleDictionary({
   source: [R('build/_merged.json')],
   // GEEN errors.brokenReferences-override: die degradeerde een onopgeloste alias tot
   // een logregel, waarna de build met exit 0 kapotte CSS opleverde en de auto-commit
@@ -145,26 +154,72 @@ const sd = new StyleDictionary({
       files: [{
         destination: 'variables.css',
         format: 'css/variables',
-        filter: (token) => ALLOWED_TYPES.includes(token.$type ?? token.type) && !isShadcn(token),
-        options: {
-          selector: ':root',
-          outputReferences: false,
-        },
-      }],
-    },
-    shadcn: {
-      transformGroup: 'shadcn',
-      buildPath: R('build') + '/',
-      files: [{
-        destination: 'shadcn.css',
-        format: 'css/shadcn',
-        filter: (token) => isShadcn(token),
+        filter: (token) => ALLOWED_TYPES.includes(token.$type ?? token.type),
+        options: { selector: ':root', outputReferences: false },
       }],
     },
   },
 });
+await sdPrimitives.buildAllPlatforms();
 
-await sd.buildAllPlatforms();
+// --- Pass 2..n: één pass per mode -> de rollaag ------------------------------
+// Per mode wordt alles geresolved (primitives als bron), maar alleen de rol-sets
+// worden geëmit. Zo blijven de primitives buiten de rollaag zonder padfilter.
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+
+async function resolveMode(mode) {
+  const sets = [...primitiveSets, ...roleSetsFor(mode)];
+  const file = R(`build/_merged.${mode}.json`);
+  await writeFile(file, JSON.stringify(mergeSets(sets), null, 2));
+
+  const sd = new StyleDictionary({
+    source: [file],
+    log: { verbosity: 'silent' },
+    platforms: { resolve: { transformGroup: 'tokens-studio' } },
+  });
+  const dict = await sd.getPlatformTokens('resolve');
+
+  // Naam = het VOLLEDIGE pad, nooit path.at(-1). Dat laatste liet een groep als
+  // `sidebar/border` — de natuurlijke notatie in de plugin — stil `--border`
+  // produceren en de echte --border overschrijven.
+  const byName = new Map();
+  for (const t of dict.allTokens) {
+    byName.set(t.path.join('-'), { value: t.$value ?? t.value, type: t.$type ?? t.type, path: t.path });
+  }
+
+  // Emit-volgorde volgt de JSON-volgorde van de rol-sets, niet de traversal van
+  // Style Dictionary — deterministisch en leesbaar gegroepeerd per concern.
+  const lines = [];
+  for (const set of emitSetsFor(mode)) {
+    for (const name of leafPaths(set.tokens)) {
+      const key = name.replace(/\./g, '-');
+      const token = byName.get(key);
+      if (!token) throw new Error(`[tokens] rol "${key}" uit set ${set.name} niet gevonden na resolve`);
+      lines.push(`    --${key}: ${formatValue(token)};`);
+    }
+  }
+  return lines;
+}
+
+function formatValue({ value, type }) {
+  const v = String(value);
+  if (type === 'color') {
+    // Alleen een 6-cijferige hex kan een HSL-triplet worden. Alpha-kleuren gaan
+    // rauw naar buiten; hexToHslTriplet zou erop gooien.
+    return HEX6.test(v) ? hexToHslTriplet(v) : v;
+  }
+  if (type === 'borderRadius' && !v.includes('rem')) return `${parseFloat(v) / 16}rem`;
+  return v;
+}
+
+const blocks = [];
+for (const mode of MODES) {
+  const lines = await resolveMode(mode);
+  blocks.push(`  ${MODE_SELECTOR[mode]} {`, ...lines, '  }');
+  if (mode !== MODES[MODES.length - 1]) blocks.push('');
+}
+await writeFile(R('build/shadcn.css'), ['@layer base {', ...blocks, '}', ''].join('\n'));
+
 console.log('\n✓ @umanex/tokens build complete → build/variables.css + build/shadcn.css');
 
 // Inject the generated shadcn block into the consumed @umanex/ui globals.css, between

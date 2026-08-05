@@ -7,7 +7,7 @@ import { useBle } from '@/lib/ble/ble-context';
 import { useWorkoutPhase } from '@/lib/workout-phase-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
-import { savePendingWorkout, clearPendingWorkout, UNIQUE_VIOLATION } from '@/lib/pendingWorkout';
+import { savePendingWorkout, clearPendingWorkout } from '@/lib/pendingWorkout';
 import type { GoalType, WorkoutGoal } from '@/lib/workout-goals';
 import { userInputToTarget, targetToUserInput } from '@/lib/workout-goals';
 import { useWorkoutMetrics } from '@/lib/hooks/useWorkoutMetrics';
@@ -151,13 +151,11 @@ export default function WorkoutScreen() {
     };
 
     const { error } = await supabase.from('workouts').insert(row);
-    if (error && error.code !== UNIQUE_VIOLATION) {
+    if (error) {
       await savePendingWorkout(row);
       reportError(error, { where: 'workout.save' });
     } else {
-      // Identiteits-gebonden: raakt de slot alleen als hij déze rit bevat, zodat
-      // een andere rit die nog op een nieuwe poging wacht blijft staan.
-      await clearPendingWorkout(row);
+      await clearPendingWorkout();
     }
   }, [user, metricsState, goal, goalReached, splits, refs, hasPR]);
 

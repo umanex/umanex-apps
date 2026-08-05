@@ -12,7 +12,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
-import { loadPendingWorkout, clearPendingWorkout } from '@/lib/pendingWorkout';
+import { drainPendingWorkout } from '@/lib/pendingWorkout';
 import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard, GoalSheet } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
@@ -83,12 +83,10 @@ export default function HomeScreen() {
 
     // Eerder mislukte (offline) workout-opslag alsnog wegschrijven vóór we lezen,
     // zodat een gedrainede rit meteen in de lijst verschijnt (security-audit P2-4).
-    const pending = await loadPendingWorkout();
-    if (pending && pending.user_id === user.id) {
-      const { error: drainError } = await supabase.from('workouts').insert(pending);
-      if (drainError) reportError(drainError, { where: 'home.drainPendingWorkout' });
-      else await clearPendingWorkout();
-    }
+    // De drain zit in pendingWorkout.ts omdat hij tegen zichzelf beschermd moet
+    // zijn: fetchData kan meerdere keren tegelijk lopen (focus + pull-to-refresh,
+    // of een auth-event dat een nieuw user-object oplevert).
+    await drainPendingWorkout(user.id);
 
     const [profileRes, workoutsRes] = await Promise.all([
       supabase

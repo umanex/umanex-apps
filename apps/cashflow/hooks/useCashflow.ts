@@ -90,8 +90,13 @@ export function useAnchorState(anchorOverride?: MonthKey): AnchorState {
   );
 }
 
+/**
+ * Wat de app zelf uitrekent als beginsaldo, zonder een handmatige correctie. Het scherm
+ * vergelijkt daartegen om te weten óf er gecorrigeerd is — vergeleek het met het
+ * werkelijke beginsaldo, dan zou een bestaande correctie altijd "gelijk" lezen.
+ */
 export function useComputedStartBalance(): number {
-  return useAnchorState().startBalance;
+  return useAnchorState().computedStartBalance;
 }
 
 export function useMonths(count = 3, anchorOverride?: MonthKey): MonthData[] {

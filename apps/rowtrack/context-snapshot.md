@@ -54,17 +54,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e247059 fix(rowtrack): history filter uses calendar periods and guards against races
 ae3a3e5 docs(rowtrack): name the supabase-rowtrack MCP server explicitly
 9ed52bf docs(rowtrack): pod install nodig bij de eerste native build na de layout-wissel
 a32f778 fix(monorepo): Metro werkt onder de geïsoleerde pnpm-layout
 b884027 docs(rowtrack): cluster 8 briefings + auth/forms figma-mapping
-7372b7e docs: trim derivable and stale content from CLAUDE.md files
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-  M  apps/rowtrack/lib/hooks/usePeriodGoal.ts
-  A  apps/rowtrack/lib/period.ts
+  M  apps/rowtrack/app/(tabs)/index.tsx
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/lib/pendingWorkout.ts
+  A  apps/rowtrack/supabase/migrations/add_workouts_unique_started_at.sql
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -167,7 +167,11 @@ export function MonthCard({
         <StartBalanceRow
           balance={startBalance}
           onChange={isFirst ? (balance) => {
-            if (Math.abs(balance - computedStartBalance) < 0.01) {
+            // Het veld bevestigt ook zonder toetsaanslag: één klik erop en een klik
+            // ernaast volstaat. Staat er niets anders dan wat er al stond, dan is er
+            // niets gebeurd — anders zou wegklikken een bestaande correctie wissen.
+            if (Math.abs(balance - startBalance) < 0.005) return;
+            if (Math.abs(balance - computedStartBalance) < 0.005) {
               removeBalanceOverride(monthKey);
             } else {
               upsertBalanceOverride(monthKey, balance);

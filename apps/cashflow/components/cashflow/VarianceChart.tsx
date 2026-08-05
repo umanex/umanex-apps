@@ -111,12 +111,12 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
               >
                 {/* Begroot: dunne baan als referentie. */}
                 <div
-                  className="absolute inset-y-0 my-auto h-4 rounded-[2px] bg-muted"
+                  className="absolute inset-y-0 my-auto h-4 rounded-sm bg-muted"
                   style={{ width: `${(row.budgeted / max) * 100}%` }}
                 />
                 {/* Werkelijk: dikke balk erbovenop, ingekleurd naar de richting. */}
                 <div
-                  className={`absolute inset-y-0 my-auto h-2 rounded-[2px] ${
+                  className={`absolute inset-y-0 my-auto h-2 rounded-sm ${
                     row.difference > 0 ? 'bg-finance-negative-surface' : 'bg-finance-positive'
                   }`}
                   style={{ width: `${(row.actual / max) * 100}%` }}

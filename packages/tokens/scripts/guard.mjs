@@ -56,13 +56,13 @@ const RULES = [
   },
 ];
 
-// Bekend en geaccepteerd. Formaat: "<pad>:<regel-id>". Laat het krimpen.
-const BASELINE = new Set([
-  // Geen radius-schaal-stap voor 2px/3px; er een verzinnen is een designbeslissing,
-  // geen migratie. Zie de open punten in het refactor-verslag.
-  'apps/cashflow/components/cashflow/VarianceChart.tsx:arbitrary-radius',
-  'apps/cashflow/components/cashflow/MonthCard.tsx:arbitrary-radius',
-]);
+// Bekend en geaccepteerd. Formaat: "<pad>:<regel-id>".
+//
+// LEEG, en dat is de bedoeling. Een baseline is een lijst uitzonderingen die in de
+// praktijk aangroeit tenzij iemand hem bewaakt; zolang hij leeg is, is elke
+// overtreding een echte. Zet er alleen iets in als het echt niet anders kan, met de
+// reden erbij, en haal het er weer uit zodra dat kan.
+const BASELINE = new Set([]);
 
 const files = [];
 for (const scope of SCOPES) {

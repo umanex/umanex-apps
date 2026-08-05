@@ -160,9 +160,29 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Volgende zet:** Ofwel een radius-schaalstap toevoegen zodat de baseline leeg kan, ofwel de
   twee sites accepteren en de baseline bevriezen met een teller-check. En `packages/config/eslint`
   ofwel migreren naar flat config plus bedraden, ofwel verwijderen.
+- **Deel 1 resolved (2026-08-05):** de baseline is leeg. De vier sites (`rounded-[2px]` in
+  `VarianceChart`, `rounded-[3px]` in `MonthCard`) staan op `rounded-sm` — 4px i.p.v. 2 en 3,
+  op een 8px-hoog balkje en een mini-chip niet waarneembaar. Een schaalstap toevoegen voor vier
+  plekken zou de schaal aan de code aanpassen i.p.v. omgekeerd.
+- **Deel 2 open:** `packages/config/eslint` is nog steeds dode flat-config. Erger: ik heb de vijf
+  token-lintregels naar drie `.eslintrc.json`-bestanden gekopieerd, wat exact de triplicatie is
+  die deze refactor bestreed. De fix is één `packages/config/eslint/tokens.js` in eslintrc-formaat
+  die de apps extenden — dan is de dode config meteen levend in plaats van verwijderd.
 - **Status:** open
 
 ## 2026-08-05 — Visuele regressie-harness ontbreekt · [idee]
+- **Deel 2 resolved (2026-08-05):** `packages/tokens/scripts/contrast.mjs` draait in CI. Toetst
+  elk vlak tegen zijn eigen tekstkleur, en elke vrije tekstrol tegen elk oppervlak waar hij op
+  kan landen — 96 combinaties. Geen browser nodig, dus geen nieuwe dependency. Het is bewust een
+  SUPERSET: hij weet niet welke combinaties de apps echt gebruiken, dus een treffer is altijd
+  echt, maar hij dekt geen component-specifieke fouten. Hij vond meteen twee dingen die de
+  handmatige DOM-sweep miste: `destructive` op een `muted`-rij in light (4.38:1, en
+  `text-destructive` staat 19× in cashflow) en `sidebar-primary-foreground` op `sidebar-primary`
+  in dark (2.74:1 — mijn eigen fout: `sidebar-primary` aliast de rol, de foreground stond nog op
+  wit). Beide gefixt. Negatief getest tegen de twee echte bugs van deze sessie.
+- **Nog open — deel 1:** het renderen zelf. Een DOM-sweep vraagt een echte browser-engine en dus
+  Playwright als dependency; `render-screens.tsx` naar het model van `render-charts.tsx` blijft
+  de weg om beide modes zonder login gate op scherm te krijgen.
 - **Bevinding:** De verificatie-as die deze hele sessie miste. `apps/cashflow/scripts/render-charts.tsx`
   doet dit al voor de grafieken: componenten met synthetische data naar een los HTML-bestand
   renderen, buiten de login gate om. Datzelfde patroon uitgebreid naar de kern-componenten,

@@ -16,7 +16,8 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "guard": "node scripts/guard.mjs"
+    "guard": "node scripts/guard.mjs",
+    "contrast": "node scripts/contrast.mjs"
   },
   "devDependencies": {
     "@tokens-studio/sd-transforms": "^1.2.0",

@@ -70,3 +70,9 @@ jobs:
       # packages/ui heeft geen eslint-config. Deze guard dekt alles op schijf.
       - name: Guard — laag-discipline (geen primitives of rauwe kleuren in app-code)
         run: pnpm --filter @umanex/tokens guard
+
+      # Toetst de rollaag zelf: elk vlak tegen zijn eigen tekstkleur, en elke vrije
+      # tekstrol tegen elk oppervlak waar hij op kan landen. Superset — hij weet niet
+      # welke combinaties de apps echt gebruiken, dus een treffer is altijd echt.
+      - name: Guard — contrast van de rollaag (WCAG AA)
+        run: pnpm --filter @umanex/tokens contrast

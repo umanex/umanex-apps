@@ -188,9 +188,21 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   `text-destructive` staat 19× in cashflow) en `sidebar-primary-foreground` op `sidebar-primary`
   in dark (2.74:1 — mijn eigen fout: `sidebar-primary` aliast de rol, de foreground stond nog op
   wit). Beide gefixt. Negatief getest tegen de twee echte bugs van deze sessie.
-- **Nog open — deel 1:** het renderen zelf. Een DOM-sweep vraagt een echte browser-engine en dus
-  Playwright als dependency; `render-screens.tsx` naar het model van `render-charts.tsx` blijft
-  de weg om beide modes zonder login gate op scherm te krijgen.
+- **Deel 1 resolved (2026-08-05):** `apps/cashflow/scripts/render-screens.tsx` +
+  `pnpm --filter cashflow render:screens`. Zet de 43 rollen als swatch-matrix, de
+  @umanex/ui-primitives in al hun varianten, de typeschaal, en de pure cashflow-componenten
+  (SectionBar, StartBalanceRow, BalanceFooter in vier standen, RunwayCard in vier standen) in
+  light én dark naast elkaar in één HTML-bestand — geen server, geen sessie, geen store. De
+  swatch-lijst wordt uit `theme.css` gelezen, dus hij groeit mee met de tokens in plaats van
+  een handgeschreven lijst te zijn die uit de pas loopt. `MonthCard` valt af: die hangt aan
+  dnd-kit en de store.
+- **Onderweg gevonden:** `render-charts.tsx` was al kapot (`React is not defined`) — de
+  app-tsconfig zet `jsx: "preserve"` omdat Next JSX zelf transformeert, en tsx/esbuild laat het
+  dan staan. Opgelost met `scripts/tsconfig.json` die `react-jsx` zet; beide scripts draaien er
+  nu op.
+- **Nog open:** de DOM-sweep automatiseren. Dat vraagt een echte browser-engine en dus
+  Playwright als dependency — bewust nog niet gedaan. De token-helft (`contrast.mjs`) dekt de
+  faalklasse die we in de praktijk tegenkwamen al wél, en draait in CI.
 - **Bevinding:** De verificatie-as die deze hele sessie miste. `apps/cashflow/scripts/render-charts.tsx`
   doet dit al voor de grafieken: componenten met synthetische data naar een los HTML-bestand
   renderen, buiten de login gate om. Datzelfde patroon uitgebreid naar de kern-componenten,

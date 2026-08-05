@@ -14,7 +14,9 @@
     "pm2:restart": "pm2 restart cashflow",
     "pm2:logs": "pm2 logs cashflow",
     "pm2:status": "pm2 status",
-    "pm2:rebuild": "next build && pm2 restart cashflow"
+    "pm2:rebuild": "next build && pm2 restart cashflow",
+    "render:screens": "tsx --tsconfig scripts/tsconfig.json scripts/render-screens.tsx",
+    "render:charts": "tsx --tsconfig scripts/tsconfig.json scripts/render-charts.tsx"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.0.0",

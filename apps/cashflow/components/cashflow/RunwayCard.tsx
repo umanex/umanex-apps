@@ -48,9 +48,9 @@ export function RunwayCard({ runway }: RunwayCardProps) {
 
       <p className="mt-3 text-3xl font-bold tabular-nums text-[var(--umanexNeutral800)]">
         {leeg ? (
-          <span className="text-[var(--umanexPrimary700)]">Buffer staat negatief</span>
+          <span className="text-[var(--umanexFinanceNegative)]">Buffer staat negatief</span>
         ) : months === null ? (
-          <span className="text-emerald-700">Geen tekort</span>
+          <span className="text-[var(--umanexFinancePositive)]">Geen tekort</span>
         ) : (
           <>
             {months.toLocaleString('nl-BE', { maximumFractionDigits: 1 })}{' '}
@@ -75,9 +75,9 @@ export function RunwayCard({ runway }: RunwayCardProps) {
         <div
           className={`h-full rounded-full ${
             leeg
-              ? 'bg-[var(--umanexPrimary700)]'
+              ? 'bg-[var(--umanexFinanceNegativeSurface)]'
               : months === null
-                ? 'bg-emerald-700'
+                ? 'bg-[var(--umanexFinancePositive)]'
                 : 'bg-[var(--umanexNeutral800)]'
           }`}
           style={{ width: `${(leeg ? 1 : filled) * 100}%` }}

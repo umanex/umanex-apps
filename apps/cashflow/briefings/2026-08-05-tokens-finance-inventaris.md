@@ -2,7 +2,7 @@
 
 - **Datum:** 2026-08-05
 - **Project:** cashflow
-- **Status:** wacht op Tokens Studio — beslissingen genomen, zie onderaan
+- **Status:** uitgevoerd — 2026-08-05, met de hand in `tokens.json`. Jeroen pullt in Tokens Studio zodat Figma bijtrekt.
 
 De open HANDOFF-post "Token-migratie is groter geworden in plaats van kleiner" vroeg om
 de nieuwe componenten mee te nemen zodra de finance-tokens aangemaakt worden. Dit bestand
@@ -101,3 +101,47 @@ vrij voor waar het voor is: reeksen zónder richting (HR-verloop, split-trend, e
 vergelijking per categorie — allemaal op de ideeënlijst). Extra reden om er vanaf te
 blijven: die vijf voeden ook ShadCN's `--chart-N`, dus elke ShadCN-grafiek die er later
 bijkomt consumeert ze op index.
+
+---
+
+## Uitgevoerd op 2026-08-05
+
+Twee nieuwe primitives, want groen en amber bestonden nog niet als ramp — alleen als
+reeks-slot `Chart.4` en `Chart.3`:
+
+    Primitives.Success   500 #10B981 · 600 #059669 · 700 #047857
+    Primitives.Warning   500 #F59E0B · 600 #D97706 · 700 #B45309
+
+En een nieuwe set `Semantic`, tussen `Primitives` en `Typography` in de `tokenSetOrder`
+en aangezet in het umanex-thema:
+
+    Semantic.Finance.positive          {Success.700}   → --umanexFinancePositive
+    Semantic.Finance.negative          {Primary.700}   → --umanexFinanceNegative
+    Semantic.Finance.negative-surface  {Primary.500}   → --umanexFinanceNegativeSurface
+    Semantic.Finance.deferred          {Warning.600}   → --umanexFinanceDeferred
+    Semantic.Finance.deferred-strong   {Warning.700}   → --umanexFinanceDeferredStrong
+    Semantic.Finance.total             {Neutral.800}   → --umanexFinanceTotal
+    Semantic.Overlay.scrim             #0A0A0A80       → --umanexOverlayScrim
+
+Twee afwijkingen op het voorstel hierboven, allebei tijdens de uitvoering ontstaan:
+
+- **`reserved` is er niet gekomen.** Die rol had één afnemer — de arcering in de
+  saldo-footer — en die is bij de buffer-herbouw verdwenen. Een token zonder gebruiker
+  is een token die niemand onderhoudt.
+- **`deferred-strong` is erbij gekomen.** De uitgestelde regels hebben een hover-tint
+  (`amber-700`); met alleen `deferred` was dat onderscheid verdwenen.
+
+`positive.surface` is niet apart geworden: de enige twee vlakken die hem zouden gebruiken
+(de toevoeg-knop en de runway-balk) dragen exact dezelfde waarde als de tekstrol. Splitsen
+kan alsnog zodra er een reden is, en dat is dan een echte beslissing in plaats van een
+vooruitlopende.
+
+Twee dingen die de migratie zichtbaar verandert:
+
+- Een paar bedragen die `emerald-600` waren staan nu op `emerald-700` — iets donkerder,
+  beter contrast, en overal dezelfde groen.
+- De waterfall-balk voor inkomsten was `#10B981` (Chart.4) en is nu `#047857`, gelijk aan
+  de rest van de app.
+
+De actie-link "Finaliseren →" en de checkbox-accent blijven bewust op `Primary.500`: dat
+zijn merkkleuren voor een handeling, geen bedragen.

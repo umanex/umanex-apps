@@ -40,14 +40,12 @@ export function BalanceFooter({
     <div className="shrink-0 border-t border-[var(--umanexPrimary50)] px-4 py-3 flex flex-col gap-1">
       <div className="flex items-center justify-between">
         <span className="text-sm text-[var(--umanexNeutral500)]">Deze maand</span>
-        {/* TODO: emerald vervangen door color.finance.positive zodra de finance-tokens
-            in Tokens Studio staan — zelfde openstaande migratie als de andere charts. */}
         <span
           className={`text-sm tabular-nums ${
             // Zelfde drempel als `formatSigned`: onder een halve cent schrijft die al
             // "€ 0,00" zonder teken. Kleurden we dan nog op het wiskundige teken, dan
             // stond een maand die exact op nul uitkomt in het rood door afrondingsruis.
-            delta > -0.005 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
+            delta > -0.005 ? 'text-[var(--umanexFinancePositive)]' : 'text-[var(--umanexFinanceNegative)]'
           }`}
         >
           {formatSigned(delta, 'in')}
@@ -60,7 +58,7 @@ export function BalanceFooter({
           <span
             className={`text-sm tabular-nums ${
               uncovered > 0
-                ? 'text-[var(--umanexPrimary700)]'
+                ? 'text-[var(--umanexFinanceNegative)]'
                 : 'text-[var(--umanexNeutral400)]'
             }`}
           >
@@ -75,7 +73,7 @@ export function BalanceFooter({
         <span className="text-sm font-medium text-[var(--umanexNeutral800)]">Buffer</span>
         <span
           className={`text-lg font-bold tabular-nums ${
-            total > -0.005 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
+            total > -0.005 ? 'text-[var(--umanexFinancePositive)]' : 'text-[var(--umanexFinanceNegative)]'
           }`}
         >
           {formatAmount(total)}

@@ -115,7 +115,7 @@ function DraggableIncomeItem({
       </span>
       <span
         className={`text-sm font-semibold tabular-nums whitespace-nowrap cursor-pointer shrink-0 ${
-          item.amount >= 0 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
+          item.amount >= 0 ? 'text-[var(--umanexFinancePositive)]' : 'text-[var(--umanexFinanceNegative)]'
         }`}
         onClick={() => { setLabel(item.label); setAmount(String(item.amount)); setEditing(true); }}
       >

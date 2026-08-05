@@ -2,7 +2,15 @@ import StyleDictionary from 'style-dictionary';
 import { register } from '@tokens-studio/sd-transforms';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { hexToHslTriplet } from './lib/hslTriplet.mjs';
+
+// Alle paden absoluut t.o.v. dit bestand — de build hing op process.cwd() en brak
+// zodra hij vanaf de repo-root draaide (turbo doet dat niet, een handmatige
+// `node packages/tokens/build.mjs` wel).
+const HERE = dirname(fileURLToPath(import.meta.url));
+const R = (...p) => join(HERE, ...p);
 
 // Register Tokens Studio transforms
 register(StyleDictionary, { excludeParentKeys: true });
@@ -66,21 +74,40 @@ StyleDictionary.registerFormat({
 });
 
 // Read tokens.json
-const raw = JSON.parse(await readFile('./tokens.json', 'utf-8'));
+const raw = JSON.parse(await readFile(R('tokens.json'), 'utf-8'));
 const { $themes, $metadata, ...tokenSets } = raw;
 
 // Find umanex theme
 const umanexTheme = $themes.find(t => t.name === 'umanex');
 if (!umanexTheme) throw new Error('Theme "umanex" not found in $themes');
 
-// Merge enabled token sets in order
-const enabledSets = Object.entries(umanexTheme.selectedTokenSets)
-  .filter(([, status]) => status === 'enabled')
-  .map(([setName]) => setName);
+// Resolutievolgorde komt uit $metadata.tokenSetOrder — dat is wat Tokens Studio als
+// canoniek hanteert. De sleutelvolgorde van selectedTokenSets is een toevallige
+// JSON-volgorde en wijkt er vandaag van af; bij de eerste override tussen twee sets
+// zou dat een stille, niet-reproduceerbare uitkomst geven.
+const ORDER = $metadata.tokenSetOrder;
+for (const name of Object.keys(tokenSets)) {
+  if (!ORDER.includes(name)) {
+    throw new Error(`[tokens] set "${name}" ontbreekt in $metadata.tokenSetOrder`);
+  }
+}
+
+// Tokens Studio kent drie statussen, niet twee. `source` betekent: wel meenemen om
+// aliassen te resolven, niet exporteren. Wie een primitives-set in de plugin op
+// `source` zet — de idiomatische keuze — kreeg met de oude `=== 'enabled'` filter
+// een set die volledig wegviel, en dus tientallen onopgeloste referenties.
+const RESOLVE = new Set(['enabled', 'source']);
+const enabledSets = ORDER.filter(name => RESOLVE.has(umanexTheme.selectedTokenSets[name]));
+
+// DTCG-leaves dragen $value, niet value. De oude guard testte op `'value' in value`
+// en was daardoor bij elk DTCG-token false: elke leaf werd als GROEP behandeld en
+// veld-per-veld gemerged in plaats van vervangen. Onschadelijk zolang geen twee sets
+// dezelfde key dragen (vandaag zo), fataal bij de eerste override.
+const isLeaf = (v) => v && typeof v === 'object' && ('$value' in v || 'value' in v);
 
 function deepMerge(target, source) {
   for (const [key, value] of Object.entries(source)) {
-    if (value && typeof value === 'object' && !Array.isArray(value) && !('value' in value)) {
+    if (value && typeof value === 'object' && !Array.isArray(value) && !isLeaf(value)) {
       target[key] = target[key] || {};
       deepMerge(target[key], value);
     } else {
@@ -95,8 +122,8 @@ for (const setName of enabledSets) {
   if (setTokens) deepMerge(mergedTokens, setTokens);
 }
 
-if (!existsSync('./build')) await mkdir('./build', { recursive: true });
-await writeFile('./build/_merged.json', JSON.stringify(mergedTokens, null, 2));
+if (!existsSync(R('build'))) await mkdir(R('build'), { recursive: true });
+await writeFile(R('build/_merged.json'), JSON.stringify(mergedTokens, null, 2));
 
 const ALLOWED_TYPES = ['color', 'spacing', 'borderRadius', 'fontFamilies', 'fontSizes', 'lineHeights', 'fontWeights'];
 
@@ -105,16 +132,16 @@ const ALLOWED_TYPES = ['color', 'spacing', 'borderRadius', 'fontFamilies', 'font
 const isShadcn = (token) => ['light', 'dark', 'radius'].includes(token.path[0]);
 
 const sd = new StyleDictionary({
-  source: ['./build/_merged.json'],
-  log: {
-    verbosity: 'default',
-    errors: { brokenReferences: 'console' },
-  },
+  source: [R('build/_merged.json')],
+  // GEEN errors.brokenReferences-override: die degradeerde een onopgeloste alias tot
+  // een logregel, waarna de build met exit 0 kapotte CSS opleverde en de auto-commit
+  // in tokens-sync.yml hem naar main publiceerde. SD v4 gooit standaard — terecht.
+  log: { verbosity: 'default' },
   platforms: {
     css: {
       transformGroup: 'tokens-studio',
       prefix: 'umanex',
-      buildPath: 'build/',
+      buildPath: R('build') + '/',
       files: [{
         destination: 'variables.css',
         format: 'css/variables',
@@ -127,7 +154,7 @@ const sd = new StyleDictionary({
     },
     shadcn: {
       transformGroup: 'shadcn',
-      buildPath: 'build/',
+      buildPath: R('build') + '/',
       files: [{
         destination: 'shadcn.css',
         format: 'css/shadcn',
@@ -143,8 +170,8 @@ console.log('\n✓ @umanex/tokens build complete → build/variables.css + build
 // Inject the generated shadcn block into the consumed @umanex/ui globals.css, between
 // markers. The hand-written @tailwind directives and the @layer base body (border-border
 // / body) live outside the markers and are preserved.
-const shadcnBlock = (await readFile('./build/shadcn.css', 'utf-8')).trimEnd();
-const globalsPath = '../ui/globals.css';
+const shadcnBlock = (await readFile(R('build/shadcn.css'), 'utf-8')).trimEnd();
+const globalsPath = R('../ui/globals.css');
 const globalsSrc = await readFile(globalsPath, 'utf-8');
 const markerRe = /\/\* @umanex\/tokens:start[\s\S]*?@umanex\/tokens:end \*\//;
 if (!markerRe.test(globalsSrc)) {

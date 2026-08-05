@@ -54,8 +54,9 @@ Voor de beschikbare exports (kleuren, `fontFamily`, `typeStyles`, `space`, `radi
 
 ### Supabase
 - Tabellen: `profiles`, `workouts`, `period_goals`
-- Lees het schema live via de Supabase MCP (`list_tables`) — kolomnamen niet hier
-  dupliceren, die drift (een gekopieerd schema stond hier maanden verkeerd)
+- Lees het schema live via de `supabase-rowtrack` MCP-server (`list_tables`) — kolomnamen niet
+  hier dupliceren, die drift (een gekopieerd schema stond hier maanden verkeerd)
+- Let op de servernaam: `supabase-cashflow` wijst naar een ánder project
 
 ---
 

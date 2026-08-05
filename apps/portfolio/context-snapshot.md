@@ -38,24 +38,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | PhotoPlaceholder | `apps/portfolio/components/ui/PhotoPlaceholder.tsx` | ui | — | — | — |
 | Reveal | `apps/portfolio/components/ui/Reveal.tsx` | ui | — | — | — |
 | RichText | `apps/portfolio/components/ui/RichText.tsx` | ui | — | — | — |
-| ThemeToggle | `apps/portfolio/components/ui/ThemeToggle.tsx` | ui | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+c21ec8a chore(tokens): retract the primitives from CSS and make the guards hard
 3151e3b feat(tokens): give Typography/Scale a real ramp and deliver it to Tailwind
 84f557b refactor(tokens): make the finance layer mode-aware and cut it loose from the brand red
 b282e96 refactor(config): generate the Tailwind color map from the tokens
 b546f4f feat(tokens): add success and warning roles, move primary to Primary.600
-760d0f0 refactor(tokens): ship the role layer as its own export and put every app on it
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/portfolio/.eslintrc.json
-  M  apps/portfolio/app/layout.tsx
-  M  packages/tokens/build.mjs
-  D  packages/tokens/build/variables.css
-  M  packages/tokens/package.json
-  A  packages/tokens/scripts/guard.mjs
+  M  apps/portfolio/components/layout/Header.tsx
+  M  packages/tokens/README.md
+  M  packages/tokens/build/theme.css
+  M  packages/tokens/tokens.json
+  R  apps/portfolio/components/ui/ThemeToggle.tsx -> packages/ui/components/ui/ThemeToggle.tsx
+  M  packages/ui/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

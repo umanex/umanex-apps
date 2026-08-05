@@ -48,20 +48,21 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+c21ec8a chore(tokens): retract the primitives from CSS and make the guards hard
 3151e3b feat(tokens): give Typography/Scale a real ramp and deliver it to Tailwind
 c6ed4ca refactor(cashflow): move the remaining primitive bypasses onto the role layer
 84f557b refactor(tokens): make the finance layer mode-aware and cut it loose from the brand red
 b282e96 refactor(config): generate the Tailwind color map from the tokens
-b546f4f feat(tokens): add success and warning roles, move primary to Primary.600
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/.eslintrc.json
   M  apps/cashflow/app/layout.tsx
-  M  packages/tokens/build.mjs
-  D  packages/tokens/build/variables.css
-  M  packages/tokens/package.json
-  A  packages/tokens/scripts/guard.mjs
+  M  apps/cashflow/app/page.tsx
+  M  packages/tokens/README.md
+  M  packages/tokens/build/theme.css
+  M  packages/tokens/tokens.json
+  A  packages/ui/components/ui/ThemeToggle.tsx
+  M  packages/ui/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { ThemeToggle } from '@umanex/ui/components/ui/theme-toggle';
 import { Container } from '@/components/layout/Container';
 import { copy } from '@/lib/copy';
 

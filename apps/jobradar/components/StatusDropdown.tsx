@@ -5,9 +5,12 @@ import type { ItemStatus } from '@/lib/db/schema'
 
 const STATUS_OPTIONS: { value: ItemStatus; label: string; className: string }[] = [
   { value: 'new', label: 'Nieuw', className: 'text-muted-foreground' },
-  { value: 'saved', label: 'Opgeslagen', className: 'text-blue-600 dark:text-blue-400' },
+  // text-primary i.p.v. text-blue-*: jobradars primary ís blauw, dus de rol drukt
+  // dezelfde bedoeling uit en volgt de merkkleur mee. Beide rollen zijn al
+  // mode-aware, dus de dark:-varianten vervallen.
+  { value: 'saved', label: 'Opgeslagen', className: 'text-primary' },
   { value: 'dismissed', label: 'Afgewezen', className: 'text-muted-foreground opacity-60' },
-  { value: 'contacted', label: 'Gecontacteerd', className: 'text-green-600 dark:text-green-500' },
+  { value: 'contacted', label: 'Gecontacteerd', className: 'text-success' },
 ]
 
 type Props = {

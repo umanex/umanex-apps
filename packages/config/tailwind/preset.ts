@@ -54,6 +54,16 @@ const preset: Config = {
           DEFAULT: hsl('destructive'),
           foreground: hsl('destructive-foreground'),
         },
+        // shadcn kent alleen destructive; success en warning zijn een umanex-
+        // uitbreiding volgens dezelfde x / x-foreground conventie.
+        success: {
+          DEFAULT: hsl('success'),
+          foreground: hsl('success-foreground'),
+        },
+        warning: {
+          DEFAULT: hsl('warning'),
+          foreground: hsl('warning-foreground'),
+        },
         card: {
           DEFAULT: hsl('card'),
           foreground: hsl('card-foreground'),

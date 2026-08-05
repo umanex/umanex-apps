@@ -11,21 +11,20 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
-    "clean": "turbo clean && rm -rf node_modules",
-    "postinstall": "mkdir -p apps/cashflow/node_modules apps/jobradar/node_modules apps/portfolio/node_modules apps/vyvey/node_modules && rm -rf apps/cashflow/node_modules/react apps/jobradar/node_modules/react apps/portfolio/node_modules/react apps/vyvey/node_modules/react node_modules/styled-jsx/node_modules/react node_modules/react-dom/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/cashflow/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/jobradar/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/portfolio/node_modules/react && ln -s ../../../node_modules/next/node_modules/react apps/vyvey/node_modules/react && ln -s ../../next/node_modules/react node_modules/styled-jsx/node_modules/react && ln -s ../../next/node_modules/react node_modules/react-dom/node_modules/react"
+    "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {
     "turbo": "^2.0.0"
   },
   "pnpm": {
-  "overrides": {
-    "styled-jsx>react": "18.3.1",
-    "@types/react": "19.1.17",
-    "@types/react-dom": "19.2.3"
+    "overrides": {
+      "styled-jsx>react": "18.3.1",
+      "@types/react": "19.1.17",
+      "@types/react-dom": "19.2.3"
+    },
+    "patchedDependencies": {
+      "expo-router@6.0.23": "patches/expo-router@6.0.23.patch"
+    }
   },
-  "patchedDependencies": {
-    "expo-router@6.0.23": "patches/expo-router@6.0.23.patch"
-  }
-},
   "packageManager": "pnpm@9.0.0"
 }

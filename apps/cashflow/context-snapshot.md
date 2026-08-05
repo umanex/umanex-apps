@@ -48,15 +48,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+14ea027 docs(cashflow): mark the storage handoff item resolved
 e6dd05c chore(cashflow): remove unused component files
 e36fd41 feat(cashflow): store data in Supabase instead of localStorage
 1fd71f8 docs(cashflow): 21 openstaande reviewbevindingen vastgelegd
 687d500 fix(cashflow): afgesloten maand trok de provisiepotten dubbel af
-fea17f8 fix(cashflow): bufferstorting telt mee als kost, analyse rekent vanaf vandaag
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/HANDOFF.md
+   M apps/cashflow/app/page.tsx
+   M apps/cashflow/components/cashflow/BalanceFooter.tsx
+   M apps/cashflow/components/cashflow/MonthCard.tsx
+   M apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
+   M apps/cashflow/components/cashflow/ReservationSection.tsx
+   M apps/cashflow/components/cashflow/ReservationSidepanel.tsx
+   M apps/cashflow/components/cashflow/WaterfallChart.tsx
+   M apps/cashflow/lib/cashflow/analysis.ts
+   M apps/cashflow/lib/cashflow/calculator.ts
+   M apps/cashflow/lib/cashflow/normalize.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

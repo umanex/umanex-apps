@@ -5,7 +5,10 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   // Bewust hard falen tijdens de build in plaats van een lege client die pas in de
-  // browser stukloopt: zonder deze twee is er geen enkele bron van data.
+  // browser stukloopt: zonder deze twee is er geen enkele bron van data. Next inlineert
+  // NEXT_PUBLIC-waardes tijdens de build, dus dit vangt een misconfigureerde deploy vóór
+  // hij live gaat. CI zet placeholders (zie .github/workflows/ci.yml) omdat die build
+  // enkel compileert en niets deployt.
   throw new Error(
     'Ontbrekende Supabase env vars (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY). ' +
       'Zet ze in apps/cashflow/.env.local.',

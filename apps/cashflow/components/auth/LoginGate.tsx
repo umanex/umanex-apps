@@ -14,7 +14,7 @@ export function LoginGate({ children }: { children: React.ReactNode }) {
   if (isChecking) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center" aria-busy="true">
-        <div className="h-9 w-40 rounded bg-[var(--umanexNeutral200)] animate-pulse" />
+        <div className="h-9 w-40 rounded bg-muted animate-pulse" />
       </main>
     );
   }

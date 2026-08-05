@@ -55,14 +55,14 @@ function DraggableExpenseItem({
   return (
     <div
       ref={setNodeRef}
-      className={`flex items-center gap-2 h-7 pl-1 rounded-[4px] w-full ${
-        isDragging ? 'opacity-30' : (item.paid ? 'opacity-70 ' : '') + (zebra ? 'bg-[var(--umanexNeutral50)]' : '')
+      className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full ${
+        isDragging ? 'opacity-30' : (item.paid ? 'opacity-70 ' : '') + (zebra ? 'bg-muted' : '')
       }`}
     >
       <button
         {...listeners}
         {...attributes}
-        className="text-[var(--umanexNeutral500)] hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0"
+        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0"
         aria-label="Versleep"
       >
         ⠿
@@ -84,7 +84,7 @@ function DraggableExpenseItem({
         onChange={(e) => setLocalAmount(limitDecimals(e.target.value))}
         onBlur={handleAmountBlur}
         onPointerDown={(e) => e.stopPropagation()}
-        className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring shrink-0 ${
+        className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring shrink-0 ${
           item.paid ? 'text-finance-positive' : 'text-finance-negative'
         }`}
         aria-label="Bedrag"
@@ -160,7 +160,7 @@ export function ExpenseSection({
 
       <div className="flex flex-col gap-1 w-full">
         {items.length === 0 && overflowItems.length === 0 && !adding && (
-          <p className="pl-2 text-sm text-[var(--umanexNeutral500)] italic">Geen eenmalige uitgaven</p>
+          <p className="pl-2 text-sm text-muted-foreground italic">Geen eenmalige uitgaven</p>
         )}
         {visibleItems.map((item, index) => (
           <DraggableExpenseItem
@@ -174,8 +174,8 @@ export function ExpenseSection({
 
         {/* Afgeleide overflow items van spaardoel-betalingen */}
         {overflowItems.map((item, idx) => (
-          <div key={`overflow-${idx}`} className={`flex items-center gap-2 h-7 pl-1 rounded-[4px] w-full opacity-70 ${
-            (visibleItems.length + idx) % 2 !== 0 ? 'bg-[var(--umanexNeutral50)]' : ''
+          <div key={`overflow-${idx}`} className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full opacity-70 ${
+            (visibleItems.length + idx) % 2 !== 0 ? 'bg-muted' : ''
           }`}>
             <span className="w-[18px] shrink-0" />
             <span className="w-3.5 shrink-0" />
@@ -198,7 +198,7 @@ export function ExpenseSection({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Omschrijving"
-              className="flex-1 h-7 px-2 text-[13px] rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+              className="flex-1 h-7 px-2 text-[13px] rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
             />
             <div className="flex flex-col gap-2 items-end shrink-0">
               <input
@@ -207,10 +207,10 @@ export function ExpenseSection({
                 value={newAmount}
                 onChange={(e) => setNewAmount(limitDecimals(e.target.value))}
                 placeholder="€"
-                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <div className="flex gap-2 items-center">
-                <button onClick={handleAdd} className="text-xs font-semibold text-[var(--umanexNeutral800)]">OK</button>
+                <button onClick={handleAdd} className="text-xs font-semibold text-foreground">OK</button>
                 <button
                   onClick={() => { setAdding(false); setLabel(''); setNewAmount(''); }}
                   className="text-xs text-muted-foreground hover:text-foreground"

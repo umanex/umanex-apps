@@ -66,13 +66,13 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
   const x = (i: number) => PAD.left + i * bandW + (bandW - barW) / 2;
 
   return (
-    <section className="rounded-xl border border-[var(--umanexPrimary50)] bg-card p-5">
+    <section className="rounded-xl border border-accent bg-card p-5">
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-[var(--umanexNeutral800)]">
+          <h2 className="text-base font-semibold text-foreground">
             Van beginsaldo naar eindsaldo
           </h2>
-          <p className="text-sm text-[var(--umanexNeutral500)]">
+          <p className="text-sm text-muted-foreground">
             {getMonthLabel(month.monthKey)} — elke stap van de kernformule
           </p>
         </div>
@@ -104,14 +104,14 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
               x2={W - PAD.right}
               y1={y(tick)}
               y2={y(tick)}
-              stroke={tick === 0 ? 'var(--umanexNeutral400)' : 'var(--umanexNeutral200)'}
+              stroke={tick === 0 ? 'hsl(var(--muted-foreground))' : 'hsl(var(--border))'}
             />
             <text
               x={PAD.left - 8}
               y={y(tick) + 4}
               textAnchor="end"
               fontSize={11}
-              fill="var(--umanexNeutral500)"
+              fill="hsl(var(--muted-foreground))"
             >
               {formatCurrency(tick)}
             </text>
@@ -148,7 +148,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
                   x2={x(i + 1) + barW}
                   y1={y(step.value)}
                   y2={y(step.value)}
-                  stroke="var(--umanexNeutral300)"
+                  stroke="hsl(var(--input))"
                   strokeDasharray="2 2"
                 />
               )}
@@ -157,7 +157,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
                 y={H - 24}
                 textAnchor="middle"
                 fontSize={11}
-                fill="var(--umanexNeutral600)"
+                fill="hsl(var(--muted-foreground))"
               >
                 {step.label}
               </text>
@@ -166,7 +166,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
                 y={H - 10}
                 textAnchor="middle"
                 fontSize={10}
-                fill="var(--umanexNeutral500)"
+                fill="hsl(var(--muted-foreground))"
               >
                 {isTotal ? formatCurrency(step.value) : formatSigned(step.delta ?? 0, 'in')}
               </text>
@@ -179,7 +179,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
         <table id="waterfall-tabel" className="mt-4 w-full text-sm">
           <caption className="sr-only">Opbouw van het eindsaldo</caption>
           <thead>
-            <tr className="text-left text-[var(--umanexNeutral500)]">
+            <tr className="text-left text-muted-foreground">
               <th scope="col" className="font-medium py-1">Stap</th>
               <th scope="col" className="font-medium py-1">Mutatie</th>
               <th scope="col" className="font-medium py-1">Saldo</th>
@@ -187,7 +187,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
           </thead>
           <tbody>
             {steps.map((step) => (
-              <tr key={step.label} className="border-t border-[var(--umanexNeutral200)]">
+              <tr key={step.label} className="border-t border-border">
                 <td className="py-1">{step.label}</td>
                 <td className="py-1 tabular-nums">
                   {step.delta === null ? '—' : formatSigned(step.delta, 'in')}

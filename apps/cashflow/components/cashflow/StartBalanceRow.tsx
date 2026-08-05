@@ -20,7 +20,7 @@ export function StartBalanceRow({ balance, onChange }: StartBalanceRowProps) {
 
   return (
     <div className="flex items-center justify-between gap-2 h-9 px-2 w-full">
-      <span className="text-sm font-semibold text-[var(--umanexNeutral800)]">{label}</span>
+      <span className="text-sm font-semibold text-foreground">{label}</span>
 
       {editing && onChange ? (
         <input
@@ -39,18 +39,18 @@ export function StartBalanceRow({ balance, onChange }: StartBalanceRowProps) {
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
             if (e.key === 'Escape') setEditing(false);
           }}
-          className="w-[110px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+          className="w-[110px] h-7 px-2 text-[13px] text-right tabular-nums rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
         />
       ) : onChange ? (
         <button
           onClick={() => { setInput(String(roundTo2(balance))); setEditing(true); }}
           title="Klik om aan te passen"
-          className="text-sm font-semibold tabular-nums whitespace-nowrap text-[var(--umanexNeutral800)] hover:underline"
+          className="text-sm font-semibold tabular-nums whitespace-nowrap text-foreground hover:underline"
         >
           {formatAmount(balance)}
         </button>
       ) : (
-        <span className="text-sm font-semibold tabular-nums whitespace-nowrap text-[var(--umanexNeutral800)]">
+        <span className="text-sm font-semibold tabular-nums whitespace-nowrap text-foreground">
           {formatAmount(balance)}
         </span>
       )}

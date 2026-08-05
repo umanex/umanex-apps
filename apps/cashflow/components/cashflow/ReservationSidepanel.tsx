@@ -120,7 +120,7 @@ function ReservationRow({
             type="checkbox"
             checked={reservation.coversDeficit ?? false}
             onChange={(e) => onSetBuffer(e.target.checked)}
-            className="mt-0.5 size-4 shrink-0 accent-[var(--umanexPrimary500)]"
+            className="mt-0.5 size-4 shrink-0 accent-primary"
           />
           <span className="flex flex-col gap-0.5">
             <span className="text-sm leading-tight">Buffer</span>

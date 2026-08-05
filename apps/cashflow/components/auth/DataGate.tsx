@@ -73,8 +73,8 @@ export function DataGate({ userId, children }: { userId: string; children: React
   if (phase === 'loading') {
     return (
       <main className="min-h-screen bg-background px-4 py-8 space-y-8" aria-busy="true">
-        <div className="h-8 w-56 rounded bg-[var(--umanexNeutral200)] animate-pulse" />
-        <div className="h-[calc(100vh-11rem)] min-h-[24rem] rounded-xl border border-[var(--umanexPrimary50)] bg-card animate-pulse" />
+        <div className="h-8 w-56 rounded bg-muted animate-pulse" />
+        <div className="h-[calc(100vh-11rem)] min-h-[24rem] rounded-xl border border-accent bg-card animate-pulse" />
       </main>
     );
   }

@@ -80,14 +80,14 @@ function DraggableRecurringItem({
   return (
     <div
       ref={setNodeRef}
-      className={`flex items-center gap-2 h-7 pl-2 rounded-[4px] w-full ${
-        isDragging ? 'opacity-30' : (isPaid ? 'opacity-70 ' : '') + (zebra ? 'bg-[var(--umanexNeutral50)]' : '')
+      className={`flex items-center gap-2 h-7 pl-2 rounded-sm w-full ${
+        isDragging ? 'opacity-30' : (isPaid ? 'opacity-70 ' : '') + (zebra ? 'bg-muted' : '')
       }`}
     >
       <button
         {...listeners}
         {...attributes}
-        className="text-[var(--umanexNeutral500)] hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0"
+        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0"
         aria-label="Versleep"
         tabIndex={0}
       >
@@ -117,7 +117,7 @@ function DraggableRecurringItem({
           value={localAmount}
           onChange={(e) => setLocalAmount(e.target.value)}
           onBlur={handleAmountBlur}
-          className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring ${
+          className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring ${
             isPaid ? 'text-finance-positive' : ''
           }`}
           aria-label="Werkelijk bedrag"
@@ -174,7 +174,7 @@ function DeferredRecurringItem({
   const zebra = index % 2 !== 0;
 
   return (
-    <div className={`flex items-center gap-2 h-7 pl-2 rounded-[4px] w-full ${zebra ? 'bg-[var(--umanexNeutral50)]' : ''}`}>
+    <div className={`flex items-center gap-2 h-7 pl-2 rounded-sm w-full ${zebra ? 'bg-muted' : ''}`}>
       <input
         type="checkbox"
         checked={localChecked || item.paid}
@@ -200,7 +200,7 @@ function DeferredRecurringItem({
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={handleAmountBlur}
-            className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+            className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
             aria-label="Werkelijk bedrag"
           />
           <button
@@ -291,7 +291,7 @@ export function RecurringSection({
 
       <div className="flex flex-col gap-1 w-full">
         {items.length === 0 && deferredItems.length === 0 && (
-          <p className="pl-2 text-sm text-[var(--umanexNeutral500)] italic">Geen vaste uitgaven</p>
+          <p className="pl-2 text-sm text-muted-foreground italic">Geen vaste uitgaven</p>
         )}
         {visibleItems.map((item, index) => (
           <DraggableRecurringItem

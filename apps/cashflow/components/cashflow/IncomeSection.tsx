@@ -72,7 +72,7 @@ function DraggableIncomeItem({
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Omschrijving"
-          className="flex-1 h-7 px-2 text-[13px] rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+          className="flex-1 h-7 px-2 text-[13px] rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
         />
         <div className="flex flex-col gap-2 items-end shrink-0">
           <input
@@ -81,10 +81,10 @@ function DraggableIncomeItem({
             value={amount}
             onChange={(e) => setAmount(limitDecimals(e.target.value))}
             placeholder="€"
-            className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+            className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <div className="flex gap-2 items-center">
-            <button onClick={handleSave} className="text-xs font-semibold text-[var(--umanexNeutral800)]">OK</button>
+            <button onClick={handleSave} className="text-xs font-semibold text-foreground">OK</button>
             <button onClick={handleCancel} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
           </div>
         </div>
@@ -95,14 +95,14 @@ function DraggableIncomeItem({
   return (
     <div
       ref={setNodeRef}
-      className={`flex items-center gap-2 h-7 px-2 rounded-[4px] w-full ${
-        isDragging ? 'opacity-30' : zebra ? 'bg-[var(--umanexNeutral50)]' : ''
+      className={`flex items-center gap-2 h-7 px-2 rounded-sm w-full ${
+        isDragging ? 'opacity-30' : zebra ? 'bg-muted' : ''
       }`}
     >
       <button
         {...listeners}
         {...attributes}
-        className="text-[var(--umanexNeutral500)] hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0"
+        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0"
         aria-label="Versleep"
       >
         ⠿
@@ -199,7 +199,7 @@ export function IncomeSection({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Omschrijving"
-              className="flex-1 h-7 px-2 text-[13px] rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+              className="flex-1 h-7 px-2 text-[13px] rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
             />
             <div className="flex flex-col gap-2 items-end shrink-0">
               <input
@@ -208,10 +208,10 @@ export function IncomeSection({
                 value={newAmount}
                 onChange={(e) => setNewAmount(limitDecimals(e.target.value))}
                 placeholder="€"
-                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <div className="flex gap-2 items-center">
-                <button onClick={handleAdd} className="text-xs font-semibold text-[var(--umanexNeutral800)]">OK</button>
+                <button onClick={handleAdd} className="text-xs font-semibold text-foreground">OK</button>
                 <button
                   onClick={() => { setAdding(false); setLabel(''); setNewAmount(''); }}
                   className="text-xs text-muted-foreground hover:text-foreground"
@@ -224,7 +224,7 @@ export function IncomeSection({
         )}
 
         {items.length === 0 && !adding && (
-          <p className="pl-2 text-sm text-[var(--umanexNeutral500)] italic">Geen inkomsten</p>
+          <p className="pl-2 text-sm text-muted-foreground italic">Geen inkomsten</p>
         )}
       </div>
     </div>

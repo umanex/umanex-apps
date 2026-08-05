@@ -17,27 +17,27 @@ export function MonthVariance({ data }: MonthVarianceProps) {
   const rows = monthVariance(data);
 
   return (
-    <div className="rounded-[4px] border border-[var(--umanexNeutral200)] bg-[var(--umanexBaseWhite)] px-3 py-2">
-      <p className="text-[13px] font-semibold text-[var(--umanexNeutral800)] mb-1.5">
+    <div className="rounded-sm border border-border bg-background px-3 py-2">
+      <p className="text-[13px] font-semibold text-foreground mb-1.5">
         Begroot tegenover werkelijk
       </p>
 
       {rows.length === 0 ? (
-        <p className="text-[13px] text-[var(--umanexNeutral500)]">
+        <p className="text-[13px] text-muted-foreground">
           Deze maand liep gelijk met de begroting.
         </p>
       ) : (
         <ul className="flex flex-col gap-1">
           {rows.map((row) => (
             <li key={row.label} className="flex items-baseline justify-between gap-2">
-              <span className="text-[13px] text-[var(--umanexNeutral600)] truncate min-w-0">
+              <span className="text-[13px] text-muted-foreground truncate min-w-0">
                 {row.label}
               </span>
               <span className="flex items-baseline gap-2 shrink-0 tabular-nums">
-                <span className="text-[11px] text-[var(--umanexNeutral500)]">
+                <span className="text-[11px] text-muted-foreground">
                   {formatAmount(row.budgeted)} →
                 </span>
-                <span className="text-[13px] text-[var(--umanexNeutral800)]">
+                <span className="text-[13px] text-foreground">
                   {formatAmount(row.actual)}
                 </span>
                 <span

@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gepland
+- **Status:** gevalideerd
 
 ---
 
@@ -71,28 +71,31 @@ _(leeg — alle kritische items beantwoord)_
 
 ## Acceptatie
 
-- [ ] Maand met overschot → buffer-storting = het volledige vrije saldo, eindsaldo €0
-- [ ] Maand met tekort en toereikende pot → opname, eindsaldo €0, potstand daalt exact
-- [ ] Pot ontoereikend → opname begrensd tot de potstand, potstand landt op €0, het
+- [x] Maand met overschot → buffer-storting = het volledige vrije saldo, eindsaldo €0
+- [x] Maand met tekort en toereikende pot → opname, eindsaldo €0, potstand daalt exact
+- [x] Pot ontoereikend → opname begrensd tot de potstand, potstand landt op €0, het
       restant rolt door als negatief vrij saldo én staat als "Niet gedekt" in de footer
-- [ ] Footer toont uitsluitend buffer-impact, buffer-totaal en (voorwaardelijk) het
+- [x] Footer toont uitsluitend buffer-impact, buffer-totaal en (voorwaardelijk) het
       niet-gedekte tekort — geen bankstand, geen gereserveerd, geen beschikbaar
-- [ ] Zonder gemarkeerde bufferpot: rekenkern ongewijzigd, footer toont de hint, en de
-      drie kolommen blijven even hoog
-- [ ] De bufferrij staat niet meer in de sectie "Provisies"; het subtotaal van die sectie
+- [x] Zonder gemarkeerde bufferpot: rekenkern ongewijzigd, footer toont de hint, en de
+      drie kolommen blijven even hoog — de rekenkern is afgedekt door S1, de hint-staat
+      zelf is alleen door code-inspectie nagegaan (`hasBuffer` is vensterbreed, dus alle
+      drie de kolommen tonen altijd dezelfde tak). Niet op scherm gezien: dat zou een
+      wijziging in Jeroens echte potten vragen.
+- [x] De bufferrij staat niet meer in de sectie "Provisies"; het subtotaal van die sectie
       bevat de buffer niet meer
-- [ ] Zichtbare sectiesubtotalen tellen op tot de buffer-kostenkop + het niet-gedekte
+- [x] Zichtbare sectiesubtotalen tellen op tot de buffer-kostenkop + het niet-gedekte
       tekort. In de ankermaand is die kop de potstand ná beweging (het banksaldo bevat de
       hele pot); in latere maanden is het de beweging zelf. De footer toont beide getallen,
       dus die asymmetrie blijft afleesbaar.
-- [ ] De bestaande bufferstand blijft behouden: de pot vertrekt van het overgedragen
+- [x] De bestaande bufferstand blijft behouden: de pot vertrekt van het overgedragen
       saldo en telt de beweging van de maand erbij, hij wordt niet herzet
-- [ ] Maandbedrag van de bufferpot is uitgeschakeld in ReservationSidepanel, met hint
-- [ ] `netBurn` en de runway rekenen op de kosten zonder buffer-storting; een maand met
+- [x] Maandbedrag van de bufferpot is uitgeschakeld in ReservationSidepanel, met hint
+- [x] `netBurn` en de runway rekenen op de kosten zonder buffer-storting; een maand met
       overschot geeft runway `null`, een maand met structureel tekort een eindig getal
-- [ ] Afgesloten maanden veranderen niet en blijven zonder fout renderen in `/analyse`
-- [ ] `buffer-scenarios.ts` slaagt volledig op het nieuwe model
-- [ ] `pnpm --filter cashflow build` en `type-check` slagen, geen `any`
+- [x] Afgesloten maanden veranderen niet en blijven zonder fout renderen in `/analyse`
+- [x] `buffer-scenarios.ts` slaagt volledig op het nieuwe model
+- [x] `pnpm --filter cashflow build` en `type-check` slagen, geen `any`
 
 ## Beslissingsgeschiedenis
 
@@ -106,3 +109,19 @@ _(leeg — alle kritische items beantwoord)_
   het tekort per constructie wegneemt.
 - 2026-08-05: Footer zonder bufferpot toont een hint in plaats van terug te vallen op het
   eindsaldo (keuze Jeroen) — het model duwt naar één buffer, geen tweede lezing.
+
+## Beoordeling
+
+Reviewpanel van vijf assen (rekenkern · doorrol/anker · UI · analyse · datamigratie) met
+adversariële verificatie per bevinding. Vier bevestigde defecten opgelost bij de oorzaak,
+elk met een scenario dat ze vastlegt:
+
+- `netBurn` las de kostenkoppen van de ankermaand, die daar een stand dragen in plaats van
+  een stroom → runway meldde een tekort bij een maand met overschot (S21).
+- `potBalanceMap` en `deferredRemainingMap` liepen uiteen bij een cash-bijbetaling → de
+  bufferpot kon onder nul zakken met "Niet gedekt €0" ernaast (S19).
+- Uitstel en finalisatie op de bufferpot zetten de sweep stil zonder zichtbare rij om het
+  terug te draaien (S20).
+
+Drie bevestigde bevindingen zijn pre-existing en raken `computeAnchorState` los van de
+buffer; die staan in `HANDOFF.md` in plaats van hier meegepatcht te worden.

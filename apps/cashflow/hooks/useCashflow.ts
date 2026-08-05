@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { addMonths, format } from 'date-fns';
 import { useCashflowStore } from '../store/cashflow';
 import { calculateMonths, computeAnchorState } from '../lib/cashflow/calculator';
@@ -9,8 +9,8 @@ import type { MonthData, MonthKey } from '../lib/cashflow/types';
 import { buildSnapshot, snapshotMap } from '../lib/cashflow/snapshot';
 
 // Verwijder verouderde defers en settlements die volledig in het verleden liggen.
-// Wordt eenmalig uitgevoerd na rehydratie.
-function cleanupStaleData(currentMonth: string) {
+// Wordt eenmalig uitgevoerd na het laden, door DataGate.
+export function cleanupStaleData(currentMonth: string) {
   const state = useCashflowStore.getState();
 
   // RecurringDefers: verwijder als zowel fromMonth als toMonth voor huidige maand liggen
@@ -38,36 +38,6 @@ function cleanupStaleData(currentMonth: string) {
       `${staleReservationDefers.length} reservation defers verwijderd (voor ${currentMonth})`
     );
   }
-}
-
-export function useHydrated(): boolean {
-  const [hydrated, setHydrated] = useState(false);
-  const done = useRef(false);
-
-  useEffect(() => {
-    if (done.current) return;
-    done.current = true;
-
-    const currentMonth = format(new Date(), 'yyyy-MM');
-
-    const finish = () => {
-      cleanupStaleData(currentMonth);
-      setHydrated(true);
-    };
-
-    try {
-      const r = useCashflowStore.persist.rehydrate();
-      if (r && typeof (r as Promise<void>).then === 'function') {
-        (r as Promise<void>).then(finish).catch(finish);
-      } else {
-        finish();
-      }
-    } catch {
-      finish();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return hydrated;
 }
 
 /**
@@ -165,11 +135,11 @@ export function useMonths(count = 3, anchorOverride?: MonthKey): MonthData[] {
  * moet voorkomen. Twee rails daarbij: vóór de referentiemaand is er geen echt banksaldo
  * om van te vertrekken, en een maand die je bewust heropend hebt blijft open.
  */
-export function useAutoCloseMonth(enabled: boolean): void {
+export function useAutoCloseMonth(): void {
   const done = useRef(false);
 
   useEffect(() => {
-    if (!enabled || done.current) return;
+    if (done.current) return;
     done.current = true;
 
     const state = useCashflowStore.getState();
@@ -199,7 +169,7 @@ export function useAutoCloseMonth(enabled: boolean): void {
       state.reservationSettlements, 1, anchor.potBalances,
     );
     if (data) state.closeMonth(buildSnapshot(data, new Date().toISOString()));
-  }, [enabled]);
+  }, []);
 }
 
 export function useCashflowActions() {

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useHydrated, useMonths } from '../../hooks/useCashflow';
+import { useMonths } from '../../hooks/useCashflow';
 import { useCashflowStore } from '../../store/cashflow';
 import { getCurrentMonthKey } from '../../lib/cashflow/recurring';
 import { bufferSeries, computeRunway } from '../../lib/cashflow/analysis';
@@ -11,7 +11,6 @@ import { WaterfallChart } from '../../components/cashflow/WaterfallChart';
 import { VarianceChart } from '../../components/cashflow/VarianceChart';
 
 export default function AnalysePage() {
-  const hydrated = useHydrated();
   // Altijd vanaf vandaag rekenen: de analyse mag niet meebewegen met waar je op de
   // prognosepagina naartoe genavigeerd bent.
   const months = useMonths(3, getCurrentMonthKey());
@@ -34,19 +33,12 @@ export default function AnalysePage() {
         </Link>
       </header>
 
-      {!hydrated ? (
-        <div className="space-y-5">
-          <div className="h-40 rounded-xl border border-[var(--umanexPrimary50)] bg-card animate-pulse" />
-          <div className="h-80 rounded-xl border border-[var(--umanexPrimary50)] bg-card animate-pulse" />
-        </div>
-      ) : (
-        <div className="space-y-5">
-          <RunwayCard runway={runway} />
-          {currentMonth && <WaterfallChart month={currentMonth} />}
-          <BufferChart points={points} closedMonths={runway.closedMonths} />
-          <VarianceChart snapshots={sortedSnapshots} />
-        </div>
-      )}
+      <div className="space-y-5">
+        <RunwayCard runway={runway} />
+        {currentMonth && <WaterfallChart month={currentMonth} />}
+        <BufferChart points={points} closedMonths={runway.closedMonths} />
+        <VarianceChart snapshots={sortedSnapshots} />
+      </div>
     </main>
   );
 }

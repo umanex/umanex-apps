@@ -1,346 +1,275 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { format } from 'date-fns';
-import type {
-  CashflowStore,
-  ExpenseItem,
-  IncomeItem,
-  RecurringItem,
-  RecurringDefer,
-  RecurringSettlement,
-  ReservationItem,
-  ReservationPayment,
-  ReservationSettlement,
-  ReservationDefer,
-  BalanceOverride,
-  MonthKey,
-  MonthSnapshot,
-} from '../lib/cashflow/types';
-
-// Verhoog bij elke schema-uitbreiding + voeg het nieuwe veld toe in migrate.
-const STORE_VERSION = 14;
+import { emptyData } from '../lib/cashflow/normalize';
+import type { CashflowData, CashflowStore, MonthSnapshot } from '../lib/cashflow/types';
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
+/**
+ * Leest precies het deel van de store dat naar `cashflow_state.data` gaat. Alles wat hier
+ * niet in staat wordt niet bewaard — `anchorMonth` is sessie-gebonden en `monthSnapshots`
+ * gaat naar zijn eigen tabel.
+ */
+export function selectCashflowData(state: CashflowStore): CashflowData {
+  return {
+    referenceBalance: state.referenceBalance,
+    referenceMonth: state.referenceMonth,
+    balanceOverrides: state.balanceOverrides,
+    expenseItems: state.expenseItems,
+    incomeItems: state.incomeItems,
+    recurringItems: state.recurringItems,
+    recurringSettlements: state.recurringSettlements,
+    reservationSettlements: state.reservationSettlements,
+    reservations: state.reservations,
+    reservationPayments: state.reservationPayments,
+    recurringDefers: state.recurringDefers,
+    reservationDefers: state.reservationDefers,
+    historyStartMonth: state.historyStartMonth,
+    reopenedMonths: state.reopenedMonths,
+  };
+}
+
 export const useCashflowStore = create<CashflowStore>()(
-  persist(
-    immer((set) => ({
-      referenceBalance: 0,
-      referenceMonth: currentMonth(),
-      balanceOverrides: [] as BalanceOverride[],
-      // anchorMonth wordt nooit gepersisteerd — altijd de huidige maand
-      anchorMonth: currentMonth(),
-      expenseItems: [] as ExpenseItem[],
-      incomeItems: [] as IncomeItem[],
-      recurringItems: [] as RecurringItem[],
-      reservations: [] as ReservationItem[],
-      reservationPayments: [] as ReservationPayment[],
-      recurringDefers: [] as RecurringDefer[],
-      recurringSettlements: [] as RecurringSettlement[],
-      reservationSettlements: [] as ReservationSettlement[],
-      reservationDefers: [] as ReservationDefer[],
-      historyStartMonth: currentMonth(),
-      monthSnapshots: [] as MonthSnapshot[],
-      reopenedMonths: [] as MonthKey[],
+  immer((set) => ({
+    ...emptyData(),
+    // Nooit bewaard: bij elke app-start is dit de huidige maand.
+    anchorMonth: currentMonth(),
+    monthSnapshots: [] as MonthSnapshot[],
 
-      closeMonth: (snapshot) =>
-        set((state) => {
-          state.monthSnapshots = state.monthSnapshots.filter(
-            (s) => s.monthKey !== snapshot.monthKey,
-          );
-          state.monthSnapshots.push(snapshot);
-          // Opnieuw afsluiten heft een eerdere heropening op.
-          state.reopenedMonths = state.reopenedMonths.filter((m) => m !== snapshot.monthKey);
-        }),
+    hydrate: (data, snapshots) =>
+      set((state) => {
+        Object.assign(state, data);
+        state.monthSnapshots = snapshots;
+        state.anchorMonth = currentMonth();
+      }),
 
-      reopenMonth: (monthKey) =>
-        set((state) => {
-          state.monthSnapshots = state.monthSnapshots.filter((s) => s.monthKey !== monthKey);
-          if (!state.reopenedMonths.includes(monthKey)) state.reopenedMonths.push(monthKey);
-        }),
+    closeMonth: (snapshot) =>
+      set((state) => {
+        state.monthSnapshots = state.monthSnapshots.filter(
+          (s) => s.monthKey !== snapshot.monthKey,
+        );
+        state.monthSnapshots.push(snapshot);
+        // Opnieuw afsluiten heft een eerdere heropening op.
+        state.reopenedMonths = state.reopenedMonths.filter((m) => m !== snapshot.monthKey);
+      }),
 
-      setReferenceBalance: (balance, month) =>
-        set((state) => {
-          state.referenceBalance = balance;
-          state.referenceMonth = month;
-        }),
+    reopenMonth: (monthKey) =>
+      set((state) => {
+        state.monthSnapshots = state.monthSnapshots.filter((s) => s.monthKey !== monthKey);
+        if (!state.reopenedMonths.includes(monthKey)) state.reopenedMonths.push(monthKey);
+      }),
 
-      upsertBalanceOverride: (monthKey, balance) =>
-        set((state) => {
-          const existing = state.balanceOverrides.find((o) => o.monthKey === monthKey);
-          if (existing) {
-            existing.balance = balance;
-          } else {
-            state.balanceOverrides.push({ id: crypto.randomUUID(), monthKey, balance });
-          }
-        }),
+    setReferenceBalance: (balance, month) =>
+      set((state) => {
+        state.referenceBalance = balance;
+        state.referenceMonth = month;
+      }),
 
-      removeBalanceOverride: (monthKey) =>
-        set((state) => {
-          state.balanceOverrides = state.balanceOverrides.filter((o) => o.monthKey !== monthKey);
-        }),
+    upsertBalanceOverride: (monthKey, balance) =>
+      set((state) => {
+        const existing = state.balanceOverrides.find((o) => o.monthKey === monthKey);
+        if (existing) {
+          existing.balance = balance;
+        } else {
+          state.balanceOverrides.push({ id: crypto.randomUUID(), monthKey, balance });
+        }
+      }),
 
-      setAnchorMonth: (month) =>
-        set((state) => { state.anchorMonth = month; }),
+    removeBalanceOverride: (monthKey) =>
+      set((state) => {
+        state.balanceOverrides = state.balanceOverrides.filter((o) => o.monthKey !== monthKey);
+      }),
 
-      addExpenseItem: (item) =>
-        set((state) => { state.expenseItems.push(item); }),
+    setAnchorMonth: (month) =>
+      set((state) => { state.anchorMonth = month; }),
 
-      updateExpenseItem: (id, patch) =>
-        set((state) => {
-          const item = state.expenseItems.find((i) => i.id === id);
-          if (item) Object.assign(item, patch);
-        }),
+    addExpenseItem: (item) =>
+      set((state) => { state.expenseItems.push(item); }),
 
-      removeExpenseItem: (id) =>
-        set((state) => {
-          state.expenseItems = state.expenseItems.filter((i) => i.id !== id);
-        }),
+    updateExpenseItem: (id, patch) =>
+      set((state) => {
+        const item = state.expenseItems.find((i) => i.id === id);
+        if (item) Object.assign(item, patch);
+      }),
 
-      addIncomeItem: (item) =>
-        set((state) => { state.incomeItems.push(item); }),
+    removeExpenseItem: (id) =>
+      set((state) => {
+        state.expenseItems = state.expenseItems.filter((i) => i.id !== id);
+      }),
 
-      updateIncomeItem: (id, patch) =>
-        set((state) => {
-          const item = state.incomeItems.find((i) => i.id === id);
-          if (item) Object.assign(item, patch);
-        }),
+    addIncomeItem: (item) =>
+      set((state) => { state.incomeItems.push(item); }),
 
-      removeIncomeItem: (id) =>
-        set((state) => { state.incomeItems = state.incomeItems.filter((i) => i.id !== id); }),
+    updateIncomeItem: (id, patch) =>
+      set((state) => {
+        const item = state.incomeItems.find((i) => i.id === id);
+        if (item) Object.assign(item, patch);
+      }),
 
-      addRecurringItem: (item) =>
-        set((state) => { state.recurringItems.push(item); }),
+    removeIncomeItem: (id) =>
+      set((state) => { state.incomeItems = state.incomeItems.filter((i) => i.id !== id); }),
 
-      updateRecurringItem: (id, patch) =>
-        set((state) => {
-          const item = state.recurringItems.find((i) => i.id === id);
-          if (item) Object.assign(item, patch);
-        }),
+    addRecurringItem: (item) =>
+      set((state) => { state.recurringItems.push(item); }),
 
-      removeRecurringItem: (id) =>
-        set((state) => {
-          state.recurringItems = state.recurringItems.filter((i) => i.id !== id);
-          state.recurringDefers = state.recurringDefers.filter((d) => d.recurringId !== id);
-          state.recurringSettlements = state.recurringSettlements.filter((s) => s.recurringId !== id);
-        }),
+    updateRecurringItem: (id, patch) =>
+      set((state) => {
+        const item = state.recurringItems.find((i) => i.id === id);
+        if (item) Object.assign(item, patch);
+      }),
 
-      addReservation: (item) =>
-        set((state) => { state.reservations.push(item); }),
+    removeRecurringItem: (id) =>
+      set((state) => {
+        state.recurringItems = state.recurringItems.filter((i) => i.id !== id);
+        state.recurringDefers = state.recurringDefers.filter((d) => d.recurringId !== id);
+        state.recurringSettlements = state.recurringSettlements.filter((s) => s.recurringId !== id);
+      }),
 
-      updateReservation: (id, patch) =>
-        set((state) => {
-          const item = state.reservations.find((r) => r.id === id);
-          if (!item) return;
-          Object.assign(item, patch);
-          // Enkel een spaardoel kan buffer zijn — een maandelijks budget reset elke
-          // maand en heeft geen saldo om een tekort uit op te vangen.
-          if (item.type !== 'spaardoel') item.coversDeficit = false;
-        }),
+    addReservation: (item) =>
+      set((state) => { state.reservations.push(item); }),
 
-      setDeficitBuffer: (id, enabled) =>
-        set((state) => {
-          // Maximaal één bufferpot: een tekort over meerdere potten verdelen is
-          // ondefinieerd, dus markeren zet de vlag elders uit.
-          for (const r of state.reservations) {
-            r.coversDeficit = enabled && r.id === id;
-          }
-        }),
+    updateReservation: (id, patch) =>
+      set((state) => {
+        const item = state.reservations.find((r) => r.id === id);
+        if (!item) return;
+        Object.assign(item, patch);
+        // Enkel een spaardoel kan buffer zijn — een maandelijks budget reset elke
+        // maand en heeft geen saldo om een tekort uit op te vangen.
+        if (item.type !== 'spaardoel') item.coversDeficit = false;
+      }),
 
-      removeReservation: (id) =>
-        set((state) => {
-          state.reservations = state.reservations.filter((r) => r.id !== id);
-          state.reservationPayments = state.reservationPayments.filter(
-            (p) => p.reservationId !== id,
-          );
-          state.reservationDefers = state.reservationDefers.filter(
-            (d) => d.reservationId !== id,
-          );
-          state.reservationSettlements = state.reservationSettlements.filter(
-            (s) => s.reservationId !== id,
-          );
-        }),
+    setDeficitBuffer: (id, enabled) =>
+      set((state) => {
+        // Maximaal één bufferpot: een tekort over meerdere potten verdelen is
+        // ondefinieerd, dus markeren zet de vlag elders uit.
+        for (const r of state.reservations) {
+          r.coversDeficit = enabled && r.id === id;
+        }
+      }),
 
-      addReservationPayment: (payment) =>
-        set((state) => { state.reservationPayments.push(payment); }),
+    removeReservation: (id) =>
+      set((state) => {
+        state.reservations = state.reservations.filter((r) => r.id !== id);
+        state.reservationPayments = state.reservationPayments.filter(
+          (p) => p.reservationId !== id,
+        );
+        state.reservationDefers = state.reservationDefers.filter(
+          (d) => d.reservationId !== id,
+        );
+        state.reservationSettlements = state.reservationSettlements.filter(
+          (s) => s.reservationId !== id,
+        );
+      }),
 
-      updateReservationPayment: (id, patch) =>
-        set((state) => {
-          const payment = state.reservationPayments.find((p) => p.id === id);
-          if (payment) Object.assign(payment, patch);
-        }),
+    addReservationPayment: (payment) =>
+      set((state) => { state.reservationPayments.push(payment); }),
 
-      removeReservationPayment: (id) =>
-        set((state) => {
-          state.reservationPayments = state.reservationPayments.filter((p) => p.id !== id);
-        }),
+    updateReservationPayment: (id, patch) =>
+      set((state) => {
+        const payment = state.reservationPayments.find((p) => p.id === id);
+        if (payment) Object.assign(payment, patch);
+      }),
 
-      upsertReservationSettlement: (reservationId, monthKey, effectiveAmount) =>
-        set((state) => {
-          const existing = state.reservationSettlements.find(
-            (s) => s.reservationId === reservationId && s.monthKey === monthKey,
-          );
-          if (existing) {
-            existing.effectiveAmount = effectiveAmount;
-            existing.finalized = false;
-          } else {
-            state.reservationSettlements.push({
-              id: crypto.randomUUID(),
-              reservationId,
-              monthKey,
-              effectiveAmount,
-              finalized: false,
-            });
-          }
-        }),
+    removeReservationPayment: (id) =>
+      set((state) => {
+        state.reservationPayments = state.reservationPayments.filter((p) => p.id !== id);
+      }),
 
-      finalizeReservation: (reservationId, monthKey, effectiveAmount) =>
-        set((state) => {
-          const existing = state.reservationSettlements.find(
-            (s) => s.reservationId === reservationId && s.monthKey === monthKey,
-          );
-          if (existing) {
-            existing.effectiveAmount = effectiveAmount;
-            existing.finalized = true;
-          } else {
-            state.reservationSettlements.push({
-              id: crypto.randomUUID(),
-              reservationId,
-              monthKey,
-              effectiveAmount,
-              finalized: true,
-            });
-          }
-        }),
+    upsertReservationSettlement: (reservationId, monthKey, effectiveAmount) =>
+      set((state) => {
+        const existing = state.reservationSettlements.find(
+          (s) => s.reservationId === reservationId && s.monthKey === monthKey,
+        );
+        if (existing) {
+          existing.effectiveAmount = effectiveAmount;
+          existing.finalized = false;
+        } else {
+          state.reservationSettlements.push({
+            id: crypto.randomUUID(),
+            reservationId,
+            monthKey,
+            effectiveAmount,
+            finalized: false,
+          });
+        }
+      }),
 
-      removeReservationSettlement: (reservationId, monthKey) =>
-        set((state) => {
-          state.reservationSettlements = state.reservationSettlements.filter(
-            (s) => !(s.reservationId === reservationId && s.monthKey === monthKey),
-          );
-        }),
+    finalizeReservation: (reservationId, monthKey, effectiveAmount) =>
+      set((state) => {
+        const existing = state.reservationSettlements.find(
+          (s) => s.reservationId === reservationId && s.monthKey === monthKey,
+        );
+        if (existing) {
+          existing.effectiveAmount = effectiveAmount;
+          existing.finalized = true;
+        } else {
+          state.reservationSettlements.push({
+            id: crypto.randomUUID(),
+            reservationId,
+            monthKey,
+            effectiveAmount,
+            finalized: true,
+          });
+        }
+      }),
 
-      addRecurringDefer: (defer) =>
-        set((state) => { state.recurringDefers.push(defer); }),
+    removeReservationSettlement: (reservationId, monthKey) =>
+      set((state) => {
+        state.reservationSettlements = state.reservationSettlements.filter(
+          (s) => !(s.reservationId === reservationId && s.monthKey === monthKey),
+        );
+      }),
 
-      removeRecurringDefer: (id) =>
-        set((state) => {
-          state.recurringDefers = state.recurringDefers.filter((d) => d.id !== id);
-        }),
+    addRecurringDefer: (defer) =>
+      set((state) => { state.recurringDefers.push(defer); }),
 
-      settleRecurringDefer: (id, paid, paidAmount) =>
-        set((state) => {
-          const defer = state.recurringDefers.find((d) => d.id === id);
-          if (defer) {
-            defer.paid = paid;
-            defer.paidAmount = paidAmount;
-          }
-        }),
+    removeRecurringDefer: (id) =>
+      set((state) => {
+        state.recurringDefers = state.recurringDefers.filter((d) => d.id !== id);
+      }),
 
-      addReservationDefer: (defer) =>
-        set((state) => { state.reservationDefers.push(defer); }),
+    settleRecurringDefer: (id, paid, paidAmount) =>
+      set((state) => {
+        const defer = state.recurringDefers.find((d) => d.id === id);
+        if (defer) {
+          defer.paid = paid;
+          defer.paidAmount = paidAmount;
+        }
+      }),
 
-      removeReservationDefer: (id) =>
-        set((state) => {
-          state.reservationDefers = state.reservationDefers.filter((d) => d.id !== id);
-        }),
+    addReservationDefer: (defer) =>
+      set((state) => { state.reservationDefers.push(defer); }),
 
-      upsertRecurringSettlement: (recurringId, monthKey, paid, actualAmount) =>
-        set((state) => {
-          const existing = state.recurringSettlements.find(
-            (s) => s.recurringId === recurringId && s.monthKey === monthKey,
-          );
-          if (existing) {
-            existing.paid = paid;
-            existing.actualAmount = actualAmount;
-          } else {
-            state.recurringSettlements.push({
-              id: crypto.randomUUID(),
-              recurringId,
-              monthKey,
-              paid,
-              actualAmount,
-            });
-          }
-        }),
+    removeReservationDefer: (id) =>
+      set((state) => {
+        state.reservationDefers = state.reservationDefers.filter((d) => d.id !== id);
+      }),
 
-      removeRecurringSettlement: (recurringId, monthKey) =>
-        set((state) => {
-          state.recurringSettlements = state.recurringSettlements.filter(
-            (s) => !(s.recurringId === recurringId && s.monthKey === monthKey),
-          );
-        }),
-    })),
-    {
-      name: 'cashflow-store-v3',
-      version: STORE_VERSION,
-      // partialize: sla anchorMonth NOOIT op in localStorage.
-      // Bij elke app-start is het altijd de huidige maand.
-      partialize: (state) => {
-        const { anchorMonth: _anchorMonth, ...rest } = state as unknown as Record<string, unknown>;
-        return rest;
-      },
+    upsertRecurringSettlement: (recurringId, monthKey, paid, actualAmount) =>
+      set((state) => {
+        const existing = state.recurringSettlements.find(
+          (s) => s.recurringId === recurringId && s.monthKey === monthKey,
+        );
+        if (existing) {
+          existing.paid = paid;
+          existing.actualAmount = actualAmount;
+        } else {
+          state.recurringSettlements.push({
+            id: crypto.randomUUID(),
+            recurringId,
+            monthKey,
+            paid,
+            actualAmount,
+          });
+        }
+      }),
 
-      migrate: (persisted: unknown) => {
-        const s = (persisted ?? {}) as Record<string, unknown>;
-        // Migratie van startBalance (model 1) naar referenceBalance + referenceMonth (model 2)
-        const migratedReferenceBalance =
-          typeof s.referenceBalance === 'number'
-            ? s.referenceBalance
-            : typeof s.startBalance === 'number'
-              ? s.startBalance
-              : 0;
-        return {
-          ...s,
-          anchorMonth: currentMonth(),
-          referenceBalance: migratedReferenceBalance,
-          referenceMonth:
-            typeof s.referenceMonth === 'string' ? s.referenceMonth : currentMonth(),
-          balanceOverrides: Array.isArray(s.balanceOverrides)
-            ? (s.balanceOverrides as BalanceOverride[]).filter(Boolean)
-            : [],
-          expenseItems: Array.isArray(s.expenseItems) ? s.expenseItems : [],
-          incomeItems: Array.isArray(s.incomeItems) ? s.incomeItems : [],
-          recurringItems: Array.isArray(s.recurringItems) ? s.recurringItems : [],
-          reservations: Array.isArray(s.reservations)
-            ? (s.reservations as ReservationItem[]).filter(Boolean).map((r) => ({
-                ...r,
-                type: r.type ?? 'spaardoel',
-                coversDeficit: (r.type ?? 'spaardoel') === 'spaardoel' && (r.coversDeficit ?? false),
-              }))
-            : [],
-          reservationPayments: Array.isArray(s.reservationPayments) ? s.reservationPayments : [],
-          recurringDefers: Array.isArray(s.recurringDefers)
-            ? (s.recurringDefers as RecurringDefer[]).filter(Boolean).map((d) => ({
-                ...d,
-                paid: d.paid ?? false,
-                paidAmount: d.paidAmount ?? 0,
-              }))
-            : [],
-          recurringSettlements: Array.isArray(s.recurringSettlements) ? s.recurringSettlements : [],
-          reservationSettlements: Array.isArray(s.reservationSettlements)
-            ? (s.reservationSettlements as ReservationSettlement[])
-                .filter(Boolean)
-                .map((rs) => ({ ...rs, finalized: rs.finalized ?? false }))
-            : [],
-          reservationDefers: Array.isArray(s.reservationDefers) ? s.reservationDefers : [],
-          // Historie begint bij de huidige maand. Wat er vóór dit punt aan snapshots
-          // stond, was afgeleid uit een reconstructie van maanden die de app nooit
-          // gezien heeft; dat is geen historie en wordt niet meegesleept.
-          historyStartMonth:
-            typeof s.historyStartMonth === 'string' ? s.historyStartMonth : currentMonth(),
-          monthSnapshots: Array.isArray(s.monthSnapshots)
-            ? (s.monthSnapshots as MonthSnapshot[]).filter(
-                (snap) =>
-                  snap.monthKey >=
-                  (typeof s.historyStartMonth === 'string' ? s.historyStartMonth : currentMonth()),
-              )
-            : [],
-          reopenedMonths: Array.isArray(s.reopenedMonths) ? s.reopenedMonths : [],
-        };
-      },
-      storage: createJSONStorage(() => localStorage),
-    },
-  ),
+    removeRecurringSettlement: (recurringId, monthKey) =>
+      set((state) => {
+        state.recurringSettlements = state.recurringSettlements.filter(
+          (s) => !(s.recurringId === recurringId && s.monthKey === monthKey),
+        );
+      }),
+  })),
 );

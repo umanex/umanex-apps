@@ -82,6 +82,31 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Volgende zet:** cashflow en jobradar naast elkaar in light en dark bekijken, met aandacht
   voor de invoervelden (`border-input` werd lichter), zebra-rijen (`bg-muted` werd sterker)
   en de foutmeldingen (`text-destructive`).
+- **Status:** resolved — 2026-08-05: gedaan in Chrome, alle drie de apps, beide modes. Naast
+  het bekijken is er per pagina een contrast-sweep over elk tekst-element gedraaid (kleur vs.
+  effectieve achtergrond, AA-drempel naar tekstgrootte). cashflow 1962 elementen, portfolio 214,
+  jobradar volledig: de **enige** faalklasse is `--primary` (zie de entry hieronder). Alle
+  gemigreerde rollen kloppen: `border-input` = Neutral.800, zebra `bg-muted` zichtbaar maar
+  subtiel, de geïnverteerde chip (`bg-foreground`/`text-background`) leest goed in beide modes,
+  en de 17 herschreven SVG-fills in de waterfall renderen correct. Eén echte bug gevonden en
+  gefixt: `color-scheme` ontbrak, waardoor native checkboxes en scrollbars in dark wit bleven.
+  Twee valse alarmen uit mijn eigen meting genoteerd: een sweep vlak na het omzetten van de
+  `dark`-class meet midden in `transition-colors` (meet ná een reload in de doelmode), en
+  `input[class*="border-input"]` matcht ook de checkbox, die geen border-breedte heeft.
+
+## 2026-08-05 — --primary haalt AA niet, en het raakt echte tekst · [risico]
+- **Bevinding:** Bij de token-refactor is `--primary` naar `Primary.600` gezet; wit erop meet
+  4.27:1, onder de 4.5 die AA voor normale tekst vraagt. Dat was toen een theoretisch punt.
+  De visuele verificatie maakt het concreet: het is de **enige** contrastfout die over drie
+  apps en beide modes overblijft, op acht echte plekken. In cashflow drie links
+  ("Finaliseren →", "+ Toevoegen", "+ Nieuwe spaarpot", 4.16–4.42:1), in portfolio vijf
+  (de eyebrow "UX/UI DESIGNER · UMANEX", "Alle cases", "Bekijk mijn parcours", en de gevulde
+  knop "Kennismaken" met wit op primary). jobradar haalt het wel — die overschrijft primary
+  naar blauw. Het gaat dus niet om één randgeval maar om de merkkleur als tekstkleur.
+- **Volgende zet:** Productbeslissing van Jeroen. `Primary.700` (#C43737) geeft 5.32:1 en is
+  één alias in `Theme/light` + `Theme/dark`. Alternatief: `--primary` op 600 houden voor vlakken
+  en een aparte rol voor tekst-op-achtergrond introduceren; dat is meer tokens maar houdt de
+  merkkleur op vlakken helderder.
 - **Status:** open
 
 ## 2026-08-05 — Semantic/dark is afgeleid, niet ontworpen · [aanname]

@@ -36,6 +36,13 @@ register(StyleDictionary, { excludeParentKeys: true });
 
 const MODES = ['light', 'dark'];
 const MODE_SELECTOR = { light: ':root', dark: '.dark' };
+
+// `color-scheme` vertelt de browser welke UA-styling hij voor native controls moet
+// gebruiken. Zonder deze regel blijft hij op `normal` staan en rendert een checkbox,
+// scrollbar of date picker in dark mode gewoon licht — de rest van het scherm is
+// donker en die elementen zijn wit. Het is de enige eigenschap die per mode moet
+// meeschakelen zonder een kleurtoken te zijn, dus hij hoort in het mode-blok.
+const MODE_COLOR_SCHEME = { light: 'light', dark: 'dark' };
 const ROLE_GROUPS = ['Theme', 'Semantic'];
 const MODE_BLIND_LEAF = 'base';
 
@@ -273,7 +280,12 @@ const roleKinds = new Map(); // rolnaam -> 'hsl' | 'raw' | 'scalar'
 for (const mode of MODES) {
   const { lines, kinds } = await resolveMode(mode);
   for (const [name, kind] of kinds) roleKinds.set(name, kind);
-  blocks.push(`${MODE_SELECTOR[mode]} {`, ...lines.map((l) => l.replace(/^ {2}/, '')), '}');
+  blocks.push(
+    `${MODE_SELECTOR[mode]} {`,
+    `  color-scheme: ${MODE_COLOR_SCHEME[mode]};`,
+    ...lines.map((l) => l.replace(/^ {2}/, '')),
+    '}'
+  );
   if (mode !== MODES[MODES.length - 1]) blocks.push('');
 }
 const header = [

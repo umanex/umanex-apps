@@ -1,0 +1,13 @@
+{
+  // De app-tsconfig zet `jsx: "preserve"`, want Next transformeert JSX zelf. De
+  // render-scripts draaien buiten Next, via tsx/esbuild, en die laat JSX dan
+  // ongemoeid staan — waarna elke component valt op `React is not defined`.
+  //
+  // Hier dus de automatic runtime, zoals Next hem intern ook gebruikt. Draai de
+  // scripts met `tsx --tsconfig scripts/tsconfig.json`.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../components/**/*", "../lib/**/*"]
+}

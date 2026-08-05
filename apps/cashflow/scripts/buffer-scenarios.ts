@@ -69,11 +69,10 @@ function recomputeEindsaldo(m: MonthData, isFirst: boolean): number {
 
   const expenses = m.expenseItems.reduce((s, i) => (i.paid && isFirst ? s : s + i.amount), 0);
 
-  const cash = isFirst
-    ? m.reservationPots
-        .filter((p) => !p.finalized)
-        .reduce((s, p) => s + p.paymentsThisMonth.reduce((ps, pay) => ps + pay.fromCash, 0), 0)
-    : m.reservationPayments.reduce((s, pay) => s + pay.fromCash, 0);
+  // Ankermaand: een geregistreerde bijbetaling is al van het banksaldo af, net als een
+  // betaalde kost. Latere maanden vertrekken van een projectie waar nog niets van betaald
+  // is, dus telt élke bijbetaling daar wel.
+  const cash = isFirst ? 0 : m.reservationPayments.reduce((s, pay) => s + pay.fromCash, 0);
 
   // Een budget is een inschatting: in de ankermaand resteert wat je nog niet opmaakte,
   // in een latere maand staat de volledige inschatting nog te vertrekken.
@@ -81,17 +80,23 @@ function recomputeEindsaldo(m: MonthData, isFirst: boolean): number {
     .filter((p) => p.potType === 'maandelijks_budget' && (!isFirst || !p.finalized))
     .reduce((s, p) => s + p.provisionThisMonth - (isFirst ? paidFromPot(p) : 0), 0);
 
+  // Ankermaand: wat er aan het einde van de maand nog in de potten vastzit, en dat kan
+  // niet minder dan niets zijn. Latere maanden: de storting van die maand, plus wat een
+  // betaling méér opnam dan de pot kon dragen — dat kwam van de rekening.
   const provisions =
     m.reservationPots
       .filter((p) => p.potType === 'spaardoel' && (!isFirst || !p.finalized))
-      .reduce(
-        (s, p) =>
+      .reduce((s, p) => {
+        const beschikbaar = p.deferredFromPrevious + p.provisionThisMonth;
+        return (
           s +
           (isFirst
-            ? p.deferredFromPrevious + p.provisionThisMonth - paidFromPot(p)
-            : p.provisionThisMonth - p.releasedThisMonth),
-        0,
-      ) + m.deferredReservationItems.reduce((s, d) => s + d.amount, 0);
+            ? Math.max(0, beschikbaar - paidFromPot(p))
+            : p.provisionThisMonth -
+              p.releasedThisMonth +
+              Math.max(0, paidFromPot(p) - beschikbaar))
+        );
+      }, 0) + m.deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 
   return (m.startBalance + m.totalIncome) - (recurring + expenses + cash + budgets + provisions);
 }
@@ -713,6 +718,51 @@ console.log('\nS21 — netBurn met een tweede provisiepot');
   check('S21 · geen runway bij overschot',
     computeRunway([buildSnapshot(months[0]!, '2026-04-01T00:00:00.000Z')], months[0]!).months === null ? 1 : 0, 1);
   invariant(months, 'S21');
+}
+
+// ── S22: cash-bijbetaling telt niet dubbel in de ankermaand ───────────────────
+console.log('\nS22 — bijbetaling bovenop een pot');
+{
+  const pot: ReservationItem = {
+    id: 'x', label: 'Pot', monthlyAmount: 100, startMonth: '2026-01', type: 'spaardoel',
+  };
+  const betaling: ReservationPayment[] = [{
+    id: 'p1', reservationId: 'x', monthKey: '2026-03', label: 'factuur',
+    invoiceAmount: 140, fromReservation: 100, fromCash: 40,
+  }];
+  // Ankermaand: de bijbetaling is al van het banksaldo af, dus telt ze niet als kost.
+  const anker = calculateMonths('2026-03', 1140, [], [], [], [pot], betaling, [], [], [], [], 1);
+  check('S22 · ankermaand telt de bijbetaling niet', anker[0]!.subtotals.oneOff, 0);
+  check('S22 · geen overflow-regel in de ankermaand', anker[0]!.cashOverflowItems.length, 0);
+  invariant(anker, 'S22a');
+
+  // Latere maand: daar is nog niets vertrokken, dus telt ze wél.
+  const later = calculateMonths('2026-02', 1140, [], [], [], [pot], betaling, [], [], [], [], 2);
+  check('S22 · latere maand telt de bijbetaling wel', later[1]!.subtotals.oneOff, 40);
+  check('S22 · met overflow-regel', later[1]!.cashOverflowItems.length, 1);
+  invariant(later, 'S22b');
+}
+
+// ── S23: betaling groter dan de pot maakt geen geld uit het niets ─────────────
+console.log('\nS23 — opname groter dan het potsaldo');
+{
+  const pot: ReservationItem = {
+    id: 'x', label: 'Pot', monthlyAmount: 100, startMonth: '2026-03', type: 'spaardoel',
+  };
+  const teveel: ReservationPayment[] = [{
+    id: 'p1', reservationId: 'x', monthKey: '2026-03', label: 'te grote factuur',
+    invoiceAmount: 300, fromReservation: 300, fromCash: 0,
+  }];
+  // Ankermaand: er blijft niets gereserveerd staan, maar de kost mag niet negatief worden.
+  const anker = calculateMonths('2026-03', 1000, [], [], [], [pot], teveel, [], [], [], [], 1);
+  check('S23 · provisiekost niet negatief', anker[0]!.subtotals.provisions, 0);
+  checkBool('S23 · eindsaldo stijgt niet door de opname', anker[0]!.endBalance <= 1000 + 0.005, true);
+  invariant(anker, 'S23a');
+
+  // Latere maand: wat de pot niet kon dragen, kwam van de rekening en telt dus als kost.
+  const later = calculateMonths('2026-02', 1000, [], [], [], [pot], teveel, [], [], [], [], 2);
+  check('S23 · overschot boven de pot telt als kost', later[1]!.subtotals.provisions, 300);
+  invariant(later, 'S23b');
 }
 
 console.log(`\n${checks - failures}/${checks} checks geslaagd${failures ? ` — ${failures} FOUT` : ''}`);

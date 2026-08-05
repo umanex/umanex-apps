@@ -125,7 +125,7 @@ function potSum(m: MonthData): number {
  * De kern: bladeren mag niets veranderen. Vergelijkt de ankermaand uit het doorlopende
  * venster met diezelfde maand als vertrekpunt van een eigen venster.
  */
-function compare(label: string, d: Dataset) {
+function compare(label: string, d: Dataset, opts: { skipBank?: boolean } = {}) {
   console.log(`\n${label}`);
   const snapshots = freeze(d);
   const continuous = runContinuous(d, snapshots);
@@ -150,7 +150,11 @@ function compare(label: string, d: Dataset) {
     .filter((p) => p.potType === 'spaardoel' && !departing.has(p.reservationId))
     .reduce((s, p) => s + p.potBalance, 0);
   const expectedBank = anchorInWindow.startBalance + potsInBank;
-  check(`${label} · banksaldo bij het anker`, state.startBalance, expectedBank);
+  // Staat er in de ankermaand al iets betaald, dan is het banksaldo bewust een
+  // momentopname midden in de maand: de afgevinkte bedragen zijn er al af. Die aftrek
+  // hier nabootsen zou de implementatie tegen zichzelf houden — het eindsaldo en de
+  // potstanden hieronder zijn de echte toets.
+  if (!opts.skipBank) check(`${label} · banksaldo bij het anker`, state.startBalance, expectedBank);
   check(`${label} · eindsaldo ankermaand`, anchored.endBalance, anchorInWindow.endBalance);
   check(`${label} · potten na de ankermaand`, potSum(anchored), potSum(anchorInWindow));
 
@@ -333,6 +337,37 @@ compare('A7 — pot vertrokken uit afsluiting én anker', {
   check(`${label} · berekende waarde blijft bewaard`,
     met.state.computedStartBalance, zonder.state.computedStartBalance);
 }
+
+// ── A10: al betaalde posten in de ankermaand ──────────────────────────────────
+//
+// Maand 0 rekent alleen wat nog moet vertrekken; het gesimuleerde banksaldo moet dus
+// missen wat er al betaald is. Klopt dat niet, dan valt het eindsaldo te hoog uit met
+// precies het bedrag dat je afvinkte — en verschuift het venster zodra je bladert.
+compare('A10 — afgevinkte kosten in de ankermaand', {
+  referenceMonth: '2026-01', referenceBalance: 10000, horizon: 4, anchorAfter: 2,
+  incomeItems: inkomen(ALLE_MAANDEN, 2000),
+  recurringItems: [HUUR],
+  recurringSettlements: [
+    { id: 'rs1', recurringId: 'huur', monthKey: '2026-03', paid: true, actualAmount: 900 },
+  ],
+  expenseItems: [
+    { id: 'e1', monthKey: '2026-03', label: 'betaald', amount: 400, paid: true },
+    { id: 'e2', monthKey: '2026-03', label: 'open', amount: 250, paid: false },
+  ],
+  reservations: [{ id: 'btw', label: 'Btw', monthlyAmount: 1400, startMonth: '2026-01', type: 'spaardoel' }],
+}, { skipBank: true });
+
+// ── A11: potbetaling met cash-bijbetaling in de ankermaand ────────────────────
+compare('A11 — potbetaling met bijbetaling in de ankermaand', {
+  referenceMonth: '2026-01', referenceBalance: 10000, horizon: 4, anchorAfter: 2,
+  incomeItems: inkomen(ALLE_MAANDEN, 2000),
+  recurringItems: [HUUR],
+  reservations: [{ id: 'btw', label: 'Btw', monthlyAmount: 1400, startMonth: '2026-01', type: 'spaardoel' }],
+  reservationPayments: [
+    { id: 'p1', reservationId: 'btw', monthKey: '2026-03', label: 'factuur',
+      invoiceAmount: 5000, fromReservation: 4200, fromCash: 800 },
+  ],
+}, { skipBank: true });
 
 console.log(`\n${checks - failures}/${checks} checks geslaagd${failures ? ` — ${failures} FOUT` : ''}`);
 process.exit(failures ? 1 : 0);

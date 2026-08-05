@@ -85,6 +85,15 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
       );
       return;
     }
+    // Meer uit een pot halen dan erin zit, kan niet: de rekenkern zou dat teveel als
+    // gewone uitgave moeten boeken en de potstand zou onder nul zakken. Hier tegenhouden
+    // is duidelijker dan het achteraf stilzwijgend rechttrekken.
+    if (res > Math.max(0, availableSaldo) + 0.01) {
+      setError(
+        `Uit pot (${formatAmount(res)}) is meer dan er in de pot zit (${formatAmount(Math.max(0, availableSaldo))}). Zet het verschil bij cash.`,
+      );
+      return;
+    }
 
     addReservationPayment({
       id: generateId(),

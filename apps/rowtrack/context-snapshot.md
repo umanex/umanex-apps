@@ -54,18 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a32f778 fix(monorepo): Metro werkt onder de geïsoleerde pnpm-layout
 b884027 docs(rowtrack): cluster 8 briefings + auth/forms figma-mapping
 7372b7e docs: trim derivable and stale content from CLAUDE.md files
 e623640 docs(rowtrack): monorepo-hoisting als openstaand punt vastgelegd
 cd09074 refactor(rowtrack): i18n-ready — typed Dutch translation layer + string extraction (#157)
-387aa31 fix(rowtrack): active-workout header conform Figma 297:2227
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/.npmrc
   M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/metro.config.js
-  M  apps/rowtrack/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

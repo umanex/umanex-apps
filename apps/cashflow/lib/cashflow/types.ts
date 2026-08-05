@@ -193,11 +193,18 @@ export interface BalanceOverride {
   balance: number;
 }
 
-export interface CashflowStore {
+/**
+ * Precies wat er in `cashflow_state.data` belandt — niets meer, niets minder.
+ *
+ * Bewust een eigen type in plaats van "de store minus de acties": twee velden horen er
+ * níét in. `anchorMonth` is sessie-gebonden en `monthSnapshots` heeft een eigen tabel,
+ * omdat afgesloten maanden onveranderlijk zijn en elke maand aangroeien — die horen niet
+ * bij elke gewone schrijfactie mee herschreven te worden.
+ */
+export interface CashflowData {
   referenceBalance: number;
   referenceMonth: MonthKey;
   balanceOverrides: BalanceOverride[];
-  anchorMonth: MonthKey;
   expenseItems: ExpenseItem[];
   incomeItems: IncomeItem[];
   recurringItems: RecurringItem[];
@@ -213,13 +220,27 @@ export interface CashflowStore {
    * naar terug genavigeerd en niets van afgesloten.
    */
   historyStartMonth: MonthKey;
-  /** Afgesloten maanden. Leidend boven elke herberekening van die maand. */
-  monthSnapshots: MonthSnapshot[];
   /**
    * Maanden waarvan de afsluiting bewust opgeheven is. Zonder deze vlag zou de
    * automatische afsluiting ze meteen weer bevriezen.
    */
   reopenedMonths: MonthKey[];
+}
+
+export interface CashflowStore extends CashflowData {
+  /** Waar het venster van drie maanden begint. Nooit opgeslagen — altijd de huidige maand. */
+  anchorMonth: MonthKey;
+  /**
+   * Afgesloten maanden. Leidend boven elke herberekening van die maand. Staat in de store
+   * omdat de calculator ze nodig heeft, maar wordt naar `cashflow_snapshots` gesynct.
+   */
+  monthSnapshots: MonthSnapshot[];
+
+  /**
+   * Zet de volledige stand zoals ze uit de database komt. Enige weg naar binnen bij het
+   * laden — losse setters zouden elk een schrijfactie terug naar de database uitlokken.
+   */
+  hydrate: (data: CashflowData, snapshots: MonthSnapshot[]) => void;
 
   closeMonth: (snapshot: MonthSnapshot) => void;
   reopenMonth: (monthKey: MonthKey) => void;

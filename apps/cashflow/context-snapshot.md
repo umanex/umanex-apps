@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-08-04_
+_Gegenereerd op 2026-08-05_
 
 ## Project
 - **App:** cashflow
@@ -21,6 +21,10 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 | Component | Pad | Categorie | Figma-node | Snapshot | Status |
 |---|---|---|---|---|---|
+| DataGate | `apps/cashflow/components/auth/DataGate.tsx` | auth | — | — | — |
+| LoginForm | `apps/cashflow/components/auth/LoginForm.tsx` | auth | — | — | — |
+| LoginGate | `apps/cashflow/components/auth/LoginGate.tsx` | auth | — | — | — |
+| SignOutButton | `apps/cashflow/components/auth/SignOutButton.tsx` | auth | — | — | — |
 | AddBtwForm | `apps/cashflow/components/cashflow/AddBtwForm.tsx` | cashflow | — | — | — |
 | AddItemForm | `apps/cashflow/components/cashflow/AddItemForm.tsx` | cashflow | — | — | — |
 | BalanceBadge | `apps/cashflow/components/cashflow/BalanceBadge.tsx` | cashflow | — | — | — |
@@ -55,18 +59,28 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | WaterfallChart | `apps/cashflow/components/cashflow/WaterfallChart.tsx` | cashflow | — | — | — |
 | YearlyRow | `apps/cashflow/components/cashflow/YearlyRow.tsx` | cashflow | — | — | — |
 | MonthCardSkeleton | `apps/cashflow/components/feedback/MonthCardSkeleton.tsx` | feedback | — | — | — |
+| SyncStatus | `apps/cashflow/components/feedback/SyncStatus.tsx` | feedback | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+1fd71f8 docs(cashflow): 21 openstaande reviewbevindingen vastgelegd
 687d500 fix(cashflow): afgesloten maand trok de provisiepotten dubbel af
 fea17f8 fix(cashflow): bufferstorting telt mee als kost, analyse rekent vanaf vandaag
 9b81846 docs(cashflow): sessie-reflectie 2026-08-04
 9383669 feat(cashflow): historie begint bij de huidige maand
-a441c1c feat(cashflow): bullet charts voor begroot tegenover werkelijk
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/HANDOFF.md
+  M  apps/cashflow/.env.example
+  M  apps/cashflow/app/analyse/page.tsx
+  M  apps/cashflow/app/layout.tsx
+  M  apps/cashflow/app/page.tsx
+  A  apps/cashflow/briefings/2026-08-05-feature-login-poort.tcebc.md
+  A  apps/cashflow/components/auth/DataGate.tsx
+  A  apps/cashflow/components/auth/LoginForm.tsx
+  A  apps/cashflow/components/auth/LoginGate.tsx
+  A  apps/cashflow/components/auth/SignOutButton.tsx
+  A  apps/cashflow/components/feedback/SyncStatus.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

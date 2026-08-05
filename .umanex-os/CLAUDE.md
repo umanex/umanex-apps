@@ -56,56 +56,18 @@ Voor je een TC-EBC schrijft, valideer eerst dat dit effectief een design- of pro
 
 Bij twijfel: door met TC-EBC. Een onnodige TC-EBC is minder erg dan een gemiste.
 
-**Stappenplan**
-
-1. **Detecteer of de Task duidelijk is**
-   - Task duidelijk → ga naar stap 2
-   - Task onduidelijk (bv. "doe iets met die sidebar") → vraag eerst om verheldering. Maak nog geen bestand.
-
-2. **Detecteer scope: één of meerdere taken?**
-   - Eén coherent geheel → ga naar stap 3
-   - Meerdere componenten of features → vraag: *"Wil je hier één TC-EBC voor het geheel, of aparte TC-EBC's per component?"*
-
-3. **Bepaal type** (vaste set):
-   - `component` — één UI primitive of compositie
-   - `flow` — opeenvolging van schermen of stappen
-   - `screen` — volledige pagina of view
-   - `feature` — capability die meerdere componenten of schermen kruist
-   - Bij twijfel: kies `component`
-
-4. **Detecteer iteratie**
-   - Als er al een TC-EBC bestand bestaat met dezelfde basis-naam (zelfde datum + naam), vraag: *"Update bestaand bestand of nieuw bestand?"*
-   - Bij "nieuw": voeg `HHMM` suffix toe aan bestandsnaam
-
-5. **Valideer kritische items**
-   - Vier items die altijd opgevraagd moeten worden tenzij beantwoord in klant- of projectcontext
-   - Voor elk niet-beantwoord item: zet op Open vragen lijst
-
-6. **Schrijf het bestand** (zie locatie en naamgeving hieronder)
-
-7. **Toon TC-EBC inline in chat** als codeblock met expliciete labels. Vermeld het bestandspad en eventuele open vragen. **Niet stilzwijgend overslaan** — gebruiker moet zien wat er is opgeslagen.
-
 **Kritische items (altijd vragen tenzij beantwoord in klant/project context)**
 
-1. **Component-typologie** — sheet / dropdown / modal / aparte pagina / inline
-2. **States** — loading / empty / error / success / default
-3. **Interactie-modaliteit** — klik / swipe / drag / keyboard / hover
-4. **Edge cases** — max waardes, min waardes, validatie regels
+Component-typologie · States · Interactie-modaliteit · Edge cases. Alle vier moeten
+beantwoord zijn of op de Open vragen lijst staan. De `tc-ebc` skill heeft per item de
+vraag-formulering.
 
-Andere items (mogen aanname zijn met `[ASSUMPTION: ...]` marker):
-- Doelgroep / persona
-- Device / form factor
-- Data shape / structuur
-- Branding / design system context
+**Uitvoering — roep de `tc-ebc` skill aan**
 
-**Vragen-formulering per kritisch item**
-
-Wanneer een kritisch item ontbreekt, gebruik deze formuleringen. Bied altijd de meest plausibele optie eerst aan op basis van wat in project-context zichtbaar is.
-
-- *Component-typologie:* "Wordt dit een [meest plausibele optie uit project context], of iets anders zoals [twee andere opties]?"
-- *States:* "Welke states zijn van toepassing? Loading is meestal nodig bij data-fetch, empty bij lege resultaten, error bij failure. Welke gelden hier?"
-- *Interactie-modaliteit:* "Welke interactie verwacht je: klik, swipe, drag, keyboard? Voor [type component] is [meest plausibele] gebruikelijk."
-- *Edge cases:* "Edge cases om te overwegen: minimum aantal items, maximum aantal items, lege staat, validatie. Welke zijn relevant?"
+Ga je een TC-EBC effectief schrijven, lees dan eerst de **`tc-ebc` skill**. Die bevat het
+stappenplan, de vraag-formuleringen per kritisch item, de bestandslocatie en -naamgeving, en
+het bestandsformaat met de acceptatie-checklist. Schrijf er nooit één op de gok zonder de
+skill te lezen — dat bestandsformaat is precies wat de Beoordeel-stap later toetst.
 
 **Inline formaat in chat**
 
@@ -117,60 +79,13 @@ BEHAVIOUR:   ...
 CONSTRAINTS: ...
 ```
 
-**Bestandslocatie**
-
-Standaard: `/briefings/` aan de root van het actieve project. In monorepos kan dit overschreven worden per klant-CLAUDE.md (zie bv. Columba's regel voor `apps/{app}/briefings/`).
-
-Als de folder nog niet bestaat: maak hem aan.
-
-**Bestandsnaamgeving**
-
-Format: `{YYYY-MM-DD}-{type}-{naam}.tcebc.md`
-
-Voorbeelden:
-- `2026-04-29-component-filter-bar.tcebc.md`
-- `2026-04-29-flow-onboarding.tcebc.md`
-- `2026-04-29-feature-mobile-vergelijking.tcebc.md`
-
-Bij naamconflict (bestand bestaat al en gebruiker koos "nieuw"): voeg `HHMM` suffix toe.
-- `2026-04-29-1430-component-filter-bar.tcebc.md`
-
-De `.tcebc.md` extensie is een pilot-marker die verifieerbaar maakt dat de TC-EBC-flow correct is doorlopen. Wordt later vervangen door `.md` zodra de flow stabiel is.
-
-**Bestandsinhoud — volledig structuurformaat**
-
-Het bestand bevat: titel met naam, metadata blok (Datum / Type / Project / Klant / Status), een horizontale lijn, het inline TC-EBC codeblock met TASK / CONTEXT / ELEMENTS / BEHAVIOUR / CONSTRAINTS labels, een tweede horizontale lijn, dan de secties Open vragen, Aannames, Acceptatie, en Beslissingsgeschiedenis.
-
-Open vragen-sectie: lijst van kritische items die nog niet beantwoord zijn. Leeg laten als alles beantwoord is.
-
-Aannames-sectie: lijst van items met `[ASSUMPTION]` markers — niet kritisch maar context-afhankelijk.
-
-Acceptatie-sectie: de checklist waartegen de Beoordeel-stap valideert (zie *Plan / Bouw / Beoordeel — werkprincipe*). Eén `- [ ]` item per toetsbaar criterium, afgeleid uit de vier kritische items (component-typologie, states, interactie, edge cases) plus de toetsbare kern van BEHAVIOUR en CONSTRAINTS. De `Status` in het metadata blok doorloopt onder dit principe `gepland → gebouwd → gevalideerd`; `gevalideerd` mag pas zodra elk item `- [x]` is én er geen P0/P1-bevindingen meer openstaan. Bij pure niet-design taken blijft deze sectie leeg — daar leeft het acceptatie-contract los (doel / invariants / done-criteria).
-
-Beslissingsgeschiedenis-sectie: alleen kantelpunten, niet elke kleine wijziging.
-
-Een kantelpunt is: component-typologie gewijzigd (sheet → modal), kritisch element toegevoegd of verwijderd, scope significant verschoven.
-
-Een kantelpunt is NIET: typo's of formuleringsverbeteringen, aanvulling van Open vragen sectie.
-
-Format per regel: `- {YYYY-MM-DD}: {wat veranderd is en waarom}`
-
-**Voorbeelden**
-
-Drie uitgewerkte voorbeelden staan in `umanex-os/docs/tc-ebc-examples/`:
-- `01-volledige-briefing-columba.md` — rijke briefing, weinig open vragen
-- `02-onvolledige-briefing.md` — minimale briefing, veel kritische items als open vragen
-- `03-feature-mobile.md` — niet-component briefing op feature-niveau
-
 ---
 
 ## Plan / Bouw / Beoordeel — werkprincipe
 
 **Wat het is**
 
-Een lus voor substantieel bouwwerk: **PLAN → BOUW → BEOORDEEL**, herhalend tot de taak *gevalideerd* is. Het is de snelle, per-taak tegenhanger van de trage eval-loop (`vastleggen` → `learnings-verwerken`); de twee koppelen op één punt (zie *Brug*). Bouwt niets nieuws — het knoopt bestaande rollen aan elkaar.
-
-Status: dit is v1, een **werkprincipe** (model-gedreven, geen skill of hook), exact zoals TC-EBC begon. Rijping staat onderaan.
+Een lus voor substantieel bouwwerk: **PLAN → BOUW → BEOORDEEL**, herhalend tot de taak *gevalideerd* is. Het is de snelle, per-taak tegenhanger van de trage eval-loop (`vastleggen` → `learnings-verwerken`). Bouwt niets nieuws — het knoopt bestaande rollen aan elkaar.
 
 **Wanneer toepassen — de poort**
 
@@ -178,11 +93,7 @@ Status: dit is v1, een **werkprincipe** (model-gedreven, geen skill of hook), ex
 - **Niet (bouw direct, geen cyclus):** copy-/token-/één-regel-fix, dep-bump, ci/config-sync, rename, pure debug/deploy/infra zonder gedragscontract.
 - **Twijfel?** De poort weegt of de Beoordeel-stap iets *meetbaars* heeft om tegen te valideren. Zo niet → geen cyclus.
 
-**De drie rollen** (mapping naar bestaande primitieven, geen nieuwe machinerie)
-
-- **PLAN** — TC-EBC (design, **main-agent only** — harde rail, nooit naar een sub-agent) of een licht **taak-contract** (doel / invariants-regressiechecks / done-criteria) voor refactor/bugfix/infra waar TC-EBC bewust wordt overgeslagen. Levert één machine-leesbare **acceptatie-checklist** (`- [ ]`).
-- **BOUW** — main-agent (erft de `@`-import CLAUDE.md-keten met git/Figma/token-rails) of de bouw-skill bij het taaktype: `nieuw-component`, `figma-naar-code`, `code-naar-figma`. Een build-sub-agent alleen bewust — `@`-import-erving is buiten de main-agent niet gegarandeerd.
-- **BEOORDEEL** — een panel langs verschillende assen, elk een eigen bril: `code-review` (diff-correctheid, P0/P1-blokker), `verify` (gedrag tegen BEHAVIOUR, P0/P1-blokker), `ux-audit` (design, niet-blokkerend), `security-audit` (backend-security & robustheid, P0/P1-blokker bij backend-werk). Bij design-to-code is de **design-snapshot** (traceability-`.md` uit `figma-naar-code` stap 4b) + parity + token-checklist de meetbare as: `verify` dift de gebouwde code tegen de snapshot i.p.v. tegen een vluchtige in-context mapping. De main-agent is **scheidsrechter** en consolideert tot één geprioriteerde P0–P3 fix-lijst. Geef een reviewer-sub-agent **nooit** een hint over de verwachte fout — dat besmet de test (`learnings-verwerken` stap 3-discipline).
+**De drie rollen** — PLAN levert de acceptatie-checklist (TC-EBC bij design, **main-agent only**; een licht taak-contract bij refactor/bugfix/infra), BOUW draait in de main-agent of de bouw-skill bij het taaktype, BEOORDEEL is een panel van `code-review` · `verify` · `ux-audit` · `security-audit` met de main-agent als scheidsrechter. De **`cyclus-tot-validatie` skill** heeft de volledige mapping, het panel per as en de reviewer-discipline — lees hem voor je de lus start.
 
 **De cyclus en "validatie volledig"**
 
@@ -197,12 +108,6 @@ Harde rail: **max 3 iteraties**. Convergeert het niet → **gecontroleerde stop*
 **Brug naar de eval-loop**
 
 Een gefaalde review die een **terugkerende faalklasse** blootlegt = een `vastleggen`-trigger. De triade is de *feeder* van de trage loop, geen duplicaat. Houd de twee assen uit elkaar: triade-status (`gepland → gebouwd → gevalideerd`, per taak) staat los van learning-status (`open → verified → promoted`, over sessies heen). Die brug is het enige raakpunt.
-
-**Rijping** (zoals TC-EBC: eerst principe, dan hardenen)
-
-- **v1** — dit werkprincipe.
-- **v2** — een `cyclus-tot-validatie`-skill die de lus triggerbaar maakt met een Stap-0 overkill-poort; propageert user-level via `sync-os.sh`.
-- **v3** — een deterministisch Workflow-script + render-paden per app, pas wanneer de Beoordeel-as echt machine-checkbaar meet. De design-snapshot (`figma-naar-code` stap 4b) is de eerste bouwsteen daarvan: een persistente, diff-bare toetssteen i.p.v. een vluchtige in-context mapping.
 
 ---
 
@@ -223,16 +128,14 @@ Bij een probleem, bug of gefaalde check: zoek de onderliggende oorzaak en los d�
 
 ## Sessie-reflectie en handoff — werkprincipe
 
-Aan het einde van een substantiële sessie: een kritisch, eerlijk retrospectief dat de vluchtige context vastlegt vóór ze verdampt. Niet vleiend — de waarde zit in wat Claude zelf naar boven haalt: onzekerheden, onuitgesproken aannames, blinde vlekken, toekomstig breukrisico, de eerste zet voor de volgende keer. Dit draait via de `sessie-reflectie` skill.
+Aan het einde van een substantiële sessie: een kritisch, eerlijk retrospectief dat de vluchtige context vastlegt vóór ze verdampt. Niet vleiend — de waarde zit in wat Claude zelf naar boven haalt: onzekerheden, onuitgesproken aannames, blinde vlekken, toekomstig breukrisico, de eerste zet voor de volgende keer. Dit draait via de **`sessie-reflectie` skill**, die de werkwijze bevat.
 
 **Router, geen silo.** De reflectie is een *feeder* die elke bevinding naar het juiste bestaande huis stuurt — geen parallelle opslag (root cause boven patch):
 - terugkerende **faalklasse** → `vastleggen` (LEARNINGS, de eval-loop);
 - **durend feit** over Jeroen/project → auto-memory;
 - **vooruitkijkend & sessie-gebonden** (onzekerheid, aanname, risico, next-step, idee, debt) → `HANDOFF.md`.
 
-**HANDOFF.md** is de vooruitkijkende tegenhanger van LEARNINGS: gelaagd (globaal `umanex-os/HANDOFF.md` / klant `{repo-root}/HANDOFF.md` / project `apps/{app}/HANDOFF.md`), on-demand aangemaakt, statussen `open → resolved`. De open items komen bij de **start** van een volgende sessie automatisch mee via de user-level SessionStart-hook (`session-start-handoff.sh`, geïnstalleerd door `sync-os.sh` — zelfde kanaal als de TC-EBC-hook). Zo is de lus rond: reflecteren aan het eind → automatisch oppikken aan het begin.
-
-**Grens met de eval-loop.** Een fout hoort in LEARNINGS mét zijn verificatie-input, niet in HANDOFF; HANDOFF is enkel het vooruitkijkende restant dat (nog) geen fout is. Multi-inzetbaar zoals alle globale skills: bron in `umanex-os/`, user-level gesynct, werkt in elk project. Auto-trigger bij sessie-einde (Stop-hook) is een latere rijping — nu wordt de skill manueel opgeroepen.
+**Grens met de eval-loop.** Een fout hoort in LEARNINGS mét zijn verificatie-input, niet in HANDOFF; HANDOFF is enkel het vooruitkijkende restant dat (nog) geen fout is. `HANDOFF.md` is gelaagd (globaal `umanex-os/` / klant repo-root / project `apps/{app}/`) met statussen `open → resolved`; open items komen bij sessiestart automatisch mee via `session-start-handoff.sh`.
 
 ---
 
@@ -466,16 +369,9 @@ Start elke Figma-operatie met `figma_get_status`. Als de Bridge niet actief is:
 
 Gebruik de `figma-naar-code` skill. Die is leidend voor alle stappen, token mapping en verificatie.
 
-**Code naar Figma workflow**
+**Code → Figma**
 
-Bij het omzetten van code naar Figma met volledige token binding:
-
-1. `figma_get_status` — Desktop Bridge check
-2. Parallel: `figma_get_variables` + `tokens.json` lezen
-3. Lookup bouwen + gap-analyse — `token path → Figma variable ID`, ontbrekende variabelen aanmaken (`figma_create_variable`) of importeren (`figma_import_library_variable`) vóór execute
-4. `figma_execute` — `setBoundVariable` voor fills/spacing/radius, text styles, effect styles, auto layout structuur, component variants voor states
-5. `figma_take_screenshot` — visuele check
-6. `figma_get_component_for_development_deep` — verifieer dat alle `boundVariables` de juiste IDs bevatten, geen hardcoded values
+Gebruik de `code-naar-figma` skill. Die is leidend voor alle stappen: Bridge-check, variabelen-lookup en gap-analyse, de `setBoundVariable`-execute, screenshot-verificatie en de deep-check op `boundVariables`.
 
 Hardcoded values in Figma (`fills = [{color: {r,g,b}}]` zonder variable binding) zijn het equivalent van hardcoded hex in code — verboden in committed work.
 

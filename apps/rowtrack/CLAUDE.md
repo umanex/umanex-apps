@@ -17,39 +17,6 @@ om de juiste node-id te vinden. Niet gokken op basis van componentnaam.
 
 ---
 
-## Skills
-
-> **Lees altijd de relevante SKILL.md vóór je begint.**
-> Skills staan in `.claude/skills/`.
-
-### 🔁 Code to Figma — `.claude/skills/code-to-figma/SKILL.md`
-
-**Trigger:** Gebruik deze skill altijd wanneer de gebruiker vraagt om een component
-naar Figma te exporteren, te synchroniseren, bij te werken in Figma, of zegt:
-"exporteer naar Figma", "update Figma", "zet dit in Figma", "sync naar Figma".
-
-Exporteert een bestaand React/TypeScript component naar Figma via de
-Figma Console MCP en Desktop Bridge. Maakt een visueel accurate weergave
-van alle component states op de "Components" pagina van het Figma bestand.
-
-**Nooit** native Figma Code Connect gebruiken — altijd `figma_execute` via Console MCP.
-
----
-
-### 🎨 Figma to Code — `.claude/skills/figma-to-code/SKILL.md`
-
-**Trigger:** Gebruik deze skill altijd wanneer de gebruiker een Figma URL deelt,
-vraagt om een component te implementeren vanuit Figma, vraagt om design-aanpassingen
-door te voeren in de code, of zegt: "sync met Figma", "implementeer dit design",
-"pas de code aan op basis van Figma".
-
-Vertaalt een Figma component of scherm naar correcte TypeScript/React Native code
-voor het RowTrack project. Inspecteert het Figma design via `get_metadata`,
-`get_screenshot` en `get_design_context` en implementeert pixel-accurate code
-die de bestaande codebase-conventies volgt.
-
-**Nooit** native Figma Code Connect gebruiken — altijd inspecteren via Figma MCP tools.
-
 ## Design tokens
 
 Tokens worden beheerd via Tokens Studio en gegenereerd via `pnpm tokens:build`.
@@ -58,26 +25,8 @@ Tokens worden beheerd via Tokens Studio en gegenereerd via `pnpm tokens:build`.
 - **Build output (importeren in code):** `apps/rowtrack/constants/`
 
 Gebruik altijd imports uit `@/constants` — geen hardcoded kleuren, spacing, radii of font families.
-
-### Beschikbare exports
-
-```ts
-// Kleuren
-import { bg, fg, accent, border, buttonTokens, neutral } from '@/constants';
-// bg.base, bg.elevated, bg.raised
-// fg.primary, fg.secondary, fg.tertiary, fg.quaternary, fg.onAccent
-// accent.default, accent.subtle, accent.muted
-// border.subtle, border.default, border.strong
-
-// Typografie
-import { fontFamily, fontSize, typeStyles, lineHeight } from '@/constants';
-// fontFamily.sourceSerifRegular / sourceSerifItalic / sourceSerifSemiBold / sourceSerifBold
-// fontFamily.albertSansMedium / albertSansSemiBold
-// typeStyles.kpiValue / italicConnector / labelSection / buttonOutline / ...
-
-// Spacing & radius
-import { space, layout, componentRadius, radii } from '@/constants';
-```
+Voor de beschikbare exports (kleuren, `fontFamily`, `typeStyles`, `space`, `radii`): lees
+`constants/index.ts` en de bestanden waar hij naar herexporteert. Niet hier dupliceren — dat drift.
 
 ---
 
@@ -86,7 +35,6 @@ import { space, layout, componentRadius, radii } from '@/constants';
 ### Code
 - `StyleSheet.create()` — nooit inline styles
 - `TouchableOpacity` voor interactieve elementen, `activeOpacity={0.8}`
-- Font families via Expo namen: `Inter_400Regular`, `Inter_500Medium`, etc.
 - Iconen via `@expo/vector-icons` (Ionicons) — **nooit** `lucide-react-native`
 - Import alias: `@/components/...`, `@/lib/...`
 - 1 component = 1 bestand, PascalCase bestandsnaam
@@ -104,12 +52,10 @@ import { space, layout, componentRadius, radii } from '@/constants';
 - HR: Heart Rate service `0x180D`, characteristic `0x2A37`
 - Twee notification types: distance/elapsed packet en spm/watts/split packet
 
-### Supabase tabellen
-- `profiles`: id, naam, gender, age, weight_kg, height_cm
-- `workouts`: id, user_id, goal_type, goal_value, distance_m, elapsed_s,
-              avg_watts, avg_spm, avg_split, avg_hr, max_hr, calories,
-              created_at
-- `period_goals`: id, user_id, period (week/month), goal_type, goal_value
+### Supabase
+- Tabellen: `profiles`, `workouts`, `period_goals`
+- Lees het schema live via de Supabase MCP (`list_tables`) — kolomnamen niet hier
+  dupliceren, die drift (een gekopieerd schema stond hier maanden verkeerd)
 
 ---
 

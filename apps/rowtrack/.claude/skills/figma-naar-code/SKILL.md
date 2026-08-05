@@ -71,7 +71,7 @@ cat components/GoalSegments.tsx
 Controleer:
 - Bestaande StyleSheet conventies
 - Import paden (`@/components/...`)
-- Font families (`Inter_400Regular`, `Inter_500Medium`, `Inter_600SemiBold`, `Inter_700Bold`)
+- Font families — lees de actuele namen uit `constants/typography.ts` (`fontFamily`), nooit uit je hoofd
 - State management patronen (useState, context)
 - Bestaande design tokens in gebruik
 
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
 
 **Verplichte conventies:**
 - `StyleSheet.create()` — nooit inline styles
-- Font families via Expo font namen: `Inter_400Regular`, `Inter_500Medium`, `Inter_600SemiBold`, `Inter_700Bold`
+- Font families via `fontFamily` uit `@/constants` — lees `constants/typography.ts` voor de actuele namen
 - Kleuren als hex strings uit de design tokens
 - `TouchableOpacity` voor interactieve elementen, `activeOpacity={0.8}`
 - Iconen via `@expo/vector-icons` (Ionicons) — nooit lucide-react-native

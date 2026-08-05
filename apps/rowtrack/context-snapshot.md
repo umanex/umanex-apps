@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-04_
+_Gegenereerd op 2026-08-05_
 
 ## Project
 - **App:** rowtrack
@@ -54,15 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e623640 docs(rowtrack): monorepo-hoisting als openstaand punt vastgelegd
 cd09074 refactor(rowtrack): i18n-ready — typed Dutch translation layer + string extraction (#157)
 387aa31 fix(rowtrack): active-workout header conform Figma 297:2227
 7464a0e docs(rowtrack): resolve profile-save handoff item, add UX-audit todos
 97c8d8f fix(rowtrack): add elapsed time and Stop exit to BLE connect overlay (audit P0-F2)
-7ac1be8 fix(rowtrack): persist profile fields per sheet (audit P0-F1)
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/.claude/skills/figma-naar-code/SKILL.md
+  M  apps/rowtrack/CLAUDE.md
 
 ## Bestanden met TODO/FIXME
   (geen)

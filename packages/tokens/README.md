@@ -17,9 +17,29 @@ bulk-restructurering mag in de repo, mits gevolgd door een Pull in Tokens Studio
 | `Theme/light` · `Theme/dark` | de shadcn-rollaag | per mode |
 | `Semantic/light` · `Semantic/dark` | domeinrollen (`finance`, `overlay`) | per mode |
 
-De mode komt uit de **set-naam**, niet uit het token-pad. Alles buiten `Theme/` en
-`Semantic/` is een primitive. Zo blijft de structuur klaar voor Figma variable modes
-zonder dat de build van Tokens Studio's multi-theme (betaald) afhangt.
+De mode komt uit de **set-naam**, niet uit het token-pad. Zo blijft de structuur klaar voor
+Figma variable modes zonder dat de build van Tokens Studio's multi-theme (betaald) afhangt.
+
+Let op het onderscheid: de **set-naam** bepaalt in welk mode-blok een token landt, het
+**token-pad** bepaalt de variabelenaam. `Theme/light` met een platte key `background` geeft
+`--background`; `Semantic/light` met `finance.positive` geeft `--finance-positive`. De
+setnaam komt níet in de variabelenaam terug.
+
+### Een nieuwe as toevoegen
+
+De build weigert elke set die hij niet thuis kan brengen — dat is bewust, want de oude
+versie classificeerde een onbekende set stil als primitive (geen output) of als mode-blind
+(output in `:root`, over de light-rollen heen). Twee wegen:
+
+- **Rollaag met CSS-output** — zet de groep in `ROLE_GROUPS` in `build.mjs` en maak
+  `Groep/light` én `Groep/dark` aan (de symmetrie-guard dekt de nieuwe groep automatisch),
+  of `Groep/base` voor waarden die niet per mode verschillen. De tokens worden vanzelf
+  Tailwind-utilities via `roles.mjs`.
+- **Iets anders dan CSS** — zet de set in `PRIMITIVE_SETS` en regel daar expliciet hoe hij
+  geleverd wordt, zoals `Typography/Scale` → `build/typography.mjs`.
+
+Een nieuwe **mode** vraagt een entry in `MODES` én in `MODE_SELECTOR`; de build controleert
+dat allebei bestaan.
 
 ## Build
 

@@ -37,13 +37,70 @@ register(StyleDictionary, { excludeParentKeys: true });
 const MODES = ['light', 'dark'];
 const MODE_SELECTOR = { light: ':root', dark: '.dark' };
 const ROLE_GROUPS = ['Theme', 'Semantic'];
+const MODE_BLIND_LEAF = 'base';
+
+// Sets buiten de rolgroepen leveren geen CSS — ze bestaan om gealiast te worden.
+// Ze staan hier EXPLICIET, met wat ze wel leveren. Zonder deze lijst viel elke
+// onbekende set stil in de primitive-bak en verdween hij zonder foutmelding uit
+// de output; met `Theme/<iets onbekends>` was het erger dan verdwijnen, want die
+// werd als mode-blind behandeld en overschreef :root.
+const PRIMITIVE_SETS = {
+  Primitives: 'resolve-only, geen output',
+  'Typography/Scale': 'build/typography.mjs',
+};
 
 function classifySet(name) {
-  const [group, leaf] = name.split('/');
-  if (!ROLE_GROUPS.includes(group)) return { kind: 'primitive' };
-  if (leaf === undefined) return { kind: 'primitive' }; // 'Semantic' zonder mode-suffix
-  if (MODES.includes(leaf)) return { kind: 'role', mode: leaf };
-  return { kind: 'role', mode: null }; // Theme/base
+  if (name in PRIMITIVE_SETS) return { kind: 'primitive' };
+
+  const [group, leaf, ...rest] = name.split('/');
+  const geldigeSuffixen = [...MODES, MODE_BLIND_LEAF].join(', ');
+
+  // Bekende rolgroep: dan moet alleen de suffix nog kloppen.
+  if (ROLE_GROUPS.includes(group) && leaf !== undefined && !rest.length) {
+    if (leaf === MODE_BLIND_LEAF) return { kind: 'role', mode: null };
+    if (MODES.includes(leaf)) return { kind: 'role', mode: leaf };
+    throw new Error(
+      `[tokens] set "${name}": suffix "${leaf}" is geen geldige mode.\n` +
+      `  Hem stilzwijgend als mode-blind behandelen zou zijn waarden in :root zetten ` +
+      `en de ${MODES[0]}-rollen overschrijven — foute output i.p.v. ontbrekende.\n` +
+      `  Geldige suffixen voor groep "${group}": ${geldigeSuffixen}.\n` +
+      `  Een nieuwe mode toevoegen? Zet hem in MODES én geef hem een selector in ` +
+      `MODE_SELECTOR in packages/tokens/build.mjs.`
+    );
+  }
+
+  // Bekende rolgroep, maar zonder mode-suffix. Dit is de vorm van vóór de
+  // herstructurering ("Semantic" i.p.v. "Semantic/light"), dus precies wat er
+  // terugkomt als iemand in de plugin de oude setnaam opnieuw aanmaakt.
+  if (ROLE_GROUPS.includes(group) && (leaf === undefined || rest.length)) {
+    throw new Error(
+      `[tokens] set "${name}" is een rolgroep zonder mode-suffix.\n` +
+      `  De mode komt uit de SET-NAAM, niet uit het token-pad. Zonder suffix weet de build ` +
+      `niet in welk blok deze tokens horen.\n` +
+      `  Splits hem in ${MODES.map((m) => `"${group}/${m}"`).join(' + ')}, of gebruik ` +
+      `"${group}/${MODE_BLIND_LEAF}" als de waarden voor elke mode gelijk zijn.`
+    );
+  }
+
+  // Onbekende groep.
+  throw new Error(
+    `[tokens] onbekende set "${name}" — ik weet niet hoe die geleverd moet worden.\n` +
+    `  Groep "${group}" is geen rolgroep (bekend: ${ROLE_GROUPS.join(', ')}), en de set staat ` +
+    `niet in PRIMITIVE_SETS.\n` +
+    `  Kies in packages/tokens/build.mjs:\n` +
+    `    - wordt het een rollaag met CSS-output? Zet "${group}" in ROLE_GROUPS en zorg dat ` +
+    `${MODES.map((m) => `"${group}/${m}"`).join(' + ')} allebei bestaan (de symmetrie-guard eist dat), ` +
+    `of gebruik "${group}/${MODE_BLIND_LEAF}" voor mode-blinde waarden.\n` +
+    `    - of levert hij iets anders dan CSS? Zet "${name}" in PRIMITIVE_SETS en regel daar ` +
+    `expliciet hoe (zoals Typography/Scale → build/typography.mjs).`
+  );
+}
+
+// Elke mode heeft een selector nodig; anders emit de build een blok met "undefined {".
+for (const mode of MODES) {
+  if (!MODE_SELECTOR[mode]) {
+    throw new Error(`[tokens] mode "${mode}" heeft geen selector in MODE_SELECTOR`);
+  }
 }
 
 const raw = JSON.parse(await readFile(R('tokens.json'), 'utf-8'));

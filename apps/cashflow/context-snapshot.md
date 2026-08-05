@@ -48,24 +48,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+04113db fix(tokens): harden the build pipeline against four latent failure modes
+dbb1b8a docs(cashflow): token-migratie afgevinkt in HANDOFF
+124dbd2 feat(tokens): finance-rollen als semantische tokens, code stapt over
 1a3cf31 docs(cashflow): tokenbeslissingen vastleggen in de finance-inventaris
 fca22ef fix(cashflow): grafieken tonen ook de randgevallen die ze verzwegen
-8f24123 fix(cashflow): afgesloten maanden bevriezen en tonen wat ze horen
-757e280 fix(cashflow): ankermaand telt geen betaalde posten dubbel meer
-d555ade fix(cashflow): beginsaldo wegklikken wist geen bestaande correctie meer
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-08-05-tokens-finance-inventaris.md
-  M  apps/cashflow/components/cashflow/BalanceFooter.tsx
-  M  apps/cashflow/components/cashflow/ExpenseSection.tsx
-  M  apps/cashflow/components/cashflow/IncomeSection.tsx
-  M  apps/cashflow/components/cashflow/MonthVariance.tsx
-  M  apps/cashflow/components/cashflow/RecurringSection.tsx
-  M  apps/cashflow/components/cashflow/RecurringSidepanel.tsx
-  M  apps/cashflow/components/cashflow/RepeatMonthModal.tsx
-  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
-  M  apps/cashflow/components/cashflow/ReservationSection.tsx
+  M  apps/cashflow/tailwind.config.ts
+  M  packages/config/package.json
+  M  packages/config/tailwind/preset.ts
+  D  packages/ui/tailwind.config.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

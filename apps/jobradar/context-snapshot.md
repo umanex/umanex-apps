@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-07-14_
+_Gegenereerd op 2026-08-05_
 
 ## Project
 - **App:** jobradar
@@ -32,19 +32,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-a482ebc chore: seed HANDOFF.md staging files (root + apps)
-7d0d1bc fix(tokens): correcte DTCG-build + verwijder ongebruikte tailwind.js-export
-cea9181 Convert to W3C DTCG format, read more at https://docs.tokens.studio/convert-to-dtcg-format
-f55a171 fix(cashflow): allow finalizing spaardoel with leftover balance
-f42fe26 feat(cashflow): prudent budget-model, geen release van onbesteed budget
+3151e3b feat(tokens): give Typography/Scale a real ramp and deliver it to Tailwind
+84f557b refactor(tokens): make the finance layer mode-aware and cut it loose from the brand red
+b282e96 refactor(config): generate the Tailwind color map from the tokens
+b546f4f feat(tokens): add success and warning roles, move primary to Primary.600
+760d0f0 refactor(tokens): ship the role layer as its own export and put every app on it
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/app/api/jobs/[id]/route.ts
-  M  apps/jobradar/app/api/leads/[id]/route.ts
-  M  apps/jobradar/app/api/sync/route.ts
-  M  apps/jobradar/app/page.tsx
-  M  apps/jobradar/lib/db/index.ts
+  M  apps/jobradar/.eslintrc.json
+  M  packages/tokens/build.mjs
+  D  packages/tokens/build/variables.css
+  M  packages/tokens/package.json
+  A  packages/tokens/scripts/guard.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

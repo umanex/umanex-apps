@@ -39,9 +39,9 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
   if (closedMonths < TREND_THRESHOLD) {
     const nog = TREND_THRESHOLD - closedMonths;
     return (
-      <section className="rounded-xl border border-[var(--umanexPrimary50)] bg-card p-5">
-        <h2 className="text-base font-semibold text-[var(--umanexNeutral800)]">Bufferopbouw</h2>
-        <p className="mt-2 text-sm text-[var(--umanexNeutral500)]">
+      <section className="rounded-xl border border-accent bg-card p-5">
+        <h2 className="text-base font-semibold text-foreground">Bufferopbouw</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           Nog {nog} {nog === 1 ? 'afgesloten maand' : 'afgesloten maanden'} nodig. Tot dan is
           er te weinig historie om een opbouw uit af te lezen.
         </p>
@@ -93,11 +93,11 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
   };
 
   return (
-    <section className="rounded-xl border border-[var(--umanexPrimary50)] bg-card p-5">
+    <section className="rounded-xl border border-accent bg-card p-5">
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-[var(--umanexNeutral800)]">Bufferopbouw</h2>
-          <p className="text-sm text-[var(--umanexNeutral500)]">
+          <h2 className="text-base font-semibold text-foreground">Bufferopbouw</h2>
+          <p className="text-sm text-muted-foreground">
             Stand van je bufferpot per maand — doorlopend is historie, gestippeld is prognose
           </p>
         </div>
@@ -125,14 +125,14 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
               x2={W - PAD.right}
               y1={y(tick)}
               y2={y(tick)}
-              stroke="var(--umanexNeutral200)"
+              stroke="hsl(var(--border))"
             />
             <text
               x={PAD.left - 8}
               y={y(tick) + 4}
               textAnchor="end"
               fontSize={11}
-              fill="var(--umanexNeutral500)"
+              fill="hsl(var(--muted-foreground))"
             >
               {formatCurrency(tick)}
             </text>
@@ -145,16 +145,16 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
           x2={W - PAD.right}
           y1={y(0)}
           y2={y(0)}
-          stroke="var(--umanexNeutral400)"
+          stroke="hsl(var(--muted-foreground))"
         />
 
-        {areaPath && <path d={areaPath} fill="var(--umanexNeutral200)" />}
+        {areaPath && <path d={areaPath} fill="hsl(var(--border))" />}
 
         {historyPoints.length > 1 && (
           <polyline
             points={line(historyPoints, 0)}
             fill="none"
-            stroke="var(--umanexNeutral800)"
+            stroke="hsl(var(--foreground))"
             strokeWidth={2}
           />
         )}
@@ -167,13 +167,13 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
               x2={x(Math.max(lastHistoryIndex, 0))}
               y1={PAD.top}
               y2={y(0)}
-              stroke="var(--umanexNeutral400)"
+              stroke="hsl(var(--muted-foreground))"
               strokeDasharray="3 3"
             />
             <polyline
               points={line(forecastPoints, Math.max(lastHistoryIndex, 0))}
               fill="none"
-              stroke="var(--umanexNeutral500)"
+              stroke="hsl(var(--muted-foreground))"
               strokeWidth={2}
               strokeDasharray="5 4"
             />
@@ -187,8 +187,8 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
             cy={y(p.buffer)}
             r={3}
             // Open markers voor de toekomst: ongevulde punten versterken de onzekerheid.
-            fill={p.isForecast ? 'var(--umanexBaseWhite)' : 'var(--umanexNeutral800)'}
-            stroke={p.isForecast ? 'var(--umanexNeutral500)' : 'none'}
+            fill={p.isForecast ? 'hsl(var(--background))' : 'hsl(var(--foreground))'}
+            stroke={p.isForecast ? 'hsl(var(--muted-foreground))' : 'none'}
           />
         ))}
 
@@ -200,7 +200,7 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
               y={H - 8}
               textAnchor="middle"
               fontSize={11}
-              fill="var(--umanexNeutral500)"
+              fill="hsl(var(--muted-foreground))"
             >
               {shortLabel(p.monthKey)}
             </text>
@@ -212,7 +212,7 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
         <table id="bufferchart-tabel" className="mt-4 w-full text-sm">
           <caption className="sr-only">Bufferstand per maand</caption>
           <thead>
-            <tr className="text-left text-[var(--umanexNeutral500)]">
+            <tr className="text-left text-muted-foreground">
               <th scope="col" className="font-medium py-1">Maand</th>
               <th scope="col" className="font-medium py-1">Bufferstand</th>
               <th scope="col" className="font-medium py-1">Bron</th>
@@ -220,10 +220,10 @@ export function BufferChart({ points, closedMonths }: BufferChartProps) {
           </thead>
           <tbody>
             {points.map((p) => (
-              <tr key={p.monthKey} className="border-t border-[var(--umanexNeutral200)]">
+              <tr key={p.monthKey} className="border-t border-border">
                 <td className="py-1">{getMonthLabel(p.monthKey)}</td>
                 <td className="py-1 tabular-nums">{formatAmount(p.buffer)}</td>
-                <td className="py-1 text-[var(--umanexNeutral500)]">
+                <td className="py-1 text-muted-foreground">
                   {p.isForecast ? 'prognose' : 'afgesloten'}
                 </td>
               </tr>

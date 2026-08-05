@@ -4,10 +4,19 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./variables.css": "./build/variables.css"
+    "./theme.css": "./build/theme.css",
+    "./roles": {
+      "types": "./build/roles.d.ts",
+      "default": "./build/roles.mjs"
+    },
+    "./typography": {
+      "types": "./build/typography.d.ts",
+      "default": "./build/typography.mjs"
+    }
   },
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "guard": "node scripts/guard.mjs"
   },
   "devDependencies": {
     "@tokens-studio/sd-transforms": "^1.2.0",

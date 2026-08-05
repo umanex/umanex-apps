@@ -48,24 +48,21 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-1a3cf31 docs(cashflow): tokenbeslissingen vastleggen in de finance-inventaris
-fca22ef fix(cashflow): grafieken tonen ook de randgevallen die ze verzwegen
-8f24123 fix(cashflow): afgesloten maanden bevriezen en tonen wat ze horen
-757e280 fix(cashflow): ankermaand telt geen betaalde posten dubbel meer
-d555ade fix(cashflow): beginsaldo wegklikken wist geen bestaande correctie meer
+c21ec8a chore(tokens): retract the primitives from CSS and make the guards hard
+3151e3b feat(tokens): give Typography/Scale a real ramp and deliver it to Tailwind
+c6ed4ca refactor(cashflow): move the remaining primitive bypasses onto the role layer
+84f557b refactor(tokens): make the finance layer mode-aware and cut it loose from the brand red
+b282e96 refactor(config): generate the Tailwind color map from the tokens
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-08-05-tokens-finance-inventaris.md
-  M  apps/cashflow/components/cashflow/BalanceFooter.tsx
-  M  apps/cashflow/components/cashflow/ExpenseSection.tsx
-  M  apps/cashflow/components/cashflow/IncomeSection.tsx
-  M  apps/cashflow/components/cashflow/MonthVariance.tsx
-  M  apps/cashflow/components/cashflow/RecurringSection.tsx
-  M  apps/cashflow/components/cashflow/RecurringSidepanel.tsx
-  M  apps/cashflow/components/cashflow/RepeatMonthModal.tsx
-  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
-  M  apps/cashflow/components/cashflow/ReservationSection.tsx
+  M  apps/cashflow/app/layout.tsx
+  M  apps/cashflow/app/page.tsx
+  M  packages/tokens/README.md
+  M  packages/tokens/build/theme.css
+  M  packages/tokens/tokens.json
+  A  packages/ui/components/ui/ThemeToggle.tsx
+  M  packages/ui/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

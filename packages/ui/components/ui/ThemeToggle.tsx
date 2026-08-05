@@ -3,6 +3,13 @@
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
+/**
+ * Schakelt de `dark` class op <html> en onthoudt de keuze in localStorage.
+ *
+ * Hoort samen met het theme-init script in de app-layout, dat diezelfde class vóór
+ * first paint zet. Zonder dat script krijg je een flits van het verkeerde theme;
+ * zonder deze knop kan de bezoeker er niet uit.
+ */
 export const ThemeToggle = () => {
   const [isDark, setIsDark] = useState<boolean | null>(null);
 

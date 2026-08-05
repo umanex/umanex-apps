@@ -135,11 +135,11 @@ function DraggablePotRow({
   return (
     <div ref={setNodeRef} className={`${isDragging ? 'opacity-30' : ''}`}>
       {/* Pot hoofdrij — altijd label + beschikbare provisie */}
-      <div className={`flex gap-2 pl-1 rounded-[4px] w-full items-start py-1 ${zebra ? 'bg-[var(--umanexNeutral50)]' : ''}`}>
+      <div className={`flex gap-2 pl-1 rounded-sm w-full items-start py-1 ${zebra ? 'bg-muted' : ''}`}>
         <button
           {...listeners}
           {...attributes}
-          className="text-[var(--umanexNeutral500)] hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0 mt-0.5"
+          className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing text-sm leading-none select-none shrink-0 mt-0.5"
           aria-label="Versleep spaarpot bijdrage"
         >
           ⠿
@@ -147,12 +147,12 @@ function DraggablePotRow({
 
         <div className="flex-1 flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-[var(--umanexNeutral800)] truncate">{pot.label}</span>
+            <span className="text-sm font-medium text-foreground truncate">{pot.label}</span>
             {canShowFinalize && (
               <button
                 onClick={handleFinalize}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="text-xs text-[var(--umanexPrimary500)] underline whitespace-nowrap shrink-0"
+                className="text-xs text-primary underline whitespace-nowrap shrink-0"
               >
                 Finaliseren →
               </button>
@@ -160,8 +160,8 @@ function DraggablePotRow({
           </div>
           {!isBudgetCurrentMonth && (
             <div className="flex items-center gap-1">
-              <span className="text-[11px] text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
-              <span className={`text-[11px] font-semibold tabular-nums ${displayAmount < 0 ? 'text-[var(--umanexFinanceNegative)]' : 'text-[var(--umanexFinancePositive)]'}`}>
+              <span className="text-2xs text-muted-foreground opacity-70">Provisie:</span>
+              <span className={`text-2xs font-semibold tabular-nums ${displayAmount < 0 ? 'text-finance-negative' : 'text-finance-positive'}`}>
                 {formatAmount(displayAmount)}
                 {displayAmount < 0 && ' ⚠'}
               </span>
@@ -183,10 +183,10 @@ function DraggablePotRow({
             }}
             onBlur={isComputed ? undefined : handleAmountBlur}
             onPointerDown={(e) => e.stopPropagation()}
-            className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] focus:outline-none focus:ring-1 focus:ring-ring ${
+            className={`w-[92px] h-7 px-2 text-dense text-right tabular-nums rounded-sm border border-input focus:outline-none focus:ring-1 focus:ring-ring ${
               isComputed
-                ? `bg-[var(--umanexNeutral50)] cursor-default ${syncValue < 0 ? 'text-[var(--umanexFinanceNegative)] font-medium' : 'text-[var(--umanexFinancePositive)]'}`
-                : `bg-white text-[var(--umanexFinanceDeferred)] ${pot.hasSettlement ? 'font-medium' : ''}`
+                ? `bg-muted cursor-default ${syncValue < 0 ? 'text-finance-negative font-medium' : 'text-finance-positive'}`
+                : `bg-background text-finance-deferred ${pot.hasSettlement ? 'font-medium' : ''}`
             }`}
             aria-label={isBudgetCurrentMonth ? 'Resterende provisie' : 'Stortingsbedrag'}
           />
@@ -205,12 +205,12 @@ function DraggablePotRow({
             <div
               key={payment.id}
               className={`flex flex-col gap-1 py-2 ${
-                pi < pot.paymentsThisMonth.length - 1 ? 'border-b border-[var(--umanexPrimary50)]' : ''
+                pi < pot.paymentsThisMonth.length - 1 ? 'border-b border-accent' : ''
               }`}
             >
               {/* Betalingslabel + verwijder/verplaats */}
               <div className="flex items-center gap-1">
-                <span className="text-xs text-[var(--umanexNeutral800)] font-medium">{payment.label}</span>
+                <span className="text-xs text-foreground font-medium">{payment.label}</span>
                 <button
                   onClick={() => onMovePayment(payment.id, nextMonthKey(monthKey))}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -229,25 +229,25 @@ function DraggablePotRow({
                 </button>
               </div>
               {/* Betaald · Provisie · Cash */}
-              <div className="flex items-center gap-2 text-[11px]">
+              <div className="flex items-center gap-2 text-2xs">
                 {payment.fromCash === 0 ? (
-                  <span className="text-[var(--umanexFinancePositive)] font-semibold tabular-nums">
+                  <span className="text-finance-positive font-semibold tabular-nums">
                     {formatAmount(payment.invoiceAmount)} betaald met provisie
                   </span>
                 ) : (
                   <>
-                    <span className="text-[var(--umanexNeutral500)] opacity-70">Betaald:</span>
-                    <span className="font-semibold text-[var(--umanexNeutral800)] tabular-nums">{formatAmount(payment.invoiceAmount)}</span>
+                    <span className="text-muted-foreground opacity-70">Betaald:</span>
+                    <span className="font-semibold text-foreground tabular-nums">{formatAmount(payment.invoiceAmount)}</span>
                     {payment.fromReservation > 0 && (
                       <>
                         <span className="text-muted-foreground/40">·</span>
-                        <span className="text-[var(--umanexNeutral500)] opacity-70">Provisie:</span>
-                        <span className="font-semibold text-[var(--umanexFinancePositive)] tabular-nums">{formatAmount(payment.fromReservation)}</span>
+                        <span className="text-muted-foreground opacity-70">Provisie:</span>
+                        <span className="font-semibold text-finance-positive tabular-nums">{formatAmount(payment.fromReservation)}</span>
                       </>
                     )}
                     <span className="text-muted-foreground/40">·</span>
-                    <span className="text-[var(--umanexNeutral500)] opacity-70">Cash:</span>
-                    <span className="font-semibold text-[var(--umanexFinanceNegative)] tabular-nums">{formatAmount(payment.fromCash)}</span>
+                    <span className="text-muted-foreground opacity-70">Cash:</span>
+                    <span className="font-semibold text-finance-negative tabular-nums">{formatAmount(payment.fromCash)}</span>
                   </>
                 )}
               </div>
@@ -338,8 +338,8 @@ function PotSubgroup({
           finalizedPots.map((pot, index) => (
             <div
               key={pot.reservationId}
-              className={`flex items-center gap-2 h-7 pl-1 rounded-[4px] w-full opacity-50 ${
-                (activePots.length + index) % 2 !== 0 ? 'bg-[var(--umanexNeutral50)]' : ''
+              className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full opacity-50 ${
+                (activePots.length + index) % 2 !== 0 ? 'bg-muted' : ''
               }`}
             >
               <span className="flex-1 text-sm truncate min-w-0">{pot.label}</span>
@@ -443,20 +443,20 @@ export function ReservationSection({
       />
 
       {deferredReservationItems.map((d, index) => (
-        <div key={d.deferId} className={`flex items-center gap-2 h-7 pl-1 rounded-[4px] w-full ${index % 2 !== 0 ? 'bg-[var(--umanexNeutral50)]' : ''}`}>
+        <div key={d.deferId} className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full ${index % 2 !== 0 ? 'bg-muted' : ''}`}>
           <span className="flex-1 text-sm truncate min-w-0">
-            <span className="text-[var(--umanexFinanceDeferred)]">{d.label}</span>
+            <span className="text-finance-deferred">{d.label}</span>
             {' '}
-            <span className="text-xs text-[var(--umanexFinanceDeferred)]">
+            <span className="text-xs text-finance-deferred">
               (uitgesteld van {getMonthLabel(d.fromMonth)})
             </span>
           </span>
-          <span className="text-sm font-medium text-[var(--umanexFinanceDeferred)] tabular-nums shrink-0">
+          <span className="text-sm font-medium text-finance-deferred tabular-nums shrink-0">
             -{formatAmount(d.amount)}
           </span>
           <button
             onClick={() => onRemoveReservationDefer(d.deferId)}
-            className="text-[var(--umanexFinanceDeferred)] hover:text-[var(--umanexFinanceDeferredStrong)] transition-colors text-sm leading-none shrink-0"
+            className="text-finance-deferred hover:text-finance-deferred-strong transition-colors text-sm leading-none shrink-0"
             aria-label="Uitstelling ongedaan maken"
           >
             ↩

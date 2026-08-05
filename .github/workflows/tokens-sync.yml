@@ -6,7 +6,7 @@ name: Tokens sync
 #
 # Twee onafhankelijke token-sets, elk met een eigen bron + output:
 #   - RowTrack       : apps/rowtrack/tokens/tokens.json → apps/rowtrack/constants/*.ts
-#   - umanex (web)   : packages/tokens/tokens.json      → packages/tokens/build/* + packages/ui/globals.css
+#   - umanex (web)   : packages/tokens/tokens.json      → packages/tokens/build/*
 #
 # Beide builds zijn deterministisch/idempotent — altijd allebei draaien is veilig;
 # git commit enkel de echte diffs. De paths-filter zorgt dat de workflow alleen
@@ -19,6 +19,11 @@ on:
     paths:
       - "apps/rowtrack/tokens/tokens.json"
       - "packages/tokens/tokens.json"
+      # Ook op de generator zelf: een wijziging in build.mjs of de transforms
+      # verandert de output net zo goed als een tokenwijziging. Zonder deze
+      # paths bleef de gecommitte output dan stale tot de volgende Figma-push.
+      - "packages/tokens/build.mjs"
+      - "packages/tokens/lib/**"
   workflow_dispatch: {} # handmatige her-sync
 
 permissions:
@@ -65,18 +70,39 @@ jobs:
       - name: Rebuild RowTrack tokens (style-dictionary → constants)
         run: pnpm --filter rowtrack tokens:build
 
-      - name: Rebuild umanex web tokens (@umanex/tokens → build + ui globals)
+      - name: Rebuild umanex web tokens (@umanex/tokens → build/)
         run: pnpm --filter @umanex/tokens build
 
-      - name: Guard — geen DTCG $value-uitval in de output
+      - name: Guard — geen DTCG $value-uitval of onopgeloste alias in de output
         run: |
-          HITS="$(grep -rnE ': undefined|\[object Object\]' \
-            apps/rowtrack/constants packages/tokens/build packages/ui/globals.css 2>/dev/null || true)"
+          # `: undefined` / `[object Object]` = de DTCG $value-valkuil.
+          # `{Foo.bar}` = een alias die nooit geresolved is. Die derde vorm ontbrak,
+          # waardoor precies de faalmodus van een set-hernoeming door de guard glipte.
+          #
+          # Scope = de GELEVERDE output. Niet de hele build-map: build/_merged.json is
+          # het tussenbestand dat Style Dictionary als input krijgt en dat per definitie
+          # nog onopgeloste aliassen bevat.
+          HITS="$(grep -rnE ': undefined|\[object Object\]|\{[A-Za-z][A-Za-z0-9_.-]*\}' \
+            apps/rowtrack/constants packages/tokens/build/*.css 2>/dev/null || true)"
           if [ -n "$HITS" ]; then
-            echo "::error::Token-build produceerde undefined / [object Object] — DTCG \$value-valkuil. Niet gecommit."
+            echo "::error::Token-build produceerde undefined / [object Object] / een onopgeloste alias. Niet gecommit."
             echo "$HITS"
             exit 1
           fi
+
+      - name: Guard — outputs zijn niet leeggelopen
+        run: |
+          # Een filter dat te veel wegneemt geeft een syntactisch geldig maar leeg
+          # bestand. Zonder ondergrens is dat niet te onderscheiden van succes.
+          check() {
+            COUNT="$(grep -cE '^\s*--' "$1" || true)"
+            if [ "$COUNT" -lt "$2" ]; then
+              echo "::error::$1 heeft $COUNT custom properties, verwacht minstens $2."
+              exit 1
+            fi
+            echo "$1: $COUNT custom properties ✓"
+          }
+          check packages/tokens/build/theme.css 60
 
       - name: Type-check RowTrack (valideert dat de constants compileren)
         run: pnpm --filter rowtrack exec tsc --noEmit
@@ -85,7 +111,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/rowtrack/constants packages/tokens/build packages/ui/globals.css
+          git add apps/rowtrack/constants packages/tokens/build
           if git diff --cached --quiet; then
             echo "Geen gegenereerde wijzigingen — code al in sync met de tokens."
             exit 0

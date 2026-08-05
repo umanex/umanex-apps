@@ -101,19 +101,19 @@ export function MonthCard({
     <div
       ref={setNodeRef}
       className={`flex flex-col h-full min-h-0 rounded-xl border overflow-hidden transition-colors ${
-        locked ? 'bg-[var(--umanexNeutral50)]' : 'bg-card'
-      } ${isOver ? 'border-primary ring-2 ring-primary/30' : 'border-[var(--umanexPrimary50)]'}`}
+        locked ? 'bg-muted' : 'bg-card'
+      } ${isOver ? 'border-primary ring-2 ring-primary/30' : 'border-accent'}`}
     >
       {/* Vaste maandheader — blijft staan terwijl de ledger scrollt. */}
-      <div className="shrink-0 flex items-center justify-between gap-2 px-6 py-3 bg-[var(--umanexNeutral100)]">
+      <div className="shrink-0 flex items-center justify-between gap-2 px-6 py-3 bg-muted">
         <div className="flex items-center gap-2 min-w-0">
-          <h2 className="font-semibold text-base text-[var(--umanexNeutral800)] truncate">
+          <h2 className="font-semibold text-base text-foreground truncate">
             {getMonthLabel(monthKey)}
           </h2>
           {locked && (
             <span
               title={'Afgesloten maand. Wat je ziet is vastgelegd op het moment van afsluiten en verandert niet meer mee met je gegevens.'}
-              className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-[11px] font-medium bg-[var(--umanexNeutral800)] text-[var(--umanexNeutral50)]"
+              className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-2xs font-medium bg-foreground text-background"
             >
               afgesloten
             </span>
@@ -121,7 +121,7 @@ export function MonthCard({
           {!locked && isReconstruction && (
             <span
               title="Deze maand is nooit afgesloten. Wat je ziet is opnieuw doorgerekend uit je huidige gegevens, niet wat er destijds stond."
-              className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-[11px] font-medium bg-[var(--umanexNeutral200)] text-[var(--umanexNeutral600)]"
+              className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-2xs font-medium bg-muted text-muted-foreground"
             >
               reconstructie
             </span>
@@ -131,7 +131,7 @@ export function MonthCard({
           <button
             onClick={onReopenMonth}
             title="Afsluiting opheffen: de maand rekent daarna weer mee met je huidige gegevens."
-            className="shrink-0 h-7 px-2 rounded-[4px] text-[13px] text-[var(--umanexNeutral500)] hover:text-[var(--umanexNeutral800)] hover:bg-[var(--umanexNeutral200)] transition-colors whitespace-nowrap"
+            className="shrink-0 h-7 px-2 rounded-sm text-dense text-muted-foreground hover:text-foreground hover:bg-muted transition-colors whitespace-nowrap"
           >
             Heropenen
           </button>
@@ -141,7 +141,7 @@ export function MonthCard({
               <button
                 onClick={onCloseMonth}
                 title="Deze maand bevriezen zoals ze nu staat, zodat latere wijzigingen de historie niet meer veranderen."
-                className="h-7 px-2 rounded-[4px] text-[13px] text-[var(--umanexNeutral500)] hover:text-[var(--umanexNeutral800)] hover:bg-[var(--umanexNeutral200)] transition-colors whitespace-nowrap"
+                className="h-7 px-2 rounded-sm text-dense text-muted-foreground hover:text-foreground hover:bg-muted transition-colors whitespace-nowrap"
               >
                 Afsluiten
               </button>
@@ -149,7 +149,7 @@ export function MonthCard({
             <button
               onClick={onRepeatMonth}
               title={`Posten van ${getMonthLabel(addMonth(monthKey, -1))} overnemen`}
-              className="h-7 px-2 rounded-[4px] text-[13px] text-[var(--umanexNeutral500)] hover:text-[var(--umanexNeutral800)] hover:bg-[var(--umanexNeutral200)] transition-colors whitespace-nowrap"
+              className="h-7 px-2 rounded-sm text-dense text-muted-foreground hover:text-foreground hover:bg-muted transition-colors whitespace-nowrap"
             >
               ↻ Herhaal
             </button>

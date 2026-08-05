@@ -21,9 +21,9 @@ export function RunwayCard({ runway }: RunwayCardProps) {
   if (!hasEnoughData) {
     const nog = TREND_THRESHOLD - closedMonths;
     return (
-      <div className="rounded-xl border border-[var(--umanexPrimary50)] bg-card p-5">
-        <h2 className="text-base font-semibold text-[var(--umanexNeutral800)]">Runway</h2>
-        <p className="mt-2 text-sm text-[var(--umanexNeutral500)]">
+      <div className="rounded-xl border border-accent bg-card p-5">
+        <h2 className="text-base font-semibold text-foreground">Runway</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           Nog {nog} {nog === 1 ? 'afgesloten maand' : 'afgesloten maanden'} nodig voor dit
           iets zegt. Een gemiddelde over minder maanden zwabbert te hard bij wisselende
           facturen.
@@ -40,21 +40,21 @@ export function RunwayCard({ runway }: RunwayCardProps) {
   const filled = months === null ? 1 : Math.min(Math.max(months / BAR_MAX_MONTHS, 0), 1);
 
   return (
-    <div className="rounded-xl border border-[var(--umanexPrimary50)] bg-card p-5">
-      <h2 className="text-base font-semibold text-[var(--umanexNeutral800)]">Runway</h2>
-      <p className="text-sm text-[var(--umanexNeutral500)]">
+    <div className="rounded-xl border border-accent bg-card p-5">
+      <h2 className="text-base font-semibold text-foreground">Runway</h2>
+      <p className="text-sm text-muted-foreground">
         Hoelang je bufferpot het gemiddelde maandtekort dekt
       </p>
 
-      <p className="mt-3 text-3xl font-bold tabular-nums text-[var(--umanexNeutral800)]">
+      <p className="mt-3 text-3xl font-bold tabular-nums text-foreground">
         {leeg ? (
-          <span className="text-[var(--umanexFinanceNegative)]">Buffer staat negatief</span>
+          <span className="text-finance-negative">Buffer staat negatief</span>
         ) : months === null ? (
-          <span className="text-[var(--umanexFinancePositive)]">Geen tekort</span>
+          <span className="text-finance-positive">Geen tekort</span>
         ) : (
           <>
             {months.toLocaleString('nl-BE', { maximumFractionDigits: 1 })}{' '}
-            <span className="text-lg font-semibold text-[var(--umanexNeutral500)]">
+            <span className="text-lg font-semibold text-muted-foreground">
               {months === 1 ? 'maand' : 'maanden'}
             </span>
           </>
@@ -62,7 +62,7 @@ export function RunwayCard({ runway }: RunwayCardProps) {
       </p>
 
       <div
-        className="mt-3 h-2 w-full rounded-full bg-[var(--umanexNeutral200)] overflow-hidden"
+        className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden"
         role="img"
         aria-label={
           leeg
@@ -75,10 +75,10 @@ export function RunwayCard({ runway }: RunwayCardProps) {
         <div
           className={`h-full rounded-full ${
             leeg
-              ? 'bg-[var(--umanexFinanceNegativeSurface)]'
+              ? 'bg-finance-negative-surface'
               : months === null
-                ? 'bg-[var(--umanexFinancePositive)]'
-                : 'bg-[var(--umanexNeutral800)]'
+                ? 'bg-finance-positive'
+                : 'bg-foreground'
           }`}
           style={{ width: `${(leeg ? 1 : filled) * 100}%` }}
         />
@@ -86,20 +86,20 @@ export function RunwayCard({ runway }: RunwayCardProps) {
 
       <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm">
         <div className="flex gap-2">
-          <dt className="text-[var(--umanexNeutral500)]">Bufferpot</dt>
-          <dd className="tabular-nums text-[var(--umanexNeutral800)]">{formatCurrency(buffer)}</dd>
+          <dt className="text-muted-foreground">Bufferpot</dt>
+          <dd className="tabular-nums text-foreground">{formatCurrency(buffer)}</dd>
         </div>
         <div className="flex gap-2">
-          <dt className="text-[var(--umanexNeutral500)]">
+          <dt className="text-muted-foreground">
             {netBurn > 0 ? 'Tekort per maand' : 'Overschot per maand'}
           </dt>
-          <dd className="tabular-nums text-[var(--umanexNeutral800)]">
+          <dd className="tabular-nums text-foreground">
             {formatCurrency(Math.abs(netBurn))}
           </dd>
         </div>
         <div className="flex gap-2">
-          <dt className="text-[var(--umanexNeutral500)]">Gemiddeld over</dt>
-          <dd className="tabular-nums text-[var(--umanexNeutral800)]">
+          <dt className="text-muted-foreground">Gemiddeld over</dt>
+          <dd className="tabular-nums text-foreground">
             {Math.min(closedMonths, 6)} {closedMonths === 1 ? 'maand' : 'maanden'}
           </dd>
         </div>

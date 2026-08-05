@@ -43,11 +43,11 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
   if (snapshots.length < TREND_THRESHOLD) {
     const nog = TREND_THRESHOLD - snapshots.length;
     return (
-      <section className="rounded-xl border border-[var(--umanexPrimary50)] bg-card p-5">
-        <h2 className="text-base font-semibold text-[var(--umanexNeutral800)]">
+      <section className="rounded-xl border border-accent bg-card p-5">
+        <h2 className="text-base font-semibold text-foreground">
           Begroot tegenover werkelijk
         </h2>
-        <p className="mt-2 text-sm text-[var(--umanexNeutral500)]">
+        <p className="mt-2 text-sm text-muted-foreground">
           Nog {nog} {nog === 1 ? 'afgesloten maand' : 'afgesloten maanden'} nodig om
           afwijkingen over meerdere maanden te kunnen vergelijken.
         </p>
@@ -59,13 +59,13 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
   const months = snapshots.length;
 
   return (
-    <section className="rounded-xl border border-[var(--umanexPrimary50)] bg-card p-5">
+    <section className="rounded-xl border border-accent bg-card p-5">
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-[var(--umanexNeutral800)]">
+          <h2 className="text-base font-semibold text-foreground">
             Begroot tegenover werkelijk
           </h2>
-          <p className="text-sm text-[var(--umanexNeutral500)]">
+          <p className="text-sm text-muted-foreground">
             Opgeteld over {months} afgesloten {months === 1 ? 'maand' : 'maanden'} — de
             dunne balk is begroot, de dikke werkelijk
           </p>
@@ -80,7 +80,7 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
       </div>
 
       {rows.length === 0 ? (
-        <p className="mt-3 text-sm text-[var(--umanexNeutral500)]">
+        <p className="mt-3 text-sm text-muted-foreground">
           Geen enkele categorie week af van de begroting.
         </p>
       ) : (
@@ -88,15 +88,15 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
           {rows.map((row) => (
             <li key={row.label}>
               <div className="flex items-baseline justify-between gap-2 text-sm">
-                <span className="text-[var(--umanexNeutral800)] truncate min-w-0">{row.label}</span>
+                <span className="text-foreground truncate min-w-0">{row.label}</span>
                 <span className="shrink-0 tabular-nums">
-                  <span className="text-[var(--umanexNeutral500)] text-xs">
+                  <span className="text-muted-foreground text-xs">
                     {formatCurrency(row.budgeted)} →{' '}
                   </span>
-                  <span className="text-[var(--umanexNeutral800)]">{formatCurrency(row.actual)}</span>{' '}
+                  <span className="text-foreground">{formatCurrency(row.actual)}</span>{' '}
                   <span
                     className={`font-semibold ${
-                      row.difference > 0 ? 'text-[var(--umanexFinanceNegative)]' : 'text-[var(--umanexFinancePositive)]'
+                      row.difference > 0 ? 'text-finance-negative' : 'text-finance-positive'
                     }`}
                   >
                     {formatSigned(row.difference, 'out')}
@@ -111,19 +111,19 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
               >
                 {/* Begroot: dunne baan als referentie. */}
                 <div
-                  className="absolute inset-y-0 my-auto h-4 rounded-[2px] bg-[var(--umanexNeutral200)]"
+                  className="absolute inset-y-0 my-auto h-4 rounded-[2px] bg-muted"
                   style={{ width: `${(row.budgeted / max) * 100}%` }}
                 />
                 {/* Werkelijk: dikke balk erbovenop, ingekleurd naar de richting. */}
                 <div
                   className={`absolute inset-y-0 my-auto h-2 rounded-[2px] ${
-                    row.difference > 0 ? 'bg-[var(--umanexFinanceNegativeSurface)]' : 'bg-[var(--umanexFinancePositive)]'
+                    row.difference > 0 ? 'bg-finance-negative-surface' : 'bg-finance-positive'
                   }`}
                   style={{ width: `${(row.actual / max) * 100}%` }}
                 />
                 {/* Streepje op het begrote bedrag: de doellijn van een bullet graph. */}
                 <div
-                  className="absolute inset-y-0 w-0.5 bg-[var(--umanexNeutral800)]"
+                  className="absolute inset-y-0 w-0.5 bg-foreground"
                   style={{ left: `calc(${(row.budgeted / max) * 100}% - 1px)` }}
                 />
               </div>
@@ -136,7 +136,7 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
         <table className="mt-4 w-full text-sm">
           <caption className="sr-only">Begroot tegenover werkelijk per categorie</caption>
           <thead>
-            <tr className="text-left text-[var(--umanexNeutral500)]">
+            <tr className="text-left text-muted-foreground">
               <th scope="col" className="font-medium py-1">Categorie</th>
               <th scope="col" className="font-medium py-1">Begroot</th>
               <th scope="col" className="font-medium py-1">Werkelijk</th>
@@ -145,7 +145,7 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.label} className="border-t border-[var(--umanexNeutral200)]">
+              <tr key={row.label} className="border-t border-border">
                 <td className="py-1">{row.label}</td>
                 <td className="py-1 tabular-nums">{formatAmount(row.budgeted)}</td>
                 <td className="py-1 tabular-nums">{formatAmount(row.actual)}</td>
@@ -156,7 +156,7 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
         </table>
       )}
 
-      <p className="mt-3 text-xs text-[var(--umanexNeutral500)]">
+      <p className="mt-3 text-xs text-muted-foreground">
         Alleen maanden die je hebt afgesloten tellen mee
         {snapshots.length > 0 &&
           `: ${getMonthLabel(snapshots[0]!.monthKey)} tot ${getMonthLabel(snapshots[snapshots.length - 1]!.monthKey)}`}

@@ -27,9 +27,9 @@ export function BalanceFooter({
 }: BalanceFooterProps) {
   if (!hasBuffer) {
     return (
-      <div className="shrink-0 border-t border-[var(--umanexPrimary50)] px-4 py-3 flex flex-col gap-1">
-        <span className="text-sm font-medium text-[var(--umanexNeutral800)]">Geen buffer</span>
-        <span className="text-[11px] leading-tight text-[var(--umanexNeutral500)]">
+      <div className="shrink-0 border-t border-accent px-4 py-3 flex flex-col gap-1">
+        <span className="text-sm font-medium text-foreground">Geen buffer</span>
+        <span className="text-2xs leading-tight text-muted-foreground">
           Markeer een provisie als buffer om te zien wat je per maand opbouwt of verbruikt.
         </span>
       </div>
@@ -37,15 +37,15 @@ export function BalanceFooter({
   }
 
   return (
-    <div className="shrink-0 border-t border-[var(--umanexPrimary50)] px-4 py-3 flex flex-col gap-1">
+    <div className="shrink-0 border-t border-accent px-4 py-3 flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-[var(--umanexNeutral500)]">Deze maand</span>
+        <span className="text-sm text-muted-foreground">Deze maand</span>
         <span
           className={`text-sm tabular-nums ${
             // Zelfde drempel als `formatSigned`: onder een halve cent schrijft die al
             // "€ 0,00" zonder teken. Kleurden we dan nog op het wiskundige teken, dan
             // stond een maand die exact op nul uitkomt in het rood door afrondingsruis.
-            delta > -0.005 ? 'text-[var(--umanexFinancePositive)]' : 'text-[var(--umanexFinanceNegative)]'
+            delta > -0.005 ? 'text-finance-positive' : 'text-finance-negative'
           }`}
         >
           {formatSigned(delta, 'in')}
@@ -54,12 +54,12 @@ export function BalanceFooter({
 
       {showUncovered && (
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[var(--umanexNeutral500)]">Niet gedekt</span>
+          <span className="text-sm text-muted-foreground">Niet gedekt</span>
           <span
             className={`text-sm tabular-nums ${
               uncovered > 0
-                ? 'text-[var(--umanexFinanceNegative)]'
-                : 'text-[var(--umanexNeutral400)]'
+                ? 'text-finance-negative'
+                : 'text-muted-foreground'
             }`}
           >
             {uncovered > 0 ? formatSigned(uncovered, 'out') : formatAmount(0)}
@@ -67,13 +67,13 @@ export function BalanceFooter({
         </div>
       )}
 
-      <div className="border-t border-[var(--umanexNeutral200)] mt-1 pt-2" />
+      <div className="border-t border-border mt-1 pt-2" />
 
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-[var(--umanexNeutral800)]">Buffer</span>
+        <span className="text-sm font-medium text-foreground">Buffer</span>
         <span
           className={`text-lg font-bold tabular-nums ${
-            total > -0.005 ? 'text-[var(--umanexFinancePositive)]' : 'text-[var(--umanexFinanceNegative)]'
+            total > -0.005 ? 'text-finance-positive' : 'text-finance-negative'
           }`}
         >
           {formatAmount(total)}

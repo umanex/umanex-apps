@@ -53,3 +53,20 @@ jobs:
           # tegenhouden.
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+      # De gegenereerde token-output staat in git, maar niets toetste of hij nog
+      # matcht met tokens.json. Een PR die tokens.json wijzigt zonder te herbouwen
+      # (of omgekeerd) kon dus groen zijn, en de drift kwam pas boven bij de
+      # volgende Figma-push. De build hierboven heeft de outputs net herschreven —
+      # als er iets verschilt, was de gecommitte versie stale.
+      - name: Guard — gegenereerde tokens zijn in sync met tokens.json
+        run: |
+          if ! git diff --exit-code -- packages/tokens/build; then
+            echo "::error::De gecommitte token-output wijkt af van wat de build produceert. Draai 'pnpm --filter @umanex/tokens build' en commit het resultaat."
+            exit 1
+          fi
+
+      # ESLint ziet de SVG fill=/stroke=-attributen en de .css-bestanden niet, en
+      # packages/ui heeft geen eslint-config. Deze guard dekt alles op schijf.
+      - name: Guard — laag-discipline (geen primitives of rauwe kleuren in app-code)
+        run: pnpm --filter @umanex/tokens guard

@@ -8,8 +8,6 @@ Monorepoconventies voor de umanex-apps codebase. Lees dit vóór je iets impleme
 ## Context
 
 - **Eigenaar**: Jeroen (jeroen@umanex.be), Belgische freelance UX/UI designer & developer
-- **Stack**: Next.js 14 App Router, TypeScript strict, Tailwind CSS, pnpm workspaces, Turborepo
-- **Apps**: cashflow (persoonlijke cashflow prognose tool), rowtrack (React Native rowing tracker), jobradar, portfolio (umanex.be presentatiesite), meer volgen
 - **Deployment**: Vercel, één project per app
 
 ## Structuurregels
@@ -21,8 +19,6 @@ Monorepoconventies voor de umanex-apps codebase. Lees dit vóór je iets impleme
 
 ## TypeScript
 
-- `strict: true` overal, geen `any`
-- `moduleResolution: "bundler"` (niet `node`)
 - Paths via tsconfig, niet via runtime tricks
 
 ## Commits (Conventional Commits)
@@ -41,7 +37,6 @@ Scope = package of app naam. Eén logische stap per commit.
 
 - `packages/tokens/tokens.json` is Tokens Studio GitHub sync target — nooit handmatig bewerken
 - Figma plugin File path: `packages/tokens/tokens.json`
-- Style Dictionary wiring volgt in aparte prompt
 
 ## Briefings (TC-EBC)
 
@@ -54,11 +49,3 @@ Briefings-bestanden landen op deze plek:
 Bij twijfel — vraag.
 
 Folders worden aangemaakt wanneer ze nodig zijn, niet vooraf.
-
-## Wat nog komt (aparte prompts)
-
-- Style Dictionary platforms configuratie in packages/tokens
-- ShadCN componenten initialiseren in packages/ui
-- Zustand store voor cashflow
-- Feature code cashflow tool (data model, dnd-kit, BTW, yearly reservering)
-- Verdere apps in apps/

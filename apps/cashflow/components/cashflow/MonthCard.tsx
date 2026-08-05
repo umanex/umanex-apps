@@ -113,7 +113,7 @@ export function MonthCard({
           {locked && (
             <span
               title={'Afgesloten maand. Wat je ziet is vastgelegd op het moment van afsluiten en verandert niet meer mee met je gegevens.'}
-              className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-2xs font-medium bg-foreground text-background"
+              className="shrink-0 px-1.5 py-0.5 rounded-sm text-2xs font-medium bg-foreground text-background"
             >
               afgesloten
             </span>
@@ -121,7 +121,7 @@ export function MonthCard({
           {!locked && isReconstruction && (
             <span
               title="Deze maand is nooit afgesloten. Wat je ziet is opnieuw doorgerekend uit je huidige gegevens, niet wat er destijds stond."
-              className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-2xs font-medium bg-muted text-muted-foreground"
+              className="shrink-0 px-1.5 py-0.5 rounded-sm text-2xs font-medium bg-muted text-muted-foreground"
             >
               reconstructie
             </span>

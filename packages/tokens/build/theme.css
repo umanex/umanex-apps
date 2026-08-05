@@ -19,7 +19,7 @@
   --muted-foreground: 221 13% 46%;
   --accent: 0 90% 96%;
   --accent-foreground: 0 56.2% 49.2%;
-  --destructive: 0 72.2% 50.6%;
+  --destructive: 0 73.7% 41.8%;
   --destructive-foreground: 0 0% 100%;
   --success: 163 93.5% 24.3%;
   --success-foreground: 0 0% 100%;
@@ -84,7 +84,7 @@
   --sidebar: 220 43% 11%;
   --sidebar-foreground: 210 20% 98%;
   --sidebar-primary: 0 83.9% 70.8%;
-  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary-foreground: 222 41% 8%;
   --sidebar-accent: 214 32.6% 16.9%;
   --sidebar-accent-foreground: 210 20% 98%;
   --sidebar-border: 214 32.6% 16.9%;

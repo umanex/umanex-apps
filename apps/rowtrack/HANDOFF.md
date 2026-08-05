@@ -32,6 +32,11 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-08-05 — Unieke index op workouts staat nog niet in de database · [next-step]
+- **Bevinding:** `supabase/migrations/add_workouts_unique_started_at.sql` staat op main maar is niet toegepast. Zolang die index ontbreekt, dekt de client alleen de race binnen één app-run: wordt de app afgesloten tussen een geslaagde insert en het wissen van de pending-slot, dan schrijft de volgende start dezelfde rit nog een keer weg en telt elke KPI-som hem dubbel.
+- **Volgende zet:** Het bestand in de Supabase SQL Editor draaien (deze repo past migrations handmatig toe). Daarna controleren dat een tweede drain-poging netjes foutcode 23505 geeft in plaats van een tweede rij.
+- **Status:** open
+
 ## 2026-07-09 — IdlePhase merge + resterende varianten verifiëren · [next-step]
 - **Bevinding:** IdlePhase goal-redesign zit op branch `feature/idlephase-goal-redesign` (commit `5635f6f`), niet gemerged. Enkel de Duur-variant is live op de simulator geverifieerd; none/distance/split/watts leunen op gedeelde-componenten-redenering.
 - **Volgende zet:** De 5 doeltypes doorklikken op de simulator (m.n. Watt = actief segment uiterst rechts, en distance single-chip full-width + komma-decimaal), dan merge naar main + branch opruimen.

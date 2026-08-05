@@ -135,10 +135,10 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
                 rx={2}
                 fill={
                   isTotal
-                    ? 'var(--umanexNeutral800)'
+                    ? 'var(--umanexFinanceTotal)'
                     : isInflow
-                      ? 'var(--umanexChart4)'
-                      : 'var(--umanexPrimary500)'
+                      ? 'var(--umanexFinancePositive)'
+                      : 'var(--umanexFinanceNegativeSurface)'
                 }
               />
               {/* Verbindingslijn naar de volgende staaf, zodat de brug leesbaar blijft. */}

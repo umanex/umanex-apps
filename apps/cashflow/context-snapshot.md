@@ -48,22 +48,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+1a3cf31 docs(cashflow): tokenbeslissingen vastleggen in de finance-inventaris
+fca22ef fix(cashflow): grafieken tonen ook de randgevallen die ze verzwegen
 8f24123 fix(cashflow): afgesloten maanden bevriezen en tonen wat ze horen
 757e280 fix(cashflow): ankermaand telt geen betaalde posten dubbel meer
 d555ade fix(cashflow): beginsaldo wegklikken wist geen bestaande correctie meer
-68b3a6b fix(cashflow): ankerstaat verliest geen potsaldo meer bij bladeren
-dd77f31 docs(cashflow): briefing afvinken en beoordeling vastleggen
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/HANDOFF.md
-  A  apps/cashflow/briefings/2026-08-05-tokens-finance-inventaris.md
+  M  apps/cashflow/briefings/2026-08-05-tokens-finance-inventaris.md
   M  apps/cashflow/components/cashflow/BalanceFooter.tsx
-  M  apps/cashflow/components/cashflow/BufferChart.tsx
-  M  apps/cashflow/components/cashflow/RunwayCard.tsx
-  M  apps/cashflow/components/cashflow/WaterfallChart.tsx
-  A  apps/cashflow/scripts/render-charts.tsx
-  A  apps/cashflow/scripts/tsconfig.render.json
+  M  apps/cashflow/components/cashflow/ExpenseSection.tsx
+  M  apps/cashflow/components/cashflow/IncomeSection.tsx
+  M  apps/cashflow/components/cashflow/MonthVariance.tsx
+  M  apps/cashflow/components/cashflow/RecurringSection.tsx
+  M  apps/cashflow/components/cashflow/RecurringSidepanel.tsx
+  M  apps/cashflow/components/cashflow/RepeatMonthModal.tsx
+  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
+  M  apps/cashflow/components/cashflow/ReservationSection.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

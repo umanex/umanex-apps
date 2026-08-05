@@ -71,7 +71,7 @@ function DraggableExpenseItem({
         type="checkbox"
         checked={item.paid}
         onChange={(e) => onUpdate(item.id, { paid: e.target.checked })}
-        className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${item.paid ? 'accent-emerald-600' : 'accent-primary'}`}
+        className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${item.paid ? 'accent-[var(--umanexFinancePositive)]' : 'accent-primary'}`}
         title="Betaald"
       />
       <span className={`flex-1 text-sm truncate min-w-0 ${item.paid ? 'text-muted-foreground' : ''}`}>
@@ -85,7 +85,7 @@ function DraggableExpenseItem({
         onBlur={handleAmountBlur}
         onPointerDown={(e) => e.stopPropagation()}
         className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring shrink-0 ${
-          item.paid ? 'text-emerald-600' : 'text-[var(--umanexPrimary500)]'
+          item.paid ? 'text-[var(--umanexFinancePositive)]' : 'text-[var(--umanexFinanceNegative)]'
         }`}
         aria-label="Bedrag"
       />
@@ -183,7 +183,7 @@ export function ExpenseSection({
               {item.label}
               <span className="ml-1 text-[11px] text-muted-foreground/60">– resterend</span>
             </span>
-            <span className="w-[92px] text-sm tabular-nums text-emerald-600 text-right shrink-0">
+            <span className="w-[92px] text-sm tabular-nums text-[var(--umanexFinancePositive)] text-right shrink-0">
               {formatAmount(item.amount)}
             </span>
             <span className="w-3 shrink-0" />

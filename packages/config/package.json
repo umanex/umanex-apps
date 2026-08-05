@@ -7,8 +7,6 @@
     "./tsconfig/base.json": "./tsconfig/base.json",
     "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
     "./tsconfig/react-library.json": "./tsconfig/react-library.json",
-    "./eslint/next": "./eslint/next.js",
-    "./eslint/react-library": "./eslint/react-library.js",
     "./eslint/tokens": "./eslint/tokens.cjs",
     "./tailwind/preset": "./tailwind/preset.ts"
   },

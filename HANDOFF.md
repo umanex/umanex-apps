@@ -172,11 +172,11 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   `.cjs` omdat `packages/config` `type: module` is en ESLint shareable configs met `require()`
   laadt. Geverifieerd: 6/6 regels vuren in alle drie de apps. De set groeide van 5 naar 6 —
   `rounded-[Npx]` zat alleen in `guard.mjs`, niet in ESLint.
-- **Restant:** `eslint/next.js` en `eslint/react-library.js` zijn nog steeds dode flat-config,
-  en importeren plugins die `packages/config` niet als dependency declareert. Ze zijn dus niet
-  alleen ongebruikt maar kapot, en zien er wél uit als infrastructuur. Verwijderen of alsnog
-  bedraden — beslissing bij Jeroen.
-- **Status:** open
+- **Restant resolved (2026-08-05):** `eslint/next.js` en `eslint/react-library.js` verwijderd,
+  samen met hun `exports`-entries. Ze waren flat-config in een ESLint 8-repo, door niets
+  geconsumeerd, en importeerden plugins die `packages/config` niet declareert — kapot én
+  misleidend. `packages/config/eslint` bevat nu alleen nog `tokens.cjs`, dat wél gebruikt wordt.
+- **Status:** resolved
 
 ## 2026-08-05 — Visuele regressie-harness ontbreekt · [idee]
 - **Deel 2 resolved (2026-08-05):** `packages/tokens/scripts/contrast.mjs` draait in CI. Toetst

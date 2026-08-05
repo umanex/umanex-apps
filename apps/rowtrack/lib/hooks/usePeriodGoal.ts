@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
+import { periodStart } from '@/lib/period';
 
 export type PeriodGoalPeriod = 'week' | 'month';
 export type PeriodGoalMetric = 'distance' | 'duration' | 'workouts';
@@ -24,19 +25,14 @@ export interface PersonalRecords {
   fastestSplit: number | null;     // seconds per 500m
 }
 
+/**
+ * Grenzen komen uit `lib/period.ts`, dezelfde bron als de historiek-filter — zo kan
+ * "deze week" op de doel-kaart niet meer een ander getal opleveren dan "Week" in de
+ * historiek.
+ */
 function getPeriodStart(period: PeriodGoalPeriod): string {
-  const now = new Date();
-  if (period === 'week') {
-    const day = now.getDay();
-    const diff = day === 0 ? 6 : day - 1; // Monday = start
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - diff);
-    monday.setHours(0, 0, 0, 0);
-    return monday.toISOString();
-  }
-  // month
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  return first.toISOString();
+  // `week` en `month` geven altijd een datum terug; enkel `all` levert null.
+  return periodStart(period)!.toISOString();
 }
 
 export function usePeriodGoal(userId: string | undefined) {

@@ -311,5 +311,28 @@ compare('A7 — pot vertrokken uit afsluiting én anker', {
     (snapshots[0]!.data.reservationPots.find((p) => p.reservationId === 'btw')?.potBalance ?? 0) + 2 * 5000);
 }
 
+// ── A9: de ankerstaat houdt de berekende waarde apart van de correctie ─────────
+//
+// Zonder dat tweede getal vergelijkt het scherm een correctie met zichzelf, leest elke
+// bevestiging als "gelijk aan berekend", en verdwijnt de correctie bij het wegklikken.
+{
+  const label = 'A9 — berekend beginsaldo blijft naast de correctie staan';
+  console.log(`\n${label}`);
+  const d: Dataset = {
+    referenceMonth: '2026-01', referenceBalance: 10000, horizon: 4, anchorAfter: 2,
+    incomeItems: inkomen(ALLE_MAANDEN, 2000),
+    recurringItems: [HUUR],
+    reservations: [{ id: 'btw', label: 'Btw', monthlyAmount: 1400, startMonth: '2026-01', type: 'spaardoel' }],
+  };
+  const zonder = runAnchored(d, []);
+  const met = runAnchored({ ...d, balanceOverrides: [{ id: 'o1', monthKey: '2026-03', balance: 15000 }] }, []);
+
+  check(`${label} · zonder correctie zijn beide gelijk`,
+    zonder.state.computedStartBalance, zonder.state.startBalance);
+  check(`${label} · correctie stuurt het beginsaldo`, met.state.startBalance, 15000);
+  check(`${label} · berekende waarde blijft bewaard`,
+    met.state.computedStartBalance, zonder.state.computedStartBalance);
+}
+
 console.log(`\n${checks - failures}/${checks} checks geslaagd${failures ? ` — ${failures} FOUT` : ''}`);
 process.exit(failures ? 1 : 0);

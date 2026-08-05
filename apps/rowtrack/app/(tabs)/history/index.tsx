@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { BottomFade, EmptyState, ErrorState, KpiSingle, Segmented, WorkoutCard } from '@/components';
 import { formatTimerFull, formatDistanceDynamic } from '@/lib/formatters';
+import { periodStart, type Period } from '@/lib/period';
 import { t } from '@/i18n';
 import {
   bg,
@@ -25,7 +26,10 @@ import {
 } from '@/constants';
 import type { WorkoutSummary } from '@/types/workout';
 
-type HistoryFilter = 'week' | 'month' | 'year' | 'all';
+type HistoryFilter = Period;
+
+/** Waarde in de KPI-band zolang de totalen niet die van het gekozen filter zijn. */
+const NO_VALUE = '—';
 
 const FILTERS: { value: HistoryFilter; label: string }[] = [
   { value: 'week',  label: t.history.filterWeek  },
@@ -39,60 +43,89 @@ export default function HistoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  // Op de id afhangen, niet op het user-object: de auth-context levert bij elk
+  // auth-event een nieuwe referentie, wat anders een extra fetch de race in stuurt.
+  const userId = user?.id;
+
   const [filter, setFilter] = useState<HistoryFilter>('week');
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
 
-  const fetchWorkouts = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
+  // Volgnummer per verzoek. Zonder dit wint bij snel wisselen van filter het
+  // laatst binnenkomende antwoord i.p.v. het laatst gekozen filter, en blijft de
+  // lijst op een andere periode hangen dan de actieve pill toont.
+  const requestSeq = useRef(0);
 
+  const fetchWorkouts = useCallback(async ({ silent = false } = {}) => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    const seq = ++requestSeq.current;
+    if (!silent) setLoading(true);
+
+    // user_id expliciet meegeven, net als elke andere workouts-query in de app;
+    // RLS dekt dit al af, maar de intentie hoort in de query te staan.
     let query = supabase
       .from('workouts')
       .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories')
+      .eq('user_id', userId)
       .order('started_at', { ascending: false });
 
-    const now = new Date();
-    if (filter === 'week') {
-      const from = new Date(now);
-      from.setDate(from.getDate() - 7);
-      query = query.gte('started_at', from.toISOString());
-    } else if (filter === 'month') {
-      const from = new Date(now);
-      from.setMonth(from.getMonth() - 1);
-      query = query.gte('started_at', from.toISOString());
-    } else if (filter === 'year') {
-      const from = new Date(now);
-      from.setFullYear(from.getFullYear() - 1);
-      query = query.gte('started_at', from.toISOString());
-    }
+    const from = periodStart(filter);
+    if (from) query = query.gte('started_at', from.toISOString());
+
+    const { data, error: queryError } = await query;
+
+    // Alleen het nieuwste verzoek mag schrijven — een traag antwoord van een vorig
+    // filter (of van een scherm dat intussen verlaten is) wordt genegeerd.
+    if (seq !== requestSeq.current) return;
 
     // Leesfout onderscheiden van "geen data": een netwerk-/backendfout mag niet
-    // als lege lijst renderen (security-audit P2-2).
-    const { data, error: queryError } = await query;
+    // als lege lijst renderen (security-audit P2-2). De rijen van de vorige
+    // periode moeten wél weg, anders verbergt de lijst de ErrorState — die rendert
+    // enkel via ListEmptyComponent — en presenteert hij oude data als vers.
     if (queryError) {
       reportError(queryError, { where: 'history.fetchWorkouts', filter });
       setError(true);
+      setWorkouts([]);
     } else {
       setError(false);
       setWorkouts((data ?? []) as WorkoutSummary[]);
     }
     setLoading(false);
-  }, [user, filter]);
+  }, [userId, filter]);
 
   // Refetch bij focus (ook bij terugkeer uit de detail na een delete), zodat een
-  // verwijderde workout niet stale in de lijst blijft staan.
+  // verwijderde workout niet stale in de lijst blijft staan. De cleanup maakt het
+  // lopende antwoord ongeldig bij blur, unmount of filterwissel.
   useFocusEffect(
     useCallback(() => {
       fetchWorkouts();
+      return () => {
+        requestSeq.current += 1;
+      };
     }, [fetchWorkouts]),
   );
 
+  const handleFilterChange = useCallback((next: HistoryFilter) => {
+    if (next === filter) return;
+    setFilter(next);
+    // De rijen van de vorige periode meteen loslaten: blijven ze staan, dan toont
+    // de lijst tijdens het laden nog de oude periode én onderdrukt hij de spinner
+    // (die hangt aan ListEmptyComponent) — precies het beeld van "filter doet niets".
+    setWorkouts([]);
+    setError(false);
+    setLoading(true);
+  }, [filter]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchWorkouts();
+    // silent: de RefreshControl draait al; `loading` erbij zetten zou de lijst-body
+    // op een tweede spinner zetten en de empty/error-state laten wegflikkeren.
+    await fetchWorkouts({ silent: true });
     setRefreshing(false);
   }, [fetchWorkouts]);
 
@@ -100,11 +133,23 @@ export default function HistoryScreen() {
     router.push(`/(tabs)/history/${id}`);
   }, [router]);
 
-  const totalWorkouts = workouts.length;
-  const totalDurSec = workouts.reduce((s, w) => s + w.duration_seconds, 0);
-  const totalDistM = workouts.reduce((s, w) => s + w.distance_meters, 0);
-  const totalDistFormatted = formatDistanceDynamic(totalDistM);
-  const totalCalories = workouts.reduce((s, w) => s + (w.calories ?? 0), 0);
+  const totals = useMemo(() => {
+    let durSec = 0;
+    let distM = 0;
+    let calories = 0;
+    for (const w of workouts) {
+      durSec += w.duration_seconds;
+      distM += w.distance_meters;
+      calories += w.calories ?? 0;
+    }
+    return { count: workouts.length, durSec, distM, calories };
+  }, [workouts]);
+
+  // De totalen worden client-side over de opgehaalde rijen gesommeerd. Zolang een
+  // fetch loopt of gefaald is, hóórt er geen cijfer te staan: dat zou de vorige
+  // periode zijn (filterwissel) of een nul die als echt totaal leest.
+  const totalsReady = !loading && !error;
+  const totalDistFormatted = formatDistanceDynamic(totals.distM);
 
   // Header: titel + segment-filter + KPI-band. Als ListHeaderComponent van de
   // FlatList, zodat de lijst gevirtualiseerd rendert (P2-5) i.p.v. alle rijen
@@ -119,33 +164,33 @@ export default function HistoryScreen() {
         style={styles.segmentContainer}
         options={FILTERS}
         value={filter}
-        onChange={setFilter}
+        onChange={handleFilterChange}
       />
 
       {/* KPI container — full width, bg.raised, border top+bottom */}
       <View style={styles.kpiContainer}>
         <View style={[styles.kpiGridRow, styles.kpiGridRowBordered]}>
           <KpiSingle
-            value={formatTimerFull(totalDurSec)}
+            value={totalsReady ? formatTimerFull(totals.durSec) : NO_VALUE}
             label={t.kpi.totalDuration}
             style={styles.kpiCell}
           />
           <KpiSingle
-            value={totalDistFormatted.value}
-            unit={totalDistFormatted.unit}
+            value={totalsReady ? totalDistFormatted.value : NO_VALUE}
+            unit={totalsReady ? totalDistFormatted.unit : ''}
             label={t.kpi.totalDistance}
             style={styles.kpiCell}
           />
         </View>
         <View style={styles.kpiGridRow}>
           <KpiSingle
-            value={`${totalCalories}`}
-            unit="kcal"
+            value={totalsReady ? `${totals.calories}` : NO_VALUE}
+            unit={totalsReady ? 'kcal' : ''}
             label={t.kpi.totalEnergy}
             style={styles.kpiCell}
           />
           <KpiSingle
-            value={`${totalWorkouts}`}
+            value={totalsReady ? `${totals.count}` : NO_VALUE}
             unit=""
             label={t.kpi.totalWorkouts}
             style={styles.kpiCell}

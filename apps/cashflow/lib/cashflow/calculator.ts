@@ -636,7 +636,15 @@ export function calculateMonths(
  * bufferpot een afgeleide opname deed (die staat immers niet in de store).
  */
 export type AnchorState = {
+  /** Waar de berekening mee vertrekt: een handmatige correctie wint van de afleiding. */
   startBalance: number;
+  /**
+   * Wat de app zelf zou uitrekenen, zonder de correctie van de gebruiker. Nodig om te
+   * kunnen zien óf er gecorrigeerd is: zonder dit tweede getal vergelijkt het scherm de
+   * correctie met zichzelf, en dan leest elke bevestiging als "gelijk aan berekend" —
+   * waarna de correctie stilletjes verdwijnt.
+   */
+  computedStartBalance: number;
   potBalances: Map<string, number>;
 };
 
@@ -762,30 +770,34 @@ export function computeAnchorState(
       const legTwo = bridgeFrom(pivot.monthKey, pivot.balance, pivotPots, pivotToAnchor + 1);
       const anchorData = legTwo[pivotToAnchor];
       const pots = potBalancesFromWindow(legTwo[pivotToAnchor - 1], anchorData, pivotPots);
-      return {
-        startBalance: anchorData ? bankFromFree(anchorData.startBalance, pots) : pivot.balance,
-        potBalances: pots,
-      };
+      const computed = anchorData ? bankFromFree(anchorData.startBalance, pots) : pivot.balance;
+      return { startBalance: computed, computedStartBalance: computed, potBalances: pots };
     }
 
     if (gap <= 1) {
       // `endBalance` van een snapshot is het VRIJE saldo; maand 0 verwacht een BANKsaldo.
+      const computed = bankFromFree(lastClosed.data.endBalance, closedPots);
       return {
-        startBalance: override ? override.balance : bankFromFree(lastClosed.data.endBalance, closedPots),
+        startBalance: override ? override.balance : computed,
+        computedStartBalance: computed,
         potBalances: closedPots,
       };
     }
     const bridged = bridgeFrom(lastClosed.monthKey, lastClosed.data.startBalance, closedPots, gap + 1);
     const anchorData = bridged[gap];
     if (!anchorData) {
+      const computed = bankFromFree(lastClosed.data.endBalance, closedPots);
       return {
-        startBalance: override ? override.balance : bankFromFree(lastClosed.data.endBalance, closedPots),
+        startBalance: override ? override.balance : computed,
+        computedStartBalance: computed,
         potBalances: closedPots,
       };
     }
     const bridgedPots = potBalancesFromWindow(bridged[gap - 1], anchorData, closedPots);
+    const computed = bankFromFree(anchorData.startBalance, bridgedPots);
     return {
-      startBalance: override ? override.balance : bankFromFree(anchorData.startBalance, bridgedPots),
+      startBalance: override ? override.balance : computed,
+      computedStartBalance: computed,
       potBalances: bridgedPots,
     };
   }
@@ -797,6 +809,7 @@ export function computeAnchorState(
   if (anchorMonth <= referenceMonth) {
     return {
       startBalance: anchorOverride ? anchorOverride.balance : referenceBalance,
+      computedStartBalance: referenceBalance,
       potBalances: historicalPotBalances(),
     };
   }
@@ -817,6 +830,7 @@ export function computeAnchorState(
   if (monthCount <= 0) {
     return {
       startBalance: anchorOverride ? anchorOverride.balance : effectiveBalance,
+      computedStartBalance: effectiveBalance,
       potBalances: historicalPotBalances(),
     };
   }
@@ -848,7 +862,10 @@ export function computeAnchorState(
     historicalPotBalances(),
   );
 
-  if (anchorOverride) return { startBalance: anchorOverride.balance, potBalances };
+  const computed = bankFromFree(anchorMonthData?.startBalance ?? effectiveBalance, potBalances);
+  if (anchorOverride) {
+    return { startBalance: anchorOverride.balance, computedStartBalance: computed, potBalances };
+  }
 
   // months[monthCount].startBalance is het doorgerolde VRIJE saldo aan het begin van
   // anchorMonth: de opgebouwde spaarpotten zijn er in de voorgaande maanden al uitgehaald.
@@ -857,10 +874,7 @@ export function computeAnchorState(
   // gefinaliseerde. Die staat aan het begin van de maand nog gewoon op de rekening; dat
   // maand 0 hem daarna niet meer als gereserveerd rekent, is precies wat een finalisatie
   // betekent en niet een reden om het geld nergens meer te tellen.
-  return {
-    startBalance: bankFromFree(anchorMonthData?.startBalance ?? effectiveBalance, potBalances),
-    potBalances,
-  };
+  return { startBalance: computed, computedStartBalance: computed, potBalances };
 }
 
 /** Alleen het banksaldo aan het begin van de ankermaand. Zie `computeAnchorState`. */

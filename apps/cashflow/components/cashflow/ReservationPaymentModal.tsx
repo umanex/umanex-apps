@@ -17,6 +17,7 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
   const reservations = useCashflowStore((s) => s.reservations);
   const reservationPayments = useCashflowStore((s) => s.reservationPayments);
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
+  const reservationDefers = useCashflowStore((s) => s.reservationDefers);
   const { addReservationPayment } = useReservationActions();
 
   // De bufferpot staat er bewust niet tussen: hij dekt tekorten automatisch, dus een
@@ -43,7 +44,7 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
   const availableSaldo = simulatedPot
     ? simulatedPot.potBalance
     : selectedReservation
-      ? calcPotBalance(selectedReservation, reservationPayments, reservationSettlements, monthKey)
+      ? calcPotBalance(selectedReservation, reservationPayments, reservationSettlements, monthKey, reservationDefers)
       : 0;
 
   function syncFromReservation(value: string) {
@@ -138,7 +139,7 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
                 {activeReservations.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.label || 'Naamloos'} — beschikbaar {formatAmount(
-                      calcPotBalance(r, reservationPayments, reservationSettlements, monthKey),
+                      calcPotBalance(r, reservationPayments, reservationSettlements, monthKey, reservationDefers),
                     )}
                   </option>
                 ))}

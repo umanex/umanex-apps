@@ -48,15 +48,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+dd77f31 docs(cashflow): briefing afvinken en beoordeling vastleggen
 66ab298 feat(cashflow): buffer neemt het vrije saldo op, footer toont enkel de buffer
 62cf4ca fix(ci): give cashflow placeholder Supabase env vars during CI build
 14ea027 docs(cashflow): mark the storage handoff item resolved
 e6dd05c chore(cashflow): remove unused component files
-e36fd41 feat(cashflow): store data in Supabase instead of localStorage
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-08-05-feature-buffer-sweep-footer.tcebc.md
+  M  apps/cashflow/HANDOFF.md
+  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
+  M  apps/cashflow/components/cashflow/ReservationSidepanel.tsx
+  M  apps/cashflow/lib/cashflow/calculator.ts
+  A  apps/cashflow/scripts/anchor-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

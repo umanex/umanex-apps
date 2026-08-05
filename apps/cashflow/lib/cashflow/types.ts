@@ -66,8 +66,9 @@ export interface ReservationItem {
   startMonth: MonthKey;
   type: ReservationPotType;
   /**
-   * Bufferpot: vangt een negatief eindsaldo automatisch op door de storting van die
-   * maand te verlagen of om te keren naar een opname. Maximaal één pot tegelijk.
+   * Bufferpot: neemt elke maand automatisch het vrije saldo op en keert om naar een
+   * opname zodra de maand een tekort geeft. `monthlyAmount` speelt voor deze pot geen
+   * rol meer — de storting is volledig afgeleid. Maximaal één pot tegelijk.
    */
   coversDeficit?: boolean;
 }
@@ -100,18 +101,19 @@ export interface ReservationPotBalance {
   /** Deze pot is de bufferpot (coversDeficit). */
   isDeficitBuffer: boolean;
   /**
-   * De automatisch bepaalde storting van deze maand wanneer de buffer een tekort
-   * opvangt — negatief bij een opname, verlaagd-positief wanneer enkel de storting
-   * gekort wordt. `null` zodra er niets op te vangen valt (normale storting geldt).
+   * De automatisch bepaalde beweging van de bufferpot deze maand: positief wanneer het
+   * vrije saldo naar de pot gaat, negatief bij een opname die een tekort dekt. Altijd
+   * afgeleid — het maandbedrag van de pot speelt geen rol meer. `null` voor elke pot die
+   * geen buffer is, en voor een bufferpot die deze maand niet aangerekend wordt.
    */
-  deficitCoverage: number | null;
+  autoContribution: number | null;
   /** Deel van het tekort dat de buffer níét kon dekken omdat de pot leeg raakte. */
   deficitUncovered: number;
 }
 
 /**
- * De vijf koppen van de kernformule voor één maand. Berekend in
- * `lib/cashflow/subtotals.ts` en van daaruit zowel doorgerold als getoond.
+ * De koppen van de kernformule voor één maand. Berekend in `lib/cashflow/subtotals.ts`
+ * en van daaruit zowel doorgerold als getoond.
  */
 export interface MonthSubtotals {
   /** Beginsaldo + inkomsten van deze maand. */
@@ -122,11 +124,25 @@ export interface MonthSubtotals {
   oneOff: number;
   /** Maandelijkse budgetten: storting − wat er deze maand uit betaald is. */
   budgets: number;
-  /** Spaardoelen: storting, plus uitgestelde stortingen die deze maand toekomen. */
+  /**
+   * Spaardoelen: storting, plus uitgestelde stortingen die deze maand toekomen.
+   * Zónder de bufferpot — die staat apart in `buffer`, omdat hij niet als ledgerregel
+   * getoond wordt maar in de footer.
+   */
   provisions: number;
-  /** Som van de vier kostenposten. */
+  /**
+   * De bufferpot als kostenkop: wat er deze maand van het vrije saldo naar de pot gaat
+   * (positief) of eruit komt (negatief). Nul zonder bufferpot. Zit wél in `costs`, zodat
+   * de doorrol ongewijzigd blijft, maar niet in `provisions`, zodat de zichtbare
+   * secties het maandresultaat vóór buffer tonen.
+   */
+  buffer: number;
+  /** Som van alle kostenposten, buffer inbegrepen. */
   costs: number;
-  /** `incoming − costs` — hetzelfde getal als `MonthData.endBalance`. */
+  /**
+   * `incoming − costs` — hetzelfde getal als `MonthData.endBalance`, en het vrije saldo
+   * dat doorrolt. Met een actieve buffer is dat €0, of negatief zodra de pot leeg is.
+   */
   endBalance: number;
 }
 

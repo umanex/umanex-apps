@@ -32,6 +32,16 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — cashflow
 
+## 2026-08-05 — Gefinaliseerde pot in de ankermaand laat zijn saldo verdwijnen · [risico]
+- **Bevinding:** In `computeAnchorState` filtert `reservedAtAnchorStart` (`lib/cashflow/calculator.ts`, rond regel 760) gefinaliseerde potten weg, terwijl het opgebouwde saldo van die pot in eerdere maanden wél van het vrije saldo is afgetrokken. Dat saldo komt dan nergens meer terug: met een spaarpot van €4.200 die in de ankermaand gefinaliseerd wordt, geeft het venster vanaf januari €2.500 eindsaldo en het venster rechtstreeks op de ankermaand −€1.700. Pre-existing en los van de buffer, maar de sweep vergroot de impact: het beginsaldo van de ankermaand bestaat nu volledig uit potstanden, dus slaat een fout daar meteen door naar alles.
+- **Volgende zet:** Uitzoeken of de `!p.finalized`-filter daar terecht is. Vermoedelijk moet een pot die in de ankermaand gefinaliseerd wordt zijn `deferredFromPrevious` wél terugkrijgen, omdat `computeMonthSubtotals` diezelfde pot in maand 0 volledig overslaat en de vrijgave dus nooit boekt. Eerst een scenario in `scripts/buffer-scenarios.ts` dat het vastlegt, dan pas fixen.
+- **Status:** open
+
+## 2026-08-05 — Twee gaten in de snapshot-tak van computeAnchorState · [debt]
+- **Bevinding:** Twee bevindingen uit het reviewpanel van de buffer-sweep, allebei in de snapshot-tak van `computeAnchorState` en allebei vandaag onbereikbaar omdat `cashflow_snapshots` nog leeg is. (1) Een `balanceOverride` op een maand tússen de laatst afgesloten maand en de ankermaand wordt genegeerd — die tak zoekt alleen een override op de ankermaand zelf, de niet-snapshot-tak gebruikt wél de meest recente eerdere. (2) De overbruggingstak valt terug op de potstanden bij afsluiting wanneer geen enkel spaardoel in de ankermaand aangerekend wordt (bv. door een uitstel), waardoor een tussentijdse opbouw verdwijnt.
+- **Volgende zet:** Oppakken vóór de eerste maand afgesloten wordt — vanaf dan wordt dit pad wél gebruikt en zijn het stille rekenfouten in het banksaldo. Beide zijn te vangen met een scenario in `scripts/buffer-scenarios.ts` naast S18.
+- **Status:** open
+
 ## 2026-08-04 — Runway leest de ankermaand, niet vandaag · [risico]
 - **Bevinding:** `/analyse` haalt de bufferstand uit `useMonths(3)[0]`, en die volgt `anchorMonth` uit de store. Navigeer je op de prognosepagina een maand terug en ga je dan naar de analyse, dan rekent de runway met de bufferstand van die andere maand — zonder dat de pagina dat zegt. De navigatie is sessie-state, dus het verdwijnt na een herlaad, wat het juist verraderlijk maakt.
 - **Volgende zet:** In `app/analyse/page.tsx` de bufferstand halen uit de maand die gelijk is aan `getCurrentMonthKey()` in plaats van uit `months[0]`, of `useMonths` daar aanroepen met een eigen anker. Daarna controleren dat het getal niet meer verandert door op `/` terug te bladeren.

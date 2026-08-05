@@ -3,6 +3,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import type { MonthData, ReservationPotType } from '../../lib/cashflow/types';
 import { addMonth, getMonthLabel } from '../../lib/cashflow/recurring';
+import { bufferSummary } from '../../lib/cashflow/buffer';
 import { BalanceFooter } from './BalanceFooter';
 import { MonthVariance } from './MonthVariance';
 import { StartBalanceRow } from './StartBalanceRow';
@@ -20,8 +21,8 @@ interface MonthCardProps {
   onRepeatMonth: () => void;
   isFirst?: boolean;
   /** Gelijk voor alle maanden, zodat de drie footers even hoog blijven. */
-  showReserved: boolean;
-  showBuffer: boolean;
+  hasBuffer: boolean;
+  showUncovered: boolean;
   /**
    * Deze maand ligt in het verleden en is nooit afgesloten, dus wat je ziet is opnieuw
    * doorgerekend uit je huidige gegevens — geen vastgelegde historie.
@@ -40,8 +41,8 @@ export function MonthCard({
   onOpenRecurringSidepanel,
   onRepeatMonth,
   isFirst,
-  showReserved,
-  showBuffer,
+  hasBuffer,
+  showUncovered,
   isReconstruction,
   locked,
   onCloseMonth,
@@ -84,17 +85,9 @@ export function MonthCard({
     expenseItems,
   } = monthData;
 
-  // Alleen provisies staan écht gereserveerd op de rekening. Een budget is een
-  // inschatting van wat er nog vertrekt, geen opzijgezet geld — zie subtotals.ts.
-  // De buffer telt apart: dat is geen schuld aan iemand anders maar eigen geld dat
-  // achter de hand blijft, en het is precies de pot die een tekort opvangt.
-  const reserved = reservationPots
-    .filter((p) => p.potType === 'spaardoel' && !p.isDeficitBuffer)
-    .reduce((s, p) => s + p.potBalance, 0);
-
-  const buffer = reservationPots
-    .filter((p) => p.isDeficitBuffer)
-    .reduce((s, p) => s + p.potBalance, 0);
+  // De footer toont enkel nog de buffer: wat er deze maand bij komt of uit gaat, en waar
+  // de pot daarmee op uitkomt. Afleiding in lib/cashflow/buffer.ts — niet hier.
+  const buffer = bufferSummary(monthData);
 
   const { setNodeRef, isOver } = useDroppable({
     id: `month-${monthKey}`,
@@ -251,11 +244,11 @@ export function MonthCard({
       </fieldset>
 
       <BalanceFooter
-        available={subtotals.endBalance}
-        reserved={reserved}
-        buffer={buffer}
-        showReserved={showReserved}
-        showBuffer={showBuffer}
+        delta={buffer.delta}
+        total={buffer.total}
+        uncovered={buffer.uncovered}
+        hasBuffer={hasBuffer}
+        showUncovered={showUncovered}
       />
     </div>
   );

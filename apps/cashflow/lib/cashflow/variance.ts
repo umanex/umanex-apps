@@ -45,13 +45,14 @@ export function monthVariance(data: MonthData): CategoryVariance[] {
     difference: recurringActual - recurringBudgeted,
   });
 
-  // Potten: het maandbedrag tegenover wat er die maand echt in ging. Bij de bufferpot is
-  // dat verschil het interessantst — een opname verschijnt hier als negatieve storting.
+  // Potten: het maandbedrag tegenover wat er die maand echt in ging. De bufferpot valt
+  // hier bewust buiten: zijn storting is volledig afgeleid uit wat er overblijft, dus
+  // heeft hij geen begroot bedrag om tegen af te zetten — het verschil zou enkel ruis zijn.
   for (const [type, label] of [
     ['maandelijks_budget', 'Maandelijkse budgetten'],
     ['spaardoel', 'Provisies'],
   ] as const) {
-    const pots = data.reservationPots.filter((p) => p.potType === type);
+    const pots = data.reservationPots.filter((p) => p.potType === type && !p.isDeficitBuffer);
     if (pots.length === 0) continue;
     const budgeted = pots.reduce((s, p) => s + p.monthlyAmount, 0);
     const actual = pots.reduce((s, p) => s + p.provisionThisMonth, 0);

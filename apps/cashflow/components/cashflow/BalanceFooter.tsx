@@ -3,94 +3,79 @@
 import { formatAmount, formatSigned } from '../../lib/cashflow/recurring';
 
 type BalanceFooterProps = {
-  /** Vrij besteedbaar eindsaldo van deze maand. */
-  available: number;
-  /** Provisies: staat op de rekening maar moet nog weg (btw, verzekering, ...). */
-  reserved: number;
-  /** Bufferpot: eigen geld dat achter de hand blijft en een tekort opvangt. */
-  buffer: number;
+  /** Beweging van de bufferpot deze maand: positief is opbouw, negatief een opname. */
+  delta: number;
+  /** Stand van de bufferpot aan het einde van deze maand. */
+  total: number;
+  /** Tekort dat de buffer deze maand niet kon dekken. Nul zolang de pot volstaat. */
+  uncovered: number;
   /**
-   * Tonen de gereserveerd- en bufferregel. Staan uit zolang er in het hele venster geen
-   * provisie of buffer is — maar altijd gelijk voor alle drie de maanden, anders staan de
-   * footers niet meer op één lijn.
+   * Is er een bufferpot ingesteld? Gelijk voor alle drie de maanden — de footers moeten
+   * op één lijn blijven staan, dus mag deze staat niet per kolom verschillen.
    */
-  showReserved: boolean;
-  showBuffer: boolean;
+  hasBuffer: boolean;
+  /** Toont ergens in het venster een niet-gedekt tekort. Zelfde reden: gelijke hoogte. */
+  showUncovered: boolean;
 };
 
 export function BalanceFooter({
-  available,
-  reserved,
-  buffer,
-  showReserved,
-  showBuffer,
+  delta,
+  total,
+  uncovered,
+  hasBuffer,
+  showUncovered,
 }: BalanceFooterProps) {
-  const bank = available + reserved + buffer;
-  const hasBreakdown = showReserved || showBuffer;
+  if (!hasBuffer) {
+    return (
+      <div className="shrink-0 border-t border-[var(--umanexPrimary50)] px-4 py-3 flex flex-col gap-1">
+        <span className="text-sm font-medium text-[var(--umanexNeutral800)]">Geen buffer</span>
+        <span className="text-[11px] leading-tight text-[var(--umanexNeutral500)]">
+          Markeer een provisie als buffer om te zien wat je per maand opbouwt of verbruikt.
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="shrink-0 border-t border-[var(--umanexPrimary50)] px-4 py-3 flex flex-col gap-1">
-      {hasBreakdown && (
-        <>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-[var(--umanexNeutral500)]">Bankstand</span>
-            <span className="text-sm tabular-nums text-[var(--umanexNeutral800)]">
-              {formatAmount(bank)}
-            </span>
-          </div>
-
-          {showReserved && (
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-sm text-[var(--umanexNeutral500)]">
-                {/* TODO: arcering vervangen door color.finance.reserved.graphic zodra de
-                    finance-tokens in Tokens Studio staan. */}
-                <span
-                  aria-hidden
-                  className="inline-block size-3 rounded-[2px] border border-[var(--umanexNeutral300)]"
-                  style={{
-                    backgroundImage:
-                      'repeating-linear-gradient(45deg, var(--umanexNeutral400) 0 2px, transparent 2px 4px)',
-                  }}
-                />
-                Gereserveerd
-              </span>
-              <span className="text-sm tabular-nums text-[var(--umanexNeutral500)]">
-                {formatSigned(reserved, 'out')}
-              </span>
-            </div>
-          )}
-
-          {showBuffer && (
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-sm text-[var(--umanexNeutral500)]">
-                {/* Vlak vlak i.p.v. arcering: de buffer is eigen geld, geen schuld.
-                    TODO: vervangen door een finance-token zodra die er zijn. */}
-                <span
-                  aria-hidden
-                  className="inline-block size-3 rounded-[2px] border border-[var(--umanexNeutral400)] bg-[var(--umanexNeutral400)]"
-                />
-                Buffer
-              </span>
-              <span className="text-sm tabular-nums text-[var(--umanexNeutral500)]">
-                {formatSigned(buffer, 'out')}
-              </span>
-            </div>
-          )}
-
-          <div className="border-t border-[var(--umanexNeutral200)] mt-1 pt-2" />
-        </>
-      )}
-
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-[var(--umanexNeutral800)]">
-          {hasBreakdown ? 'Beschikbaar' : 'Eindsaldo'}
-        </span>
+        <span className="text-sm text-[var(--umanexNeutral500)]">Deze maand</span>
+        {/* TODO: emerald vervangen door color.finance.positive zodra de finance-tokens
+            in Tokens Studio staan — zelfde openstaande migratie als de andere charts. */}
         <span
-          className={`text-lg font-bold tabular-nums ${
-            available >= 0 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
+          className={`text-sm tabular-nums ${
+            delta >= 0 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
           }`}
         >
-          {formatAmount(available)}
+          {formatSigned(delta, 'in')}
+        </span>
+      </div>
+
+      {showUncovered && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-[var(--umanexNeutral500)]">Niet gedekt</span>
+          <span
+            className={`text-sm tabular-nums ${
+              uncovered > 0
+                ? 'text-[var(--umanexPrimary700)]'
+                : 'text-[var(--umanexNeutral400)]'
+            }`}
+          >
+            {uncovered > 0 ? formatSigned(uncovered, 'out') : formatAmount(0)}
+          </span>
+        </div>
+      )}
+
+      <div className="border-t border-[var(--umanexNeutral200)] mt-1 pt-2" />
+
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-[var(--umanexNeutral800)]">Buffer</span>
+        <span
+          className={`text-lg font-bold tabular-nums ${
+            total >= 0 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
+          }`}
+        >
+          {formatAmount(total)}
         </span>
       </div>
     </div>

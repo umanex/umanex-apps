@@ -344,7 +344,7 @@ function digestMonth(m: MonthData, index: number) {
         effectiveAmount: r(p.effectiveAmount),
         finalized: p.finalized,
         isDeficitBuffer: p.isDeficitBuffer,
-        deficitCoverage: p.deficitCoverage === null ? null : r(p.deficitCoverage),
+        autoContribution: p.autoContribution === null ? null : r(p.autoContribution),
         deficitUncovered: r(p.deficitUncovered),
       })),
     ui: {

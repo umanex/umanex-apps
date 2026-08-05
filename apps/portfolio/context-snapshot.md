@@ -41,18 +41,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e59eaa1 chore(config): remove the dead flat-config eslint files
+5806065 refactor(config): share the token lint rules instead of copying them per app
 36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
 5ead2b3 fix(tokens): give primary a contrast-safe value per mode
 4f7cf08 fix(tokens): declare color-scheme per mode
-cf9777b fix(tokens): refuse a token set the build cannot place
-bddfb97 test
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/portfolio/.eslintrc.js
-  D  apps/portfolio/.eslintrc.json
-  A  packages/config/eslint/tokens.cjs
-  M  packages/config/package.json
+  M  apps/portfolio/package.json
+  D  packages/tokens/build/.gitkeep
+  M  packages/ui/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

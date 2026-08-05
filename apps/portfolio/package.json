@@ -13,13 +13,11 @@
   "dependencies": {
     "@umanex/tokens": "workspace:*",
     "@umanex/ui": "workspace:*",
-    "clsx": "^2",
     "framer-motion": "^12.40.0",
     "lucide-react": "^0.400.0",
     "next": "^14",
     "react": "^18",
-    "react-dom": "^18",
-    "tailwind-merge": "^2"
+    "react-dom": "^18"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -48,18 +48,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+3dde3da feat(cashflow): render the role layer and its components in both modes
 e59eaa1 chore(config): remove the dead flat-config eslint files
 5806065 refactor(config): share the token lint rules instead of copying them per app
 36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
 5ead2b3 fix(tokens): give primary a contrast-safe value per mode
-4f7cf08 fix(tokens): declare color-scheme per mode
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/.gitignore
   M  apps/cashflow/package.json
-  A  apps/cashflow/scripts/render-screens.tsx
-  A  apps/cashflow/scripts/tsconfig.json
+  D  packages/tokens/build/.gitkeep
+  M  packages/ui/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

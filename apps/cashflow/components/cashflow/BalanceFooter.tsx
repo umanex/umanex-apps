@@ -44,7 +44,10 @@ export function BalanceFooter({
             in Tokens Studio staan — zelfde openstaande migratie als de andere charts. */}
         <span
           className={`text-sm tabular-nums ${
-            delta >= 0 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
+            // Zelfde drempel als `formatSigned`: onder een halve cent schrijft die al
+            // "€ 0,00" zonder teken. Kleurden we dan nog op het wiskundige teken, dan
+            // stond een maand die exact op nul uitkomt in het rood door afrondingsruis.
+            delta > -0.005 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
           }`}
         >
           {formatSigned(delta, 'in')}
@@ -72,7 +75,7 @@ export function BalanceFooter({
         <span className="text-sm font-medium text-[var(--umanexNeutral800)]">Buffer</span>
         <span
           className={`text-lg font-bold tabular-nums ${
-            total >= 0 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
+            total > -0.005 ? 'text-emerald-700' : 'text-[var(--umanexPrimary700)]'
           }`}
         >
           {formatAmount(total)}

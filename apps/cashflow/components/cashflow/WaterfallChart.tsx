@@ -79,6 +79,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
         <button
           onClick={() => setShowTable((v) => !v)}
           aria-expanded={showTable}
+          aria-controls="waterfall-tabel"
           className="shrink-0 h-8 px-3 rounded-md border border-input text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           {showTable ? 'Verberg tabel' : 'Toon tabel'}
@@ -90,9 +91,13 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
         className="mt-4 w-full h-auto max-h-[280px]"
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label={`Opbouw van het eindsaldo van ${getMonthLabel(month.monthKey)}. De tabel eronder bevat dezelfde waarden.`}
+        aria-label={`Opbouw van het eindsaldo van ${getMonthLabel(month.monthKey)}.${showTable ? ' De tabel eronder bevat dezelfde waarden.' : ' Gebruik "Toon tabel" voor dezelfde waarden als tekst.'}`}
       >
-        {[min, 0, max].map((tick) => (
+        {/* Ontdubbeld: `values` bevat altijd een literale 0, dus min <= 0 <= max. Zodra
+            een van beide exact 0 is — het normale geval, en met een actieve bufferpot per
+            constructie — kregen twee <g>-elementen dezelfde key en werd dezelfde
+            rasterlijn met astekst twee keer over zichzelf getekend. */}
+        {[...new Set([min, 0, max])].map((tick) => (
           <g key={tick}>
             <line
               x1={PAD.left}
@@ -171,7 +176,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
       </svg>
 
       {showTable && (
-        <table className="mt-4 w-full text-sm">
+        <table id="waterfall-tabel" className="mt-4 w-full text-sm">
           <caption className="sr-only">Opbouw van het eindsaldo</caption>
           <thead>
             <tr className="text-left text-[var(--umanexNeutral500)]">

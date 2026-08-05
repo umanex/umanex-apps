@@ -41,20 +41,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-c21ec8a chore(tokens): retract the primitives from CSS and make the guards hard
-3151e3b feat(tokens): give Typography/Scale a real ramp and deliver it to Tailwind
-84f557b refactor(tokens): make the finance layer mode-aware and cut it loose from the brand red
-b282e96 refactor(config): generate the Tailwind color map from the tokens
-b546f4f feat(tokens): add success and warning roles, move primary to Primary.600
+36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
+5ead2b3 fix(tokens): give primary a contrast-safe value per mode
+4f7cf08 fix(tokens): declare color-scheme per mode
+cf9777b fix(tokens): refuse a token set the build cannot place
+bddfb97 test
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/portfolio/components/layout/Header.tsx
-  M  packages/tokens/README.md
-  M  packages/tokens/build/theme.css
-  M  packages/tokens/tokens.json
-  R  apps/portfolio/components/ui/ThemeToggle.tsx -> packages/ui/components/ui/ThemeToggle.tsx
-  M  packages/ui/package.json
+  A  apps/portfolio/.eslintrc.js
+  D  apps/portfolio/.eslintrc.json
+  A  packages/config/eslint/tokens.cjs
+  M  packages/config/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

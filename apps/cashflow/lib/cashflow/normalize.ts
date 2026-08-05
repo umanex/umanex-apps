@@ -81,12 +81,27 @@ export function normalizeData(input: unknown): CashflowData {
 /**
  * Snapshots komen uit hun eigen tabel en worden per rij genormaliseerd. Een snapshot van
  * vóór `historyStartMonth` is geen historie maar een reconstructie en wordt geweerd.
+ *
+ * De buffer-kop in `subtotals` is er pas sinds het sweep-model. Een bevroren maand van
+ * daarvóór telde de bufferstorting mee in `provisions`, dus is 0 hier het juiste
+ * antwoord: `netBurn` valt daarmee terug op de oude formule en de waterfall rekent niet
+ * met `undefined`. Een snapshot mag verder niet aangepast worden — dat is precies wat
+ * bevriezen betekent.
  */
 export function normalizeSnapshots(
   rows: MonthSnapshot[],
   historyStartMonth: string,
 ): MonthSnapshot[] {
-  return rows.filter((snap) => Boolean(snap) && snap.monthKey >= historyStartMonth);
+  return rows
+    .filter((snap) => Boolean(snap) && snap.monthKey >= historyStartMonth)
+    .map((snap) =>
+      typeof snap.data?.subtotals?.buffer === 'number'
+        ? snap
+        : {
+            ...snap,
+            data: { ...snap.data, subtotals: { ...snap.data.subtotals, buffer: 0 } },
+          },
+    );
 }
 
 /** De lege beginstand voor een gebruiker die nog geen document heeft. */

@@ -128,6 +128,25 @@ export function calculateMonths(
   const potBalanceMap = new Map<string, number>();
   const deferredRemainingMap = new Map<string, number>();
 
+  // Bufferpot: neemt het vrije saldo van elke maand op en vangt een tekort weer op.
+  // Enkel een spaardoel kan buffer zijn — een maandelijks budget reset elke maand en
+  // heeft dus geen saldo om in op te bouwen of uit te putten.
+  const bufferId =
+    reservations.find((r) => r.coversDeficit && r.type === 'spaardoel')?.id ?? null;
+
+  // Uitstel en afrekening zijn beslissingen over een storting die je zelf kiest. De
+  // bufferstorting is volledig afgeleid, dus zijn ze er betekenisloos geworden — en
+  // gevaarlijk: een uitstel haalt de pot uit de maand en een finalisatie zet de sweep
+  // stil, allebei zonder dat de gebruiker er nog een rij voor ziet om het terug te
+  // draaien. Zulke resten uit het oude model negeren we, in plaats van ze te laten
+  // doorwerken op een waarde die niemand meer kan bewerken.
+  const activeReservationDefers =
+    bufferId === null ? reservationDefers : reservationDefers.filter((d) => d.reservationId !== bufferId);
+  const activeSettlements =
+    bufferId === null
+      ? reservationSettlements
+      : reservationSettlements.filter((s) => s.reservationId !== bufferId);
+
   // Initialiseer spaardoel-potten met historisch saldo vóór het berekeningsvenster.
   // deferredRemainingMap = cumulatieve uitstaande provisies = potbalans voor spaardoelen.
   const prevMonth = format(addMonths(parseISO(`${anchorMonth}-01`), -1), 'yyyy-MM');
@@ -135,16 +154,11 @@ export function calculateMonths(
     if (res.type === 'spaardoel' && res.startMonth <= prevMonth) {
       const historical =
         initialPotBalances?.get(res.id) ??
-        calcPotBalance(res, reservationPayments, reservationSettlements, prevMonth);
+        calcPotBalance(res, reservationPayments, activeSettlements, prevMonth);
       potBalanceMap.set(res.id, historical);
       deferredRemainingMap.set(res.id, historical);
     }
   }
-
-  // Bufferpot: vangt een negatief eindsaldo op. Enkel een spaardoel kan buffer zijn —
-  // een maandelijks budget reset elke maand en heeft dus geen saldo om uit te putten.
-  const bufferId =
-    reservations.find((r) => r.coversDeficit && r.type === 'spaardoel')?.id ?? null;
 
   for (const monthKey of months) {
     // Afgesloten maand: overnemen zoals ze bevroren is, en de volgende maand daarop
@@ -206,13 +220,13 @@ export function calculateMonths(
     const activeReservations = reservations.filter((r) => r.startMonth <= monthKey);
 
     const departingReservationDeferIds = new Set(
-      reservationDefers.filter((d) => d.fromMonth === monthKey).map((d) => d.reservationId),
+      activeReservationDefers.filter((d) => d.fromMonth === monthKey).map((d) => d.reservationId),
     );
     const billableReservations = activeReservations.filter(
       (r) => !departingReservationDeferIds.has(r.id),
     );
 
-    const arrivingReservationDefers = reservationDefers.filter((d) => d.toMonth === monthKey);
+    const arrivingReservationDefers = activeReservationDefers.filter((d) => d.toMonth === monthKey);
     const deferredReservationItems = arrivingReservationDefers.flatMap((d) => {
       const res = reservations.find((r) => r.id === d.reservationId);
       if (!res) return [];
@@ -227,7 +241,7 @@ export function calculateMonths(
     const deferredReservationAmount = deferredReservationItems.reduce((s, d) => s + d.amount, 0);
 
     const getEffectiveAmount = (res: ReservationItem): number => {
-      const settlement = reservationSettlements.find(
+      const settlement = activeSettlements.find(
         (s) => s.reservationId === res.id && s.monthKey === monthKey,
       );
       return settlement ? settlement.effectiveAmount : res.monthlyAmount;
@@ -246,6 +260,15 @@ export function calculateMonths(
     }
 
     const monthReservationPayments = reservationPayments.filter((p) => p.monthKey === monthKey);
+
+    /**
+     * Is er deze maand cash bijbetaald bovenop deze pot? Dan is de pot volledig benut en
+     * staat er niets meer in — zowel voor de getoonde stand als voor de doorrol en voor
+     * de ruimte die de buffer kan uitlenen. Eén bron voor die drie, want liepen ze uit
+     * elkaar, dan kon de pot ongemerkt negatief worden.
+     */
+    const hasCashOverflow = (resId: string): boolean =>
+      monthReservationPayments.some((p) => p.reservationId === resId && p.fromCash > 0);
     const monthSettlements = recurringSettlements.filter((s) => s.monthKey === monthKey);
 
     // --- BESCHIKBAAR / OPENSTAAND / EINDSALDO ---
@@ -316,7 +339,7 @@ export function calculateMonths(
     const evaluateMonth = (bufferProvision: number | null): MonthEvaluation => {
       const getProvisionThisMonth = (res: ReservationItem): number => {
         if (bufferProvision !== null && res.id === bufferId) return bufferProvision;
-        const settlement = reservationSettlements.find(
+        const settlement = activeSettlements.find(
           (s) => s.reservationId === res.id && s.monthKey === monthKey,
         );
         return settlement ? settlement.effectiveAmount : res.monthlyAmount;
@@ -338,7 +361,7 @@ export function calculateMonths(
       }
       // Als er cash bijbetaald werd, is de pot volledig benut — saldo naar 0
       for (const payment of monthReservationPayments) {
-        if (payment.fromCash > 0) {
+        if (hasCashOverflow(payment.reservationId)) {
           potBalances.set(payment.reservationId, 0);
         }
       }
@@ -350,7 +373,7 @@ export function calculateMonths(
       const spaardoelReleases = new Map<string, number>();
       for (const res of billableReservations) {
         if (res.type !== 'spaardoel') continue;
-        const settlement = reservationSettlements.find(
+        const settlement = activeSettlements.find(
           (s) => s.reservationId === res.id && s.monthKey === monthKey,
         );
         if (!settlement?.finalized) continue;
@@ -371,7 +394,7 @@ export function calculateMonths(
         totalSpaardoelReleased;
 
       const reservationPots: ReservationPotBalance[] = billableReservations.map((r) => {
-        const settlement = reservationSettlements.find(
+        const settlement = activeSettlements.find(
           (s) => s.reservationId === r.id && s.monthKey === monthKey,
         );
         const paymentsThisMonth = monthReservationPayments.filter((p) => p.reservationId === r.id);
@@ -398,7 +421,7 @@ export function calculateMonths(
           releasedThisMonth: spaardoelReleases.get(r.id) ?? 0,
           displayContribution,
           isDeficitBuffer: r.id === bufferId,
-          deficitCoverage: null,
+          autoContribution: null,
           deficitUncovered: 0,
         };
       });
@@ -450,6 +473,15 @@ export function calculateMonths(
           nextPotBalances.set(res.id, 0);
           continue;
         }
+        // Cash bijbetaald: de pot is volledig benut en staat hierboven al op 0. Diezelfde
+        // regel moet ook de doorrol halen, anders zegt `potBalance` 0 terwijl de
+        // doorgerolde stand nog een saldo draagt — en dat saldo is precies wat de buffer
+        // als opnameruimte leest. De twee maps liepen daardoor uiteen en de pot kon
+        // ongemerkt onder nul zakken.
+        if (hasCashOverflow(res.id)) {
+          nextDeferred.set(res.id, 0);
+          continue;
+        }
         const paidFromReservation = monthReservationPayments
           .filter((p) => p.reservationId === res.id)
           .reduce((s, p) => s + p.fromReservation, 0);
@@ -462,6 +494,10 @@ export function calculateMonths(
       // wél een uitgestelde storting ontvangt, moet die storting toch bijgeschreven zien.
       for (const [resId, credit] of arrivingCredit) {
         if (billableReservations.some((r) => r.id === resId)) continue;
+        if (hasCashOverflow(resId)) {
+          nextDeferred.set(resId, 0);
+          continue;
+        }
         const paidFromReservation = monthReservationPayments
           .filter((p) => p.reservationId === resId)
           .reduce((s, p) => s + p.fromReservation, 0);
@@ -480,51 +516,43 @@ export function calculateMonths(
       };
     };
 
-    // --- BUFFER: tekortdekking ---
+    // --- BUFFER: het vrije saldo van de maand ---
     //
-    // Het eindsaldo is lineair in de buffer-storting x: E(x) = E(0) − x. Komt de maand
-    // met de normale storting negatief uit, dan is de storting die het eindsaldo exact
-    // op €0 zet dus x = E(0) — negatief bij een echte opname, verlaagd-positief wanneer
-    // het volstaat om minder te storten. De opname kan nooit groter zijn dan wat er in
-    // de pot zit; het restant blijft als negatief eindsaldo zichtbaar staan.
+    // Het eindsaldo is lineair in de buffer-storting x: E(x) = E(0) − x. De buffer neemt
+    // op wat er overblijft, dus is x = E(0) de storting die het eindsaldo exact op €0
+    // zet — positief bij een overschot (opbouw), negatief bij een tekort (opname). Het
+    // maandbedrag van de pot speelt geen rol: de waarde is volledig afgeleid. Een opname
+    // kan nooit groter zijn dan wat er in de pot zit; het restant blijft als negatief
+    // eindsaldo zichtbaar staan en rolt door naar de volgende maand.
     let evaluation = evaluateMonth(null);
-    let bufferCoverage: number | null = null;
+    let bufferContribution: number | null = null;
     let bufferUncovered = 0;
 
     const bufferIsBillable = bufferId !== null && billableReservations.some((r) => r.id === bufferId);
     const bufferIsFinalized =
       bufferId !== null &&
-      reservationSettlements.some(
+      activeSettlements.some(
         (s) => s.reservationId === bufferId && s.monthKey === monthKey && s.finalized,
       );
 
-    if (bufferId !== null && bufferIsBillable && !bufferIsFinalized && evaluation.endBalance < -EPSILON) {
+    if (bufferId !== null && bufferIsBillable && !bufferIsFinalized) {
       // Wat de pot deze maand echt kan missen: het overgedragen saldo plus een
       // uitgestelde storting die nu toekomt, minus wat er deze maand al uit betaald is.
       // Nooit negatief — een overtrokken pot leent niets uit.
       const paidFromBuffer = monthReservationPayments
         .filter((p) => p.reservationId === bufferId)
         .reduce((s, p) => s + p.fromReservation, 0);
-      const potAvailable = Math.max(
-        0,
-        getDeferred(bufferId) + (arrivingCredit.get(bufferId) ?? 0) - paidFromBuffer,
-      );
-      // De buffer mag de maand nooit slechter maken dan de normale storting al doet,
-      // dus is die storting de bovengrens.
-      const bufferSettlement = reservationSettlements.find(
-        (s) => s.reservationId === bufferId && s.monthKey === monthKey,
-      );
-      const normalProvision = bufferSettlement
-        ? bufferSettlement.effectiveAmount
-        : (reservations.find((r) => r.id === bufferId)?.monthlyAmount ?? 0);
-      const target = Math.min(
-        normalProvision,
-        Math.max(evaluateMonth(0).endBalance, -potAvailable),
-      );
-      const covered = evaluateMonth(target);
-      bufferCoverage = target;
-      bufferUncovered = covered.endBalance < -EPSILON ? -covered.endBalance : 0;
-      evaluation = covered;
+      const potAvailable = hasCashOverflow(bufferId)
+        ? 0
+        : Math.max(
+            0,
+            getDeferred(bufferId) + (arrivingCredit.get(bufferId) ?? 0) - paidFromBuffer,
+          );
+      const target = Math.max(evaluateMonth(0).endBalance, -potAvailable);
+      const swept = evaluateMonth(target);
+      bufferContribution = target;
+      bufferUncovered = swept.endBalance < -EPSILON ? -swept.endBalance : 0;
+      evaluation = swept;
     }
 
     const {
@@ -537,11 +565,11 @@ export function calculateMonths(
     } = evaluation;
 
     const reservationPots =
-      bufferCoverage === null
+      bufferContribution === null
         ? evaluation.reservationPots
         : evaluation.reservationPots.map((p) =>
             p.reservationId === bufferId
-              ? { ...p, deficitCoverage: bufferCoverage, deficitUncovered: bufferUncovered }
+              ? { ...p, autoContribution: bufferContribution, deficitUncovered: bufferUncovered }
               : p,
           );
 
@@ -561,7 +589,7 @@ export function calculateMonths(
       totalExpenses,
       incomeItems: monthIncomeItems,
       recurringItems: monthRecurringItems,
-      reservationSettlements: reservationSettlements.filter((s) => s.monthKey === monthKey),
+      reservationSettlements: activeSettlements.filter((s) => s.monthKey === monthKey),
       reservationPots,
       reservationPayments: monthReservationPayments,
       deferredRecurringAmount,

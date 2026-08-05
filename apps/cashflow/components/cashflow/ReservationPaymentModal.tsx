@@ -19,8 +19,10 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);
   const { addReservationPayment } = useReservationActions();
 
+  // De bufferpot staat er bewust niet tussen: hij dekt tekorten automatisch, dus een
+  // factuur "uit de buffer" betalen zou hetzelfde geld twee keer inzetten.
   const activeReservations = reservations.filter(
-    (r) => r.startMonth <= monthKey && (!filterType || r.type === filterType),
+    (r) => r.startMonth <= monthKey && !r.coversDeficit && (!filterType || r.type === filterType),
   );
 
   const [reservationId, setReservationId] = useState(activeReservations[0]?.id ?? '');

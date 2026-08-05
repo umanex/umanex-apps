@@ -33,6 +33,8 @@ function ReservationRow({
   onRemovePayment,
   onSetBuffer,
 }: ReservationRowProps) {
+  // De bufferpot heeft geen eigen maandbedrag meer: hij neemt op wat er overblijft.
+  const isBuffer = reservation.coversDeficit ?? false;
   const currentBalance =
     simulatedBalance ??
     calcPotBalance(reservation, payments, settlements, getCurrentMonthKey());
@@ -69,8 +71,15 @@ function ReservationRow({
             placeholder="0"
             min={0}
             step={0.01}
-            className="w-28 h-8 px-2 rounded border border-input bg-background text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+            disabled={isBuffer}
+            title={isBuffer ? 'De buffer neemt op wat er overblijft — geen vast maandbedrag.' : undefined}
+            className="w-28 h-8 px-2 rounded border border-input bg-background text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
           />
+          {isBuffer && (
+            <span className="text-[11px] leading-tight text-muted-foreground">
+              Automatisch
+            </span>
+          )}
         </div>
         <div className="flex flex-col gap-0.5">
           <label className="text-xs text-muted-foreground">Vanaf</label>
@@ -111,10 +120,11 @@ function ReservationRow({
             className="mt-0.5 size-4 shrink-0 accent-[var(--umanexPrimary500)]"
           />
           <span className="flex flex-col gap-0.5">
-            <span className="text-sm leading-tight">Vangt tekorten op</span>
+            <span className="text-sm leading-tight">Buffer</span>
             <span className="text-xs text-muted-foreground leading-tight">
-              Bij een negatief eindsaldo verlaagt of keert deze pot zijn storting om, tot
-              het saldo op €0 staat. Slechts één pot tegelijk.
+              Deze pot neemt elke maand op wat er na alle andere posten overblijft, en vult
+              een tekort weer aan uit wat erin zit. Het maandbedrag vervalt daardoor.
+              Slechts één pot tegelijk.
             </span>
           </span>
         </label>

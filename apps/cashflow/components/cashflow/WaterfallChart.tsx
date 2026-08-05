@@ -27,14 +27,19 @@ function buildSteps(month: MonthData): Step[] {
   const afterRecurring = afterIncome - subtotals.recurring;
   const afterOneOff = afterRecurring - subtotals.oneOff;
   const afterBudgets = afterOneOff - subtotals.budgets;
+  const afterProvisions = afterBudgets - subtotals.provisions;
 
+  // De buffer is de laatste stap: hij neemt op wat er na alle andere posten overblijft,
+  // waardoor het eindsaldo op €0 landt. Zonder bufferpot is de stap 0 breed en valt hij
+  // visueel samen met het eindsaldo.
   return [
     { label: 'Beginsaldo', delta: null, value: startBalance },
     { label: 'Inkomsten', delta: totalIncome, value: afterIncome },
     { label: 'Vast', delta: -subtotals.recurring, value: afterRecurring },
     { label: 'Eenmalig', delta: -subtotals.oneOff, value: afterOneOff },
     { label: 'Budgetten', delta: -subtotals.budgets, value: afterBudgets },
-    { label: 'Provisies', delta: -subtotals.provisions, value: subtotals.endBalance },
+    { label: 'Provisies', delta: -subtotals.provisions, value: afterProvisions },
+    { label: 'Buffer', delta: -subtotals.buffer, value: subtotals.endBalance },
     { label: 'Eindsaldo', delta: null, value: subtotals.endBalance },
   ];
 }

@@ -1,4 +1,5 @@
-import type { MonthData, MonthKey, MonthSnapshot } from './types';
+import type { MonthData, MonthKey, MonthSnapshot, ReservationPotBalance } from './types';
+import { bufferSummary } from './buffer';
 
 /** Onder dit aantal afgesloten maanden is een trend ruis, geen signaal. */
 export const TREND_THRESHOLD = 3;
@@ -28,20 +29,41 @@ export interface RunwayResult {
 }
 
 function bufferBalance(data: MonthData): number {
-  return data.reservationPots
-    .filter((p) => p.isDeficitBuffer)
-    .reduce((s, p) => s + p.potBalance, 0);
+  return bufferSummary(data).total;
 }
 
 /**
  * Netto tekort van één maand: wat eruit ging min wat erin kwam.
  *
- * De storting naar de bufferpot telt gewoon mee als kost van die maand — het geld is die
- * maand van je vrije saldo af, ongeacht waar het naartoe ging. De runway wordt daardoor
- * korter dan wanneer je de storting eruit zou laten, en dat is het voorzichtige antwoord.
+ * Bewust niet afgeleid uit `subtotals`. Die koppen antwoorden in de ankermaand op een
+ * andere vraag — "wat moet er nog van je huidige banksaldo af" — en dragen daar de
+ * volledige opgebouwde stand van elke provisiepot in plaats van de storting van die ene
+ * maand. Elke afgesloten maand is per constructie zo'n ankermaand (`useAutoCloseMonth`
+ * rekent één maand vanaf zijn eigen ankerstaat door), dus zou de runway systematisch een
+ * tekort melden ter grootte van je opgebouwde provisies.
+ *
+ * Hier meten we daarom stromen: wat er deze maand aan kosten vertrekt, tegenover wat er
+ * binnenkwam. De buffer blijft erbuiten — hij neemt per constructie op wat er overblijft
+ * en vult aan wat er tekort is, dus zou elke maand op nul uitkomen als hij meetelde.
+ * Precies die beweging is wat de runway moet verklaren.
  */
 export function netBurn(data: MonthData): number {
-  return data.subtotals.costs - data.totalIncome;
+  // Een budget telt volledig mee, ook onbesteed: het prudente model gaat ervan uit dat
+  // het opgaat. Een provisie telt met de storting van deze maand, verminderd met wat een
+  // finalisatie weer vrijgeeft.
+  const potFlow = (p: ReservationPotBalance): number =>
+    p.potType === 'maandelijks_budget'
+      ? p.provisionThisMonth
+      : p.provisionThisMonth - p.releasedThisMonth;
+
+  const costs =
+    data.totalRecurring +
+    data.totalExpenses +
+    data.totalReservationCashPayments +
+    data.reservationPots.filter((p) => !p.isDeficitBuffer).reduce((s, p) => s + potFlow(p), 0) +
+    data.deferredReservationAmount;
+
+  return costs - data.totalIncome;
 }
 
 /**

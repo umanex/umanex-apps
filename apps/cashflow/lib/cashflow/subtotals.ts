@@ -3,7 +3,11 @@ import type { MonthSubtotals, ReservationPotBalance } from './types';
 /**
  * De kernformule van één maand, op één plek.
  *
- *   eindsaldo = beschikbaar − vast − eenmalig − budgetten − provisies
+ *   eindsaldo = beschikbaar − vast − eenmalig − budgetten − provisies − buffer
+ *
+ * De buffer is de laatste kop: hij neemt op wat er na alle andere kosten overblijft,
+ * waardoor het eindsaldo met een actieve bufferpot per constructie op €0 landt (of
+ * negatief blijft zodra de pot het tekort niet meer dekt).
  *
  * Zowel de doorrol naar de volgende maand als de weergave op de maandkaart leest deze
  * uitkomst. Stond de formule op meerdere plaatsen, dan liepen het getoonde eindsaldo en
@@ -85,22 +89,40 @@ export function computeMonthSubtotals(input: MonthSubtotalInput): MonthSubtotals
   // in eerdere maanden al opgebouwd werd (`deferredFromPrevious`). Latere maanden: die
   // opbouw is er in een eerdere maand al afgetrokken, dus telt enkel de nieuwe storting,
   // verminderd met wat een finalisatie deze maand vrijgeeft.
+  const spaardoelCost = (p: ReservationPotBalance): number =>
+    isFirstMonth
+      ? p.deferredFromPrevious + p.provisionThisMonth - paidFromPot(p)
+      : p.provisionThisMonth - p.releasedThisMonth;
+
+  const spaardoelen = reservationPots.filter(
+    (p) => p.potType === 'spaardoel' && (!isFirstMonth || !p.finalized),
+  );
+
+  // De bufferpot is dezelfde soort kost, maar krijgt een eigen kop: hij staat niet als
+  // ledgerregel in de Provisies-sectie maar in de footer. `deferredReservationAmount`
+  // blijft bij de provisies — een uitgestelde storting is enkel nog historisch mogelijk,
+  // want de bufferrij is niet meer versleepbaar.
   const provisions =
-    reservationPots
-      .filter((p) => p.potType === 'spaardoel' && (!isFirstMonth || !p.finalized))
-      .reduce(
-        (s, p) =>
-          s +
-          (isFirstMonth
-            ? p.deferredFromPrevious + p.provisionThisMonth - paidFromPot(p)
-            : p.provisionThisMonth - p.releasedThisMonth),
-        0,
-      ) + input.deferredReservationAmount;
+    spaardoelen.filter((p) => !p.isDeficitBuffer).reduce((s, p) => s + spaardoelCost(p), 0) +
+    input.deferredReservationAmount;
+
+  const buffer = spaardoelen
+    .filter((p) => p.isDeficitBuffer)
+    .reduce((s, p) => s + spaardoelCost(p), 0);
 
   const incoming = input.startBalance + input.totalIncome;
-  const costs = recurring + oneOff + budgets + provisions;
+  const costs = recurring + oneOff + budgets + provisions + buffer;
 
-  return { incoming, recurring, oneOff, budgets, provisions, costs, endBalance: incoming - costs };
+  return {
+    incoming,
+    recurring,
+    oneOff,
+    budgets,
+    provisions,
+    buffer,
+    costs,
+    endBalance: incoming - costs,
+  };
 }
 
 /** Cash-bijbetalingen bovenop een pot, als losse regels voor de uitgavensectie. */

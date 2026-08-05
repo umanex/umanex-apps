@@ -6,6 +6,7 @@ import { useMonths, useEarliestDataMonth, useCashflowActions, useAutoCloseMonth 
 import { useCashflowStore } from '../store/cashflow';
 import { getCurrentMonthKey } from '../lib/cashflow/recurring';
 import { buildSnapshot } from '../lib/cashflow/snapshot';
+import { bufferSummary } from '../lib/cashflow/buffer';
 import { MonthCard } from '../components/cashflow/MonthCard';
 import { CashflowDndContext } from '../components/cashflow/CashflowDndContext';
 import { RecurringSidepanel } from '../components/cashflow/RecurringSidepanel';
@@ -30,10 +31,9 @@ export default function Page() {
   // opnieuw doorgerekend uit de huidige gegevens. Dat moet zichtbaar zijn.
   const currentMonth = getCurrentMonthKey();
   // Gelijk voor alle kolommen: anders staan de drie footers niet meer op één lijn.
-  const showReserved = months.some((m) =>
-    m.reservationPots.some((p) => p.potType === 'spaardoel' && !p.isDeficitBuffer),
-  );
-  const showBuffer = months.some((m) => m.reservationPots.some((p) => p.isDeficitBuffer));
+  const bufferSummaries = months.map(bufferSummary);
+  const hasBuffer = bufferSummaries.some((b) => b.present);
+  const showUncovered = bufferSummaries.some((b) => b.uncovered > 0);
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [reservationOpen, setReservationOpen] = useState(false);
   const [paymentState, setPaymentState] = useState<{ monthKey: MonthKey; filterType: ReservationPotType } | null>(null);
@@ -84,8 +84,8 @@ export default function Page() {
                 key={month.monthKey}
                 monthData={month}
                 isFirst={index === 0}
-                showReserved={showReserved}
-                showBuffer={showBuffer}
+                hasBuffer={hasBuffer}
+                showUncovered={showUncovered}
                 isReconstruction={month.monthKey < currentMonth}
                 locked={monthSnapshots.some((s) => s.monthKey === month.monthKey)}
                 onCloseMonth={

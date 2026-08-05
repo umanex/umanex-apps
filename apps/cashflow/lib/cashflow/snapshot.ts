@@ -1,4 +1,5 @@
 import type { MonthData, MonthKey, MonthSnapshot } from './types';
+import { bufferSummary } from './buffer';
 
 /**
  * Bevriest een doorgerekende maand tot historie.
@@ -27,9 +28,7 @@ export function reservedIn(data: MonthData): number {
 
 /** Stand van de bufferpot aan het einde van de maand. */
 export function bufferIn(data: MonthData): number {
-  return data.reservationPots
-    .filter((p) => p.isDeficitBuffer)
-    .reduce((s, p) => s + p.potBalance, 0);
+  return bufferSummary(data).total;
 }
 
 /** Snapshots op maandsleutel, zodat de calculator ze in één stap kan opzoeken. */

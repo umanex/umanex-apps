@@ -4,6 +4,7 @@
  */
 
 :root {
+  color-scheme: light;
   --background: 0 0% 100%;
   --foreground: 220 43% 11%;
   --card: 0 0% 100%;
@@ -51,6 +52,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: 222 41% 8%;
   --foreground: 210 20% 98%;
   --card: 220 43% 11%;

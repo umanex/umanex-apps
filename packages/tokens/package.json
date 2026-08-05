@@ -5,7 +5,6 @@
   "type": "module",
   "exports": {
     "./theme.css": "./build/theme.css",
-    "./variables.css": "./build/variables.css",
     "./roles": {
       "types": "./build/roles.d.ts",
       "default": "./build/roles.mjs"
@@ -16,7 +15,8 @@
     }
   },
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "guard": "node scripts/guard.mjs"
   },
   "devDependencies": {
     "@tokens-studio/sd-transforms": "^1.2.0",

@@ -27,7 +27,7 @@ register(StyleDictionary, { excludeParentKeys: true });
 //   Theme/light, Theme/dark        -> rollaag, per mode
 //   Theme/base                     -> rollaag, mode-blind (alleen in :root)
 //   Semantic/light, Semantic/dark  -> domeinlaag, per mode
-//   al de rest                     -> primitives (variables.css)
+//   al de rest                     -> primitives (resolve-only, geen output)
 //
 // De build leest $themes NIET voor de mode-keuze. Tokens Studio's multi-theme zit
 // achter een betaald plan; door de conventie in de set-naam te leggen werkt deze
@@ -133,36 +133,15 @@ function mergeSets(sets) {
 
 if (!existsSync(R('build'))) await mkdir(R('build'), { recursive: true });
 
-// --- Pass 1: primitives -> variables.css ------------------------------------
-// Ongewijzigd gedrag: de primitives (en voorlopig de mode-blinde Semantic-set)
-// gaan met het umanex-prefix naar variables.css.
-const ALLOWED_TYPES = ['color', 'spacing', 'borderRadius', 'fontFamilies', 'fontSizes', 'lineHeights', 'fontWeights'];
+// De primitives krijgen GEEN eigen CSS-output meer. Ze bestonden als
+// --umanexNeutral500 en zo verder in een variables.css die elke app importeerde,
+// en dat was precies de ontsnappingsroute: app-code kon een primitive rechtstreeks
+// aanspreken en zo de mode-aware rollaag overslaan (158 keer in cashflow).
+//
+// Primitives zijn nu resolve-only: ze bestaan om door de rollaag gealiast te
+// worden en verlaten het pakket niet. Je kunt niet consumeren wat er niet is.
 
-await writeFile(R('build/_merged.json'), JSON.stringify(mergeSets(primitiveSets), null, 2));
-
-const sdPrimitives = new StyleDictionary({
-  source: [R('build/_merged.json')],
-  // GEEN errors.brokenReferences-override: die degradeerde een onopgeloste alias tot
-  // een logregel, waarna de build met exit 0 kapotte CSS opleverde en de auto-commit
-  // in tokens-sync.yml hem naar main publiceerde. SD v4 gooit standaard — terecht.
-  log: { verbosity: 'default' },
-  platforms: {
-    css: {
-      transformGroup: 'tokens-studio',
-      prefix: 'umanex',
-      buildPath: R('build') + '/',
-      files: [{
-        destination: 'variables.css',
-        format: 'css/variables',
-        filter: (token) => ALLOWED_TYPES.includes(token.$type ?? token.type),
-        options: { selector: ':root', outputReferences: false },
-      }],
-    },
-  },
-});
-await sdPrimitives.buildAllPlatforms();
-
-// --- Pass 2..n: één pass per mode -> de rollaag ------------------------------
+// --- Één pass per mode -> de rollaag ----------------------------------------
 // Per mode wordt alles geresolved (primitives als bron), maar alleen de rol-sets
 // worden geëmit. Zo blijven de primitives buiten de rollaag zonder padfilter.
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
@@ -364,4 +343,4 @@ await writeFile(
   ].join('\n')
 );
 
-console.log('\n✓ @umanex/tokens build complete → variables.css + theme.css + roles.mjs + typography.mjs');
+console.log('\n✓ @umanex/tokens build complete → theme.css + roles.mjs + typography.mjs');

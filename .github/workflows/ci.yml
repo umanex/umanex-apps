@@ -65,3 +65,8 @@ jobs:
             echo "::error::De gecommitte token-output wijkt af van wat de build produceert. Draai 'pnpm --filter @umanex/tokens build' en commit het resultaat."
             exit 1
           fi
+
+      # ESLint ziet de SVG fill=/stroke=-attributen en de .css-bestanden niet, en
+      # packages/ui heeft geen eslint-config. Deze guard dekt alles op schijf.
+      - name: Guard — laag-discipline (geen primitives of rauwe kleuren in app-code)
+        run: pnpm --filter @umanex/tokens guard

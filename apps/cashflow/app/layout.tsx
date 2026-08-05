@@ -4,7 +4,6 @@ import { Fira_Sans } from 'next/font/google';
 // globals.css mag daar daarna overheen.
 import '@umanex/tokens/theme.css';
 import './globals.css';
-import '@umanex/tokens/variables.css';
 import { AuthProvider } from '../lib/supabase/auth-context';
 import { LoginGate } from '../components/auth/LoginGate';
 

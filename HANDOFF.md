@@ -62,7 +62,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Volgende zet:** Maak in Figma een triviale wijziging (bv. één primitive), push vanuit de
   plugin naar een wegwerp-branch, en diff `tokens.json` tegen main. Kijk specifiek of
   `{primary}` en `rgba({Base.black}, 0.5)` overleven. Pas daarna vrijuit pushen naar main.
-- **Status:** open
+- **Status:** resolved — 2026-08-05: Jeroen heeft gepusht (main `bddfb97`). Beide constructies
+  overleefden ongewijzigd, alle zeven sets en `tokenSetOrder` intact, en de build produceert
+  byte-identieke output. De plugin deed drie onschadelijke dingen: `"disabled"`-entries uit
+  `selectedTokenSets` weggelaten (alleen enabled/source blijven), `$themes` en `$metadata` naar
+  het einde van het bestand verplaatst, en de trailing newline weggehaald. Dat de weggelaten
+  `disabled`-entries niets breken, is precies waarom de build de mode uit de set-naam leest
+  en niet uit `$themes`.
 
 ## 2026-08-05 — Token-refactor is nooit visueel geverifieerd · [onzekerheid]
 - **Bevinding:** De hele twaalf-stappen-refactor is geverifieerd op CSS-niveau: gecompileerde
@@ -98,7 +104,14 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Volgende zet:** Bij het toevoegen van de eerste nieuwe as (spacing is de meest
   waarschijnlijke): een expliciete allow-list van bekende primitive-sets in `classifySet`,
   die gooit op een onbekende set in plaats van hem stil als primitive te classificeren.
-- **Status:** open
+- **Status:** resolved — 2026-08-05: gedaan, en het gat bleek breder dan hier beschreven. Er
+  zaten drie stille paden in `classifySet`, niet één: (1) een nieuwe as buiten de rolgroepen
+  werd primitive zonder output, (2) een kale `Semantic` — de setnaam van vóór de refactor —
+  idem, en (3) `Theme/<onbekende suffix>` werd als mode-blind behandeld en zou zijn waarden in
+  `:root` zetten, over de light-rollen heen. Dat derde pad gaf dus *foute* output in plaats van
+  ontbrekende. Alle drie gooien nu, met een boodschap die de twee uitwegen noemt. Geverifieerd
+  door elk pad uit te lokken, plus een positieve test dat een nieuwe rolgroep via `ROLE_GROUPS`
+  wel gewoon werkt en dat de symmetrie-guard hem meteen meedekt.
 
 ## 2026-08-05 — Guard-baseline en dode eslint-config · [debt]
 - **Bevinding:** Twee dingen die eruitzien als handhaving maar het niet zijn. (1) De

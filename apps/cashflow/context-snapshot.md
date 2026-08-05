@@ -48,21 +48,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b282e96 refactor(config): generate the Tailwind color map from the tokens
+b546f4f feat(tokens): add success and warning roles, move primary to Primary.600
+760d0f0 refactor(tokens): ship the role layer as its own export and put every app on it
 bf4ffe4 refactor(tokens): derive the mode from the set name, not the token path
 14e34b8 refactor(config): make the shared preset the single source of Tailwind colors
-04113db fix(tokens): harden the build pipeline against four latent failure modes
-dbb1b8a docs(cashflow): token-migratie afgevinkt in HANDOFF
-124dbd2 feat(tokens): finance-rollen als semantische tokens, code stapt over
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/app/globals.css
-  M  apps/cashflow/app/layout.tsx
-  M  packages/tokens/build.mjs
-  D  packages/tokens/build/shadcn.css
-  A  packages/tokens/build/theme.css
-  M  packages/tokens/package.json
-  M  packages/ui/globals.css
+  M  apps/cashflow/components/cashflow/BalanceFooter.tsx
+  M  apps/cashflow/components/cashflow/ExpenseSection.tsx
+  M  apps/cashflow/components/cashflow/IncomeSection.tsx
+  M  apps/cashflow/components/cashflow/MonthVariance.tsx
+  M  apps/cashflow/components/cashflow/RecurringSection.tsx
+  M  apps/cashflow/components/cashflow/RecurringSidepanel.tsx
+  M  apps/cashflow/components/cashflow/RepeatMonthModal.tsx
+  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
+  M  apps/cashflow/components/cashflow/ReservationSection.tsx
+  M  apps/cashflow/components/cashflow/ReservationSidepanel.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

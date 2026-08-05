@@ -96,7 +96,7 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
                   <span className="text-[var(--umanexNeutral800)]">{formatCurrency(row.actual)}</span>{' '}
                   <span
                     className={`font-semibold ${
-                      row.difference > 0 ? 'text-[var(--umanexFinanceNegative)]' : 'text-[var(--umanexFinancePositive)]'
+                      row.difference > 0 ? 'text-finance-negative' : 'text-finance-positive'
                     }`}
                   >
                     {formatSigned(row.difference, 'out')}
@@ -117,7 +117,7 @@ export function VarianceChart({ snapshots }: VarianceChartProps) {
                 {/* Werkelijk: dikke balk erbovenop, ingekleurd naar de richting. */}
                 <div
                   className={`absolute inset-y-0 my-auto h-2 rounded-[2px] ${
-                    row.difference > 0 ? 'bg-[var(--umanexFinanceNegativeSurface)]' : 'bg-[var(--umanexFinancePositive)]'
+                    row.difference > 0 ? 'bg-finance-negative-surface' : 'bg-finance-positive'
                   }`}
                   style={{ width: `${(row.actual / max) * 100}%` }}
                 />

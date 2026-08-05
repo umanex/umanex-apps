@@ -98,7 +98,7 @@ function DraggableRecurringItem({
         type="checkbox"
         checked={isPaid}
         onChange={(e) => handleCheck(e.target.checked)}
-        className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${isPaid ? 'accent-[var(--umanexFinancePositive)]' : 'accent-primary'}`}
+        className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${isPaid ? 'accent-finance-positive' : 'accent-primary'}`}
         aria-label={`${item.label} betaald`}
       />
 
@@ -118,12 +118,12 @@ function DraggableRecurringItem({
           onChange={(e) => setLocalAmount(e.target.value)}
           onBlur={handleAmountBlur}
           className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-[4px] border border-[var(--umanexNeutral300)] bg-white focus:outline-none focus:ring-1 focus:ring-ring ${
-            isPaid ? 'text-[var(--umanexFinancePositive)]' : ''
+            isPaid ? 'text-finance-positive' : ''
           }`}
           aria-label="Werkelijk bedrag"
         />
         {hasDeviation && (
-          <span className="text-xs text-[var(--umanexFinanceDeferred)] tabular-nums shrink-0" title={`Begroot: ${formatAmount(budgeted)}`}>
+          <span className="text-xs text-finance-deferred tabular-nums shrink-0" title={`Begroot: ${formatAmount(budgeted)}`}>
             ({formatAmount(budgeted)})
           </span>
         )}
@@ -180,11 +180,11 @@ function DeferredRecurringItem({
         checked={localChecked || item.paid}
         disabled={item.paid}
         onChange={(e) => handleCheck(e.target.checked)}
-        className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${item.paid ? 'accent-[var(--umanexFinancePositive)]' : 'accent-primary'}`}
+        className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${item.paid ? 'accent-finance-positive' : 'accent-primary'}`}
         aria-label={`${item.label} betaald`}
       />
       <span className={`flex-1 text-sm truncate min-w-0 ${item.paid ? 'opacity-60' : ''}`}>
-        <span className={item.paid ? 'line-through text-muted-foreground' : 'text-[var(--umanexFinanceDeferred)]'}>
+        <span className={item.paid ? 'line-through text-muted-foreground' : 'text-finance-deferred'}>
           {item.label}
         </span>
         {' '}
@@ -212,7 +212,7 @@ function DeferredRecurringItem({
         </>
       ) : (
         <>
-          <span className={`text-sm tabular-nums shrink-0 ${item.paid ? 'text-muted-foreground' : 'font-medium text-[var(--umanexFinanceNegative)]'}`}>
+          <span className={`text-sm tabular-nums shrink-0 ${item.paid ? 'text-muted-foreground' : 'font-medium text-finance-negative'}`}>
             {formatAmount(item.paid ? item.paidAmount : item.amount)}
           </span>
           {hasDeviation && (
@@ -225,7 +225,7 @@ function DeferredRecurringItem({
       {item.paid ? (
         <button
           onClick={() => onUnsettle(item.deferId)}
-          className="text-muted-foreground hover:text-[var(--umanexFinanceDeferred)] transition-colors text-sm leading-none shrink-0"
+          className="text-muted-foreground hover:text-finance-deferred transition-colors text-sm leading-none shrink-0"
           aria-label="Betaling ongedaan"
         >
           ↩
@@ -234,7 +234,7 @@ function DeferredRecurringItem({
         !localChecked && (
           <button
             onClick={() => onRemoveDefer(item.deferId)}
-            className="text-[var(--umanexFinanceDeferred)] hover:text-[var(--umanexFinanceDeferredStrong)] transition-colors text-sm leading-none shrink-0"
+            className="text-finance-deferred hover:text-finance-deferred-strong transition-colors text-sm leading-none shrink-0"
             aria-label="Uitstelling ongedaan maken"
           >
             ↩

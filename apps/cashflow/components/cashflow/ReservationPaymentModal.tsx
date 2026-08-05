@@ -116,7 +116,7 @@ export function ReservationPaymentModal({ monthKey, filterType, onClose }: Reser
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-[var(--umanexOverlayScrim)]"
+        className="absolute inset-0 bg-overlay-scrim"
         onClick={onClose}
         aria-hidden="true"
       />

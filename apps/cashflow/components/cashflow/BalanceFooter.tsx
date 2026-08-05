@@ -45,7 +45,7 @@ export function BalanceFooter({
             // Zelfde drempel als `formatSigned`: onder een halve cent schrijft die al
             // "€ 0,00" zonder teken. Kleurden we dan nog op het wiskundige teken, dan
             // stond een maand die exact op nul uitkomt in het rood door afrondingsruis.
-            delta > -0.005 ? 'text-[var(--umanexFinancePositive)]' : 'text-[var(--umanexFinanceNegative)]'
+            delta > -0.005 ? 'text-finance-positive' : 'text-finance-negative'
           }`}
         >
           {formatSigned(delta, 'in')}
@@ -58,7 +58,7 @@ export function BalanceFooter({
           <span
             className={`text-sm tabular-nums ${
               uncovered > 0
-                ? 'text-[var(--umanexFinanceNegative)]'
+                ? 'text-finance-negative'
                 : 'text-[var(--umanexNeutral400)]'
             }`}
           >
@@ -73,7 +73,7 @@ export function BalanceFooter({
         <span className="text-sm font-medium text-[var(--umanexNeutral800)]">Buffer</span>
         <span
           className={`text-lg font-bold tabular-nums ${
-            total > -0.005 ? 'text-[var(--umanexFinancePositive)]' : 'text-[var(--umanexFinanceNegative)]'
+            total > -0.005 ? 'text-finance-positive' : 'text-finance-negative'
           }`}
         >
           {formatAmount(total)}

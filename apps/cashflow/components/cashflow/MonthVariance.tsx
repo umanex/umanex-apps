@@ -42,7 +42,7 @@ export function MonthVariance({ data }: MonthVarianceProps) {
                 </span>
                 <span
                   className={`text-[13px] font-semibold ${
-                    row.difference > 0 ? 'text-[var(--umanexFinanceNegative)]' : 'text-[var(--umanexFinancePositive)]'
+                    row.difference > 0 ? 'text-finance-negative' : 'text-finance-positive'
                   }`}
                 >
                   {formatSigned(row.difference, 'out')}

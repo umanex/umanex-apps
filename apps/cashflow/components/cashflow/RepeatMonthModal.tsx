@@ -99,7 +99,7 @@ export function RepeatMonthModal({ monthKey, onClose }: RepeatMonthModalProps) {
       role="dialog"
       aria-label={`Posten overnemen uit ${getMonthLabel(sourceMonth)}`}
     >
-      <div className="absolute inset-0 bg-[var(--umanexOverlayScrim)]" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-overlay-scrim" onClick={onClose} aria-hidden="true" />
 
       <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-background shadow-2xl p-6 space-y-5">
         <div className="flex items-start justify-between gap-4">
@@ -148,8 +148,8 @@ export function RepeatMonthModal({ monthKey, onClose }: RepeatMonthModalProps) {
                     <span
                       className={`text-sm tabular-nums whitespace-nowrap shrink-0 ${
                         candidate.kind === 'income'
-                          ? 'text-[var(--umanexFinancePositive)]'
-                          : 'text-[var(--umanexFinanceNegative)]'
+                          ? 'text-finance-positive'
+                          : 'text-finance-negative'
                       }`}
                     >
                       {formatSigned(candidate.amount, candidate.kind === 'income' ? 'in' : 'out')}

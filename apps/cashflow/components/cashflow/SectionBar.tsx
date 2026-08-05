@@ -40,8 +40,8 @@ export function SectionBar({
               direction === 'neutral' || isZero
                 ? 'text-[var(--umanexNeutral800)]'
                 : inflow
-                  ? 'text-[var(--umanexFinancePositive)]'
-                  : 'text-[var(--umanexFinanceNegative)]'
+                  ? 'text-finance-positive'
+                  : 'text-finance-negative'
             }`}
           >
             {formatSigned(amount, direction)}
@@ -61,7 +61,7 @@ export function SectionBar({
             {onAdd && (
               <button
                 onClick={onAdd}
-                className={`bg-[var(--umanexFinancePositive)] size-7 flex items-center justify-center text-[var(--umanexNeutral50)] text-[19px] leading-none disabled:opacity-30 ${
+                className={`bg-finance-positive size-7 flex items-center justify-center text-[var(--umanexNeutral50)] text-[19px] leading-none disabled:opacity-30 ${
                   hasFilter ? 'rounded-r-[4px]' : 'rounded-[4px]'
                 }`}
                 aria-label={addAriaLabel}

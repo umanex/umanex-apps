@@ -43,10 +43,18 @@ export const hslRoles = [
   "sidebar-accent",
   "sidebar-accent-foreground",
   "sidebar-border",
-  "sidebar-ring"
+  "sidebar-ring",
+  "finance-positive",
+  "finance-negative",
+  "finance-negative-surface",
+  "finance-deferred",
+  "finance-deferred-strong",
+  "finance-total"
 ];
 
-export const rawRoles = [];
+export const rawRoles = [
+  "overlay-scrim"
+];
 
 export const scalarRoles = [
   "radius"

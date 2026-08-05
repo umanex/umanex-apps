@@ -107,7 +107,7 @@ function ReservationRow({
         <div className="flex flex-col gap-0.5 ml-auto text-right">
           <span className="text-xs text-muted-foreground">Saldo nu</span>
           <span
-            className={`text-sm font-semibold tabular-nums ${currentBalance >= 0 ? 'text-[var(--umanexFinancePositive)]' : 'text-destructive'}`}
+            className={`text-sm font-semibold tabular-nums ${currentBalance >= 0 ? 'text-finance-positive' : 'text-destructive'}`}
           >
             {formatAmount(currentBalance)}
           </span>
@@ -165,7 +165,7 @@ function ReservationRow({
                       <span> · cash: {formatAmount(payment.fromCash)}</span>
                     )}
                     <span
-                      className={`ml-2 font-medium ${balanceAfter >= 0 ? 'text-[var(--umanexFinancePositive)]' : 'text-destructive'}`}
+                      className={`ml-2 font-medium ${balanceAfter >= 0 ? 'text-finance-positive' : 'text-destructive'}`}
                     >
                       → {formatAmount(balanceAfter)}
                     </span>
@@ -206,7 +206,7 @@ function ReservationRow({
             <div className="flex justify-between font-medium">
               <span>Resterend provisie</span>
               <span
-                className={`tabular-nums ${currentBalance < 0 ? 'text-destructive' : 'text-[var(--umanexFinancePositive)]'}`}
+                className={`tabular-nums ${currentBalance < 0 ? 'text-destructive' : 'text-finance-positive'}`}
               >
                 {formatAmount(currentBalance)}
                 {currentBalance < 0 && ' ⚠'}
@@ -259,7 +259,7 @@ export function ReservationSidepanel({ open, onClose }: ReservationSidepanelProp
   return (
     <>
       <div
-        className={`fixed inset-0 mt-0 bg-[var(--umanexOverlayScrim)] z-40 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 mt-0 bg-overlay-scrim z-40 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
         aria-hidden="true"
       />

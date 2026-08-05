@@ -61,7 +61,7 @@ jobs:
       # als er iets verschilt, was de gecommitte versie stale.
       - name: Guard — gegenereerde tokens zijn in sync met tokens.json
         run: |
-          if ! git diff --exit-code -- packages/tokens/build packages/ui/globals.css; then
+          if ! git diff --exit-code -- packages/tokens/build; then
             echo "::error::De gecommitte token-output wijkt af van wat de build produceert. Draai 'pnpm --filter @umanex/tokens build' en commit het resultaat."
             exit 1
           fi

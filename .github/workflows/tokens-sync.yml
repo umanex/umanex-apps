@@ -6,7 +6,7 @@ name: Tokens sync
 #
 # Twee onafhankelijke token-sets, elk met een eigen bron + output:
 #   - RowTrack       : apps/rowtrack/tokens/tokens.json → apps/rowtrack/constants/*.ts
-#   - umanex (web)   : packages/tokens/tokens.json      → packages/tokens/build/* + packages/ui/globals.css
+#   - umanex (web)   : packages/tokens/tokens.json      → packages/tokens/build/*
 #
 # Beide builds zijn deterministisch/idempotent — altijd allebei draaien is veilig;
 # git commit enkel de echte diffs. De paths-filter zorgt dat de workflow alleen
@@ -70,7 +70,7 @@ jobs:
       - name: Rebuild RowTrack tokens (style-dictionary → constants)
         run: pnpm --filter rowtrack tokens:build
 
-      - name: Rebuild umanex web tokens (@umanex/tokens → build + ui globals)
+      - name: Rebuild umanex web tokens (@umanex/tokens → build/)
         run: pnpm --filter @umanex/tokens build
 
       - name: Guard — geen DTCG $value-uitval of onopgeloste alias in de output
@@ -83,7 +83,7 @@ jobs:
           # het tussenbestand dat Style Dictionary als input krijgt en dat per definitie
           # nog onopgeloste aliassen bevat.
           HITS="$(grep -rnE ': undefined|\[object Object\]|\{[A-Za-z][A-Za-z0-9_.-]*\}' \
-            apps/rowtrack/constants packages/tokens/build/*.css packages/ui/globals.css 2>/dev/null || true)"
+            apps/rowtrack/constants packages/tokens/build/*.css 2>/dev/null || true)"
           if [ -n "$HITS" ]; then
             echo "::error::Token-build produceerde undefined / [object Object] / een onopgeloste alias. Niet gecommit."
             echo "$HITS"
@@ -102,8 +102,7 @@ jobs:
             fi
             echo "$1: $COUNT custom properties ✓"
           }
-          check packages/tokens/build/variables.css 30
-          check packages/ui/globals.css 60
+          check packages/tokens/build/theme.css 60
 
       - name: Type-check RowTrack (valideert dat de constants compileren)
         run: pnpm --filter rowtrack exec tsc --noEmit
@@ -112,7 +111,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/rowtrack/constants packages/tokens/build packages/ui/globals.css
+          git add apps/rowtrack/constants packages/tokens/build
           if git diff --cached --quiet; then
             echo "Geen gegenereerde wijzigingen — code al in sync met de tokens."
             exit 0

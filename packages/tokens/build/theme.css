@@ -11,7 +11,7 @@
   --card-foreground: 220 43% 11%;
   --popover: 0 0% 100%;
   --popover-foreground: 220 43% 11%;
-  --primary: 0 66.8% 56.3%;
+  --primary: 0 56.2% 49.2%;
   --primary-foreground: 0 0% 100%;
   --secondary: 216 24% 96%;
   --secondary-foreground: 220 43% 11%;
@@ -27,7 +27,7 @@
   --warning-foreground: 0 0% 100%;
   --border: 218 17% 91%;
   --input: 218 17% 91%;
-  --ring: 0 66.8% 56.3%;
+  --ring: 0 56.2% 49.2%;
   --chart-1: 0 83.9% 63.5%;
   --chart-2: 221 83.1933% 53.3333%;
   --chart-3: 38 92.126% 50.1961%;
@@ -35,12 +35,12 @@
   --chart-5: 258 89.5349% 66.2745%;
   --sidebar: 210 20% 98%;
   --sidebar-foreground: 220 43% 11%;
-  --sidebar-primary: 0 66.8% 56.3%;
+  --sidebar-primary: 0 56.2% 49.2%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 216 24% 96%;
   --sidebar-accent-foreground: 220 43% 11%;
   --sidebar-border: 218 17% 91%;
-  --sidebar-ring: 0 66.8% 56.3%;
+  --sidebar-ring: 0 56.2% 49.2%;
   --finance-positive: 163 93.5% 24.3%;
   --finance-negative: 0 73.7% 41.8%;
   --finance-negative-surface: 0 72.2% 50.6%;
@@ -59,8 +59,8 @@
   --card-foreground: 210 20% 98%;
   --popover: 220 43% 11%;
   --popover-foreground: 210 20% 98%;
-  --primary: 0 66.8% 56.3%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 0 83.9% 70.8%;
+  --primary-foreground: 222 41% 8%;
   --secondary: 214 32.6% 16.9%;
   --secondary-foreground: 210 20% 98%;
   --muted: 214 32.6% 16.9%;
@@ -75,7 +75,7 @@
   --warning-foreground: 222 41% 8%;
   --border: 214 32.6% 16.9%;
   --input: 214 32.6% 16.9%;
-  --ring: 0 66.8% 56.3%;
+  --ring: 0 83.9% 70.8%;
   --chart-1: 0 83.9% 63.5%;
   --chart-2: 221 83.1933% 53.3333%;
   --chart-3: 38 92.126% 50.1961%;
@@ -83,12 +83,12 @@
   --chart-5: 258 89.5349% 66.2745%;
   --sidebar: 220 43% 11%;
   --sidebar-foreground: 210 20% 98%;
-  --sidebar-primary: 0 66.8% 56.3%;
+  --sidebar-primary: 0 83.9% 70.8%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 214 32.6% 16.9%;
   --sidebar-accent-foreground: 210 20% 98%;
   --sidebar-border: 214 32.6% 16.9%;
-  --sidebar-ring: 0 66.8% 56.3%;
+  --sidebar-ring: 0 83.9% 70.8%;
   --finance-positive: 160 84.1% 39.4%;
   --finance-negative: 0 90.6% 70.8%;
   --finance-negative-surface: 0 72.2% 50.6%;

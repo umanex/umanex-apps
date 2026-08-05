@@ -2,7 +2,7 @@
 
 - **Datum:** 2026-08-05
 - **Project:** cashflow
-- **Status:** wacht op Tokens Studio
+- **Status:** wacht op Tokens Studio — beslissingen genomen, zie onderaan
 
 De open HANDOFF-post "Token-migratie is groter geworden in plaats van kleiner" vroeg om
 de nieuwe componenten mee te nemen zodra de finance-tokens aangemaakt worden. Dit bestand
@@ -27,6 +27,7 @@ dezelfde betekenis op drie manieren geschreven wordt.
 | Vlak daarvan | `bg-[var(--umanexPrimary500)]`, `bg-[var(--umanexPrimary700)]` | `color.finance.negative.surface` |
 | Uitgesteld / vraagt aandacht | `text-amber-600`, `text-amber-500`, `hover:text-amber-700` | `color.finance.deferred` |
 | Gereserveerd (arcering en vlak in de ledger) | `var(--umanexNeutral400)` met een `// TODO` | `color.finance.reserved.graphic` |
+| Saldo-staaf in een grafiek (niveau, geen beweging) | `var(--umanexNeutral800)` | `color.finance.total` |
 | Verduistering achter een overlay | `bg-black/40`, `bg-black/50` | `color.overlay.scrim` |
 
 `text-destructive` blijft zoals het is: dat is de ShadCN-rol voor "verwijderen", geen
@@ -52,7 +53,7 @@ Twaalf bestanden, alle in `apps/cashflow/components/`:
 ## Wat er in Tokens Studio moet gebeuren
 
 1. Een set `color.finance` met `positive`, `positive.surface`, `negative`,
-   `negative.surface`, `deferred`, `reserved.graphic` — en `color.overlay.scrim`.
+   `negative.surface`, `deferred`, `reserved.graphic`, `total` — en `color.overlay.scrim`.
 2. Waardes: neem `emerald-700` / `emerald-600` en `amber-600` als vertrekpunt, maar
    controleer het contrast op `--umanexNeutral50` en op wit. De bedragen staan in
    `tabular-nums` op klein formaat, dus AA op 14px is de ondergrens.
@@ -60,13 +61,43 @@ Twaalf bestanden, alle in `apps/cashflow/components/`:
    Het punt is de *naam*: `primary` betekent nu zowel "merkkleur" als "geld eraf".
 4. Exporteren in W3C DTCG (`$value` / `$type`) — `sync-tokens.js` leest niets anders.
 
-## Twee dingen om te beslissen
+## Beslissingen — genomen op 2026-08-05
 
-- **`teal-600` in het spaarpotten-paneel** wijkt af van de `emerald` elders voor exact
-  dezelfde betekenis (een positief potsaldo). Voorstel: laten samenvallen op
-  `color.finance.positive`. Was dat een bewust onderscheid, zeg het dan — dan wordt het
-  een eigen token in plaats van een opruiming.
-- **`--umanexChart4`** doet in de waterfall dienst als "geld erbij", terwijl de naam een
-  reeks-index suggereert. Als de grafieken ooit een echte reeks-schaal krijgen, botst dat.
-  Voorstel: de waterfall op `color.finance.*` zetten en `umanexChart*` reserveren voor
-  categorische reeksen.
+**`teal-600` in het spaarpotten-paneel is drift.** Geen bewust onderscheid, dus het valt
+samen met `color.finance.positive`. Raakt `ReservationSidepanel.tsx` op twee plaatsen
+(het potsaldo in de kop en het saldo-na-betaling in de betalingenlijst).
+
+**`umanexChart4` verdwijnt uit de waterfall.** De aanleiding, met de feiten erbij:
+
+`Primitives.Chart.1–5` is een categorische reeks — `#F05454`, `#2563EB`, `#F59E0B`,
+`#10B981`, `#8B5CF6` — en die vijf voeden `Theme/shadcn.light.chart-1..5` plus de
+dark-variant. Het zijn dus de ShadCN-serie-slots. In heel cashflow staat er precies één
+verwijzing naar, in `WaterfallChart.tsx`:
+
+    fill={ isTotal ? 'var(--umanexNeutral800)'
+         : isInflow ? 'var(--umanexChart4)'
+         :            'var(--umanexPrimary500)' }
+
+Drie rollen uit drie verschillende schalen. Dat wringt op drie manieren:
+
+1. **Het nummer is een index, geen betekenis.** Slot 4 zegt "de vierde reeks". Herschik je
+   het palet ooit — normaal onderhoud, bijvoorbeeld voor beter contrast tussen aangrenzende
+   reeksen — dan wordt "inkomsten" stilletjes blauw. Er breekt niets; de grafiek klopt
+   alleen niet meer.
+2. **De twee helften van dezelfde beslissing komen niet uit dezelfde schaal.** "Erbij" uit
+   het chart-palet, "eraf" uit `Primary`, terwijl `Chart.1` vrijwel dezelfde rode is. De
+   voor de hand liggende koppeling was beschikbaar en werd niet gebruikt — de keuze is ad
+   hoc gemaakt, niet als paar bedacht.
+3. **Er staan twee groenen voor één betekenis naast elkaar op `/analyse`.** De waterfall
+   gebruikt `#10B981` (emerald-500), de footer en de sectiebalken `emerald-700`
+   (`#047857`).
+
+Daarom een derde token erbij, dat nu ontbreekt: **`color.finance.total`** voor de
+saldo-staven. Die lenen vandaag `umanexNeutral800`, en dat is een eigen rol — een saldo is
+geen beweging maar een niveau, en daarom bewust kleurloos.
+
+Na de migratie verwijst niets in cashflow nog naar `umanexChart*`, en is het palet weer
+vrij voor waar het voor is: reeksen zónder richting (HR-verloop, split-trend, een
+vergelijking per categorie — allemaal op de ideeënlijst). Extra reden om er vanaf te
+blijven: die vijf voeden ook ShadCN's `--chart-N`, dus elke ShadCN-grafiek die er later
+bijkomt consumeert ze op index.

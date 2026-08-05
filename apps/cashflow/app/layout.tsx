@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { Fira_Sans } from 'next/font/google';
+// Volgorde is functioneel: theme.css levert de ongelaagde :root/.dark rollaag,
+// globals.css mag daar daarna overheen.
+import '@umanex/tokens/theme.css';
 import './globals.css';
 import '@umanex/tokens/variables.css';
 import { AuthProvider } from '../lib/supabase/auth-context';

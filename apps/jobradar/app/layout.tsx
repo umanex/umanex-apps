@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+// Volgorde is functioneel: theme.css levert de ongelaagde :root/.dark rollaag,
+// globals.css zet daarna de jobradar-merkkleuren erover.
+import '@umanex/tokens/theme.css'
 import './globals.css'
 
 const inter = Inter({

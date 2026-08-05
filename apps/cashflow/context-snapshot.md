@@ -48,18 +48,21 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+bf4ffe4 refactor(tokens): derive the mode from the set name, not the token path
+14e34b8 refactor(config): make the shared preset the single source of Tailwind colors
 04113db fix(tokens): harden the build pipeline against four latent failure modes
 dbb1b8a docs(cashflow): token-migratie afgevinkt in HANDOFF
 124dbd2 feat(tokens): finance-rollen als semantische tokens, code stapt over
-1a3cf31 docs(cashflow): tokenbeslissingen vastleggen in de finance-inventaris
-fca22ef fix(cashflow): grafieken tonen ook de randgevallen die ze verzwegen
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/tailwind.config.ts
-  M  packages/config/package.json
-  M  packages/config/tailwind/preset.ts
-  D  packages/ui/tailwind.config.ts
+  M  apps/cashflow/app/globals.css
+  M  apps/cashflow/app/layout.tsx
+  M  packages/tokens/build.mjs
+  D  packages/tokens/build/shadcn.css
+  A  packages/tokens/build/theme.css
+  M  packages/tokens/package.json
+  M  packages/ui/globals.css
 
 ## Bestanden met TODO/FIXME
   (geen)

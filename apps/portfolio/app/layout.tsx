@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { Fira_Sans, Merriweather } from 'next/font/google';
+// Volgorde is functioneel: theme.css levert de ongelaagde :root/.dark rollaag,
+// globals.css mag daar daarna overheen.
+import '@umanex/tokens/theme.css';
 import '@umanex/ui/globals.css';
 import '@umanex/tokens/variables.css';
 import { Header } from '@/components/layout/Header';

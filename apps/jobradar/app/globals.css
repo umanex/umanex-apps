@@ -2,51 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 218 12% 27%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    --radius: 0.5rem;
-  }
+/* De :root / .dark rollaag komt uit @umanex/tokens/theme.css, geïmporteerd in
+   app/layout.tsx vóór dit bestand.
 
-  .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 221 83% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 19% 27%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 19% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 19% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 19% 17%;
-    --input: 217 19% 17%;
-    --ring: 221 83% 60%;
-  }
+   jobradar is de enige app met een eigen merkkleur: blauw waar umanex rood is.
+   Onderstaand blok is de VOLLEDIGE afwijking en staat bewust ongelaagd, zodat het
+   van de ongelaagde theme.css wint zonder specificiteitstrucs.
+
+   Waarom deze zes en niet alleen --primary: --accent is in de umanex-rollaag
+   merk-getint ({Primary.50} / {Primary.700}), en packages/ui/components/ui/button.tsx
+   zet hover:bg-accent op zowel de outline- als de ghost-variant — zonder override
+   krijgt een blauw gebrande app rode hover-states. --secondary is in jobradar een
+   donkere chip (ScoreBadge) in plaats van een licht vlak. */
+
+:root {
+  --primary: 221 83% 53%;
+  --ring: 221 83% 53%;
+  --secondary: 218 12% 27%;
+  --secondary-foreground: 0 0% 100%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+}
+
+.dark {
+  --primary: 221 83% 60%;
+  --ring: 221 83% 60%;
+  --secondary: 217 19% 27%;
+  --secondary-foreground: 210 40% 98%;
+  --accent: 217 19% 17%;
+  --accent-foreground: 210 40% 98%;
 }
 
 @layer base {

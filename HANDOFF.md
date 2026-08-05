@@ -107,7 +107,14 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   één alias in `Theme/light` + `Theme/dark`. Alternatief: `--primary` op 600 houden voor vlakken
   en een aparte rol voor tekst-op-achtergrond introduceren; dat is meer tokens maar houdt de
   merkkleur op vlakken helderder.
-- **Status:** open
+- **Status:** resolved — 2026-08-05: Primary.700 in light (5.32:1). In dark ging 700 de
+  verkeerde kant op — daar staat `text-primary` op een bijna-zwarte achtergrond, dus 700 zakte
+  naar 3.34 — en werd het `Primary.400`. Niet 500: dat haalde 5.16 op de card maar 4.27 op een
+  `bg-muted`-zebrarij, en die is het lichtste oppervlak. `primary-foreground` in dark werd
+  `Neutral.950`, zoals success/warning/destructive daar al deden. `ring`, `sidebar-primary` en
+  `sidebar-ring` volgden vanzelf omdat ze de rol aliassen. Geverifieerd met de contrast-sweep:
+  cashflow 0 fouten in beide modes (1962/1954 elementen), portfolio 0 met alle reveal-wrappers
+  geforceerd zichtbaar.
 
 ## 2026-08-05 — Semantic/dark is afgeleid, niet ontworpen · [aanname]
 - **Bevinding:** Elke dark-waarde in `Theme/dark` en `Semantic/dark` is door mij gekozen door
@@ -118,6 +125,11 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Volgende zet:** Bij het eerste echte gebruik van dark mode in cashflow: de finance-rollen
   beoordelen als *set* i.p.v. per token. Bevalt het niet, dan is het één alias per rol in
   `Semantic/dark`.
+- **Note (2026-08-05):** bewust als todo aangehouden door Jeroen. Dark mode is nu bruikbaar en
+  haalt overal AA; wat openstaat is de esthetische beoordeling, niet een defect. Daar hoort ook
+  de score-pill in jobradar bij, die van helder amber (`bg-amber-500`, 2.15:1) naar bruin
+  (`bg-warning` = Warning.700, 5.02:1) ging — correcter, maar een zichtbare verschuiving op
+  elke kaart.
 - **Status:** open
 
 ## 2026-08-05 — Een nieuwe token-set levert stil geen output · [risico]
@@ -169,4 +181,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Volgende zet:** Bij een tweede afwijkend merk: het afgewezen brand-laag-voorstel opnieuw
   bekijken (staat in de synthese van de analyse-workflow), met per-merk rollagen i.p.v. een
   alias-overlay — die laatste lost een omgekeerde rolsemantiek niet op.
-- **Status:** open
+- **Status:** resolved — 2026-08-05: niet van toepassing verklaard door Jeroen. Er komt geen
+  tweede afwijkend merk in beeld, dus de zes overrides in `apps/jobradar/app/globals.css`
+  blijven de hele oplossing. Blijft hier staan als spoor: kantelt dat ooit, dan is dit het
+  vertrekpunt.

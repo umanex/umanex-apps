@@ -164,10 +164,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   `VarianceChart`, `rounded-[3px]` in `MonthCard`) staan op `rounded-sm` — 4px i.p.v. 2 en 3,
   op een 8px-hoog balkje en een mini-chip niet waarneembaar. Een schaalstap toevoegen voor vier
   plekken zou de schaal aan de code aanpassen i.p.v. omgekeerd.
-- **Deel 2 open:** `packages/config/eslint` is nog steeds dode flat-config. Erger: ik heb de vijf
-  token-lintregels naar drie `.eslintrc.json`-bestanden gekopieerd, wat exact de triplicatie is
-  die deze refactor bestreed. De fix is één `packages/config/eslint/tokens.js` in eslintrc-formaat
-  die de apps extenden — dan is de dode config meteen levend in plaats van verwijderd.
+- **Deel 2 resolved (2026-08-05):** de triplicatie is weg. `packages/config/eslint/tokens.cjs`
+  is één eslintrc-shareable config; de drie apps extenden hem via een `.eslintrc.js` met
+  `require.resolve`. Dat laatste is nodig omdat ESLint 8 op een kale `extends`-naam zijn eigen
+  conventie toepast en `@umanex/eslint-config-config` gaat zoeken — Node resolvet het subpath
+  wél, dus een absoluut pad uit `require.resolve` werkt en een `../../`-pad is niet nodig.
+  `.cjs` omdat `packages/config` `type: module` is en ESLint shareable configs met `require()`
+  laadt. Geverifieerd: 6/6 regels vuren in alle drie de apps. De set groeide van 5 naar 6 —
+  `rounded-[Npx]` zat alleen in `guard.mjs`, niet in ESLint.
+- **Restant:** `eslint/next.js` en `eslint/react-library.js` zijn nog steeds dode flat-config,
+  en importeren plugins die `packages/config` niet als dependency declareert. Ze zijn dus niet
+  alleen ongebruikt maar kapot, en zien er wél uit als infrastructuur. Verwijderen of alsnog
+  bedraden — beslissing bij Jeroen.
 - **Status:** open
 
 ## 2026-08-05 — Visuele regressie-harness ontbreekt · [idee]

@@ -48,21 +48,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
 5ead2b3 fix(tokens): give primary a contrast-safe value per mode
 4f7cf08 fix(tokens): declare color-scheme per mode
 cf9777b fix(tokens): refuse a token set the build cannot place
 bddfb97 test
-9737550 feat(cashflow): enable dark mode, and fix the last mode-blind role
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/components/cashflow/MonthCard.tsx
-  M  apps/cashflow/components/cashflow/VarianceChart.tsx
-  M  packages/tokens/build/theme.css
-  M  packages/tokens/package.json
-  A  packages/tokens/scripts/contrast.mjs
-  M  packages/tokens/scripts/guard.mjs
-  M  packages/tokens/tokens.json
+  A  apps/cashflow/.eslintrc.js
+  D  apps/cashflow/.eslintrc.json
+  A  packages/config/eslint/tokens.cjs
+  M  packages/config/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

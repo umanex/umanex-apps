@@ -54,19 +54,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b884027 docs(rowtrack): cluster 8 briefings + auth/forms figma-mapping
 7372b7e docs: trim derivable and stale content from CLAUDE.md files
 e623640 docs(rowtrack): monorepo-hoisting als openstaand punt vastgelegd
 cd09074 refactor(rowtrack): i18n-ready — typed Dutch translation layer + string extraction (#157)
 387aa31 fix(rowtrack): active-workout header conform Figma 297:2227
-7464a0e docs(rowtrack): resolve profile-save handoff item, add UX-audit todos
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/briefings/2026-07-08-component-connect-overlay.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-08-component-goal-setup-modal.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-08-component-milestone-overlay.tcebc.md
-  A  apps/rowtrack/briefings/2026-07-08-flow-auth.tcebc.md
-  M  apps/rowtrack/figma-map.md
+  M  apps/rowtrack/.npmrc
+  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/metro.config.js
+  M  apps/rowtrack/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

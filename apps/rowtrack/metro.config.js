@@ -15,8 +15,11 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// 3. Force Metro om alleen via die paden te resolven
-//    Dit voorkomt dat het per ongeluk een tweede React vindt in een nested node_modules
-config.resolver.disableHierarchicalLookup = true;
+// 3. Hierarchical lookup blijft AAN. pnpm's geïsoleerde layout zet de dependencies
+//    van een package naast dat package in .pnpm/, dus Metro moet vanaf het
+//    importerende bestand omhoog kunnen lopen. Zet je dit uit, dan valt bijvoorbeeld
+//    `whatwg-fetch` (dep van @expo/metro-runtime) niet meer te resolven.
+//    De oude reden om het uit te zetten — per ongeluk een tweede React vinden —
+//    bestaat niet meer: elke app resolvet zijn eigen react uit zijn eigen node_modules.
 
 module.exports = config;

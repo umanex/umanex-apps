@@ -52,7 +52,7 @@ export function SectionBar({
             {hasFilter && (
               <button
                 onClick={onFilterToggle}
-                className="bg-foreground h-7 px-4 rounded-l-sm text-[13px] text-background leading-none whitespace-nowrap disabled:opacity-30"
+                className="bg-foreground h-7 px-4 rounded-l-sm text-dense text-background leading-none whitespace-nowrap disabled:opacity-30"
                 aria-label={showPaid ? 'Filter: alles zichtbaar — klik voor openstaand' : 'Filter: openstaand — klik voor alles'}
               >
                 {showPaid ? 'Alle' : 'Open'}
@@ -61,7 +61,7 @@ export function SectionBar({
             {onAdd && (
               <button
                 onClick={onAdd}
-                className={`bg-finance-positive size-7 flex items-center justify-center text-background text-[19px] leading-none disabled:opacity-30 ${
+                className={`bg-finance-positive size-7 flex items-center justify-center text-background text-xl leading-none disabled:opacity-30 ${
                   hasFilter ? 'rounded-r-sm' : 'rounded-sm'
                 }`}
                 aria-label={addAriaLabel}

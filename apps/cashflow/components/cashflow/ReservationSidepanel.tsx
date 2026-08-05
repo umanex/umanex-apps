@@ -79,7 +79,7 @@ function ReservationRow({
             className="w-28 h-8 px-2 rounded border border-input bg-background text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
           />
           {isBuffer && (
-            <span className="text-[11px] leading-tight text-muted-foreground">
+            <span className="text-2xs leading-tight text-muted-foreground">
               Automatisch
             </span>
           )}

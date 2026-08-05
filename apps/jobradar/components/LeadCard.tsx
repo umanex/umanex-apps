@@ -32,14 +32,14 @@ export function LeadCard({ company, isNew, onStatusChange }: LeadCardProps) {
               <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
               <h3 className="truncate text-sm font-semibold">{company.companyName}</h3>
               {isNew && (
-                <Badge variant="default" className="shrink-0 text-[10px]">
+                <Badge variant="default" className="shrink-0 text-2xs">
                   nieuw
                 </Badge>
               )}
             </div>
             <div className="mt-1.5 flex flex-wrap gap-1">
               {signals.map((signal) => (
-                <Badge key={signal} variant="outline" className="text-[10px]">
+                <Badge key={signal} variant="outline" className="text-2xs">
                   {signal}
                 </Badge>
               ))}

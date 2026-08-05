@@ -30,7 +30,7 @@ export function JobCard({ job, isNew, onStatusChange }: JobCardProps) {
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="truncate text-sm font-semibold">{job.title}</h3>
               {isNew && (
-                <Badge variant="default" className="shrink-0 text-[10px]">
+                <Badge variant="default" className="shrink-0 text-2xs">
                   nieuw
                 </Badge>
               )}

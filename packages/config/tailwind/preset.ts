@@ -3,6 +3,7 @@ import animate from 'tailwindcss-animate';
 // Gegenereerd door packages/tokens/build.mjs; TypeScript leidt de string[]-types
 // rechtstreeks uit de .mjs af, dus er is geen .d.ts nodig.
 import { hslRoles, rawRoles } from '@umanex/tokens/roles';
+import { fontSize, fontWeight, letterSpacing } from '@umanex/tokens/typography';
 
 /**
  * De gedeelde umanex Tailwind-preset.
@@ -74,9 +75,20 @@ const preset: Config = {
         // value-time — dan valt font-family terug op de browser-default in plaats
         // van op de volgende stack-entry. Met var(--x, fallback) blijft de
         // declaratie geldig, ook in een app die deze font-variabele niet zet.
+        //
+        // De familienaam zelf staat bewust NIET hier: next/font hasht de naam en
+        // levert hem via --font-sans. Het token font.family.sans legt de bedoeling
+        // vast en wordt door de guard tegen layout.tsx getoetst.
         sans: ['var(--font-sans, ui-sans-serif)', 'system-ui', 'sans-serif'],
         serif: ['var(--font-serif, ui-serif)', 'Georgia', 'serif'],
       },
+      // Tuples uit de tokens: [size, { lineHeight }]. Met kale strings zou elke
+      // bestaande text-sm zijn line-height verliezen. De tuple-vorm komt uit de
+      // meegegenereerde typography.d.ts — zonder die types leidt TypeScript er een
+      // gewone array uit af en heb je hier een cast nodig.
+      fontSize,
+      fontWeight,
+      letterSpacing,
     },
   },
   plugins: [animate],

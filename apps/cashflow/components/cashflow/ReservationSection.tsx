@@ -160,8 +160,8 @@ function DraggablePotRow({
           </div>
           {!isBudgetCurrentMonth && (
             <div className="flex items-center gap-1">
-              <span className="text-[11px] text-muted-foreground opacity-70">Provisie:</span>
-              <span className={`text-[11px] font-semibold tabular-nums ${displayAmount < 0 ? 'text-finance-negative' : 'text-finance-positive'}`}>
+              <span className="text-2xs text-muted-foreground opacity-70">Provisie:</span>
+              <span className={`text-2xs font-semibold tabular-nums ${displayAmount < 0 ? 'text-finance-negative' : 'text-finance-positive'}`}>
                 {formatAmount(displayAmount)}
                 {displayAmount < 0 && ' ⚠'}
               </span>
@@ -183,7 +183,7 @@ function DraggablePotRow({
             }}
             onBlur={isComputed ? undefined : handleAmountBlur}
             onPointerDown={(e) => e.stopPropagation()}
-            className={`w-[92px] h-7 px-2 text-[13px] text-right tabular-nums rounded-sm border border-input focus:outline-none focus:ring-1 focus:ring-ring ${
+            className={`w-[92px] h-7 px-2 text-dense text-right tabular-nums rounded-sm border border-input focus:outline-none focus:ring-1 focus:ring-ring ${
               isComputed
                 ? `bg-muted cursor-default ${syncValue < 0 ? 'text-finance-negative font-medium' : 'text-finance-positive'}`
                 : `bg-background text-finance-deferred ${pot.hasSettlement ? 'font-medium' : ''}`
@@ -229,7 +229,7 @@ function DraggablePotRow({
                 </button>
               </div>
               {/* Betaald · Provisie · Cash */}
-              <div className="flex items-center gap-2 text-[11px]">
+              <div className="flex items-center gap-2 text-2xs">
                 {payment.fromCash === 0 ? (
                   <span className="text-finance-positive font-semibold tabular-nums">
                     {formatAmount(payment.invoiceAmount)} betaald met provisie

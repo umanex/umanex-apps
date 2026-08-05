@@ -29,7 +29,7 @@ export function BalanceFooter({
     return (
       <div className="shrink-0 border-t border-accent px-4 py-3 flex flex-col gap-1">
         <span className="text-sm font-medium text-foreground">Geen buffer</span>
-        <span className="text-[11px] leading-tight text-muted-foreground">
+        <span className="text-2xs leading-tight text-muted-foreground">
           Markeer een provisie als buffer om te zien wat je per maand opbouwt of verbruikt.
         </span>
       </div>

@@ -32,19 +32,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+84f557b refactor(tokens): make the finance layer mode-aware and cut it loose from the brand red
+b282e96 refactor(config): generate the Tailwind color map from the tokens
+b546f4f feat(tokens): add success and warning roles, move primary to Primary.600
 760d0f0 refactor(tokens): ship the role layer as its own export and put every app on it
 bf4ffe4 refactor(tokens): derive the mode from the set name, not the token path
-14e34b8 refactor(config): make the shared preset the single source of Tailwind colors
-04113db fix(tokens): harden the build pipeline against four latent failure modes
-124dbd2 feat(tokens): finance-rollen als semantische tokens, code stapt over
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/components/StatusDropdown.tsx
+  M  apps/jobradar/app/layout.tsx
+  M  apps/jobradar/components/JobCard.tsx
+  M  apps/jobradar/components/LeadCard.tsx
   M  packages/config/tailwind/preset.ts
-  M  packages/tokens/build/theme.css
-  M  packages/tokens/tokens.json
-  M  packages/ui/components/ui/badge.tsx
+  M  packages/tokens/build.mjs
+  A  packages/tokens/build/roles.d.ts
+  A  packages/tokens/build/typography.d.ts
+  A  packages/tokens/build/typography.mjs
+  M  packages/tokens/build/variables.css
+  M  packages/tokens/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

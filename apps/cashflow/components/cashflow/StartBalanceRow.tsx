@@ -39,7 +39,7 @@ export function StartBalanceRow({ balance, onChange }: StartBalanceRowProps) {
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
             if (e.key === 'Escape') setEditing(false);
           }}
-          className="w-[110px] h-7 px-2 text-[13px] text-right tabular-nums rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+          className="w-[110px] h-7 px-2 text-dense text-right tabular-nums rounded-sm border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
         />
       ) : onChange ? (
         <button

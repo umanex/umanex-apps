@@ -6,7 +6,14 @@
   "exports": {
     "./theme.css": "./build/theme.css",
     "./variables.css": "./build/variables.css",
-    "./roles": "./build/roles.mjs"
+    "./roles": {
+      "types": "./build/roles.d.ts",
+      "default": "./build/roles.mjs"
+    },
+    "./typography": {
+      "types": "./build/typography.d.ts",
+      "default": "./build/typography.mjs"
+    }
   },
   "scripts": {
     "build": "node build.mjs"

@@ -8,21 +8,31 @@ import type { AnchorState } from '../lib/cashflow/calculator';
 import type { MonthData, MonthKey } from '../lib/cashflow/types';
 import { buildSnapshot, snapshotMap } from '../lib/cashflow/snapshot';
 
-// Verwijder verouderde defers en settlements die volledig in het verleden liggen.
-// Wordt eenmalig uitgevoerd na het laden, door DataGate.
-export function cleanupStaleData(currentMonth: string) {
+/**
+ * Ruimt uitstellen op die nergens meer meetellen. Draait eenmalig na het laden, door
+ * DataGate.
+ *
+ * Een uitstel is pas afgehandeld wanneer beide maanden vastliggen: de maand waaruit de
+ * post vertrok én de maand waar hij toekwam. Zolang één van beide nog doorgerekend wordt,
+ * draagt het uitstel daar nog gewicht.
+ *
+ * Eerder was de grens "vóór de huidige maand", en dat is te ruim: deze functie draait vóór
+ * de automatische afsluiting, dus een uitgestelde kost die in de vorige maand toekwam werd
+ * weggegooid net vóór die maand bevroren werd. De kost verdween dan uit het snapshot én
+ * uit de hele keten erna.
+ */
+export function cleanupStaleData() {
   const state = useCashflowStore.getState();
+  const frozen = new Set(state.monthSnapshots.map((s) => s.monthKey));
+  const vastgelegd = (monthKey: string) =>
+    monthKey < state.historyStartMonth || frozen.has(monthKey);
+  const afgehandeld = (d: { fromMonth: string; toMonth: string }) =>
+    vastgelegd(d.fromMonth) && vastgelegd(d.toMonth);
 
-  // RecurringDefers: verwijder als zowel fromMonth als toMonth voor huidige maand liggen
-  const staleRecurringDefers = state.recurringDefers.filter(
-    (d) => d.fromMonth < currentMonth && d.toMonth < currentMonth,
-  );
+  const staleRecurringDefers = state.recurringDefers.filter(afgehandeld);
   staleRecurringDefers.forEach((d) => state.removeRecurringDefer(d.id));
 
-  // ReservationDefers: zelfde logica
-  const staleReservationDefers = state.reservationDefers.filter(
-    (d) => d.fromMonth < currentMonth && d.toMonth < currentMonth,
-  );
+  const staleReservationDefers = state.reservationDefers.filter(afgehandeld);
   staleReservationDefers.forEach((d) => state.removeReservationDefer(d.id));
 
   // RecurringSettlements: bewaar enkel de huidige maand
@@ -30,12 +40,11 @@ export function cleanupStaleData(currentMonth: string) {
   // ze beinvloeden de berekening niet (calculator filtert op monthKey)
   // maar ze blijven beschikbaar als referentie.
 
-  // Rapporteer cleanup in development
   const cleaned = staleRecurringDefers.length + staleReservationDefers.length;
   if (cleaned > 0 && process.env.NODE_ENV === 'development') {
     console.info(
       `[cashflow] cleanup: ${staleRecurringDefers.length} recurring defers, ` +
-      `${staleReservationDefers.length} reservation defers verwijderd (voor ${currentMonth})`
+      `${staleReservationDefers.length} reservation defers verwijderd`
     );
   }
 }
@@ -137,8 +146,14 @@ export function useMonths(count = 3, anchorOverride?: MonthKey): MonthData[] {
  *
  * Bewust alleen die ene maand. Zou de app bij het eerste gebruik alle oudere maanden
  * bevriezen, dan legt hij een herberekening vast als historie — precies wat een snapshot
- * moet voorkomen. Twee rails daarbij: vóór de referentiemaand is er geen echt banksaldo
- * om van te vertrekken, en een maand die je bewust heropend hebt blijft open.
+ * moet voorkomen. Drie rails daarbij: vóór de referentiemaand is er geen echt banksaldo om
+ * van te vertrekken, een maand die je bewust heropend hebt blijft open, en een maand die
+ * de app nooit gezien heeft wordt niet bevroren.
+ *
+ * Die derde rail is het verschil tussen historie en reconstructie. Sloeg je een maand
+ * over, dan is de kolom die de app voor die maand tekent volledig afgeleid uit je huidige
+ * gegevens; die bevriezen zou een gok als vastgelegd verleden bewaren. Zo'n maand blijft
+ * als "reconstructie" staan, met de handmatige Afsluiten-knop als uitweg.
  */
 export function useAutoCloseMonth(): void {
   const done = useRef(false);
@@ -148,11 +163,17 @@ export function useAutoCloseMonth(): void {
     done.current = true;
 
     const state = useCashflowStore.getState();
+    const thisMonth = format(new Date(), 'yyyy-MM');
     const prevMonth = format(addMonths(new Date(), -1), 'yyyy-MM');
+    // Eerst lezen, dan pas vastleggen dat we deze maand gezien hebben — anders zou de
+    // rail hieronder altijd zichzelf goedkeuren.
+    const lastSeen = state.lastSeenMonth;
+    state.markMonthSeen(thisMonth);
 
     if (prevMonth < state.historyStartMonth) return;
     if (state.reopenedMonths.includes(prevMonth)) return;
     if (state.monthSnapshots.some((s) => s.monthKey === prevMonth)) return;
+    if (lastSeen < prevMonth) return;
 
     const hasData =
       state.incomeItems.some((i) => i.monthKey === prevMonth) ||

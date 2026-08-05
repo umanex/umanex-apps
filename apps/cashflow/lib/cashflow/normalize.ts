@@ -13,7 +13,7 @@ import type {
  * Wordt meegeschreven naar `cashflow_state.store_version`, zodat een verouderde client
  * zichtbaar is zonder het document te parsen.
  */
-export const STORE_VERSION = 14;
+export const STORE_VERSION = 15;
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
@@ -75,6 +75,10 @@ export function normalizeData(input: unknown): CashflowData {
     reservationDefers: Array.isArray(s.reservationDefers) ? s.reservationDefers : [],
     historyStartMonth,
     reopenedMonths: Array.isArray(s.reopenedMonths) ? s.reopenedMonths : [],
+    // Bestaande documenten kennen dit veld niet. De huidige maand is dan het veiligste
+    // antwoord: de app staat op dit moment open, en over eerdere maanden weten we niets —
+    // die worden dus niet automatisch als historie vastgelegd.
+    lastSeenMonth: typeof s.lastSeenMonth === 'string' ? s.lastSeenMonth : currentMonth(),
   };
 }
 

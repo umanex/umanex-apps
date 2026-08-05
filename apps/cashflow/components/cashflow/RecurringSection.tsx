@@ -28,6 +28,8 @@ interface RecurringSectionProps {
   onFinalizeDefer: (deferId: string, amount: number) => void;
   onUnsettleDefer: (deferId: string) => void;
   onOpenSidepanel: () => void;
+  /** Afgesloten maand: alles staat vast, dus mag de filter niets verbergen. */
+  locked?: boolean;
 }
 
 function DraggableRecurringItem({
@@ -254,8 +256,14 @@ export function RecurringSection({
   onFinalizeDefer,
   onUnsettleDefer,
   onOpenSidepanel,
+  locked,
 }: RecurringSectionProps) {
   const [showPaid, setShowPaid] = useState(false);
+  // In een afgesloten maand staat alles vast en is de filterknop uitgeschakeld door de
+  // omliggende fieldset. Zou de filter dan dicht blijven, dan verdwijnen de betaalde
+  // regels permanent achter een knop die niet meer reageert — met de sectiekop die het
+  // volledige bedrag blijft tonen. Bevroren betekent dus: alles zichtbaar.
+  const showAll = locked || showPaid;
 
   const unpaidItems = items.filter(
     (item) => !settlements.find((s) => s.recurringId === item.id && s.paid),
@@ -264,10 +272,10 @@ export function RecurringSection({
     (item) => !!settlements.find((s) => s.recurringId === item.id && s.paid),
   );
   const paidDeferredCount = deferredItems.filter((d) => d.paid).length;
-  const visibleDeferred = showPaid ? deferredItems : deferredItems.filter((d) => !d.paid);
+  const visibleDeferred = showAll ? deferredItems : deferredItems.filter((d) => !d.paid);
 
   const totalPaidCount = paidItems.length + paidDeferredCount;
-  const visibleItems = showPaid ? items : unpaidItems;
+  const visibleItems = showAll ? items : unpaidItems;
 
 
   return (
@@ -275,7 +283,7 @@ export function RecurringSection({
       <SectionBar
         label="Vaste uitgaves"
         amount={amount}
-        showPaid={totalPaidCount > 0 ? showPaid : undefined}
+        showPaid={totalPaidCount > 0 ? showAll : undefined}
         onFilterToggle={totalPaidCount > 0 ? () => setShowPaid((v) => !v) : undefined}
         onAdd={onOpenSidepanel}
         addAriaLabel="Vaste uitgave toevoegen"

@@ -202,6 +202,7 @@ export function MonthCard({
           onFinalizeDefer={(deferId, amount) => settleRecurringDefer(deferId, true, amount)}
           onUnsettleDefer={(deferId) => settleRecurringDefer(deferId, false, 0)}
           onOpenSidepanel={onOpenRecurringSidepanel}
+          locked={locked}
         />
 
         <ExpenseSection
@@ -212,6 +213,7 @@ export function MonthCard({
           onAdd={addExpenseItem}
           onUpdate={(id, patch) => updateExpenseItem(id, patch)}
           onRemove={removeExpenseItem}
+          locked={locked}
         />
 
         <ReservationSection
@@ -231,6 +233,7 @@ export function MonthCard({
           onRemoveReservationSettlement={(reservationId) =>
             removeReservationSettlement(reservationId, monthKey)
           }
+          locked={locked}
           onFinalize={(reservationId, effectiveAmount) =>
             finalizeReservation(reservationId, monthKey, effectiveAmount)
           }

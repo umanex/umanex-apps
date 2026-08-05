@@ -241,6 +241,12 @@ export interface CashflowData {
    * automatische afsluiting ze meteen weer bevriezen.
    */
   reopenedMonths: MonthKey[];
+  /**
+   * Laatste maand waarin de app open stond. De automatische afsluiting bevriest alleen
+   * een maand die je ook echt gezien hebt — anders legt ze een reconstructie vast als
+   * historie, precies wat een snapshot moet voorkomen.
+   */
+  lastSeenMonth: MonthKey;
 }
 
 export interface CashflowStore extends CashflowData {
@@ -260,6 +266,8 @@ export interface CashflowStore extends CashflowData {
 
   closeMonth: (snapshot: MonthSnapshot) => void;
   reopenMonth: (monthKey: MonthKey) => void;
+  /** Legt vast dat de app in deze maand open stond. Schuift alleen vooruit. */
+  markMonthSeen: (monthKey: MonthKey) => void;
 
   setReferenceBalance: (balance: number, month: MonthKey) => void;
   upsertBalanceOverride: (monthKey: MonthKey, balance: number) => void;

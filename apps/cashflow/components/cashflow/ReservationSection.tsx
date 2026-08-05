@@ -31,6 +31,8 @@ interface ReservationSectionProps {
   onRemoveReservationSettlement: (reservationId: string) => void;
   onFinalize: (reservationId: string, effectiveAmount: number) => void;
   onUnfinalize: (reservationId: string) => void;
+  /** Afgesloten maand: alles staat vast, dus mag de filter niets verbergen. */
+  locked?: boolean;
 }
 
 function nextMonthKey(monthKey: MonthKey): MonthKey {
@@ -80,10 +82,13 @@ function DraggablePotRow({
   const syncValue = isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth;
   const [localAmount, setLocalAmount] = useState(String(roundTo2(syncValue)));
 
+  // `isBudgetCurrentMonth` hoort er wél bij: bladeren met de MonthNavigator hergebruikt
+  // dezelfde kolom en klapt alleen die vlag om. Zonder deze dependency bleef het veld het
+  // restbedrag tonen terwijl het de storting moest tonen — en dan was het ook nog
+  // bewerkbaar, zodat wegklikken dat restbedrag als afrekening vastlegde.
   useEffect(() => {
     setLocalAmount(String(roundTo2(isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth)));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayAmount, pot.provisionThisMonth]);
+  }, [displayAmount, pot.provisionThisMonth, isBudgetCurrentMonth]);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `reservation-pot-${pot.reservationId}-${monthKey}`,
@@ -271,6 +276,7 @@ function PotSubgroup({
   onFinalize,
   onUnfinalize,
   onAmountChange,
+  locked,
 }: {
   label: string;
   potType: ReservationPotType;
@@ -288,8 +294,12 @@ function PotSubgroup({
   onFinalize: (reservationId: string, effectiveAmount: number) => void;
   onUnfinalize: (reservationId: string) => void;
   onAmountChange: (reservationId: string, amount: number | null) => void;
+  locked?: boolean;
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
+  // Zie RecurringSection: in een afgesloten maand is de filterknop uitgeschakeld, dus mag
+  // hij de gefinaliseerde potten niet verborgen houden.
+  const showAll = locked || showFinalized;
   // Het bedrag komt uit de calculator; alleen wat je op dit moment aan het typen bent
   // — nog niet opgeslagen — wordt er lokaal bovenop gelegd, zodat de kop meebeweegt.
   const subtotaal = amount + pendingOverrideDelta(activePots, overrideAmounts, isCurrentMonth);
@@ -301,7 +311,7 @@ function PotSubgroup({
       <SectionBar
         label={label}
         amount={subtotaal}
-        showPaid={finalizedPots.length > 0 ? showFinalized : undefined}
+        showPaid={finalizedPots.length > 0 ? showAll : undefined}
         onFilterToggle={finalizedPots.length > 0 ? () => setShowFinalized((v) => !v) : undefined}
         onAdd={() => onRegisterPayment(potType)}
         addAriaLabel="Betaling registreren"
@@ -324,7 +334,7 @@ function PotSubgroup({
           />
         ))}
 
-        {showFinalized &&
+        {showAll &&
           finalizedPots.map((pot, index) => (
             <div
               key={pot.reservationId}
@@ -365,6 +375,7 @@ export function ReservationSection({
   onRemoveReservationSettlement,
   onFinalize,
   onUnfinalize,
+  locked,
 }: ReservationSectionProps) {
   const [overrideAmounts, setOverrideAmounts] = useState<Record<string, number>>({});
 
@@ -409,6 +420,7 @@ export function ReservationSection({
     onFinalize,
     onUnfinalize,
     onAmountChange: handleAmountChange,
+    locked,
   };
 
   return (

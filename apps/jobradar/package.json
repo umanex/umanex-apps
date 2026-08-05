@@ -22,8 +22,7 @@
     "next": "^14",
     "react": "^18",
     "react-dom": "^18",
-    "server-only": "^0.0.1",
-    "tailwindcss-animate": "^1.0.7"
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",

@@ -175,8 +175,10 @@ export default function WorkoutScreen() {
   // Handmatig stoppen → rit opslaan (achtergrond) + BLE stoppen + naar de samenvatting.
   const handleStop = useCallback(() => {
     saveWorkout();
-    disconnect();
-    stopHR();
+    // `auto`: het einde van een rit is geen keuze om niet meer te verbinden, dus
+    // autoconnect blijft voor de volgende sessie gewoon aan staan.
+    disconnect({ auto: true });
+    stopHR({ auto: true });
     setPhase('summary');
   }, [saveWorkout, disconnect, stopHR]);
 
@@ -199,11 +201,11 @@ export default function WorkoutScreen() {
     if (phase === 'active' && goalReached && !goalEndedRef.current) {
       goalEndedRef.current = true;
       saveWorkout();
-      disconnect();
+      disconnect({ auto: true });
       // Ook de hartslagmeter loslaten, symmetrisch met de roeier. Bleef die hangen,
       // dan adverteerde de band niet meer en was hij bij de volgende rit onvindbaar
       // — de app hield zelf vast wat ze daarna zocht.
-      stopHR();
+      stopHR({ auto: true });
     }
   }, [phase, goalReached, saveWorkout, disconnect, stopHR]);
 

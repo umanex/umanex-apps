@@ -117,7 +117,10 @@ export class RowerBleService {
 
     try {
       const manager = await this.getManager();
-      if (this.aborted('vóór verbinden met bekend toestel')) return false;
+      if (this.aborted('vóór verbinden met bekend toestel')) {
+        this.onStatusChange('idle');
+        return false;
+      }
 
       const device = await manager.connectToDevice(id, {
         requestMTU: 512,
@@ -127,6 +130,10 @@ export class RowerBleService {
     } catch (e) {
       const detail = e instanceof Error ? e.message : undefined;
       log(' bekend toestel niet bereikbaar:', detail);
+      // Terug naar een eindtoestand. Zonder dit blijft de rij op 'connecting' staan
+      // mét een uitgeschakelde knop — een spinner zonder uitgang, precies waar de
+      // gebruiker niet om vroeg. 'idle' en niet 'error': hij startte dit niet zelf.
+      this.onStatusChange('idle');
       return false;
     }
   }
@@ -214,6 +221,9 @@ export class RowerBleService {
       const found = new Map<string, Device>();
 
       const decide = () => {
+        // Nam de hartslagdienst de gedeelde scan intussen over, dan zijn onze
+        // resultaten niet meer van ons — dan mag deze scan ook niets beslissen.
+        if (!ownsScan(this.scanToken)) return;
         this.stopScan();
         const matches = [...found.values()];
         if (matches.length === 0) {
@@ -244,6 +254,11 @@ export class RowerBleService {
       log(' scan started (filter: name prefix "' + ROWER_NAME_PREFIX + '")');
       claimScan(this.scanToken);
       manager.startDeviceScan(null, null, (err, dev) => {
+        // `BleManager` is een singleton met één scan-subscription: start de andere
+        // dienst een scan, dan blijft déze callback geabonneerd maar zijn de
+        // resultaten niet meer van ons. Zwijgen dus — anders melden we een fout of
+        // verbinden we met iets uit de scan van iemand anders.
+        if (!ownsScan(this.scanToken)) return;
         if (err) {
           this.stopScan();
           log(' scan error:', err.message);

@@ -55,23 +55,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+d63125f feat(rowtrack): connect to the devices you used last, without scanning
 3e2c730 docs(rowtrack): brief autoconnect to the last used devices
 7ebafb2 fix(rowtrack): let go of the heart rate monitor before searching for it
 8dd824c docs(rowtrack): carry this session's open ends into the handoff
 a0ce5eb docs(rowtrack): record what the reviews established about these three risks
-d180578 fix(rowtrack): chunk the secure session store by bytes, never mid-character
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
-  A  apps/rowtrack/components/workout/DeviceSelectionModal.tsx
+  M  apps/rowtrack/components/workout/DeviceSelectionModal.tsx
   M  apps/rowtrack/components/workout/IdlePhase.tsx
-  M  apps/rowtrack/i18n/translations/nl.ts
   M  apps/rowtrack/lib/ble/ble-context.tsx
   M  apps/rowtrack/lib/ble/ble-service.ts
   M  apps/rowtrack/lib/ble/hr-service.ts
-  A  apps/rowtrack/lib/ble/knownDevices.ts
   M  apps/rowtrack/lib/ble/types.ts
 
 ## Bestanden met TODO/FIXME

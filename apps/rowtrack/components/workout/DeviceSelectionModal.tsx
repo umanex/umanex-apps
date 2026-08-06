@@ -24,10 +24,14 @@ type Props = {
   onCancel: () => void;
 };
 
-/** Ruwe RSSI → een label dat iets zegt over waar je het toestel moet leggen. */
+/**
+ * Ruwe RSSI → een label dat iets zegt over waar je het toestel moet leggen.
+ * Kleuren en grenzen ongewijzigd t.o.v. de inline versie waar dit uit komt:
+ * -80 hoort nog bij "Goed", en "Goed" is accent, geen waarschuwing.
+ */
 function signalLabel(rssi: number): { text: string; color: string } {
   if (rssi > -60) return { text: t.workout.deviceModal.signalStrong, color: status.success };
-  if (rssi > -80) return { text: t.workout.deviceModal.signalGood, color: status.warning };
+  if (rssi >= -80) return { text: t.workout.deviceModal.signalGood, color: accent.default };
   return { text: t.workout.deviceModal.signalWeak, color: status.error };
 }
 
@@ -114,7 +118,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space['16'],
     paddingVertical: space['14'],
     marginBottom: space['8'],
-    minHeight: 48,
+    minHeight: space['48'],
   },
   deviceLabel: {
     flex: 1,

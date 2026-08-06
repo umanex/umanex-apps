@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -106,6 +106,10 @@ export function IdlePhase({
 }: IdlePhaseProps) {
   const { user } = useAuth();
   const recents = useRecentGoals(user?.id, idleGoalType);
+  // Laatste toesteltype dat koos — de sheet blijft tijdens zijn sluit-animatie in
+  // beeld terwijl `picking` al null is.
+  const lastPicking = useRef<DeviceSelectionKind>('rower');
+  if (picking) lastPicking.current = picking;
   const { width: screenWidth } = useWindowDimensions();
 
   const selectedSegment: GoalSegmentType = idleGoalType ?? 'none';
@@ -313,7 +317,10 @@ export function IdlePhase({
 
       <DeviceSelectionModal
         visible={picking !== null}
-        kind={picking ?? 'rower'}
+        // Tijdens het wegschuiven is `picking` al null terwijl de sheet nog in beeld
+        // is; zonder het laatste type te onthouden flitst de titel dan naar die van
+        // het andere toestel.
+        kind={picking ?? lastPicking.current}
         devices={devices}
         onSelect={onSelectDevice}
         onCancel={onCancelSelection}

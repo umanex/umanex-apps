@@ -122,6 +122,7 @@ export class HRBleService {
       const seenIds = new Set<string>();
 
       const decide = () => {
+        if (!ownsScan(this.scanToken)) return;
         this.stopScan();
         this.handleScanComplete(foundDevices);
       };
@@ -136,6 +137,9 @@ export class HRBleService {
       log('scan started (filter: service 0x180D, collecting for 5s)');
       claimScan(this.scanToken);
       manager.startDeviceScan([HR_SERVICE_UUID], null, (err, dev) => {
+        // Zie ble-service: één gedeelde scan-subscription, dus een verweesde
+        // callback moet zwijgen in plaats van de scan van de ander te kapen.
+        if (!ownsScan(this.scanToken)) return;
         if (err) {
           this.stopScan();
           log('scan error:', err.message);
@@ -180,10 +184,15 @@ export class HRBleService {
     await this.releaseDevice();
     this.intentionalDisconnect = false;
     this.onStatusChange('scanning');
-    return this.connectToDeviceById(id, name ?? undefined, {
+    const ok = await this.connectToDeviceById(id, name ?? undefined, {
       silent: true,
       timeout: KNOWN_CONNECT_TIMEOUT_MS,
     });
+    // De silent-vlag onderdrukt de foutmélding, niet de statusreset: zonder dit
+    // bleef de rij op 'Zoeken…' hangen met een uitgeschakelde knop, waardoor de
+    // gebruiker de band ook handmatig niet meer kon verbinden.
+    if (!ok) this.onStatusChange('idle');
+    return ok;
   }
 
   /** De band waarmee nu verbonden is — de context bewaart dit als 'bekend'. */

@@ -65,6 +65,13 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   /** Eén autoconnect-poging tegelijk, ook bij een dubbele focus-event. */
   const autoConnecting = useRef(false);
 
+  // Spiegels van de status, zodat `autoConnect` een stabiele identiteit houdt en het
+  // focus-effect niet bij elke statuswissel opnieuw vuurt.
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  const hrStatusRef = useRef(hrStatus);
+  hrStatusRef.current = hrStatus;
+
   useEffect(() => {
     // Rower service
     const service = new RowerBleService(
@@ -148,8 +155,11 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const disconnect = useCallback(() => {
-    suppressed.current.add('rower');
+  // `auto` = het einde van een rit, niet een keuze van de gebruiker. Zonder dat
+  // onderscheid onderdrukte élke rit de autoconnect van de volgende sessie, en deed
+  // de feature na de eerste rit niets meer.
+  const disconnect = useCallback((opts?: { auto?: boolean }) => {
+    if (!opts?.auto) suppressed.current.add('rower');
     serviceRef.current?.disconnect();
   }, []);
 
@@ -164,8 +174,8 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const stopHR = useCallback(() => {
-    suppressed.current.add('hr');
+  const stopHR = useCallback((opts?: { auto?: boolean }) => {
+    if (!opts?.auto) suppressed.current.add('hr');
     hrServiceRef.current?.stop();
   }, []);
 
@@ -192,6 +202,10 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     const kind = picking;
     setPicking(null);
     setDevices([]);
+    // Annuleren is een expliciet "nee" — net als verbreken. Zonder dit verbond
+    // autoconnect meteen daarna alsnog met het onthouden toestel, precies datgene
+    // wat de gebruiker zojuist niet koos.
+    if (kind) suppressed.current.add(kind);
     // Zonder keuze staat er niets te verbinden; de rij hoort terug op "Verbinden".
     if (kind === 'rower') setStatus('idle');
     if (kind === 'hr') setHRStatus('idle');
@@ -219,17 +233,21 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
       };
 
       await Promise.all([
-        tryKind('rower', status !== 'idle' && status !== 'error', (d) =>
+        tryKind('rower', statusRef.current !== 'idle' && statusRef.current !== 'error', (d) =>
           serviceRef.current?.connectKnown(d.id, d.name) ?? Promise.resolve(false),
         ),
-        tryKind('hr', hrStatus !== 'idle' && hrStatus !== 'error', (d) =>
+        tryKind('hr', hrStatusRef.current !== 'idle' && hrStatusRef.current !== 'error', (d) =>
           hrServiceRef.current?.connectKnown(d.id, d.name) ?? Promise.resolve(false),
         ),
       ]);
     } finally {
       autoConnecting.current = false;
     }
-  }, [status, hrStatus]);
+    // Bewust lege deps: dit draait in een `useFocusEffect`, en met status in de
+    // dependency-array kreeg de functie bij élke statuswissel een nieuwe identiteit
+    // — waarna het effect opnieuw vuurde terwijl het scherm gewoon gefocust bleef.
+    // Eén mislukte handmatige scan werd zo meteen overschreven door een autoconnect.
+  }, []);
 
   return (
     <BleContext.Provider

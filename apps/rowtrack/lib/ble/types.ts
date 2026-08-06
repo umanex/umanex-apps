@@ -76,7 +76,7 @@ export interface BleContextValue {
   metrics: RowerMetrics | null;
   error: string | null;
   startScan: () => void;
-  disconnect: () => void;
+  disconnect: (opts?: { auto?: boolean }) => void;
   // HR monitor
   hrStatus: HRStatus;
   hrDeviceName: string | null;
@@ -84,7 +84,7 @@ export interface BleContextValue {
   /** Laatste HR-fout in leesbare vorm, of null. Verdween voorheen in een dev-log. */
   hrError: string | null;
   startHRScan: () => void;
-  stopHR: () => void;
+  stopHR: (opts?: { auto?: boolean }) => void;
   // Keuzelijst, gedeeld door beide types
   devices: FoundDevice[];
   /** Welk type staat te kiezen, of null wanneer de lijst dicht is. */

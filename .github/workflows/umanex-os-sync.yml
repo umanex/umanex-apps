@@ -10,6 +10,7 @@ name: Sync umanex-os layer
 #   - .umanex-os/profile                                        marker voor scripts/sync-os.sh
 #   - scripts/sync-os.sh                                        canoniek sync-script
 #   - scripts/gen-snapshot.sh, .githooks/pre-commit             snapshot-systeem (bestanden)
+#   - .githooks/commit-msg                                      commit-scope guard (bestand)
 #   - context.json                                              snapshot-input, seed-if-absent
 #   - LEARNINGS.md in root + elke apps/*                        capture-staging, seed-if-absent
 #
@@ -52,6 +53,7 @@ jobs:
           LEARNINGS_TEMPLATE_B64: ${{ github.event.client_payload.learnings_template_b64 }}
           GEN_SNAPSHOT_B64: ${{ github.event.client_payload.gen_snapshot_b64 }}
           GITHOOK_B64: ${{ github.event.client_payload.githook_b64 }}
+          COMMIT_MSG_HOOK_B64: ${{ github.event.client_payload.commit_msg_hook_b64 }}
           CONTEXT_TEMPLATE_B64: ${{ github.event.client_payload.context_template_b64 }}
         run: |
           set -euo pipefail
@@ -85,6 +87,13 @@ jobs:
             mkdir -p .githooks
             printf '%s' "$GITHOOK_B64" | base64 -d | gunzip > .githooks/pre-commit
             chmod +x .githooks/pre-commit
+          fi
+          # Commit-scope guard: canoniek bestand, zero-config (leest apps/* van schijf) →
+          # overschrijven mag. Deelt core.hooksPath met de pre-commit hook hierboven.
+          if [ -n "${COMMIT_MSG_HOOK_B64:-}" ]; then
+            mkdir -p .githooks
+            printf '%s' "$COMMIT_MSG_HOOK_B64" | base64 -d | gunzip > .githooks/commit-msg
+            chmod +x .githooks/commit-msg
           fi
           # context.json is repo-eigen input → alleen scaffolden als afwezig, nooit overschrijven.
           if [ -n "${CONTEXT_TEMPLATE_B64:-}" ] && [ ! -f context.json ]; then

@@ -33,6 +33,33 @@ ci: ...
 
 Scope = package of app naam. Eén logische stap per commit.
 
+**De scope is afdwingbaar.** `.githooks/commit-msg` blokkeert een commit met een app-scope
+die een ándere app raakt — `fix(cashflow):` komt niet aan `apps/rowtrack/`. Package-scopes
+(`feat(tokens):`, `refactor(config):`) en scope-loze commits (`chore:`) mogen wél meerdere
+apps tegelijk raken: een gedeelde laag hoort in één commit met de apps die hij aanpast.
+Bewust cross-app? Zet een `Cross-app: <reden>` trailer in de body. Het werkprincipe staat
+in `.umanex-os/CLAUDE.md` → Git workflow → Parallel werk.
+
+## Parallel aan twee apps werken
+
+Twee taken tegelijk krijgen elk een eigen worktree — niet twee taken in één tree:
+
+```bash
+git worktree add ../umanex-apps-<taak> <type>/<korte-beschrijving>
+pnpm install                      # per worktree; de pnpm store linkt hard, dus vooral tijd
+# ... werk, commit, PR ...
+git worktree remove ../umanex-apps-<taak>
+```
+
+Wat gedeeld blijft en dus botst:
+
+| | |
+|---|---|
+| Dev-poorten | cashflow `:3000` · portfolio `:3001` · vyvey `:3002` · jobradar `:3003` — hardcoded in de `dev`-scripts. Dezelfde app niet vanuit twee worktrees draaien. |
+| cashflow PM2 | De productie-build op `:3000` hangt aan `ecosystem.config.js` met absolute paden (gitignored) — die blijft aan de hoofd-tree. |
+| rowtrack | Expo dev-client: een tweede worktree betekent een tweede native build. Houd rowtrack in de hoofd-tree. |
+| `.githooks` | Rijdt automatisch mee — `core.hooksPath` staat in de gedeelde git-config. Niets extra te doen. |
+
 ## Design tokens
 
 - `packages/tokens/tokens.json` is Tokens Studio GitHub sync target

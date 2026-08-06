@@ -238,6 +238,26 @@ Voorbeelden:
 
 Klantnaam komt **niet** in branchnamen — die zit al in de repo.
 
+### Parallel werk — één taak, één worktree
+
+Twee taken tegelijk in één working tree lopen door elkaar. Niet soms: gegarandeerd. `git add -A` veegt het in-flight werk van de andere taak mee, de commit slaagt, en CI blijft groen omdat die de hele repo bouwt — een verdwaald bestand compileert gewoon mee. Git kan niet scheiden wat op schijf niet gescheiden is, dus discipline is hier geen oplossing.
+
+Werk je aan twee dingen tegelijk, dan krijgt elke taak een eigen worktree:
+
+```bash
+git worktree add ../<repo>-<taak> <type>/<korte-beschrijving>
+# ... werk, commit, PR ...
+git worktree remove ../<repo>-<taak>
+```
+
+Eigen bestanden, eigen branch, eigen index — ze kunnen elkaar fysiek niet raken. De `.githooks`-hooks rijden automatisch mee: `core.hooksPath` staat in de gedeelde git-config en de hooks zelf staan in de repo.
+
+Wat **wel** gedeeld blijft en dus botst: draaiende dev-servers en hun poorten, PM2-processen, en native build-caches. Draai dezelfde app niet vanuit twee worktrees. Voor een monorepo met een package manager: reken op één install per worktree (met pnpm is dat vooral tijd, nauwelijks schijf — de store linkt hard).
+
+Blijf je toch in één tree, dan geldt: nooit `git add -A`, altijd per pad stagen.
+
+**De guard.** `.githooks/commit-msg` blokkeert een commit met een app-scope die een ándere app raakt — `fix(cashflow):` mag niet aan `apps/rowtrack/` komen. Scopes die géén app zijn (`chore:`, `feat(tokens):`, `refactor(config):`) blijven vrij: een gedeelde laag hoort in één commit met de apps die hij aanpast. Is een cross-app commit écht bedoeld, zet dan een `Cross-app: <reden>` trailer in de body — expliciet en greppable. `--no-verify` is de slechtere weg: dat slaat álle hooks over, ook de snapshot- en token-sync.
+
 ### Cross-repo review — normaliseer eerst naar main
 
 Voor élke cross-repo inventarisatie of code review: bepaal per repo eerst `git -C <repo> rev-parse --abbrev-ref HEAD`. Staat een repo NIET op main, dan is de uitgecheckte werkkopie geen canonieke bron — normaliseer eerst (`git -C <repo> checkout main && git -C <repo> pull`) of, als checkout niet wenselijk is, vergelijk expliciet tegen `origin/main` en flag elke afwijking. Dit geldt óók voor umanex-os zelf: rapporteer nooit content van een feature-branch (incl. nog-niet-gemergede skills of uncommitted wijzigingen) als bestaand systeemonderdeel zonder te markeren dat die nog niet op main staat. Behandel nooit een toevallig uitgecheckte staat als de waarheid.

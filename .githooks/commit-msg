@@ -1,0 +1,86 @@
+#!/bin/bash
+# .githooks/commit-msg — houdt een app-scoped commit binnen zijn eigen app.
+#
+# De fout die dit vangt: twee taken tegelijk in één working tree. `git add -A` veegt de
+# in-flight wijzigingen van app B mee in de commit van app A. De commit slaagt, CI blijft
+# groen (die bouwt de hele monorepo, dus een verdwaald bestand compileert gewoon mee), en
+# de vervuiling komt pas boven bij een revert, een bisect of een cherry-pick.
+#
+# De regel, in één zin: een commit met een app-scope mag geen ándere app raken.
+#
+# Alles zonder app-scope blijft vrij — `chore:`, `feat(tokens):`, `refactor(config):`
+# mogen bewust meerdere apps tegelijk raken, want een gedeelde laag hoort in één commit
+# met de apps die hij aanpast. De guard knipt dus precies één ding weg: onbedoelde ruis.
+#
+# Zero-config: de app-lijst komt uit `apps/*` op schijf, niet uit een lijst die je moet
+# bijhouden. Een nieuwe app doet automatisch mee, een verwijderde valt vanzelf weg.
+#
+# Escape: zet een `Cross-app: <reden>` trailer in de commit body. Expliciet en greppable.
+# `--no-verify` is de slechtere weg — dat slaat álle hooks over, ook de snapshot-sync.
+#
+# Canonieke bron: umanex-os/templates/githooks-commit-msg. Gesynct naar
+# <klant-repo>/.githooks/commit-msg en geactiveerd via core.hooksPath=.githooks
+# (zet scripts/sync-os.sh automatisch). Dependency-vrij — geen commitlint.
+
+set -uo pipefail
+
+MSG_FILE="${1:-}"
+[ -n "$MSG_FILE" ] && [ -f "$MSG_FILE" ] || exit 0
+
+# Repo's zonder apps/ (umanex-os zelf, een losse site) hebben niets te scheiden.
+[ -d apps ] || exit 0
+
+subject="$(sed -n '1p' "$MSG_FILE")"
+
+# Merge-, revert- en fixup-commits schrijf je niet zelf: hun inhoud is per definitie wat
+# een andere commit al bevatte, dus een scope-toets zegt daar niets zinnigs over.
+case "$subject" in
+  Merge*|Revert*|fixup!*|squash!*|amend!*) exit 0 ;;
+esac
+if [ -e "$(git rev-parse --git-path MERGE_HEAD)" ]; then
+  exit 0
+fi
+
+# Scope uit een Conventional-Commit subject: type(scope): ... of type(scope)!: ...
+scope="$(printf '%s' "$subject" | sed -n 's#^[a-z][a-z]*(\([^)]\{1,\}\))!\{0,1\}:.*#\1#p')"
+
+# Geen scope, of een scope die geen app is (tokens, config, ui, deps, ...) → vrij.
+[ -n "$scope" ] || exit 0
+[ -d "apps/$scope" ] || exit 0
+
+# Welke apps raakt deze commit werkelijk? Inclusief deletes (D): een verwijderd bestand in
+# een andere app is net zo goed vervuiling.
+staged="$(git diff --cached --name-only --diff-filter=ACMRD)"
+foreign="$(printf '%s\n' "$staged" | sed -n 's#^apps/\([^/]*\)/.*#\1#p' | sort -u | grep -vx "$scope" || true)"
+
+[ -n "$foreign" ] || exit 0
+
+# Bewuste cross-app commit? Dan hoort dat in de body te staan, niet in je hoofd.
+if grep -qiE '^Cross-app:[[:space:]]*[^[:space:]]' "$MSG_FILE"; then
+  echo "ℹ Cross-app trailer gevonden — scope-guard overgeslagen voor:$(printf ' %s' $foreign)"
+  exit 0
+fi
+
+repo_name="$(basename "$(pwd)")"
+
+echo ""
+echo "✗ Commit gestopt — scope '($scope)' raakt een andere app."
+echo ""
+echo "  Deze commit zegt '($scope)' maar wijzigt ook:"
+for app in $foreign; do
+  echo ""
+  echo "    apps/$app/"
+  printf '%s\n' "$staged" | grep "^apps/$app/" | sed 's/^/      /'
+done
+echo ""
+echo "  Twee taken in één working tree lopen door elkaar. Kies:"
+echo ""
+echo "    Splits de commit    git restore --staged apps/<andere-app>"
+echo "                        commit opnieuw, daarna de andere app apart"
+echo ""
+echo "    Werk parallel       git worktree add ../$repo_name-<taak> <type>/<naam>"
+echo "                        eigen tree, eigen branch — ze kunnen elkaar niet raken"
+echo ""
+echo "    Écht cross-app      zet 'Cross-app: <reden>' in de commit body"
+echo ""
+exit 1

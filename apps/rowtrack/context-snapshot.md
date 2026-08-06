@@ -54,22 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+7ebafb2 fix(rowtrack): let go of the heart rate monitor before searching for it
 8dd824c docs(rowtrack): carry this session's open ends into the handoff
 a0ce5eb docs(rowtrack): record what the reviews established about these three risks
 d180578 fix(rowtrack): chunk the secure session store by bytes, never mid-character
 e03e09d fix(rowtrack): stop only our own BLE scan, and give up when the user already did
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-  M  apps/rowtrack/components/workout/IdlePhase.tsx
-  M  apps/rowtrack/i18n/bleErrors.ts
-  M  apps/rowtrack/i18n/translations/nl.ts
-  M  apps/rowtrack/lib/ble/ble-context.tsx
-  M  apps/rowtrack/lib/ble/hr-service.ts
-  M  apps/rowtrack/lib/ble/types.ts
+  A  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

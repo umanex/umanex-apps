@@ -77,6 +77,8 @@ export interface BleContextValue {
   hrStatus: HRStatus;
   hrDeviceName: string | null;
   hrBpm: number | null;
+  /** Laatste HR-fout in leesbare vorm, of null. Verdween voorheen in een dev-log. */
+  hrError: string | null;
   startHRScan: () => void;
   stopHR: () => void;
   hrDevices: HRFoundDevice[];

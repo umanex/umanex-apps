@@ -42,6 +42,7 @@ import {
   radii,
   componentRadius,
   layout,
+  space,
 } from '@/constants';
 import { useAuth } from '@/lib/auth-context';
 import { useRecentGoals } from '@/lib/hooks/useRecentGoals';
@@ -63,6 +64,7 @@ type IdlePhaseProps = {
   onDisconnect: () => void;
   hrStatus: HRStatus;
   hrDeviceName: string | null;
+  hrError: string | null;
   onHRConnect: () => void;
   onHRDisconnect: () => void;
   hrDevices: HRFoundDevice[];
@@ -152,6 +154,7 @@ export function IdlePhase({
   onDisconnect,
   hrStatus,
   hrDeviceName,
+  hrError,
   onHRConnect,
   onHRDisconnect,
   hrDevices,
@@ -340,6 +343,9 @@ export function IdlePhase({
                 onDisconnect={onHRDisconnect}
               />
             </View>
+            {/* Een mislukte hartslag-scan liet de rij gewoon terugvallen op "Verbinden",
+                zonder één woord uitleg — niet te onderscheiden van een dode knop. */}
+            {hrError ? <Text style={styles.deviceError}>{hrError}</Text> : null}
           </View>
 
           {/* Doel header + segments */}
@@ -433,6 +439,13 @@ const styles = StyleSheet.create({
   sectionLabel: {
     ...typeStyles.labelGoalPrefix,
     color: fg.tertiary,
+  },
+
+  deviceError: {
+    fontFamily: fontFamily.albertSansRegular,
+    fontSize: fontSize['13'],
+    color: status.error,
+    marginTop: space['8'],
   },
 
   doelHeader: {

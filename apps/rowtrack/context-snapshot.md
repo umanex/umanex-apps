@@ -54,11 +54,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a0ce5eb docs(rowtrack): record what the reviews established about these three risks
 d180578 fix(rowtrack): chunk the secure session store by bytes, never mid-character
 e03e09d fix(rowtrack): stop only our own BLE scan, and give up when the user already did
 62ab13d chore: prune four orphans, and declare the binary the render scripts need
 e59eaa1 chore(config): remove the dead flat-config eslint files
-5806065 refactor(config): share the token lint rules instead of copying them per app
 ```
 
 ## Uncommitted wijzigingen

@@ -51,6 +51,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Bevinding:** De actieve chip (Chip.tsx) én het actieve segment (GoalSegments.tsx) gebruiken `rgba(240,84,84,0.20)` hardcoded; er bestaat enkel `accent.muted` (0.12) en `accent.subtle` (0.06). Twee `// TODO`-markers wijzen ernaar.
 - **Volgende zet:** Een `accent.selected` (0.20) token toevoegen via Tokens Studio → `tokens.json`, rebuilden, beide hardcodes vervangen.
 - **Status:** open — 2026-07-14: tint-richting bevestigd (0.20 wint van de audit-"solid"); token nog NIET toegevoegd. Er is nu een DERDE hardcode bij: het active segment in `profile.tsx`. Zodra de alias gepusht is → 3 plekken vervangen (Chip, GoalSegments, segmented).
+  2026-08-06: opnieuw gecontroleerd na "tokens zijn aangepast" — er is **niets geland**.
+  `tokens.json` staat nog op de push van 14 juli, geen tokens-sync-run, en een lokale
+  `pnpm --filter rowtrack tokens:build` is een schone no-op. De wijziging is dus wel in Tokens
+  Studio gemaakt maar niet naar GitHub gepusht. De hardcodes staan nu op vier plekken:
+  `Chip.tsx:42`, `GoalSegments.tsx:157`, `Segmented.tsx:84` (elk met een `// TODO`) en
+  `ActivePhase.tsx:686` (die laatste is bewust `accent.muted`, geen 0.20).
 
 ## 2026-07-09 — Chip value/unit-split is fragiele heuristiek · [risico]
 - **Bevinding:** IdlePhase splitst de chip-value/unit met `label.endsWith(' ${unit}')`. Dit is gekoppeld aan het exacte label-formaat van de formatters; een wijziging daar breekt stil de italic-unit-rendering (of toont een verkeerde unit).
@@ -349,3 +355,48 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Geverifieerd:** schone install (`rm -rf node_modules apps/*/node_modules packages/*/node_modules` + `CI=true pnpm install`), `turbo build type-check lint --force` 14/14, `tsc --noEmit` in rowtrack schoon, en een volledige Metro-bundle voor iOS én Android (`expo export`). Nog niet bevestigd: een runtime-start op toestel — de resolutie is bewezen, het draaien van de app niet.
 - **Let op bij de eerste native build hierna:** `ios/Podfile.lock` wijst nog naar de oude platte paden (`../../../node_modules/expo-constants/ios` e.d.), die onder de geïsoleerde layout niet meer bestaan. `pod install` regenereert ze — `expo run:ios` doet dat zelf — maar reken op een grote Podfile.lock-diff bij die eerste build. Autolinking zelf is wel geverifieerd: `expo-modules-autolinking` vindt 23 Expo-modules en de RN-kant vindt alle zeven native packages (waaronder `react-native-ble-plx`) via hun `.pnpm`-paden.
 - **Status:** resolved (2026-08-05) — behalve de toestel-bevestiging hierboven.
+
+## 2026-08-06 — Account verwijderen is gebouwd maar de Edge Function is niet uitgerold · [next-step]
+- **Bevinding:** PR #209 zet de volledige keten neer (rij + sheet in Profiel, re-auth met wachtwoord,
+  `supabase/functions/delete-account`). Tot die functie uitgerold is, staat er wél een zichtbare
+  "Account verwijderen"-actie in de app die op een 404 valt — de UI meldt dan netjes "verwijderen
+  lukt nu niet", maar de knop doet niets. Daarom is de PR bewust níet gemerged.
+- **Volgende zet:** `supabase functions deploy delete-account --project-ref vvncomyfmvuzyicqhnzj`
+  (de drie env-vars injecteert Supabase zelf, geen secrets in te stellen), dan #209 mergen, dan één
+  echte verwijdering op een testaccount. Die run sluit de twee laatste acceptatie-items in
+  `briefings/2026-08-06-feature-account-verwijderen.tcebc.md`; de briefing staat nu op `gebouwd`.
+- **Status:** open
+
+## 2026-08-06 — De Edge Function wordt door niets getypecheckt · [risico]
+- **Bevinding:** `apps/rowtrack/tsconfig.json` sluit `supabase/functions` uit — noodzakelijk, want
+  Deno-code (`Deno.serve`, een `jsr:`-import) haalt de React-Native-config niet. Gevolg: die functie
+  valt buiten `tsc`, buiten CI en buiten elke lint. Een tikfout erin komt pas boven bij `supabase
+  functions deploy` of, erger, pas bij de eerste echte aanroep — op een pad dat data onherroepelijk
+  verwijdert.
+- **Volgende zet:** Bij een tweede Edge Function een aparte `deno check` in CI zetten (of
+  `supabase functions deploy --dry-run` als rooktest). Voor deze ene functie is de deploy zelf de
+  gate; het punt is dat dat niet schaalt.
+- **Status:** open
+
+## 2026-08-06 — Verloren antwoord bij verwijderen is principieel dubbelzinnig · [aanname]
+- **Bevinding:** Slaagt de verwijdering server-side maar gaat het antwoord verloren (verbinding valt
+  weg), dan kan de client niet weten of het gelukt is — een delete is niet idempotent en er is geen
+  statuscode om op te lezen. Een tweede poging meldt dan "wachtwoord klopt niet", want GoTrue kent
+  de gebruiker niet meer. Bewust niet weggeprogrammeerd: de eindtoestand klopt (account weg, sessie
+  dood), alleen de melding kan verwarren. De copy is daarop eerlijk gemaakt: "de verbinding viel weg
+  tijdens het verwijderen — kun je straks niet meer inloggen, dan is je account wél verwijderd."
+- **Volgende zet:** Alleen heropenen als dit in de praktijk opduikt. Een echte oplossing vraagt een
+  idempotency-key of een status-endpoint, en dat is voor deze app overkill.
+- **Status:** open
+
+## 2026-08-06 — Geen testrunner in de repo · [debt]
+- **Bevinding:** De chunk-fix in `secureStorage.ts` is geverifieerd met een wegwerp-harness in de
+  scratchpad die de functies letterlijk uit de bron knipt en met Node's type-stripping draait — dat
+  werkte (10 gerichte cases + 300 fuzz-cases), maar het is niet herhaalbaar en staat niet in CI.
+  Hetzelfde gold eerder voor `bestDistanceTime` (19 tests + 800k fuzz, ook ad hoc). Er zijn nu
+  minstens drie modules met pure, goed toetsbare logica: `bestDistanceTime`, `secureStorage` en
+  `formatters`.
+- **Volgende zet:** Beslissing bij Jeroen — een testrunner is een dependency (`vitest` ligt het meest
+  voor de hand, `test`-task in `turbo.json`, stap in `ci.yml`). Zonder die keuze blijft elke
+  verificatie eenmalig.
+- **Status:** open

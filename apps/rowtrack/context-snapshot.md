@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-05_
+_Gegenereerd op 2026-08-06_
 
 ## Project
 - **App:** rowtrack
@@ -54,18 +54,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-e247059 fix(rowtrack): history filter uses calendar periods and guards against races
-ae3a3e5 docs(rowtrack): name the supabase-rowtrack MCP server explicitly
-9ed52bf docs(rowtrack): pod install nodig bij de eerste native build na de layout-wissel
-a32f778 fix(monorepo): Metro werkt onder de geïsoleerde pnpm-layout
-b884027 docs(rowtrack): cluster 8 briefings + auth/forms figma-mapping
+62ab13d chore: prune four orphans, and declare the binary the render scripts need
+e59eaa1 chore(config): remove the dead flat-config eslint files
+5806065 refactor(config): share the token lint rules instead of copying them per app
+36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
+5ead2b3 fix(tokens): give primary a contrast-safe value per mode
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/lib/pendingWorkout.ts
-  A  apps/rowtrack/supabase/migrations/add_workouts_unique_started_at.sql
+   M apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/lib/ble/ble-service.ts
+  M  apps/rowtrack/lib/ble/hr-service.ts
+  A  apps/rowtrack/lib/ble/scan-lock.ts
+   M apps/rowtrack/lib/secureStorage.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

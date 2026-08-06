@@ -5,6 +5,7 @@ import type {
 } from 'react-native-ble-plx';
 import { Platform, PermissionsAndroid } from 'react-native';
 import { base64ToBytes } from './base64';
+import { claimScan, ownsScan, releaseScan } from './scan-lock';
 import type { HrBleError } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
@@ -48,6 +49,8 @@ export class HRBleService {
   private device: Device | null = null;
   private monitorSub: Subscription | null = null;
   private scanTimeout: ReturnType<typeof setTimeout> | null = null;
+  /** Identiteit in het gedeelde scan-slot — één native scan voor twee diensten. */
+  private readonly scanToken = Symbol('hr-scan');
   private intentionalDisconnect = false;
 
   private onStatusChange: StatusListener;
@@ -96,14 +99,15 @@ export class HRBleService {
       const seenIds = new Set<string>();
 
       this.scanTimeout = setTimeout(() => {
-        manager.stopDeviceScan();
+        this.stopScan();
         this.handleScanComplete(foundDevices);
       }, SCAN_COLLECT_MS);
 
       log('scan started (filter: service 0x180D, collecting for 5s)');
+      claimScan(this.scanToken);
       manager.startDeviceScan([HR_SERVICE_UUID], null, (err, dev) => {
         if (err) {
-          this.clearScanTimeout();
+          this.stopScan();
           log('scan error:', err.message);
           this.onStatusChange('error', { code: 'scan_error', detail: err.message });
           return;
@@ -238,8 +242,24 @@ export class HRBleService {
     }
   }
 
-  private cleanup(): void {
+  /**
+   * Stopt de scan die déze dienst gestart heeft, plus zijn timeout. De
+   * eigenaarscheck voorkomt dat we de scan van de roeier-dienst afbreken: beide
+   * diensten delen één native scan via de `BleManager`-singleton (zie `scan-lock.ts`).
+   */
+  private stopScan(): void {
     this.clearScanTimeout();
+    if (!ownsScan(this.scanToken)) return;
+    releaseScan(this.scanToken);
+    try {
+      this.manager?.stopDeviceScan().catch(() => {});
+    } catch {
+      // Manager al vernietigd — dan loopt er ook geen scan meer.
+    }
+  }
+
+  private cleanup(): void {
+    this.stopScan();
     this.monitorSub?.remove();
     this.monitorSub = null;
   }

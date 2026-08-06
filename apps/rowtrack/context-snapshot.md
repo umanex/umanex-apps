@@ -54,19 +54,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e03e09d fix(rowtrack): stop only our own BLE scan, and give up when the user already did
 62ab13d chore: prune four orphans, and declare the binary the render scripts need
 e59eaa1 chore(config): remove the dead flat-config eslint files
 5806065 refactor(config): share the token lint rules instead of copying them per app
 36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
-5ead2b3 fix(tokens): give primary a contrast-safe value per mode
 ```
 
 ## Uncommitted wijzigingen
    M apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/lib/ble/ble-service.ts
-  M  apps/rowtrack/lib/ble/hr-service.ts
-  A  apps/rowtrack/lib/ble/scan-lock.ts
-   M apps/rowtrack/lib/secureStorage.ts
+  M  apps/rowtrack/lib/secureStorage.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

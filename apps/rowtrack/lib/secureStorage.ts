@@ -30,11 +30,59 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type SecureStoreModule = typeof import('expo-secure-store');
 
-const CHUNK_SIZE = 2000; // tekens, ruim onder de 2048-byte SecureStore-grens
+// SecureStore's grens is 2048 BYTES, niet tekens. 1800 laat marge voor de
+// keychain-overhead en houdt de rekensom weg bij de rand.
+const CHUNK_BYTES = 1800;
 
 // SecureStore-keys mogen enkel [A-Za-z0-9._-] bevatten.
 function sanitize(key: string): string {
   return key.replace(/[^A-Za-z0-9._-]/g, '_');
+}
+
+/** Aantal UTF-8 bytes van één code point. */
+function utf8Size(codePoint: number): number {
+  if (codePoint < 0x80) return 1;
+  if (codePoint < 0x800) return 2;
+  if (codePoint < 0x10000) return 3;
+  return 4;
+}
+
+/**
+ * Splitst een waarde in stukken van hoogstens `maxBytes` UTF-8 bytes, zonder ooit
+ * midden in een teken te knippen.
+ *
+ * De vorige versie sneed op `value.length` — JS-tekens, niet bytes. Dat brak op twee
+ * manieren, beide bevestigd met een probe:
+ *   1. Eén accentteken telt voor 1 maar weegt 2 bytes: 2000 tekens werd 4000 bytes,
+ *      het dubbele van de grens.
+ *   2. `slice()` knipt op UTF-16 code units. Valt een surrogaatpaar (emoji) precies
+ *      op de grens, dan gaat de helft in chunk A en de helft in chunk B. Elk halfje
+ *      is op zichzelf geen geldige UTF-8, dus de sprong over de native bridge maakt
+ *      er een replacement-teken van — en de weer samengevoegde sessie is stil corrupt
+ *      (JSON.parse faalt → gebruiker wordt zonder aanwijsbare reden uitgelogd).
+ *
+ * `for...of` itereert over code points, dus een surrogaatpaar blijft per constructie
+ * heel. Vandaag is de Supabase-sessieblob puur ASCII en raakt geen van beide je; dat
+ * verandert zodra er ooit een naam of emoji in de user_metadata belandt.
+ */
+function chunkByUtf8Bytes(value: string, maxBytes: number): string[] {
+  const chunks: string[] = [];
+  let current = '';
+  let currentBytes = 0;
+
+  for (const char of value) {
+    const size = utf8Size(char.codePointAt(0)!);
+    if (currentBytes > 0 && currentBytes + size > maxBytes) {
+      chunks.push(current);
+      current = '';
+      currentBytes = 0;
+    }
+    current += char;
+    currentBytes += size;
+  }
+  if (current.length > 0) chunks.push(current);
+
+  return chunks;
 }
 
 // Lazy-geladen native module + gecachete beschikbaarheids-beslissing, zodat de
@@ -104,20 +152,23 @@ export const secureStorageAdapter = {
     // wrapper). Accessibility wordt op WRITE gezet: bestaande items schuiven mee bij de
     // eerstvolgende token-write (refresh terwijl ontgrendeld, of re-login).
     const opts = { keychainAccessible: ss!.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY };
+    const chunks = chunkByUtf8Bytes(value, CHUNK_BYTES);
     await removeChunks(base); // oude staat opruimen vóór herschrijven
-    if (value.length <= CHUNK_SIZE) {
+
+    // 0 chunks = lege string; die hoort als gewone enkele waarde opgeslagen te
+    // worden, niet als "geen chunks" (dat leest terug als afwezig).
+    if (chunks.length <= 1) {
       await ss!.setItemAsync(base, value, opts);
       return;
     }
-    const n = Math.ceil(value.length / CHUNK_SIZE);
-    for (let i = 0; i < n; i++) {
-      await ss!.setItemAsync(
-        `${base}__${i}`,
-        value.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE),
-        opts,
-      );
+
+    // Chunks eerst, `__n` als laatste: breekt het schrijven halverwege af, dan telt
+    // de waarde als afwezig (eenmalig opnieuw inloggen) in plaats van als compleet
+    // maar afgekapt (stille corruptie).
+    for (let i = 0; i < chunks.length; i++) {
+      await ss!.setItemAsync(`${base}__${i}`, chunks[i], opts);
     }
-    await ss!.setItemAsync(`${base}__n`, String(n), opts);
+    await ss!.setItemAsync(`${base}__n`, String(chunks.length), opts);
   },
 
   removeItem: async (key: string): Promise<void> => {

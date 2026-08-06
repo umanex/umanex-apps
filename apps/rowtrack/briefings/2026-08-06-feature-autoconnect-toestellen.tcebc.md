@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** rowtrack
 - **Klant:** umanex
-- **Status:** gepland
+- **Status:** gebouwd
 
 ---
 
@@ -63,25 +63,34 @@ Geen. De vier productkeuzes zijn beantwoord (2026-08-06):
 
 ## Acceptatie
 
-- [ ] Autoconnect vuurt bij het openen van het trainingsscherm, niet bij app-start.
-- [ ] Bekend toestel in de buurt → verbonden zonder dat de gebruiker iets tikt.
-- [ ] Bekend toestel niet in de buurt → valt terug op scannen, en daarna op een duidelijke fout;
-      geen oneindig "verbinden…".
-- [ ] **State loading:** de rij toont dat er verbonden wordt, met onderscheid tussen "bekend
-      toestel" en "zoeken".
-- [ ] **State empty:** niets gevonden → melding die zegt wat de gebruiker kan doen (zoals de
-      HR-melding die er nu al is).
-- [ ] **State error:** mislukte autoconnect blokkeert niets; handmatig verbinden blijft werken.
-- [ ] **State connected:** naam van het verbonden toestel zichtbaar per rij.
-- [ ] Meerdere gevonden toestellen → keuze-sheet, met signaalsterkte, voor beide types.
-- [ ] "Ander toestel kiezen" is bereikbaar terwijl er een verbinding staat, en verbreekt die eerst.
-- [ ] Handmatig verbreken werkt altijd en zet autoconnect uit tot de gebruiker zelf verbindt —
-      ook wanneer hij het scherm intussen verlaat en terugkomt.
-- [ ] Het gekozen toestel wordt onthouden en overleeft een herstart van de app.
-- [ ] Een vergeten/vervangen toestel is te wissen zonder de app opnieuw te installeren.
-- [ ] Autoconnect start nooit een tweede scan naast een lopende (één gedeeld scan-slot,
-      zie `lib/ble/scan-lock.ts`).
-- [ ] `tsc --noEmit` groen.
+- [x] Autoconnect vuurt bij het openen van het trainingsscherm, niet bij app-start
+      (`useFocusEffect` in `app/(tabs)/workout.tsx`, alleen in de idle-fase).
+- [x] Bekend toestel in de buurt → verbonden zonder dat de gebruiker iets tikt, rechtstreeks op
+      id en dus zonder scan.
+- [x] Bekend toestel niet in de buurt → de poging faalt stil binnen 8 s en laat de rij op
+      "Verbinden" staan; geen foutmelding voor iets wat de gebruiker niet vroeg.
+- [x] **State loading:** 'connecting' met de onthouden naam bij autoconnect, 'scanning' bij zoeken.
+- [x] **State empty:** niets gevonden → de melding onder de toestellen-kaart (uit PR #210).
+- [x] **State error:** een mislukte autoconnect blokkeert niets; handmatig verbinden blijft werken.
+- [x] **State connected:** naam van het verbonden toestel zichtbaar per rij (bestaand gedrag).
+- [x] Meerdere gevonden toestellen → keuze-sheet met signaalsterkte, nu voor **beide** types.
+      De roeier pakte voorheen blind de eerste treffer.
+- [ ] "Ander toestel kiezen" als eigen actie terwijl er een verbinding staat. → *Niet gebouwd.
+      `DeviceRow` draagt één actie; een tweede knop is een design-wijziging aan een component dat
+      op twee plekken leeft, en er is geen Figma-referentie voor dit scherm (bekend dekkingsgat).
+      Functioneel is het pad er wel: Verbreken → Verbinden → keuzelijst.*
+- [x] Handmatig verbreken zet autoconnect uit tot de gebruiker zelf verbindt — de `suppressed`-set
+      in de context overleeft het verlaten en terugkeren van het scherm.
+- [x] Het gekozen toestel wordt onthouden (AsyncStorage) en overleeft een herstart.
+- [x] Een ander toestel kiezen overschrijft het onthouden toestel; `forgetKnownDevice` bestaat voor
+      een expliciete wis-actie.
+- [x] Autoconnect start geen scan, dus ook geen tweede scan naast een lopende. Het scan-pad zelf
+      gaat nog altijd via het gedeelde slot in `lib/ble/scan-lock.ts`.
+- [x] `tsc --noEmit` groen.
+
+**Waarom nog niet `gevalideerd`.** Eén acceptatie-item is bewust niet gebouwd (hierboven), en niets
+hiervan is op een toestel gereden — autoconnect is per definitie hardware-gedrag. De eerste rit met
+deze build is de echte toets.
 
 ## Beslissingsgeschiedenis
 

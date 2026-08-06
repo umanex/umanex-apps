@@ -60,11 +60,15 @@ export interface RowerMetrics {
 
 export type HRStatus = 'idle' | 'scanning' | 'connected' | 'error';
 
-export interface HRFoundDevice {
+/** Een toestel uit een scan, klaar om in de keuzelijst te tonen. */
+export interface FoundDevice {
   id: string;
   name: string;
   rssi: number;
 }
+
+/** @deprecated Gebruik `FoundDevice` — de lijst is niet langer HR-only. */
+export type HRFoundDevice = FoundDevice;
 
 export interface BleContextValue {
   status: ConnectionStatus;
@@ -81,10 +85,14 @@ export interface BleContextValue {
   hrError: string | null;
   startHRScan: () => void;
   stopHR: () => void;
-  hrDevices: HRFoundDevice[];
-  hrSelecting: boolean;
-  selectHRDevice: (deviceId: string) => void;
-  cancelHRSelection: () => void;
+  // Keuzelijst, gedeeld door beide types
+  devices: FoundDevice[];
+  /** Welk type staat te kiezen, of null wanneer de lijst dicht is. */
+  picking: 'rower' | 'hr' | null;
+  selectDevice: (deviceId: string) => void;
+  cancelSelection: () => void;
+  /** Verbindt met de toestellen van vorige keer; stil wanneer dat niet lukt. */
+  autoConnect: () => Promise<void>;
 }
 
 export type DataSource = 'ble';

@@ -49,20 +49,30 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | TabLabel | `apps/rowtrack/components/TabLabel.tsx` | components | — | — | — |
 | WheelPicker | `apps/rowtrack/components/WheelPicker.tsx` | components | — | — | — |
 | ActivePhase | `apps/rowtrack/components/workout/ActivePhase.tsx` | workout | — | — | — |
+| DeviceSelectionModal | `apps/rowtrack/components/workout/DeviceSelectionModal.tsx` | workout | — | — | — |
 | IdlePhase | `apps/rowtrack/components/workout/IdlePhase.tsx` | workout | — | — | — |
 | WorkoutCard | `apps/rowtrack/components/WorkoutCard.tsx` | components | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+3e2c730 docs(rowtrack): brief autoconnect to the last used devices
 7ebafb2 fix(rowtrack): let go of the heart rate monitor before searching for it
 8dd824c docs(rowtrack): carry this session's open ends into the handoff
 a0ce5eb docs(rowtrack): record what the reviews established about these three risks
 d180578 fix(rowtrack): chunk the secure session store by bytes, never mid-character
-e03e09d fix(rowtrack): stop only our own BLE scan, and give up when the user already did
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
+  A  apps/rowtrack/components/workout/DeviceSelectionModal.tsx
+  M  apps/rowtrack/components/workout/IdlePhase.tsx
+  M  apps/rowtrack/i18n/translations/nl.ts
+  M  apps/rowtrack/lib/ble/ble-context.tsx
+  M  apps/rowtrack/lib/ble/ble-service.ts
+  M  apps/rowtrack/lib/ble/hr-service.ts
+  A  apps/rowtrack/lib/ble/knownDevices.ts
+  M  apps/rowtrack/lib/ble/types.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

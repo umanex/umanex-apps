@@ -130,9 +130,9 @@ export const nl = {
       freeTraining: 'Vrije training zonder vooraf bepaald doel.',
       startButton: 'Start training',
     },
-    hrModal: {
-      title: 'Kies hartslagmeter',
-      cancel: 'Annuleer',
+    deviceModal: {
+      titleRower: 'Kies roeitrainer',
+      titleHr: 'Kies hartslagmeter',
       signalStrong: 'Sterk',
       signalGood: 'Goed',
       signalWeak: 'Zwak',

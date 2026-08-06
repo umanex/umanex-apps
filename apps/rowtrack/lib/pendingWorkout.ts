@@ -66,6 +66,19 @@ export async function clearPendingWorkout(row: PendingWorkout): Promise<void> {
   }
 }
 
+/**
+ * Wist de slot onvoorwaardelijk. Enkel voor een volledige lokale reset — nu:
+ * account verwijderen. Overal elders geldt `clearPendingWorkout`, die alleen wist
+ * wat hij zelf heeft weggeschreven; blind wissen kost daar een rit.
+ */
+export async function purgePendingWorkout(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(KEY);
+  } catch {
+    // no-op — de rit hoort bij een account dat niet meer bestaat.
+  }
+}
+
 // Eén lopende drain per app-instantie. De app kent één ingelogde gebruiker
 // tegelijk, dus een enkele in-flight promise volstaat als wederzijdse uitsluiting.
 let drainInFlight: Promise<void> | null = null;

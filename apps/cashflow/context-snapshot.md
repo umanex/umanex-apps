@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-08-05_
+_Gegenereerd op 2026-08-06_
 
 ## Project
 - **App:** cashflow
@@ -48,17 +48,21 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+62ab13d chore: prune four orphans, and declare the binary the render scripts need
 3dde3da feat(cashflow): render the role layer and its components in both modes
 e59eaa1 chore(config): remove the dead flat-config eslint files
 5806065 refactor(config): share the token lint rules instead of copying them per app
 36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
-5ead2b3 fix(tokens): give primary a contrast-safe value per mode
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/package.json
-  D  packages/tokens/build/.gitkeep
-  M  packages/ui/package.json
+  A  apps/cashflow/briefings/2026-08-06-feature-budget-bewerkbaar-ankermaand.tcebc.md
+  M  apps/cashflow/components/cashflow/ReservationSection.tsx
+  M  apps/cashflow/lib/cashflow/calculator.ts
+  M  apps/cashflow/lib/cashflow/subtotals.ts
+  M  apps/cashflow/lib/cashflow/types.ts
+  M  apps/cashflow/scripts/buffer-scenarios.ts
+  M  apps/cashflow/scripts/calc-baseline.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

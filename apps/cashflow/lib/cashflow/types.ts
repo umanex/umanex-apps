@@ -97,7 +97,6 @@ export interface ReservationPotBalance {
   deferredFromPrevious: number;
   potType: ReservationPotType;
   releasedThisMonth: number;
-  displayContribution: number;
   /** Deze pot is de bufferpot (coversDeficit). */
   isDeficitBuffer: boolean;
   /**

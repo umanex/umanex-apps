@@ -75,10 +75,15 @@ function recomputeEindsaldo(m: MonthData, isFirst: boolean): number {
   const cash = isFirst ? 0 : m.reservationPayments.reduce((s, pay) => s + pay.fromCash, 0);
 
   // Een budget is een inschatting: in de ankermaand resteert wat je nog niet opmaakte,
-  // in een latere maand staat de volledige inschatting nog te vertrekken.
+  // in een latere maand staat de volledige inschatting nog te vertrekken. Wat er nog te
+  // besteden valt kan niet minder dan niets zijn — een budget onder wat er al uit betaald
+  // is, geeft geen geld terug.
   const budgets = m.reservationPots
     .filter((p) => p.potType === 'maandelijks_budget' && (!isFirst || !p.finalized))
-    .reduce((s, p) => s + p.provisionThisMonth - (isFirst ? paidFromPot(p) : 0), 0);
+    .reduce(
+      (s, p) => s + (isFirst ? Math.max(0, p.provisionThisMonth - paidFromPot(p)) : p.provisionThisMonth),
+      0,
+    );
 
   // Ankermaand: wat er aan het einde van de maand nog in de potten vastzit, en dat kan
   // niet minder dan niets zijn. Latere maanden: de storting van die maand, plus wat een
@@ -763,6 +768,47 @@ console.log('\nS23 — opname groter dan het potsaldo');
   const later = calculateMonths('2026-02', 1000, [], [], [], [pot], teveel, [], [], [], [], 2);
   check('S23 · overschot boven de pot telt als kost', later[1]!.subtotals.provisions, 300);
   invariant(later, 'S23b');
+}
+
+// ── S24: budget van de ankermaand handmatig bijgesteld ────────────────────────
+console.log('\nS24 — budget bijstellen in de ankermaand');
+{
+  const budget: ReservationItem = {
+    id: 'b', label: 'Boodschappen', monthlyAmount: 400, startMonth: '2026-03',
+    type: 'maandelijks_budget',
+  };
+  const betaling: ReservationPayment[] = [{
+    id: 'p1', reservationId: 'b', monthKey: '2026-03', label: 'winkel',
+    invoiceAmount: 250, fromReservation: 250, fromCash: 0,
+  }];
+  const hoger: ReservationSettlement[] = [{
+    id: 's1', reservationId: 'b', monthKey: '2026-03', effectiveAmount: 600, finalized: false,
+  }];
+  const lager: ReservationSettlement[] = [{
+    id: 's2', reservationId: 'b', monthKey: '2026-03', effectiveAmount: 100, finalized: false,
+  }];
+
+  const basis = calculateMonths('2026-03', 1000, [], [], [], [budget], betaling, [], [], [], [], 1);
+  check('S24 · zonder bijstelling resteert 400 − 250', basis[0]!.subtotals.budgets, 150);
+  invariant(basis, 'S24a');
+
+  const op = calculateMonths('2026-03', 1000, [], [], [], [budget], betaling, [], [], [], hoger, 1);
+  check('S24 · budget verhoogd naar 600 → 350 te besteden', op[0]!.subtotals.budgets, 350);
+  check('S24 · pot draagt het nieuwe bedrag', op[0]!.reservationPots[0]!.provisionThisMonth, 600);
+  invariant(op, 'S24b');
+
+  // Onder wat er al betaald is: er valt niets meer te reserveren, en het teveel is al van
+  // het banksaldo af. De kost zakt naar 0 en mag het eindsaldo niet optillen.
+  const neer = calculateMonths('2026-03', 1000, [], [], [], [budget], betaling, [], [], [], lager, 1);
+  check('S24 · budget onder het betaalde → kost 0', neer[0]!.subtotals.budgets, 0);
+  check('S24 · eindsaldo niet opgetild', neer[0]!.endBalance, 1000);
+  invariant(neer, 'S24c');
+
+  // Latere maand: de bijstelling geldt enkel voor de maand waarop ze staat.
+  const later = calculateMonths('2026-02', 1000, [], [], [], [budget], betaling, [], [], [], lager, 3);
+  check('S24 · bijgestelde maand telt zijn eigen bedrag', later[1]!.subtotals.budgets, 100);
+  check('S24 · maand erna staat weer op het begrote bedrag', later[2]!.subtotals.budgets, 400);
+  invariant(later, 'S24d');
 }
 
 console.log(`\n${checks - failures}/${checks} checks geslaagd${failures ? ` — ${failures} FOUT` : ''}`);

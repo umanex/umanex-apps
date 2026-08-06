@@ -23,6 +23,23 @@ function cashFromPot(pot: ReservationPotBalance): number {
   return pot.paymentsThisMonth.reduce((s, p) => s + p.fromCash, 0);
 }
 
+/**
+ * Kost van één pot bij een gegeven storting. De storting is een parameter en niet
+ * `p.provisionThisMonth`, zodat de sectiekop met exact dezelfde formule kan tonen wat een
+ * bedrag dat je nú intypt zou kosten — zie `pendingOverrideDelta`.
+ */
+function budgetCost(p: ReservationPotBalance, provision: number, isFirstMonth: boolean): number {
+  return isFirstMonth ? Math.max(0, provision - paidFromPot(p)) : provision;
+}
+
+function spaardoelCost(p: ReservationPotBalance, provision: number, isFirstMonth: boolean): number {
+  const beschikbaar = p.deferredFromPrevious + provision;
+  const teveel = Math.max(0, paidFromPot(p) - beschikbaar);
+  return isFirstMonth
+    ? Math.max(0, beschikbaar - paidFromPot(p))
+    : provision - p.releasedThisMonth + teveel;
+}
+
 export interface MonthSubtotalInput {
   startBalance: number;
   totalIncome: number;
@@ -79,9 +96,14 @@ export function computeMonthSubtotals(input: MonthSubtotalInput): MonthSubtotals
   // die doorrolt). In de ankermaand is een betaling uit het budget al van je banksaldo af,
   // dus resteert enkel het onbestede deel. In een latere maand is er nog niets vertrokken
   // en blijft de volledige inschatting staan — een geboekte betaling zit daar al in.
+  //
+  // De ondergrens hoort erbij sinds het budget van de ankermaand handmatig bijgesteld kan
+  // worden: zet je het onder wat er deze maand al uit betaald is, dan is er niets meer te
+  // reserveren. Zonder die grens werd de kost negatief en tilde een te laag budget het
+  // eindsaldo op met geld dat al van de rekening was.
   const budgets = reservationPots
     .filter((p) => p.potType === 'maandelijks_budget' && (!isFirstMonth || !p.finalized))
-    .reduce((s, p) => s + p.provisionThisMonth - (isFirstMonth ? paidFromPot(p) : 0), 0);
+    .reduce((s, p) => s + budgetCost(p, p.provisionThisMonth, isFirstMonth), 0);
 
   // Ankermaand: de volledige resterende provisie moet uit het banksaldo, inclusief wat er
   // in eerdere maanden al opgebouwd werd (`deferredFromPrevious`). Latere maanden: die
@@ -91,15 +113,7 @@ export function computeMonthSubtotals(input: MonthSubtotalInput): MonthSubtotals
   // Beide takken kennen een ondergrens. Zonder die grens levert een betaling die groter is
   // dan de pot in de ankermaand een negatieve kost op — geld dat niet bestaat — en gaat
   // hetzelfde teveel in een latere maand juist nooit van het saldo af. Wat een pot niet
-  // kan dragen, komt van de rekening, en dat is precies de tweede term hieronder.
-  const spaardoelCost = (p: ReservationPotBalance): number => {
-    const beschikbaar = p.deferredFromPrevious + p.provisionThisMonth;
-    const teveel = Math.max(0, paidFromPot(p) - beschikbaar);
-    return isFirstMonth
-      ? Math.max(0, beschikbaar - paidFromPot(p))
-      : p.provisionThisMonth - p.releasedThisMonth + teveel;
-  };
-
+  // kan dragen, komt van de rekening, en dat is precies de `teveel`-term in de formule.
   const spaardoelen = reservationPots.filter(
     (p) => p.potType === 'spaardoel' && (!isFirstMonth || !p.finalized),
   );
@@ -109,12 +123,14 @@ export function computeMonthSubtotals(input: MonthSubtotalInput): MonthSubtotals
   // blijft bij de provisies — een uitgestelde storting is enkel nog historisch mogelijk,
   // want de bufferrij is niet meer versleepbaar.
   const provisions =
-    spaardoelen.filter((p) => !p.isDeficitBuffer).reduce((s, p) => s + spaardoelCost(p), 0) +
+    spaardoelen
+      .filter((p) => !p.isDeficitBuffer)
+      .reduce((s, p) => s + spaardoelCost(p, p.provisionThisMonth, isFirstMonth), 0) +
     input.deferredReservationAmount;
 
   const buffer = spaardoelen
     .filter((p) => p.isDeficitBuffer)
-    .reduce((s, p) => s + spaardoelCost(p), 0);
+    .reduce((s, p) => s + spaardoelCost(p, p.provisionThisMonth, isFirstMonth), 0);
 
   const incoming = input.startBalance + input.totalIncome;
   const costs = recurring + oneOff + budgets + provisions + buffer;
@@ -157,19 +173,22 @@ export function collectCashOverflowItems(
 // storting). Die tweede reeks formules is daarmee verdwenen.
 
 /**
- * Verschil tussen het bedrag dat op dit moment in een veld getypt wordt en de opgeslagen
- * storting. Alleen daarmee beweegt de kop van een pot-subgroep mee vóór het opslaan. In
- * de ankermaand telt een override niet mee: daar toont de kop de resterende provisie,
- * niet de storting.
+ * Verschil tussen wat het getypte bedrag zou kosten en wat de opgeslagen storting kost.
+ * Alleen daarmee beweegt de kop van een pot-subgroep mee vóór het opslaan.
+ *
+ * Het is bewust hetzelfde paar functies als hierboven: in de ankermaand is de kost niet
+ * de storting zelf maar het onbestede deel ervan, en die takken mogen niet uit elkaar
+ * lopen — anders toont de kop tijdens het typen iets anders dan na het opslaan.
  */
 export function pendingOverrideDelta(
   activePots: ReservationPotBalance[],
   overrides: Record<string, number>,
   isCurrentMonth: boolean,
 ): number {
-  if (isCurrentMonth) return 0;
   return activePots.reduce((s, p) => {
     const override = overrides[p.reservationId];
-    return override === undefined ? s : s + (override - p.displayContribution);
+    if (override === undefined) return s;
+    const cost = p.potType === 'maandelijks_budget' ? budgetCost : spaardoelCost;
+    return s + cost(p, override, isCurrentMonth) - cost(p, p.provisionThisMonth, isCurrentMonth);
   }, 0);
 }

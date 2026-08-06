@@ -330,10 +330,10 @@ export function calculateMonths(
     const totalOutstandingCosts = unpaidRecurringAmount + unpaidExpenses;
 
     // Prudent budget-model: onbesteed maandbudget wordt NIET teruggestort naar het
-    // vrije saldo — we nemen aan dat het budget besteed wordt. De kost van een budget
-    // = provisie − betaald uit pot, identiek in de huidige én toekomstige maanden (en
-    // aan de sectie-kop die dat via displayContribution al toont). Een betaling uit een
-    // budget verhoogt zo, net als bij een provisie, het eindsaldo van die maand.
+    // vrije saldo — we nemen aan dat het budget besteed wordt. De kost van een budget in
+    // de ankermaand = provisie − betaald uit pot (zie `budgets` in subtotals.ts, dezelfde
+    // formule als de sectie-kop). Een betaling uit een budget verhoogt zo, net als bij
+    // een provisie, het eindsaldo van die maand.
     const budgetPaidFromReservation = billableReservations
       .filter((r) => r.type === 'maandelijks_budget')
       .reduce(
@@ -420,9 +420,6 @@ export function calculateMonths(
         const paidFromReservation = paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
         const provision = getProvisionThisMonth(r);
         const deferred = getDeferred(r.id);
-        const displayContribution = r.type === 'maandelijks_budget' && isFirstMonth
-          ? provision - paidFromReservation
-          : provision;
         return {
           reservationId: r.id,
           label: r.label,
@@ -438,7 +435,6 @@ export function calculateMonths(
           deferredFromPrevious: deferred,
           potType: r.type,
           releasedThisMonth: spaardoelReleases.get(r.id) ?? 0,
-          displayContribution,
           isDeficitBuffer: r.id === bufferId,
           autoContribution: null,
           deficitUncovered: 0,

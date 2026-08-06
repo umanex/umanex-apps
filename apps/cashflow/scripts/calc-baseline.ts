@@ -305,7 +305,9 @@ function potHeader(m: MonthData, potType: ReservationPotBalance['potType'], isCu
         return s + p.deferredFromPrevious + p.provisionThisMonth - paidFromPot(p);
       }
     }
-    return s + p.displayContribution;
+    // Bevroren kopie: buiten de ankermaand was `displayContribution` per definitie de
+    // storting van die maand. Dat veld is weg, de waarde niet.
+    return s + p.provisionThisMonth;
   }, 0);
 }
 
@@ -339,7 +341,6 @@ function digestMonth(m: MonthData, index: number) {
         potBalance: r(p.potBalance),
         provisionThisMonth: r(p.provisionThisMonth),
         deferredFromPrevious: r(p.deferredFromPrevious),
-        displayContribution: r(p.displayContribution),
         releasedThisMonth: r(p.releasedThisMonth),
         effectiveAmount: r(p.effectiveAmount),
         finalized: p.finalized,

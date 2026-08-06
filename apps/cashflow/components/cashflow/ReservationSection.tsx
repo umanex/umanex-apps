@@ -68,27 +68,30 @@ function DraggablePotRow({
   onAmountChange: (reservationId: string, amount: number | null) => void;
 }) {
   const paidFromReservation = pot.paymentsThisMonth.reduce((s, p) => s + p.fromReservation, 0);
-  const displayAmount = pot.provisionThisMonth + pot.deferredFromPrevious - paidFromReservation;
   const hasPayments = pot.paymentsThisMonth.length > 0;
   // Maandelijks budget mag ook zonder betalingen gefinaliseerd worden (besteed = 0);
   // spaardoel is finaliseerbaar zodra er betalingen zijn — het restsaldo wordt
   // bij finalisatie vrijgegeven en de opbouw herstart de maand erna.
   const canShowFinalize = pot.potType === 'maandelijks_budget' || hasPayments;
-  // De bufferpot komt hier niet voorbij (ReservationSection filtert hem eruit), dus is
-  // het budget van de huidige maand het enige veld dat volledig afgeleid is.
+  // Het veld draagt in élke kolom hetzelfde: de storting van die maand. Voor een budget in
+  // de ankermaand toonde het vroeger het restbedrag, en dan moest het wel uitgeschakeld
+  // staan — je kunt een afgeleide waarde niet bewerken zonder dat het veld iets anders
+  // betekent dan ernaast. Dat restbedrag staat nu op de subregel, zoals bij elke andere pot.
   const isBudgetCurrentMonth = pot.potType === 'maandelijks_budget' && isCurrentMonth;
-  const isComputed = isBudgetCurrentMonth;
 
-  const syncValue = isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth;
-  const [localAmount, setLocalAmount] = useState(String(roundTo2(syncValue)));
+  const [localAmount, setLocalAmount] = useState(String(roundTo2(pot.provisionThisMonth)));
 
-  // `isBudgetCurrentMonth` hoort er wél bij: bladeren met de MonthNavigator hergebruikt
-  // dezelfde kolom en klapt alleen die vlag om. Zonder deze dependency bleef het veld het
-  // restbedrag tonen terwijl het de storting moest tonen — en dan was het ook nog
-  // bewerkbaar, zodat wegklikken dat restbedrag als afrekening vastlegde.
   useEffect(() => {
-    setLocalAmount(String(roundTo2(isBudgetCurrentMonth ? displayAmount : pot.provisionThisMonth)));
-  }, [displayAmount, pot.provisionThisMonth, isBudgetCurrentMonth]);
+    setLocalAmount(String(roundTo2(pot.provisionThisMonth)));
+  }, [pot.provisionThisMonth]);
+
+  // De subregel rekent met wat er op dit moment in het veld staat, niet met wat opgeslagen
+  // is. De sectiekop doet dat via `pendingOverrideDelta` al; liep de rij daar niet in mee,
+  // dan bewoog de kop tijdens het typen terwijl het restbedrag eronder bleef staan.
+  const typedAmount = parseFloat(localAmount.replace(',', '.'));
+  const pendingProvision =
+    isNaN(typedAmount) || typedAmount < 0 ? pot.provisionThisMonth : typedAmount;
+  const displayAmount = pendingProvision + pot.deferredFromPrevious - paidFromReservation;
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `reservation-pot-${pot.reservationId}-${monthKey}`,
@@ -103,20 +106,23 @@ function DraggablePotRow({
 
   function handleAmountBlur() {
     const amt = parseFloat(localAmount.replace(',', '.'));
-    const defaultValue = pot.provisionThisMonth;
+    onAmountChange(pot.reservationId, null);
+    // Leeg, onleesbaar of negatief: terug naar het begrote bedrag, afrekening weg.
     if (isNaN(amt) || amt < 0) {
-      setLocalAmount(String(roundTo2(defaultValue)));
-      onAmountChange(pot.reservationId, null);
-      onRemoveSettlement(pot.reservationId);
+      setLocalAmount(String(roundTo2(pot.monthlyAmount)));
+      if (pot.hasSettlement) onRemoveSettlement(pot.reservationId);
       return;
     }
-    onAmountChange(pot.reservationId, null);
-    if (Math.abs(amt - defaultValue) < 0.01) {
-      if (!pot.hasSettlement) onRemoveSettlement(pot.reservationId);
-    } else {
-      setLocalAmount(String(roundTo2(amt)));
-      onSettle(pot.reservationId, amt);
+    setLocalAmount(String(roundTo2(amt)));
+    // Een afrekening ís het verschil met het begrote bedrag. Wie terugtypt naar dat
+    // bedrag wil dus geen afrekening van dezelfde waarde, maar geen afrekening meer.
+    if (Math.abs(amt - pot.monthlyAmount) < 0.01) {
+      if (pot.hasSettlement) onRemoveSettlement(pot.reservationId);
+      return;
     }
+    // Ongewijzigd t.o.v. wat er al staat: niets naar de store schrijven.
+    if (Math.abs(amt - pot.provisionThisMonth) < 0.01) return;
+    onSettle(pot.reservationId, amt);
   }
 
   function handleFinalize() {
@@ -158,15 +164,17 @@ function DraggablePotRow({
               </button>
             )}
           </div>
-          {!isBudgetCurrentMonth && (
-            <div className="flex items-center gap-1">
-              <span className="text-2xs text-muted-foreground opacity-70">Provisie:</span>
-              <span className={`text-2xs font-semibold tabular-nums ${displayAmount < 0 ? 'text-finance-negative' : 'text-finance-positive'}`}>
-                {formatAmount(displayAmount)}
-                {displayAmount < 0 && ' ⚠'}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            {/* In de ankermaand is een betaling uit een budget al van het banksaldo af, dus
+                is wat hier staat het onbesteed gebleven deel — vandaar een eigen woord. */}
+            <span className="text-2xs text-muted-foreground opacity-70">
+              {isBudgetCurrentMonth ? 'Resterend:' : 'Provisie:'}
+            </span>
+            <span className={`text-2xs font-semibold tabular-nums ${displayAmount < 0 ? 'text-finance-negative' : 'text-finance-positive'}`}>
+              {formatAmount(displayAmount)}
+              {displayAmount < 0 && ' ⚠'}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
@@ -174,23 +182,20 @@ function DraggablePotRow({
             type="text"
             inputMode="decimal"
             value={localAmount}
-            disabled={isComputed}
             onChange={(e) => {
               const v = limitDecimals(e.target.value);
               setLocalAmount(v);
               const parsed = parseFloat(v.replace(',', '.'));
               onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
             }}
-            onBlur={isComputed ? undefined : handleAmountBlur}
+            onBlur={handleAmountBlur}
             onPointerDown={(e) => e.stopPropagation()}
-            className={`w-[92px] h-7 px-2 text-dense text-right tabular-nums rounded-sm border border-input focus:outline-none focus:ring-1 focus:ring-ring ${
-              isComputed
-                ? `bg-muted cursor-default ${syncValue < 0 ? 'text-finance-negative font-medium' : 'text-finance-positive'}`
-                : `bg-background text-finance-deferred ${pot.hasSettlement ? 'font-medium' : ''}`
+            className={`w-[92px] h-7 px-2 text-dense text-right tabular-nums rounded-sm border border-input bg-background text-finance-deferred focus:outline-none focus:ring-1 focus:ring-ring ${
+              pot.hasSettlement ? 'font-medium' : ''
             }`}
-            aria-label={isBudgetCurrentMonth ? 'Resterende provisie' : 'Stortingsbedrag'}
+            aria-label={pot.potType === 'maandelijks_budget' ? 'Budget deze maand' : 'Stortingsbedrag'}
           />
-          {!isComputed && pot.hasSettlement && (
+          {pot.hasSettlement && (
             <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">
               ({formatAmount(pot.monthlyAmount)})
             </span>

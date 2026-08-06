@@ -17,6 +17,8 @@
 # - ~/.claude/hooks/session-start-handoff.sh + settings.json  (SessionStart handoff-hook, user-level)
 # - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
 # - HANDOFF.md                     (sessie-handoff in root + elke app, geseed als afwezig — nooit overschreven)
+# - scripts/gen-snapshot.sh + .githooks/pre-commit   (context-snapshots, incl. core.hooksPath-activatie)
+# - .githooks/commit-msg           (commit-scope guard: een app-scope mag geen andere app raken)
 #
 # Wat dit script NOOIT aanraakt:
 # - <klant-repo>/.claude/skills/   — klant-specifieke skills (project-level discovery)
@@ -222,6 +224,22 @@ if [ -f "context.json" ]; then
 elif [ -f "$CONTEXT_TEMPLATE" ]; then
   cp "$CONTEXT_TEMPLATE" context.json
   echo "  ✓ context.json aangemaakt uit template — vul de Figma-gegevens per app in"
+fi
+
+# Commit-scope guard: blokkeert een commit met een app-scope die een ándere app raakt.
+# Zero-config (leest apps/* van schijf) en rijdt mee op dezelfde core.hooksPath als de
+# pre-commit hook hierboven, dus hier alleen het bestand plaatsen.
+echo ""
+echo "→ Installeer commit-scope guard..."
+COMMIT_MSG_HOOK="$UMANEX_OS_PATH/templates/githooks-commit-msg"
+if [ -f "$COMMIT_MSG_HOOK" ]; then
+  mkdir -p .githooks
+  cp "$COMMIT_MSG_HOOK" .githooks/commit-msg
+  chmod +x .githooks/commit-msg
+  git config core.hooksPath .githooks
+  echo "  ✓ .githooks/commit-msg (core.hooksPath gezet)"
+else
+  echo "  ⚠ templates/githooks-commit-msg niet gevonden — guard overgeslagen"
 fi
 
 # TC-EBC UserPromptSubmit hook: user-level (~/.claude), net als de skills — niet repo-lokaal.

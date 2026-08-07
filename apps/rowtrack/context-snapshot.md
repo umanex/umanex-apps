@@ -55,24 +55,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-40568a2 feat(rowtrack): in-app account deletion via a service-role Edge Function
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
-e59eaa1 chore(config): remove the dead flat-config eslint files
-5806065 refactor(config): share the token lint rules instead of copying them per app
-36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
+4d3be76 Merge remote-tracking branch 'origin/main' into feature/rowtrack-account-verwijderen
+4caaa8b fix(rowtrack): never leave a device row spinning after a silent autoconnect
+d63125f feat(rowtrack): connect to the devices you used last, without scanning
+3e2c730 docs(rowtrack): brief autoconnect to the last used devices
+7ebafb2 fix(rowtrack): let go of the heart rate monitor before searching for it
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  A  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-  A  apps/rowtrack/components/workout/DeviceSelectionModal.tsx
-  M  apps/rowtrack/components/workout/IdlePhase.tsx
-  M  apps/rowtrack/context-snapshot.md
-  M  apps/rowtrack/i18n/bleErrors.ts
+  M  apps/rowtrack/components/MotivationalToast.tsx
   M  apps/rowtrack/i18n/translations/nl.ts
-  M  apps/rowtrack/lib/ble/ble-context.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

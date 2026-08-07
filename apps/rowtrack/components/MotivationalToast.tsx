@@ -167,7 +167,7 @@ export const MotivationalToast = memo(function MotivationalToast({
           <Text style={styles.title}>{t.workout.celebration.title}</Text>
           {message && <Text style={styles.body}>{message}</Text>}
           <Button
-            title={t.common.continue}
+            title={t.workout.celebration.viewSummary}
             variant="primary"
             size="md"
             icon="arrow-forward"

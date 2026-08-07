@@ -242,7 +242,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — Aanname: doel-bereikt beëindigt de rit (geen doorroeien) · [aanname]
 - **Bevinding:** Jeroen koos "doel-bereikt → celebration → samenvatting", maar dat de rit dáár stopt (`disconnect()` in de goal-reached-effect, je roeit niet verder) is een eigen invulling, niet expliciet bevestigd.
 - **Volgende zet:** Bij Jeroen aftoetsen. Wil hij ná het doel kunnen doorroeien → de goal-reached-effect (save + disconnect) herwerken (bv. save als checkpoint, pas stoppen op expliciete actie). UX-audit 2026-07-16 (**F7**) voegt toe: de celebration-knop "Ga verder" verhult dat de rit al beëindigd is — minstens de copy expliciet maken ("Bekijk samenvatting"), of de doorroei-optie bouwen.
-- **Status:** open
+- **Status:** resolved — 2026-08-07: Jeroen bevestigde dat een bereikt doel de rit hoort te
+  beëindigen; doorroeien is bewust geen optie. De aanname was dus juist en de goal-reached-effect
+  (save + disconnect + stopHR) blijft zoals hij is. De F7-helft is meteen weggewerkt: de
+  celebration-knop heet nu "Bekijk samenvatting" i.p.v. "Ga verder" — die laatste suggereerde dat
+  je nog verder kon roeien, terwijl de rit op dat moment al opgeslagen en losgekoppeld is. Eigen
+  copy-sleutel (`workout.celebration.viewSummary`), want de samenvatting-knop houdt "Ga verder".
 
 ## 2026-07-16 — Translucente celebration-card gebruikt hardcoded rgba · [debt]
 - **Bevinding:** `MotivationalToast.tsx` card-bg is `rgba(33, 36, 44, 0.75)` (= `bg.raised` @ 75%) met `// TODO` — er is geen token voor een translucente `bg.raised`. Drift-gevoelig als `bg.raised` wijzigt.

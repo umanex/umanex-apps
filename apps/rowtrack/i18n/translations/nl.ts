@@ -276,6 +276,26 @@ export const nl = {
       confirmationSentBody: (email: string) =>
         `Controleer je inbox op ${email} om de wijziging te bevestigen.`,
     },
+    deleteAccount: 'Account verwijderen',
+    deleteSheet: {
+      title: 'Account verwijderen',
+      warning:
+        'Je account en alles wat erbij hoort verdwijnt: al je ritten met hun splits en ' +
+        'hartslaggegevens, je lichaamsgegevens en je doel. Dit kan niet ongedaan gemaakt worden.',
+      password: 'WACHTWOORD',
+      passwordPlaceholder: 'Je wachtwoord',
+      confirm: 'Definitief verwijderen',
+      wrongPassword: 'Wachtwoord klopt niet.',
+      notSignedIn: 'Je sessie is verlopen. Log opnieuw in en probeer het daarna nog eens.',
+      unavailable: 'Verwijderen lukt nu niet. Controleer je verbinding en probeer opnieuw.',
+      rateLimited: 'Te veel pogingen. Wacht even en probeer opnieuw.',
+      // Verzoek vertrok, antwoord kwam niet aan: we weten niet of het gelukt is.
+      // Doen alsof er niets gebeurd is zou onterecht geruststellen.
+      uncertain:
+        'De verbinding viel weg tijdens het verwijderen. Probeer opnieuw — kun je straks niet ' +
+        'meer inloggen, dan is je account wél verwijderd.',
+      failed: 'Verwijderen is mislukt. Probeer het later opnieuw.',
+    },
   },
 
   goals: {

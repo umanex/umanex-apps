@@ -6,12 +6,21 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
+  /**
+   * Vergeet de sessie in de app-state, zonder uit te loggen bij de server.
+   *
+   * Enkel voor het geval waarin de sessie server-side al niet meer bestaat maar er
+   * geen `SIGNED_OUT`-event kwam — account verwijderd terwijl de logout-call het
+   * netwerk niet haalde. Zonder dit blijft de auth-gate op een dode sessie staan.
+   */
+  clearSession: () => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   isLoading: true,
+  clearSession: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -35,7 +44,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, isLoading }}
+      value={{
+        session,
+        user: session?.user ?? null,
+        isLoading,
+        clearSession: () => setSession(null),
+      }}
     >
       {children}
     </AuthContext.Provider>

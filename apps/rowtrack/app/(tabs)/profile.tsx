@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { signOut } from '@/lib/auth';
+import { signOut, deleteAccount, type DeleteAccountFailure } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { Button, WheelPicker, GoalSheet, Segmented, type SegmentedOption } from '@/components';
@@ -103,10 +103,19 @@ function genderLabel(g: string | null): string {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type SheetType = 'none' | 'voornaam' | 'email' | 'geslacht' | 'lengte' | 'gewicht' | 'geboortedatum' | 'doel';
+type SheetType = 'none' | 'voornaam' | 'email' | 'geslacht' | 'lengte' | 'gewicht' | 'geboortedatum' | 'doel' | 'verwijderen';
+
+const DELETE_ERROR_COPY: Record<DeleteAccountFailure, string> = {
+  wrong_password: t.profile.deleteSheet.wrongPassword,
+  not_signed_in: t.profile.deleteSheet.notSignedIn,
+  unavailable: t.profile.deleteSheet.unavailable,
+  rate_limited: t.profile.deleteSheet.rateLimited,
+  uncertain: t.profile.deleteSheet.uncertain,
+  failed: t.profile.deleteSheet.failed,
+};
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
+  const { user, clearSession } = useAuth();
   const insets = useSafeAreaInsets();
 
   const { goalProgress, refetch: refetchGoal } = usePeriodGoal(user?.id);
@@ -133,6 +142,11 @@ export default function ProfileScreen() {
   const [draftPassword, setDraftPassword] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailChanging, setEmailChanging] = useState(false);
+
+  // Account verwijderen
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Body data drafts
   const [draftGender, setDraftGender] = useState<string | null>(null);
@@ -225,9 +239,23 @@ export default function ProfileScreen() {
     setSheetOpen('doel');
   }
 
+  function openVerwijderen() {
+    setDeletePassword('');
+    setDeleteError(null);
+    setSheetOpen('verwijderen');
+  }
+
   function closeSheet() {
     setSheetOpen('none');
   }
+
+  // Tijdens het verwijderen mag de sheet niet dicht (X, scrim, Android-back):
+  // halverwege wegklikken laat de gebruiker achter zonder te weten of zijn account
+  // nu weg is. useCallback houdt de memo van BottomSheet intact.
+  const closeDeleteSheet = useCallback(() => {
+    if (deleting) return;
+    setSheetOpen('none');
+  }, [deleting]);
 
   // --- Sheet savers: persisteren direct naar Supabase (per veld, zoals GoalSheet).
   // Lokale state + sheet-sluiten pas ná een geslaagde write; bij een fout blijft de
@@ -337,6 +365,41 @@ export default function ProfileScreen() {
       t.profile.emailSheet.confirmationSentTitle,
       t.profile.emailSheet.confirmationSentBody(draftEmail),
     );
+  }
+
+  async function handleDeleteAccount() {
+    // Dubbeltap-slot: de knop is al disabled, maar onSubmitEditing op het
+    // wachtwoordveld heeft die gate niet.
+    if (deleting || !deletePassword) return;
+    setDeleteError(null);
+    setDeleting(true);
+
+    try {
+      const result = await deleteAccount(deletePassword);
+
+      if (!result.ok) {
+        setDeleteError(DELETE_ERROR_COPY[result.reason]);
+        setDeleting(false);
+        return;
+      }
+
+      // Het account is weg. Lukte de logout-call niet, dan is de sessie al uit de
+      // opslag gehaald maar kwam er geen SIGNED_OUT-event — dan moeten we de
+      // app-state zelf leegmaken, anders blijft de gate op een dode sessie staan
+      // en houdt de sheet een spinner vast die niet weg kan.
+      if (!result.signedOut) clearSession();
+
+      // Het wachtwoord meteen uit het geheugen/scherm, en `deleting` bewust áán
+      // laten staan: de auth-gate vervangt deze boom binnen een tick, en de sheet
+      // sluiten zou eerst het profiel van een niet-bestaand account laten flitsen.
+      setDeletePassword('');
+    } catch (e) {
+      // Bv. een keychain-fout in de storage-adapter: die propageert door
+      // getSession() heen. Zonder catch blijft de sheet vergrendeld achter.
+      reportError(e, { where: 'profile.deleteAccount' });
+      setDeleteError(DELETE_ERROR_COPY.failed);
+      setDeleting(false);
+    }
   }
 
   function handleLogout() {
@@ -463,6 +526,24 @@ export default function ProfileScreen() {
         </View>
 
         <Button title={t.profile.logout} onPress={handleLogout} variant="primary" size="lg" icon="arrow-forward" iconPosition="trailing" />
+
+        {/* Account verwijderen — AVG art. 17 + Apple 5.1.1(v). Label in de gewone
+            rij-stijl (fg.tertiary haalt AA, status.error op bg.raised niet); het
+            rode icoon draagt het destructieve signaal en is non-text, dus 3:1. */}
+        <View style={styles.section}>
+          <View style={styles.listCard}>
+            <TouchableOpacity
+              style={styles.listRow}
+              onPress={openVerwijderen}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={t.profile.deleteAccount}
+            >
+              <Text style={styles.listLabel}>{t.profile.deleteAccount}</Text>
+              <Ionicons name="trash-outline" size={18} color={status.error} />
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <Text style={styles.version}>RowTrack v1.0.0</Text>
       </ScrollView>
@@ -625,6 +706,46 @@ export default function ProfileScreen() {
         </View>
       </BottomSheet>
 
+      {/* Account verwijderen */}
+      <BottomSheet
+        visible={sheetOpen === 'verwijderen'}
+        onClose={closeDeleteSheet}
+        title={t.profile.deleteSheet.title}
+        footer={
+          <Button
+            title={t.profile.deleteSheet.confirm}
+            onPress={handleDeleteAccount}
+            variant="destructive"
+            disabled={!deletePassword || deleting}
+            loading={deleting}
+            size="md"
+          />
+        }
+      >
+        <Text style={styles.deleteWarning}>{t.profile.deleteSheet.warning}</Text>
+
+        <View style={styles.sheetFieldGroup}>
+          <Text style={styles.sheetFieldLabel}>{t.profile.deleteSheet.password}</Text>
+          {/* Bewust geen autofocus: het toetsenbord zou de waarschuwing wegduwen
+              vóór ze gelezen is. */}
+          <TextInput
+            style={styles.sheetInput}
+            value={deletePassword}
+            onChangeText={text => { setDeletePassword(text); setDeleteError(null); }}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!deleting}
+            returnKeyType="done"
+            onSubmitEditing={handleDeleteAccount}
+            placeholder={t.profile.deleteSheet.passwordPlaceholder}
+            placeholderTextColor={fg.tertiary}
+          />
+        </View>
+
+        {deleteError && <Text style={styles.emailError}>{deleteError}</Text>}
+      </BottomSheet>
+
       {/* Doel bewerken — gedeelde, zelf-persisterende sheet (ook op home in-place). */}
       <GoalSheet
         visible={sheetOpen === 'doel'}
@@ -730,6 +851,12 @@ const styles = StyleSheet.create({
   currentEmailText: {
     fontFamily: fontFamily.albertSansRegular,
     fontSize: fontSize['18'],
+    color: fg.secondary,
+  },
+
+  // Sheet: waarschuwing bij account verwijderen
+  deleteWarning: {
+    ...body.md,
     color: fg.secondary,
   },
 

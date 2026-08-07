@@ -60,6 +60,33 @@ Voor de beschikbare exports (kleuren, `fontFamily`, `typeStyles`, `space`, `radi
 
 ---
 
+## Verify-pad
+
+Wat de `verify`-skill hier kan uitvoeren. Vastgesteld 2026-08-07 door het te draaien, niet door
+het af te leiden. Staat er "geen", dan is dat een gat dat gebouwd moet worden — geen vergetelheid.
+
+| Capability | Commando / status |
+|---|---|
+| **Render vastleggen** | `xcrun simctl io booted screenshot <pad>.png` — werkt. Nooit een UDID hardcoden, die verandert; `booted` is stabiel. Op het fysieke toestel: geen automatisch pad, screenshot met de hand. |
+| **Flow aandrijven** | **Geen.** Geen idb, geen Detox, geen Maestro. Tappen, typen en navigeren gebeuren door Jeroen. Elk acceptatie-item dat door de UI loopt is dus `[NIET TE VERIFIËREN]` tenzij hij meekijkt. |
+| **State forceren** | `app/dev-active.tsx` forceert de active-workout fase. Voor de rest: **geen** — en er is **geen testaccount**, er is één profiel en dat is Jeroens echte. |
+| **Invariant draaien** | `node --test <bestand>.test.ts` — Node 24 draait TypeScript zonder transpiler en heeft `node:test`/`node:assert` ingebouwd, dus dit kost geen dependency. Werkt op modules zonder path-alias of RN-import (`lib/bestDistanceTime.ts`, `calories.ts`, `smoothing.ts`, `period.ts`). Een module die `@/…` importeert lost Node niet op. |
+| **Verse build** | De app op de simulator is een **dev-client**: zonder Metro (`pnpm dev:rowtrack`) draait hij op wat er toevallig nog in het geheugen zit. Controleer de datum van `~/Library/Developer/CoreSimulator/Devices/<udid>/data/Containers/Bundle/Application/*/RowTrack.app/` vóór je een screenshot als bewijs gebruikt — op 2026-08-07 was die een maand oud en dat is aan de render niet te zien. Na een native wijziging: `expo run:ios --device`, cf. de worklets-les. |
+
+**Destructieve paden — niet aanroepen.** `revoke_health_consent()` wist hartslag uit alle ritten en
+leegt de lichaamsvelden, en er is geen testaccount om dat op te vangen. Toets de guard (aanroepen
+zonder auth, daarna tellen dat de data er nog staat) of draai de transformatie op synthetische
+`jsonb` in een `select`. Zie rail 5 in de `verify`-skill.
+
+**Migratiestaat: toets het schema, niet het ledger.** Migraties worden hier met de hand in de SQL
+Editor gedraaid, dus `list_migrations` kent er 6 van de 11 in `supabase/migrations/`. Alle elf zijn
+toegepast — het ledger is stil onvolledig, niet het schema. Een briefing die schrijft "de migratie is
+nog niet gedraaid" veroudert daardoor zonder dat iemand het merkt; schrijf de *check* op in plaats
+van de *staat*, en toets tegen `information_schema` of `pg_indexes`. Let op: een unique constraint
+kan hier een unique *index* zijn — `pg_constraint` alleen bekijken geeft een vals negatief.
+
+---
+
 ## Veelgemaakte fouten
 
 | Probleem | Oplossing |

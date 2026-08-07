@@ -56,16 +56,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+89126b8 feat(rowtrack): add a seedable test account so destructive paths become verifiable
 23100dc docs(rowtrack): record the verify-pad and correct the consent briefing
 451e251 feat(rowtrack): ask for consent before touching health data
 812240f docs(rowtrack): privacy policy written against what the app actually does
 9b52e10 docs(rowtrack): account deletion is validated against a real deletion
-ab1fd44 chore(rowtrack): drop env fallbacks that name variables Supabase never sets
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/CLAUDE.md
-  A  apps/rowtrack/supabase/seed/test-account.sql
 
 ## Bestanden met TODO/FIXME
   (geen)

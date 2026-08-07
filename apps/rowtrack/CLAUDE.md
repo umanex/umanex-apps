@@ -100,3 +100,4 @@ kan hier een unique *index* zijn — `pg_constraint` alleen bekijken geeft een v
 | Fonts niet geladen in Figma | `await figma.loadFontAsync(...)` vóór elke `createText()` |
 | Tab label verkeerd | Tab heet "Training" (niet "Workout") |
 | pod install faalt | `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` |
+| Defensieve fallback vuurt nooit | Een static `import` van een native module evalueert bij module-load, dus vóór je try/catch. Laad hem lazy met `require()` *binnen* de try/catch — enkel dan is "module ontbreekt" opvangbaar. Zie `lib/secureStorage.ts` |

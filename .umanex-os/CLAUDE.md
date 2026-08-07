@@ -105,6 +105,14 @@ Itereer BOUW → BEOORDEEL zolang er P0/P1 openstaan. EXIT (status `gevalideerd`
 
 Harde rail: **max 3 iteraties**. Convergeert het niet → **gecontroleerde stop**: roep `vastleggen` niet-interactief aan (taak-input als Input, de aanhoudende bevinding als Fout) en escaleer naar Jeroen. Nooit stil afsluiten alsof gevalideerd. Ontbreekt de meetbare as (geen render-pad → `verify`/parity vallen terug op "overgeslagen")? Meld dat expliciet; draai de Beoordeel-stap niet alsof hij slaagde.
 
+**Discipline in de Beoordeel-stap**
+
+*De Beoordeel-stap schrijft.* Bouwen, migreren en installeren zijn geen observaties — ze veranderen de schijf. Leest er een langlopend proces uit diezelfde plek (dev-server, PM2-app, gedeelde database), dan deployt je verificatie ongewild, en de schade valt buiten je blikveld: jij ziet "build ok" en exit 0, de gebruiker ziet een witte pagina. Kijk daarom vóór een build in een repo met draaiende processen of er iets uit die map serveert (`pm2 status`, `lsof -nP -iTCP:<poort> -sTCP:LISTEN`); zo ja, gebruik het script dat bouwen en herstarten koppelt (bv. `pm2:rebuild`), of bouw naar een aparte map. Achteraf telt niet de exit code, maar of de app nog serveert wat ze zegt te serveren.
+
+*Verifieer op het doelwit van de gebruiker.* Een groene check op een ander toestel, een andere build of een andere omgeving dan waar de gebruiker de fout ziet, bewijst niets over zijn geval. Draai de volledige cyclus — herstart of reload inbegrepen — op hetzelfde doelwit, of meld expliciet dat je op een surrogaat getest hebt en wat dat níet uitsluit.
+
+*Bij afhankelijke berekeningen is de invariant de meetbare as.* Volgt een waarde uit een andere — een saldo dat doorrolt, een provisie die afgetrokken wordt, een subtotaal dat uit losse posten opgebouwd wordt — dan valideert een controle scherm per scherm niets. Elke fix is er lokaal correct terwijl dezelfde afgeleide waarde elders anders berekend blijft: je patcht de instanties en de klasse blijft leven. PLAN levert daarom minstens één **invariant** die over het hele model moet gelden (`eindsaldo maand N == beginsaldo maand N+1`, `som(posten) == subtotaal`, `totaal na verwijderen == totaal vóór toevoegen`), en BEOORDEEL rékent die uit over een echte dataset in plaats van de uitkomst af te lezen. Bestaat er al een scenario-harness, dan hoort ze in CI naast de andere guards — een harness die door niets aangeroepen wordt, meet niets.
+
 **Brug naar de eval-loop**
 
 Een gefaalde review die een **terugkerende faalklasse** blootlegt = een `vastleggen`-trigger. De triade is de *feeder* van de trage loop, geen duplicaat. Houd de twee assen uit elkaar: triade-status (`gepland → gebouwd → gevalideerd`, per taak) staat los van learning-status (`open → verified → promoted`, over sessies heen). Die brug is het enige raakpunt.
@@ -119,6 +127,8 @@ Bij een probleem, bug of gefaalde check: zoek de onderliggende oorzaak en los d�
 - Kan dezelfde oorzaak elders opnieuw toeslaan? Dan is een lokale fix een patch.
 - Fix je het gevolg (de foutmelding, de kapotte output) of de reden waaróm dat gevolg ontstaat?
 - Voorbeeld uit deze codebase: bij een kapotte DTCG-build is de root cause een custom format die `token.value` i.p.v. `token.$value` leest — niet de ontbrekende output-waarde die je ook handmatig zou kunnen bijvullen.
+
+**Toets een bewering over een bibliotheek aan de geïnstalleerde bron.** Die staat in `node_modules` — lees hem vóór je een fix bouwt op wat een API "zou moeten" doen. Hoe stelliger de bewering, hoe kleiner de kans dat ze nagekeken is, en een typecheck die slaagt zegt niets over een verkeerd begrepen contract. Dezelfde vorm als de DTCG-valkuil verderop.
 
 **Wanneer een patch tóch mag** — tijdsdruk, een echt lokaal incident, of de root cause zit buiten scope. Dan geldt: benoem het expliciet als patch en maak de oorzaak zichtbaar — een `// TODO:` die naar de root cause wijst, of een `vastleggen`-entry bij een terugkerende faalklasse. Nooit stilzwijgend om een oorzaak heen werken en het als opgelost rapporteren.
 
@@ -135,7 +145,9 @@ Aan het einde van een substantiële sessie: een kritisch, eerlijk retrospectief 
 - **durend feit** over Jeroen/project → auto-memory;
 - **vooruitkijkend & sessie-gebonden** (onzekerheid, aanname, risico, next-step, idee, debt) → `HANDOFF.md`.
 
-**Grens met de eval-loop.** Een fout hoort in LEARNINGS mét zijn verificatie-input, niet in HANDOFF; HANDOFF is enkel het vooruitkijkende restant dat (nog) geen fout is. `HANDOFF.md` is gelaagd (globaal `umanex-os/` / klant repo-root / project `apps/{app}/`) met statussen `open → resolved`; open items komen bij sessiestart automatisch mee via `session-start-handoff.sh`.
+**Grens met de eval-loop.** Een fout hoort in LEARNINGS mét zijn verificatie-input, niet in HANDOFF; HANDOFF is enkel het vooruitkijkende restant dat (nog) geen fout is. `HANDOFF.md` is gelaagd (globaal `umanex-os/` / klant repo-root / project `apps/{app}/`) met statussen `open → resolved`; open items komen bij sessiestart automatisch mee via `session-start-handoff.sh`. Diezelfde hook toont ook de LEARNINGS-entries op `open` (nog te verifiëren) en `verified` (bewezen, nog niet gehard) — zonder die herinnering was de eval-loop de enige lus zonder trigger, en bleven bewezen lessen wekenlang ongepromoveerd.
+
+**Een faalklasse hoeft niet in de sessie te zijn opgetreden.** `vastleggen` vangt van nature alleen wat iemand zag misgaan. Een klasse die zich over weken opstapelt — dezelfde soort `fix(...)` die telkens terugkomt, een as die geen enkele guard dekt — wordt pas zichtbaar door terug te kijken. De `sessie-reflectie` skill stelt die vraag expliciet; het antwoord is een `vastleggen`-trigger als elke andere, met een reproduceerbaar commando in plaats van een prompt als Input.
 
 ---
 
@@ -238,17 +250,22 @@ Voorbeelden:
 
 Klantnaam komt **niet** in branchnamen — die zit al in de repo.
 
-### Parallel werk — één taak, één worktree
+### Parallel werk — één app, één worktree
 
 Twee taken tegelijk in één working tree lopen door elkaar. Niet soms: gegarandeerd. `git add -A` veegt het in-flight werk van de andere taak mee, de commit slaagt, en CI blijft groen omdat die de hele repo bouwt — een verdwaald bestand compileert gewoon mee. Git kan niet scheiden wat op schijf niet gescheiden is, dus discipline is hier geen oplossing.
 
-Werk je aan twee dingen tegelijk, dan krijgt elke taak een eigen worktree:
+**Een branch lost dit niet op.** Er is één set bestanden op schijf, gedeeld door élke branch. Niet-gecommitte en ongetrackte bestanden reizen mee bij iedere `checkout`, ongeacht op welke branch je staat. Wie netjes per taak vertakt en tóch in één tree werkt, heeft het probleem nog steeds.
+
+Daarom is de eenheid de **app**, niet de taak. Elke app waaraan actief gewerkt wordt krijgt een eigen worktree, permanent:
 
 ```bash
-git worktree add ../<repo>-<taak> <type>/<korte-beschrijving>
-# ... werk, commit, PR ...
-git worktree remove ../<repo>-<taak>
+git worktree add ../<repo>-<app> -b <type>/<korte-beschrijving>
+# ... werk, commit, PR; de volgende taak vertakt in dezelfde map ...
 ```
+
+Per taak vertak je bínnen die map; de map zelf blijft staan. De hoofdtree houd je vrij voor gedeelde lagen (`packages/`, tokens, CI) — daar hoort geen app-werk meer te gebeuren.
+
+"Eén taak, één worktree" vraagt een beslissing precies op het moment dat je haast hebt. "Eén app, één worktree" vraagt niets: de map staat er al.
 
 Eigen bestanden, eigen branch, eigen index — ze kunnen elkaar fysiek niet raken. De `.githooks`-hooks rijden automatisch mee: `core.hooksPath` staat in de gedeelde git-config en de hooks zelf staan in de repo.
 
@@ -256,7 +273,11 @@ Wat **wel** gedeeld blijft en dus botst: draaiende dev-servers en hun poorten, P
 
 Blijf je toch in één tree, dan geldt: nooit `git add -A`, altijd per pad stagen.
 
-**De guard.** `.githooks/commit-msg` blokkeert een commit met een app-scope die een ándere app raakt — `fix(cashflow):` mag niet aan `apps/rowtrack/` komen. Scopes die géén app zijn (`chore:`, `feat(tokens):`, `refactor(config):`) blijven vrij: een gedeelde laag hoort in één commit met de apps die hij aanpast. Is een cross-app commit écht bedoeld, zet dan een `Cross-app: <reden>` trailer in de body — expliciet en greppable. `--no-verify` is de slechtere weg: dat slaat álle hooks over, ook de snapshot- en token-sync.
+**Werk nooit in andermans tree.** Zit er iemand anders — of een agent — in dezelfde map, blijf er dan af, ook voor "even een branch aanmaken". Een branch die je vanaf andermans HEAD aanmaakt, erft diens werk als vertrekpunt.
+
+**Bij het mergen.** Gebruik `gh pr merge --delete-branch` niet zolang er een andere branch in dezelfde tree leeft: die vlag verplaatst HEAD naar een willekeurige andere lokale branch. Check eerst expliciet `main` uit, merge daarna, ruim de branch apart op.
+
+**Twee guards.** `.githooks/pre-commit` weigert een commit op `main`/`master` en op een losse HEAD — de veiligheidsklep is daarmee afdwingbaar in plaats van een goed voornemen, en een geparkeerde worktree kan geen commit stil kwijtraken. Rebase, cherry-pick en een lopende merge laat hij met rust. `.githooks/commit-msg` blokkeert een commit met een app-scope die een ándere app raakt — `fix(cashflow):` mag niet aan `apps/rowtrack/` komen. Scopes die géén app zijn (`chore:`, `feat(tokens):`, `refactor(config):`) blijven vrij: een gedeelde laag hoort in één commit met de apps die hij aanpast. Is een cross-app commit écht bedoeld, zet dan een `Cross-app: <reden>` trailer in de body — expliciet en greppable. `--no-verify` is de slechtere weg: dat slaat álle hooks over, ook de snapshot- en token-sync.
 
 ### Cross-repo review — normaliseer eerst naar main
 

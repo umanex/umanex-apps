@@ -31,6 +31,9 @@ const SCAN_COLLECT_MS = 5_000;
  */
 const SCAN_EXTEND_MS = 10_000;
 
+/** Deadline voor een gerichte verbinding met een onthouden band. */
+const KNOWN_CONNECT_TIMEOUT_MS = 8_000;
+
 export type HRStatus = 'idle' | 'scanning' | 'connected' | 'error';
 
 export interface HRFoundDevice {
@@ -119,6 +122,7 @@ export class HRBleService {
       const seenIds = new Set<string>();
 
       const decide = () => {
+        if (!ownsScan(this.scanToken)) return;
         this.stopScan();
         this.handleScanComplete(foundDevices);
       };
@@ -133,6 +137,9 @@ export class HRBleService {
       log('scan started (filter: service 0x180D, collecting for 5s)');
       claimScan(this.scanToken);
       manager.startDeviceScan([HR_SERVICE_UUID], null, (err, dev) => {
+        // Zie ble-service: één gedeelde scan-subscription, dus een verweesde
+        // callback moet zwijgen in plaats van de scan van de ander te kapen.
+        if (!ownsScan(this.scanToken)) return;
         if (err) {
           this.stopScan();
           log('scan error:', err.message);
@@ -168,10 +175,44 @@ export class HRBleService {
     }
   }
 
-  async connectToDeviceById(deviceId: string, name?: string): Promise<void> {
+  /**
+   * Verbindt met een eerder gebruikte band zonder scan. Faalt stil (geen foutstatus)
+   * en geeft `false` terug, zodat de aanroeper kan terugvallen op zoeken — een
+   * mislukte poging op een onthouden toestel is voor de gebruiker geen mislukking.
+   */
+  async connectKnown(id: string, name: string | null): Promise<boolean> {
+    await this.releaseDevice();
+    this.intentionalDisconnect = false;
+    this.onStatusChange('scanning');
+    const ok = await this.connectToDeviceById(id, name ?? undefined, {
+      silent: true,
+      timeout: KNOWN_CONNECT_TIMEOUT_MS,
+    });
+    // De silent-vlag onderdrukt de foutmélding, niet de statusreset: zonder dit
+    // bleef de rij op 'Zoeken…' hangen met een uitgeschakelde knop, waardoor de
+    // gebruiker de band ook handmatig niet meer kon verbinden.
+    if (!ok) this.onStatusChange('idle');
+    return ok;
+  }
+
+  /** De band waarmee nu verbonden is — de context bewaart dit als 'bekend'. */
+  currentDevice(): { id: string; name: string } | null {
+    const d = this.device;
+    if (!d) return null;
+    return { id: d.id, name: d.name || d.localName || 'HR Monitor' };
+  }
+
+  async connectToDeviceById(
+    deviceId: string,
+    name?: string,
+    opts?: { silent?: boolean; timeout?: number },
+  ): Promise<boolean> {
     try {
       const manager = await this.getManager();
-      const device = await manager.connectToDevice(deviceId);
+      const device = await manager.connectToDevice(
+        deviceId,
+        opts?.timeout ? { timeout: opts.timeout } : undefined,
+      );
       this.device = device;
       const deviceName = name || device.name || device.localName || 'HR Monitor';
 
@@ -212,10 +253,14 @@ export class HRBleService {
 
       this.onStatusChange('connected', undefined, deviceName);
       log('connected:', deviceName);
+      return true;
     } catch (e: unknown) {
       const bleErr = e as { message?: string };
       log('connect error:', bleErr.message);
-      this.onStatusChange('error', { code: 'connect_failed', detail: bleErr.message });
+      if (!opts?.silent) {
+        this.onStatusChange('error', { code: 'connect_failed', detail: bleErr.message });
+      }
+      return false;
     }
   }
 

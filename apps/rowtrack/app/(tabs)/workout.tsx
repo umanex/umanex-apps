@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Platform, UIManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useBle } from '@/lib/ble/ble-context';
 import { useWorkoutPhase } from '@/lib/workout-phase-context';
@@ -26,7 +26,7 @@ export default function WorkoutScreen() {
   const {
     status, deviceName, metrics: bleMetrics, error: bleError, startScan, disconnect,
     hrStatus, hrDeviceName, hrBpm, hrError, startHRScan, stopHR,
-    hrDevices, hrSelecting, selectHRDevice, cancelHRSelection,
+    devices, picking, selectDevice, cancelSelection, autoConnect,
   } = useBle();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -161,11 +161,24 @@ export default function WorkoutScreen() {
     }
   }, [user, metricsState, goal, goalReached, splits, refs, hasPR]);
 
+  // Bij het openen van dit scherm verbinden met de toestellen van vorige keer.
+  // Alleen in de idle-fase: tijdens een rit staat er al een verbinding, en op de
+  // samenvatting hoort de app niets meer te zoeken. Bewust hier en niet bij
+  // app-start — dan zou de app ook Bluetooth doen als je enkel je historiek bekijkt.
+  useFocusEffect(
+    useCallback(() => {
+      if (phase !== 'idle') return;
+      autoConnect();
+    }, [phase, autoConnect]),
+  );
+
   // Handmatig stoppen → rit opslaan (achtergrond) + BLE stoppen + naar de samenvatting.
   const handleStop = useCallback(() => {
     saveWorkout();
-    disconnect();
-    stopHR();
+    // `auto`: het einde van een rit is geen keuze om niet meer te verbinden, dus
+    // autoconnect blijft voor de volgende sessie gewoon aan staan.
+    disconnect({ auto: true });
+    stopHR({ auto: true });
     setPhase('summary');
   }, [saveWorkout, disconnect, stopHR]);
 
@@ -188,11 +201,11 @@ export default function WorkoutScreen() {
     if (phase === 'active' && goalReached && !goalEndedRef.current) {
       goalEndedRef.current = true;
       saveWorkout();
-      disconnect();
+      disconnect({ auto: true });
       // Ook de hartslagmeter loslaten, symmetrisch met de roeier. Bleef die hangen,
       // dan adverteerde de band niet meer en was hij bij de volgende rit onvindbaar
       // — de app hield zelf vast wat ze daarna zocht.
-      stopHR();
+      stopHR({ auto: true });
     }
   }, [phase, goalReached, saveWorkout, disconnect, stopHR]);
 
@@ -230,10 +243,10 @@ export default function WorkoutScreen() {
         hrError={hrError}
         onHRConnect={startHRScan}
         onHRDisconnect={stopHR}
-        hrDevices={hrDevices}
-        hrSelecting={hrSelecting}
-        onSelectHRDevice={selectHRDevice}
-        onCancelHRSelection={cancelHRSelection}
+        devices={devices}
+        picking={picking}
+        onSelectDevice={selectDevice}
+        onCancelSelection={cancelSelection}
         idleGoalType={idleGoalType}
         setIdleGoalType={setIdleGoalType}
         idleGoalInput={idleGoalInput}

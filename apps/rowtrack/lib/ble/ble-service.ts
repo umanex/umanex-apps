@@ -15,7 +15,7 @@ import {
 } from './constants';
 import { parseRowerData } from './ftms-parser';
 import { claimScan, ownsScan, releaseScan } from './scan-lock';
-import type { RowerMetrics, ConnectionStatus, RowerBleError } from './types';
+import type { RowerMetrics, ConnectionStatus, RowerBleError, FoundDevice } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
   ? (...args: unknown[]) => console.log('[BLE]', ...args)
@@ -50,6 +50,13 @@ type StatusListener = (
   deviceName?: string,
 ) => void;
 type MetricsListener = (metrics: RowerMetrics) => void;
+type DevicesFoundListener = (devices: FoundDevice[]) => void;
+
+/** Hoe lang we treffers verzamelen vóór we beslissen (één = verbinden, meer = kiezen). */
+const COLLECT_MS = 3_000;
+
+/** Deadline voor een gerichte verbinding met een onthouden toestel. */
+const KNOWN_CONNECT_TIMEOUT_MS = 8_000;
 
 let blePlxModule: typeof import('react-native-ble-plx') | null = null;
 
@@ -72,14 +79,76 @@ export class RowerBleService {
   private isConnecting = false;
   /** Identiteit van deze dienst in het gedeelde scan-slot. Zie `stopScan()`. */
   private readonly scanToken = Symbol('rower-scan');
+  /** Onthouden toestel: verschijnt dat in de scan, dan hoeft er niet gewacht te worden. */
+  private preferredId: string | null = null;
+  /** Toestellen uit de laatste scan, zodat een keuze uit de lijst te verbinden is. */
+  private pendingChoices = new Map<string, Device>();
 
   private lastMetrics: RowerMetrics = emptyMetrics();
   private onStatusChange: StatusListener;
   private onMetrics: MetricsListener;
+  private onDevicesFound: DevicesFoundListener | null;
 
-  constructor(onStatusChange: StatusListener, onMetrics: MetricsListener) {
+  constructor(
+    onStatusChange: StatusListener,
+    onMetrics: MetricsListener,
+    onDevicesFound?: DevicesFoundListener,
+  ) {
     this.onStatusChange = onStatusChange;
     this.onMetrics = onMetrics;
+    this.onDevicesFound = onDevicesFound ?? null;
+  }
+
+  /**
+   * Verbindt rechtstreeks met een eerder gebruikt toestel, zonder scan.
+   *
+   * Dat is niet alleen sneller — het omzeilt de klasse fouten waarin een toestel
+   * simpelweg niet in scanresultaten opduikt (nog verbonden, of traag met
+   * adverteren). Lukt het niet binnen de deadline, dan geeft dit `false` terug en
+   * kan de aanroeper alsnog gaan scannen. Er komt bewust geen foutstatus uit: een
+   * mislukte poging op een onthouden toestel is geen mislukking voor de gebruiker.
+   */
+  async connectKnown(id: string, name: string | null): Promise<boolean> {
+    this.intentionalDisconnect = false;
+    this.reconnectAttempts = 0;
+    this.lastMetrics = emptyMetrics();
+    this.preferredId = id;
+    this.onStatusChange('connecting', undefined, name ?? undefined);
+
+    try {
+      const manager = await this.getManager();
+      if (this.aborted('vóór verbinden met bekend toestel')) {
+        this.onStatusChange('idle');
+        return false;
+      }
+
+      const device = await manager.connectToDevice(id, {
+        requestMTU: 512,
+        timeout: KNOWN_CONNECT_TIMEOUT_MS,
+      });
+      return await this.finishConnection(device, name || device.name || device.localName || 'Rower');
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : undefined;
+      log(' bekend toestel niet bereikbaar:', detail);
+      // Terug naar een eindtoestand. Zonder dit blijft de rij op 'connecting' staan
+      // mét een uitgeschakelde knop — een spinner zonder uitgang, precies waar de
+      // gebruiker niet om vroeg. 'idle' en niet 'error': hij startte dit niet zelf.
+      this.onStatusChange('idle');
+      return false;
+    }
+  }
+
+  /** Verbindt met een toestel dat de gebruiker uit de keuzelijst koos. */
+  async connectChoice(id: string): Promise<boolean> {
+    const device = this.pendingChoices.get(id);
+    this.pendingChoices = new Map();
+    if (!device) return false;
+    return this.connectToDevice(device);
+  }
+
+  /** Onthoudt welk toestel bij een volgende scan voorrang krijgt. */
+  setPreferred(id: string | null): void {
+    this.preferredId = id;
   }
 
   private async getManager(): Promise<BleManager> {
@@ -146,14 +215,50 @@ export class RowerBleService {
       // Een vorige scan (of zijn timeout) mag nooit naast deze blijven lopen.
       this.stopScan();
 
-      this.scanTimeout = setTimeout(() => {
+      // Gevonden trainers verzamelen in plaats van blind de eerste pakken: met twee
+      // machines in één ruimte was dat een gok. Na een kort venster beslissen we —
+      // één treffer verbindt meteen, meerdere gaan naar de keuzelijst.
+      const found = new Map<string, Device>();
+
+      const decide = () => {
+        // Nam de hartslagdienst de gedeelde scan intussen over, dan zijn onze
+        // resultaten niet meer van ons — dan mag deze scan ook niets beslissen.
+        if (!ownsScan(this.scanToken)) return;
         this.stopScan();
-        this.onStatusChange('error', { code: 'rower_not_found' });
-      }, SCAN_TIMEOUT_MS);
+        const matches = [...found.values()];
+        if (matches.length === 0) {
+          this.onStatusChange('error', { code: 'rower_not_found' });
+          return;
+        }
+        if (matches.length === 1 || !this.onDevicesFound) {
+          this.connectToDevice(matches[0]);
+          return;
+        }
+        this.pendingChoices = found;
+        this.onDevicesFound(
+          matches.map((d) => ({
+            id: d.id,
+            name: d.name || d.localName || 'Rower',
+            rssi: d.rssi ?? -100,
+          })),
+        );
+      };
+
+      this.scanTimeout = setTimeout(() => {
+        if (found.size > 0) return decide();
+        // Niets binnen het korte venster: doorzoeken tot de volle timeout in plaats
+        // van opgeven — een trainer die net aangezet is adverteert niet meteen.
+        this.scanTimeout = setTimeout(decide, SCAN_TIMEOUT_MS - COLLECT_MS);
+      }, COLLECT_MS);
 
       log(' scan started (filter: name prefix "' + ROWER_NAME_PREFIX + '")');
       claimScan(this.scanToken);
       manager.startDeviceScan(null, null, (err, dev) => {
+        // `BleManager` is een singleton met één scan-subscription: start de andere
+        // dienst een scan, dan blijft déze callback geabonneerd maar zijn de
+        // resultaten niet meer van ons. Zwijgen dus — anders melden we een fout of
+        // verbinden we met iets uit de scan van iemand anders.
+        if (!ownsScan(this.scanToken)) return;
         if (err) {
           this.stopScan();
           log(' scan error:', err.message);
@@ -171,8 +276,9 @@ export class RowerBleService {
           dev.name?.startsWith(ROWER_NAME_PREFIX) ||
           dev.localName?.startsWith(ROWER_NAME_PREFIX)
         ) {
-          this.stopScan();
-          this.connectToDevice(dev);
+          found.set(dev.id, dev);
+          // Het onthouden toestel hoeft niet op de anderen te wachten.
+          if (dev.id === this.preferredId) decide();
         }
       });
     } catch (e) {
@@ -238,6 +344,24 @@ export class RowerBleService {
       const connected = await manager.connectToDevice(device.id, {
         requestMTU: 512,
       });
+      return await this.finishConnection(connected, name);
+    } catch (e: unknown) {
+      this.isConnecting = false;
+      const bleErr = e as { message?: string; errorCode?: number };
+      log(' connect error:', bleErr.message, 'code:', bleErr.errorCode);
+      this.onStatusChange('error', { code: 'connect_failed', detail: bleErr.message });
+      return false;
+    }
+  }
+
+  /**
+   * Het gedeelde staartstuk van elke verbinding: service discovery, notificaties en
+   * de disconnect-listener. Zowel een scan-treffer als een gerichte verbinding met
+   * een onthouden toestel komt hier uit.
+   */
+  private async finishConnection(connected: Device, name: string): Promise<boolean> {
+    this.isConnecting = true;
+    try {
       log(' connected:', connected.id);
       // Meteen bewaren, nog vóór de delay: valt hier een disconnect(), dan moet die
       // de verbinding kunnen intrekken. Stond dit later, dan zag `disconnect()` een
@@ -270,11 +394,13 @@ export class RowerBleService {
       // Listen for unexpected disconnect
       connected.onDisconnected((err) => {
         log(' disconnected, intentional:', this.intentionalDisconnect, 'error:', err?.message);
+        if (this.device !== connected) return; // verouderde callback van een oud toestel
         if (!this.intentionalDisconnect) {
           this.handleDisconnect();
         }
       });
 
+      this.preferredId = connected.id;
       this.onStatusChange('connected', undefined, name);
       this.isConnecting = false;
       return true;
@@ -285,6 +411,13 @@ export class RowerBleService {
       this.onStatusChange('error', { code: 'connect_failed', detail: bleErr.message });
       return false;
     }
+  }
+
+  /** Het toestel waarmee nu verbonden is — de context bewaart dit als 'bekend'. */
+  currentDevice(): FoundDevice | null {
+    const d = this.device;
+    if (!d) return null;
+    return { id: d.id, name: d.name || d.localName || 'Rower', rssi: d.rssi ?? -100 };
   }
 
 

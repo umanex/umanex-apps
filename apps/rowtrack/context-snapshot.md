@@ -55,17 +55,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+fbd8fbe fix(rowtrack): name the celebration button after what it does
 4d3be76 Merge remote-tracking branch 'origin/main' into feature/rowtrack-account-verwijderen
 4caaa8b fix(rowtrack): never leave a device row spinning after a silent autoconnect
 d63125f feat(rowtrack): connect to the devices you used last, without scanning
 3e2c730 docs(rowtrack): brief autoconnect to the last used devices
-7ebafb2 fix(rowtrack): let go of the heart rate monitor before searching for it
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/components/MotivationalToast.tsx
-  M  apps/rowtrack/i18n/translations/nl.ts
+  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

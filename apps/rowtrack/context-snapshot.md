@@ -55,16 +55,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9b52e10 docs(rowtrack): account deletion is validated against a real deletion
 ab1fd44 chore(rowtrack): drop env fallbacks that name variables Supabase never sets
 fdbc08b fix(rowtrack): drop the live metrics to zero when you stop pulling
 fbd8fbe fix(rowtrack): name the celebration button after what it does
 4d3be76 Merge remote-tracking branch 'origin/main' into feature/rowtrack-account-verwijderen
-4caaa8b fix(rowtrack): never leave a device row spinning after a silent autoconnect
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/briefings/2026-08-06-feature-account-verwijderen.tcebc.md
+  A  apps/rowtrack/docs/privacybeleid.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -4,7 +4,10 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gevalideerd — wacht enkel nog op de finance-tokens
+- **Status:** gebouwd — teruggezet van `gevalideerd` op 2026-08-07. De briefing stond op
+  `gevalideerd` terwijl één acceptatie-item nooit was afgevinkt; de triade vereist dat
+  álle items af zijn. Bij de eerste echte verificatie (zie het item hieronder) faalde dat
+  item. Wacht daarnaast nog op de finance-tokens.
 
 ---
 
@@ -91,13 +94,17 @@ waardes en contrastcijfers staat in het plan.
       de KPI's en chart-labels van fase 4.
 - [x] Detailregels staan open (beslissing 2); de +-knop en de Open/Alle-filter zitten in de
       ledger-regel zelf.
-- [ ] Drag & drop tussen maanden werkt nog, ook met toetsenbord — **nog steeds niet
-      getest** (herbevestigd 2026-08-07). De sleepgrepen renderen, maar een sleep tussen
-      twee kolommen is nooit uitgevoerd, met muis noch toetsenbord. Dit is het enige
-      acceptatie-item van deze briefing dat openstaat, en het valt buiten élk vangnet:
-      de scenario-scripts raken alleen de rekenkern, en `render-screens.tsx` laat
-      `MonthCard` bewust weg omdat die aan dnd-kit én de store hangt. Verplaatst naar
-      `apps/cashflow/HANDOFF.md` zodat het niet in een briefing blijft liggen.
+- [ ] Drag & drop tussen maanden werkt nog, ook met toetsenbord — **GEFAALD bij de eerste
+      echte verificatie** (2026-08-07, `verify` op de draaiende PM2-app, poort 3000, met
+      een wegwerp-post). Het toetsenbordpad pakt de post correct op — de greep krijgt
+      `aria-pressed="true"`, de live region meldt *"was moved over droppable area
+      month-2026-08"*, de bronkolom licht op en het kaartje tilt zichtbaar op — maar
+      daarna beweegt hij niet: 23× ArrowRight en 6× ArrowDown laten de drop-zone
+      onveranderd op `month-2026-08`. De post is dus op te pakken en niet te verplaatsen.
+      Escape annuleert netjes (*"Dragging was cancelled"*). De muis-variant kon met de
+      beschikbare tooling niet sluitend getest worden (één synthetische sprong, die
+      dnd-kit's PointerSensor terecht kan negeren) — maar het item eist beide paden, en
+      het toetsenbordpad faalt hard. Bijhorend HANDOFF-item: `apps/cashflow/HANDOFF.md`.
 - [x] Een lege categorie toont een lege staat in plaats van te verdwijnen (inkomsten, vaste
       uitgaven, eenmalige uitgaven). De pot-secties blijven verborgen zonder potten, gelijk
       met de gereserveerd-regel in de footer.

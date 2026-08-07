@@ -19,7 +19,10 @@
     "render:charts": "tsx --tsconfig scripts/tsconfig.json scripts/render-charts.tsx",
     "sweep": "node scripts/dom-sweep.mjs",
     "sweep:selftest": "node scripts/dom-sweep.mjs --selftest",
-    "verify:visual": "pnpm render:screens && pnpm render:charts && pnpm sweep"
+    "verify:visual": "pnpm render:screens && pnpm render:charts && pnpm sweep",
+    "flow": "node scripts/flow-harness.mjs",
+    "flow:selftest": "node scripts/flow-harness.mjs --selftest",
+    "verify:flow": "next build && node scripts/flow-harness.mjs --selftest"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.0.0",

@@ -48,16 +48,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+d0c356b docs(cashflow): record that cross-month drag is picked up but immovable
 73891a0 feat(cashflow): sweep the rendered DOM for contrast, not just the tokens
 588f0fb chore(cashflow): add playwright as a dev dependency
 ad2f626 docs(cashflow): close out the stale briefing bookkeeping and drop CSV import
 af6ade4 fix(cashflow): retry a write once with a fresh session too
-5e21883 fix(cashflow): make the budget field say that editing it changes the budget
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/HANDOFF.md
-  M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
+   M apps/cashflow/CLAUDE.md
+   M apps/cashflow/HANDOFF.md
+   M apps/cashflow/components/cashflow/CashflowDndContext.tsx
+  M  apps/cashflow/package.json
+  A  apps/cashflow/scripts/flow-harness.mjs
+  ?? apps/cashflow/lib/cashflow/dndKeyboard.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -5,6 +5,7 @@ import type {
 } from 'react-native-ble-plx';
 import { Platform, PermissionsAndroid } from 'react-native';
 import { base64ToBytes } from './base64';
+import { claimScan, ownsScan, releaseScan } from './scan-lock';
 import type { HrBleError } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
@@ -16,7 +17,19 @@ const HR_SERVICE_UUID = '0000180d-0000-1000-8000-00805f9b34fb';
 /** Heart Rate Measurement Characteristic (notify) */
 const HR_MEASUREMENT_UUID = '00002a37-0000-1000-8000-00805f9b34fb';
 
+/**
+ * Kort verzamelvenster voor het normale geval: adverteert de band, dan staat hij er
+ * binnen enkele seconden.
+ */
 const SCAN_COLLECT_MS = 5_000;
+
+/**
+ * Levert dat korte venster niets op, dan zoeken we door tot in totaal even lang als
+ * de roeier (15 s) in plaats van meteen op te geven. Een toestel dat net een
+ * verbinding verloor — of een horloge dat zijn broadcast opnieuw opstart — heeft
+ * vaak meer dan vijf seconden nodig voor het weer adverteert.
+ */
+const SCAN_EXTEND_MS = 10_000;
 
 export type HRStatus = 'idle' | 'scanning' | 'connected' | 'error';
 
@@ -48,6 +61,8 @@ export class HRBleService {
   private device: Device | null = null;
   private monitorSub: Subscription | null = null;
   private scanTimeout: ReturnType<typeof setTimeout> | null = null;
+  /** Identiteit in het gedeelde scan-slot — één native scan voor twee diensten. */
+  private readonly scanToken = Symbol('hr-scan');
   private intentionalDisconnect = false;
 
   private onStatusChange: StatusListener;
@@ -71,6 +86,14 @@ export class HRBleService {
   // ── Public API ────────────────────────────────────────────
 
   async startScan(): Promise<void> {
+    // Eerst een eventuele bestaande verbinding loslaten. Zonder dit zoekt de app naar
+    // een toestel dat ze zélf vasthoudt: iOS geeft een peripheral dat al aan dit
+    // toestel hangt nooit terug in scanresultaten, dus elke scan komt leeg terug en de
+    // rij valt terug op "Verbinden" — terwijl "Verbreken" (de enige plek met een
+    // `cancelConnection`) juist alleen bij status 'connected' getoond wordt. Dat was
+    // een lus zonder uitgang: enkel de app killen hielp nog.
+    await this.releaseDevice();
+
     this.intentionalDisconnect = false;
     this.onStatusChange('scanning');
 
@@ -95,15 +118,23 @@ export class HRBleService {
       const foundDevices: HRFoundDevice[] = [];
       const seenIds = new Set<string>();
 
-      this.scanTimeout = setTimeout(() => {
-        manager.stopDeviceScan();
+      const decide = () => {
+        this.stopScan();
         this.handleScanComplete(foundDevices);
+      };
+
+      this.scanTimeout = setTimeout(() => {
+        // Al iets gevonden? Dan meteen beslissen — doorzoeken levert alleen wachttijd op.
+        if (foundDevices.length > 0) return decide();
+        log('niets in', SCAN_COLLECT_MS, 'ms — doorzoeken');
+        this.scanTimeout = setTimeout(decide, SCAN_EXTEND_MS);
       }, SCAN_COLLECT_MS);
 
       log('scan started (filter: service 0x180D, collecting for 5s)');
+      claimScan(this.scanToken);
       manager.startDeviceScan([HR_SERVICE_UUID], null, (err, dev) => {
         if (err) {
-          this.clearScanTimeout();
+          this.stopScan();
           log('scan error:', err.message);
           this.onStatusChange('error', { code: 'scan_error', detail: err.message });
           return;
@@ -150,6 +181,9 @@ export class HRBleService {
         HR_SERVICE_UUID,
         HR_MEASUREMENT_UUID,
         (error, char) => {
+          // Callbacks van een toestel dat we intussen losgelaten hebben moeten zwijgen,
+          // anders overschrijft een verlate melding de status van de nieuwe scan.
+          if (this.device !== device) return;
           if (error) {
             log('monitor error:', error.message);
             if (!this.intentionalDisconnect) {
@@ -168,6 +202,7 @@ export class HRBleService {
 
       device.onDisconnected(() => {
         log('disconnected, intentional:', this.intentionalDisconnect);
+        if (this.device !== device) return;
         if (!this.intentionalDisconnect) {
           this.cleanup();
           this.device = null;
@@ -192,6 +227,22 @@ export class HRBleService {
       this.device = null;
     }
     this.onStatusChange('idle');
+  }
+
+  /**
+   * Laat een bestaande verbinding los zonder de status te wijzigen — de aanroeper
+   * bepaalt zelf wat er daarna gebeurt (scannen, opnieuw verbinden). `this.device`
+   * gaat meteen op null zodat de identiteitscheck in de callbacks van het oude
+   * toestel ze vanaf nu laat zwijgen.
+   */
+  private async releaseDevice(): Promise<void> {
+    const device = this.device;
+    if (!device) return;
+    log('bestaande verbinding loslaten vóór de scan');
+    this.intentionalDisconnect = true;
+    this.cleanup();
+    this.device = null;
+    await device.cancelConnection().catch(() => {});
   }
 
   destroy(): void {
@@ -238,8 +289,24 @@ export class HRBleService {
     }
   }
 
-  private cleanup(): void {
+  /**
+   * Stopt de scan die déze dienst gestart heeft, plus zijn timeout. De
+   * eigenaarscheck voorkomt dat we de scan van de roeier-dienst afbreken: beide
+   * diensten delen één native scan via de `BleManager`-singleton (zie `scan-lock.ts`).
+   */
+  private stopScan(): void {
     this.clearScanTimeout();
+    if (!ownsScan(this.scanToken)) return;
+    releaseScan(this.scanToken);
+    try {
+      this.manager?.stopDeviceScan().catch(() => {});
+    } catch {
+      // Manager al vernietigd — dan loopt er ook geen scan meer.
+    }
+  }
+
+  private cleanup(): void {
+    this.stopScan();
     this.monitorSub?.remove();
     this.monitorSub = null;
   }

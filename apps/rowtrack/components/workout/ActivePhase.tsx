@@ -417,8 +417,18 @@ export function ActivePhase({
             i < kpiOrder.length - 1 && activeStyles.kpiRowDivider,
           ];
           if (key === 'BPM') {
+            // Alleen tikbaar zolang er géén band hangt. Tikken tijdens een verbinding
+            // startte een scan die het eigen toestel niet kan vinden (iOS geeft een
+            // verbonden peripheral nooit terug in scanresultaten), waarna de rij op
+            // "Verbinden" bleef staan zonder weg terug.
             return (
-              <TouchableOpacity key="BPM" style={rowStyle} onPress={startHRScan} activeOpacity={0.8}>
+              <TouchableOpacity
+                key="BPM"
+                style={rowStyle}
+                onPress={startHRScan}
+                disabled={hrStatus === 'connected' || hrStatus === 'scanning'}
+                activeOpacity={0.8}
+              >
                 <Text style={activeStyles.kpiLabel}>{t.workout.active.kpiBpm}</Text>
                 {hrStatus === 'scanning' ? (
                   <ActivityIndicator size="small" color={fg.secondary} />

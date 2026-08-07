@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-05_
+_Gegenereerd op 2026-08-06_
 
 ## Project
 - **App:** rowtrack
@@ -54,18 +54,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-e247059 fix(rowtrack): history filter uses calendar periods and guards against races
-ae3a3e5 docs(rowtrack): name the supabase-rowtrack MCP server explicitly
-9ed52bf docs(rowtrack): pod install nodig bij de eerste native build na de layout-wissel
-a32f778 fix(monorepo): Metro werkt onder de geïsoleerde pnpm-layout
-b884027 docs(rowtrack): cluster 8 briefings + auth/forms figma-mapping
+7ebafb2 fix(rowtrack): let go of the heart rate monitor before searching for it
+8dd824c docs(rowtrack): carry this session's open ends into the handoff
+a0ce5eb docs(rowtrack): record what the reviews established about these three risks
+d180578 fix(rowtrack): chunk the secure session store by bytes, never mid-character
+e03e09d fix(rowtrack): stop only our own BLE scan, and give up when the user already did
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/lib/pendingWorkout.ts
-  A  apps/rowtrack/supabase/migrations/add_workouts_unique_started_at.sql
+  A  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

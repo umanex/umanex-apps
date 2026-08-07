@@ -14,6 +14,7 @@ import {
   MAX_RECONNECT_ATTEMPTS,
 } from './constants';
 import { parseRowerData } from './ftms-parser';
+import { claimScan, ownsScan, releaseScan } from './scan-lock';
 import type { RowerMetrics, ConnectionStatus, RowerBleError } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
@@ -69,6 +70,8 @@ export class RowerBleService {
   private reconnectAttempts = 0;
   private intentionalDisconnect = false;
   private isConnecting = false;
+  /** Identiteit van deze dienst in het gedeelde scan-slot. Zie `stopScan()`. */
+  private readonly scanToken = Symbol('rower-scan');
 
   private lastMetrics: RowerMetrics = emptyMetrics();
   private onStatusChange: StatusListener;
@@ -101,6 +104,12 @@ export class RowerBleService {
       const state = await manager.state();
       log(' adapter state:', state);
 
+      // Vanaf hier zijn we voorbij de eerste awaits (module laden, manager maken,
+      // adapterstatus). Viel daar een disconnect(), dan is de gebruiker al gestopt en
+      // mag niets hieronder nog vuren — ook geen foutmelding, die zou anders over de
+      // 'idle'-status van het samenvattingsscherm heen komen.
+      if (this.aborted('na adapterstatus')) return;
+
       if (state !== State.PoweredOn) {
         if (state === State.PoweredOff) {
           this.onStatusChange('error', { code: 'bluetooth_off' });
@@ -114,6 +123,9 @@ export class RowerBleService {
           if (s === State.PoweredOn) {
             this.stateSub?.remove();
             this.stateSub = null;
+            // Deze callback kan ná een disconnect() vuren: wordt hij pas ná
+            // `cleanup()` geregistreerd, dan heeft cleanup hem niet kunnen opruimen.
+            if (this.aborted('adapter aan, maar intussen gestopt')) return;
             this.startScan();
           }
         }, true);
@@ -122,21 +134,28 @@ export class RowerBleService {
 
       if (Platform.OS === 'android') {
         const ok = await this.requestAndroidPermissions();
+        // De permissie-dialog kan minuten open blijven staan; in die tijd kan de
+        // gebruiker allang gestopt zijn.
+        if (this.aborted('na permissies')) return;
         if (!ok) {
           this.onStatusChange('error', { code: 'permission_denied' });
           return;
         }
       }
 
+      // Een vorige scan (of zijn timeout) mag nooit naast deze blijven lopen.
+      this.stopScan();
+
       this.scanTimeout = setTimeout(() => {
-        manager.stopDeviceScan();
+        this.stopScan();
         this.onStatusChange('error', { code: 'rower_not_found' });
       }, SCAN_TIMEOUT_MS);
 
       log(' scan started (filter: name prefix "' + ROWER_NAME_PREFIX + '")');
+      claimScan(this.scanToken);
       manager.startDeviceScan(null, null, (err, dev) => {
         if (err) {
-          this.clearScanTimeout();
+          this.stopScan();
           log(' scan error:', err.message);
           this.onStatusChange('error', { code: 'scan_error', detail: err.message });
           return;
@@ -152,8 +171,7 @@ export class RowerBleService {
           dev.name?.startsWith(ROWER_NAME_PREFIX) ||
           dev.localName?.startsWith(ROWER_NAME_PREFIX)
         ) {
-          this.clearScanTimeout();
-          manager.stopDeviceScan();
+          this.stopScan();
           this.connectToDevice(dev);
         }
       });
@@ -191,6 +209,18 @@ export class RowerBleService {
 
   // ── Private ───────────────────────────────────────────────
 
+  /**
+   * Breekt een verbinding af die tijdens het opbouwen achterhaald raakte. Geen
+   * statuswijziging: `disconnect()` heeft de status al op 'idle' gezet, en er
+   * overheen melden zou de gebruiker terugduwen naar een rit die hij net stopte.
+   */
+  private abandonConnection(device: Device): false {
+    this.isConnecting = false;
+    this.device = null;
+    device.cancelConnection().catch(() => {});
+    return false;
+  }
+
   /** Returns true when the connection (incl. service discovery) succeeded. */
   private async connectToDevice(device: Device): Promise<boolean> {
     if (this.isConnecting) {
@@ -209,13 +239,20 @@ export class RowerBleService {
         requestMTU: 512,
       });
       log(' connected:', connected.id);
+      // Meteen bewaren, nog vóór de delay: valt hier een disconnect(), dan moet die
+      // de verbinding kunnen intrekken. Stond dit later, dan zag `disconnect()` een
+      // lege `device` en bleef de erg fysiek verbonden achter.
       this.device = connected;
+
+      if (this.aborted('tijdens verbinden')) return this.abandonConnection(connected);
 
       // Wait for BLE stack to settle
       await this.delay(2000);
+      if (this.aborted('tijdens verbinden')) return this.abandonConnection(connected);
 
       this.onStatusChange('discovering', undefined, name);
       await connected.discoverAllServicesAndCharacteristics();
+      if (this.aborted('tijdens service discovery')) return this.abandonConnection(connected);
 
       // Log discovered services
       const services = await connected.services();
@@ -225,6 +262,7 @@ export class RowerBleService {
       }
 
       await this.delay(1000);
+      if (this.aborted('vlak vóór het abonneren')) return this.abandonConnection(connected);
 
       // Start notifications — try 2AD1 first, fallback to 2ACC
       this.startMonitoring(connected);
@@ -379,6 +417,19 @@ export class RowerBleService {
     }
   }
 
+  /**
+   * Is de gebruiker intussen gestopt? Verbinden en scannen zitten vol awaits (module
+   * laden, adapterstatus, permissiedialoog, connect, service discovery, twee vaste
+   * delays) en `disconnect()` kan in elk van die vensters vallen. Zonder een check ná
+   * elke await hervat het opgeschorte werk daarna gewoon en meldt 'connected' op een
+   * scherm waar de rit al beëindigd is.
+   */
+  private aborted(where: string): boolean {
+    if (!this.intentionalDisconnect) return false;
+    log(' afgebroken —', where);
+    return true;
+  }
+
   private clearScanTimeout(): void {
     if (this.scanTimeout) {
       clearTimeout(this.scanTimeout);
@@ -386,8 +437,33 @@ export class RowerBleService {
     }
   }
 
-  private cleanup(): void {
+  /**
+   * Stopt de scan die déze service gestart heeft, plus zijn timeout.
+   *
+   * Zonder dit leefde het stoppen alleen ín de scan-callback, dus een scan die niets
+   * vond bleef doorlopen na `disconnect()`. Startte je hem via "Opnieuw proberen" en
+   * drukte je meteen op Stop, dan kon die verweesde scan later alsnog een erg vinden
+   * en de status op 'connected' zetten terwijl de gebruiker al gestopt was.
+   *
+   * De eigenaarscheck is geen luxe: `BleManager` is een procesbrede singleton, dus
+   * deze dienst en `HRBleService` delen één native scan. Blind `stopDeviceScan()`
+   * aanroepen vanuit `cleanup()` brak een lopende hartslag-scan af — die meldt dan
+   * "geen hartslagmeter gevonden" terwijl de band gewoon uitzendt. Zie `scan-lock.ts`.
+   */
+  private stopScan(): void {
     this.clearScanTimeout();
+    if (!ownsScan(this.scanToken)) return;
+    releaseScan(this.scanToken);
+    try {
+      // Geeft een Promise terug: een synchrone catch vangt de rejection niet.
+      this.manager?.stopDeviceScan().catch(() => {});
+    } catch {
+      // Manager al vernietigd — dan loopt er per definitie ook geen scan meer.
+    }
+  }
+
+  private cleanup(): void {
+    this.stopScan();
     if (this.fallbackTimeout) {
       clearTimeout(this.fallbackTimeout);
       this.fallbackTimeout = null;

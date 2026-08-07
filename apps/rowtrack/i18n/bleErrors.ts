@@ -1,4 +1,4 @@
-import type { RowerBleError } from '@/lib/ble/types';
+import type { RowerBleError, HrBleError } from '@/lib/ble/types';
 import { t } from './index';
 
 /**
@@ -28,5 +28,29 @@ export function rowerErrorMessage(error: RowerBleError): string {
       return t.errors.rower.noData;
     case 'connection_lost':
       return t.errors.rower.connectionLost;
+  }
+}
+
+/**
+ * Idem voor de hartslagmeter. Deze meldingen bereikten de gebruiker voorheen niet:
+ * de provider logde ze enkel in `__DEV__`, dus een mislukte scan zag eruit als een
+ * dode knop.
+ */
+export function hrErrorMessage(error: HrBleError): string {
+  switch (error.code) {
+    case 'bluetooth_off':
+      return t.errors.hr.bluetoothOff;
+    case 'permission_denied':
+      return t.errors.hr.permissionDenied;
+    case 'hr_not_found':
+      return t.errors.hr.hrNotFound;
+    case 'scan_error':
+      return t.errors.hr.scanError(error.detail ?? '');
+    case 'scan_failed':
+      return error.detail || t.errors.hr.scanFailed;
+    case 'connect_failed':
+      return error.detail || t.errors.hr.connectFailed;
+    case 'connection_lost':
+      return t.errors.hr.connectionLost;
   }
 }

@@ -25,7 +25,7 @@ export default function WorkoutScreen() {
   const { user } = useAuth();
   const {
     status, deviceName, metrics: bleMetrics, error: bleError, startScan, disconnect,
-    hrStatus, hrDeviceName, hrBpm, startHRScan, stopHR,
+    hrStatus, hrDeviceName, hrBpm, hrError, startHRScan, stopHR,
     hrDevices, hrSelecting, selectHRDevice, cancelHRSelection,
   } = useBle();
   const router = useRouter();
@@ -165,8 +165,9 @@ export default function WorkoutScreen() {
   const handleStop = useCallback(() => {
     saveWorkout();
     disconnect();
+    stopHR();
     setPhase('summary');
-  }, [saveWorkout, disconnect]);
+  }, [saveWorkout, disconnect, stopHR]);
 
   // Samenvatting "Ga verder" → naar huis (de rit is al op de achtergrond opgeslagen).
   const handleContinue = useCallback(() => {
@@ -188,8 +189,12 @@ export default function WorkoutScreen() {
       goalEndedRef.current = true;
       saveWorkout();
       disconnect();
+      // Ook de hartslagmeter loslaten, symmetrisch met de roeier. Bleef die hangen,
+      // dan adverteerde de band niet meer en was hij bij de volgende rit onvindbaar
+      // — de app hield zelf vast wat ze daarna zocht.
+      stopHR();
     }
-  }, [phase, goalReached, saveWorkout, disconnect]);
+  }, [phase, goalReached, saveWorkout, disconnect, stopHR]);
 
   const handleSetGoal = useCallback((g: WorkoutGoal) => {
     setGoal(g);
@@ -222,6 +227,7 @@ export default function WorkoutScreen() {
         onDisconnect={disconnect}
         hrStatus={hrStatus}
         hrDeviceName={hrDeviceName}
+        hrError={hrError}
         onHRConnect={startHRScan}
         onHRDisconnect={stopHR}
         hrDevices={hrDevices}

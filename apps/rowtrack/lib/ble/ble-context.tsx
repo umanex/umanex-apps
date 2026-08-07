@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { RowerBleService } from './ble-service';
 import { HRBleService } from './hr-service';
-import { rowerErrorMessage } from '@/i18n/bleErrors';
+import { rowerErrorMessage, hrErrorMessage } from '@/i18n/bleErrors';
 import type { BleContextValue, ConnectionStatus, HRFoundDevice, HRStatus, RowerMetrics } from './types';
 
 const BleContext = createContext<BleContextValue>({
@@ -21,6 +21,7 @@ const BleContext = createContext<BleContextValue>({
   hrStatus: 'idle',
   hrDeviceName: null,
   hrBpm: null,
+  hrError: null,
   startHRScan: () => {},
   stopHR: () => {},
   hrDevices: [],
@@ -41,6 +42,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   const [hrStatus, setHRStatus] = useState<HRStatus>('idle');
   const [hrDeviceName, setHRDeviceName] = useState<string | null>(null);
   const [hrBpm, setHRBpm] = useState<number | null>(null);
+  const [hrError, setHRError] = useState<string | null>(null);
   const [hrDevices, setHRDevices] = useState<HRFoundDevice[]>([]);
   const [hrSelecting, setHRSelecting] = useState(false);
   const hrServiceRef = useRef<HRBleService | null>(null);
@@ -73,9 +75,12 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
           setHRBpm(null);
           setHRDeviceName(null);
         }
-        if (newStatus === 'error' && bleError) {
-          // HR errors are non-blocking, just log
-          if (__DEV__) console.log('[HR] error:', bleError.code, bleError.detail ?? '');
+        // Een HR-fout blokkeert de rit niet, maar hij hoort de gebruiker wel te
+        // bereiken: voorheen ging hij enkel naar een dev-log, dus een mislukte scan
+        // was niet te onderscheiden van een knop die niets doet.
+        setHRError(newStatus === 'error' && bleError ? hrErrorMessage(bleError) : null);
+        if (newStatus === 'error' && bleError && __DEV__) {
+          console.log('[HR] error:', bleError.code, bleError.detail ?? '');
         }
       },
       (bpm) => {
@@ -112,9 +117,11 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
 
   // HR controls
   const startHRScan = useCallback(() => {
+    setHRError(null);
     hrServiceRef.current?.startScan().catch((err: unknown) => {
+      const detail = err instanceof Error ? err.message : undefined;
       setHRStatus('error');
-      if (__DEV__) console.log('[HR] scan error:', err instanceof Error ? err.message : err);
+      setHRError(hrErrorMessage({ code: 'scan_failed', detail }));
     });
   }, []);
 
@@ -139,7 +146,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     <BleContext.Provider
       value={{
         status, deviceName, metrics, error, startScan, disconnect,
-        hrStatus, hrDeviceName, hrBpm, startHRScan, stopHR,
+        hrStatus, hrDeviceName, hrBpm, hrError, startHRScan, stopHR,
         hrDevices, hrSelecting, selectHRDevice, cancelHRSelection,
       }}
     >

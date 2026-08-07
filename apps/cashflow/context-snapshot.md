@@ -48,18 +48,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0e96d05 fix(cashflow): move a post between months with the keyboard again
 2000682 feat(cashflow): drive the cross-month drag instead of reading it
 d0c356b docs(cashflow): record that cross-month drag is picked up but immovable
 73891a0 feat(cashflow): sweep the rendered DOM for contrast, not just the tokens
 588f0fb chore(cashflow): add playwright as a dev dependency
-ad2f626 docs(cashflow): close out the stale briefing bookkeeping and drop CSV import
 ```
 
 ## Uncommitted wijzigingen
-   M apps/cashflow/CLAUDE.md
-  M  apps/cashflow/HANDOFF.md
-  M  apps/cashflow/components/cashflow/CashflowDndContext.tsx
-  A  apps/cashflow/lib/cashflow/dndKeyboard.ts
+  M  apps/cashflow/CLAUDE.md
 
 ## Bestanden met TODO/FIXME
   (geen)

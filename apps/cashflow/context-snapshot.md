@@ -48,18 +48,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+61c9e05 fix(cashflow): hide an already-paid overflow line behind the paid filter
 4325c43 fix(cashflow): recover from a stale token instead of dead-ending on retry
 74d6f4d fix(cashflow): maandbudget toont resterende provisie, teveel naar niet-recurrent
 255d167 feat(cashflow): budget van de ankermaand handmatig bijstelbaar
 62ab13d chore: prune four orphans, and declare the binary the render scripts need
-3dde3da feat(cashflow): render the role layer and its components in both modes
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/components/cashflow/ExpenseSection.tsx
-  M  apps/cashflow/lib/cashflow/subtotals.ts
-  M  apps/cashflow/lib/cashflow/types.ts
-  M  apps/cashflow/scripts/buffer-scenarios.ts
+  M  apps/cashflow/components/cashflow/ReservationSection.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

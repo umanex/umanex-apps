@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ReservationPotBalance, ReservationPayment, MonthKey, ReservationPotType } from '../../lib/cashflow/types';
 import { formatAmount, getMonthLabel, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
@@ -91,6 +91,7 @@ function DraggablePotRow({
 
   const [editing, setEditing] = useState(false);
   const [localAmount, setLocalAmount] = useState(String(roundTo2(idleFieldValue)));
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Buiten het bewerken volgt het veld de opgeslagen waarde — zo daalt het resterende bedrag
   // meteen zodra er een betaling bijkomt. Tijdens het typen niet: dan zou een store-update de
@@ -124,6 +125,10 @@ function DraggablePotRow({
     // Een budget in de huidige maand toont in rust de resterende provisie; bewerken raakt het
     // budget zelf, dus wisselt het veld bij focus naar dat brutobudget.
     if (isBudgetCurrentMonth) setLocalAmount(String(roundTo2(pot.provisionThisMonth)));
+    // Selecteren ná de re-render: de wissel hierboven is een state-update, dus op dit moment
+    // staat de oude waarde nog in het veld en zou een directe `select()` die selecteren. Zonder
+    // dit moet je het brutobudget eerst handmatig wissen, en typ je er anders doodleuk middenin.
+    requestAnimationFrame(() => inputRef.current?.select());
   }
 
   function handleAmountBlur() {
@@ -192,16 +197,17 @@ function DraggablePotRow({
             )}
           </div>
           {isBudgetCurrentMonth ? (
-            // Het veld toont hier de resterende provisie; de subregel zet het brutobudget
-            // ernaast zodra er iets uit de pot betaald is, zodat beide bedragen zichtbaar zijn.
-            paidFromReservation > 0 && (
-              <div className="flex items-center gap-1">
-                <span className="text-2xs text-muted-foreground opacity-70">Budget:</span>
-                <span className="text-2xs font-semibold tabular-nums text-finance-positive">
-                  {formatAmount(pot.provisionThisMonth)}
-                </span>
-              </div>
-            )
+            // Het veld toont hier de resterende provisie, de subregel het brutobudget. Die
+            // staat er altijd, ook zolang beide gelijk zijn: verscheen hij pas bij de eerste
+            // uitgave, dan dook hij op op exact het moment dat het veld begon af te wijken —
+            // en dan moet je in één keer leren dat er twee bedragen zijn én dat ze verschillen.
+            // De prijs is een korte dubbeling bij een onaangeroerd budget; dat weegt lichter.
+            <div className="flex items-center gap-1">
+              <span className="text-2xs text-muted-foreground opacity-70">Budget:</span>
+              <span className="text-2xs font-semibold tabular-nums text-finance-positive">
+                {formatAmount(pot.provisionThisMonth)}
+              </span>
+            </div>
           ) : (
             <div className="flex items-center gap-1">
               <span className="text-2xs text-muted-foreground opacity-70">Provisie:</span>
@@ -215,6 +221,7 @@ function DraggablePotRow({
 
         <div className="flex items-center gap-1 shrink-0">
           <input
+            ref={inputRef}
             type="text"
             inputMode="decimal"
             value={localAmount}
@@ -231,6 +238,15 @@ function DraggablePotRow({
               pot.hasSettlement ? 'font-medium' : ''
             }`}
             aria-label={pot.potType === 'maandelijks_budget' ? 'Budget deze maand' : 'Stortingsbedrag'}
+            // Bij een budget in de huidige maand wisselt het veld bij focus van het resterende
+            // bedrag naar het budget. Zonder uitleg leest die sprong als een storing in plaats
+            // van als "nu bewerk je het budget" — vandaar dat de tooltip het benoemt mét het
+            // bedrag dat je te zien krijgt.
+            title={
+              isBudgetCurrentMonth
+                ? `Bewerken past het budget aan — nu ${formatAmount(pot.provisionThisMonth)}`
+                : undefined
+            }
           />
           {pot.hasSettlement && (
             <span className="text-xs text-muted-foreground tabular-nums" title="Begroot bedrag">

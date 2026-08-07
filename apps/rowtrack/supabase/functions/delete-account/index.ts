@@ -42,15 +42,6 @@ function json(status: number, body: Json): Response {
   });
 }
 
-/** Leest een env-var onder de huidige of de oudere naam. */
-function env(...names: string[]): string | undefined {
-  for (const name of names) {
-    const value = Deno.env.get(name);
-    if (value) return value;
-  }
-  return undefined;
-}
-
 Deno.serve(async (req) => {
   // 204 is een null-body status: een Response met body gooit een TypeError in de
   // Fetch-spec, waardoor elke preflight een kale 500 zónder CORS-headers zou krijgen.
@@ -62,9 +53,17 @@ Deno.serve(async (req) => {
     return json(401, { error: 'unauthorized' });
   }
 
-  const url = env('SUPABASE_URL');
-  const anonKey = env('SUPABASE_ANON_KEY', 'SUPABASE_PUBLISHABLE_KEY');
-  const serviceKey = env('SUPABASE_SERVICE_ROLE_KEY', 'SB_SECRET_KEY');
+  // Supabase injecteert deze drie zelf in elke Edge Function; er valt niets in te
+  // stellen. Er stonden hier fallbacks op `SUPABASE_PUBLISHABLE_KEY` en
+  // `SB_SECRET_KEY` — die namen bestaan niet, dus dat was dode code. Het nieuwe
+  // key-systeem gebruikt `SUPABASE_PUBLISHABLE_KEYS` / `SUPABASE_SECRET_KEYS`
+  // (meervoud, JSON-dictionaries die je moet parsen). Zolang de legacy-keys hieronder
+  // geïnjecteerd blijven is dat niet nodig; worden ze ooit uitgezet, dan faalt deze
+  // functie luid op `server_misconfigured` in plaats van stil — en is dát het moment
+  // om de meervoudsvorm te lezen.
+  const url = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
   if (!url || !anonKey || !serviceKey) {
     // Bewust geen detail in de response: welke key ontbreekt is server-informatie.

@@ -55,16 +55,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+fdbc08b fix(rowtrack): drop the live metrics to zero when you stop pulling
 fbd8fbe fix(rowtrack): name the celebration button after what it does
 4d3be76 Merge remote-tracking branch 'origin/main' into feature/rowtrack-account-verwijderen
 4caaa8b fix(rowtrack): never leave a device row spinning after a silent autoconnect
 d63125f feat(rowtrack): connect to the devices you used last, without scanning
-3e2c730 docs(rowtrack): brief autoconnect to the last used devices
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
+  M  apps/rowtrack/supabase/functions/delete-account/index.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

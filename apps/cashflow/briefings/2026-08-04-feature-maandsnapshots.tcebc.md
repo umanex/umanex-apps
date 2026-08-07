@@ -119,8 +119,9 @@ van fase 4 moet dus het variantiepaneel als bron nemen, niet de ledger-regels.
 
 ## Beslissingsgeschiedenis
 
-- 2026-08-04: aangemaakt als fase 3. Fase 2 leverde alleen "herhaal vorige maand"; de
-  CSV-import is geschrapt en kan hier terugkomen zodra historiek bestaat.
+- 2026-08-04: aangemaakt als fase 3. Fase 2 leverde alleen "herhaal vorige maand".
+- 2026-08-07: de CSV-import die hier ooit als vervolg genoemd stond, is definitief
+  geschrapt — de historiek bestaat nu en de behoefte bleek er niet.
 
 ## Herziening 2026-08-04 — historie begint bij de huidige maand
 

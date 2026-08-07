@@ -77,5 +77,7 @@ Alle drie beantwoord op 2026-08-04:
 
 ## Beslissingsgeschiedenis
 
-- 2026-08-04: aangemaakt als eerste helft van fase 2. CSV-import krijgt een eigen briefing
-  zodra het exportformaat van de bank bekend is.
+- 2026-08-04: aangemaakt als eerste helft van fase 2.
+- 2026-08-07: de tweede helft — een CSV-import zodra het bankformaat bekend was — is
+  definitief geschrapt. "Herhaal vorige maand" is daarmee het volledige antwoord op de
+  invoerfrictie uit WS3.

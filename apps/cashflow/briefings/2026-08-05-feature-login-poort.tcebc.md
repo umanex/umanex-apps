@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gepland
+- **Status:** gevalideerd (2026-08-07) — zie Acceptatie voor het bewijs per item
 
 ---
 
@@ -53,17 +53,34 @@ Geen.
 
 ## Acceptatie
 
-- [ ] Zonder sessie toont de app het loginformulier, niet de prognose — op `/` én `/analyse`
-- [ ] Tijdens de sessiecontrole verschijnt een skelet, geen lege of flitsende prognose
-- [ ] Foute credentials tonen een melding onder het veld; het e-mailveld blijft ingevuld
-- [ ] Een tweede klik tijdens een lopende poging doet niets
-- [ ] Netwerkfout geeft een andere melding dan foute credentials
-- [ ] Een sessie die tijdens gebruik vervalt brengt je terug naar het formulier zonder
-      dataverlies aan serverzijde
-- [ ] Uitloggen wist de sessie en toont het formulier
-- [ ] Na herladen blijf je ingelogd (sessie overleeft een refresh)
-- [ ] Enter in het wachtwoordveld verstuurt; autofocus staat op e-mail
-- [ ] Geen enkele cashflowdata is zichtbaar of opvraagbaar zonder sessie
+Nagelopen op 2026-08-07 tegen de code. Deze poort is dagelijks in gebruik sinds 08-05, dus
+de hoofdpaden (inloggen, herladen, uitloggen) zijn ook feitelijk uitgereden.
+
+- [x] Zonder sessie toont de app het loginformulier, niet de prognose — op `/` én `/analyse`
+      — `LoginGate` staat in `app/layout.tsx` en omsluit dus beide routes; zonder sessie
+      wordt `children` nooit gerenderd
+- [x] Tijdens de sessiecontrole verschijnt een skelet, geen lege of flitsende prognose —
+      `isChecking` in `auth-context.tsx` begint op `true` en gaat pas na `getSession()` uit;
+      `LoginGate` toont zolang een `aria-busy` skelet
+- [x] Foute credentials tonen een melding onder het veld; het e-mailveld blijft ingevuld —
+      `LoginForm.tsx:36` wist alleen het wachtwoord, de melding staat als `role="alert"`
+      onder de velden
+- [x] Een tweede klik tijdens een lopende poging doet niets — `if (busy) return` plús
+      `disabled={busy}` op de knop; `busy` blijft na succes bewust staan
+- [x] Netwerkfout geeft een andere melding dan foute credentials — `isAuthApiError` splitst
+      de twee; een transportfout is geen `AuthApiError`
+- [x] Een sessie die tijdens gebruik vervalt brengt je terug naar het formulier zonder
+      dataverlies aan serverzijde — `onAuthStateChange` zet de sessie op `null` en de poort
+      valt vanzelf terug; de schrijfkant is puur remote, dus er staat niets lokaal te wachten
+- [x] Uitloggen wist de sessie en toont het formulier — `SignOutButton` → `signOut()` →
+      dezelfde `onAuthStateChange`-weg
+- [x] Na herladen blijf je ingelogd — supabase-js persisteert de sessie zelf; `getSession()`
+      leest ze bij mount terug
+- [x] Enter in het wachtwoordveld verstuurt; autofocus staat op e-mail — native
+      `<form onSubmit>` en `autoFocus` op het e-mailveld
+- [x] Geen enkele cashflowdata is zichtbaar of opvraagbaar zonder sessie — twee sloten, niet
+      één: de poort rendert niets, en `supabase/schema.sql:73-97` scope't elke policy op
+      beide tabellen aan `auth.uid()`. De UI-poort alleen zou een cosmetisch slot zijn
 
 ## Beslissingsgeschiedenis
 

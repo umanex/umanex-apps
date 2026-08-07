@@ -48,17 +48,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+af6ade4 fix(cashflow): retry a write once with a fresh session too
 5e21883 fix(cashflow): make the budget field say that editing it changes the budget
 61c9e05 fix(cashflow): hide an already-paid overflow line behind the paid filter
 4325c43 fix(cashflow): recover from a stale token instead of dead-ending on retry
 74d6f4d fix(cashflow): maandbudget toont resterende provisie, teveel naar niet-recurrent
-255d167 feat(cashflow): budget van de ankermaand handmatig bijstelbaar
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/components/auth/DataGate.tsx
-  M  apps/cashflow/lib/cashflow/sync.ts
-  M  apps/cashflow/lib/supabase/auth-recovery.ts
+  M  apps/cashflow/HANDOFF.md
+  M  apps/cashflow/briefings/2026-05-18-feature-deferred-payment-finalize.tcebc.md
+  M  apps/cashflow/briefings/2026-05-19-feature-section-subheader.tcebc.md
+  M  apps/cashflow/briefings/2026-05-20-component-spaarpot-betalingen-collapse.tcebc.md
+  M  apps/cashflow/briefings/2026-06-01-feature-model2-referentiebalans.tcebc.md
+  M  apps/cashflow/briefings/2026-08-03-feature-buffer-tekortdekking.tcebc.md
+  M  apps/cashflow/briefings/2026-08-04-feature-analyse-en-charts.tcebc.md
+  M  apps/cashflow/briefings/2026-08-04-feature-herhaal-vorige-maand.tcebc.md
+  M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
+  M  apps/cashflow/briefings/2026-08-04-feature-maandsnapshots.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

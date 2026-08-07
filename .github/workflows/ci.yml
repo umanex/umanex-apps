@@ -76,3 +76,25 @@ jobs:
       # welke combinaties de apps echt gebruiken, dus een treffer is altijd echt.
       - name: Guard — contrast van de rollaag (WCAG AA)
         run: pnpm --filter @umanex/tokens contrast
+
+      # De check hierboven kent alleen de tokens. Wat er in een component écht ontstaat —
+      # tekst op een geneste achtergrond, een alpha-vlak boven een ander vlak — zag tot nu
+      # toe alleen een mens in een browserconsole, met drie meetfouten onderweg. Deze sweep
+      # meet dat op de gerenderde DOM van de harness: geen server, geen sessie, light en
+      # dark naast elkaar in één statisch bestand.
+      - name: Cache Playwright-browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Playwright Chromium
+        run: pnpm --filter cashflow exec playwright install --with-deps chromium
+
+      # `verify:visual` rendert de harness uit de build hierboven en sweept hem daarna.
+      # De sweep draait zijn eigen zelftest mee — een guard die niet kán falen meldt
+      # "0 fouten" even overtuigend als een die werkt.
+      - name: Guard — contrast van de gerenderde DOM (WCAG AA)
+        run: pnpm --filter cashflow verify:visual

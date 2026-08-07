@@ -68,16 +68,28 @@ const Sectie = ({ titel, kind }: { titel: string; kind: ReactNode }) =>
 const Rij = ({ kind }: { kind: ReactNode }) =>
   h('div', { className: 'flex flex-wrap items-center gap-2 mb-2' }, kind);
 
+// Een `x-foreground` hoort per shadcn-conventie op `x` en nergens anders. Zet je hem
+// als los "Aa" op de paginakleur, dan toon je wit op wit: onleesbaar in de harness,
+// terwijl de rol in de app prima werkt. De swatch toont daarom het páár.
+const basisVan = (rol: string) =>
+  rol.endsWith('-foreground') ? rol.slice(0, -'-foreground'.length) : null;
+
 const Swatch = ({ rol }: { rol: string }) => {
   const isTekst = TEKST_ROLLEN.has(rol);
+  const basis = basisVan(rol);
   return h('div', { className: 'flex items-center gap-2 w-64', key: rol },
     h('div', {
       className: 'h-8 w-8 rounded-sm border border-border shrink-0 flex items-center justify-center text-2xs font-semibold',
       style: isTekst
-        ? { color: `hsl(var(--${rol}))` }
+        ? {
+            color: `hsl(var(--${rol}))`,
+            // `foreground` zelf heeft geen basis — die landt echt op de paginakleur.
+            ...(basis ? { background: `hsl(var(--${basis}))` } : {}),
+          }
         : { background: `hsl(var(--${rol}))` },
     }, isTekst ? 'Aa' : null),
-    h('code', { className: 'text-2xs text-muted-foreground truncate' }, `--${rol}`));
+    h('code', { className: 'text-2xs text-muted-foreground truncate' },
+      basis ? `--${rol} op --${basis}` : `--${rol}`));
 };
 
 /** Alles wat we willen zien, één keer. Wordt twee keer aangeroepen: light en dark. */

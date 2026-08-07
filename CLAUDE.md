@@ -60,6 +60,12 @@ Wat gedeeld blijft en dus botst:
 | rowtrack | Expo dev-client: een tweede worktree betekent een tweede native build. Houd rowtrack in de hoofd-tree. |
 | `.githooks` | Rijdt automatisch mee — `core.hooksPath` staat in de gedeelde git-config. Niets extra te doen. |
 
+Wat juist **niet** meereist: gitignorede bestanden. `apps/cashflow/.env.local` staat niet in
+git, dus in een verse worktree valt `next build` om op de ontbrekende `NEXT_PUBLIC_SUPABASE_*`
+— en wel pas bij het prerenderen, ná een geslaagde compile, dus de CSS staat er dan al en een
+render-script lijkt gewoon te werken. Kopieer het bestand mee, of bouw met dezelfde
+placeholders als CI (`ci.yml`, stap "Type-check, lint, build"). Geldt voor elk `.env.local`.
+
 ## Design tokens
 
 - `packages/tokens/tokens.json` is Tokens Studio GitHub sync target

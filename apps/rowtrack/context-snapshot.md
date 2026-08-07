@@ -56,16 +56,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+23100dc docs(rowtrack): record the verify-pad and correct the consent briefing
 451e251 feat(rowtrack): ask for consent before touching health data
 812240f docs(rowtrack): privacy policy written against what the app actually does
 9b52e10 docs(rowtrack): account deletion is validated against a real deletion
 ab1fd44 chore(rowtrack): drop env fallbacks that name variables Supabase never sets
-fdbc08b fix(rowtrack): drop the live metrics to zero when you stop pulling
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/CLAUDE.md
-  M  apps/rowtrack/briefings/2026-08-07-feature-gezondheidsdata-toestemming.tcebc.md
+  A  apps/rowtrack/supabase/seed/test-account.sql
 
 ## Bestanden met TODO/FIXME
   (geen)

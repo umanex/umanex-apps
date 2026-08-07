@@ -186,6 +186,10 @@ export const nl = {
     },
     celebration: {
       title: 'Doel bereikt!',
+      // Niet "Ga verder": de rit is op dit punt al beëindigd en opgeslagen, en die
+      // knop suggereerde dat je nog kon doorroeien. Doorroeien ná het doel is een
+      // bewuste productkeuze die niet bestaat (2026-08-07).
+      viewSummary: 'Bekijk samenvatting',
       duration: (min: number) =>
         `Je hebt ${min} ${min === 1 ? 'minuut' : 'minuten'} geroeid. Geweldig gedaan! 💪`,
       distance: (value: string, unit: string) =>

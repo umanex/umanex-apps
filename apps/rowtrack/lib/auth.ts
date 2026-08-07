@@ -4,6 +4,25 @@ import { supabase, AUTH_STORAGE_KEY } from './supabase';
 import { secureStorageAdapter } from './secureStorage';
 import { reportError } from './monitoring';
 import { purgePendingWorkout } from './pendingWorkout';
+import { forgetKnownDevice } from './ble/knownDevices';
+
+/**
+ * Wist alles wat lokaal aan déze gebruiker hangt.
+ *
+ * Draait bij uitloggen én bij verwijderen. Zonder dit bleef een rit die niet
+ * verstuurd kon worden — mét user-id en een hartslagwaarde per seconde —
+ * onversleuteld op het toestel staan nadat de gebruiker was uitgelogd. Op een
+ * gedeelde telefoon is dat andermans gezondheidsdata die blijft liggen.
+ *
+ * De onthouden bluetooth-toestellen gaan mee: uitloggen betekent "dit is mijn
+ * sessie niet meer", en autoconnect leert het toestel bij de eerstvolgende
+ * verbinding gewoon opnieuw. Dat kost één handmatige tik, geen data.
+ */
+async function clearLocalUserData(): Promise<void> {
+  await purgePendingWorkout();
+  await forgetKnownDevice('rower');
+  await forgetKnownDevice('hr');
+}
 
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -24,6 +43,7 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signOut() {
+  await clearLocalUserData();
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
@@ -129,7 +149,7 @@ export async function deleteAccount(password: string): Promise<DeleteAccountOutc
 
   // Vanaf hier is de data weg. Alles wat nu nog faalt mag de flow niet tegenhouden —
   // ingelogd blijven op een verwijderd account is de slechtere uitkomst.
-  await purgePendingWorkout();
+  await clearLocalUserData();
   const signedOut = await signOutAfterDeletion();
   return { ok: true, signedOut };
 }

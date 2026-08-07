@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useBle } from '@/lib/ble/ble-context';
+import { useHealthConsent } from '@/lib/health-consent-context';
 import { useWorkoutPhase } from '@/lib/workout-phase-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
@@ -21,6 +22,9 @@ if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
 }
 
+/** Zonder toestemming voor gezondheidsgegevens doet de hartslag-rij niets. */
+const noop = () => {};
+
 export default function WorkoutScreen() {
   const { user } = useAuth();
   const {
@@ -28,6 +32,7 @@ export default function WorkoutScreen() {
     hrStatus, hrDeviceName, hrBpm, hrError, startHRScan, stopHR,
     devices, picking, selectDevice, cancelSelection, autoConnect,
   } = useBle();
+  const { granted: healthGranted } = useHealthConsent();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -114,8 +119,11 @@ export default function WorkoutScreen() {
     // null wanneer de sessie < 2000m was. Samples compact als [t, d]-tuples opgeslagen.
     const samples = refs.samplesRef.current;
     const best2k = bestTimeForDistance(samples, 2000);
+    // Zonder toestemming voor gezondheidsgegevens gaat de hartslag er hier uit —
+    // aan de bron, niet pas bij het tonen. Anders zou hij alsnog in de database
+    // belanden en is de toestemming een schermpje zonder gevolg.
     const sampleTuples = samples.length > 0
-      ? samples.map((s) => (s.hr != null ? [s.t, s.d, s.hr] : [s.t, s.d]))
+      ? samples.map((s) => (healthGranted && s.hr != null ? [s.t, s.d, s.hr] : [s.t, s.d]))
       : null;
 
     const row = {
@@ -135,10 +143,12 @@ export default function WorkoutScreen() {
       max_watts: refs.maxWattsRef.current > 0 ? Math.round(refs.maxWattsRef.current) : null,
       max_spm: refs.maxSpmRef.current > 0 ? Math.round(refs.maxSpmRef.current) : null,
       best_split: refs.bestSplitRef.current < Infinity ? Math.round(refs.bestSplitRef.current) : null,
-      avg_heart_rate: refs.heartRateCount.current > 0
+      avg_heart_rate: healthGranted && refs.heartRateCount.current > 0
         ? Math.round(refs.heartRateSum.current / refs.heartRateCount.current)
         : null,
-      max_heart_rate: refs.maxHeartRateRef.current > 0 ? Math.round(refs.maxHeartRateRef.current) : null,
+      max_heart_rate: healthGranted && refs.maxHeartRateRef.current > 0
+        ? Math.round(refs.maxHeartRateRef.current)
+        : null,
       resistance_level: metricsState.resistanceLevel != null ? Math.round(metricsState.resistanceLevel) : null,
       goal_type: goal?.type ?? null,
       goal_target: goal?.target ?? null,
@@ -159,7 +169,7 @@ export default function WorkoutScreen() {
       // een andere rit die nog op een nieuwe poging wacht blijft staan.
       await clearPendingWorkout(row);
     }
-  }, [user, metricsState, goal, goalReached, splits, refs, hasPR]);
+  }, [user, metricsState, goal, goalReached, splits, refs, hasPR, healthGranted]);
 
   // Bij het openen van dit scherm verbinden met de toestellen van vorige keer.
   // Alleen in de idle-fase: tijdens een rit staat er al een verbinding, en op de
@@ -240,8 +250,8 @@ export default function WorkoutScreen() {
         onDisconnect={disconnect}
         hrStatus={hrStatus}
         hrDeviceName={hrDeviceName}
-        hrError={hrError}
-        onHRConnect={startHRScan}
+        hrError={healthGranted ? hrError : t.consent.hrBlocked}
+        onHRConnect={healthGranted ? startHRScan : noop}
         onHRDisconnect={stopHR}
         devices={devices}
         picking={picking}

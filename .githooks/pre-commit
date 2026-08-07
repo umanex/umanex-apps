@@ -10,9 +10,43 @@
 #     Waarschuwt alleen — blokkeren doet .githooks/commit-msg, en pas wanneer dat
 #     andere werk effectief in de commit belandt.
 #
+# En vóór dat alles: de branch-guard hieronder.
+#
 # Canonieke bron: umanex-os/templates/githooks-pre-commit. Gesynct naar
 # <klant-repo>/.githooks/pre-commit en geactiveerd via core.hooksPath=.githooks
 # (zet scripts/sync-os.sh automatisch). Dependency-vrij — geen husky.
+
+# 0. Branch-guard — nooit rechtstreeks op main, nooit op een losse HEAD.
+#
+# "Commit nooit direct op main" stond als proza in CLAUDE.md. Proza verliest van
+# gemak: de commit die dit vangt was er één die per ongeluk op main landde terwijl
+# er in dezelfde working tree aan een ándere app gewerkt werd.
+#
+# De losse-HEAD-tak dekt de worktree-opzet af. Een app-worktree parkeert op een
+# losse HEAD tot je een taak start; zonder deze guard zou een commit daar stil
+# verdwijnen zodra je wegcheckt. Nu word je gedwongen eerst te vertakken.
+#
+# Rebase, cherry-pick en een lopende merge draaien per definitie op een losse HEAD
+# of committen op de huidige branch — die laat de guard met rust, anders zou hij
+# doodgewone git-operaties breken.
+git_dir="$(git rev-parse --git-dir)"
+if [ ! -d "$git_dir/rebase-merge" ] && [ ! -d "$git_dir/rebase-apply" ] \
+   && [ ! -f "$git_dir/CHERRY_PICK_HEAD" ] && [ ! -f "$git_dir/MERGE_HEAD" ]; then
+  current_branch="$(git symbolic-ref --short -q HEAD || true)"
+
+  if [ -z "$current_branch" ]; then
+    echo "✗ Losse HEAD — je zit op geen enkele branch, dus deze commit raakt zoek."
+    echo "  Start je taak eerst: git checkout -b <type>/<korte-beschrijving>"
+    exit 1
+  fi
+
+  if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+    echo "✗ Niet rechtstreeks op $current_branch committen."
+    echo "  Werk op een branch: git checkout -b <type>/<korte-beschrijving>"
+    echo "  (types: feature · fix · chore · docs · refactor)"
+    exit 1
+  fi
+fi
 
 changed_apps="$(git diff --cached --name-only --diff-filter=ACMR \
   | sed -n 's#^apps/\([^/]*\)/.*#\1#p' | sort -u)"

@@ -3,6 +3,8 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BleProvider } from '@/lib/ble/ble-context';
+import { HealthConsentProvider, useHealthConsent } from '@/lib/health-consent-context';
+import { HealthConsentScreen } from '@/components/HealthConsentScreen';
 import { WorkoutPhaseProvider, useWorkoutPhase } from '@/lib/workout-phase-context';
 import { TabLabel } from '@/components/TabLabel';
 import { lockPortrait, allowAllOrientations } from '@/lib/orientation';
@@ -94,12 +96,36 @@ function TabsInner() {
   );
 }
 
+/**
+ * Toont het toestemmingsscherm zolang er geen keuze vastligt — ook op een bestaand
+ * account, want daar staat de data die nog geen grondslag heeft. Het scherm ligt
+ * over de tabs heen in plaats van als eigen route: de gebruiker is al ingelogd, en
+ * een extra route in de auth-gate zou die gate ingewikkelder maken dan nodig.
+ */
+function ConsentGate({ children }: { children: React.ReactNode }) {
+  const { consent, loading, grant, revoke } = useHealthConsent();
+  return (
+    <>
+      {children}
+      <HealthConsentScreen
+        visible={!loading && consent === null}
+        onGrant={grant}
+        onDecline={revoke}
+      />
+    </>
+  );
+}
+
 export default function TabsLayout() {
   return (
-    <BleProvider>
-      <WorkoutPhaseProvider>
-        <TabsInner />
-      </WorkoutPhaseProvider>
-    </BleProvider>
+    <HealthConsentProvider>
+      <ConsentGate>
+        <BleProvider>
+          <WorkoutPhaseProvider>
+            <TabsInner />
+          </WorkoutPhaseProvider>
+        </BleProvider>
+      </ConsentGate>
+    </HealthConsentProvider>
   );
 }

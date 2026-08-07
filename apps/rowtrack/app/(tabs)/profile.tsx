@@ -21,6 +21,7 @@ import { Button, WheelPicker, GoalSheet, Segmented, type SegmentedOption } from 
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { BottomSheet } from '@/components/BottomSheet';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
+import { useHealthConsent } from '@/lib/health-consent-context';
 import { t } from '@/i18n';
 import {
   bg,
@@ -116,6 +117,7 @@ const DELETE_ERROR_COPY: Record<DeleteAccountFailure, string> = {
 
 export default function ProfileScreen() {
   const { user, clearSession } = useAuth();
+  const { granted: healthGranted, grant: grantHealth, revoke: revokeHealth } = useHealthConsent();
   const insets = useSafeAreaInsets();
 
   const { goalProgress, refetch: refetchGoal } = usePeriodGoal(user?.id);
@@ -147,6 +149,7 @@ export default function ProfileScreen() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [healthBusy, setHealthBusy] = useState(false);
 
   // Body data drafts
   const [draftGender, setDraftGender] = useState<string | null>(null);
@@ -402,6 +405,39 @@ export default function ProfileScreen() {
     }
   }
 
+  // Aanzetten mag meteen; uitzetten wist gegevens en vraagt dus een bevestiging.
+  async function handleHealthToggle(value: boolean) {
+    if (healthBusy) return;
+    if (value) {
+      setHealthBusy(true);
+      const ok = await grantHealth();
+      setHealthBusy(false);
+      if (!ok) Alert.alert(t.common.error, t.consent.saveFailed);
+      return;
+    }
+    Alert.alert(t.consent.revokeTitle, t.consent.revokeBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.consent.revokeConfirm,
+        style: 'destructive',
+        onPress: async () => {
+          setHealthBusy(true);
+          const ok = await revokeHealth();
+          setHealthBusy(false);
+          if (!ok) {
+            Alert.alert(t.common.error, t.consent.revokeFailed);
+            return;
+          }
+          // De server heeft de velden gewist; de lokale kopie moet mee.
+          setGender(null);
+          setBirthDate(null);
+          setHeightCm(null);
+          setWeightKg(null);
+        },
+      },
+    ]);
+  }
+
   function handleLogout() {
     Alert.alert(t.profile.logout, t.profile.logoutConfirmBody, [
       { text: t.common.cancel, style: 'cancel' },
@@ -466,7 +502,9 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* LICHAAMSGEGEVENS */}
+        {/* LICHAAMSGEGEVENS — enkel met toestemming; zonder die grondslag hoort de
+            app deze velden niet eens aan te bieden. */}
+        {healthGranted ? (
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t.profile.sectionBody}</Text>
           <View style={styles.listCard}>
@@ -501,6 +539,29 @@ export default function ProfileScreen() {
                 <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
               </View>
             </TouchableOpacity>
+          </View>
+        </View>
+        ) : null}
+
+        {/* GEZONDHEIDSGEGEVENS — de toestemming zelf, altijd zichtbaar en in beide
+            richtingen te bedienen. Intrekken moet even makkelijk zijn als geven. */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>{t.consent.settingLabel}</Text>
+          <View style={styles.listCard}>
+            <View style={styles.listRow}>
+              <View style={styles.spmToggleLabel}>
+                <Text style={styles.listLabel}>{t.consent.settingLabel}</Text>
+                <Text style={styles.listHint}>{t.consent.settingHint}</Text>
+              </View>
+              <Switch
+                value={healthGranted}
+                onValueChange={handleHealthToggle}
+                disabled={healthBusy}
+                trackColor={{ false: border.strong, true: accent.default }}
+                thumbColor={fg.primary}
+                ios_backgroundColor={border.strong}
+              />
+            </View>
           </View>
         </View>
 

@@ -36,6 +36,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | GoalSegments | `apps/rowtrack/components/GoalSegments.tsx` | components | — | — | — |
 | GoalSetupModal | `apps/rowtrack/components/GoalSetupModal.tsx` | components | — | — | — |
 | GoalSheet | `apps/rowtrack/components/GoalSheet.tsx` | components | — | — | — |
+| HealthConsentScreen | `apps/rowtrack/components/HealthConsentScreen.tsx` | components | — | — | — |
 | HrStatusBar | `apps/rowtrack/components/HrStatusBar.tsx` | components | — | — | — |
 | Icon | `apps/rowtrack/components/Icon.tsx` | components | — | — | — |
 | KPI_single | `apps/rowtrack/components/KPI_single.tsx` | components | — | — | — |
@@ -55,15 +56,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+812240f docs(rowtrack): privacy policy written against what the app actually does
 9b52e10 docs(rowtrack): account deletion is validated against a real deletion
 ab1fd44 chore(rowtrack): drop env fallbacks that name variables Supabase never sets
 fdbc08b fix(rowtrack): drop the live metrics to zero when you stop pulling
 fbd8fbe fix(rowtrack): name the celebration button after what it does
-4d3be76 Merge remote-tracking branch 'origin/main' into feature/rowtrack-account-verwijderen
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/docs/privacybeleid.md
+  M  apps/rowtrack/app/(tabs)/_layout.tsx
+  M  apps/rowtrack/app/(tabs)/profile.tsx
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  A  apps/rowtrack/briefings/2026-08-07-feature-gezondheidsdata-toestemming.tcebc.md
+  A  apps/rowtrack/components/HealthConsentScreen.tsx
+  M  apps/rowtrack/docs/privacybeleid.md
+  M  apps/rowtrack/i18n/translations/nl.ts
+  M  apps/rowtrack/lib/auth.ts
+  A  apps/rowtrack/lib/health-consent-context.tsx
+  A  apps/rowtrack/lib/links.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

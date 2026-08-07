@@ -26,12 +26,9 @@ over de app zelf — niet over deze website of andere producten van umanex.
 
 RowTrack wordt gemaakt en beheerd door:
 
-**umanex** — Jeroen Colpaert
+**umanex CommV**
+Eernegemweg 97, 8490 Jabbeke, België
 E-mail: **jeroen@umanex.be**
-
-<!-- [IN TE VULLEN vóór publicatie: ondernemingsnummer/BTW-nummer en vestigingsadres. Die zijn
-     verplicht onder AVG art. 13 lid 1 a — de identiteit van de verwerkingsverantwoordelijke moet
-     controleerbaar zijn, en een e-mailadres alleen volstaat daar niet voor. -->
 
 umanex is de *verwerkingsverantwoordelijke*: degene die bepaalt welke gegevens verzameld worden en
 waarom. Er is geen functionaris voor gegevensbescherming aangesteld; dat is voor een organisatie van
@@ -116,19 +113,14 @@ Een deel van je gegevens staat lokaal, niet op onze servers:
 - **Welk bluetooth-toestel je het laatst gebruikte** — het id en de naam van je roeitrainer en
   hartslagmeter, zodat de app de volgende keer meteen kan verbinden. Dit verlaat je telefoon niet.
 
-Twee dingen die je moet weten over die lokale opslag:
+**Uitloggen wist dit alles.** Zowel uitloggen als je account verwijderen ruimt de niet-verstuurde
+rit en de onthouden bluetooth-toestellen op. Deel je je telefoon met iemand anders, dan blijft er na
+het uitloggen dus niets van jou achter in de app.
 
-1. **De onversleutelde delen kunnen in de back-up van je telefoon terechtkomen** — dus in iCloud
-   (Apple) of Google Drive. Dat is een back-up die jij beheert, niet wij, maar het betekent wel dat
-   een niet-verstuurde rit met hartslaggegevens daarin kan zitten.
-2. **Uitloggen wist deze lokale gegevens niet.** Deel je je telefoon met iemand anders, dan blijven
-   een niet-verstuurde rit en de onthouden bluetooth-toestellen staan tot de app opnieuw verbindt of
-   je hem verwijdert. Account verwijderen wist de niet-verstuurde rit wél; de onthouden
-   bluetooth-toestellen blijven ook dan staan.
-
-<!-- [OPMERKING VOOR JEROEN — niet publiceren: punt 2 beschrijft twee echte gaten in de code
-     (pendingWorkout wordt niet gewist bij uitloggen; forgetKnownDevice heeft geen call site).
-     Beter de code fixen dan dit in het beleid moeten toegeven. Zie het overzicht in de PR. -->
+Eén ding blijft buiten onze macht: **de onversleutelde delen kunnen in de back-up van je telefoon
+terechtkomen** — in iCloud (Apple) of Google Drive — zolang ze er staan. Dat is een back-up die jij
+beheert, niet wij, maar het betekent wel dat een rit die nog niet verstuurd is met hartslaggegevens
+daarin kan zitten.
 
 ---
 
@@ -141,12 +133,17 @@ handig is, en niet omdat je de app nu eenmaal gebruikt.
 
 Daarom:
 
-- Je geeft die toestemming apart, en pas nadat je hebt kunnen lezen waarvoor.
+- Je geeft die toestemming **apart**, op een eigen scherm, en pas nadat je hebt kunnen lezen
+  waarvoor. Er staat niets voorgevinkt en de twee keuzes zijn gelijkwaardig — ja is niet groter of
+  opvallender dan nee.
 - Je kunt de app **gebruiken zonder** je lichaamsgegevens in te vullen en zonder hartslagmeter. Je
   ritten worden dan gewoon opgeslagen, zonder hartslag en met een geschat calorieverbruik.
-- Je kunt je toestemming **altijd intrekken**. Dat kan door de betreffende velden leeg te maken in
-  je profiel, door geen hartslagmeter meer te koppelen, of door je account te verwijderen. Intrekken
-  werkt voor de toekomst; wat er tot dan verwerkt is blijft rechtmatig verwerkt.
+- Je kunt je toestemming **altijd intrekken**, met één schakelaar in je profiel — even makkelijk
+  als geven. Trek je hem in, dan **wissen we wat er al is**: je hartslag wordt uit al je opgeslagen
+  ritten verwijderd, samen met je gewicht, lengte, geboortedatum en geslacht. Je ritten zelf blijven
+  bestaan, met afstand, tijd, vermogen en split. Dat wissen is onomkeerbaar.
+- Zonder toestemming is de hartslagmeter niet koppelbaar en zijn de lichaamsvelden niet zichtbaar.
+  Er wordt dan niets van deze gegevens vastgelegd — ook niet tijdelijk.
 
 ---
 
@@ -171,11 +168,7 @@ telefoon.
 
 **Supabase** is onze enige verwerker. Zij hosten de database, het aanmeldsysteem en de functie die
 je account verwijdert, en zij versturen de e-mails voor wachtwoordherstel. Zij verwerken je gegevens
-uitsluitend in onze opdracht, op basis van een verwerkersovereenkomst.
-
-<!-- [IN TE VULLEN: bevestig dat de Supabase DPA aanvaard is en noteer de regio van het project
-     (Dashboard → Project Settings → General → Region). Ligt die buiten de EER, dan moet sectie 6
-     de doorgifte-grondslag benoemen (standaardcontractbepalingen). -->
+uitsluitend in onze opdracht, op basis van een aanvaarde verwerkersovereenkomst.
 
 **Apple of Google**, als beheerder van de back-up van je telefoon, kunnen de onversleutelde lokale
 gegevens uit sectie 2.5 in je toestel-back-up hebben staan. Dat is een gevolg van hoe je telefoon
@@ -198,12 +191,12 @@ app, dan stuurt hij niets meer.
 
 ## 6. Waar je gegevens staan
 
-De database en het aanmeldsysteem draaien bij Supabase.
+De database en het aanmeldsysteem draaien bij Supabase in de regio **Centraal-Europa (Frankfurt,
+`eu-central-1`)**. Je gegevens blijven daarmee binnen de Europese Economische Ruimte; er is geen
+doorgifte naar een land buiten de EER.
 
-<!-- [IN TE VULLEN: "in de regio {regio}". Bij een EER-regio volstaat: "Je gegevens blijven binnen
-     de Europese Economische Ruimte." Bij een regio erbuiten hoort hier de doorgifte-grondslag
-     (standaardcontractbepalingen van de Europese Commissie) plus een verwijzing naar de subverwerkers
-     van Supabase. -->
+De back-up van je telefoon (sectie 5) is de uitzondering waar wij geen zeggenschap over hebben: waar
+Apple of Google die opslaat, bepaal jij via de instellingen van je toestel.
 
 ---
 

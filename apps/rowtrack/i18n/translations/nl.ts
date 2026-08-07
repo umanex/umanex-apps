@@ -366,6 +366,42 @@ export const nl = {
     hidePassword: 'Verberg wachtwoord',
   },
 
+  consent: {
+    title: 'Je gezondheidsgegevens',
+    intro:
+      'RowTrack kan gegevens verwerken die onder de privacywetgeving als gezondheidsgegevens ' +
+      'gelden. Daar vragen we je apart toestemming voor — niet verstopt in de voorwaarden.',
+    items: [
+      'Je hartslag tijdens een rit, ongeveer één meting per seconde',
+      'Je gewicht en lengte',
+      'Je geboortedatum en geslacht',
+    ],
+    why:
+      'We gebruiken ze om je calorieverbruik te berekenen en om je trainingen in context te ' +
+      'zetten. Ze worden nooit gedeeld, verkocht of gebruikt voor advertenties.',
+    optional:
+      'Zeg je nee, dan werkt de app gewoon. Je ritten worden opgeslagen met afstand, tijd, ' +
+      'vermogen en split; alleen je hartslag en lichaamsgegevens blijven weg.',
+    withdraw:
+      'Je kunt je keuze later altijd wijzigen in je profiel. Trek je de toestemming in, dan ' +
+      'wissen we de hartslag- en lichaamsgegevens die er al zijn.',
+    readPolicy: 'Lees het privacybeleid',
+    accept: 'Ja, ik geef toestemming',
+    decline: 'Nee, zonder deze gegevens',
+    saveFailed: 'Je keuze kon niet opgeslagen worden. Controleer je verbinding en probeer opnieuw.',
+    // Profiel-schakelaar
+    settingLabel: 'Gezondheidsgegevens',
+    settingHint: 'Hartslag, gewicht, lengte, geboortedatum en geslacht',
+    revokeTitle: 'Toestemming intrekken',
+    revokeBody:
+      'Je hartslag wordt uit al je opgeslagen ritten gewist, samen met je gewicht, lengte, ' +
+      'geboortedatum en geslacht. Je ritten zelf blijven bestaan. Dit kan niet ongedaan gemaakt worden.',
+    revokeConfirm: 'Intrekken en wissen',
+    revokeFailed: 'Intrekken is mislukt. Probeer het opnieuw.',
+    // Waar de gegevens geblokkeerd zijn
+    hrBlocked: 'Geef eerst toestemming voor gezondheidsgegevens in je profiel.',
+  },
+
   errors: {
     // BLE-fouten. De services emitteren codes (lib/ble/types.ts); de vertaling
     // gebeurt aan de UI-kant (i18n/bleErrors.ts).

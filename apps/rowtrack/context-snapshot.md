@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-06_
+_Gegenereerd op 2026-08-07_
 
 ## Project
 - **App:** rowtrack
@@ -49,28 +49,30 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | TabLabel | `apps/rowtrack/components/TabLabel.tsx` | components | — | — | — |
 | WheelPicker | `apps/rowtrack/components/WheelPicker.tsx` | components | — | — | — |
 | ActivePhase | `apps/rowtrack/components/workout/ActivePhase.tsx` | workout | — | — | — |
+| DeviceSelectionModal | `apps/rowtrack/components/workout/DeviceSelectionModal.tsx` | workout | — | — | — |
 | IdlePhase | `apps/rowtrack/components/workout/IdlePhase.tsx` | workout | — | — | — |
 | WorkoutCard | `apps/rowtrack/components/WorkoutCard.tsx` | components | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+40568a2 feat(rowtrack): in-app account deletion via a service-role Edge Function
 62ab13d chore: prune four orphans, and declare the binary the render scripts need
 e59eaa1 chore(config): remove the dead flat-config eslint files
 5806065 refactor(config): share the token lint rules instead of copying them per app
 36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
-5ead2b3 fix(tokens): give primary a contrast-safe value per mode
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  A  apps/rowtrack/briefings/2026-08-06-feature-account-verwijderen.tcebc.md
+  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  A  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  A  apps/rowtrack/components/workout/DeviceSelectionModal.tsx
+  M  apps/rowtrack/components/workout/IdlePhase.tsx
+  M  apps/rowtrack/context-snapshot.md
+  M  apps/rowtrack/i18n/bleErrors.ts
   M  apps/rowtrack/i18n/translations/nl.ts
-  M  apps/rowtrack/lib/auth-context.tsx
-  M  apps/rowtrack/lib/auth.ts
-  M  apps/rowtrack/lib/pendingWorkout.ts
-  M  apps/rowtrack/lib/supabase.ts
-  A  apps/rowtrack/supabase/functions/delete-account/index.ts
-  M  apps/rowtrack/tsconfig.json
+  M  apps/rowtrack/lib/ble/ble-context.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

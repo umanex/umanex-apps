@@ -8,8 +8,9 @@ import {
 } from 'react';
 import { RowerBleService } from './ble-service';
 import { HRBleService } from './hr-service';
-import { rowerErrorMessage } from '@/i18n/bleErrors';
-import type { BleContextValue, ConnectionStatus, HRFoundDevice, HRStatus, RowerMetrics } from './types';
+import { loadKnownDevice, saveKnownDevice, type DeviceKind } from './knownDevices';
+import { rowerErrorMessage, hrErrorMessage } from '@/i18n/bleErrors';
+import type { BleContextValue, ConnectionStatus, FoundDevice, HRStatus, RowerMetrics } from './types';
 
 const BleContext = createContext<BleContextValue>({
   status: 'idle',
@@ -21,13 +22,19 @@ const BleContext = createContext<BleContextValue>({
   hrStatus: 'idle',
   hrDeviceName: null,
   hrBpm: null,
+  hrError: null,
   startHRScan: () => {},
   stopHR: () => {},
-  hrDevices: [],
-  hrSelecting: false,
-  selectHRDevice: () => {},
-  cancelHRSelection: () => {},
+  devices: [],
+  picking: null,
+  selectDevice: () => {},
+  cancelSelection: () => {},
+  autoConnect: async () => {},
 });
+
+const log: (...args: unknown[]) => void = __DEV__
+  ? (...args: unknown[]) => console.log('[BLE-auto]', ...args)
+  : () => {};
 
 export function BleProvider({ children }: { children: React.ReactNode }) {
   // Rower state
@@ -41,9 +48,29 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   const [hrStatus, setHRStatus] = useState<HRStatus>('idle');
   const [hrDeviceName, setHRDeviceName] = useState<string | null>(null);
   const [hrBpm, setHRBpm] = useState<number | null>(null);
-  const [hrDevices, setHRDevices] = useState<HRFoundDevice[]>([]);
-  const [hrSelecting, setHRSelecting] = useState(false);
+  const [hrError, setHRError] = useState<string | null>(null);
   const hrServiceRef = useRef<HRBleService | null>(null);
+
+  // Keuzelijst — gedeeld door beide types; `picking` zegt wélk type kiest.
+  const [devices, setDevices] = useState<FoundDevice[]>([]);
+  const [picking, setPicking] = useState<DeviceKind | null>(null);
+
+  /**
+   * Types waarvoor de gebruiker zelf verbrak. Autoconnect laat die met rust tot hij
+   * weer verbindt — anders pakt de app het toestel meteen terug en vecht de app
+   * tegen zijn eigen gebruiker. Een ref, niet state: dit stuurt geen render aan en
+   * moet meteen leesbaar zijn binnen dezelfde tick.
+   */
+  const suppressed = useRef<Set<DeviceKind>>(new Set());
+  /** Eén autoconnect-poging tegelijk, ook bij een dubbele focus-event. */
+  const autoConnecting = useRef(false);
+
+  // Spiegels van de status, zodat `autoConnect` een stabiele identiteit houdt en het
+  // focus-effect niet bij elke statuswissel opnieuw vuurt.
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  const hrStatusRef = useRef(hrStatus);
+  hrStatusRef.current = hrStatus;
 
   useEffect(() => {
     // Rower service
@@ -57,9 +84,19 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
           setMetrics(null);
           setDeviceName(null);
         }
+        // Onthouden zodra een verbinding staat: dát is het moment waarop we zeker
+        // weten dat dit toestel werkt, niet het moment waarop het gevonden werd.
+        if (newStatus === 'connected') {
+          const d = serviceRef.current?.currentDevice();
+          if (d) saveKnownDevice('rower', { id: d.id, name: d.name });
+        }
       },
       (newMetrics) => {
         setMetrics(newMetrics);
+      },
+      (found) => {
+        setDevices(found);
+        setPicking('rower');
       },
     );
     serviceRef.current = service;
@@ -73,17 +110,24 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
           setHRBpm(null);
           setHRDeviceName(null);
         }
-        if (newStatus === 'error' && bleError) {
-          // HR errors are non-blocking, just log
-          if (__DEV__) console.log('[HR] error:', bleError.code, bleError.detail ?? '');
+        // Een HR-fout blokkeert de rit niet, maar hij hoort de gebruiker wel te
+        // bereiken: voorheen ging hij enkel naar een dev-log, dus een mislukte scan
+        // was niet te onderscheiden van een knop die niets doet.
+        setHRError(newStatus === 'error' && bleError ? hrErrorMessage(bleError) : null);
+        if (newStatus === 'error' && bleError && __DEV__) {
+          console.log('[HR] error:', bleError.code, bleError.detail ?? '');
+        }
+        if (newStatus === 'connected') {
+          const d = hrServiceRef.current?.currentDevice();
+          if (d) saveKnownDevice('hr', d);
         }
       },
       (bpm) => {
         setHRBpm(bpm);
       },
-      (devices) => {
-        setHRDevices(devices);
-        setHRSelecting(true);
+      (found) => {
+        setDevices(found);
+        setPicking('hr');
       },
     );
     hrServiceRef.current = hrService;
@@ -97,8 +141,13 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Rower controls
-  const startScan = useCallback(() => {
+  const startScan = useCallback(async () => {
     setError(null);
+    suppressed.current.delete('rower'); // zelf verbinden heft het verbreken op
+    // Staat er een onthouden trainer tussen de treffers, dan hoeft die niet op de
+    // andere te wachten — met twee machines in de ruimte wint de jouwe meteen.
+    const known = await loadKnownDevice('rower');
+    serviceRef.current?.setPreferred(known?.id ?? null);
     serviceRef.current?.startScan().catch((err: unknown) => {
       const detail = err instanceof Error ? err.message : undefined;
       setStatus('error');
@@ -106,41 +155,106 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const disconnect = useCallback(() => {
+  // `auto` = het einde van een rit, niet een keuze van de gebruiker. Zonder dat
+  // onderscheid onderdrukte élke rit de autoconnect van de volgende sessie, en deed
+  // de feature na de eerste rit niets meer.
+  const disconnect = useCallback((opts?: { auto?: boolean }) => {
+    if (!opts?.auto) suppressed.current.add('rower');
     serviceRef.current?.disconnect();
   }, []);
 
   // HR controls
   const startHRScan = useCallback(() => {
+    setHRError(null);
+    suppressed.current.delete('hr');
     hrServiceRef.current?.startScan().catch((err: unknown) => {
+      const detail = err instanceof Error ? err.message : undefined;
       setHRStatus('error');
-      if (__DEV__) console.log('[HR] scan error:', err instanceof Error ? err.message : err);
+      setHRError(hrErrorMessage({ code: 'scan_failed', detail }));
     });
   }, []);
 
-  const stopHR = useCallback(() => {
+  const stopHR = useCallback((opts?: { auto?: boolean }) => {
+    if (!opts?.auto) suppressed.current.add('hr');
     hrServiceRef.current?.stop();
   }, []);
 
-  const selectHRDevice = useCallback((deviceId: string) => {
-    const device = hrDevices.find((d) => d.id === deviceId);
-    setHRSelecting(false);
-    setHRDevices([]);
-    hrServiceRef.current?.connectToDeviceById(deviceId, device?.name);
-  }, [hrDevices]);
+  // Keuzelijst
+  const selectDevice = useCallback((deviceId: string) => {
+    const kind = picking;
+    const device = devices.find((d) => d.id === deviceId);
+    setPicking(null);
+    setDevices([]);
+    if (kind === 'rower') {
+      // Bewust gekozen toestel wordt het onthouden toestel — ook als de verbinding
+      // straks faalt is dít wat de gebruiker wil, niet het vorige.
+      if (device) saveKnownDevice('rower', { id: device.id, name: device.name });
+      serviceRef.current?.connectChoice(deviceId);
+      return;
+    }
+    if (kind === 'hr') {
+      if (device) saveKnownDevice('hr', { id: device.id, name: device.name });
+      hrServiceRef.current?.connectToDeviceById(deviceId, device?.name);
+    }
+  }, [devices, picking]);
 
-  const cancelHRSelection = useCallback(() => {
-    setHRSelecting(false);
-    setHRDevices([]);
-    setHRStatus('idle');
+  const cancelSelection = useCallback(() => {
+    const kind = picking;
+    setPicking(null);
+    setDevices([]);
+    // Annuleren is een expliciet "nee" — net als verbreken. Zonder dit verbond
+    // autoconnect meteen daarna alsnog met het onthouden toestel, precies datgene
+    // wat de gebruiker zojuist niet koos.
+    if (kind) suppressed.current.add(kind);
+    // Zonder keuze staat er niets te verbinden; de rij hoort terug op "Verbinden".
+    if (kind === 'rower') setStatus('idle');
+    if (kind === 'hr') setHRStatus('idle');
+  }, [picking]);
+
+  /**
+   * Verbindt met de toestellen van vorige keer. Draait bij het openen van het
+   * trainingsscherm — niet bij app-start, anders doet de app Bluetooth terwijl je
+   * alleen je historiek bekijkt.
+   *
+   * Rechtstreeks op id, dus zonder scan. Dat is sneller én het omzeilt de klasse
+   * fouten waarin een toestel niet in scanresultaten opduikt. Lukt het niet, dan
+   * gebeurt er niets zichtbaars: de gebruiker tikt gewoon op Verbinden.
+   */
+  const autoConnect = useCallback(async () => {
+    if (autoConnecting.current) return;
+    autoConnecting.current = true;
+    try {
+      const tryKind = async (kind: DeviceKind, busy: boolean, connect: (d: { id: string; name: string | null }) => Promise<boolean>) => {
+        if (busy || suppressed.current.has(kind)) return;
+        const known = await loadKnownDevice(kind);
+        if (!known) return;
+        const ok = await connect(known);
+        if (!ok) log(kind, 'bekend toestel niet bereikbaar — gebruiker kan zelf verbinden');
+      };
+
+      await Promise.all([
+        tryKind('rower', statusRef.current !== 'idle' && statusRef.current !== 'error', (d) =>
+          serviceRef.current?.connectKnown(d.id, d.name) ?? Promise.resolve(false),
+        ),
+        tryKind('hr', hrStatusRef.current !== 'idle' && hrStatusRef.current !== 'error', (d) =>
+          hrServiceRef.current?.connectKnown(d.id, d.name) ?? Promise.resolve(false),
+        ),
+      ]);
+    } finally {
+      autoConnecting.current = false;
+    }
+    // Bewust lege deps: dit draait in een `useFocusEffect`, en met status in de
+    // dependency-array kreeg de functie bij élke statuswissel een nieuwe identiteit
+    // — waarna het effect opnieuw vuurde terwijl het scherm gewoon gefocust bleef.
+    // Eén mislukte handmatige scan werd zo meteen overschreven door een autoconnect.
   }, []);
 
   return (
     <BleContext.Provider
       value={{
         status, deviceName, metrics, error, startScan, disconnect,
-        hrStatus, hrDeviceName, hrBpm, startHRScan, stopHR,
-        hrDevices, hrSelecting, selectHRDevice, cancelHRSelection,
+        hrStatus, hrDeviceName, hrBpm, hrError, startHRScan, stopHR,
+        devices, picking, selectDevice, cancelSelection, autoConnect,
       }}
     >
       {children}

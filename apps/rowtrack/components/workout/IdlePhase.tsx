@@ -1,17 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
-  FlatList,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { EdgeInsets } from 'react-native-safe-area-context';
-import type { ConnectionStatus, HRFoundDevice, HRStatus } from '@/lib/ble/types';
+import type { ConnectionStatus, FoundDevice, HRStatus } from '@/lib/ble/types';
+import { DeviceSelectionModal, type DeviceSelectionKind } from './DeviceSelectionModal';
 import type { GoalType } from '@/lib/workout-goals';
 import { buildGoalSuggestions } from '@/lib/workout-goals';
 import {
@@ -33,15 +31,14 @@ import {
 import {
   bg,
   fg,
-  accent,
   border,
   status,
   typeStyles,
   fontFamily,
   fontSize,
   radii,
-  componentRadius,
   layout,
+  space,
 } from '@/constants';
 import { useAuth } from '@/lib/auth-context';
 import { useRecentGoals } from '@/lib/hooks/useRecentGoals';
@@ -63,12 +60,13 @@ type IdlePhaseProps = {
   onDisconnect: () => void;
   hrStatus: HRStatus;
   hrDeviceName: string | null;
+  hrError: string | null;
   onHRConnect: () => void;
   onHRDisconnect: () => void;
-  hrDevices: HRFoundDevice[];
-  hrSelecting: boolean;
-  onSelectHRDevice: (deviceId: string) => void;
-  onCancelHRSelection: () => void;
+  devices: FoundDevice[];
+  picking: DeviceSelectionKind | null;
+  onSelectDevice: (deviceId: string) => void;
+  onCancelSelection: () => void;
   idleGoalType: GoalType | null;
   setIdleGoalType: (type: GoalType | null) => void;
   idleGoalInput: string;
@@ -81,67 +79,6 @@ type IdlePhaseProps = {
   insets: EdgeInsets;
 }
 
-// --- Signal strength ---
-
-function rssiLabel(rssi: number): { text: string; color: string } {
-  if (rssi > -60) return { text: t.workout.hrModal.signalStrong, color: status.success };
-  if (rssi >= -80) return { text: t.workout.hrModal.signalGood, color: accent.default };
-  return { text: t.workout.hrModal.signalWeak, color: status.error };
-}
-
-// --- HR Selection Modal ---
-
-function HRSelectionModal({
-  visible,
-  devices,
-  onSelect,
-  onCancel,
-}: {
-  visible: boolean;
-  devices: HRFoundDevice[];
-  onSelect: (deviceId: string) => void;
-  onCancel: () => void;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={modalStyles.backdrop}>
-        <View style={modalStyles.sheet}>
-          <Text style={modalStyles.title}>{t.workout.hrModal.title}</Text>
-          <FlatList
-            data={devices}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              const signal = rssiLabel(item.rssi);
-              return (
-                <TouchableOpacity onPress={() => onSelect(item.id)} style={modalStyles.deviceRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Ionicons name="heart" size={18} color={accent.default} />
-                    <Text style={modalStyles.deviceName}>{item.name}</Text>
-                  </View>
-                  <Text style={[modalStyles.deviceSignal, { color: signal.color }]}>{signal.text}</Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
-          <TouchableOpacity onPress={onCancel} style={modalStyles.cancelBtn}>
-            <Text style={modalStyles.cancelText}>{t.workout.hrModal.cancel}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-const modalStyles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheet: { backgroundColor: bg.elevated, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 24, paddingBottom: 40, paddingHorizontal: 20 },
-  title: { color: fg.primary, fontSize: fontSize['18'], fontFamily: fontFamily.displayBold, marginBottom: 16, textAlign: 'center' },
-  deviceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: bg.raised, borderRadius: componentRadius.cardSm, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 8 },
-  deviceName: { color: fg.primary, fontSize: fontSize['15'], fontFamily: fontFamily.albertSansMedium },
-  deviceSignal: { fontSize: fontSize['13'], fontFamily: fontFamily.albertSansMedium },
-  cancelBtn: { marginTop: 8, paddingVertical: 14, borderRadius: componentRadius.cardSm, alignItems: 'center' },
-  cancelText: { color: fg.tertiary, fontSize: fontSize['15'], fontFamily: fontFamily.albertSansSemiBold },
-});
 
 // --- Component ---
 
@@ -152,12 +89,13 @@ export function IdlePhase({
   onDisconnect,
   hrStatus,
   hrDeviceName,
+  hrError,
   onHRConnect,
   onHRDisconnect,
-  hrDevices,
-  hrSelecting,
-  onSelectHRDevice,
-  onCancelHRSelection,
+  devices,
+  picking,
+  onSelectDevice,
+  onCancelSelection,
   idleGoalType,
   setIdleGoalType,
   setIdleGoalInput,
@@ -168,6 +106,10 @@ export function IdlePhase({
 }: IdlePhaseProps) {
   const { user } = useAuth();
   const recents = useRecentGoals(user?.id, idleGoalType);
+  // Laatste toesteltype dat koos — de sheet blijft tijdens zijn sluit-animatie in
+  // beeld terwijl `picking` al null is.
+  const lastPicking = useRef<DeviceSelectionKind>('rower');
+  if (picking) lastPicking.current = picking;
   const { width: screenWidth } = useWindowDimensions();
 
   const selectedSegment: GoalSegmentType = idleGoalType ?? 'none';
@@ -340,6 +282,9 @@ export function IdlePhase({
                 onDisconnect={onHRDisconnect}
               />
             </View>
+            {/* Een mislukte hartslag-scan liet de rij gewoon terugvallen op "Verbinden",
+                zonder één woord uitleg — niet te onderscheiden van een dode knop. */}
+            {hrError ? <Text style={styles.deviceError}>{hrError}</Text> : null}
           </View>
 
           {/* Doel header + segments */}
@@ -370,11 +315,15 @@ export function IdlePhase({
         />
       </View>
 
-      <HRSelectionModal
-        visible={hrSelecting}
-        devices={hrDevices}
-        onSelect={onSelectHRDevice}
-        onCancel={onCancelHRSelection}
+      <DeviceSelectionModal
+        visible={picking !== null}
+        // Tijdens het wegschuiven is `picking` al null terwijl de sheet nog in beeld
+        // is; zonder het laatste type te onthouden flitst de titel dan naar die van
+        // het andere toestel.
+        kind={picking ?? lastPicking.current}
+        devices={devices}
+        onSelect={onSelectDevice}
+        onCancel={onCancelSelection}
       />
     </View>
   );
@@ -433,6 +382,13 @@ const styles = StyleSheet.create({
   sectionLabel: {
     ...typeStyles.labelGoalPrefix,
     color: fg.tertiary,
+  },
+
+  deviceError: {
+    fontFamily: fontFamily.albertSansRegular,
+    fontSize: fontSize['13'],
+    color: status.error,
+    marginTop: space['8'],
   },
 
   doelHeader: {

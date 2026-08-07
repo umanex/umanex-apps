@@ -130,9 +130,9 @@ export const nl = {
       freeTraining: 'Vrije training zonder vooraf bepaald doel.',
       startButton: 'Start training',
     },
-    hrModal: {
-      title: 'Kies hartslagmeter',
-      cancel: 'Annuleer',
+    deviceModal: {
+      titleRower: 'Kies roeitrainer',
+      titleHr: 'Kies hartslagmeter',
       signalStrong: 'Sterk',
       signalGood: 'Goed',
       signalWeak: 'Zwak',
@@ -363,9 +363,8 @@ export const nl = {
   },
 
   errors: {
-    // Roeitrainer-BLE. De service emitteert codes (lib/ble/types.ts); de vertaling
-    // gebeurt aan de UI-kant (i18n/bleErrors.ts). HR-fouten bereiken de UI niet
-    // (alleen dev-log) en hebben daarom geen vertaling.
+    // BLE-fouten. De services emitteren codes (lib/ble/types.ts); de vertaling
+    // gebeurt aan de UI-kant (i18n/bleErrors.ts).
     rower: {
       bluetoothOff: 'Bluetooth staat uit. Schakel Bluetooth in.',
       bluetoothUnauthorized: 'Bluetooth toestemming is vereist.',
@@ -376,6 +375,19 @@ export const nl = {
       connectFailed: 'Verbinding mislukt',
       noData: 'Kan geen data ontvangen. Herstart de app.',
       connectionLost: 'Verbinding verloren. Probeer opnieuw.',
+    },
+    hr: {
+      bluetoothOff: 'Bluetooth staat uit. Schakel Bluetooth in.',
+      permissionDenied: 'Bluetooth toestemming geweigerd.',
+      // Noemt de twee dingen die de gebruiker zélf kan doen. Een borstband gaat uit
+      // zonder huidcontact; een horloge moet zijn hartslag-broadcast aan hebben staan.
+      hrNotFound:
+        'Geen hartslagmeter gevonden. Zit de band goed, of staat de hartslag-broadcast ' +
+        'op je horloge aan?',
+      scanError: (detail: string) => `Scanfout: ${detail}`,
+      scanFailed: 'Zoeken naar een hartslagmeter is mislukt.',
+      connectFailed: 'Verbinden met de hartslagmeter is mislukt.',
+      connectionLost: 'Verbinding met de hartslagmeter verloren.',
     },
   },
 };

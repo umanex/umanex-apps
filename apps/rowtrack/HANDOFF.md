@@ -51,6 +51,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Bevinding:** De actieve chip (Chip.tsx) én het actieve segment (GoalSegments.tsx) gebruiken `rgba(240,84,84,0.20)` hardcoded; er bestaat enkel `accent.muted` (0.12) en `accent.subtle` (0.06). Twee `// TODO`-markers wijzen ernaar.
 - **Volgende zet:** Een `accent.selected` (0.20) token toevoegen via Tokens Studio → `tokens.json`, rebuilden, beide hardcodes vervangen.
 - **Status:** open — 2026-07-14: tint-richting bevestigd (0.20 wint van de audit-"solid"); token nog NIET toegevoegd. Er is nu een DERDE hardcode bij: het active segment in `profile.tsx`. Zodra de alias gepusht is → 3 plekken vervangen (Chip, GoalSegments, segmented).
+  2026-08-06: opnieuw gecontroleerd na "tokens zijn aangepast" — er is **niets geland**.
+  `tokens.json` staat nog op de push van 14 juli, geen tokens-sync-run, en een lokale
+  `pnpm --filter rowtrack tokens:build` is een schone no-op. De wijziging is dus wel in Tokens
+  Studio gemaakt maar niet naar GitHub gepusht. De hardcodes staan nu op vier plekken:
+  `Chip.tsx:42`, `GoalSegments.tsx:157`, `Segmented.tsx:84` (elk met een `// TODO`) en
+  `ActivePhase.tsx:686` (die laatste is bewust `accent.muted`, geen 0.20).
 
 ## 2026-07-09 — Chip value/unit-split is fragiele heuristiek · [risico]
 - **Bevinding:** IdlePhase splitst de chip-value/unit met `label.endsWith(' ${unit}')`. Dit is gekoppeld aan het exacte label-formaat van de formatters; een wijziging daar breekt stil de italic-unit-rendering (of toont een verkeerde unit).
@@ -172,12 +178,41 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-15 — BottomSheet flexShrink:0 — small-device keyboard-clip mogelijk · [risico]
 - **Bevinding:** `bodyScroll` staat op `flexShrink:0` (fix voor de hug-collapse-clip die de segmented-track onderaan afkapte). Bij een keyboard-open sheet met veel content (Email) wordt de sheet omhoog getild (paddingBottom = keyboardhoogte); op een klein toestel kan (content + lift) `maxHeight:90%` overschrijden → de top clipt, want `flexShrink:0` scrollt niet. Niet gezien op iPhone 13/17 Pro (past net).
 - **Volgende zet:** Email-sheet met keyboard testen op een klein toestel (SE); clipt het → body `flexShrink` conditioneel op 1 zetten wanneer keyboard open, of de lift cappen.
-- **Status:** open
+- **Status:** open — 2026-08-06: een fix gebouwd (expliciete `maxHeight` op de body zolang het
+  toetsenbord open staat, uit vensterhoogte − toetsenbord − safeTop − gemeten header/footer) en na
+  review **teruggedraaid**. Drie bevestigde bevindingen maakten hem een slechtere ruil dan het
+  risico zelf: (1) de clamp kapt de ÓNDERkant van de body af zonder scroll-affordance
+  (`showsVerticalScrollIndicator={false}`) en zonder auto-scroll naar het gefocuste veld — op een
+  SE valt het onderste veld van de e-mail-sheet buiten beeld; (2) `emailError` is het laatste kind
+  van `bodyContent`, dus op een **iPhone 13** (het toestel waarop deze app geverifieerd wordt) valt
+  de foutmelding bij een verkeerd wachtwoord onder de vouw — de gebruiker ziet de spinner stoppen
+  en verder niets; (3) de rekensom was 8pt te ruim: `footer.marginTop` (space['16']) ontbrak en
+  `bodyContent.paddingBottom` werd dubbel afgetrokken (die zit ín de contentContainer en dus al
+  binnen de maxHeight).
+- **Voor de volgende poging** (met een toestel/sim erbij, want zonder render-check is dit niet af
+  te maken): de juiste ondergrens is
+  `B <= windowHeight − K − safeTop − headerH − footerH − (32 + 16 + 16 + 20)`,
+  en de clamp heeft twee begeleiders nodig — een zichtbare scroll-affordance zodra hij bijt, en
+  feedback (foutmeldingen) buiten de scroll, bijvoorbeeld tussen ScrollView en footer.
 
 ## 2026-07-15 — secureStorage chunking-wrapper ongetest + nu live · [risico]
 - **Bevinding:** De P2-1 `lib/secureStorage.ts` gechunkte Keychain-adapter is non-triviaal en zonder tests naar main gemerged (#132) op basis van `tsc`-groen + additief/degradeert-veilig-redenering; de native rebuild is intussen gedaan → hij is nu het actieve auth-storage-pad. Een bug in de chunk-read/write kan stil een sessie droppen (de AsyncStorage-fallback vangt enkel een ontbrekende native module op, geen logica-bug).
 - **Volgende zet:** Let op onverwachte uitlog-events bij dagelijks gebruik; bij twijfel de chunk-splitsing in `secureStorage.ts` reviewen/unit-testen.
-- **Status:** open
+- **Status:** resolved — 2026-08-06: de splitsing is nagelopen en er zaten twee echte defecten in,
+  allebei empirisch gereproduceerd vóór de fix. (1) `CHUNK_SIZE` telde JS-tekens terwijl de
+  SecureStore-grens 2048 **bytes** is: 2000 accenttekens werden 4000 bytes, het dubbele. (2)
+  `slice()` knipt op UTF-16 code units, dus een surrogaatpaar (emoji) precies op de grens ging
+  gehalveerd de bridge over — elk halfje is op zich geen geldige UTF-8, dus de weer samengevoegde
+  sessie kwam stil corrupt terug en de gebruiker werd zonder aanwijsbare reden uitgelogd.
+  Nu wordt er op UTF-8 byte-grootte gesplitst, per code point (`for...of`), met 1800 bytes marge.
+  Geverifieerd met een harness die de functies letterlijk uit de bron knipt en met Node's
+  type-stripping draait: 10 gerichte cases (leeg, grens, accenten, emoji op de grens, CJK, gemengd)
+  plus 300 fuzz-cases — elke chunk ≤ 1800 bytes en byte-identiek na een UTF-8 round-trip per deel.
+  Vandaag is de sessieblob puur ASCII, dus geen van beide defecten was al zichtbaar; ze werden
+  scherp zodra er ooit een naam of emoji in de `user_metadata` belandt.
+- **Blijft open als aparte vraag:** er is nog altijd geen testrunner in deze repo (de verificatie
+  hierboven was een wegwerp-harness in de scratchpad). Een vaste runner is een dependency-keuze
+  voor Jeroen — hij zou ook `bestDistanceTime` en `formatters` afdekken.
 
 ## 2026-07-15 — CI Node-20-deprecation zit in de actions, niet in node-version · [onzekerheid]
 - **Bevinding:** De `node-version: 20 → 22`-bump (#135) verhoogt het build-runtime, maar de deprecation-annotatie ("forced to run on Node.js 24") gaat over de *actions* zelf (`actions/cache@v4`, `actions/setup-node@v4`, `pnpm/action-setup@v4`) die intern Node 20 bundelen — niet over `node-version`. Die annotatie blijft dus waarschijnlijk verschijnen. Ik heb dit richting Jeroen aanvankelijk verkeerd toegeschreven aan de bump.
@@ -267,6 +302,30 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — Lopende BLE-scan overleeft disconnect() (ghost-reconnect mogelijk) · [risico]
 - **Bevinding:** Review-vondst bij de P0-fixes (cross-file tracer): `RowerBleService.disconnect()/cleanup()` roept nooit `manager.stopDeviceScan()` aan — dat gebeurt alleen ín de scan-callback. Pre-existing gat, maar de nieuwe overlay-Stop naast "Opnieuw proberen" geeft het een tweede ingang: Retry-scan starten → meteen Stop → de scan loopt door en kan later alsnog verbinden → spook-status 'connected' op het Idle-scherm.
 - **Volgende zet:** `stopDeviceScan()` toevoegen aan `cleanup()`/`disconnect()` in `lib/ble/ble-service.ts` (klein, maar dat bestand is nu in de i18n-flight — na die merge oppakken); daarna Retry→Stop-scenario op toestel naspelen.
+- **Status:** resolved (code) — 2026-08-06: één eigenaar voor de scan-staat (`stopScan()`), gebruikt
+  in `cleanup()`, bij scan-start, in de timeout, in de error-tak en bij een gevonden toestel.
+  Twee dingen kwamen pas in de review boven, en zonder allebei was de fix een verslechtering:
+  **(a)** `BleManager` is een procesbrede **singleton** (`static sharedInstance`) — deze service en
+  `HRBleService` delen letterlijk één manager, één native scan en één `_scanEventSubscription`. Een
+  onvoorwaardelijke `stopDeviceScan()` in `cleanup()` sloopte dus een lopende **hartslag**-scan, die
+  daarna stil "geen hartslagmeter gevonden" meldt. Er is nu een `scanActive`-vlag: we stoppen alleen
+  onze eigen scan. **(b)** `startScan()` deed drie awaits (module laden, adapterstatus, op Android de
+  permissiedialoog) vóór `startDeviceScan()`, zonder abort-check — een `disconnect()` in dat venster
+  liet de scan alsnog starten, precies de spookscan die dit item beschrijft. Daar staat nu een
+  `intentionalDisconnect`-check.
+- **Nog te doen:** het Retry→Stop-scenario en een HR-scan-naast-roeier op **toestel** naspelen; dit
+  is statisch geverifieerd tegen de ble-plx-bron, niet gereden.
+
+## 2026-08-06 — HR- en roeier-dienst delen één BleManager-singleton · [debt]
+- **Bevinding:** Bovengekomen bij de scan-fix hierboven. `RowerBleService.getManager()` en
+  `HRBleService.getManager()` doen allebei `new BleManager()`, maar ble-plx geeft door
+  `static sharedInstance` hetzelfde object terug. Er is dus één native scan en één
+  `_scanEventSubscription` voor twee diensten die denken dat ze hun eigen scanner hebben. De
+  `scanActive`-vlag dekt nu één richting af (wij slopen de HR-scan niet meer); de andere richting
+  staat nog open: `HRBleService.startDeviceScan()` overschrijft de gedeelde subscription van een
+  lopende roeier-scan. Pre-existing, ouder dan de fix van vandaag.
+- **Volgende zet:** Eén gedeelde scan-arbiter voor beide diensten in plaats van twee
+  `new BleManager()`-aanroepen — of, kleiner, de HR-scan weigeren zolang de roeier scant.
 - **Status:** open
 
 ## 2026-07-16 — UX-audit P3-verzamellijst (F13–F19) · [next-step]
@@ -296,3 +355,48 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Geverifieerd:** schone install (`rm -rf node_modules apps/*/node_modules packages/*/node_modules` + `CI=true pnpm install`), `turbo build type-check lint --force` 14/14, `tsc --noEmit` in rowtrack schoon, en een volledige Metro-bundle voor iOS én Android (`expo export`). Nog niet bevestigd: een runtime-start op toestel — de resolutie is bewezen, het draaien van de app niet.
 - **Let op bij de eerste native build hierna:** `ios/Podfile.lock` wijst nog naar de oude platte paden (`../../../node_modules/expo-constants/ios` e.d.), die onder de geïsoleerde layout niet meer bestaan. `pod install` regenereert ze — `expo run:ios` doet dat zelf — maar reken op een grote Podfile.lock-diff bij die eerste build. Autolinking zelf is wel geverifieerd: `expo-modules-autolinking` vindt 23 Expo-modules en de RN-kant vindt alle zeven native packages (waaronder `react-native-ble-plx`) via hun `.pnpm`-paden.
 - **Status:** resolved (2026-08-05) — behalve de toestel-bevestiging hierboven.
+
+## 2026-08-06 — Account verwijderen is gebouwd maar de Edge Function is niet uitgerold · [next-step]
+- **Bevinding:** PR #209 zet de volledige keten neer (rij + sheet in Profiel, re-auth met wachtwoord,
+  `supabase/functions/delete-account`). Tot die functie uitgerold is, staat er wél een zichtbare
+  "Account verwijderen"-actie in de app die op een 404 valt — de UI meldt dan netjes "verwijderen
+  lukt nu niet", maar de knop doet niets. Daarom is de PR bewust níet gemerged.
+- **Volgende zet:** `supabase functions deploy delete-account --project-ref vvncomyfmvuzyicqhnzj`
+  (de drie env-vars injecteert Supabase zelf, geen secrets in te stellen), dan #209 mergen, dan één
+  echte verwijdering op een testaccount. Die run sluit de twee laatste acceptatie-items in
+  `briefings/2026-08-06-feature-account-verwijderen.tcebc.md`; de briefing staat nu op `gebouwd`.
+- **Status:** open
+
+## 2026-08-06 — De Edge Function wordt door niets getypecheckt · [risico]
+- **Bevinding:** `apps/rowtrack/tsconfig.json` sluit `supabase/functions` uit — noodzakelijk, want
+  Deno-code (`Deno.serve`, een `jsr:`-import) haalt de React-Native-config niet. Gevolg: die functie
+  valt buiten `tsc`, buiten CI en buiten elke lint. Een tikfout erin komt pas boven bij `supabase
+  functions deploy` of, erger, pas bij de eerste echte aanroep — op een pad dat data onherroepelijk
+  verwijdert.
+- **Volgende zet:** Bij een tweede Edge Function een aparte `deno check` in CI zetten (of
+  `supabase functions deploy --dry-run` als rooktest). Voor deze ene functie is de deploy zelf de
+  gate; het punt is dat dat niet schaalt.
+- **Status:** open
+
+## 2026-08-06 — Verloren antwoord bij verwijderen is principieel dubbelzinnig · [aanname]
+- **Bevinding:** Slaagt de verwijdering server-side maar gaat het antwoord verloren (verbinding valt
+  weg), dan kan de client niet weten of het gelukt is — een delete is niet idempotent en er is geen
+  statuscode om op te lezen. Een tweede poging meldt dan "wachtwoord klopt niet", want GoTrue kent
+  de gebruiker niet meer. Bewust niet weggeprogrammeerd: de eindtoestand klopt (account weg, sessie
+  dood), alleen de melding kan verwarren. De copy is daarop eerlijk gemaakt: "de verbinding viel weg
+  tijdens het verwijderen — kun je straks niet meer inloggen, dan is je account wél verwijderd."
+- **Volgende zet:** Alleen heropenen als dit in de praktijk opduikt. Een echte oplossing vraagt een
+  idempotency-key of een status-endpoint, en dat is voor deze app overkill.
+- **Status:** open
+
+## 2026-08-06 — Geen testrunner in de repo · [debt]
+- **Bevinding:** De chunk-fix in `secureStorage.ts` is geverifieerd met een wegwerp-harness in de
+  scratchpad die de functies letterlijk uit de bron knipt en met Node's type-stripping draait — dat
+  werkte (10 gerichte cases + 300 fuzz-cases), maar het is niet herhaalbaar en staat niet in CI.
+  Hetzelfde gold eerder voor `bestDistanceTime` (19 tests + 800k fuzz, ook ad hoc). Er zijn nu
+  minstens drie modules met pure, goed toetsbare logica: `bestDistanceTime`, `secureStorage` en
+  `formatters`.
+- **Volgende zet:** Beslissing bij Jeroen — een testrunner is een dependency (`vitest` ligt het meest
+  voor de hand, `test`-task in `turbo.json`, stap in `ci.yml`). Zonder die keuze blijft elke
+  verificatie eenmalig.
+- **Status:** open

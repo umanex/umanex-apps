@@ -2,9 +2,13 @@
 
 **Datum:** 2026-08-04
 **Bron:** `Claude.pdf` (PDF-B) + `Cashflow Forecasting App - Onderzoek & Advies.pdf` (PDF-A)
-**Status:** gepland — wacht op go per fase
+**Status:** uitgevoerd (2026-08-07) — fase 0 t/m 4 zijn gebouwd en gemerged
 
 Dit is het overkoepelende plan. Per fase volgt een aparte TC-EBC in deze map, geschreven vlak vóór de bouw van die fase.
+
+Het plan blijft staan als beslissingsspoor, niet als werklijst. Wat er sinds 08-04 nog
+bovenop kwam — de loginpoort, Supabase als enige bron, de finance-tokens, de dark mode —
+stond hier niet in en heeft elk een eigen briefing.
 
 ---
 
@@ -15,11 +19,11 @@ Dit is het overkoepelende plan. Per fase volgt een aparte TC-EBC in deze map, ge
 | Scope | WS1 (kolom-leesbaarheid) + WS3 (invoerfrictie) + WS4/WS5 (historiek & charts) |
 | Eindsaldo-footer | Drie regels: bankstand / gereserveerd / beschikbaar (WS2 opgenomen in WS1) |
 | Fiscaal model | Geen. Generieke spaarpotten volstaan; btw en RSZ zijn gewone potten |
-| Historiek-opslag | Immutable snapshots in de bestaande Zustand-store (localStorage) |
-| Charts | Recharts, waterfall via stacked-bar-truc |
+| Historiek-opslag | Immutable snapshots in de bestaande Zustand-store (localStorage) — sinds PR #181 staat de store in Supabase, de snapshots zijn onveranderd meeverhuisd |
+| Charts | Recharts, waterfall via stacked-bar-truc — **herzien in PR #172**: handgetekende inline SVG, geen dependency |
 | Finance-tokens | Afgeleid van de bestaande umanex-schaal, niet uit de PDF-paletten |
 | Centen | Tonen in ledgerregels en invoervelden, verbergen in KPI's, subtotalen en chart-labels |
-| WS3-scope | Alleen "herhaal vorige maand". CSV-import geschrapt op 2026-08-04 |
+| WS3-scope | Alleen "herhaal vorige maand". CSV-import definitief geschrapt op 2026-08-07 |
 
 **Geparkeerd:** mobiele scroll-snap layout, dark mode, command palette, fiscaal model, insight cards,
 what-if scenario-sandbox, zoom-niveaus (jaar → 3 maanden → maand). Het WCAG-kritische deel van
@@ -116,12 +120,13 @@ grafische objecten (1.4.11), tekst heeft de diepere variant nodig.
 1. **Herhaal vorige maand** — gebouwd. Elke maandkolom neemt met één klik de inkomsten en
    eenmalige uitgaven van zijn voorganger over, als afvinklijst met duplicaatmarkering.
    Briefing: `2026-08-04-feature-herhaal-vorige-maand.tcebc.md`.
-2. **CSV-import** — **geschrapt.** Een bankexport beschrijft het verleden, terwijl de app
-   vooruitkijkt: regels landen ofwel in een maand waar ze niet thuishoren, ofwel in maanden
-   die pas met fase 3 zichtbaar worden. Beide adviesrapporten noemen de import een must,
-   maar geen van beide beantwoordt in welke tijdsemmer de regels terechtkomen. Zonder dat
-   antwoord is het drie dagen bouwen aan iets waarvan het nut niet vaststaat. Herzien zodra
-   er historiek is, als de behoefte er dan nog is.
+2. **CSV-import** — **definitief geschrapt op 2026-08-07**, niet uitgesteld. Een bankexport
+   beschrijft het verleden terwijl de app vooruitkijkt: regels landen ofwel in een maand
+   waar ze niet thuishoren, ofwel in maanden die de app niet als invoer behandelt. Beide
+   adviesrapporten noemen de import een must, maar geen van beide beantwoordt in welke
+   tijdsemmer de regels terechtkomen. De eerdere formulering hield de deur open ("herzien
+   zodra er historiek is"); die historiek bestaat inmiddels en de behoefte bleek er niet.
+   Hiermee is de vraag gesloten — heropenen vraagt een nieuwe briefing, niet dit plan.
 
 ---
 
@@ -179,15 +184,23 @@ Deze landen in de TC-EBC van de betreffende fase, niet nu:
 Fase 0 (calculator)          ✔ gemerged — PR #161
    └── Fase 1 (ledger + footer)  ✔ gemerged — PR #162
           ├── Fase 2 (herhaal vorige maand)  ✔ gemerged — PR #163
-          └── Fase 3 (snapshots, ~3d)
-                 └── Fase 4 (charts, ~4d)
+          └── Fase 3 (snapshots)  ✔ gemerged — PR #166 + #167
+                 │                  herzien in #173: historie begint bij de huidige maand
+                 └── Fase 4 (charts)  ✔ gemerged — PR #168 + #169
+                                        herbouwd in #172: inline SVG i.p.v. Recharts
 ```
 
 Elke fase is een eigen feature branch met PR.
 
-**Open na fase 1**, los van de fasering:
-- De finance-tokens moeten in Tokens Studio aangemaakt worden; tot dan blijven de
-  hardcoded `emerald`/`amber`-klassen staan.
-- De hydratatie-skeleton is niet gebouwd: `useHydrated()` bestaat maar wordt nergens
-  aangeroepen, dus bij het laden verschijnen kort nullen.
-- De ledger en de modals zijn niet visueel geverifieerd (Chrome-extensie niet verbonden).
+**Open na fase 1** — stand op 2026-08-07:
+- ~~De finance-tokens moeten in Tokens Studio aangemaakt worden; tot dan blijven de
+  hardcoded `emerald`/`amber`-klassen staan.~~ Gedaan in PR #194: twee primitive-ramps
+  (`Success`, `Warning`) plus een `Semantic`-set met `Finance` en `Overlay`; veertien
+  componenten stapten over en er staat geen paletklasse meer in de app.
+- ~~De hydratatie-skeleton is niet gebouwd.~~ Gedaan: `useHydrated()` wordt aangeroepen in
+  `app/page.tsx`, en sinds de loginpoort staat er bovendien een `DataGate` vóór met een
+  eigen laad- en foutscherm.
+- **Nog open (deels):** de ledger en de modals zijn nooit visueel geverifieerd.
+  `scripts/render-screens.tsx` dekt sinds 08-05 de rollaag, de primitives en de losse
+  cashflow-componenten in beide modes, maar `MonthCard` valt er bewust buiten (dnd-kit +
+  store). Zie `apps/cashflow/HANDOFF.md` voor het restant.

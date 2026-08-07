@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gepland
+- **Status:** gevalideerd (2026-08-07) — zie Acceptatie voor het bewijs per item
 
 ---
 
@@ -67,21 +67,39 @@ _(leeg — alle kritische items beantwoord)_
 
 ## Acceptatie
 
-- [ ] Een spaardoel kan als buffer gemarkeerd worden via ReservationSidepanel; markeren
-      van een tweede pot heft de eerste op
-- [ ] Zonder gemarkeerde buffer is het gedrag van de app ongewijzigd
-- [ ] Maand met negatief eindsaldo en toereikende pot → eindsaldo exact €0
-- [ ] De buffer-opname verlaagt het potsaldo met exact het opgenomen bedrag, doorheen
-      opeenvolgende maanden
-- [ ] Pot ontoereikend → opname beperkt tot het potsaldo, eindsaldo blijft negatief,
-      potsaldo landt op €0 (niet negatief)
-- [ ] Maand zonder tekort → normale storting, geen opname, veld blijft bewerkbaar
-- [ ] Negatieve buffer-waarde is zichtbaar in de rij én telt correct door in het
-      "Provisies"-subtotaal (dat negatief mag worden) en de Uitgaves-tegel
-- [ ] MonthCard-eindsaldo en calculator-eindsaldo blijven identiek (bestaande invariant)
-- [ ] Maand 0 en toekomstige maanden geven hetzelfde resultaat voor dezelfde situatie
-- [ ] Bestaande localStorage-data migreert zonder verlies (STORE_VERSION-bump)
-- [ ] `pnpm --filter cashflow build` slaagt, geen TypeScript-fouten, geen `any`
+Nagelopen op 2026-08-07. Het bewijs staat per item; `buffer-scenarios` verwijst naar
+`scripts/buffer-scenarios.ts` (546/546 checks groen op die datum).
+
+- [x] Een spaardoel kan als buffer gemarkeerd worden via ReservationSidepanel; markeren
+      van een tweede pot heft de eerste op — `ReservationSidepanel.tsx:121` zet de vlag,
+      `store/cashflow.ts:155` (`r.coversDeficit = enabled && r.id === id`) maakt de
+      exclusiviteit een eigenschap van de setter in plaats van een UI-afspraak
+- [x] Zonder gemarkeerde buffer is het gedrag van de app ongewijzigd — buffer-scenarios S1
+      (regressie-baseline, `autoContribution === null` op elke pot in elke maand)
+- [x] Maand met negatief eindsaldo en toereikende pot → eindsaldo exact €0 — S2
+- [x] De buffer-opname verlaagt het potsaldo met exact het opgenomen bedrag, doorheen
+      opeenvolgende maanden — S5 (drie tekortmaanden op rij) plus de doorrol-invariant
+      die elk scenario per maandgrens draait
+- [x] Pot ontoereikend → opname beperkt tot het potsaldo, eindsaldo blijft negatief,
+      potsaldo landt op €0 (niet negatief) — S3, alle drie de assen apart gecheckt
+- [x] Maand zonder tekort → normale storting, geen opname, veld blijft bewerkbaar — S1;
+      het veld is read-only zolang `autoContribution !== null`, en dat is het hier niet
+- [~] ~~Negatieve buffer-waarde is zichtbaar in de rij én telt correct door in het
+      "Provisies"-subtotaal~~ — **achterhaald**, niet behaald. De bufferpot staat sinds
+      `2026-08-05-feature-buffer-sweep-footer.tcebc.md` bewust *niet* meer in de ledger:
+      `ReservationSection.tsx:456` filtert `isDeficitBuffer` uit beide potlijsten, en de
+      opname leest af in de footer. Reden daar: de bufferstorting is geen beslissing die
+      je in de ledger neemt maar het restant na alle andere posten. `autoContribution`
+      wordt daardoor door geen enkel component meer gelezen — de waarde bereikt het scherm
+      via `provisionThisMonth` en de footer-props
+- [x] MonthCard-eindsaldo en calculator-eindsaldo blijven identiek (bestaande invariant) —
+      de `kaart == doorrol`-check draait in elk scenario, in elke maand
+- [x] Maand 0 en toekomstige maanden geven hetzelfde resultaat voor dezelfde situatie — S6
+- [~] ~~Bestaande localStorage-data migreert zonder verlies (STORE_VERSION-bump)~~ —
+      **vervallen.** Sinds PR #181 (puur remote) is `localStorage` geen bron meer, dus er
+      is niets meer om van te migreren
+- [x] `pnpm --filter cashflow build` slaagt, geen TypeScript-fouten, geen `any` —
+      geverifieerd op 2026-08-07
 
 ## Beslissingsgeschiedenis
 

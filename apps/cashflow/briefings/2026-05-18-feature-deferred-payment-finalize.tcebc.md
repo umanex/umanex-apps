@@ -5,7 +5,7 @@ Datum: 2026-05-18
 Type: feature
 Project: cashflow
 Klant: umanex
-Status: in progress
+Status: afgerond (nagelopen 2026-08-07 — gebouwd en in gebruik)
 ---
 
 ---

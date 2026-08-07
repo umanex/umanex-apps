@@ -82,8 +82,12 @@ kost meer code maar levert volledige tokencontrole en nul risico voor het fundam
       SVG mee met de volle breedte en werd de waterfall 672px hoog, met labels buiten beeld.
 - [x] Bullet charts voor begroot-vs-werkelijk per categorie, opgeteld over de afgesloten
       maanden: dunne baan voor begroot, dikke balk voor werkelijk, streepje op de doellijn.
-- [ ] **Niet visueel geverifieerd**: alleen de bullet charts. Het browser-tabblad sloot
-      voor ik ernaar kon kijken; build, type-check en lint zijn groen.
+- [x] Bullet charts visueel geverifieerd — alsnog gedaan op 2026-08-05, maar niet in de
+      browser: `scripts/render-charts.tsx` rendert ze met synthetische data naar een los
+      HTML-bestand, buiten de login gate om. Dat legde drie echte fouten bloot (botsende
+      labels aan het eind, een spooklabel onder de nullijn, een negatieve bufferstand
+      buiten beeld), gefixt in PR #191. De gevreesde onzichtbaar kleine balk bleek geen
+      probleem: de chart aggregeert per categorie en zet het bedrag als tekst ernaast.
 
 ## Beslissingsgeschiedenis
 

@@ -200,9 +200,27 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   app-tsconfig zet `jsx: "preserve"` omdat Next JSX zelf transformeert, en tsx/esbuild laat het
   dan staan. Opgelost met `scripts/tsconfig.json` die `react-jsx` zet; beide scripts draaien er
   nu op.
-- **Nog open:** de DOM-sweep automatiseren. Dat vraagt een echte browser-engine en dus
-  Playwright als dependency — bewust nog niet gedaan. De token-helft (`contrast.mjs`) dekt de
-  faalklasse die we in de praktijk tegenkwamen al wél, en draait in CI.
+- **Deel 3 resolved (2026-08-07):** de DOM-sweep is geautomatiseerd. `playwright` als
+  devDependency op cashflow, `apps/cashflow/scripts/dom-sweep.mjs`, draait in CI achter
+  `pnpm --filter cashflow verify:visual`. Hij loopt elk element met eigen tekst af, composit
+  de effectieve achtergrond door de ouderketen (alpha én `opacity` per laag — "eerste
+  ondoorzichtige wint" geeft daar het verkeerde antwoord), en schaalt de AA-drempel naar
+  tekstgrootte en -gewicht. De twee meetfouten van de handmatige ronde zitten als regel
+  ingebakken: nooit tijdens een mode-wissel meten (de harness zet light en dark als twee
+  statische kolommen, plus transitions uit), en meten op eigen tekst-nodes in plaats van op
+  class-namen (dat was de checkbox die `input[class*="border-input"]` meeving).
+  Stand: 451 tekstelementen, 0 fouten.
+- **Onderweg gevonden (2026-08-07):** de eerste run gaf vier treffers, alle vier tooling en
+  geen app-bug — precies waarom een nieuwe guard eerst getrieerd moet worden voor je hem
+  vertrouwt. (1) Vijf "Aa"-swatches meldden wit-op-wit: `render-screens.tsx` zette elke
+  `x-foreground` als losse letter op de paginakleur, terwijl die rol per conventie op `x`
+  hoort. De swatch toont nu het páár — een echte verbetering van de harness, niet een
+  onderdrukte melding. (2) De `disabled`-knop zakte naar 2.24:1 door `disabled:opacity-50`;
+  WCAG 1.4.3 zondert inactieve componenten expliciet uit, dus die uitzondering staat nu in de
+  sweep (en wordt geteld, niet stil overgeslagen).
+- **Nog open:** `MonthCard` en de modals blijven ongedekt — die hangen aan dnd-kit en de
+  store en staan niet in de harness. Het drukste scherm van de app is dus nog steeds nooit
+  machinaal nagekeken. Zie `apps/cashflow/HANDOFF.md` voor de drag & drop-kant daarvan.
 - **Bevinding:** De verificatie-as die deze hele sessie miste. `apps/cashflow/scripts/render-charts.tsx`
   doet dit al voor de grafieken: componenten met synthetische data naar een los HTML-bestand
   renderen, buiten de login gate om. Datzelfde patroon uitgebreid naar de kern-componenten,
@@ -210,7 +228,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   refactor zichtbaar gemaakt zonder in te loggen.
 - **Volgende zet:** `scripts/render-screens.tsx` naar het model van `render-charts.tsx`, met
   beide modes naast elkaar. Ook bruikbaar als input voor `ux-audit` en voor `code-naar-figma`.
-- **Status:** open
+- **Status:** resolved — 2026-08-07, in drie delen (zie hierboven). Wat overblijft is geen
+  ontbrekende harness meer maar een dekkingsgat: `MonthCard` en de modals.
 
 ## 2026-08-05 — Geen brand-laag: heropenen bij een tweede merk · [aanname]
 - **Bevinding:** De keuze om géén brand-/merklaag te bouwen rust op één aanname: jobradar is

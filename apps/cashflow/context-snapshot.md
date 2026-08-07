@@ -48,17 +48,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+588f0fb chore(cashflow): add playwright as a dev dependency
+ad2f626 docs(cashflow): close out the stale briefing bookkeeping and drop CSV import
+af6ade4 fix(cashflow): retry a write once with a fresh session too
 5e21883 fix(cashflow): make the budget field say that editing it changes the budget
 61c9e05 fix(cashflow): hide an already-paid overflow line behind the paid filter
-4325c43 fix(cashflow): recover from a stale token instead of dead-ending on retry
-74d6f4d fix(cashflow): maandbudget toont resterende provisie, teveel naar niet-recurrent
-255d167 feat(cashflow): budget van de ankermaand handmatig bijstelbaar
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/components/auth/DataGate.tsx
-  M  apps/cashflow/lib/cashflow/sync.ts
-  M  apps/cashflow/lib/supabase/auth-recovery.ts
+  A  apps/cashflow/scripts/dom-sweep.mjs
+  M  apps/cashflow/scripts/render-screens.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

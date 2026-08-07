@@ -91,8 +91,13 @@ waardes en contrastcijfers staat in het plan.
       de KPI's en chart-labels van fase 4.
 - [x] Detailregels staan open (beslissing 2); de +-knop en de Open/Alle-filter zitten in de
       ledger-regel zelf.
-- [ ] Drag & drop tussen maanden werkt nog, ook met toetsenbord — **niet getest**. De
-      sleepgrepen renderen, maar een sleep tussen twee kolommen is niet uitgevoerd.
+- [ ] Drag & drop tussen maanden werkt nog, ook met toetsenbord — **nog steeds niet
+      getest** (herbevestigd 2026-08-07). De sleepgrepen renderen, maar een sleep tussen
+      twee kolommen is nooit uitgevoerd, met muis noch toetsenbord. Dit is het enige
+      acceptatie-item van deze briefing dat openstaat, en het valt buiten élk vangnet:
+      de scenario-scripts raken alleen de rekenkern, en `render-screens.tsx` laat
+      `MonthCard` bewust weg omdat die aan dnd-kit én de store hangt. Verplaatst naar
+      `apps/cashflow/HANDOFF.md` zodat het niet in een briefing blijft liggen.
 - [x] Een lege categorie toont een lege staat in plaats van te verdwijnen (inkomsten, vaste
       uitgaven, eenmalige uitgaven). De pot-secties blijven verborgen zonder potten, gelijk
       met de gereserveerd-regel in de footer.

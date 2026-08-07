@@ -6,6 +6,9 @@ import { supabase } from '@/lib/supabase';
 import { calculateCalories } from '@/lib/calories';
 import { ema, SMOOTHING } from '@/lib/smoothing';
 
+/** Zoveel opeenvolgende idle-packets vóór de live-waarden naar 0 zakken. */
+const IDLE_PACKETS_BEFORE_ZERO = 2;
+
 const log: (...args: unknown[]) => void = __DEV__
   ? (...args: unknown[]) => console.log('[kcal]', ...args)
   : () => {};
@@ -41,7 +44,9 @@ const initialState: WorkoutMetricsState = {
   resistanceLevel: null,
   wattsSmoothed: 0,
   spmSmoothed: 0,
-  splitSmoothed: 0,
+  // Oneindig = "geen tempo" → `formatSplit` toont "—". Vóór de eerste haal is een
+  // split net zo ongedefinieerd als tijdens een rustpauze; 0 zou "oneindig snel" zijn.
+  splitSmoothed: Infinity,
 };
 
 function metricsReducer(state: WorkoutMetricsState, action: MetricsAction): WorkoutMetricsState {
@@ -117,6 +122,8 @@ export function useWorkoutMetrics(
   const wattsEmaRef = useRef<number | null>(null);
   const spmEmaRef = useRef<number | null>(null);
   const splitEmaRef = useRef<number | null>(null);
+  /** Opeenvolgende packets zonder kracht én zonder slagen — zie de rust-transitie. */
+  const idlePacketsRef = useRef(0);
   // Laatst-verwerkte bleMetrics-referentie: dit effect her-draait ook op hrBpm-
   // wijzigingen (HR-accumulatie), en dan is bleMetrics dezelfde gemergede referentie.
   const lastProcessedMetricsRef = useRef<RowerMetrics | null>(null);
@@ -190,6 +197,30 @@ export function useWorkoutMetrics(
         partial.splitSmoothed = splitEmaRef.current;
       }
     }
+    // Rust-transitie. De erg meldt geen kracht én geen slagen meer (ble-service nult
+    // die drie samen zodra watts en spm allebei 0 zijn). De EMA stapt dan niet, dus
+    // bleef de "huidige" waarde staan op wat je vóór de pauze trok — je las 180 W
+    // terwijl je uitblies. De EMA-refs gaan mee leeg, zodat de eerste haal daarna
+    // vers seedt in plaats van vanaf de oude waarde omhoog te kruipen.
+    //
+    // Twee opeenvolgende idle-packets vereist: één enkel 0/0-packet mag geen flikkering
+    // geven als een erg tijdens de recovery even niets rapporteert.
+    if (isNewRowerPacket) {
+      const idle = bleMetrics.instantaneousPower == null && bleMetrics.strokeRate == null;
+      idlePacketsRef.current = idle ? idlePacketsRef.current + 1 : 0;
+
+      if (idle && idlePacketsRef.current >= IDLE_PACKETS_BEFORE_ZERO) {
+        wattsEmaRef.current = null;
+        spmEmaRef.current = null;
+        splitEmaRef.current = null;
+        partial.wattsSmoothed = 0;
+        partial.spmSmoothed = 0;
+        // Split níet op 0 — dat leest als oneindig snel. Bij stilstand is het tempo
+        // ongedefinieerd, en dat toont `formatSplit` als "—".
+        partial.splitSmoothed = Infinity;
+      }
+    }
+
     if (bleMetrics.totalDistance != null) {
       if (initialDistance.current === null) initialDistance.current = bleMetrics.totalDistance;
       partial.distanceMeters = bleMetrics.totalDistance - initialDistance.current;
@@ -293,6 +324,7 @@ export function useWorkoutMetrics(
     wattsEmaRef.current = null;
     spmEmaRef.current = null;
     splitEmaRef.current = null;
+    idlePacketsRef.current = 0;
     lastProcessedMetricsRef.current = null;
     startedAtRef.current = new Date();
   }, []);

@@ -48,15 +48,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+5e21883 fix(cashflow): make the budget field say that editing it changes the budget
 61c9e05 fix(cashflow): hide an already-paid overflow line behind the paid filter
 4325c43 fix(cashflow): recover from a stale token instead of dead-ending on retry
 74d6f4d fix(cashflow): maandbudget toont resterende provisie, teveel naar niet-recurrent
 255d167 feat(cashflow): budget van de ankermaand handmatig bijstelbaar
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/components/cashflow/ReservationSection.tsx
+  M  apps/cashflow/components/auth/DataGate.tsx
+  M  apps/cashflow/lib/cashflow/sync.ts
+  M  apps/cashflow/lib/supabase/auth-recovery.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

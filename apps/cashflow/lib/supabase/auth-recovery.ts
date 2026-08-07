@@ -44,3 +44,24 @@ export async function refreshSession(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Draait `run`, en probeert het één keer opnieuw met een verse sessie als het tóken de
+ * blokkade was.
+ *
+ * Herhalen is hier veilig omdat PostgREST een ongeldig token aan de poort weigert: de query
+ * heeft dan niet gedraaid, dus er staat niets half geschreven. Voor andere fouten — een
+ * revisieconflict, een RLS-weigering, een netwerkstoring — gaat de fout ongemoeid door;
+ * daarvoor is een verse sessie geen antwoord en zou herhalen alleen schade verbergen.
+ *
+ * Eén herkansing, geen lus: helpt een vers token niet, dan zit het probleem elders.
+ */
+export async function withAuthRetry<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (!isAuthError(error)) throw error;
+    if (!(await refreshSession())) throw error;
+    return await run();
+  }
+}

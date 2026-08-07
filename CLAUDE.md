@@ -40,16 +40,35 @@ apps tegelijk raken: een gedeelde laag hoort in één commit met de apps die hij
 Bewust cross-app? Zet een `Cross-app: <reden>` trailer in de body. Het werkprincipe staat
 in `.umanex-os/CLAUDE.md` → Git workflow → Parallel werk.
 
+**En de branch is afdwingbaar.** `.githooks/pre-commit` weigert een commit op `main` en op een
+losse HEAD. Werk dus altijd op een branch — ook voor een eenregelige doc-fix. Rebase, cherry-pick
+en een lopende merge worden met rust gelaten.
+
 ## Parallel aan twee apps werken
 
-Twee taken tegelijk krijgen elk een eigen worktree — niet twee taken in één tree:
+**Eén app, één worktree.** Niet één per taak — dan moet je beslissen op het moment dat je haast
+hebt, en precies dan sla je het over. De map staat er gewoon; per taak vertak je erbinnen.
+
+Een branch volstaat niet: er is één set bestanden op schijf, gedeeld door élke branch.
+Niet-gecommitte en ongetrackte bestanden reizen mee bij iedere `checkout`. Dat is hoe rowtrack- en
+cashflow-werk op 2026-08-07 door elkaar liepen ondanks nette branches.
 
 ```bash
-git worktree add ../umanex-apps-<taak> <type>/<korte-beschrijving>
-pnpm install                      # per worktree; de pnpm store linkt hard, dus vooral tijd
-# ... werk, commit, PR ...
-git worktree remove ../umanex-apps-<taak>
+git worktree add ../umanex-apps-<app> -b <type>/<korte-beschrijving>
+cd ../umanex-apps-<app> && pnpm install   # per worktree; pnpm linkt hard, dus vooral tijd
+# ... werk, commit, PR; de volgende taak vertakt in dezelfde map ...
 ```
+
+De verdeling in deze repo:
+
+| Waar | Wat |
+|---|---|
+| **Hoofd-tree** | rowtrack + gedeelde lagen (`packages/`, tokens, CI). rowtrack blijft hier omdat een tweede worktree een tweede native build betekent — zie de tabel hieronder. |
+| `../umanex-apps-cashflow` | cashflow |
+| `../umanex-apps-<app>` | portfolio, vyvey, jobradar — aanmaken zodra er actief aan gewerkt wordt |
+
+Werk nooit in een tree waar iemand anders in zit, ook niet om "even een branch aan te maken": een
+branch vanaf andermans HEAD erft diens werk als vertrekpunt.
 
 Wat gedeeld blijft en dus botst:
 

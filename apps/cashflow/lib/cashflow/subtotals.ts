@@ -152,16 +152,18 @@ export function collectCashOverflowItems(
   reservationPots: ReservationPotBalance[],
   isFirstMonth: boolean,
 ): Array<{ label: string; amount: number }> {
-  // In de ankermaand is de bijbetaling al van het banksaldo af en telt ze niet meer als
-  // kost. Ze hier dan tóch als regel tonen zou de sectie laten optellen tot een ander
-  // bedrag dan de kop — de betaling blijft zichtbaar op de potrij zelf.
-  if (isFirstMonth) return [];
-  return reservationPots
-    .flatMap((p) =>
-      p.paymentsThisMonth
-        .filter((pay) => pay.fromCash > 0)
-        .map((pay) => ({ label: pay.label, amount: pay.fromCash })),
-    );
+  return reservationPots.flatMap((p) => {
+    // In de ankermaand is een bijbetaling al van het banksaldo af, telt ze niet nog eens als
+    // kost, en tonen we ze niet als losse regel — behalve wanneer een maandelijks budget
+    // overschreden wordt. Dan is het gereserveerde deel volledig opgebruikt (resterend 0) en
+    // hoort het teveel zichtbaar bij de niet-recurrente uitgaven, zoals de gebruiker het ook
+    // zou boeken. Voor een spaardoel blijft de ankermaand-regel weg (het teveel zit al in de
+    // provisiekost verrekend). In latere maanden telt élke bijbetaling en krijgt ze een regel.
+    if (isFirstMonth && p.potType !== 'maandelijks_budget') return [];
+    return p.paymentsThisMonth
+      .filter((pay) => pay.fromCash > 0)
+      .map((pay) => ({ label: pay.label, amount: pay.fromCash }));
+  });
 }
 
 // ── Sectiekoppen ──────────────────────────────────────────────────────────────

@@ -4,8 +4,30 @@ import { useEffect, useState } from 'react';
 import { cleanupStaleData } from '../../hooks/useCashflow';
 import { errorMessage } from '../../lib/cashflow/error-message';
 import { hydrateFromRemote, resetSync, startSync } from '../../lib/cashflow/sync';
+import { isAuthError, refreshSession } from '../../lib/supabase/auth-recovery';
+import { supabase } from '../../lib/supabase/client';
 
 type Phase = 'loading' | 'ready' | 'error';
+
+/**
+ * Laadt de stand, en herstelt één keer als het tóken de blokkade was.
+ *
+ * Zonder deze stap is "Opnieuw proberen" een doodlopende knop bij een auth-fout: dezelfde
+ * sessie levert gegarandeerd dezelfde fout, dus de gebruiker zit vast tot supabase-js uit
+ * zichzelf ververst. Dat duurde in de praktijk een half uur (PGRST303 op 07-08).
+ *
+ * Eén herkansing, geen lus: helpt een vers token niet, dan zit het probleem elders en is
+ * de oorspronkelijke fout wat de gebruiker moet zien.
+ */
+async function loadWithRecovery(uid: string): Promise<void> {
+  try {
+    await hydrateFromRemote(uid);
+  } catch (error) {
+    if (!isAuthError(error)) throw error;
+    if (!(await refreshSession())) throw error;
+    await hydrateFromRemote(uid);
+  }
+}
 
 /**
  * Laadt de stand uit Supabase en houdt de app tegen tot dat gelukt is.
@@ -17,6 +39,8 @@ type Phase = 'loading' | 'ready' | 'error';
 export function DataGate({ userId, children }: { userId: string; children: React.ReactNode }) {
   const [phase, setPhase] = useState<Phase>('loading');
   const [message, setMessage] = useState<string | null>(null);
+  /** Ook een verse sessie kwam er niet door — inloggen is dan de enige weg vooruit. */
+  const [sessionExhausted, setSessionExhausted] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -25,8 +49,9 @@ export function DataGate({ userId, children }: { userId: string; children: React
 
     setPhase('loading');
     setMessage(null);
+    setSessionExhausted(false);
 
-    hydrateFromRemote(userId)
+    loadWithRecovery(userId)
       .then(() => {
         if (cancelled) return;
         // Pas luisteren nadat de stand staat: anders zou het laden zelf als wijziging
@@ -39,6 +64,7 @@ export function DataGate({ userId, children }: { userId: string; children: React
         if (cancelled) return;
         console.error('[cashflow] laden mislukt', error);
         setMessage(errorMessage(error));
+        setSessionExhausted(isAuthError(error));
         setPhase('error');
       });
 
@@ -59,12 +85,27 @@ export function DataGate({ userId, children }: { userId: string; children: React
             zeker is dat het volledig is.
           </p>
           {message && <p className="text-xs text-destructive break-words">{message}</p>}
-          <button
-            onClick={() => setAttempt((n) => n + 1)}
-            className="inline-flex items-center justify-center h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
-          >
-            Opnieuw proberen
-          </button>
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => setAttempt((n) => n + 1)}
+              className="inline-flex items-center justify-center h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Opnieuw proberen
+            </button>
+            {sessionExhausted && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Ook met een verse sessie lukte het niet. Opnieuw inloggen is de weg vooruit.
+                </p>
+                <button
+                  onClick={() => void supabase.auth.signOut()}
+                  className="text-xs underline underline-offset-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Opnieuw inloggen
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </main>
     );

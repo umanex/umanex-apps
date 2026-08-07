@@ -86,10 +86,41 @@ Geen. Beantwoord op 2026-08-07:
 - [x] Geen hardcoded kleur/spacing/fontgrootte; alle copy via `t.*`.
 - [x] `tsc --noEmit` groen.
 
-**Waarom nog niet `gevalideerd`.** De migratie (`supabase/migrations/add_health_consent.sql`) is nog
-niet gedraaid, dus geen enkel pad is uitgevoerd — zonder die kolommen faalt het laden van de keuze en
-blijft het scherm staan. Daarnaast moet het privacybeleid online staan vóór de link werkt. Alles is
-statisch geverifieerd; de meetbare as ontbreekt bewust en is niet overgeslagen.
+**Waarom nog niet `gevalideerd`.**
+
+*Bijgewerkt 2026-08-07 na de eerste `verify`-run.* De migratie **is** intussen gedraaid — dat deel van
+de blokkade is weg. Live op `profiles`: `health_consent` (met de check-constraint en de kolom-comment
+uit het migratiebestand), `health_consent_at`, `health_consent_version`, plus de functie
+`revoke_health_consent()`.
+
+Wat de backend-as runtime bewees:
+
+- **Auth-guard van `revoke_health_consent()` houdt.** De functie is zonder ingelogde gebruiker
+  aangeroepen; daarna stonden alle 11 ritten met `avg_heart_rate`/`max_heart_rate` en de 9 ritten met
+  hartslag in `samples` er onveranderd, en de lichaamsvelden waren nog gevuld. `auth.uid()` uit een
+  argument halen zou hier een wisfunctie voor andermans data zijn — dat kan niet.
+- **De strip-logica klopt.** `[[0,0,120],[1,10,125],[2,21,130]]` → `[[0,0],[1,10],[2,21]]`: hartslag
+  eruit, tijd en afstand intact.
+- **Rechten zijn dicht.** `EXECUTE` staat op `postgres`, `authenticated`, `service_role`; `anon` en
+  `public` staan niet in de ACL. `SECURITY DEFINER` bevestigd.
+- **`tsc --noEmit` groen** (exit 0).
+
+Wat de as *deed* falen:
+
+- **De privacybeleid-link is dood.** `PRIVACY_POLICY_URL` (`lib/links.ts`) wijst naar
+  `https://umanex.be/rowtrack/privacy` — vandaag HTTP **404**, met en zonder `www`. Toestemming die
+  verwijst naar een onbereikbaar beleid is niet "geïnformeerd"; dit is het enige item dat het contract
+  aantoonbaar schendt.
+
+Wat **niet** verifieerbaar was, en waarom: elk item dat door de UI loopt (scherm verschijnt na
+inloggen, gelijkwaardige knoppen, verborgen lichaamsvelden, koppelknop hartslagmeter, loading/error,
+intrekken in Profiel, keuze overleeft heropstart). Er is geen pad om een flow af te leggen: de
+dev-client op de simulator dateert van 10 juli — een maand vóór deze feature — er draait geen Metro,
+en er is geen manier om te tappen. De vinkjes bij die items komen uit de bouwstap en betekenen
+*gebouwd*, niet *geverifieerd*; onder de `verify`-skill hoort `- [x]` het tweede te betekenen. Die
+baseline-beslissing staat open.
+
+Blokkeert `gevalideerd`: de dode beleid-link (P1) plus de niet-afgelegde flow.
 
 ## Beslissingsgeschiedenis
 

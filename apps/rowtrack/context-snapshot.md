@@ -56,24 +56,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+451e251 feat(rowtrack): ask for consent before touching health data
 812240f docs(rowtrack): privacy policy written against what the app actually does
 9b52e10 docs(rowtrack): account deletion is validated against a real deletion
 ab1fd44 chore(rowtrack): drop env fallbacks that name variables Supabase never sets
 fdbc08b fix(rowtrack): drop the live metrics to zero when you stop pulling
-fbd8fbe fix(rowtrack): name the celebration button after what it does
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/_layout.tsx
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  A  apps/rowtrack/briefings/2026-08-07-feature-gezondheidsdata-toestemming.tcebc.md
-  A  apps/rowtrack/components/HealthConsentScreen.tsx
-  M  apps/rowtrack/docs/privacybeleid.md
-  M  apps/rowtrack/i18n/translations/nl.ts
-  M  apps/rowtrack/lib/auth.ts
-  A  apps/rowtrack/lib/health-consent-context.tsx
-  A  apps/rowtrack/lib/links.ts
+  M  apps/rowtrack/CLAUDE.md
+  M  apps/rowtrack/briefings/2026-08-07-feature-gezondheidsdata-toestemming.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

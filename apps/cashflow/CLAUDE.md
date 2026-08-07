@@ -24,16 +24,16 @@ Logs: `pm2 logs cashflow` of `/Users/jeroen/.pm2/logs/cashflow-{out,error}.log`.
 
 ## Verify-pad
 
-Wat de `verify`-skill hier kan uitvoeren. Vastgesteld 2026-08-07 door het te draaien, niet door het
-af te leiden. Staat er "geen", dan is dat een gat dat gebouwd moet worden — geen vergetelheid.
+Wat de `verify`-skill hier kan uitvoeren. Vastgesteld 2026-08-07 door alle vijf te draaien, niet door
+ze af te leiden. Staat er "geen", dan is dat een gat dat gebouwd moet worden — geen vergetelheid.
 
 | Capability | Commando / status |
 |---|---|
-| **Render vastleggen** | `pnpm --filter cashflow verify:visual` rendert de rollaag en de charts naar `.screens-preview.html` / `.charts-preview.html` en sweept ze op contrast. Let op de dekking: `MonthCard` en de modals staan **niet** in die harness — het grootste scherm van de app zit er niet in. Daarvoor: screenshot van de draaiende app op `http://localhost:3000`. |
-| **Flow aandrijven** | Browser-automatisering tegen de PM2-server. Voor de dnd-kit-sleep volstaat `left_click_drag` **niet** — zie het recept hieronder. Het toetsenbordpad (spatie → pijltjes → spatie) drijft een tweede, onafhankelijke sensor aan en is dus het controle-pad. |
-| **State forceren** | **Geen.** Geen testaccount, geen dev-route, geen mock-laag — de app toont altijd Jeroens echte Supabase-document, dus loading/empty/error zijn niet op te wekken. `scripts/seed-supabase.mjs` is géén verify-pad: dat is een one-off migratie die naar productie schrijft. |
-| **Invariant draaien** | `./apps/cashflow/node_modules/.bin/tsx apps/cashflow/scripts/anchor-scenarios.ts` → `48/48 checks geslaagd` (gemeten 2026-08-07). Idem `buffer-scenarios.ts`. `calc-baseline.ts` dumpt een digest vóór en ná een refactor; een lege diff bewijst dat geen enkel getal verschoof. Alle drie pure berekening, geen netwerk. **Geen van drieën wordt door `package.json` of CI aangeroepen** — met de hand starten. |
-| **Verse build** | PM2 draait een production build (`next start`), geen `next dev`: de browser ziet `.next`, niet je source. Toets met `find app components lib store -newer .next/BUILD_ID` — leeg betekent actueel. Na een wijziging `pnpm --filter cashflow pm2:rebuild`, daarna hard refresh. |
+| **Render vastleggen** | `pnpm --filter cashflow verify:visual` rendert de rollaag en de charts naar `.screens-preview.html` / `.charts-preview.html` — statisch, light en dark naast elkaar, geen server en geen sessie — en sweept ze meteen op contrast (451 tekstelementen). Let op de dekking: `MonthCard` en de modals staan **niet** in die harness. Het échte scherm zien: `pnpm --filter cashflow flow --headed`, of een screenshot van de draaiende app op `http://localhost:3000`. |
+| **Flow aandrijven** | `pnpm --filter cashflow flow` — Playwright rijdt de sleep tussen twee maandkolommen uit, met toetsenbord én muis, tegen de gebouwde app. Start zijn eigen `next start` op **3100** en weigert te draaien als daar al iets luistert. `--selftest` voegt een scenario toe dat hóórt te falen, `--headed` laat meekijken, `--port=` wijkt uit. Vereist een build in `apps/cashflow/.next`; hij bouwt bewust niet zelf. Moet je juist de échte data zien, dan is er het handmatige recept onderaan — daar geldt de schrijf-discipline wél. |
+| **State forceren** | De fixture in `scripts/flow-harness.mjs` (`fixtureData()`): één post met een uniek bedrag in de eerste van drie kolommen, geserveerd uit een onderschepte route. Loading, empty en error zijn daarmee nog **niet** op te wekken — de handler antwoordt altijd meteen en goed. **Geen testaccount:** er is één Supabase-gebruiker en dat is Jeroens echte data. `scripts/seed-supabase.mjs` is géén verify-pad — dat is een one-off migratie die naar productie schrijft. |
+| **Invariant draaien** | `pnpm exec tsx --tsconfig scripts/tsconfig.json scripts/buffer-scenarios.ts` → 546/546, en hetzelfde voor `scripts/anchor-scenarios.ts` → 48/48 (gemeten 2026-08-07). `calc-baseline.ts` dumpt een digest vóór en ná een refactor; een lege diff bewijst dat geen enkel getal verschoof. Alle drie pure berekening, geen netwerk. **Geen van drieën wordt door `package.json` of CI aangeroepen** — met de hand starten. Een harness die door niets aangeroepen wordt, meet niets. |
+| **Verse build** | Twee doelwitten, houd ze uit elkaar. De PM2-app op **:3000** draait uit de hoofd-tree en serveert `.next`, niet je source: toets met `find app components lib store -newer .next/BUILD_ID` — leeg betekent actueel. Na een wijziging `pnpm --filter cashflow pm2:rebuild`, daarna hard refresh. De flow-harness bouwt en serveert in zijn éígen worktree op 3100 en raakt :3000 niet aan. |
 
 **`pm2 status` is geen bewijs dat de app draait.** Op 2026-08-07 stond cashflow op `online` terwijl er
 niets op poort 3000 luisterde: PM2's opgeslagen procesdefinitie wees nog naar de root-binary
@@ -44,9 +44,18 @@ Herstellen is de definitie herladen, niet herstarten:
 `pm2 delete cashflow && pnpm --filter cashflow pm2:start && pm2 save`. Zonder die `pm2 save` haalt een
 `pm2 resurrect` de dode definitie terug.
 
-### Recept — een dnd-kit sleep aandrijven zonder iets te schrijven
+**Destructieve paden — de harness kan er niet bij.** Élk verzoek naar de Supabase-origin wordt
+onderschept: wat de harness kent (login, document, snapshots, de wegschrijf-call) beantwoordt hij uit
+de fixture, al het overige breekt hij af en telt hij als lek, en één lek laat de run vallen. Ook een
+geslaagde verplaatsing schrijft dus niets weg — de PATCH die de app dan stuurt, verschijnt in de
+teller "schrijfpogingen onderschept". Richt hem nooit op :3000: daar draait de app mét jouw echte
+sessie en echte data. De poortcheck weigert dat al, maar de reden hoort hier te staan. Zie rail 5 in
+de `verify`-skill.
 
-Gemeten 2026-08-07 op de draaiende app, tegen echte data, zonder één schrijfactie.
+### Recept — een dnd-kit sleep met de hand aandrijven zonder iets te schrijven
+
+Voor het geval je de sleep op de échte data moet zien in plaats van op de fixture. Gemeten
+2026-08-07 op de draaiende app, zonder één schrijfactie.
 
 **Welke paden gegarandeerd niets schrijven.** Er is één `onDragEnd`, in `CashflowDndContext.tsx`; de
 secties gebruiken enkel `useDraggable` en alleen `MonthCard` is droppable. Die handler schrijft
@@ -70,6 +79,9 @@ aan met losse `PointerEvent`s en een wachttijd per stap:
     pointerdown op [aria-roledescription="draggable"]
     → 8 × pointermove richting het doel, ~50 ms ertussen
     → keydown Escape          (nooit pointerup boven een andere maand)
+
+Dezelfde reden zit in de harness ingebakken: `page.mouse.move(..., { steps })` in plaats van één
+sprong, plus een korte beweging om de 8px-drempel van de `PointerSensor` te passeren.
 
 **Het tabblad moet zichtbaar zijn.** In een achtergrond-tabblad is `document.visibilityState`
 `hidden` en vuurt `requestAnimationFrame` niet meer. Een wachtlus op `rAF` hangt dan tot de

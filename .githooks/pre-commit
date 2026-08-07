@@ -102,3 +102,34 @@ if [ -n "$parallel_apps" ]; then
   echo "⚠ Onvastgelegde wijzigingen buiten deze commit in:$parallel_apps"
   echo "  Twee taken in één working tree? 'git worktree add' scheidt ze fysiek — zie CLAUDE.md, Git workflow."
 fi
+
+# 4. Verify-pad-signaal — heeft de app die je aanraakt een uitvoerbaar verificatiepad?
+#    Waarschuwt, blokkeert niet. Toen deze guard gebouwd werd had 1 van de 11 apps een
+#    `## Verify-pad`-sectie; hard falen zou dus op dag één tien apps blokkeren en vooral
+#    aanleren hoe je `--no-verify` typt. Door op *aanraking* te waarschuwen komt de druk
+#    precies waar gewerkt wordt en blijven dormante apps buiten schot.
+#
+#    Waarom dit een guard is en geen instructie: de regel "een verify-pad is een
+#    deliverable" stond al in twee skills, en in rowtrack viel de flow-as intussen twaalf
+#    keer weg zonder dat er één item over het pad zélf ontstond. Instructie produceerde
+#    daar netjes een regel per gemiste verificatie en nooit de infrastructuur.
+#
+#    Het contract staat in de `verify` skill: vijf capabilities (render vastleggen · flow
+#    aandrijven · state forceren · invariant draaien · verse build), waarbij "geen" een
+#    geldig antwoord is zolang het zichtbaar staat. Een eerlijke "geen" is het punt —
+#    dan weet de Beoordeel-stap vooraf dat die as overgeslagen wordt.
+zonder_pad=""
+for app in $changed_apps; do
+  [ -d "apps/$app" ] || continue
+  md="apps/$app/CLAUDE.md"
+  if [ ! -f "$md" ] || ! grep -q '^## Verify-pad' "$md"; then
+    zonder_pad="$zonder_pad $app"
+  fi
+done
+
+if [ -n "$zonder_pad" ]; then
+  echo "⚠ Geen '## Verify-pad'-sectie in de CLAUDE.md van:$zonder_pad"
+  echo "  Zonder dat pad valt de Beoordeel-stap terug op 'overgeslagen' zonder dat iemand het merkt."
+  echo "  Vul de vijf capabilities in (render · flow · state · invariant · verse build);"
+  echo "  'geen' is een geldig antwoord, mits zichtbaar. Zie de \`verify\` skill."
+fi

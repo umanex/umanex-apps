@@ -69,14 +69,17 @@ het af te leiden. Staat er "geen", dan is dat een gat dat gebouwd moet worden �
 |---|---|
 | **Render vastleggen** | `xcrun simctl io booted screenshot <pad>.png` — werkt. Nooit een UDID hardcoden, die verandert; `booted` is stabiel. Op het fysieke toestel: geen automatisch pad, screenshot met de hand. |
 | **Flow aandrijven** | **Geen.** Geen idb, geen Detox, geen Maestro. Tappen, typen en navigeren gebeuren door Jeroen. Elk acceptatie-item dat door de UI loopt is dus `[NIET TE VERIFIËREN]` tenzij hij meekijkt. |
-| **State forceren** | `app/dev-active.tsx` forceert de active-workout fase. Voor de rest: **geen** — en er is **geen testaccount**, er is één profiel en dat is Jeroens echte. |
+| **State forceren** | `app/dev-active.tsx` forceert de active-workout fase. Verder: `supabase/seed/test-account.sql` in de SQL Editor zet `rowtrack-test@umanex.be` terug op een vaste vertreksituatie — `health_consent = null`, lege lichaamsvelden, 4 ritten met bewust verschillende `samples`-vormen. Idempotent, dus ook de reset. |
 | **Invariant draaien** | `node --test <bestand>.test.ts` — Node 24 draait TypeScript zonder transpiler en heeft `node:test`/`node:assert` ingebouwd, dus dit kost geen dependency. Werkt op modules zonder path-alias of RN-import (`lib/bestDistanceTime.ts`, `calories.ts`, `smoothing.ts`, `period.ts`). Een module die `@/…` importeert lost Node niet op. |
 | **Verse build** | De app op de simulator is een **dev-client**: zonder Metro (`pnpm dev:rowtrack`) draait hij op wat er toevallig nog in het geheugen zit. Controleer de datum van `~/Library/Developer/CoreSimulator/Devices/<udid>/data/Containers/Bundle/Application/*/RowTrack.app/` vóór je een screenshot als bewijs gebruikt — op 2026-08-07 was die een maand oud en dat is aan de render niet te zien. Na een native wijziging: `expo run:ios --device`, cf. de worklets-les. |
 
-**Destructieve paden — niet aanroepen.** `revoke_health_consent()` wist hartslag uit alle ritten en
-leegt de lichaamsvelden, en er is geen testaccount om dat op te vangen. Toets de guard (aanroepen
-zonder auth, daarna tellen dat de data er nog staat) of draai de transformatie op synthetische
-`jsonb` in een `select`. Zie rail 5 in de `verify`-skill.
+**Destructieve paden — alleen op het testaccount.** `revoke_health_consent()` wist hartslag uit álle
+ritten van de aanroeper en leegt de lichaamsvelden. Op `jeroen@ikbenjeroen.be` is dat onherstelbaar
+verlies: draai het daar nooit. Op `rowtrack-test@umanex.be` mag het wél, want
+`supabase/seed/test-account.sql` zet de staat in één run terug. Is er om welke reden ook geen
+testsessie beschikbaar, val dan terug op de guard toetsen (aanroepen zonder auth, daarna tellen dat
+de data er nog staat) of de transformatie op synthetische `jsonb` in een `select`. Zie rail 5 in de
+`verify`-skill.
 
 **Migratiestaat: toets het schema, niet het ledger.** Migraties worden hier met de hand in de SQL
 Editor gedraaid, dus `list_migrations` kent er 6 van de 11 in `supabase/migrations/`. Alle elf zijn

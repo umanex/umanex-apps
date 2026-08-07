@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** rowtrack
 - **Klant:** umanex
-- **Status:** gebouwd
+- **Status:** gevalideerd
 
 ---
 
@@ -70,9 +70,9 @@ de flow niet, alleen wat de server doet.
       bewerkbaar, en kan de sheet niet gesloten worden (X, scrim, Android-back).
 - [x] **State error:** verkeerd wachtwoord, geen verbinding, rate limiting, een onbekende uitkomst
       en een gefaalde Edge Function geven elk een eigen inline melding; de sheet blijft open.
-- [ ] **State success:** de gebruiker wordt uitgelogd en landt op het loginscherm; er blijft geen
-      sessie in de beveiligde opslag achter. → *statisch afgeleid uit de auth-js-broncode, niet
-      op een toestel gezien. Blijft open tot de eerste echte verwijdering.*
+- [x] **State success:** de gebruiker wordt uitgelogd en landt op het loginscherm; er blijft geen
+      sessie in de beveiligde opslag achter. → *2026-08-07 op toestel bevestigd met een
+      wegwerp-account.*
 - [x] **Interactie:** tap-only (rij, veld, knop, sluiten); `onSubmitEditing` op het wachtwoordveld
       doet hetzelfde als de knop; de rij heeft een raakvlak ≥44pt (`listRow`, minHeight 48).
 - [x] **Edge case dubbeltap:** twee snelle taps sturen hoogstens één verwijderverzoek.
@@ -84,16 +84,28 @@ de flow niet, alleen wat de server doet.
 - [x] Edge Function draait niet zonder service-role-key en lekt die nooit in een response.
 - [x] De `ON DELETE CASCADE`-keten `auth.users → profiles → workouts → workout_intervals` is live
       tegen de database geverifieerd; het periode-doel zit als kolommen op `profiles` en gaat mee.
-- [ ] Na een échte verwijdering zijn de rijen ook werkelijk weg. → *vereist de uitgerolde functie.*
+- [x] Na een échte verwijdering zijn de rijen ook werkelijk weg. → *2026-08-07 geverifieerd tegen
+      de database: `auth.users` en `profiles` terug van 2 naar 1, `workouts` onaangeroerd op 11, en
+      nul wees-rijen (geen `workouts` zonder profiel, geen `profiles` zonder auth-user). De cascade
+      raakte exact één gebruiker.*
 - [x] Geen hardcoded kleur/spacing/fontgrootte; alles via `@/constants`.
 - [x] Alle nieuwe copy via `t.*`, niets inline in de component.
 - [x] `tsc --noEmit` groen.
 
-**Waarom nog niet `gevalideerd`.** Twee acceptatie-items hangen op een runtime die er nog niet is:
-de Edge Function is niet uitgerold, dus de keten is nooit end-to-end gereden. Alles wat statisch
-toetsbaar was, is getoetst — twee adversariële reviewrondes (9 + 8 bevindingen, 6 + 4 bevestigd na
-weerleggingspoging) zijn verwerkt en er staan geen P0/P1 meer open. De meetbare as ontbreekt
-bewust, hij is niet overgeslagen.
+**Gevalideerd op 2026-08-07.** De functie is uitgerold en de keten is end-to-end gereden met een
+wegwerp-account: aanmaken → verwijderen → terug op het loginscherm, met de database-telling als
+bewijs. Elk acceptatie-item staat afgevinkt, er zijn geen P0/P1 meer open na twee adversariële
+reviewrondes (9 + 8 bevindingen, 6 + 4 bevestigd na weerleggingspoging), en de Open vragen-lijst
+is leeg.
+
+De uitgerolde functie is bovendien aan de buitenkant getoetst: `POST` zonder token geeft 401
+(`UNAUTHORIZED_NO_AUTH_HEADER` — de JWT-poort staat aan), en een `OPTIONS`-preflight geeft 204 met
+de volledige CORS-headers inclusief `apikey` en `x-client-info`. Dat laatste bewijst tegelijk dat
+de uitgerolde code de actuele versie is en niet een eerdere kopie.
+
+**Wat niet gereden is:** de faalpaden. Verkeerd wachtwoord, offline en een verlopen sessie zijn
+statisch geredeneerd en door de reviews bevestigd, maar niet op het toestel uitgelokt. Die staan
+als losse controle in `HANDOFF.md`.
 
 ## Beslissingsgeschiedenis
 

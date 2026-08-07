@@ -378,7 +378,16 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   (de drie env-vars injecteert Supabase zelf, geen secrets in te stellen), dan #209 mergen, dan één
   echte verwijdering op een testaccount. Die run sluit de twee laatste acceptatie-items in
   `briefings/2026-08-06-feature-account-verwijderen.tcebc.md`; de briefing staat nu op `gebouwd`.
-- **Status:** open
+- **Status:** resolved — 2026-08-07: Jeroen rolde de functie uit via de dashboard-editor (geen CLI
+  en geen Docker op de machine; voor één functie is dat de kortste weg, de bron blijft in git).
+  Buitenkant getoetst: `POST` zonder token → 401 `UNAUTHORIZED_NO_AUTH_HEADER`, `OPTIONS` → 204 met
+  de volledige CORS-headers incl. `apikey`/`x-client-info` — dat laatste bewijst meteen dat de
+  uitgerolde code de actuele versie is. Daarna een echte verwijdering met een wegwerp-account:
+  `auth.users` en `profiles` van 2 terug naar 1, `workouts` onaangeroerd op 11, nul wees-rijen aan
+  beide kanten. De briefing staat op `gevalideerd`.
+- **Wat níet gereden is:** de faalpaden van het verwijderen — verkeerd wachtwoord, offline, en een
+  verlopen sessie. Die zijn statisch geredeneerd en door twee reviewrondes bevestigd, maar nooit op
+  het toestel uitgelokt. Mee te nemen bij een volgende gelegenheid, geen blocker.
 
 ## 2026-08-06 — De Edge Function wordt door niets getypecheckt · [risico]
 - **Bevinding:** `apps/rowtrack/tsconfig.json` sluit `supabase/functions` uit — noodzakelijk, want

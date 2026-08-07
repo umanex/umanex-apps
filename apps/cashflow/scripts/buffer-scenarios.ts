@@ -842,12 +842,17 @@ console.log('\nS25 — budget overschreden in de ankermaand');
   check('S25 · cash-regel = het teveel', anker[0]!.cashOverflowItems[0]!.amount, 43.6);
   check('S25 · teveel telt niet dubbel in de ankermaand', anker[0]!.subtotals.oneOff, 0);
   check('S25 · eindsaldo niet dubbel verlaagd', anker[0]!.endBalance, 1000);
+  // De vlag moet de kop volgen: telt het bedrag niet mee, dan hoort de regel zich als een
+  // betaalde uitgave te gedragen en dus achter de filter te zitten. Anders toont de sectie
+  // een regel die niet in haar eigen totaal zit — precies wat er tot 07-08 gebeurde.
+  checkBool('S25 · niet meegeteld → regel als betaald', anker[0]!.cashOverflowItems[0]!.paid, true);
   invariant(anker, 'S25b');
 
   // Latere maand: daar telt de cash-bijbetaling wél als kost én krijgt ze een regel.
   const later = calculateMonths('2026-02', 1000, [], [], [], [budget], over, [], [], [], [], 2);
   check('S25 · latere maand telt het teveel', later[1]!.subtotals.oneOff, 43.6);
   check('S25 · latere maand toont de cash-regel', later[1]!.cashOverflowItems.length, 1);
+  checkBool('S25 · wél meegeteld → regel niet als betaald', later[1]!.cashOverflowItems[0]!.paid, false);
   invariant(later, 'S25c');
 }
 

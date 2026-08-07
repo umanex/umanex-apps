@@ -151,7 +151,7 @@ export function computeMonthSubtotals(input: MonthSubtotalInput): MonthSubtotals
 export function collectCashOverflowItems(
   reservationPots: ReservationPotBalance[],
   isFirstMonth: boolean,
-): Array<{ label: string; amount: number }> {
+): Array<{ label: string; amount: number; paid: boolean }> {
   return reservationPots.flatMap((p) => {
     // In de ankermaand is een bijbetaling al van het banksaldo af, telt ze niet nog eens als
     // kost, en tonen we ze niet als losse regel — behalve wanneer een maandelijks budget
@@ -162,7 +162,11 @@ export function collectCashOverflowItems(
     if (isFirstMonth && p.potType !== 'maandelijks_budget') return [];
     return p.paymentsThisMonth
       .filter((pay) => pay.fromCash > 0)
-      .map((pay) => ({ label: pay.label, amount: pay.fromCash }));
+      // `paid` volgt exact de tak op regel 89: in de ankermaand staat `cashOverflow` op 0,
+      // dus zit dit bedrag niet in `oneOff` en gedraagt de regel zich als een betaalde
+      // uitgave — zichtbaar achter de filter, niet meegeteld in de kop. In latere maanden
+      // telt ze wel mee en hoort ze dus gewoon in beeld te staan.
+      .map((pay) => ({ label: pay.label, amount: pay.fromCash, paid: isFirstMonth }));
   });
 }
 

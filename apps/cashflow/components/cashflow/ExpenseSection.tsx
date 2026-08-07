@@ -11,7 +11,8 @@ interface ExpenseSectionProps {
   items: ExpenseItem[];
   /** Stapbedrag van deze ledger-regel, uit de calculator. */
   amount: number;
-  overflowItems?: { label: string; amount: number }[];
+  /** `paid` = al van het banksaldo af, dus niet in `amount` meegeteld. Zie MonthData. */
+  overflowItems?: { label: string; amount: number; paid: boolean }[];
   onAdd: (item: ExpenseItem) => void;
   onUpdate: (id: string, patch: Partial<ExpenseItem>) => void;
   onRemove: (id: string) => void;
@@ -122,6 +123,14 @@ export function ExpenseSection({
   const paidItems = items.filter((i) => i.paid);
   const visibleItems = showAll ? items : unpaidItems;
 
+  // Een overflow-regel die al betaald is, zit niet in `amount` — dezelfde reden waarom een
+  // betaalde uitgave er in de ankermaand ook buiten valt. Hem onvoorwaardelijk tonen liet de
+  // sectie optellen tot een ander bedrag dan haar kop; achter dezelfde filter blijft hij
+  // opvraagbaar zonder dat het lijkt alsof hij meetelt.
+  const paidOverflowItems = overflowItems.filter((i) => i.paid);
+  const visibleOverflowItems = showAll ? overflowItems : overflowItems.filter((i) => !i.paid);
+  const hasHiddenPaid = paidItems.length > 0 || paidOverflowItems.length > 0;
+
 
   function handleAdd() {
     const parsed = parseFloat(newAmount.replace(',', '.'));
@@ -152,14 +161,14 @@ export function ExpenseSection({
       <SectionBar
         label="Niet recurrent"
         amount={amount}
-        showPaid={paidItems.length > 0 ? showAll : undefined}
-        onFilterToggle={paidItems.length > 0 ? () => setShowPaid((v) => !v) : undefined}
+        showPaid={hasHiddenPaid ? showAll : undefined}
+        onFilterToggle={hasHiddenPaid ? () => setShowPaid((v) => !v) : undefined}
         onAdd={() => setAdding(true)}
         addAriaLabel="Kost toevoegen"
       />
 
       <div className="flex flex-col gap-1 w-full">
-        {items.length === 0 && overflowItems.length === 0 && !adding && (
+        {visibleItems.length === 0 && visibleOverflowItems.length === 0 && !adding && (
           <p className="pl-2 text-sm text-muted-foreground italic">Geen eenmalige uitgaven</p>
         )}
         {visibleItems.map((item, index) => (
@@ -173,7 +182,7 @@ export function ExpenseSection({
         ))}
 
         {/* Afgeleide overflow items van spaardoel-betalingen */}
-        {overflowItems.map((item, idx) => (
+        {visibleOverflowItems.map((item, idx) => (
           <div key={`overflow-${idx}`} className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full opacity-70 ${
             (visibleItems.length + idx) % 2 !== 0 ? 'bg-muted' : ''
           }`}>
@@ -181,7 +190,9 @@ export function ExpenseSection({
             <span className="w-3.5 shrink-0" />
             <span className="flex-1 text-sm truncate text-muted-foreground min-w-0">
               {item.label}
-              <span className="ml-1 text-2xs text-muted-foreground/60">– resterend</span>
+              <span className="ml-1 text-2xs text-muted-foreground/60">
+                {item.paid ? '– al betaald' : '– resterend'}
+              </span>
             </span>
             <span className="w-[92px] text-sm tabular-nums text-finance-positive text-right shrink-0">
               {formatAmount(item.amount)}

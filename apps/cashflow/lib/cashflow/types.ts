@@ -151,8 +151,13 @@ export interface MonthData {
   endBalance: number;
   /** Sectie-subtotalen van deze maand. Enige bron voor kaart én doorrol. */
   subtotals: MonthSubtotals;
-  /** Cash-bijbetalingen bovenop een pot, als losse regels voor de uitgavensectie. */
-  cashOverflowItems: Array<{ label: string; amount: number }>;
+  /**
+   * Cash-bijbetalingen bovenop een pot, als losse regels voor de uitgavensectie.
+   *
+   * `paid` zegt of het bedrag al van het banksaldo af is en dus níet in `subtotals.oneOff`
+   * meetelt. Zonder die vlag toont de sectie regels die niet optellen tot haar eigen kop.
+   */
+  cashOverflowItems: Array<{ label: string; amount: number; paid: boolean }>;
   totalIncome: number;
   totalRecurring: number;
   totalReservationDeductions: number;

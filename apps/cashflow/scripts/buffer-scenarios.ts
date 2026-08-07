@@ -811,5 +811,45 @@ console.log('\nS24 — budget bijstellen in de ankermaand');
   invariant(later, 'S24d');
 }
 
+// ── S25: budget overschreden — resterend 0, teveel bij de niet-recurrente uitgaven ─────
+console.log('\nS25 — budget overschreden in de ankermaand');
+{
+  const budget: ReservationItem = {
+    id: 'b', label: 'Parking', monthlyAmount: 106.4, startMonth: '2026-03',
+    type: 'maandelijks_budget',
+  };
+
+  // Binnen budget: het resterende deel is 106,40 − 39,63 = 66,77 en er is geen cash-regel.
+  const binnen: ReservationPayment[] = [{
+    id: 'p1', reservationId: 'b', monthKey: '2026-03', label: 'ticket',
+    invoiceAmount: 39.63, fromReservation: 39.63, fromCash: 0,
+  }];
+  const b = calculateMonths('2026-03', 1000, [], [], [], [budget], binnen, [], [], [], [], 1);
+  check('S25 · binnen budget → resterend 66,77', b[0]!.subtotals.budgets, 66.77);
+  check('S25 · binnen budget → geen cash-regel', b[0]!.cashOverflowItems.length, 0);
+  invariant(b, 'S25a');
+
+  // Over budget: de pot draagt 106,40, de rest (43,60) is cash. Resterend 0, en het teveel
+  // verschijnt als regel bij de niet-recurrente uitgaven — maar telt in de ankermaand niet
+  // nog eens als kost, want het is al van het banksaldo af.
+  const over: ReservationPayment[] = [{
+    id: 'p1', reservationId: 'b', monthKey: '2026-03', label: 'ticket',
+    invoiceAmount: 150, fromReservation: 106.4, fromCash: 43.6,
+  }];
+  const anker = calculateMonths('2026-03', 1000, [], [], [], [budget], over, [], [], [], [], 1);
+  check('S25 · over budget → resterend 0', anker[0]!.subtotals.budgets, 0);
+  check('S25 · over budget → cash-regel in de ankermaand', anker[0]!.cashOverflowItems.length, 1);
+  check('S25 · cash-regel = het teveel', anker[0]!.cashOverflowItems[0]!.amount, 43.6);
+  check('S25 · teveel telt niet dubbel in de ankermaand', anker[0]!.subtotals.oneOff, 0);
+  check('S25 · eindsaldo niet dubbel verlaagd', anker[0]!.endBalance, 1000);
+  invariant(anker, 'S25b');
+
+  // Latere maand: daar telt de cash-bijbetaling wél als kost én krijgt ze een regel.
+  const later = calculateMonths('2026-02', 1000, [], [], [], [budget], over, [], [], [], [], 2);
+  check('S25 · latere maand telt het teveel', later[1]!.subtotals.oneOff, 43.6);
+  check('S25 · latere maand toont de cash-regel', later[1]!.cashOverflowItems.length, 1);
+  invariant(later, 'S25c');
+}
+
 console.log(`\n${checks - failures}/${checks} checks geslaagd${failures ? ` — ${failures} FOUT` : ''}`);
 process.exit(failures ? 1 : 0);

@@ -73,21 +73,36 @@ function DraggablePotRow({
   // spaardoel is finaliseerbaar zodra er betalingen zijn — het restsaldo wordt
   // bij finalisatie vrijgegeven en de opbouw herstart de maand erna.
   const canShowFinalize = pot.potType === 'maandelijks_budget' || hasPayments;
-  // Het veld draagt in élke kolom hetzelfde: de storting van die maand. Voor een budget in
-  // de ankermaand toonde het vroeger het restbedrag, en dan moest het wel uitgeschakeld
-  // staan — je kunt een afgeleide waarde niet bewerken zonder dat het veld iets anders
-  // betekent dan ernaast. Dat restbedrag staat nu op de subregel, zoals bij elke andere pot.
   const isBudgetCurrentMonth = pot.potType === 'maandelijks_budget' && isCurrentMonth;
 
-  const [localAmount, setLocalAmount] = useState(String(roundTo2(pot.provisionThisMonth)));
+  // De resterende provisie van deze maand: het budget minus wat er al uit de pot betaald is.
+  // Een betaling kan de pot niet onder nul trekken (de betaalmodal capt `fromReservation` op
+  // de potstand), dus is dit nooit negatief — het teveel vertrekt als cash-bijbetaling.
+  const remaining = Math.max(
+    0,
+    pot.provisionThisMonth + pot.deferredFromPrevious - paidFromReservation,
+  );
 
+  // Het bedragveld toont bij een budget in de huidige maand de resterende provisie; bij elke
+  // andere pot of maand de storting/het budget van die maand. Bewerken raakt altijd het
+  // budget zelf — daarom wisselt het veld bij focus naar dat budget (zie `handleFocus`) en
+  // valt het bij blur terug op de rustwaarde hieronder.
+  const idleFieldValue = isBudgetCurrentMonth ? remaining : pot.provisionThisMonth;
+
+  const [editing, setEditing] = useState(false);
+  const [localAmount, setLocalAmount] = useState(String(roundTo2(idleFieldValue)));
+
+  // Buiten het bewerken volgt het veld de opgeslagen waarde — zo daalt het resterende bedrag
+  // meteen zodra er een betaling bijkomt. Tijdens het typen niet: dan zou een store-update de
+  // cursor terugzetten.
   useEffect(() => {
-    setLocalAmount(String(roundTo2(pot.provisionThisMonth)));
-  }, [pot.provisionThisMonth]);
+    if (!editing) setLocalAmount(String(roundTo2(idleFieldValue)));
+  }, [idleFieldValue, editing]);
 
-  // De subregel rekent met wat er op dit moment in het veld staat, niet met wat opgeslagen
-  // is. De sectiekop doet dat via `pendingOverrideDelta` al; liep de rij daar niet in mee,
-  // dan bewoog de kop tijdens het typen terwijl het restbedrag eronder bleef staan.
+  // De subregel van een spaardoel (of een budget in een latere maand) rekent met wat er op
+  // dit moment in het veld staat — daar ís het veld de storting. Bij een budget in de huidige
+  // maand toont het veld zelf al het resterende bedrag; de subregel toont er het brutobudget
+  // naast (zie de render).
   const typedAmount = parseFloat(localAmount.replace(',', '.'));
   const pendingProvision =
     isNaN(typedAmount) || typedAmount < 0 ? pot.provisionThisMonth : typedAmount;
@@ -104,25 +119,37 @@ function DraggablePotRow({
     },
   });
 
+  function handleFocus() {
+    setEditing(true);
+    // Een budget in de huidige maand toont in rust de resterende provisie; bewerken raakt het
+    // budget zelf, dus wisselt het veld bij focus naar dat brutobudget.
+    if (isBudgetCurrentMonth) setLocalAmount(String(roundTo2(pot.provisionThisMonth)));
+  }
+
   function handleAmountBlur() {
+    setEditing(false);
     const amt = parseFloat(localAmount.replace(',', '.'));
     onAmountChange(pot.reservationId, null);
-    // Leeg, onleesbaar of negatief: terug naar het begrote bedrag, afrekening weg.
-    if (isNaN(amt) || amt < 0) {
-      setLocalAmount(String(roundTo2(pot.monthlyAmount)));
-      if (pot.hasSettlement) onRemoveSettlement(pot.reservationId);
-      return;
-    }
-    setLocalAmount(String(roundTo2(amt)));
-    // Een afrekening ís het verschil met het begrote bedrag. Wie terugtypt naar dat
-    // bedrag wil dus geen afrekening van dezelfde waarde, maar geen afrekening meer.
-    if (Math.abs(amt - pot.monthlyAmount) < 0.01) {
+    // Wat je typt is altijd het budget/de storting van die maand. Leeg, onleesbaar of
+    // negatief valt terug op het begrote bedrag.
+    const invalid = isNaN(amt) || amt < 0;
+    const effectiveBudget = invalid ? pot.monthlyAmount : amt;
+    // Display valt terug op de rustwaarde: bij een budget in de huidige maand het resterende
+    // deel van het (nieuwe) budget, anders het budget/de storting zelf.
+    const nextRemaining = Math.max(
+      0,
+      effectiveBudget + pot.deferredFromPrevious - paidFromReservation,
+    );
+    setLocalAmount(String(roundTo2(isBudgetCurrentMonth ? nextRemaining : effectiveBudget)));
+    // Een afrekening ís het verschil met het begrote bedrag. Wie terugtypt naar dat bedrag
+    // (of leeg/negatief laat) wil dus geen afrekening van dezelfde waarde, maar geen meer.
+    if (invalid || Math.abs(effectiveBudget - pot.monthlyAmount) < 0.01) {
       if (pot.hasSettlement) onRemoveSettlement(pot.reservationId);
       return;
     }
     // Ongewijzigd t.o.v. wat er al staat: niets naar de store schrijven.
-    if (Math.abs(amt - pot.provisionThisMonth) < 0.01) return;
-    onSettle(pot.reservationId, amt);
+    if (Math.abs(effectiveBudget - pot.provisionThisMonth) < 0.01) return;
+    onSettle(pot.reservationId, effectiveBudget);
   }
 
   function handleFinalize() {
@@ -164,17 +191,26 @@ function DraggablePotRow({
               </button>
             )}
           </div>
-          <div className="flex items-center gap-1">
-            {/* In de ankermaand is een betaling uit een budget al van het banksaldo af, dus
-                is wat hier staat het onbesteed gebleven deel — vandaar een eigen woord. */}
-            <span className="text-2xs text-muted-foreground opacity-70">
-              {isBudgetCurrentMonth ? 'Resterend:' : 'Provisie:'}
-            </span>
-            <span className={`text-2xs font-semibold tabular-nums ${displayAmount < 0 ? 'text-finance-negative' : 'text-finance-positive'}`}>
-              {formatAmount(displayAmount)}
-              {displayAmount < 0 && ' ⚠'}
-            </span>
-          </div>
+          {isBudgetCurrentMonth ? (
+            // Het veld toont hier de resterende provisie; de subregel zet het brutobudget
+            // ernaast zodra er iets uit de pot betaald is, zodat beide bedragen zichtbaar zijn.
+            paidFromReservation > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-2xs text-muted-foreground opacity-70">Budget:</span>
+                <span className="text-2xs font-semibold tabular-nums text-finance-positive">
+                  {formatAmount(pot.provisionThisMonth)}
+                </span>
+              </div>
+            )
+          ) : (
+            <div className="flex items-center gap-1">
+              <span className="text-2xs text-muted-foreground opacity-70">Provisie:</span>
+              <span className={`text-2xs font-semibold tabular-nums ${displayAmount < 0 ? 'text-finance-negative' : 'text-finance-positive'}`}>
+                {formatAmount(displayAmount)}
+                {displayAmount < 0 && ' ⚠'}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
@@ -188,6 +224,7 @@ function DraggablePotRow({
               const parsed = parseFloat(v.replace(',', '.'));
               onAmountChange(pot.reservationId, isNaN(parsed) || parsed < 0 ? null : parsed);
             }}
+            onFocus={handleFocus}
             onBlur={handleAmountBlur}
             onPointerDown={(e) => e.stopPropagation()}
             className={`w-[92px] h-7 px-2 text-dense text-right tabular-nums rounded-sm border border-input bg-background text-finance-deferred focus:outline-none focus:ring-1 focus:ring-ring ${

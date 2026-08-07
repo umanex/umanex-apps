@@ -12,7 +12,7 @@ import {
   type DragEndEvent,
   type DragCancelEvent,
 } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { monthColumnCoordinates } from '../../lib/cashflow/dndKeyboard';
 import { useCashflowStore } from '../../store/cashflow';
 import { formatAmount } from '../../lib/cashflow/recurring';
 import type { MonthKey, RecurringDefer, ReservationDefer } from '../../lib/cashflow/types';
@@ -41,7 +41,7 @@ export function CashflowDndContext({ children }: CashflowDndContextProps) {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, { coordinateGetter: monthColumnCoordinates }),
   );
 
   function handleDragStart(event: DragStartEvent) {

@@ -4,30 +4,10 @@ import { useEffect, useState } from 'react';
 import { cleanupStaleData } from '../../hooks/useCashflow';
 import { errorMessage } from '../../lib/cashflow/error-message';
 import { hydrateFromRemote, resetSync, startSync } from '../../lib/cashflow/sync';
-import { isAuthError, refreshSession } from '../../lib/supabase/auth-recovery';
+import { isAuthError, withAuthRetry } from '../../lib/supabase/auth-recovery';
 import { supabase } from '../../lib/supabase/client';
 
 type Phase = 'loading' | 'ready' | 'error';
-
-/**
- * Laadt de stand, en herstelt één keer als het tóken de blokkade was.
- *
- * Zonder deze stap is "Opnieuw proberen" een doodlopende knop bij een auth-fout: dezelfde
- * sessie levert gegarandeerd dezelfde fout, dus de gebruiker zit vast tot supabase-js uit
- * zichzelf ververst. Dat duurde in de praktijk een half uur (PGRST303 op 07-08).
- *
- * Eén herkansing, geen lus: helpt een vers token niet, dan zit het probleem elders en is
- * de oorspronkelijke fout wat de gebruiker moet zien.
- */
-async function loadWithRecovery(uid: string): Promise<void> {
-  try {
-    await hydrateFromRemote(uid);
-  } catch (error) {
-    if (!isAuthError(error)) throw error;
-    if (!(await refreshSession())) throw error;
-    await hydrateFromRemote(uid);
-  }
-}
 
 /**
  * Laadt de stand uit Supabase en houdt de app tegen tot dat gelukt is.
@@ -51,7 +31,10 @@ export function DataGate({ userId, children }: { userId: string; children: React
     setMessage(null);
     setSessionExhausted(false);
 
-    loadWithRecovery(userId)
+    // Zonder de herkansing is "Opnieuw proberen" een doodlopende knop bij een auth-fout:
+    // dezelfde sessie levert gegarandeerd dezelfde fout, dus zat je vast tot supabase-js uit
+    // zichzelf ververste. Dat duurde in de praktijk een half uur (PGRST303 op 07-08).
+    withAuthRetry(() => hydrateFromRemote(userId))
       .then(() => {
         if (cancelled) return;
         // Pas luisteren nadat de stand staat: anders zou het laden zelf als wijziging

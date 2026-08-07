@@ -9,6 +9,7 @@ import {
 } from './repository';
 import { emptyData } from './normalize';
 import { errorMessage } from './error-message';
+import { withAuthRetry } from '../supabase/auth-recovery';
 import { useSyncStatus } from './sync-status';
 import type { CashflowData, MonthSnapshot } from './types';
 
@@ -73,13 +74,24 @@ async function push(): Promise<void> {
 
   useSyncStatus.getState().setStatus('saving');
   try {
-    // Snapshots eerst: een afgesloten maand hoort te bestaan vóór het document dat
-    // hem via reopenedMonths kan tegenspreken.
-    await syncSnapshots(uid, snapshots);
-    if (!dataUnchanged(data, lastPushedData)) {
-      revision = await saveState(uid, data, revision);
-      lastPushedData = data;
-    }
+    // Eén herkansing met een verse sessie als het tóken de blokkade was. Zonder dat blijft een
+    // voorbijgaande PGRST303 hangen tot de volgende wijziging — en er is geen lokale kopie die
+    // het intussen onthoudt.
+    //
+    // Het blok is veilig te herhalen. Een geweigerd token komt niet voorbij de poort van
+    // PostgREST, dus er is niets half geschreven. En zelfs als dat wél zo was: de snapshot-
+    // upserts gaan per maandsleutel en `syncSnapshots` heeft `lastPushedSnapshots` dan al
+    // bijgewerkt, terwijl `revision` enkel bij een geslaagde `saveState` opschuift — dus de
+    // tweede poging vertrekt van dezelfde revisie en botst niet met zichzelf.
+    await withAuthRetry(async () => {
+      // Snapshots eerst: een afgesloten maand hoort te bestaan vóór het document dat
+      // hem via reopenedMonths kan tegenspreken.
+      await syncSnapshots(uid, snapshots);
+      if (!dataUnchanged(data, lastPushedData)) {
+        revision = await saveState(uid, data, revision);
+        lastPushedData = data;
+      }
+    });
     useSyncStatus.getState().setStatus('idle');
   } catch (error) {
     if (error instanceof RevisionConflictError) {

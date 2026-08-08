@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCashflowStore } from '../../store/cashflow';
 import { useMonths, useReservationActions } from '../../hooks/useCashflow';
+import { useDismissOnEscape } from '../../hooks/useDismissOnEscape';
 import { calcPotBalance } from '../../lib/cashflow/calculator';
 import { generateId, formatAmount } from '../../lib/cashflow/recurring';
 import type { MonthKey, ReservationPotType } from '../../lib/cashflow/types';
@@ -14,6 +15,8 @@ interface ReservationPaymentModalProps {
 }
 
 export function ReservationPaymentModal({ monthKey, filterType, onClose }: ReservationPaymentModalProps) {
+  useDismissOnEscape(onClose);
+
   const reservations = useCashflowStore((s) => s.reservations);
   const reservationPayments = useCashflowStore((s) => s.reservationPayments);
   const reservationSettlements = useCashflowStore((s) => s.reservationSettlements);

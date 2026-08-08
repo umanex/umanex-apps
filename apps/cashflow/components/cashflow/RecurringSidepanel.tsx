@@ -2,6 +2,8 @@
 
 import { useCashflowStore } from '../../store/cashflow';
 import { useCashflowActions } from '../../hooks/useCashflow';
+import { useDismissOnEscape } from '../../hooks/useDismissOnEscape';
+import { useInertWhenClosed } from '../../hooks/useInertWhenClosed';
 import { generateId, getCurrentMonthKey, formatAmount } from '../../lib/cashflow/recurring';
 import type { RecurringItem } from '../../lib/cashflow/types';
 
@@ -80,6 +82,11 @@ function ItemEditRow({ item, onUpdate, onRemove }: ItemEditRowProps) {
 }
 
 export function RecurringSidepanel({ open, onClose }: RecurringSidepanelProps) {
+  // Het paneel blijft gemonteerd wanneer het dicht is — de schuif-animatie heeft dat
+  // nodig — dus moet het zelf uit de tab-volgorde en de a11y-tree stappen.
+  const panelRef = useInertWhenClosed(open);
+  useDismissOnEscape(onClose, open);
+
   const items = useCashflowStore((s) => s.recurringItems);
   const { addRecurringItem, updateRecurringItem, removeRecurringItem } = useCashflowActions();
 
@@ -104,8 +111,12 @@ export function RecurringSidepanel({ open, onClose }: RecurringSidepanelProps) {
         aria-hidden="true"
       />
       <div
-        role="dialog"
-        aria-modal="true"
+        ref={panelRef}
+        // Alleen een geopend paneel is een dialoog. Stond `role`/`aria-modal` er ook
+        // dicht, dan meldde de app permanent een open modale dialoog naast de prognose.
+        role={open ? 'dialog' : undefined}
+        aria-modal={open ? true : undefined}
+        aria-hidden={open ? undefined : true}
         aria-label="Vaste uitgaven beheren"
         className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-background border-l border-border shadow-xl z-50 flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >

@@ -123,7 +123,12 @@ async function main() {
   for (const route of ROUTES) {
     const res = await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
     const status = res?.status() ?? 0;
-    if (status !== 200) { fail(`${route} → HTTP ${status}`); continue; }
+    // Alleen 4xx/5xx is een fout. Een 3xx is dat niet: de Next App Router beantwoordt een
+    // `redirect()` met een 307 **mét** HTML-body die client-side doorstuurt, zonder
+    // Location-header. Gemeten op partner-portal — `/` en `/partnerzone` gaven 307 terwijl
+    // ze gewoon renderen. Wie op de statuscode oordeelt meldt daar twee defecten die er
+    // niet zijn; het oordeel hoort te gaan over wat er uiteindelijk op het scherm staat.
+    if (status >= 400) { fail(`${route} → HTTP ${status}`); continue; }
     // `domcontentloaded` is te vroeg voor een client-gerenderde app: die heeft dan nog
     // niets in de body staan. Gemeten op enviro-mobile — daar leverde het 0 tekens op een
     // pagina die na de client-side redirect gewoon rendert, dus een vals "wit scherm" op
@@ -131,8 +136,10 @@ async function main() {
     // service worker), dan lezen we alsnog wat er staat in plaats van te blijven hangen.
     await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
     const text = (await page.locator('body').innerText().catch(() => '')).trim();
-    if (text.length < 20) fail(`${route} rendert vrijwel niets (${text.length} tekens)`);
-    else ok(`${route} → 200, ${text.length} tekens tekst`);
+    const landed = new URL(page.url()).pathname;
+    const where = landed === route ? `${route}` : `${route} → ${landed}`;
+    if (text.length < 20) fail(`${where} rendert vrijwel niets (${text.length} tekens)`);
+    else ok(`${where} → ${status}, ${text.length} tekens tekst`);
     if (SHOT) {
       const name = route === '/' ? 'index' : route.replace(/\//g, '-').replace(/^-/, '');
       const file = resolve(process.cwd(), `${SHOT}/${name}.png`);

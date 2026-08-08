@@ -32,11 +32,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+13ed3ea fix: read the page after the network settles, not at domcontentloaded
 89e9434 fix(jobradar): do not count a link to the current page as navigation
 a96280b feat(jobradar): add a flow harness and a measured verify path
 62ab13d chore: prune four orphans, and declare the binary the render scripts need
 e59eaa1 chore(config): remove the dead flat-config eslint files
-5806065 refactor(config): share the token lint rules instead of copying them per app
 ```
 
 ## Uncommitted wijzigingen

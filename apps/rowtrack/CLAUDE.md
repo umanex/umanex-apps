@@ -68,10 +68,29 @@ het af te leiden. Staat er "geen", dan is dat een gat dat gebouwd moet worden �
 | Capability | Commando / status |
 |---|---|
 | **Render vastleggen** | `xcrun simctl io booted screenshot <pad>.png` — werkt. Nooit een UDID hardcoden, die verandert; `booted` is stabiel. Op het fysieke toestel: geen automatisch pad, screenshot met de hand. |
-| **Flow aandrijven** | **Geen.** Geen idb, geen Detox, geen Maestro. Tappen, typen en navigeren gebeuren door Jeroen. Elk acceptatie-item dat door de UI loopt is dus `[NIET TE VERIFIËREN]` tenzij hij meekijkt. |
+| **Flow aandrijven** | **Maestro 2.8.0** (besluit Jeroen, 2026-08-08). Draaien: `JAVA_HOME=$(brew --prefix openjdk)/libexec/openjdk.jdk/Contents/Home maestro test apps/rowtrack/.maestro/smoke.yaml`. `JAVA_HOME` is niet optioneel — Homebrew's openjdk is keg-only en staat niet vanzelf op `PATH`. Installeren met **`brew install mobile-dev-inc/tap/maestro`**, nooit `brew install maestro`: dat is een gelijknamige cask van runmaestro.ai, een heel ander product. Gemeten 2026-08-08 op simulator `iPhone 17` / iOS 26.5: `smoke.yaml` slaagt (launch + twee asserts, exit 0). Drie valkuilen die hij onderweg blootlegde, zie hieronder. |
 | **State forceren** | `app/dev-active.tsx` forceert de active-workout fase. Verder: `supabase/seed/test-account.sql` in de SQL Editor zet `rowtrack-test@umanex.be` terug op een vaste vertreksituatie — `health_consent = null`, lege lichaamsvelden, 4 ritten met bewust verschillende `samples`-vormen. Idempotent, dus ook de reset. |
 | **Invariant draaien** | `node --test <bestand>.test.ts` — Node 24 draait TypeScript zonder transpiler en heeft `node:test`/`node:assert` ingebouwd, dus dit kost geen dependency. Werkt op modules zonder path-alias of RN-import (`lib/bestDistanceTime.ts`, `calories.ts`, `smoothing.ts`, `period.ts`). Een module die `@/…` importeert lost Node niet op. |
 | **Verse build** | De app op de simulator is een **dev-client**: zonder Metro (`pnpm dev:rowtrack`) draait hij op wat er toevallig nog in het geheugen zit. Controleer de datum van `~/Library/Developer/CoreSimulator/Devices/<udid>/data/Containers/Bundle/Application/*/RowTrack.app/` vóór je een screenshot als bewijs gebruikt — op 2026-08-07 was die een maand oud en dat is aan de render niet te zien. Na een native wijziging: `expo run:ios --device`, cf. de worklets-les. |
+
+**Drie valkuilen van de flow-as, elk gemeten op 2026-08-08.** Alle drie geven hetzelfde beeld —
+een blanco scherm en een gefaalde assert — terwijl er niets mis is met de app. Wie ze niet kent,
+rapporteert een vals negatief.
+
+1. **Een verse worktree heeft geen `.env`.** Dat bestand is gitignored, dus het reist niet mee met
+   `git worktree add`. Zonder `EXPO_PUBLIC_SUPABASE_URL` en `..._ANON_KEY` crasht de app bij het
+   opstarten op *"Missing Supabase env vars"* en toont de hiërarchie enkel de statusbalk. Fix:
+   `cp ../umanex-apps/apps/rowtrack/.env apps/rowtrack/.env` en Metro herstarten.
+2. **Het dev-menu van de development build verbergt de app.** Bij de eerste start ná installatie
+   verschijnt een onboarding-sheet, en het dev-menu zelf legt zich als aparte laag over de app.
+   Maestro ziet dan géén app-inhoud, ook al staat het scherm er visueel achter. `smoke.yaml` klikt
+   de sheet voorwaardelijk weg; komt het volledige menu op, herstart dan de app
+   (`xcrun simctl terminate booted com.rowtrack.app && xcrun simctl launch booted com.rowtrack.app`).
+3. **Metro moet draaien.** De dev-client haalt zijn bundle van `:8081`. Staat Metro niet op, dan is
+   het beeld opnieuw blanco — zie ook *Verse build* hierboven.
+
+Bewust géén inloggegevens in `smoke.yaml`. Een flow die verder moet dan het startscherm gebruikt
+het testaccount hieronder, met de hand ingevuld.
 
 **Destructieve paden — alleen op het testaccount.** `revoke_health_consent()` wist hartslag uit álle
 ritten van de aanroeper en leegt de lichaamsvelden. Op `jeroen@ikbenjeroen.be` is dat onherstelbaar

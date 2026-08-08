@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-07_
+_Gegenereerd op 2026-08-08_
 
 ## Project
 - **App:** rowtrack
@@ -56,14 +56,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+7a473f9 docs(rowtrack): promote the native-module fallback lesson
 89126b8 feat(rowtrack): add a seedable test account so destructive paths become verifiable
 23100dc docs(rowtrack): record the verify-pad and correct the consent briefing
 451e251 feat(rowtrack): ask for consent before touching health data
 812240f docs(rowtrack): privacy policy written against what the app actually does
-9b52e10 docs(rowtrack): account deletion is validated against a real deletion
 ```
 
 ## Uncommitted wijzigingen
+  A  apps/rowtrack/.maestro/smoke.yaml
   M  apps/rowtrack/CLAUDE.md
 
 ## Bestanden met TODO/FIXME

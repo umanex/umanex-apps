@@ -60,18 +60,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+34ef4b4 feat(vyvey): add a flow harness and a measured verify path
 62ab13d chore: prune four orphans, and declare the binary the render scripts need
 e59eaa1 chore(config): remove the dead flat-config eslint files
 5806065 refactor(config): share the token lint rules instead of copying them per app
 36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
-5ead2b3 fix(tokens): give primary a contrast-safe value per mode
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/vyvey/.gitignore
-  A  apps/vyvey/CLAUDE.md
-  M  apps/vyvey/package.json
-  A  apps/vyvey/scripts/flow-harness.mjs
+  M  apps/vyvey/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

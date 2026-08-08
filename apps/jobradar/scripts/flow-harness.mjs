@@ -124,6 +124,12 @@ async function main() {
     const res = await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
     const status = res?.status() ?? 0;
     if (status !== 200) { fail(`${route} → HTTP ${status}`); continue; }
+    // `domcontentloaded` is te vroeg voor een client-gerenderde app: die heeft dan nog
+    // niets in de body staan. Gemeten op enviro-mobile — daar leverde het 0 tekens op een
+    // pagina die na de client-side redirect gewoon rendert, dus een vals "wit scherm" op
+    // een werkende app. Wachten tot het netwerk stil is; blijft dat uit (long polling,
+    // service worker), dan lezen we alsnog wat er staat in plaats van te blijven hangen.
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
     const text = (await page.locator('body').innerText().catch(() => '')).trim();
     if (text.length < 20) fail(`${route} rendert vrijwel niets (${text.length} tekens)`);
     else ok(`${route} → 200, ${text.length} tekens tekst`);

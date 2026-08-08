@@ -245,6 +245,34 @@ if [ -d "$UMANEX_OS_PATH/skills" ]; then
     synced=$((synced + 1))
   done
   [ "$synced" -eq 0 ] && echo "  (geen globale skills gevonden in umanex-os/skills/)"
+
+  # Wezen opruimen: skills die user-level staan maar niet meer in umanex-os/skills/.
+  #
+  # De lus hierboven loopt alleen over de bron, dus een hernoemde of verwijderde skill
+  # bleef eeuwig staan. Hernoem `verify` naar `verifieer` en je hebt er user-level twee,
+  # met overlappende trigger-frasen, waarvan één permanent bevroren op de inhoud van vóór
+  # de hernoeming — en die blijft gewoon vuren met verouderde instructies. Beide wachters
+  # deelden die blinde vlek (doctor.sh en session-start-handoff.sh lopen ook over de bron),
+  # dus niets meldde de wees.
+  #
+  # Alleen wat umanex-os ooit beheerde wordt opgeruimd: een map zonder SKILL.md blijft
+  # staan, want dat is dan iets van jou en niet van deze sync.
+  orphans=""
+  for target in "$USER_SKILLS"/*/; do
+    [ -d "$target" ] || continue
+    tname="$(basename "$target")"
+    [ -n "$tname" ] || continue
+    [ -d "$UMANEX_OS_PATH/skills/$tname" ] && continue    # bestaat nog in de bron
+    [ -f "$target/SKILL.md" ] || continue                 # geen door ons beheerde skill
+    orphans="$orphans $tname"
+  done
+  if [ -n "$orphans" ]; then
+    echo "  → wees(en) gevonden die niet meer in umanex-os/skills/ staan:$orphans"
+    for tname in $orphans; do
+      rm -rf "${USER_SKILLS:?}/$tname"
+      echo "    ✓ $tname verwijderd"
+    done
+  fi
 else
   echo "  ⚠ Geen umanex-os/skills/ folder gevonden — skill-sync overgeslagen"
 fi
@@ -306,6 +334,34 @@ fi
 # Commit-scope guard: blokkeert een commit met een app-scope die een ándere app raakt.
 # Zero-config (leest apps/* van schijf) en rijdt mee op dezelfde core.hooksPath als de
 # pre-commit hook hierboven, dus hier alleen het bestand plaatsen.
+# Het sync-script werkt ook zichzelf bij.
+#
+# Dit installeerde elf canonieke bestanden en nooit zichzelf. `check-client-drift.yml`
+# bewaakt `scripts/sync-os.sh` wél, en het remediatie-advies daar luidt "lokaal
+# scripts/sync-os.sh draaien" — een commando dat het bestand dat als drift gemeld wordt
+# per definitie niet kon bijwerken. Een klant met een achtergebleven sync-script bleef
+# dus achter en het wekelijkse issue bleef rood.
+#
+# In zelf-modus overslaan: daar ís scripts/sync-os.sh de symlink naar de template, en
+# dat zou het origineel over zichzelf heen kopiëren.
+#
+# Let op: de nieuwe versie geldt pas vanaf de vólgende run. Bash leest het script tijdens
+# uitvoering, dus jezelf halverwege vervangen is nooit veilig — daarom kopiëren we hier
+# alleen en zeggen we het erbij.
+if [ "$SELF_MODE" -eq 0 ]; then
+  echo ""
+  echo "→ Werk het sync-script zelf bij..."
+  if [ ! -f "$UMANEX_OS_PATH/templates/sync-os.sh" ]; then
+    echo "  ⚠ templates/sync-os.sh niet gevonden — overgeslagen"
+  elif cmp -s "$UMANEX_OS_PATH/templates/sync-os.sh" "$CLIENT_ROOT/scripts/sync-os.sh"; then
+    echo "  • scripts/sync-os.sh is al canoniek"
+  else
+    cp "$UMANEX_OS_PATH/templates/sync-os.sh" "$CLIENT_ROOT/scripts/sync-os.sh"
+    chmod +x "$CLIENT_ROOT/scripts/sync-os.sh"
+    echo "  ✓ scripts/sync-os.sh bijgewerkt — de nieuwe versie geldt vanaf de volgende run"
+  fi
+fi
+
 echo ""
 echo "→ Installeer commit-scope guard..."
 COMMIT_MSG_HOOK="$UMANEX_OS_PATH/templates/githooks-commit-msg"
@@ -347,7 +403,11 @@ else
     else
       _tmp="$(mktemp)"
       if jq --arg cmd "$HOOK_CMD" '.hooks.UserPromptSubmit += [{"hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"TC-EBC check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
-        mv "$_tmp" "$USER_SETTINGS"
+        # `cat >` in plaats van `mv`: settings.json is bij veel dotfiles-opzetten een
+        # symlink naar een repo, en `mv` vervángt die door een gewoon bestand — je edits
+        # landen dan buiten je dotfiles zonder dat iets het meldt. `cat >` schrijft dóór
+        # de symlink heen en laat de rechten van het bestaande bestand intact.
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
         echo "  ✓ UserPromptSubmit-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
       else
         rm -f "$_tmp"
@@ -380,7 +440,9 @@ else
     else
       _tmp="$(mktemp)"
       if jq --arg cmd "$HANDOFF_HOOK_CMD" '.hooks.SessionStart += [{"hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Handoff surface"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
-        mv "$_tmp" "$USER_SETTINGS"
+        # Zie de toelichting bij de UserPromptSubmit-hook hierboven: schrijf dóór een
+        # eventuele symlink heen in plaats van hem te vervangen.
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
         echo "  ✓ SessionStart-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
       else
         rm -f "$_tmp"

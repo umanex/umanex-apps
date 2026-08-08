@@ -48,23 +48,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ab6f074 chore(cashflow): close three holes the review found in the guards
+664937a fix(cashflow): make the overlays behave like dialogs
 b4acf02 test(cashflow): cover MonthCard, the modals and the three states
 1d32df2 docs(cashflow): close the last acceptance item of the ledger briefing
 f9f871c ci: run the cashflow calculation and flow harnesses in the pipeline
-f0e29e6 chore(cashflow): drop dark mode
-22862b4 Merge branch 'main' into feature/cashflow-flow-harness
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/CLAUDE.md
-  M  apps/cashflow/HANDOFF.md
-  M  apps/cashflow/components/cashflow/RecurringSidepanel.tsx
-  M  apps/cashflow/components/cashflow/RepeatMonthModal.tsx
-  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
-  M  apps/cashflow/components/cashflow/ReservationSidepanel.tsx
-  A  apps/cashflow/hooks/useDismissOnEscape.ts
-  A  apps/cashflow/hooks/useInertWhenClosed.ts
-  M  apps/cashflow/scripts/flow-harness.mjs
+  M  apps/cashflow/briefings/2026-08-08-plan-harness-dekking.md
 
 ## Bestanden met TODO/FIXME
   (geen)

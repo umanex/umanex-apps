@@ -91,3 +91,22 @@ Drie dingen die niemand zocht, en die precies daarom de moeite van het opschrijv
    sluit nu niet alleen de juiste origin af, hij zégt het ook wanneer de app een andere zoekt.
 3. **Geen van beide modals sluit op Escape.** Bewust niet als assertie opgenomen — dan zou
    de harness rood staan op bestaand gedrag — maar het staat als bevinding in `HANDOFF.md`.
+   Gefixt op 2026-08-08 samen met punt 1; sindsdien is sluiten met Escape wél de assertie.
+
+## Wat de review daarna vond
+
+Een `code-review` op de diff leverde drie bevindingen op die alle drie dezelfde vorm hebben
+als wat dit plan wilde wegwerken — een guard die succes meldt zonder gemeten te hebben.
+Opgelost in een eigen PR; hier genoteerd omdat ze bij dit werk horen.
+
+1. **De harness sloot de verkeerde origin af zonder het te merken.** Hij las de origin uit
+   zijn eigen omgeving, terwijl de app die uit de build draagt. Bij een mismatch gaan de
+   verzoeken langs de onderschepping heen — naar een échte server — en meldt de uitslag
+   nog steeds "0 verzoeken naar de echte origin". Hij leest de origins nu uit
+   `.next/static/chunks` en weigert te starten bij een mismatch, en breekt daarnaast élke
+   andere supabase-host af. De diagnose op `requestfailed` die ik tijdens het bouwen
+   toevoegde is weer weg: die ving alleen de ónschuldige richting.
+2. **`scenarios` was de enige guard zonder tegenproef.** Nu draait elke suite eerst met
+   `SCENARIO_SELFTEST=1`, wat één check injecteert die moet falen.
+3. **`scenarios` ketende met `&&`,** dus een rode buffer-suite verborg de anker-suite tot
+   de volgende push. Beide draaien nu altijd.

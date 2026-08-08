@@ -36,7 +36,7 @@
  */
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -135,6 +135,64 @@ function supabaseUrl() {
   const match = readFileSync(env, 'utf8').match(/^NEXT_PUBLIC_SUPABASE_URL=(.+)$/m);
   if (!match) throw new Error('NEXT_PUBLIC_SUPABASE_URL ontbreekt in .env.local.');
   return match[1].trim().replace(/\/+$/, '');
+}
+
+/**
+ * Welke Supabase-origins zitten er ingebakken in de build die we zo gaan serveren?
+ *
+ * `NEXT_PUBLIC_`-waardes worden bij het bouwen in de bundel gezet; de harness leest ze op
+ * dat moment níet, hij leest zijn eigen omgeving. Lopen die twee uiteen, dan sluit
+ * `page.route()` een origin af waar de app helemaal niet naartoe gaat — en dan is
+ * "0 verzoeken naar de echte origin" een lege bewering. De gevaarlijke richting is
+ * harness=placeholder met een build op de échte URL: die verzoeken vertrekken gewoon, ze
+ * falen niet eens, en niets in de uitslag verraadt het.
+ */
+function originsInBuild() {
+  const gevonden = new Set();
+  const patroon = /https:\/\/[a-z0-9-]+\.supabase\.co/g;
+
+  const loop = (dir) => {
+    let inhoud;
+    try {
+      inhoud = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const naam of inhoud) {
+      const pad = `${dir}/${naam}`;
+      if (statSync(pad).isDirectory()) loop(pad);
+      else if (naam.endsWith('.js')) {
+        for (const m of readFileSync(pad, 'utf8').matchAll(patroon)) gevonden.add(m[0]);
+      }
+    }
+  };
+
+  loop(resolve(APP, '.next/static/chunks'));
+  return gevonden;
+}
+
+/** Weigert te starten wanneer de build een andere origin draagt dan we afsluiten. */
+function controleerBuildOrigin(origin) {
+  const inBuild = originsInBuild();
+
+  if (inBuild.size === 0) {
+    throw new Error(
+      'Geen enkele supabase-origin gevonden in .next/static/chunks.\n' +
+        'De harness kan dan niet vaststellen dat hij de origin afsluit waar de app naartoe gaat, ' +
+        'en dat is zijn hele veiligheidsgarantie. Bouw opnieuw, of pas deze check aan als de ' +
+        'bundel-indeling veranderd is.',
+    );
+  }
+
+  const vreemd = [...inBuild].filter((o) => o !== origin);
+  if (vreemd.length) {
+    throw new Error(
+      `De build praat met ${vreemd.join(', ')}, de harness sluit ${origin} af.\n` +
+        'Die verzoeken zouden langs de onderschepping heen gaan — naar een echte server, met ' +
+        'echte data. Bouw met dezelfde NEXT_PUBLIC_SUPABASE_URL als waarmee je de harness draait:\n' +
+        `  NEXT_PUBLIC_SUPABASE_URL=${origin} pnpm --filter cashflow build`,
+    );
+  }
 }
 
 /**
@@ -271,21 +329,21 @@ async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen' } = {
   const page = await context.newPage();
   page.on('pageerror', (err) => state.paginafouten.push(String(err).slice(0, 200)));
 
-  // De gebouwde app draagt zijn Supabase-URL ingebakken (NEXT_PUBLIC_, inline in de
-  // bundel). Bouwt iemand met een ándere waarde dan waarmee de harness draait, dan sluit
-  // de route-handler de verkeerde origin af: elk verzoek gaat langs de onderschepping
-  // heen, faalt, en de app toont "Geen verbinding met de server" — waarna élk scenario
-  // rood staat op een oorzaak die nergens genoemd wordt. Dat kostte één run om te vinden.
-  page.on('requestfailed', (req) => {
-    const url = req.url();
-    if (!url.includes('supabase') || url.startsWith(state.origin)) return;
-    try {
-      state.vreemdeOrigins.add(new URL(url).origin);
-    } catch {
-      /* geen bruikbare URL */
-    }
-  });
+  // Twee lagen, in deze volgorde. Playwright laat de laatst geregistreerde route eerst
+  // kiezen, dus de vangnet-route staat hier bovenaan en de specifieke eronder.
+  //
+  // Laag 1 — het vangnet: élke andere host die naar Supabase ruikt, wordt afgebroken en
+  // geteld als lek. `controleerBuildOrigin()` hoort dit al onmogelijk te maken, maar een
+  // veiligheidsgarantie die op één check rust, rust op te weinig.
+  await page.route(
+    (url) => /supabase/i.test(url.hostname) && url.origin !== state.origin,
+    (route) => {
+      state.lekken.push(`${route.request().method()} ${route.request().url()}`);
+      return route.abort();
+    },
+  );
 
+  // Laag 2 — de origin die de app hoort te gebruiken, uit de fixture bediend.
   await page.route(`${state.origin}/**`, maakRouteHandler(state, gedrag));
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
 
@@ -296,11 +354,8 @@ async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen' } = {
       await page.waitForSelector(selector, { timeout: 20_000, state: 'visible' });
     } catch {
       const tekst = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').slice(0, 240));
-      const mismatch = state.vreemdeOrigins.size
-        ? ` De app praatte met ${[...state.vreemdeOrigins].join(', ')} terwijl de harness ${state.origin} afsluit —` +
-          ' bouw met dezelfde NEXT_PUBLIC_SUPABASE_URL als waarmee je hem draait.'
-        : '';
-      throw new Error(`${wat} verscheen niet. Op het scherm stond: "${tekst}"${mismatch}`);
+      const lek = state.lekken.length ? ` Onderweg afgebroken: ${state.lekken.slice(0, 2).join(', ')}.` : '';
+      throw new Error(`${wat} verscheen niet. Op het scherm stond: "${tekst}"${lek}`);
     }
   };
 
@@ -745,10 +800,13 @@ async function main() {
     lekken: [],
     schrijfpogingen: [],
     paginafouten: [],
-    vreemdeOrigins: new Set(),
   };
 
-  console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin}`);
+  // Vóór de server, vóór de browser: klopt de origin die we afsluiten met de origin in de
+  // build? Zo niet, dan is elke uitspraak over lekken daarna waardeloos.
+  controleerBuildOrigin(state.origin);
+
+  console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin} (ook in de build)`);
 
   const server = await startServer();
   const browser = await chromium.launch({ headless: !HEADED });
@@ -775,13 +833,9 @@ async function main() {
 
   console.log('');
   console.log(`  schrijfpogingen onderschept: ${state.schrijfpogingen.length}`);
-  console.log(`  verzoeken naar de echte origin: ${state.lekken.length}${state.lekken.length ? ` — ${state.lekken.join(', ')}` : ''}`);
+  console.log(`  verzoeken naar buiten afgebroken: ${state.lekken.length}${state.lekken.length ? ` — ${state.lekken.join(', ')}` : ''}`);
   if (state.paginafouten.length) {
     console.log(`  paginafouten: ${state.paginafouten.length} — ${state.paginafouten.slice(0, 3).join(' | ')}`);
-  }
-  if (state.vreemdeOrigins.size) {
-    console.log(`  ⚠ de app zocht ${[...state.vreemdeOrigins].join(', ')} — die origin wordt NIET onderschept.`);
-    console.log(`    Bouw met dezelfde NEXT_PUBLIC_SUPABASE_URL als waarmee je de harness draait.`);
   }
 
   const echteFouten = resultaten.filter((r) => (r.moetFalen ? r.ok : !r.ok));

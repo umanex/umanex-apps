@@ -22,7 +22,7 @@
     "verify:visual": "pnpm render:screens && pnpm render:charts && pnpm sweep",
     "scenarios:buffer": "tsx --tsconfig scripts/tsconfig.json scripts/buffer-scenarios.ts",
     "scenarios:anchor": "tsx --tsconfig scripts/tsconfig.json scripts/anchor-scenarios.ts",
-    "scenarios": "pnpm scenarios:buffer && pnpm scenarios:anchor",
+    "scenarios": "node scripts/scenarios.mjs",
     "flow": "node scripts/flow-harness.mjs",
     "flow:selftest": "node scripts/flow-harness.mjs --selftest",
     "verify:flow": "next build && node scripts/flow-harness.mjs --selftest"

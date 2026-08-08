@@ -4,10 +4,11 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gebouwd — teruggezet van `gevalideerd` op 2026-08-07. De briefing stond op
-  `gevalideerd` terwijl één acceptatie-item nooit was afgevinkt; de triade vereist dat
-  álle items af zijn. Bij de eerste echte verificatie (zie het item hieronder) faalde dat
-  item. Wacht daarnaast nog op de finance-tokens.
+- **Status:** gevalideerd — 2026-08-08. Op 2026-08-07 teruggezet naar `gebouwd` omdat één
+  acceptatie-item nooit was afgevinkt en bij de eerste echte verificatie faalde (het
+  toetsenbordpad van de sleep). Dat item is gefixt en uitgereden, de finance-tokens waar
+  deze briefing op wachtte landden in PR #194, en alle acceptatie-items staan af. De sleep
+  hangt sinds 2026-08-08 in CI, dus de regressie kan niet stil terugkomen.
 
 ---
 
@@ -94,17 +95,20 @@ waardes en contrastcijfers staat in het plan.
       de KPI's en chart-labels van fase 4.
 - [x] Detailregels staan open (beslissing 2); de +-knop en de Open/Alle-filter zitten in de
       ledger-regel zelf.
-- [ ] Drag & drop tussen maanden werkt nog, ook met toetsenbord — **GEFAALD bij de eerste
-      echte verificatie** (2026-08-07, `verify` op de draaiende PM2-app, poort 3000, met
-      een wegwerp-post). Het toetsenbordpad pakt de post correct op — de greep krijgt
-      `aria-pressed="true"`, de live region meldt *"was moved over droppable area
-      month-2026-08"*, de bronkolom licht op en het kaartje tilt zichtbaar op — maar
-      daarna beweegt hij niet: 23× ArrowRight en 6× ArrowDown laten de drop-zone
-      onveranderd op `month-2026-08`. De post is dus op te pakken en niet te verplaatsen.
-      Escape annuleert netjes (*"Dragging was cancelled"*). De muis-variant kon met de
-      beschikbare tooling niet sluitend getest worden (één synthetische sprong, die
-      dnd-kit's PointerSensor terecht kan negeren) — maar het item eist beide paden, en
-      het toetsenbordpad faalt hard. Bijhorend HANDOFF-item: `apps/cashflow/HANDOFF.md`.
+- [x] Drag & drop tussen maanden werkt nog, ook met toetsenbord. **Faalde bij de eerste
+      echte verificatie** (2026-08-07, `verify` op de draaiende PM2-app): het toetsenbordpad
+      pakte de post wél op maar verplaatste hem niet — 23× ArrowRight liet de drop-zone
+      onveranderd. Oorzaak stond in de bron, niet in de afstelling: `sortableKeyboardCoordinates`
+      begint met `droppableContainers.get(active.id)` en gaat er dus van uit dat elk item
+      zichzelf óók als droppable registreert. Hier is het gesleepte item een `useDraggable`
+      en zijn alleen de maandkaarten droppable, dus die lookup gaf structureel `undefined`.
+      Vervangen door `lib/cashflow/dndKeyboard.ts` — zelfde richtingsfilter en `closestCorners`,
+      zonder de sorteer-voorwaarde. Uitgeschakelde droppables blijven overgeslagen, dus een
+      afgesloten maand blijft een ongeldig doelwit. Sinds 2026-08-07 afgedekt door
+      `scripts/flow-harness.mjs`: toetsenbord én muis rijden de sleep end-to-end af, inclusief
+      de wegschrijf-kant (de PATCH wordt onderschept en geteld). Dat de harness déze regressie
+      vangt is apart bewezen door de fix terug te draaien — toetsenbord rood, muis groen.
+      Draait sinds 2026-08-08 in CI.
 - [x] Een lege categorie toont een lege staat in plaats van te verdwijnen (inkomsten, vaste
       uitgaven, eenmalige uitgaven). De pot-secties blijven verborgen zonder potten, gelijk
       met de gereserveerd-regel in de footer.

@@ -80,8 +80,8 @@ jobs:
       # De check hierboven kent alleen de tokens. Wat er in een component écht ontstaat —
       # tekst op een geneste achtergrond, een alpha-vlak boven een ander vlak — zag tot nu
       # toe alleen een mens in een browserconsole, met drie meetfouten onderweg. Deze sweep
-      # meet dat op de gerenderde DOM van de harness: geen server, geen sessie, light en
-      # dark naast elkaar in één statisch bestand.
+      # meet dat op de gerenderde DOM van de harness: geen server, geen sessie, één
+      # statisch bestand.
       - name: Cache Playwright-browser
         uses: actions/cache@v4
         with:
@@ -98,3 +98,23 @@ jobs:
       # "0 fouten" even overtuigend als een die werkt.
       - name: Guard — contrast van de gerenderde DOM (WCAG AA)
         run: pnpm --filter cashflow verify:visual
+
+      # De rekenkern van cashflow rolt door: het eindsaldo van maand N is het beginsaldo van
+      # N+1, en een pot draagt zijn stand mee. Een fout daar is per scherm onzichtbaar en
+      # per keten fataal, dus de dekking zit in invarianten die over het hele model rekenen.
+      # Twee suites, 594 checks; ze draaiden tot 2026-08-08 alleen met de hand.
+      - name: Guard — invarianten op de rekenkern (buffer + anker)
+        run: pnpm --filter cashflow scenarios
+
+      # De sleep tussen twee maandkolommen is het enige pad dat noch de sweep noch de
+      # scenario's raken: hij hangt aan dnd-kit én de store. De harness rijdt hem uit met
+      # toetsenbord en muis tegen de build hierboven, en onderschept élk verzoek naar de
+      # Supabase-origin — ook de wegschrijf-call, die geteld wordt in plaats van verstuurd.
+      # `flow:selftest` voegt een scenario toe dat hóórt te falen.
+      - name: Guard — flow (sleep tussen maandkolommen)
+        run: pnpm --filter cashflow flow:selftest
+        env:
+          # Dezelfde placeholder als de build. De harness leest hem om te weten welke origin
+          # hij moet dichtzetten — zonder die waarde weigert hij te starten, en dat hoort zo.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key

@@ -48,19 +48,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+f9f871c ci: run the cashflow calculation and flow harnesses in the pipeline
+f0e29e6 chore(cashflow): drop dark mode
 22862b4 Merge branch 'main' into feature/cashflow-flow-harness
 da82de7 docs(cashflow): record the verify path, established by running it
 0e96d05 fix(cashflow): move a post between months with the keyboard again
-2000682 feat(cashflow): drive the cross-month drag instead of reading it
-7650577 docs(cashflow): record the verify path and correct the drag finding
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/CLAUDE.md
-  M  apps/cashflow/app/layout.tsx
-  M  apps/cashflow/app/page.tsx
-  M  apps/cashflow/scripts/dom-sweep.mjs
-  M  apps/cashflow/scripts/render-screens.tsx
+  M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

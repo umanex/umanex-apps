@@ -141,7 +141,10 @@ async function main() {
   // als lek tellen en de run laten falen op iets dat geen defect is.
   console.log('→ Interactie (echt aangedreven, geen goto)');
   const select = page.locator('select:visible').first();
-  const link = page.locator('a[href^="/"]:visible').first();
+  // Een link naar de pagina waar je al staat (het logo, meestal) bewijst niets: die
+  // "navigeert" naar zichzelf en slaagt altijd. Sluit het huidige pad dus uit.
+  const here = new URL(page.url()).pathname;
+  const link = page.locator(`a[href^="/"]:visible:not([href="${here}"])`).first();
 
   if (await select.count()) {
     const options = await select.locator('option').allTextContents();
@@ -161,7 +164,7 @@ async function main() {
     await link.click();
     await page.waitForLoadState('domcontentloaded');
     const landed = new URL(page.url()).pathname;
-    if (landed === href) ok(`klik op ${href} → ${landed}`);
+    if (landed === href) ok(`klik: ${here} → ${landed}`);
     else notes.push(`klik op ${href} kwam uit op ${landed} (redirect of anchor)`);
   } else {
     notes.push('geen select en geen interne link op de eerste route — interactie niet uitgereden');

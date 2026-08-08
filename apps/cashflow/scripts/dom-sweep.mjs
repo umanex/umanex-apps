@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Contrast-sweep over een gerenderde DOM.
+ * Contrast-sweep over een gerenderde DOM — driver A: statische bestanden.
  *
  *   pnpm --filter cashflow sweep            # de twee harness-bestanden
  *   pnpm --filter cashflow sweep --selftest # bewijst dat hij kan falen
@@ -12,224 +12,27 @@
  * ander vlak, een kleur die pas door overerving zijn ondergrond krijgt. Die helft werd
  * tot nu toe met de hand in een browserconsole gedaan, met drie meetfouten onderweg.
  *
- * De twee lessen uit die handmatige ronde zitten hier ingebakken:
- *   1. Nooit meten terwijl er iets beweegt. De harness meet een statisch bestand en dooft
- *      bovendien elke transition — een sweep midden in `transition-colors` meet een
- *      tussenkleur die nergens op het scherm blijft staan.
- *   2. Alleen elementen die zelf tekst dragen. `input[class*="border-input"]` matchte
- *      destijds ook de checkbox; dit script kijkt naar directe tekst-nodes, niet naar
- *      class-namen.
+ * De meting zelf staat in `contrast.mjs` en wordt gedeeld met `flow-harness.mjs`, die
+ * hem op de dráaiende app draait. Deze driver dekt wat statisch te renderen is; die
+ * andere dekt `MonthCard` en de modals, die aan dnd-kit en de store hangen.
  *
- * Wat hij NIET dekt, en dat is bewust:
- *   - `MonthCard` en de modals — die hangen aan dnd-kit en de store en staan niet in de
- *     harness. Het grootste scherm van de app blijft dus ongedekt (zie HANDOFF).
- *   - tekst boven een gradient of afbeelding. Die worden geteld en gemeld als
- *     "onmeetbaar", niet stil overgeslagen.
+ * Wat hij NIET dekt, en dat is bewust: tekst boven een gradient of afbeelding. Die
+ * worden geteld en gemeld als "onmeetbaar", niet stil overgeslagen.
  */
 import { chromium } from 'playwright';
 import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { beoordeel, beschrijfFout, meetInPagina, STIL_CSS } from './contrast.mjs';
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = resolve(HERE, '..');
-
-const AA_NORMAAL = 4.5;
-const AA_GROOT = 3.0;
-
-// Grote tekst volgens WCAG: >=24px, of >=18.66px wanneer hij bold is.
-const GROOT_PX = 24;
-const GROOT_BOLD_PX = 18.66;
-const BOLD = 700;
 
 const DEFAULT_PAGINAS = [
   { pad: `${APP}/.screens-preview.html`, maak: 'pnpm --filter cashflow render:screens' },
   { pad: `${APP}/.charts-preview.html`, maak: 'pnpm --filter cashflow render:charts' },
 ];
-
-// ── De meting, uitgevoerd ín de pagina ───────────────────────────────────────
-// Alles binnen deze functie draait in de browser. Ze geeft rauwe getallen terug; het
-// oordeel (drempel, pass/fail) valt in Node, zodat het hier testbaar en leesbaar blijft.
-
-function meetInPagina() {
-  const parseKleur = (waarde) => {
-    const m = waarde.match(/^rgba?\(([^)]+)\)$/);
-    if (!m) return null;
-    const d = m[1].split(',').map((v) => parseFloat(v.trim()));
-    if (d.length < 3 || d.some(Number.isNaN)) return null;
-    return { r: d[0], g: d[1], b: d[2], a: d.length > 3 ? d[3] : 1 };
-  };
-
-  /** src over dst leggen. Standaard alpha-compositing, niet "eerste ondoorzichtige wint". */
-  const overElkaar = (src, dst) => ({
-    r: src.r * src.a + dst.r * (1 - src.a),
-    g: src.g * src.a + dst.g * (1 - src.a),
-    b: src.b * src.a + dst.b * (1 - src.a),
-    a: 1,
-  });
-
-  const zichtbaar = (el) => {
-    const s = getComputedStyle(el);
-    if (s.display === 'none' || s.visibility === 'hidden' || s.visibility === 'collapse') return false;
-    if (parseFloat(s.opacity) === 0) return false;
-    const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
-  };
-
-  /**
-   * WCAG 2.1 SC 1.4.3 zondert inactieve componenten expliciet uit: "text ... that is
-   * part of an inactive user interface component ... has no contrast requirement".
-   * Zonder deze uitzondering meldt élke `disabled:opacity-50`-knop een fout, en dan
-   * leert de sweep je alleen maar om hem te negeren.
-   */
-  const inactief = (el) => el.closest('[disabled],[aria-disabled="true"],:disabled') !== null;
-
-  const resultaten = [];
-  const onmeetbaar = [];
-  let vrijgesteld = 0;
-
-  for (const el of document.querySelectorAll('*')) {
-    // Alleen elementen met eigen tekst. Een wrapper erft geen meetplicht van zijn kind:
-    // die tekst wordt bij het kind zelf al gemeten.
-    const eigenTekst = [...el.childNodes]
-      .filter((n) => n.nodeType === Node.TEXT_NODE)
-      .map((n) => n.textContent.trim())
-      .join(' ')
-      .trim();
-    if (!eigenTekst) continue;
-
-    if (inactief(el)) { vrijgesteld += 1; continue; }
-
-    // Een onzichtbare ouder maakt het kind onzichtbaar; loop de keten af.
-    let keten = el;
-    let verborgen = false;
-    while (keten && keten !== document.documentElement) {
-      if (!zichtbaar(keten)) { verborgen = true; break; }
-      keten = keten.parentElement;
-    }
-    if (verborgen) continue;
-
-    const stijl = getComputedStyle(el);
-    const fontSize = parseFloat(stijl.fontSize);
-    if (!fontSize) continue;
-
-    const tekstKleur = parseKleur(stijl.color);
-    if (!tekstKleur || tekstKleur.a === 0) continue;
-
-    // Effectieve achtergrond: van het element omhoog compositen tot ondoorzichtig.
-    // De opacity van élke laag telt mee in zijn alpha — anders meet je een vlak dat
-    // op 40% staat alsof het vol is.
-    let onder = { r: 0, g: 0, b: 0, a: 0 };
-    let node = el;
-    let gradient = null;
-
-    while (node) {
-      const s = getComputedStyle(node);
-      if (s.backgroundImage && s.backgroundImage !== 'none' && !gradient) {
-        gradient = node === el ? 'op het element zelf' : 'op een ouder';
-      }
-      const bg = parseKleur(s.backgroundColor);
-      if (bg && bg.a > 0) {
-        const laag = { ...bg, a: bg.a * parseFloat(s.opacity || '1') };
-        // `onder` is wat we al verzameld hebben (dichter bij de tekst), dus die gaat
-        // bovenop deze diepere laag.
-        onder = onder.a === 0 ? laag : overElkaar(onder, laag);
-        if (onder.a >= 0.999) break;
-      }
-      node = node.parentElement;
-    }
-
-    if (onder.a < 0.999) {
-      // Niets ondoorzichtigs gevonden tot aan de wortel: de canvas-kleur is wit.
-      onder = overElkaar(onder, { r: 255, g: 255, b: 255, a: 1 });
-    }
-
-    if (gradient) {
-      onmeetbaar.push({ tekst: eigenTekst.slice(0, 60), reden: `achtergrondafbeelding/gradient ${gradient}` });
-      continue;
-    }
-
-    const tekst = tekstKleur.a < 1 ? overElkaar(tekstKleur, onder) : tekstKleur;
-
-    // Kort pad voor de melding — genoeg om het terug te vinden, niet het hele DOM-pad.
-    const beschrijf = (n) =>
-      n.tagName.toLowerCase() +
-      (n.id ? `#${n.id}` : '') +
-      (typeof n.className === 'string' && n.className.trim()
-        ? `.${n.className.trim().split(/\s+/).slice(0, 3).join('.')}`
-        : '');
-    const pad = [el.parentElement, el].filter(Boolean).map(beschrijf).join(' > ');
-
-    resultaten.push({
-      pad,
-      tekst: eigenTekst.slice(0, 60),
-      fontSize,
-      fontWeight: parseInt(stijl.fontWeight, 10) || 400,
-      voor: [tekst.r, tekst.g, tekst.b],
-      achter: [onder.r, onder.g, onder.b],
-    });
-  }
-
-  return { resultaten, onmeetbaar, vrijgesteld };
-}
-
-// ── Oordeel, in Node ─────────────────────────────────────────────────────────
-
-const kanaal = (v) => {
-  const c = v / 255;
-  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-};
-const luminantie = ([r, g, b]) => 0.2126 * kanaal(r) + 0.7152 * kanaal(g) + 0.0722 * kanaal(b);
-const verhouding = (a, b) => {
-  const [hoog, laag] = [luminantie(a), luminantie(b)].sort((p, q) => q - p);
-  return (hoog + 0.05) / (laag + 0.05);
-};
-
-const drempelVoor = ({ fontSize, fontWeight }) =>
-  fontSize >= GROOT_PX || (fontSize >= GROOT_BOLD_PX && fontWeight >= BOLD) ? AA_GROOT : AA_NORMAAL;
-
-const hex = ([r, g, b]) =>
-  '#' + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
-
-/** Eén bevinding per kleurcombinatie, niet per element — anders spamt een zebra-tabel. */
-function beoordeel({ resultaten, onmeetbaar, vrijgesteld }) {
-  const perCombinatie = new Map();
-
-  for (const r of resultaten) {
-    const ratio = verhouding(r.voor, r.achter);
-    const drempel = drempelVoor(r);
-    if (ratio >= drempel) continue;
-
-    const sleutel = `${hex(r.voor)}|${hex(r.achter)}|${drempel}`;
-    const bestaand = perCombinatie.get(sleutel);
-    if (bestaand) {
-      bestaand.aantal += 1;
-      if (r.tekst.length > bestaand.voorbeeldTekst.length) {
-        bestaand.voorbeeldTekst = r.tekst;
-        bestaand.voorbeeldPad = r.pad;
-      }
-      continue;
-    }
-    perCombinatie.set(sleutel, {
-      voor: hex(r.voor),
-      achter: hex(r.achter),
-      ratio,
-      drempel,
-      fontSize: r.fontSize,
-      fontWeight: r.fontWeight,
-      aantal: 1,
-      voorbeeldTekst: r.tekst,
-      voorbeeldPad: r.pad,
-    });
-  }
-
-  return {
-    fouten: [...perCombinatie.values()].sort((a, b) => a.ratio - b.ratio),
-    gemeten: resultaten.length,
-    onmeetbaar,
-    vrijgesteld,
-  };
-}
 
 // ── Zelftest ─────────────────────────────────────────────────────────────────
 // Een guard die nooit faalt is decoratie. Deze fixture dwingt elk pad één keer af:
@@ -315,9 +118,7 @@ async function sweepPagina(browser, pad) {
   // meetfout nummer één van de handmatige ronde.
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(pathToFileURL(pad).href, { waitUntil: 'load' });
-  await page.addStyleTag({
-    content: '*,*::before,*::after{transition:none!important;animation:none!important}',
-  });
+  await page.addStyleTag({ content: STIL_CSS });
   const uitkomst = await page.evaluate(meetInPagina);
   await page.close();
   return uitkomst;
@@ -366,13 +167,7 @@ try {
       if (fouten.length) {
         faalt = true;
         console.error(`\n✗ ${naam}: ${fouten.length} kleurcombinatie(s) onder AA (${gemeten} tekstelementen gemeten)\n`);
-        for (const f of fouten) {
-          const waar = f.aantal === 1 ? '1 element' : `${f.aantal} elementen`;
-          console.error(`  ${f.voor} op ${f.achter} — ${waar}`);
-          console.error(`      ${f.ratio.toFixed(2)}:1, nodig ${f.drempel}:1 (${f.fontSize}px/${f.fontWeight})`);
-          console.error(`      "${f.voorbeeldTekst}"`);
-          console.error(`      ${f.voorbeeldPad}\n`);
-        }
+        for (const f of fouten) console.error(`${beschrijfFout(f)}\n`);
       } else {
         console.log(`✓ ${naam}: ${gemeten} tekstelementen, alles boven AA`);
       }
@@ -386,7 +181,7 @@ try {
       console.log(`\n✓ dom-sweep: ${totaalGemeten} tekstelementen boven AA`);
       if (totaalOnmeetbaar) console.log(`  ${totaalOnmeetbaar} onmeetbaar, met de hand te beoordelen`);
       if (totaalVrijgesteld) console.log(`  ${totaalVrijgesteld} vrijgesteld (inactieve componenten, WCAG 1.4.3)`);
-      console.log('  Niet gedekt: MonthCard en de modals staan niet in de harness.');
+      console.log('  MonthCard en de modals zitten in de flow-harness, niet hier.');
     }
   }
 } finally {

@@ -1,23 +1,29 @@
 #!/usr/bin/env node
 /**
- * Flow-harness: rijdt een sleep tussen twee maandkolommen uit, met toetsenbord én muis.
+ * Flow-harness: rijdt de app uit in een echte browser — driver B van de contrast-meting.
  *
- *   pnpm --filter cashflow flow             # beide paden
- *   pnpm --filter cashflow flow --selftest  # bewijst dat hij kan falen
+ *   pnpm --filter cashflow flow             # alle scenario's
+ *   pnpm --filter cashflow flow --selftest  # + de tegenproeven, die hóren te falen
  *   pnpm --filter cashflow flow --headed    # meekijken terwijl het gebeurt
  *
- * Waarom dit bestaat: het slepen van een post tussen maanden viel tot nu toe buiten élk
- * vangnet. De scenario-scripts raken alleen de rekenkern, `@umanex/tokens contrast` alleen
- * de rollaag, en zowel `render-screens.tsx` als `dom-sweep.mjs` laten `MonthCard` bewust
- * weg omdat die aan dnd-kit én de store hangt. Het grootste scherm van de app was dus
- * alleen gelezen, nooit uitgereden — en toen het op 2026-08-07 één keer met de hand
- * uitgereden werd, faalde het meteen. Een handmatige sessie is geen vangnet: hij draait
- * niet in CI en hij draait niet opnieuw.
+ * Waarom dit bestaat: het slepen van een post tussen maanden viel tot 2026-08-07 buiten
+ * élk vangnet. De scenario-scripts raken alleen de rekenkern, `@umanex/tokens contrast`
+ * alleen de rollaag, en `dom-sweep.mjs` leest alleen statische bestanden — waar
+ * `MonthCard` en de modals per definitie buiten vallen, want die hangen aan dnd-kit en
+ * de store. Het grootste scherm van de app was dus alleen gelezen, nooit uitgereden — en
+ * toen het één keer met de hand uitgereden werd, faalde het meteen.
+ *
+ * Wat hij dekt:
+ *   - de sleep tussen twee maandkolommen, met toetsenbord én muis
+ *   - de contrast-sweep op het échte scherm, mét beide modals open (dezelfde meting als
+ *     `dom-sweep.mjs`, uit `contrast.mjs` — één bron, twee drivers)
+ *   - het openen en sluiten van `RepeatMonthModal` en `ReservationPaymentModal`
+ *   - loading, empty en error: de drie states die een gebruiker ziet wanneer het misgaat
  *
  * Waarom hij de échte app aanstuurt en niet een gemockte `MonthCard`: dnd-kit meet
- * rechthoeken op. Een harness die de kolommen zelf neerzet, meet zijn eigen layout —
- * precies de as waarop dit gedrag stukgaat. Dit rijdt op de gebouwde app, dezelfde
- * bundel die `next start` serveert.
+ * rechthoeken op, en een sweep meet gecomponeerde kleuren. Een harness die de kolommen
+ * zelf neerzet, meet zijn eigen layout — precies de as waarop dit gedrag stukgaat. Dit
+ * rijdt op de gebouwde app, dezelfde bundel die `next start` serveert.
  *
  * Waarom hij tóch geen productiedata kan raken: élk verzoek naar de Supabase-origin wordt
  * onderschept. Wat de harness kent (login, het document, de snapshots, de wegschrijf-call)
@@ -35,6 +41,8 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { beoordeel, beschrijfFout, meetInPagina, STIL_CSS } from './contrast.mjs';
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = resolve(HERE, '..');
 const require_ = createRequire(import.meta.url);
@@ -47,10 +55,12 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 // ── Fixture ──────────────────────────────────────────────────────────────────
 // Eén post in de eerste kolom, met een bedrag dat nergens anders voorkomt zodat de
-// saldo-assertie hem niet met een andere waarde kan verwarren.
+// saldo-assertie hem niet met een andere waarde kan verwarren. Eén spaarpot erbij, want
+// zonder pot bestaat de betaalmodal niet: die kiest uit de actieve potten.
 const USER_ID = '00000000-0000-4000-8000-000000000001';
 const LABEL = 'Harnaspost';
 const AMOUNT = 137.42;
+const POT = 'Harnaspot';
 
 /** 'YYYY-MM' voor vandaag + n maanden. De app toont drie kolommen vanaf de huidige maand. */
 function monthKey(offset = 0) {
@@ -62,18 +72,25 @@ function monthKey(offset = 0) {
 const BRON = monthKey(0);
 const DOEL = monthKey(1);
 
-function fixtureData() {
+/**
+ * `leeg: true` geeft een geldig document zónder posten — dat is iets anders dan een
+ * mislukte fetch, en het hoort ook iets anders te tonen: lege staten per sectie in
+ * plaats van een foutscherm.
+ */
+function fixtureData({ leeg = false } = {}) {
   return {
-    referenceBalance: 5000,
+    referenceBalance: leeg ? 0 : 5000,
     referenceMonth: BRON,
     historyStartMonth: BRON,
     balanceOverrides: [],
-    expenseItems: [{ id: 'harness-1', monthKey: BRON, label: LABEL, amount: AMOUNT, paid: false }],
+    expenseItems: leeg ? [] : [{ id: 'harness-1', monthKey: BRON, label: LABEL, amount: AMOUNT, paid: false }],
     incomeItems: [],
     recurringItems: [],
     recurringSettlements: [],
     reservationSettlements: [],
-    reservations: [],
+    reservations: leeg
+      ? []
+      : [{ id: 'harness-pot', label: POT, monthlyAmount: 60, startMonth: BRON, type: 'spaardoel' }],
     reservationPayments: [],
     recurringDefers: [],
     reservationDefers: [],
@@ -124,8 +141,14 @@ function supabaseUrl() {
  * Beantwoordt wat de app nodig heeft en breekt al het overige af. Fail-closed: een pad dat
  * hier niet staat, komt niet op het netwerk maar in `lekken` — en laat de run vallen. Dat
  * is de hele veiligheidsgarantie, dus hier nooit een `route.continue()` toevoegen.
+ *
+ * `gedrag` is wat een scenario aan het antwoord mag draaien — leeg document, trage fetch,
+ * serverfout. Zonder die knop kon de harness alleen het geslaagde pad tonen, en juist de
+ * drie andere schermen (skeleton, lege staat, foutscherm) zag nooit een guard.
  */
-function maakRouteHandler(state) {
+function maakRouteHandler(state, gedrag = {}) {
+  const { leeg = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
+
   return async (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -141,7 +164,13 @@ function maakRouteHandler(state) {
 
     // Het document. `maybeSingle()` wil één object, geen array.
     if (pad === '/rest/v1/cashflow_state') {
-      if (req.method() === 'GET') return json(state.document, 200);
+      if (req.method() === 'GET') {
+        if (vertragingMs) await new Promise((r) => setTimeout(r, vertragingMs));
+        if (documentStatus !== 200) {
+          return json({ message: 'harness: opzettelijke serverfout' }, documentStatus);
+        }
+        return json({ data: fixtureData({ leeg }), revision: state.revision }, 200);
+      }
       // Elke schrijfpoging wordt geteld en beantwoord alsof ze lukte: de app moet
       // verder kunnen, en het bewijs dat er niets weglekte is juist dat we hier staan.
       state.schrijfpogingen.push(`${req.method()} ${pad}`);
@@ -233,10 +262,31 @@ function stopServer(proc) {
 // ── Pagina klaarzetten ───────────────────────────────────────────────────────
 const KOLOM = '.grid.grid-cols-3 > div';
 
-async function openApp(context, state) {
+/**
+ * Logt in en geeft de pagina terug. `wachtOp: 'kolommen'` wacht tot de prognose staat;
+ * `'niets'` geeft de pagina meteen terug, want een scenario dat juist de laad- of
+ * foutstaat meet mag niet wachten op een scherm dat er nooit komt.
+ */
+async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen' } = {}) {
   const page = await context.newPage();
   page.on('pageerror', (err) => state.paginafouten.push(String(err).slice(0, 200)));
-  await page.route(`${state.origin}/**`, maakRouteHandler(state));
+
+  // De gebouwde app draagt zijn Supabase-URL ingebakken (NEXT_PUBLIC_, inline in de
+  // bundel). Bouwt iemand met een ándere waarde dan waarmee de harness draait, dan sluit
+  // de route-handler de verkeerde origin af: elk verzoek gaat langs de onderschepping
+  // heen, faalt, en de app toont "Geen verbinding met de server" — waarna élk scenario
+  // rood staat op een oorzaak die nergens genoemd wordt. Dat kostte één run om te vinden.
+  page.on('requestfailed', (req) => {
+    const url = req.url();
+    if (!url.includes('supabase') || url.startsWith(state.origin)) return;
+    try {
+      state.vreemdeOrigins.add(new URL(url).origin);
+    } catch {
+      /* geen bruikbare URL */
+    }
+  });
+
+  await page.route(`${state.origin}/**`, maakRouteHandler(state, gedrag));
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
 
   // Elke wachtstap meldt wat er wél op het scherm stond. Een kale "Timeout waiting for
@@ -246,7 +296,11 @@ async function openApp(context, state) {
       await page.waitForSelector(selector, { timeout: 20_000, state: 'visible' });
     } catch {
       const tekst = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').slice(0, 240));
-      throw new Error(`${wat} verscheen niet. Op het scherm stond: "${tekst}"`);
+      const mismatch = state.vreemdeOrigins.size
+        ? ` De app praatte met ${[...state.vreemdeOrigins].join(', ')} terwijl de harness ${state.origin} afsluit —` +
+          ' bouw met dezelfde NEXT_PUBLIC_SUPABASE_URL als waarmee je hem draait.'
+        : '';
+      throw new Error(`${wat} verscheen niet. Op het scherm stond: "${tekst}"${mismatch}`);
     }
   };
 
@@ -265,8 +319,10 @@ async function openApp(context, state) {
     await page.click('button[type=submit]');
   }
 
-  await wacht(KOLOM, 'de maandkolommen');
-  await wacht(`text=${LABEL}`, `de fixture-post "${LABEL}"`);
+  if (wachtOp === 'kolommen') {
+    await wacht(KOLOM, 'de maandkolommen');
+    if (!gedrag.leeg) await wacht(`text=${LABEL}`, `de fixture-post "${LABEL}"`);
+  }
   return page;
 }
 
@@ -283,7 +339,7 @@ function greep(page, label) {
   return page.locator('div', { hasText: label }).locator('button[aria-label="Versleep"]').last();
 }
 
-// ── De twee paden ────────────────────────────────────────────────────────────
+// ── De twee sleeppaden ───────────────────────────────────────────────────────
 
 /**
  * Toetsenbord. dnd-kit's KeyboardSensor activeert op Spatie, beweegt op pijltjes en laat
@@ -333,42 +389,271 @@ async function muispad(page) {
   await page.waitForTimeout(400);
 }
 
+/**
+ * Sleep-assertie: de post hoort van kolom 0 naar kolom 1 te zijn verhuisd, en de app hoort
+ * dat te willen wegschrijven. `sync.ts` schrijft met 800ms debounce weg — even wachten
+ * maakt van "er kan niets weglekken" een waarneming in plaats van een redenering.
+ */
+async function verhuisd(page, state, schrijfVoor) {
+  await page.waitForTimeout(1_200);
+  const geschreven = state.schrijfpogingen.length - schrijfVoor;
+  const na = await kolomVanPost(page, LABEL);
+  if (na === 1) {
+    return { ok: true, bewijs: `post verhuisde van kolom 0 naar kolom 1 (${BRON} → ${DOEL}); ${geschreven} wegschrijf-call onderschept` };
+  }
+  if (na === 0) return { ok: false, bewijs: 'post staat na afloop nog steeds in kolom 0 — er is niets verplaatst' };
+  return { ok: false, bewijs: `post belandde in kolom ${na}, verwacht was kolom 1` };
+}
+
+// ── Contrast op het échte scherm ─────────────────────────────────────────────
+
+/**
+ * Dezelfde meting als `dom-sweep.mjs`, maar op de draaiende app. Dit is de enige plek waar
+ * `MonthCard` en de modals gemeten worden; statisch zijn ze niet te renderen zonder de
+ * store en dnd-kit na te bouwen, en dan meet je je eigen namaak.
+ */
+async function sweep(page, waar) {
+  await page.addStyleTag({ content: STIL_CSS });
+  const { fouten, gemeten, onmeetbaar, vrijgesteld } = beoordeel(await page.evaluate(meetInPagina));
+  return { waar, fouten, gemeten, onmeetbaar: onmeetbaar.length, vrijgesteld };
+}
+
+// ── Modals ───────────────────────────────────────────────────────────────────
+/**
+ * Selecteer op `aria-label`, niet op `[role=dialog]` alleen. Beide sidepanels staan
+ * permanent gemonteerd als `role="dialog" aria-modal="true"` en worden enkel met
+ * `translate-x-full` uit beeld geschoven — voor Playwright zijn ze dus zichtbaar, en een
+ * kale `[role=dialog]` matcht er meteen één. Dat kwam boven doordat de tegenproef
+ * "modal die niemand opent" gróen was.
+ */
+const MODALS = {
+  herhaal: {
+    naam: 'Herhaal vorige maand',
+    open: (page) => page.locator('button', { hasText: '↻ Herhaal' }).first(),
+    dialoog: '[role=dialog][aria-label^="Posten overnemen"]',
+  },
+  betaling: {
+    naam: 'Betaling registreren',
+    open: (page) => page.locator('button[aria-label="Betaling registreren"]').first(),
+    dialoog: '[role=dialog][aria-label="Betaling registreren"]',
+  },
+};
+
+/**
+ * Opent een modal en sluit hem weer. Sluiten gaat via "Annuleren": géén van beide modals
+ * luistert naar Escape — een aparte bevinding, hier niet stilzwijgend omheen gewerkt maar
+ * bewust niet als assertie opgenomen, want dan zou de harness op bestaand gedrag rood staan.
+ */
+async function metModaalOpen(page, modal, tijdensOpen) {
+  await modal.open(page).click();
+  await page.waitForSelector(modal.dialoog, { timeout: 10_000, state: 'visible' });
+  const resultaat = tijdensOpen ? await tijdensOpen() : null;
+  await page.locator(`${modal.dialoog} button`, { hasText: 'Annuleren' }).first().click();
+  await page.waitForSelector(modal.dialoog, { timeout: 5_000, state: 'detached' });
+  return resultaat;
+}
+
 // ── Runner ───────────────────────────────────────────────────────────────────
 /**
  * Eén scenario = één verse context. Anders erft het volgende scenario de sessie én de
  * localStorage van het vorige, en meet je de nasleep van de vorige run.
+ *
+ * Een scenario levert zelf zijn oordeel: `{ ok, bewijs }`. Dat moest wel — de eerste versie
+ * had de sleep-assertie in de runner zitten, en toen kon er niets anders dan een sleep in.
  */
-async function draaiScenario(browser, state, naam, actie) {
+/**
+ * Playwright plakt een hele "Call log" onder elke timeout, met kleurcodes. Eén regel met
+ * de selector erbij zegt evenveel en houdt de uitslag leesbaar — juist bij de tegenproeven,
+ * waar een timeout de bedoeling ís.
+ */
+function kortBericht(bericht) {
+  const regels = String(bericht)
+    // eslint-disable-next-line no-control-regex
+    .replace(/\[\d+m/g, '')
+    .split('\n')
+    .map((r) => r.trim())
+    .filter(Boolean);
+  const eerste = regels[0] ?? 'onbekende fout';
+  const wachtte = regels.find((r) => r.startsWith('- waiting for'));
+  return wachtte ? `${eerste} — ${wachtte.slice(2)}` : eerste;
+}
+
+async function draaiScenario(browser, state, scenario) {
+  const { naam, gedrag = {}, wachtOp = 'kolommen', actie } = scenario;
   const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   try {
-    const page = await openApp(context, state);
-    const voor = await kolomVanPost(page, LABEL);
-    if (voor !== 0) throw new Error(`de fixture staat niet in kolom 0 maar in ${voor}`);
-
-    const schrijfVoor = state.schrijfpogingen.length;
-    await actie(page);
-
-    // `sync.ts` schrijft met 800ms debounce weg. Even wachten maakt van "er kan niets
-    // weglekken" een waarneming in plaats van een redenering: bij een geslaagde
-    // verplaatsing hoort hier een onderschepte PATCH te staan.
-    await page.waitForTimeout(1_200);
-    const geschreven = state.schrijfpogingen.length - schrijfVoor;
-
-    const na = await kolomVanPost(page, LABEL);
-    if (na === 1) {
-      return {
-        naam,
-        ok: true,
-        bewijs: `post verhuisde van kolom 0 naar kolom 1 (${BRON} → ${DOEL}); ${geschreven} wegschrijf-call onderschept`,
-      };
-    }
-    if (na === 0) return { naam, ok: false, bewijs: 'post staat na afloop nog steeds in kolom 0 — er is niets verplaatst' };
-    return { naam, ok: false, bewijs: `post belandde in kolom ${na}, verwacht was kolom 1` };
+    const page = await openApp(context, state, { gedrag, wachtOp });
+    const uitkomst = await actie(page, { state, schrijfVoor: state.schrijfpogingen.length });
+    return { naam, ...uitkomst };
   } catch (err) {
-    return { naam, ok: false, bewijs: err.message };
+    return { naam, ok: false, bewijs: kortBericht(err.message ?? err) };
   } finally {
     await context.close();
   }
+}
+
+/** De scenario's die altijd draaien. */
+function scenarios() {
+  return [
+    {
+      naam: 'sleep — toetsenbord',
+      actie: async (page, { state, schrijfVoor }) => {
+        const voor = await kolomVanPost(page, LABEL);
+        if (voor !== 0) throw new Error(`de fixture staat niet in kolom 0 maar in ${voor}`);
+        await toetsenbordpad(page);
+        return verhuisd(page, state, schrijfVoor);
+      },
+    },
+    {
+      naam: 'sleep — muis',
+      actie: async (page, { state, schrijfVoor }) => {
+        const voor = await kolomVanPost(page, LABEL);
+        if (voor !== 0) throw new Error(`de fixture staat niet in kolom 0 maar in ${voor}`);
+        await muispad(page);
+        return verhuisd(page, state, schrijfVoor);
+      },
+    },
+    {
+      // Het scherm zelf, en daarna elke modal open. Samen dekt dit wat `dom-sweep.mjs`
+      // per constructie niet kan zien.
+      naam: 'contrast — scherm + modals',
+      actie: async (page) => {
+        const metingen = [
+          await sweep(page, 'prognose'),
+          await metModaalOpen(page, MODALS.herhaal, () => sweep(page, MODALS.herhaal.naam)),
+          await metModaalOpen(page, MODALS.betaling, () => sweep(page, MODALS.betaling.naam)),
+        ];
+        const fouten = metingen.flatMap((m) => m.fouten.map((f) => ({ ...f, waar: m.waar })));
+        const gemeten = metingen.reduce((n, m) => n + m.gemeten, 0);
+        if (fouten.length) {
+          return {
+            ok: false,
+            bewijs: `${fouten.length} kleurcombinatie(s) onder AA (${gemeten} tekstelementen gemeten)`,
+            details: fouten.map((f) => `[${f.waar}]\n${beschrijfFout(f)}`),
+          };
+        }
+        const per = metingen.map((m) => `${m.waar} ${m.gemeten}`).join(', ');
+        return { ok: true, bewijs: `${gemeten} tekstelementen boven AA (${per})` };
+      },
+    },
+    {
+      // Openen en sluiten is het pad dat de sweep hierboven nodig heeft; dit scenario
+      // toetst het als gedrag, zodat een kapotte modal niet als contrast-fout leest.
+      naam: 'modals — openen en sluiten',
+      actie: async (page) => {
+        const gezien = [];
+        for (const modal of [MODALS.herhaal, MODALS.betaling]) {
+          const kop = await metModaalOpen(page, modal, async () =>
+            (await page.locator(modal.dialoog).innerText()).replace(/\s+/g, ' '),
+          );
+          if (!kop.includes(modal.naam)) {
+            throw new Error(`modal toonde "${kop.slice(0, 80)}", verwacht "${modal.naam}"`);
+          }
+          gezien.push(modal.naam);
+        }
+        return { ok: true, bewijs: `${gezien.length} modals geopend en gesloten: ${gezien.join(', ')}` };
+      },
+    },
+    {
+      // Een trage fetch hoort een skeleton te geven, geen leeg scherm en geen nullen.
+      naam: 'state — laden',
+      gedrag: { vertragingMs: 2_500 },
+      wachtOp: 'niets',
+      actie: async (page) => {
+        await page.waitForSelector('[aria-busy="true"]', { timeout: 10_000, state: 'visible' });
+        // En hij hoort ook weer wég te gaan: een skeleton die blijft staan is even stuk
+        // als een die er nooit was.
+        await page.waitForSelector(KOLOM, { timeout: 20_000, state: 'visible' });
+        return { ok: true, bewijs: 'skeleton met aria-busy tijdens het laden, daarna de prognose' };
+      },
+    },
+    {
+      // Geldig document, geen posten: lege staten per sectie, geen blanco kolom.
+      naam: 'state — leeg',
+      gedrag: { leeg: true },
+      actie: async (page) => {
+        const verwacht = ['Geen inkomsten', 'Geen vaste uitgaven', 'Geen eenmalige uitgaven'];
+        const tekst = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' '));
+        const ontbreekt = verwacht.filter((v) => !tekst.includes(v));
+        if (ontbreekt.length) throw new Error(`lege staat ontbreekt: ${ontbreekt.join(', ')}`);
+        return { ok: true, bewijs: `drie lege staten getoond in plaats van een blanco kolom` };
+      },
+    },
+    {
+      // Mislukte fetch: een eigen foutscherm met een herkansing, geen prognose die er
+      // wél uitziet alsof ze klopt.
+      naam: 'state — fout',
+      gedrag: { documentStatus: 500 },
+      wachtOp: 'niets',
+      actie: async (page) => {
+        await page.waitForSelector('text=Gegevens niet geladen', { timeout: 20_000, state: 'visible' });
+        const herkansing = await page.locator('button', { hasText: 'Opnieuw proberen' }).count();
+        if (!herkansing) throw new Error('foutscherm zonder "Opnieuw proberen" — doodlopend');
+        const kolommen = await page.locator(KOLOM).count();
+        if (kolommen) throw new Error('de prognose staat er tóch, naast het foutscherm');
+        return { ok: true, bewijs: 'foutscherm met herkansing, geen half gevulde prognose' };
+      },
+    },
+  ];
+}
+
+/**
+ * De tegenproeven. Elke nieuwe assertie krijgt er één: een guard die niet kán afgaan meldt
+ * "geen fouten" even overtuigend als een die werkt. Deze horen dus te FALEN; de runner
+ * keert hun oordeel om.
+ */
+function tegenproeven() {
+  return [
+    {
+      naam: 'tegenproef — sleep doet niets',
+      moetFalen: true,
+      actie: async (page, { state, schrijfVoor }) => {
+        await greep(page, LABEL).focus();
+        await page.keyboard.press('Space');
+        await page.waitForTimeout(150);
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(200);
+        return verhuisd(page, state, schrijfVoor);
+      },
+    },
+    {
+      naam: 'tegenproef — te lichte tekst',
+      moetFalen: true,
+      actie: async (page) => {
+        // Eén element met een kleur die gegarandeerd zakt. Vindt de sweep hem niet, dan
+        // meet hij het scherm niet echt.
+        await page.evaluate(() => {
+          const p = document.createElement('p');
+          p.textContent = 'tegenproef: onleesbaar grijs';
+          p.style.cssText = 'color:#cfcfcf;background:#ffffff;font-size:13px;padding:4px';
+          document.body.appendChild(p);
+        });
+        const m = await sweep(page, 'prognose + injectie');
+        if (m.fouten.length) return { ok: false, bewijs: `${m.fouten.length} fout(en) gevonden, zoals het hoort` };
+        return { ok: true, bewijs: 'de geïnjecteerde te lichte tekst glipte door de sweep' };
+      },
+    },
+    {
+      naam: 'tegenproef — modal die niemand opent',
+      moetFalen: true,
+      actie: async (page) => {
+        // Niets aanklikken, wél de modal verwachten. Deze tegenproef verdiende zichzelf
+        // meteen terug: met een kale `[role=dialog]`-selector was hij groen, want de
+        // sidepanels staan permanent gemonteerd.
+        await page.waitForSelector(MODALS.herhaal.dialoog, { timeout: 3_000, state: 'visible' });
+        return { ok: true, bewijs: 'de modal stond open zonder dat iemand hem opende' };
+      },
+    },
+    {
+      naam: 'tegenproef — foutscherm zonder fout',
+      moetFalen: true,
+      actie: async (page) => {
+        // Het document komt gewoon door; het foutscherm hoort er dus níet te staan.
+        await page.waitForSelector('text=Gegevens niet geladen', { timeout: 3_000, state: 'visible' });
+        return { ok: true, bewijs: 'foutscherm verscheen terwijl de fetch slaagde' };
+      },
+    },
+  ];
 }
 
 async function main() {
@@ -378,9 +663,7 @@ async function main() {
     lekken: [],
     schrijfpogingen: [],
     paginafouten: [],
-    get document() {
-      return { data: fixtureData(), revision: this.revision };
-    },
+    vreemdeOrigins: new Set(),
   };
 
   console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin}`);
@@ -388,23 +671,12 @@ async function main() {
   const server = await startServer();
   const browser = await chromium.launch({ headless: !HEADED });
 
+  const teDraaien = [...scenarios(), ...(SELFTEST ? tegenproeven() : [])];
   const resultaten = [];
   try {
-    resultaten.push(await draaiScenario(browser, state, 'toetsenbord', toetsenbordpad));
-    resultaten.push(await draaiScenario(browser, state, 'muis', muispad));
-
-    if (SELFTEST) {
-      // Bewijst dat de assertie kán falen: pak op, doe niets, laat weer los. Een harness
-      // die altijd groen is meldt "geen fouten" even overtuigend als een die werkt.
-      resultaten.push(
-        await draaiScenario(browser, state, 'zelftest (hoort te falen)', async (page) => {
-          await greep(page, LABEL).focus();
-          await page.keyboard.press('Space');
-          await page.waitForTimeout(150);
-          await page.keyboard.press('Escape');
-          await page.waitForTimeout(200);
-        }),
-      );
+    for (const scenario of teDraaien) {
+      const r = await draaiScenario(browser, state, scenario);
+      resultaten.push({ ...r, moetFalen: scenario.moetFalen === true });
     }
   } finally {
     await browser.close();
@@ -412,20 +684,28 @@ async function main() {
   }
 
   console.log('');
+  const breedte = Math.max(...resultaten.map((r) => r.naam.length));
   for (const r of resultaten) {
-    const zelftest = r.naam.startsWith('zelftest');
-    const geslaagd = zelftest ? !r.ok : r.ok;
-    console.log(`  ${geslaagd ? '✓' : '✗'} ${r.naam.padEnd(26)} ${r.bewijs}`);
+    const geslaagd = r.moetFalen ? !r.ok : r.ok;
+    console.log(`  ${geslaagd ? '✓' : '✗'} ${r.naam.padEnd(breedte)}  ${r.bewijs}`);
+    if (!geslaagd && r.details) for (const d of r.details) console.error(d);
   }
 
   console.log('');
   console.log(`  schrijfpogingen onderschept: ${state.schrijfpogingen.length}`);
   console.log(`  verzoeken naar de echte origin: ${state.lekken.length}${state.lekken.length ? ` — ${state.lekken.join(', ')}` : ''}`);
+  if (state.paginafouten.length) {
+    console.log(`  paginafouten: ${state.paginafouten.length} — ${state.paginafouten.slice(0, 3).join(' | ')}`);
+  }
+  if (state.vreemdeOrigins.size) {
+    console.log(`  ⚠ de app zocht ${[...state.vreemdeOrigins].join(', ')} — die origin wordt NIET onderschept.`);
+    console.log(`    Bouw met dezelfde NEXT_PUBLIC_SUPABASE_URL als waarmee je de harness draait.`);
+  }
 
-  const echteFouten = resultaten.filter((r) => (r.naam.startsWith('zelftest') ? r.ok : !r.ok));
+  const echteFouten = resultaten.filter((r) => (r.moetFalen ? r.ok : !r.ok));
   const gezakt = echteFouten.length > 0 || state.lekken.length > 0;
   console.log('');
-  console.log(gezakt ? `${echteFouten.length} pad(en) gefaald` : 'alle paden geslaagd');
+  console.log(gezakt ? `${echteFouten.length} scenario('s) gefaald` : `alle ${resultaten.length} scenario's geslaagd`);
   process.exit(gezakt ? 1 : 0);
 }
 

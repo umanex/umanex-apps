@@ -16,7 +16,6 @@ import { RepeatMonthModal } from '../components/cashflow/RepeatMonthModal';
 import { MonthNavigator } from '../components/cashflow/MonthNavigator';
 import { SyncStatus } from '../components/feedback/SyncStatus';
 import { SignOutButton } from '../components/auth/SignOutButton';
-import { ThemeToggle } from '@umanex/ui/components/ui/theme-toggle';
 import type { MonthKey, ReservationPotType } from '../lib/cashflow/types';
 
 export default function Page() {
@@ -71,7 +70,6 @@ export default function Page() {
           >
             Analyse
           </Link>
-          <ThemeToggle />
           <SignOutButton />
         </div>
       </header>

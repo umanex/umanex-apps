@@ -13,9 +13,9 @@
  * tot nu toe met de hand in een browserconsole gedaan, met drie meetfouten onderweg.
  *
  * De twee lessen uit die handmatige ronde zitten hier ingebakken:
- *   1. Nooit meten tijdens een mode-wissel. De harness zet light en dark als twee
- *      kolommen in één statisch bestand, en we doven bovendien elke transition — een
- *      sweep vlak na het omzetten van de `dark`-class meet midden in `transition-colors`.
+ *   1. Nooit meten terwijl er iets beweegt. De harness meet een statisch bestand en dooft
+ *      bovendien elke transition — een sweep midden in `transition-colors` meet een
+ *      tussenkleur die nergens op het scherm blijft staan.
  *   2. Alleen elementen die zelf tekst dragen. `input[class*="border-input"]` matchte
  *      destijds ook de checkbox; dit script kijkt naar directe tekst-nodes, niet naar
  *      class-namen.
@@ -151,9 +151,6 @@ function meetInPagina() {
 
     const tekst = tekstKleur.a < 1 ? overElkaar(tekstKleur, onder) : tekstKleur;
 
-    // Waar staat dit? De harness zet de mode als class op de kolom.
-    const mode = el.closest('.dark') ? 'dark' : 'light';
-
     // Kort pad voor de melding — genoeg om het terug te vinden, niet het hele DOM-pad.
     const beschrijf = (n) =>
       n.tagName.toLowerCase() +
@@ -164,7 +161,6 @@ function meetInPagina() {
     const pad = [el.parentElement, el].filter(Boolean).map(beschrijf).join(' > ');
 
     resultaten.push({
-      mode,
       pad,
       tekst: eigenTekst.slice(0, 60),
       fontSize,
@@ -204,7 +200,7 @@ function beoordeel({ resultaten, onmeetbaar, vrijgesteld }) {
     const drempel = drempelVoor(r);
     if (ratio >= drempel) continue;
 
-    const sleutel = `${r.mode}|${hex(r.voor)}|${hex(r.achter)}|${drempel}`;
+    const sleutel = `${hex(r.voor)}|${hex(r.achter)}|${drempel}`;
     const bestaand = perCombinatie.get(sleutel);
     if (bestaand) {
       bestaand.aantal += 1;
@@ -215,7 +211,6 @@ function beoordeel({ resultaten, onmeetbaar, vrijgesteld }) {
       continue;
     }
     perCombinatie.set(sleutel, {
-      mode: r.mode,
       voor: hex(r.voor),
       achter: hex(r.achter),
       ratio,
@@ -254,8 +249,8 @@ const SELFTEST_HTML = `<!doctype html><meta charset="utf-8"><body style="backgro
   </div>
   <p id="verborgen" style="color:#fefefe;background:#ffffff;display:none">onzichtbaar, telt niet</p>
   <p id="opacity0" style="color:#fefefe;background:#ffffff;opacity:0">ook onzichtbaar</p>
-  <div class="dark" style="background:#111111">
-    <p id="darkfout" style="color:#3a3a3a;font-size:14px">te donker op donker</p>
+  <div style="background:#111111">
+    <p id="donker" style="color:#3a3a3a;font-size:14px">te donker op donker</p>
   </div>
   <p id="gradient" style="background:linear-gradient(#fff,#000);color:#888;font-size:14px">onmeetbaar</p>
   <button id="uit" disabled style="color:#cccccc;background:#ffffff;font-size:14px">inactieve knop</button>
@@ -266,14 +261,14 @@ const SELFTEST_HTML = `<!doctype html><meta charset="utf-8"><body style="backgro
 
 // Wat er moet uitkomen. `null` = mag niet als fout verschijnen.
 const SELFTEST_VERWACHT = [
-  { tekst: 'grijs op wit', faalt: true, mode: 'light' },
+  { tekst: 'grijs op wit', faalt: true },
   { tekst: 'donkergrijs op wit', faalt: false },
   { tekst: 'groot en grijs', faalt: false }, // 3.03:1 — zakt onder 4.5 maar haalt de grote-tekstdrempel
-  { tekst: 'groot maar te licht', faalt: true, mode: 'light' },
-  { tekst: 'op een 92%-wit vlak', faalt: true, mode: 'light' },
+  { tekst: 'groot maar te licht', faalt: true },
+  { tekst: 'op een 92%-wit vlak', faalt: true },
   { tekst: 'onzichtbaar, telt niet', faalt: false },
   { tekst: 'ook onzichtbaar', faalt: false },
-  { tekst: 'te donker op donker', faalt: true, mode: 'dark' },
+  { tekst: 'te donker op donker', faalt: true }, // een donker paneel binnen een light pagina
   { tekst: 'inactieve knop', faalt: false }, // WCAG 1.4.3 zondert inactieve componenten uit
   { tekst: 'in een uitgeschakelde fieldset', faalt: false }, // de uitzondering erft
 ];
@@ -292,8 +287,6 @@ async function zelftest(browser) {
         problemen.push(`"${verwacht.tekst}" had als fout gemeld moeten worden, maar glipte door`);
       } else if (!verwacht.faalt && gevonden) {
         problemen.push(`"${verwacht.tekst}" is ten onrechte als fout gemeld (${gevonden.ratio.toFixed(2)}:1)`);
-      } else if (verwacht.faalt && gevonden && gevonden.mode !== verwacht.mode) {
-        problemen.push(`"${verwacht.tekst}" kreeg mode ${gevonden.mode}, verwacht ${verwacht.mode}`);
       }
     }
 
@@ -375,7 +368,7 @@ try {
         console.error(`\n✗ ${naam}: ${fouten.length} kleurcombinatie(s) onder AA (${gemeten} tekstelementen gemeten)\n`);
         for (const f of fouten) {
           const waar = f.aantal === 1 ? '1 element' : `${f.aantal} elementen`;
-          console.error(`  [${f.mode}] ${f.voor} op ${f.achter} — ${waar}`);
+          console.error(`  ${f.voor} op ${f.achter} — ${waar}`);
           console.error(`      ${f.ratio.toFixed(2)}:1, nodig ${f.drempel}:1 (${f.fontSize}px/${f.fontWeight})`);
           console.error(`      "${f.voorbeeldTekst}"`);
           console.error(`      ${f.voorbeeldPad}\n`);
@@ -390,7 +383,7 @@ try {
     }
 
     if (!faalt) {
-      console.log(`\n✓ dom-sweep: ${totaalGemeten} tekstelementen boven AA in light en dark`);
+      console.log(`\n✓ dom-sweep: ${totaalGemeten} tekstelementen boven AA`);
       if (totaalOnmeetbaar) console.log(`  ${totaalOnmeetbaar} onmeetbaar, met de hand te beoordelen`);
       if (totaalVrijgesteld) console.log(`  ${totaalVrijgesteld} vrijgesteld (inactieve componenten, WCAG 1.4.3)`);
       console.log('  Niet gedekt: MonthCard en de modals staan niet in de harness.');

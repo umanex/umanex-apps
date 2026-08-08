@@ -130,6 +130,20 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   de score-pill in jobradar bij, die van helder amber (`bg-amber-500`, 2.15:1) naar bruin
   (`bg-warning` = Warning.700, 5.02:1) ging — correcter, maar een zichtbare verschuiving op
   elke kaart.
+- **Status:** resolved — 2026-08-08: de cashflow-helft vervalt. Jeroen heeft dark mode voor
+  cashflow niet-van-toepassing verklaard en de aanroep is uitgebouwd (toggle, theme-init-script,
+  dark-kolom in de harnessen); de `Semantic/*/finance`-rollen in dark worden dus door niets
+  meer getoond en hoeven niet als set beoordeeld te worden. De tokensets zelf blijven staan —
+  `Theme/dark` draagt portfolio, vyvey en jobradar, en de build faalt op asymmetrie tussen de
+  mode-sets. Het jobradar-stuk staat als eigen entry hieronder.
+
+## 2026-08-08 — jobradar score-pill werd bruin door de contrastfix · [onzekerheid]
+- **Bevinding:** Afgesplitst van de entry hierboven, waarvan de cashflow-helft vervallen is. De
+  score-pill ging van helder amber (`bg-amber-500`, 2.15:1) naar bruin (`bg-warning` =
+  Warning.700, 5.02:1) — correcter, maar een zichtbare verschuiving op elke kaart. Esthetische
+  beoordeling, geen defect.
+- **Volgende zet:** De pill in jobradar naast de kaart beoordelen en beslissen: bruin houden, of
+  een eigen rol voor een pil-achtergrond met donkere tekst erop (dan haalt helder amber wél AA).
 - **Status:** open
 
 ## 2026-08-05 — Een nieuwe token-set levert stil geen output · [risico]

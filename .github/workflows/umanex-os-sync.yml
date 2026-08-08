@@ -167,6 +167,42 @@ jobs:
 
           rm -rf "$SRC"
 
+          # ── De laag valideren vóór hij een PR wordt. ──
+          #
+          # Op deze PR draait géén CI van deze repo, en dat is geen instelling maar een
+          # ontwerpkeuze van GitHub: een push met de default `github.token` triggert bewust
+          # geen workflows, anders krijg je oneindige lussen. Gevolg is wel dat een sync-PR
+          # nul checks toont — visueel niet te onderscheiden van "alles groen".
+          #
+          # Een PAT per klant-repo zou dat oplossen, maar dat is een secret met schrijfrechten
+          # erbij voor een controle die niets over de app zegt (er komt geen app-code in deze
+          # PR). Dus valideren we hier, waar de bestanden al staan en een fout de sync nog
+          # kan tegenhouden in plaats van hem als PR door te laten.
+          echo "→ Laag valideren"
+          layer_ok=1
+          for f in scripts/sync-os.sh scripts/gen-snapshot.sh .githooks/pre-commit .githooks/commit-msg; do
+            [ -f "$f" ] || { echo "  ✗ $f ontbreekt na installatie"; layer_ok=0; continue; }
+            [ -s "$f" ] || { echo "  ✗ $f is leeg"; layer_ok=0; continue; }
+            bash -n "$f" 2>/dev/null || { echo "  ✗ $f is geen geldige bash"; layer_ok=0; continue; }
+            [ -x "$f" ] || { echo "  ✗ $f is niet executable — git zou de hook stil overslaan"; layer_ok=0; continue; }
+            echo "  ✓ $f"
+          done
+          # context.json is repo-eigen input (seed-if-absent), geen canoniek bestand. Een
+          # klant die hem met de hand kapotmaakt is een echt probleem, maar niet dít
+          # probleem — de sync tegenhouden lost daar niets aan op en blokkeert wél de
+          # levering van alles wat wél klopt. Dus melden, niet falen: fail op wat je
+          # installeert, waarschuw over wat je alleen aantreft.
+          if [ -f context.json ] && ! python3 -c 'import json; json.load(open("context.json"))' 2>/dev/null; then
+            echo "  ⚠ context.json is geen geldige JSON — snapshots krijgen [TODO]-placeholders"
+            echo "    (repo-eigen bestand, dus dit houdt de sync niet tegen)"
+          fi
+          if [ "$layer_ok" -ne 1 ]; then
+            echo ""
+            echo "✗ De gesyncte laag is kapot — geen PR geopend."
+            echo "  Fix het canonieke bestand in umanex-os en dispatch opnieuw."
+            exit 1
+          fi
+
           # Drift-check: alles stagen en kijken of er iets veranderde t.o.v. de doelbranch.
           git add -A
           if git diff --cached --quiet; then
@@ -180,7 +216,12 @@ jobs:
           if gh pr view "$BRANCH" --json state -q .state 2>/dev/null | grep -q OPEN; then
             echo "Bestaande open PR aangevuld met een nieuwe commit (bestaande commits blijven staan)."
           else
+            PR_BODY="Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, sync-script, git hooks, LEARNINGS- en HANDOFF-seed), getriggerd door een wijziging in umanex-os. Skills komen via het lokale scripts/sync-os.sh.
+
+            **Geen checks op deze PR, en dat is verwacht.** GitHub triggert geen workflows voor een push met de default github.token. De laag is daarom in de sync-job zelf gevalideerd: elk gesynct shell-bestand is niet-leeg, syntactisch geldig en executable, en context.json is geldige JSON. Was dat niet zo, dan was deze PR niet geopend.
+
+            Review en merge wanneer je wil."
             gh pr create --base main --head "$BRANCH" \
               --title "chore: sync umanex-os layer with global umanex-os" \
-              --body "Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, sync-script, git hooks, LEARNINGS- en HANDOFF-seed), getriggerd door een wijziging in umanex-os. Skills komen via het lokale scripts/sync-os.sh. Review en merge wanneer je wil."
+              --body "$PR_BODY"
           fi

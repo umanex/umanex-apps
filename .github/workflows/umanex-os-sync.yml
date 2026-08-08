@@ -1,7 +1,7 @@
 name: Sync umanex-os layer
 
 # Ontvangt een repository_dispatch vanuit umanex-os wanneer de globale CLAUDE.md,
-# een profile, het sync-script of de LEARNINGS-template wijzigt, en opent een PR met
+# een profile, het sync-script of een staging-template wijzigt, en opent een PR met
 # de bijgewerkte umanex-os-laag. Alle inhoud komt mee in de payload (gzip+base64), zodat
 # deze repo geen leestoegang tot de private umanex-os repo nodig heeft.
 #
@@ -13,6 +13,7 @@ name: Sync umanex-os layer
 #   - .githooks/commit-msg                                      commit-scope guard (bestand)
 #   - context.json                                              snapshot-input, seed-if-absent
 #   - LEARNINGS.md in root + elke apps/*                        capture-staging, seed-if-absent
+#   - HANDOFF.md in root + elke apps/*                          sessie-handoff, seed-if-absent
 #
 # Skills worden NIET via CI gesynct: die staan user-level (~/.claude/skills) en komen
 # via het lokale scripts/sync-os.sh. GitHub Actions kan niet naar de runner-home schrijven.
@@ -51,6 +52,7 @@ jobs:
           PROFILE_NAME: ${{ github.event.client_payload.profile_name }}
           SYNC_SCRIPT_B64: ${{ github.event.client_payload.sync_script_b64 }}
           LEARNINGS_TEMPLATE_B64: ${{ github.event.client_payload.learnings_template_b64 }}
+          HANDOFF_TEMPLATE_B64: ${{ github.event.client_payload.handoff_template_b64 }}
           GEN_SNAPSHOT_B64: ${{ github.event.client_payload.gen_snapshot_b64 }}
           GITHOOK_B64: ${{ github.event.client_payload.githook_b64 }}
           COMMIT_MSG_HOOK_B64: ${{ github.event.client_payload.commit_msg_hook_b64 }}
@@ -100,17 +102,26 @@ jobs:
             printf '%s' "$CONTEXT_TEMPLATE_B64" | base64 -d | gunzip > context.json
           fi
 
-          # LEARNINGS-seed in root + elke app — alleen als afwezig, nooit overschrijven
-          if [ -n "${LEARNINGS_TEMPLATE_B64:-}" ]; then
-            TMP_TEMPLATE="$(mktemp)"
-            printf '%s' "$LEARNINGS_TEMPLATE_B64" | base64 -d | gunzip > "$TMP_TEMPLATE"
-            seed() { [ -f "$1/LEARNINGS.md" ] || cp "$TMP_TEMPLATE" "$1/LEARNINGS.md"; }
-            seed "."
+          # Staging-seeds in root + elke app — alleen als afwezig, nooit overschrijven.
+          # LEARNINGS is terugkijkend (waargenomen fouten), HANDOFF vooruitkijkend
+          # (onzekerheden, next steps). Beide worden bij sessiestart uitgelezen door
+          # ~/.claude/hooks/session-start-handoff.sh, dus een ontbrekend bestand maakt
+          # de bijbehorende lus stil in plaats van luidruchtig.
+          seed_layered() { # $1 = base64-payload, $2 = bestandsnaam
+            [ -n "${1:-}" ] || return 0
+            local name="$2" tmp d
+            tmp="$(mktemp)"
+            printf '%s' "$1" | base64 -d | gunzip > "$tmp"
+            [ -f "./$name" ] || cp "$tmp" "./$name"
             if [ -d apps ]; then
-              for d in apps/*/; do [ -d "$d" ] && seed "${d%/}"; done
+              for d in apps/*/; do
+                [ -d "$d" ] && { [ -f "${d%/}/$name" ] || cp "$tmp" "${d%/}/$name"; }
+              done
             fi
-            rm -f "$TMP_TEMPLATE"
-          fi
+            rm -f "$tmp"
+          }
+          seed_layered "${LEARNINGS_TEMPLATE_B64:-}" "LEARNINGS.md"
+          seed_layered "${HANDOFF_TEMPLATE_B64:-}"   "HANDOFF.md"
 
           # Drift-check: alles stagen en kijken of er iets veranderde
           git config user.name "github-actions[bot]"
@@ -131,5 +142,5 @@ jobs:
           else
             gh pr create --base main --head "$BRANCH" \
               --title "chore: sync umanex-os layer with global umanex-os" \
-              --body "Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, sync-script, LEARNINGS-seed), getriggerd door een wijziging in umanex-os. Skills komen via het lokale scripts/sync-os.sh. Review en merge wanneer je wil."
+              --body "Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, sync-script, git hooks, LEARNINGS- en HANDOFF-seed), getriggerd door een wijziging in umanex-os. Skills komen via het lokale scripts/sync-os.sh. Review en merge wanneer je wil."
           fi

@@ -49,9 +49,11 @@ Alle vier beantwoord op 2026-08-04:
 3. **KPI-tegels** — weg; de ledger toont dezelfde twee getallen.
 4. **Lopend saldo** — alleen stapbedragen, eindsaldo in de footer.
 
-Nog te beslissen buiten deze fase: de finance-tokens moeten in Tokens Studio aangemaakt
-worden voor de hardcoded `emerald`/`amber`-klassen kunnen verdwijnen. De lijst met paden,
-waardes en contrastcijfers staat in het plan.
+~~Nog te beslissen buiten deze fase: de finance-tokens moeten in Tokens Studio aangemaakt
+worden voor de hardcoded `emerald`/`amber`-klassen kunnen verdwijnen.~~ Gedaan in PR #194
+(2026-08-05): twee primitive-ramps plus een `Semantic`-set met `Finance` en `Overlay`;
+veertien componenten stapten over en er staat geen paletklasse meer in de app. De
+uitwerking staat in `briefings/2026-08-05-tokens-finance-inventaris.md`.
 
 ## Aannames
 

@@ -856,5 +856,10 @@ console.log('\nS25 — budget overschreden in de ankermaand');
   invariant(later, 'S25c');
 }
 
+// Tegenproef. `scripts/scenarios.mjs` draait deze suite eerst mét deze vlag en eist dan een
+// niet-nul exit: een suite die niet kán falen meldt "546/546 geslaagd" even overtuigend als
+// een die werkt. Zonder de vlag verandert er niets aan de telling.
+if (process.env.SCENARIO_SELFTEST) check('zelftest — hoort te falen', 0, 1);
+
 console.log(`\n${checks - failures}/${checks} checks geslaagd${failures ? ` — ${failures} FOUT` : ''}`);
 process.exit(failures ? 1 : 0);

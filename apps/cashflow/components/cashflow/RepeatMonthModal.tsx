@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCashflowStore } from '../../store/cashflow';
 import { useCashflowActions } from '../../hooks/useCashflow';
+import { useDismissOnEscape } from '../../hooks/useDismissOnEscape';
 import { addMonth, formatSigned, generateId, getMonthLabel } from '../../lib/cashflow/recurring';
 import type { MonthKey } from '../../lib/cashflow/types';
 
@@ -27,6 +28,8 @@ function normalize(label: string): string {
 }
 
 export function RepeatMonthModal({ monthKey, onClose }: RepeatMonthModalProps) {
+  useDismissOnEscape(onClose);
+
   const incomeItems = useCashflowStore((s) => s.incomeItems);
   const expenseItems = useCashflowStore((s) => s.expenseItems);
   const { addIncomeItem, addExpenseItem } = useCashflowActions();

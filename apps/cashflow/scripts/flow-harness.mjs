@@ -440,17 +440,39 @@ const MODALS = {
 };
 
 /**
- * Opent een modal en sluit hem weer. Sluiten gaat via "Annuleren": géén van beide modals
- * luistert naar Escape — een aparte bevinding, hier niet stilzwijgend omheen gewerkt maar
- * bewust niet als assertie opgenomen, want dan zou de harness op bestaand gedrag rood staan.
+ * Opent een modal en sluit hem weer met Escape. Dat sluiten ís de assertie: tot 2026-08-08
+ * luisterde geen enkele overlay naar Escape, en de harness moest via "Annuleren" sluiten.
+ * Nu dat gefixt is, hoort een teruggedraaide fix hier meteen rood te staan.
  */
-async function metModaalOpen(page, modal, tijdensOpen) {
+async function metModaalOpen(page, modal, tijdensOpen, { sluitToets = 'Escape' } = {}) {
   await modal.open(page).click();
   await page.waitForSelector(modal.dialoog, { timeout: 10_000, state: 'visible' });
   const resultaat = tijdensOpen ? await tijdensOpen() : null;
-  await page.locator(`${modal.dialoog} button`, { hasText: 'Annuleren' }).first().click();
+  await page.keyboard.press(sluitToets);
   await page.waitForSelector(modal.dialoog, { timeout: 5_000, state: 'detached' });
   return resultaat;
+}
+
+// ── Sidepanels ───────────────────────────────────────────────────────────────
+// Ze blijven gemonteerd wanneer ze dicht zijn, dus is "onbereikbaar" hier een assertie en
+// geen vanzelfsprekendheid.
+const PANELEN = [
+  { naam: 'Vaste uitgaven', knop: 'Vaste uitgaven', dialoog: '[aria-label="Vaste uitgaven beheren"]' },
+  { naam: 'Spaarpotten', knop: 'Spaarpotten', dialoog: '[aria-label="Spaarpotten beheren"]' },
+];
+
+/** Wat het paneel op dit moment aan de a11y-tree vertelt. */
+async function panelStaat(page, selector) {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    return {
+      rol: el.getAttribute('role'),
+      ariaModal: el.getAttribute('aria-modal'),
+      ariaHidden: el.getAttribute('aria-hidden'),
+      inert: el.hasAttribute('inert'),
+    };
+  }, selector);
 }
 
 // ── Runner ───────────────────────────────────────────────────────────────────
@@ -551,7 +573,42 @@ function scenarios() {
           }
           gezien.push(modal.naam);
         }
-        return { ok: true, bewijs: `${gezien.length} modals geopend en gesloten: ${gezien.join(', ')}` };
+        return { ok: true, bewijs: `${gezien.length} modals geopend en met Escape gesloten: ${gezien.join(', ')}` };
+      },
+    },
+    {
+      // Een gesloten sidepanel blijft in de DOM staan voor zijn schuif-animatie. Het mag
+      // dan geen dialoog meer zijn, niet in de a11y-tree staan en niet tabbaar zijn.
+      naam: 'sidepanels — dicht is onbereikbaar',
+      actie: async (page) => {
+        const bewijzen = [];
+        for (const paneel of PANELEN) {
+          const dicht = await panelStaat(page, paneel.dialoog);
+          if (!dicht) throw new Error(`${paneel.naam}: paneel niet gevonden (${paneel.dialoog})`);
+          if (dicht.rol || dicht.ariaModal) {
+            throw new Error(`${paneel.naam}: dicht paneel meldt zich nog als ${dicht.rol}/aria-modal=${dicht.ariaModal}`);
+          }
+          if (dicht.ariaHidden !== 'true' || !dicht.inert) {
+            throw new Error(`${paneel.naam}: dicht paneel is bereikbaar (aria-hidden=${dicht.ariaHidden}, inert=${dicht.inert})`);
+          }
+
+          await page.locator('header button', { hasText: paneel.knop }).first().click();
+          await page.waitForSelector(`${paneel.dialoog}[role=dialog]`, { timeout: 10_000, state: 'visible' });
+          const open = await panelStaat(page, paneel.dialoog);
+          if (open.inert || open.ariaHidden === 'true') {
+            throw new Error(`${paneel.naam}: open paneel is verborgen (aria-hidden=${open.ariaHidden}, inert=${open.inert})`);
+          }
+
+          // Escape moet ook hier werken; dat was de tweede helft van dezelfde fix.
+          await page.keyboard.press('Escape');
+          await page.waitForTimeout(400);
+          const opnieuwDicht = await panelStaat(page, paneel.dialoog);
+          if (opnieuwDicht.rol || !opnieuwDicht.inert) {
+            throw new Error(`${paneel.naam}: Escape sloot het paneel niet (role=${opnieuwDicht.rol}, inert=${opnieuwDicht.inert})`);
+          }
+          bewijzen.push(paneel.naam);
+        }
+        return { ok: true, bewijs: `${bewijzen.length} panelen: dicht inert + uit de a11y-tree, open bereikbaar, Escape sluit` };
       },
     },
     {
@@ -642,6 +699,31 @@ function tegenproeven() {
         // sidepanels staan permanent gemonteerd.
         await page.waitForSelector(MODALS.herhaal.dialoog, { timeout: 3_000, state: 'visible' });
         return { ok: true, bewijs: 'de modal stond open zonder dat iemand hem opende' };
+      },
+    },
+    {
+      naam: 'tegenproef — willekeurige toets sluit niets',
+      moetFalen: true,
+      actie: async (page) => {
+        // Sluiten met 'a' in plaats van Escape. Slaagt dit, dan sluit de modal om een
+        // andere reden dan de toets en zegt de Escape-assertie niets.
+        await metModaalOpen(page, MODALS.herhaal, null, { sluitToets: 'a' });
+        return { ok: true, bewijs: 'de modal ging dicht van een willekeurige toets' };
+      },
+    },
+    {
+      naam: 'tegenproef — open paneel telt als verborgen',
+      moetFalen: true,
+      actie: async (page) => {
+        // Het geopende paneel mág niet inert zijn. Meldt de assertie hier tóch "verborgen",
+        // dan meet ze de open-staat niet.
+        await page.locator('header button', { hasText: 'Spaarpotten' }).first().click();
+        await page.waitForSelector('[aria-label="Spaarpotten beheren"][role=dialog]', { timeout: 10_000, state: 'visible' });
+        const open = await panelStaat(page, '[aria-label="Spaarpotten beheren"]');
+        if (!open.inert && open.ariaHidden !== 'true') {
+          return { ok: false, bewijs: 'open paneel is bereikbaar, zoals het hoort' };
+        }
+        return { ok: true, bewijs: 'een open paneel gold als verborgen' };
       },
     },
     {

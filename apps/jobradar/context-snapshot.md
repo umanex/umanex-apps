@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-08-05_
+_Gegenereerd op 2026-08-08_
 
 ## Project
 - **App:** jobradar
@@ -32,17 +32,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+13ed3ea fix: read the page after the network settles, not at domcontentloaded
+89e9434 fix(jobradar): do not count a link to the current page as navigation
+a96280b feat(jobradar): add a flow harness and a measured verify path
+62ab13d chore: prune four orphans, and declare the binary the render scripts need
 e59eaa1 chore(config): remove the dead flat-config eslint files
-5806065 refactor(config): share the token lint rules instead of copying them per app
-36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
-5ead2b3 fix(tokens): give primary a contrast-safe value per mode
-4f7cf08 fix(tokens): declare color-scheme per mode
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/package.json
-  D  packages/tokens/build/.gitkeep
-  M  packages/ui/package.json
+  M  apps/jobradar/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

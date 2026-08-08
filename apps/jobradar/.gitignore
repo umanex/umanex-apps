@@ -17,3 +17,4 @@ drizzle/
 
 # OS
 .DS_Store
+.flow-shots/

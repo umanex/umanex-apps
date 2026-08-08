@@ -8,3 +8,4 @@
 
 # misc
 *.tsbuildinfo
+.flow-shots/

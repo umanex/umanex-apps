@@ -1,5 +1,5 @@
 # Context Snapshot — vyvey
-_Gegenereerd op 2026-07-08_
+_Gegenereerd op 2026-08-08_
 
 ## Project
 - **App:** vyvey
@@ -16,26 +16,62 @@ _Gegenereerd op 2026-07-08_
 - **@umanex/tokens:** 0.0.1
 - **@umanex/ui:** 0.0.1
 
+## Componenten
+_Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers + co-located `.design-snapshot.md` sidecars._
+
+| Component | Pad | Categorie | Figma-node | Snapshot | Status |
+|---|---|---|---|---|---|
+| FormStatus | `apps/vyvey/components/feedback/FormStatus.tsx` | feedback | — | — | — |
+| CallbackForm | `apps/vyvey/components/forms/CallbackForm.tsx` | forms | — | — | — |
+| IconAdvies | `apps/vyvey/components/icons/IconAdvies.tsx` | icons | — | — | — |
+| IconContact | `apps/vyvey/components/icons/IconContact.tsx` | icons | — | — | — |
+| IconDecoratie | `apps/vyvey/components/icons/IconDecoratie.tsx` | icons | — | — | — |
+| IconInterieurDecoratie | `apps/vyvey/components/icons/IconInterieurDecoratie.tsx` | icons | — | — | — |
+| IconKwaliteit | `apps/vyvey/components/icons/IconKwaliteit.tsx` | icons | — | — | — |
+| IconOpeningsuren | `apps/vyvey/components/icons/IconOpeningsuren.tsx` | icons | — | — | — |
+| IconPersoonlijkContact | `apps/vyvey/components/icons/IconPersoonlijkContact.tsx` | icons | — | — | — |
+| IconTotaalinrichting | `apps/vyvey/components/icons/IconTotaalinrichting.tsx` | icons | — | — | — |
+| UmanexCredit | `apps/vyvey/components/icons/UmanexCredit.tsx` | icons | — | — | — |
+| Wordmark | `apps/vyvey/components/icons/Wordmark.tsx` | icons | — | — | — |
+| Footer | `apps/vyvey/components/layout/Footer.tsx` | layout | — | — | — |
+| Header | `apps/vyvey/components/layout/Header.tsx` | layout | — | — | — |
+| MobileNav | `apps/vyvey/components/layout/MobileNav.tsx` | layout | — | — | — |
+| Reveal | `apps/vyvey/components/motion/Reveal.tsx` | motion | — | — | — |
+| RevealGroup | `apps/vyvey/components/motion/RevealGroup.tsx` | motion | — | — | — |
+| RevealItem | `apps/vyvey/components/motion/RevealItem.tsx` | motion | — | — | — |
+| Contact | `apps/vyvey/components/sections/Contact.tsx` | sections | — | — | — |
+| Diensten | `apps/vyvey/components/sections/Diensten.tsx` | sections | — | — | — |
+| Hero | `apps/vyvey/components/sections/Hero.tsx` | sections | — | — | — |
+| LegalPlaceholder | `apps/vyvey/components/sections/LegalPlaceholder.tsx` | sections | — | — | — |
+| OverOns | `apps/vyvey/components/sections/OverOns.tsx` | sections | — | — | — |
+| PersonCard | `apps/vyvey/components/sections/PersonCard.tsx` | sections | — | — | — |
+| ServiceCategory | `apps/vyvey/components/sections/ServiceCategory.tsx` | sections | — | — | — |
+| ServicesIntro | `apps/vyvey/components/sections/ServicesIntro.tsx` | sections | — | — | — |
+| AccentRule | `apps/vyvey/components/ui/AccentRule.tsx` | ui | — | — | — |
+| Button | `apps/vyvey/components/ui/Button.tsx` | ui | — | — | — |
+| Card | `apps/vyvey/components/ui/Card.tsx` | ui | — | — | — |
+| Checkbox | `apps/vyvey/components/ui/Checkbox.tsx` | ui | — | — | — |
+| Container | `apps/vyvey/components/ui/Container.tsx` | ui | — | — | — |
+| Field | `apps/vyvey/components/ui/Field.tsx` | ui | — | — | — |
+| Input | `apps/vyvey/components/ui/Input.tsx` | ui | — | — | — |
+| Pill | `apps/vyvey/components/ui/Pill.tsx` | ui | — | — | — |
+| Section | `apps/vyvey/components/ui/Section.tsx` | ui | — | — | — |
+| Select | `apps/vyvey/components/ui/Select.tsx` | ui | — | — | — |
+
 ## Recente commits (app + packages)
 ```
-72a202a chore: sync umanex-os layer (CLAUDE.md, snapshot-hook, vyvey LEARNINGS-seed)
-f55a171 fix(cashflow): allow finalizing spaardoel with leftover balance
-f42fe26 feat(cashflow): prudent budget-model, geen release van onbesteed budget
-9083da0 feat(cashflow): resterende provisie in huidige maand
-2f68049 fix(cashflow): corrigeer dubbele spaarpot-aftrek bij maandovergang
+62ab13d chore: prune four orphans, and declare the binary the render scripts need
+e59eaa1 chore(config): remove the dead flat-config eslint files
+5806065 refactor(config): share the token lint rules instead of copying them per app
+36d20f0 feat(tokens): check role-layer contrast in CI, and empty the guard baseline
+5ead2b3 fix(tokens): give primary a contrast-safe value per mode
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/vyvey/.env.example
-  A  apps/vyvey/.eslintrc.json
-  A  apps/vyvey/.gitignore
-  A  apps/vyvey/app/algemene-voorwaarden/page.tsx
-  A  apps/vyvey/app/api/contact/route.ts
-  A  apps/vyvey/app/globals.css
-  A  apps/vyvey/app/layout.tsx
-  A  apps/vyvey/app/page.tsx
-  A  apps/vyvey/app/privacy/page.tsx
-  A  apps/vyvey/briefings/2026-06-19-feature-vyvey-site-migratie.tcebc.md
+  M  apps/vyvey/.gitignore
+  A  apps/vyvey/CLAUDE.md
+  M  apps/vyvey/package.json
+  A  apps/vyvey/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

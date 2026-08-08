@@ -20,6 +20,13 @@
 # - scripts/gen-snapshot.sh + .githooks/pre-commit   (context-snapshots, incl. core.hooksPath-activatie)
 # - .githooks/commit-msg           (commit-scope guard: een app-scope mag geen andere app raken)
 #
+# ZELF-MODUS. Draait dit script in umanex-os zelf (scripts/sync-os.sh is daar een symlink
+# naar templates/sync-os.sh), dan slaat het over wat alleen voor een klant zinvol is — de
+# `.umanex-os/`-kopie van de laag, het profiel, de marker, het snapshot-systeem en de
+# commit-scope guard, die allemaal een klant-repo of `apps/` veronderstellen. Wat wél
+# geïnstalleerd wordt is alles dat universeel geldt: de branch-guard (als symlink, geen
+# kopie), de user-level hooks, de skills en de LEARNINGS/HANDOFF-seed.
+#
 # Wat dit script NOOIT aanraakt:
 # - <klant-repo>/.claude/skills/   — klant-specifieke skills (project-level discovery)
 #                                    blijven in de klant-repo en worden niet overschreven.
@@ -35,22 +42,50 @@ UMANEX_OS_PATH="$HOME/Documents/umanex-os"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CLIENT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-# Lees het klant-profiel uit de marker in de repo zelf — geen hardcoded default.
-PROFILE_MARKER="$CLIENT_ROOT/.umanex-os/profile"
-if [ ! -f "$PROFILE_MARKER" ]; then
-  echo "✗ Geen profiel-marker gevonden op .umanex-os/profile"
-  echo "  Maak hem aan met de klantnaam, bv.:  mkdir -p .umanex-os && echo umanex > .umanex-os/profile"
-  exit 1
-fi
-CLIENT_PROFILE="$(tr -d '[:space:]' < "$PROFILE_MARKER")"
-if [ -z "$CLIENT_PROFILE" ]; then
-  echo "✗ Profiel-marker .umanex-os/profile is leeg — vul de klantnaam in."
-  exit 1
+# Zelf-modus: draait dit script in umanex-os zelf?
+#
+# Tot 2026-08-08 kon dat niet. Alles wat umanex-os uitrolt bereikte een klant-repo via
+# dit script of de CI-receiver, en géén van beide had de bronrepo als doelwit: het script
+# stopte hier op de ontbrekende profiel-marker, de dispatcher stuurt naar de drie klanten.
+# Gevolg: élk universeel toepasbaar onderdeel moest in umanex-os met de hand, en pas nadat
+# iemand het gat toevallig opmerkte — de branch-guard ontbrak er maanden, HANDOFF.md ook.
+#
+# In zelf-modus slaat het script over wat alleen voor een klant zinvol is (de `.umanex-os/`
+# kopie van de laag, het profiel, de marker, het snapshot-systeem dat `apps/` veronderstelt)
+# en installeert het wél alles wat universeel geldt: de branch-guard, de user-level hooks,
+# de skills en de staging-bestanden. De bron krijgt zo nooit een kopie van zichzelf.
+# `-ef` vergelijkt device+inode, geen tekst. Dat is hier nodig: op een hoofdletter-
+# ongevoelig macOS-bestandssysteem leveren `~/Documents/...` en `~/documents/...` dezelfde
+# map maar verschillende strings op, en dan zou zelf-modus stil niet aanslaan. Het dekt
+# meteen ook symlinks en een afsluitende slash af.
+SELF_MODE=0
+if [ -d "$UMANEX_OS_PATH" ] && [ "$CLIENT_ROOT" -ef "$UMANEX_OS_PATH" ]; then
+  SELF_MODE=1
 fi
 
-echo "→ Sync umanex-os naar $(basename "$CLIENT_ROOT")"
-echo "  Profile: $CLIENT_PROFILE (uit .umanex-os/profile)"
-echo ""
+if [ "$SELF_MODE" -eq 1 ]; then
+  CLIENT_PROFILE=""
+  echo "→ Sync umanex-os naar zichzelf (zelf-modus)"
+  echo "  Geen profiel, geen .umanex-os/-laag — alleen wat universeel geldt."
+  echo ""
+else
+  # Lees het klant-profiel uit de marker in de repo zelf — geen hardcoded default.
+  PROFILE_MARKER="$CLIENT_ROOT/.umanex-os/profile"
+  if [ ! -f "$PROFILE_MARKER" ]; then
+    echo "✗ Geen profiel-marker gevonden op .umanex-os/profile"
+    echo "  Maak hem aan met de klantnaam, bv.:  mkdir -p .umanex-os && echo umanex > .umanex-os/profile"
+    exit 1
+  fi
+  CLIENT_PROFILE="$(tr -d '[:space:]' < "$PROFILE_MARKER")"
+  if [ -z "$CLIENT_PROFILE" ]; then
+    echo "✗ Profiel-marker .umanex-os/profile is leeg — vul de klantnaam in."
+    exit 1
+  fi
+
+  echo "→ Sync umanex-os naar $(basename "$CLIENT_ROOT")"
+  echo "  Profile: $CLIENT_PROFILE (uit .umanex-os/profile)"
+  echo ""
+fi
 
 # Check of umanex-os lokaal staat
 if [ ! -d "$UMANEX_OS_PATH" ]; then
@@ -81,22 +116,29 @@ else
 fi
 echo ""
 
-# Maak doel-folders in klant-repo
 cd "$CLIENT_ROOT"
-mkdir -p .umanex-os/profiles
 
-# Kopieer globale CLAUDE.md
-echo "→ Kopieer globale CLAUDE.md..."
-cp "$UMANEX_OS_PATH/CLAUDE.md" ".umanex-os/CLAUDE.md"
-echo "  ✓ .umanex-os/CLAUDE.md"
-
-# Kopieer enkel het juiste profile
-echo "→ Kopieer profile: $CLIENT_PROFILE..."
-if [ -f "$UMANEX_OS_PATH/profiles/$CLIENT_PROFILE.md" ]; then
-  cp "$UMANEX_OS_PATH/profiles/$CLIENT_PROFILE.md" ".umanex-os/profiles/$CLIENT_PROFILE.md"
-  echo "  ✓ .umanex-os/profiles/$CLIENT_PROFILE.md"
+if [ "$SELF_MODE" -eq 1 ]; then
+  # De bron is de laag; een kopie ervan in .umanex-os/ zou een tweede waarheid zijn.
+  echo "→ Globale laag overgeslagen (dit ís de bron)"
+  echo ""
 else
-  echo "  ⚠ Profile $CLIENT_PROFILE.md niet gevonden in umanex-os/profiles/"
+  # Maak doel-folders in klant-repo
+  mkdir -p .umanex-os/profiles
+
+  # Kopieer globale CLAUDE.md
+  echo "→ Kopieer globale CLAUDE.md..."
+  cp "$UMANEX_OS_PATH/CLAUDE.md" ".umanex-os/CLAUDE.md"
+  echo "  ✓ .umanex-os/CLAUDE.md"
+
+  # Kopieer enkel het juiste profile
+  echo "→ Kopieer profile: $CLIENT_PROFILE..."
+  if [ -f "$UMANEX_OS_PATH/profiles/$CLIENT_PROFILE.md" ]; then
+    cp "$UMANEX_OS_PATH/profiles/$CLIENT_PROFILE.md" ".umanex-os/profiles/$CLIENT_PROFILE.md"
+    echo "  ✓ .umanex-os/profiles/$CLIENT_PROFILE.md"
+  else
+    echo "  ⚠ Profile $CLIENT_PROFILE.md niet gevonden in umanex-os/profiles/"
+  fi
 fi
 
 # Seed een leeg LEARNINGS.md in de klant-repo root én in elke app (apps/*) als die er
@@ -199,31 +241,49 @@ GEN_SNAPSHOT="$UMANEX_OS_PATH/templates/gen-snapshot.sh"
 GITHOOK="$UMANEX_OS_PATH/templates/githooks-pre-commit"
 CONTEXT_TEMPLATE="$UMANEX_OS_PATH/templates/context.json.template"
 
-if [ -f "$GEN_SNAPSHOT" ]; then
-  mkdir -p scripts
-  cp "$GEN_SNAPSHOT" scripts/gen-snapshot.sh
-  chmod +x scripts/gen-snapshot.sh
-  echo "  ✓ scripts/gen-snapshot.sh"
-else
-  echo "  ⚠ templates/gen-snapshot.sh niet gevonden — overgeslagen"
-fi
-
-if [ -f "$GITHOOK" ]; then
+if [ "$SELF_MODE" -eq 1 ]; then
+  # In de bron is een kópie van de hook een tweede waarheid die wegdrijft van het
+  # origineel; een symlink kan dat per definitie niet. Git voert een gesymlinkte hook
+  # gewoon uit. Alleen pre-commit: commit-msg scheidt app-scopes en umanex-os heeft
+  # geen apps/, dus die zou hier dood gewicht zijn. Idem voor het snapshot-systeem
+  # en context.json — die veronderstellen allebei apps/.
   mkdir -p .githooks
-  cp "$GITHOOK" .githooks/pre-commit
-  chmod +x .githooks/pre-commit
+  if [ -L .githooks/pre-commit ] || [ ! -e .githooks/pre-commit ]; then
+    ln -sfn ../templates/githooks-pre-commit .githooks/pre-commit
+    echo "  ✓ .githooks/pre-commit → templates/githooks-pre-commit (symlink)"
+  else
+    echo "  ⚠ .githooks/pre-commit is een echt bestand, geen symlink — ongemoeid gelaten"
+  fi
   git config core.hooksPath .githooks
-  echo "  ✓ .githooks/pre-commit (core.hooksPath gezet)"
+  echo "  ✓ core.hooksPath = .githooks"
+  echo "  • snapshot-systeem en context.json overgeslagen (geen apps/ in de bron)"
 else
-  echo "  ⚠ templates/githooks-pre-commit niet gevonden — hook overgeslagen"
-fi
+  if [ -f "$GEN_SNAPSHOT" ]; then
+    mkdir -p scripts
+    cp "$GEN_SNAPSHOT" scripts/gen-snapshot.sh
+    chmod +x scripts/gen-snapshot.sh
+    echo "  ✓ scripts/gen-snapshot.sh"
+  else
+    echo "  ⚠ templates/gen-snapshot.sh niet gevonden — overgeslagen"
+  fi
 
-# context.json is repo-eigen input — alleen scaffolden als afwezig, nooit overschrijven.
-if [ -f "context.json" ]; then
-  echo "  • context.json bestaat al — ongemoeid gelaten"
-elif [ -f "$CONTEXT_TEMPLATE" ]; then
-  cp "$CONTEXT_TEMPLATE" context.json
-  echo "  ✓ context.json aangemaakt uit template — vul de Figma-gegevens per app in"
+  if [ -f "$GITHOOK" ]; then
+    mkdir -p .githooks
+    cp "$GITHOOK" .githooks/pre-commit
+    chmod +x .githooks/pre-commit
+    git config core.hooksPath .githooks
+    echo "  ✓ .githooks/pre-commit (core.hooksPath gezet)"
+  else
+    echo "  ⚠ templates/githooks-pre-commit niet gevonden — hook overgeslagen"
+  fi
+
+  # context.json is repo-eigen input — alleen scaffolden als afwezig, nooit overschrijven.
+  if [ -f "context.json" ]; then
+    echo "  • context.json bestaat al — ongemoeid gelaten"
+  elif [ -f "$CONTEXT_TEMPLATE" ]; then
+    cp "$CONTEXT_TEMPLATE" context.json
+    echo "  ✓ context.json aangemaakt uit template — vul de Figma-gegevens per app in"
+  fi
 fi
 
 # Commit-scope guard: blokkeert een commit met een app-scope die een ándere app raakt.
@@ -232,7 +292,9 @@ fi
 echo ""
 echo "→ Installeer commit-scope guard..."
 COMMIT_MSG_HOOK="$UMANEX_OS_PATH/templates/githooks-commit-msg"
-if [ -f "$COMMIT_MSG_HOOK" ]; then
+if [ "$SELF_MODE" -eq 1 ]; then
+  echo "  • overgeslagen — de guard scheidt app-scopes en de bron heeft geen apps/"
+elif [ -f "$COMMIT_MSG_HOOK" ]; then
   mkdir -p .githooks
   cp "$COMMIT_MSG_HOOK" .githooks/commit-msg
   chmod +x .githooks/commit-msg

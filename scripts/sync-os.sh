@@ -38,9 +38,26 @@ set -uo pipefail
 # Pad naar de lokale umanex-os checkout (per machine; standaard onder ~/Documents).
 UMANEX_OS_PATH="$HOME/Documents/umanex-os"
 
-# Bepaal waar dit script staat en ga naar de klant-repo root
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-CLIENT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+# Bepaal waar dit script staat en ga naar de klant-repo root.
+#
+# Deze twee afleidingen worden hard geguard, want dit script is het gevaarlijkste van de
+# set: het doet verderop `rm -rf .umanex-os/skills`, `mkdir -p`, en `git config
+# core.hooksPath` — allemaal relatief aan CLIENT_ROOT. Faalt de afleiding, dan wordt
+# SCRIPT_DIR leeg, lost `$SCRIPT_DIR/..` op naar `/`, en slaagt de `cd` daarnaartoe gewoon.
+# Die stappen draaien dan op je filesystem-root in plaats van in een repo.
+#
+# `set -e` is bewust niet de fix: dit script blijft doorlopen na een ontbrekend optioneel
+# bestand (een profiel dat er niet is, jq dat ontbreekt) en meldt dat als waarschuwing.
+die() { echo "✗ $1" >&2; exit 1; }
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" 2>/dev/null && pwd )" \
+  || die "kan de map van dit script niet bepalen vanaf ${BASH_SOURCE[0]}"
+CLIENT_ROOT="$( cd "$SCRIPT_DIR/.." 2>/dev/null && pwd )" \
+  || die "kan de repo-root niet bepalen vanaf $SCRIPT_DIR"
+[ -n "$CLIENT_ROOT" ] && [ "$CLIENT_ROOT" != "/" ] \
+  || die "repo-root loste op naar '$CLIENT_ROOT' — dat kan geen repo zijn"
+[ -d "$CLIENT_ROOT/.git" ] || [ -f "$CLIENT_ROOT/.git" ] \
+  || die "'$CLIENT_ROOT' is geen git-repo — sync-os.sh hoort in <repo>/scripts/ te staan"
 
 # Zelf-modus: draait dit script in umanex-os zelf?
 #

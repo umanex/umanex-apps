@@ -2,10 +2,10 @@ name: Sync umanex-os layer
 
 # Ontvangt een repository_dispatch vanuit umanex-os wanneer de globale CLAUDE.md,
 # een profile, het sync-script of een staging-template wijzigt, en opent een PR met
-# de bijgewerkte umanex-os-laag. Alle inhoud komt mee in de payload (gzip+base64), zodat
-# deze repo geen leestoegang tot de private umanex-os repo nodig heeft.
+# de bijgewerkte umanex-os-laag. Alle inhoud komt mee in de payload, zodat deze repo
+# geen leestoegang tot de private umanex-os repo nodig heeft.
 #
-# Wat deze workflow schrijft (alle uit de payload):
+# Wat deze workflow schrijft:
 #   - .umanex-os/CLAUDE.md, .umanex-os/profiles/<profile>.md   globale laag
 #   - .umanex-os/profile                                        marker voor scripts/sync-os.sh
 #   - scripts/sync-os.sh                                        canoniek sync-script
@@ -15,13 +15,18 @@ name: Sync umanex-os layer
 #   - LEARNINGS.md in root + elke apps/*                        capture-staging, seed-if-absent
 #   - HANDOFF.md in root + elke apps/*                          sessie-handoff, seed-if-absent
 #
+# TWEE PAYLOAD-VORMEN. De huidige dispatcher stuurt één `bundle_b64` (tar.gz met alle
+# canonieke bestanden) plus `profile_name` en `bundle_version` — drie van de tien velden
+# die GitHub toestaat, dus het aantal bestanden is geen limiet meer. Daarvóór stuurde hij
+# elk bestand als eigen veld; die vorm wordt hieronder nog gelezen als fallback, zodat een
+# receiver die vóór de dispatcher bijgewerkt wordt blijft werken. De fallback mag weg zodra
+# alle klant-repos deze versie draaien.
+#
 # Skills worden NIET via CI gesynct: die staan user-level (~/.claude/skills) en komen
 # via het lokale scripts/sync-os.sh. GitHub Actions kan niet naar de runner-home schrijven.
 #
-# De snapshot-hook ACTIVATIE (git config core.hooksPath .githooks) zet CI NIET — dat is
-# lokale git-config van je werkkopie. De bestanden staan na deze sync wel in de repo;
-# draai één keer scripts/sync-os.sh lokaal (of `git config core.hooksPath .githooks`)
-# om de hook te activeren.
+# De hook-ACTIVATIE (git config core.hooksPath .githooks) zet CI NIET — dat is lokale
+# git-config van je werkkopie. Draai één keer scripts/sync-os.sh lokaal.
 #
 # Deze workflow kan zichzelf niet updaten — GitHub weigert workflow-wijzigingen met de
 # default GITHUB_TOKEN. Nieuwe versies van deze receiver gaan via een handmatige PR.
@@ -47,9 +52,12 @@ jobs:
       - name: Schrijf umanex-os laag uit payload en open PR
         env:
           GH_TOKEN: ${{ github.token }}
+          PROFILE_NAME: ${{ github.event.client_payload.profile_name }}
+          BUNDLE_B64: ${{ github.event.client_payload.bundle_b64 }}
+          BUNDLE_VERSION: ${{ github.event.client_payload.bundle_version }}
+          # Legacy-vorm: losse velden per bestand. Alleen nog als fallback.
           CLAUDE_MD_B64: ${{ github.event.client_payload.claude_md_b64 }}
           PROFILE_B64: ${{ github.event.client_payload.profile_b64 }}
-          PROFILE_NAME: ${{ github.event.client_payload.profile_name }}
           SYNC_SCRIPT_B64: ${{ github.event.client_payload.sync_script_b64 }}
           LEARNINGS_TEMPLATE_B64: ${{ github.event.client_payload.learnings_template_b64 }}
           HANDOFF_TEMPLATE_B64: ${{ github.event.client_payload.handoff_template_b64 }}
@@ -59,69 +67,79 @@ jobs:
           CONTEXT_TEMPLATE_B64: ${{ github.event.client_payload.context_template_b64 }}
         run: |
           set -euo pipefail
-          if [ -z "${PROFILE_NAME:-}" ] || [ -z "${CLAUDE_MD_B64:-}" ]; then
-            echo "Onvolledige payload — afgebroken."; exit 1
+
+          [ -n "${PROFILE_NAME:-}" ] || { echo "Payload zonder profile_name — afgebroken."; exit 1; }
+
+          SRC="$(mktemp -d)"
+
+          if [ -n "${BUNDLE_B64:-}" ]; then
+            # Onbekende bundelversie = hard falen. Stil de verkeerde bestanden wegschrijven
+            # is precies de faalvorm die de receiver-drift ooit onzichtbaar hield.
+            case "${BUNDLE_VERSION:-1}" in
+              1) : ;;
+              *) echo "Bundelversie '${BUNDLE_VERSION}' is nieuwer dan deze receiver kent. Werk de receiver bij via een handmatige PR."; exit 1 ;;
+            esac
+            printf '%s' "$BUNDLE_B64" | base64 -d | tar -xzf - -C "$SRC" --strip-components=1
+            echo "Payload: bundel v${BUNDLE_VERSION:-1}"
+          else
+            # Fallback op de losse velden.
+            [ -n "${CLAUDE_MD_B64:-}" ] || { echo "Payload heeft bundle noch claude_md_b64 — afgebroken."; exit 1; }
+            decode() { # $1=base64 $2=bestandsnaam in SRC
+              [ -n "${1:-}" ] || return 0
+              printf '%s' "$1" | base64 -d | gunzip > "$SRC/$2"
+            }
+            decode "${CLAUDE_MD_B64:-}"          CLAUDE.md
+            decode "${PROFILE_B64:-}"            profile.md
+            decode "${SYNC_SCRIPT_B64:-}"        sync-os.sh
+            decode "${LEARNINGS_TEMPLATE_B64:-}" LEARNINGS.template.md
+            decode "${HANDOFF_TEMPLATE_B64:-}"   HANDOFF.template.md
+            decode "${GEN_SNAPSHOT_B64:-}"       gen-snapshot.sh
+            decode "${GITHOOK_B64:-}"            githooks-pre-commit
+            decode "${COMMIT_MSG_HOOK_B64:-}"    githooks-commit-msg
+            decode "${CONTEXT_TEMPLATE_B64:-}"   context.json.template
+            echo "Payload: losse velden (legacy)"
           fi
 
-          # Globale laag
-          mkdir -p .umanex-os/profiles
-          printf '%s' "$CLAUDE_MD_B64" | base64 -d | gunzip > .umanex-os/CLAUDE.md
-          printf '%s' "$PROFILE_B64"   | base64 -d | gunzip > ".umanex-os/profiles/${PROFILE_NAME}.md"
+          # ── Installeren. Vanaf hier is de payload-vorm niet meer zichtbaar. ──
+
+          install_file() { # $1=bron in SRC  $2=doelpad  $3=executable? (x|"")
+            [ -f "$SRC/$1" ] || return 0
+            mkdir -p "$(dirname "$2")"
+            cp "$SRC/$1" "$2"
+            [ "${3:-}" = "x" ] && chmod +x "$2" || true
+          }
+
+          install_file CLAUDE.md           ".umanex-os/CLAUDE.md"
+          install_file profile.md          ".umanex-os/profiles/${PROFILE_NAME}.md"
+          install_file sync-os.sh          "scripts/sync-os.sh"          x
+          install_file gen-snapshot.sh     "scripts/gen-snapshot.sh"     x
+          install_file githooks-pre-commit ".githooks/pre-commit"        x
+          install_file githooks-commit-msg ".githooks/commit-msg"        x
 
           # Marker voor het lokale scripts/sync-os.sh
           printf '%s\n' "$PROFILE_NAME" > .umanex-os/profile
 
-          # Canoniek sync-script (indien meegestuurd)
-          if [ -n "${SYNC_SCRIPT_B64:-}" ]; then
-            mkdir -p scripts
-            printf '%s' "$SYNC_SCRIPT_B64" | base64 -d | gunzip > scripts/sync-os.sh
-            chmod +x scripts/sync-os.sh
-          fi
-
-          # Snapshot-systeem: gen-snapshot.sh + pre-commit hook zijn canonieke bestanden
-          # (geen repo-eigen inhoud) → overschrijven mag. De hook-activatie blijft lokaal.
-          if [ -n "${GEN_SNAPSHOT_B64:-}" ]; then
-            mkdir -p scripts
-            printf '%s' "$GEN_SNAPSHOT_B64" | base64 -d | gunzip > scripts/gen-snapshot.sh
-            chmod +x scripts/gen-snapshot.sh
-          fi
-          if [ -n "${GITHOOK_B64:-}" ]; then
-            mkdir -p .githooks
-            printf '%s' "$GITHOOK_B64" | base64 -d | gunzip > .githooks/pre-commit
-            chmod +x .githooks/pre-commit
-          fi
-          # Commit-scope guard: canoniek bestand, zero-config (leest apps/* van schijf) →
-          # overschrijven mag. Deelt core.hooksPath met de pre-commit hook hierboven.
-          if [ -n "${COMMIT_MSG_HOOK_B64:-}" ]; then
-            mkdir -p .githooks
-            printf '%s' "$COMMIT_MSG_HOOK_B64" | base64 -d | gunzip > .githooks/commit-msg
-            chmod +x .githooks/commit-msg
-          fi
-          # context.json is repo-eigen input → alleen scaffolden als afwezig, nooit overschrijven.
-          if [ -n "${CONTEXT_TEMPLATE_B64:-}" ] && [ ! -f context.json ]; then
-            printf '%s' "$CONTEXT_TEMPLATE_B64" | base64 -d | gunzip > context.json
-          fi
+          # context.json is repo-eigen input → alleen scaffolden als afwezig.
+          [ -f context.json ] || install_file context.json.template "context.json"
 
           # Staging-seeds in root + elke app — alleen als afwezig, nooit overschrijven.
-          # LEARNINGS is terugkijkend (waargenomen fouten), HANDOFF vooruitkijkend
-          # (onzekerheden, next steps). Beide worden bij sessiestart uitgelezen door
-          # ~/.claude/hooks/session-start-handoff.sh, dus een ontbrekend bestand maakt
-          # de bijbehorende lus stil in plaats van luidruchtig.
-          seed_layered() { # $1 = base64-payload, $2 = bestandsnaam
-            [ -n "${1:-}" ] || return 0
-            local name="$2" tmp d
-            tmp="$(mktemp)"
-            printf '%s' "$1" | base64 -d | gunzip > "$tmp"
-            [ -f "./$name" ] || cp "$tmp" "./$name"
+          # LEARNINGS is terugkijkend (waargenomen fouten), HANDOFF vooruitkijkend.
+          # Beide worden bij sessiestart uitgelezen door session-start-handoff.sh, dus een
+          # ontbrekend bestand maakt de bijbehorende lus stil in plaats van luidruchtig.
+          seed_layered() { # $1=bron in SRC  $2=bestandsnaam in de repo
+            [ -f "$SRC/$1" ] || return 0
+            local d
+            [ -f "./$2" ] || cp "$SRC/$1" "./$2"
             if [ -d apps ]; then
               for d in apps/*/; do
-                [ -d "$d" ] && { [ -f "${d%/}/$name" ] || cp "$tmp" "${d%/}/$name"; }
+                [ -d "$d" ] && { [ -f "${d%/}/$2" ] || cp "$SRC/$1" "${d%/}/$2"; }
               done
             fi
-            rm -f "$tmp"
           }
-          seed_layered "${LEARNINGS_TEMPLATE_B64:-}" "LEARNINGS.md"
-          seed_layered "${HANDOFF_TEMPLATE_B64:-}"   "HANDOFF.md"
+          seed_layered LEARNINGS.template.md LEARNINGS.md
+          seed_layered HANDOFF.template.md   HANDOFF.md
+
+          rm -rf "$SRC"
 
           # Drift-check: alles stagen en kijken of er iets veranderde
           git config user.name "github-actions[bot]"

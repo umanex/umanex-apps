@@ -1,0 +1,27 @@
+# Smoke-flow: bewijst dat de flow-as van `verify` RowTrack werkelijk kan aandrijven.
+#
+# Doel is niet dekking maar aantoonbaarheid: start de app op de simulator en stel vast dat
+# het eerste scherm gerenderd is. Faalt dit, dan is elk acceptatie-item dat door de UI loopt
+# sowieso `[NIET TE VERIFIËREN]` — dan is de driver stuk, of de app start niet eens op.
+#
+# Bewust géén inloggegevens. Een flow met een wachtwoord hoort niet in een repo; het
+# testaccount uit `## Verify-pad` vul je met de hand in wanneer een flow verder moet dan
+# het startscherm.
+#
+# Het dev-menu van de development build verschijnt bij een eerste start ná installatie en
+# legt zich over de app heen. Het wordt hier voorwaardelijk weggeklikt in plaats van
+# onvoorwaardelijk: bij een tweede run is het er niet, en een harde tapOn zou dan falen op
+# iets dat niets met de app te maken heeft.
+#
+# Draaien:  JAVA_HOME=$(brew --prefix openjdk)/libexec/openjdk.jdk/Contents/Home \
+#             maestro test apps/rowtrack/.maestro/smoke.yaml
+appId: com.rowtrack.app
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+- assertVisible: "RowTrack"
+- assertVisible: "Log in om verder te gaan"

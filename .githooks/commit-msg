@@ -30,7 +30,14 @@ MSG_FILE="${1:-}"
 # Repo's zonder apps/ (umanex-os zelf, een losse site) hebben niets te scheiden.
 [ -d apps ] || exit 0
 
-subject="$(sed -n '1p' "$MSG_FILE")"
+# Commentaarregels er eerst uit, dán pas de eerste regel pakken.
+#
+# Git strípt `#`-regels pas ná deze hook. Wie via de editor commit met een commit.template,
+# een achtergebleven `# WIP`-notitie of een IDE-commit-UI, heeft dus een berichtbestand
+# waarvan regel 1 een commentaarregel is. Die matcht de scope-regex niet, `scope` blijft
+# leeg, en de guard sluit zichzelf af — de commit landt als `fix(a):` terwijl hij `apps/b/`
+# raakt. Een guard die stil uitgaat is erger dan geen guard, want je vertrouwt erop.
+subject="$(git stripspace --strip-comments < "$MSG_FILE" | sed -n '1p')"
 
 # Merge-, revert- en fixup-commits schrijf je niet zelf: hun inhoud is per definitie wat
 # een andere commit al bevatte, dus een scope-toets zegt daar niets zinnigs over.

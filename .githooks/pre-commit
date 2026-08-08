@@ -48,20 +48,45 @@ if [ ! -d "$git_dir/rebase-merge" ] && [ ! -d "$git_dir/rebase-apply" ] \
   fi
 fi
 
-changed_apps="$(git diff --cached --name-only --diff-filter=ACMR \
+# `D` hoort erbij. Een commit die alleen verwijdert raakt de app net zo goed, en juist een
+# delete maakt de context-snapshot ongeldig: die blijft anders een bestand als `gekoppeld`
+# vermelden dat niet meer bestaat. Zonder de D sloeg zo'n commit alle vier de blokken
+# hieronder over — geen snapshot, geen token-sync, geen parallel-werk- en geen
+# verify-pad-signaal. De zusterguard `.githooks/commit-msg` telde deletes al wél mee.
+changed_apps="$(git diff --cached --name-only --diff-filter=ACMRD \
   | sed -n 's#^apps/\([^/]*\)/.*#\1#p' | sort -u)"
 
 [ -z "$changed_apps" ] && exit 0
 
-# 1. Context-snapshots — ongewijzigd gedrag voor alle repos.
+# 1. Context-snapshots.
+#
+# De uitkomst van gen-snapshot.sh wordt gecontroleerd, en de ✅ komt alleen als er ook echt
+# iets gelukt is. Voorheen draaide de generator, mocht hij falen, werd de `git add` met
+# `|| true` weggeslikt en verscheen daarna onvoorwaardelijk "✅ Snapshots toegevoegd aan
+# commit" — de commit landde dan zonder snapshot terwijl het scherm zei van wel.
+#
+# Blokkeren doet dit blok niet: een kapotte snapshot is geen reden om werk tegen te houden.
+# Maar het zégt wat er misging, en het liegt niet groen.
 if [ -f ./scripts/gen-snapshot.sh ]; then
   echo "🔄 Context snapshots bijwerken..."
+  snap_ok=0; snap_fail=""
   for app in $changed_apps; do
     [ -d "apps/$app" ] || continue
-    bash ./scripts/gen-snapshot.sh "$app"
-    git add "apps/$app/context-snapshot.md" 2>/dev/null || true
+    if bash ./scripts/gen-snapshot.sh "$app"; then
+      if git add "apps/$app/context-snapshot.md" 2>/dev/null; then
+        snap_ok=$((snap_ok + 1))
+      else
+        snap_fail="$snap_fail $app(niet gestaged)"
+      fi
+    else
+      snap_fail="$snap_fail $app(generator faalde)"
+    fi
   done
-  echo "✅ Snapshots toegevoegd aan commit"
+  [ "$snap_ok" -gt 0 ] && echo "✅ $snap_ok snapshot(s) toegevoegd aan commit"
+  if [ -n "$snap_fail" ]; then
+    echo "⚠ Snapshot NIET bijgewerkt voor:$snap_fail"
+    echo "  De commit gaat door, maar de context-snapshot van die app is nu stale."
+  fi
 fi
 
 # 2. Design tokens — constants/ in sync houden met tokens.json.

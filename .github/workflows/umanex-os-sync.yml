@@ -15,12 +15,12 @@ name: Sync umanex-os layer
 #   - LEARNINGS.md in root + elke apps/*                        capture-staging, seed-if-absent
 #   - HANDOFF.md in root + elke apps/*                          sessie-handoff, seed-if-absent
 #
-# TWEE PAYLOAD-VORMEN. De huidige dispatcher stuurt één `bundle_b64` (tar.gz met alle
-# canonieke bestanden) plus `profile_name` en `bundle_version` — drie van de tien velden
-# die GitHub toestaat, dus het aantal bestanden is geen limiet meer. Daarvóór stuurde hij
-# elk bestand als eigen veld; die vorm wordt hieronder nog gelezen als fallback, zodat een
-# receiver die vóór de dispatcher bijgewerkt wordt blijft werken. De fallback mag weg zodra
-# alle klant-repos deze versie draaien.
+# PAYLOAD. De dispatcher stuurt één `bundle_b64` (tar.gz met alle canonieke bestanden)
+# plus `profile_name` en `bundle_version` — drie van de tien velden die GitHub toestaat,
+# dus het aantal bestanden is geen limiet meer. De oude vorm (elk bestand een eigen veld)
+# werd hier nog als fallback gelezen; die tak is verwijderd nadat alle klant-repos de
+# bundel-versie draaiden. Dode code in een receiver is duur: hij propageert naar drie
+# repo's en suggereert een pad dat allang niet meer bestaat.
 #
 # Skills worden NIET via CI gesynct: die staan user-level (~/.claude/skills) en komen
 # via het lokale scripts/sync-os.sh. GitHub Actions kan niet naar de runner-home schrijven.
@@ -33,10 +33,14 @@ name: Sync umanex-os layer
 #
 # Canonieke bron: umanex-os/templates/umanex-os-sync.yml — wijzig daar, niet hier.
 
+# Alleen repository_dispatch. `workflow_dispatch` stond hier ook, maar de job is gegate op
+# `github.event_name == 'repository_dispatch'` en werd dus altijd overgeslagen — mét een
+# groene conclusie, wat de indruk wekt dat een handmatige re-sync gewerkt heeft. Er is ook
+# niets zinnigs handmatig te draaien: zonder payload is er geen laag om te installeren.
+# Wil je opnieuw syncen, draai dan de dispatcher in umanex-os.
 on:
   repository_dispatch:
     types: [umanex-os-sync]
-  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -55,55 +59,77 @@ jobs:
           PROFILE_NAME: ${{ github.event.client_payload.profile_name }}
           BUNDLE_B64: ${{ github.event.client_payload.bundle_b64 }}
           BUNDLE_VERSION: ${{ github.event.client_payload.bundle_version }}
-          # Legacy-vorm: losse velden per bestand. Alleen nog als fallback.
-          CLAUDE_MD_B64: ${{ github.event.client_payload.claude_md_b64 }}
-          PROFILE_B64: ${{ github.event.client_payload.profile_b64 }}
-          SYNC_SCRIPT_B64: ${{ github.event.client_payload.sync_script_b64 }}
-          LEARNINGS_TEMPLATE_B64: ${{ github.event.client_payload.learnings_template_b64 }}
-          HANDOFF_TEMPLATE_B64: ${{ github.event.client_payload.handoff_template_b64 }}
-          GEN_SNAPSHOT_B64: ${{ github.event.client_payload.gen_snapshot_b64 }}
-          GITHOOK_B64: ${{ github.event.client_payload.githook_b64 }}
-          COMMIT_MSG_HOOK_B64: ${{ github.event.client_payload.commit_msg_hook_b64 }}
-          CONTEXT_TEMPLATE_B64: ${{ github.event.client_payload.context_template_b64 }}
         run: |
           set -euo pipefail
 
-          [ -n "${PROFILE_NAME:-}" ] || { echo "Payload zonder profile_name — afgebroken."; exit 1; }
+          # PROFILE_NAME wordt hieronder als padcomponent gebruikt. Zonder deze toets zou een
+          # payload met `../` buiten `.umanex-os/` schrijven, en `git add -A` commit dat mee.
+          # De dispatcher stuurt altijd een simpele klantnaam; de guard kost niets en sluit
+          # de enige plek af waar payload-inhoud een pad bepaalt.
+          case "${PROFILE_NAME:-}" in
+            "" ) echo "✗ Payload zonder profile_name — afgebroken."; exit 1 ;;
+            *[!a-zA-Z0-9_-]* ) echo "✗ profile_name '$PROFILE_NAME' bevat iets anders dan letters, cijfers, - of _ — afgebroken."; exit 1 ;;
+          esac
 
           SRC="$(mktemp -d)"
 
-          if [ -n "${BUNDLE_B64:-}" ]; then
-            # Onbekende bundelversie = hard falen. Stil de verkeerde bestanden wegschrijven
-            # is precies de faalvorm die de receiver-drift ooit onzichtbaar hield.
-            case "${BUNDLE_VERSION:-1}" in
-              1) : ;;
-              *) echo "Bundelversie '${BUNDLE_VERSION}' is nieuwer dan deze receiver kent. Werk de receiver bij via een handmatige PR."; exit 1 ;;
-            esac
-            printf '%s' "$BUNDLE_B64" | base64 -d | tar -xzf - -C "$SRC" --strip-components=1
-            echo "Payload: bundel v${BUNDLE_VERSION:-1}"
+          [ -n "${BUNDLE_B64:-}" ] || { echo "✗ Payload zonder bundle_b64 — afgebroken."; exit 1; }
+
+          # Onbekende bundelversie = hard falen. Stil de verkeerde bestanden wegschrijven
+          # is precies de faalvorm die de receiver-drift ooit onzichtbaar hield.
+          case "${BUNDLE_VERSION:-1}" in
+            1) : ;;
+            *) echo "Bundelversie '${BUNDLE_VERSION}' is nieuwer dan deze receiver kent. Werk de receiver bij via een handmatige PR."; exit 1 ;;
+          esac
+          printf '%s' "$BUNDLE_B64" | base64 -d | tar -xzf - -C "$SRC" --strip-components=1
+          echo "Payload: bundel v${BUNDLE_VERSION:-1}"
+
+          # ── Eerst de doelbranch, dán installeren. Die volgorde is het hele punt. ──
+          #
+          # Voorheen installeerde deze workflow op een verse main, vertakte daarna, en deed
+          # `push -f`. Had je op de open sync-PR een fixup gepusht — een geseede LEARNINGS.md
+          # bijgesteld, een conflict opgelost — dan verving de volgende sync die historie door
+          # één verse commit, met de melding "Bestaande open PR bijgewerkt via push" eronder.
+          #
+          # Door eerst naar de bestaande branch te gaan en dáár overheen te installeren,
+          # worden de canonieke bestanden gewoon overschreven (dat hóórt) terwijl alles wat
+          # jij op de PR veranderde blijft staan. `merge origin/main` erbij zodat de PR geen
+          # nieuwere main-content terugdraait. Geen `-f` meer bij de push: een niet-fast-
+          # forward faalt dan luid in plaats van stil te wissen.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          BRANCH="chore/sync-umanex-os"
+          git fetch -q origin "$BRANCH" 2>/dev/null || true
+
+          if git rev-parse --verify -q "refs/remotes/origin/$BRANCH" >/dev/null 2>&1; then
+            echo "Bestaande sync-branch gevonden — daarop voortbouwen."
+            git switch -q -c "$BRANCH" "origin/$BRANCH"
+            if ! git merge -q --no-edit origin/main; then
+              echo "✗ Kon origin/main niet in $BRANCH mergen — er staat een conflict op de PR."
+              echo "  Los dat met de hand op; deze sync stopt om niets te overschrijven."
+              exit 1
+            fi
           else
-            # Fallback op de losse velden.
-            [ -n "${CLAUDE_MD_B64:-}" ] || { echo "Payload heeft bundle noch claude_md_b64 — afgebroken."; exit 1; }
-            decode() { # $1=base64 $2=bestandsnaam in SRC
-              [ -n "${1:-}" ] || return 0
-              printf '%s' "$1" | base64 -d | gunzip > "$SRC/$2"
-            }
-            decode "${CLAUDE_MD_B64:-}"          CLAUDE.md
-            decode "${PROFILE_B64:-}"            profile.md
-            decode "${SYNC_SCRIPT_B64:-}"        sync-os.sh
-            decode "${LEARNINGS_TEMPLATE_B64:-}" LEARNINGS.template.md
-            decode "${HANDOFF_TEMPLATE_B64:-}"   HANDOFF.template.md
-            decode "${GEN_SNAPSHOT_B64:-}"       gen-snapshot.sh
-            decode "${GITHOOK_B64:-}"            githooks-pre-commit
-            decode "${COMMIT_MSG_HOOK_B64:-}"    githooks-commit-msg
-            decode "${CONTEXT_TEMPLATE_B64:-}"   context.json.template
-            echo "Payload: losse velden (legacy)"
+            git switch -q -c "$BRANCH"
           fi
 
           # ── Installeren. Vanaf hier is de payload-vorm niet meer zichtbaar. ──
 
+          # Een ontbrekend bundel-lid faalt luid, precies zoals een onbekende bundle_version.
+          #
+          # Voorheen gaf `[ -f "$SRC/$1" ] || return 0` succes terug bij een ontbrekende bron,
+          # waardoor een afgekapte tar of een vergeten `cp` in de dispatcher een hálve laag
+          # installeerde, committe en als schone sync rapporteerde. De klant-repo eindigde
+          # dan met een verse CLAUDE.md naast een maanden oude commit-msg-guard, en élk
+          # downstream-signaal stond groen — dezelfde onzichtbare partiële sync die de
+          # receiver-drift bij umanex-apps zo lang verborgen hield.
           install_file() { # $1=bron in SRC  $2=doelpad  $3=executable? (x|"")
-            [ -f "$SRC/$1" ] || return 0
+            if [ ! -f "$SRC/$1" ]; then
+              echo "✗ Bundel mist '$1' — de payload is onvolledig. Niets geïnstalleerd."
+              echo "  Controleer de dispatcher: elk canoniek bestand hoort in \$work/bundle."
+              exit 1
+            fi
             mkdir -p "$(dirname "$2")"
             cp "$SRC/$1" "$2"
             [ "${3:-}" = "x" ] && chmod +x "$2" || true
@@ -141,22 +167,18 @@ jobs:
 
           rm -rf "$SRC"
 
-          # Drift-check: alles stagen en kijken of er iets veranderde
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Drift-check: alles stagen en kijken of er iets veranderde t.o.v. de doelbranch.
           git add -A
           if git diff --cached --quiet; then
             echo "Geen drift — umanex-os laag is al up-to-date."
             exit 0
           fi
 
-          BRANCH="chore/sync-umanex-os"
-          git switch -c "$BRANCH"
           git commit -m "chore: sync umanex-os layer with global umanex-os"
-          git push -f origin "$BRANCH"
+          git push origin "$BRANCH"
 
           if gh pr view "$BRANCH" --json state -q .state 2>/dev/null | grep -q OPEN; then
-            echo "Bestaande open PR bijgewerkt via push."
+            echo "Bestaande open PR aangevuld met een nieuwe commit (bestaande commits blijven staan)."
           else
             gh pr create --base main --head "$BRANCH" \
               --title "chore: sync umanex-os layer with global umanex-os" \

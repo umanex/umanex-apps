@@ -22,6 +22,22 @@ Logs: `pm2 logs cashflow` of `/Users/jeroen/.pm2/logs/cashflow-{out,error}.log`.
 
 ---
 
+## Geen dark mode
+
+Cashflow draait uitsluitend in light. Beslissing van Jeroen op 2026-08-08; de app is een
+persoonlijke tool op één scherm en een tweede mode leverde alleen onderhoud op. Er is dus geen
+theme-class, geen `ThemeToggle` en geen theme-init-script — bouw ze niet terug.
+
+De gedeelde lagen blijven ongemoeid: `@umanex/tokens` houdt zijn `Theme/dark` en `Semantic/dark`
+sets (portfolio, vyvey en jobradar gebruiken ze), `packages/ui` houdt zijn `ThemeToggle`, en
+`darkMode` blijft in de gedeelde Tailwind-preset staan. Wat hier weg is, is de *aanroep* — de
+`.dark`-blokken in `theme.css` worden in deze app nooit aangezet.
+
+Gevolg voor verificatie: `render-screens.tsx` rendert één kolom en `dom-sweep.mjs` labelt geen
+mode meer. Een contrastcijfer voor cashflow gaat dus altijd over light.
+
+---
+
 ## Verify-pad
 
 Wat de `verify`-skill hier kan uitvoeren. Vastgesteld 2026-08-07 door alle vijf te draaien, niet door
@@ -29,7 +45,7 @@ ze af te leiden. Staat er "geen", dan is dat een gat dat gebouwd moet worden —
 
 | Capability | Commando / status |
 |---|---|
-| **Render vastleggen** | `pnpm --filter cashflow verify:visual` rendert de rollaag en de charts naar `.screens-preview.html` / `.charts-preview.html` — statisch, light en dark naast elkaar, geen server en geen sessie — en sweept ze meteen op contrast (451 tekstelementen). Let op de dekking: `MonthCard` en de modals staan **niet** in die harness. Het échte scherm zien: `pnpm --filter cashflow flow --headed`, of een screenshot van de draaiende app op `http://localhost:3000`. |
+| **Render vastleggen** | `pnpm --filter cashflow verify:visual` rendert de rollaag en de charts naar `.screens-preview.html` / `.charts-preview.html` — statisch, geen server en geen sessie — en sweept ze meteen op contrast (284 tekstelementen, gemeten 2026-08-08). Alleen light; zie "Geen dark mode" hieronder. Let op de dekking: `MonthCard` en de modals staan **niet** in die harness. Het échte scherm zien: `pnpm --filter cashflow flow --headed`, of een screenshot van de draaiende app op `http://localhost:3000`. |
 | **Flow aandrijven** | `pnpm --filter cashflow flow` — Playwright rijdt de sleep tussen twee maandkolommen uit, met toetsenbord én muis, tegen de gebouwde app. Start zijn eigen `next start` op **3100** en weigert te draaien als daar al iets luistert. `--selftest` voegt een scenario toe dat hóórt te falen, `--headed` laat meekijken, `--port=` wijkt uit. Vereist een build in `apps/cashflow/.next`; hij bouwt bewust niet zelf. Moet je juist de échte data zien, dan is er het handmatige recept onderaan — daar geldt de schrijf-discipline wél. |
 | **State forceren** | De fixture in `scripts/flow-harness.mjs` (`fixtureData()`): één post met een uniek bedrag in de eerste van drie kolommen, geserveerd uit een onderschepte route. Loading, empty en error zijn daarmee nog **niet** op te wekken — de handler antwoordt altijd meteen en goed. **Geen testaccount:** er is één Supabase-gebruiker en dat is Jeroens echte data. `scripts/seed-supabase.mjs` is géén verify-pad — dat is een one-off migratie die naar productie schrijft. |
 | **Invariant draaien** | `pnpm exec tsx --tsconfig scripts/tsconfig.json scripts/buffer-scenarios.ts` → 546/546, en hetzelfde voor `scripts/anchor-scenarios.ts` → 48/48 (gemeten 2026-08-07). `calc-baseline.ts` dumpt een digest vóór en ná een refactor; een lege diff bewijst dat geen enkel getal verschoof. Alle drie pure berekening, geen netwerk. **Geen van drieën wordt door `package.json` of CI aangeroepen** — met de hand starten. Een harness die door niets aangeroepen wordt, meet niets. |

@@ -1,6 +1,6 @@
 /**
- * Rendert de rollaag en de componenten die erop leunen naar één HTML-bestand, in
- * light én dark naast elkaar.
+ * Rendert de rollaag en de componenten die erop leunen naar één HTML-bestand.
+ * Alleen light: cashflow heeft geen dark mode.
  *
  *   pnpm --filter cashflow render:screens && open apps/cashflow/.screens-preview.html
  *
@@ -171,11 +171,10 @@ try {
 if (cssFiles.length === 0) throw new Error(`Geen gebouwde CSS in ${cssDir} — eerst builden.`);
 const css = cssFiles.map((f) => readFileSync(`${cssDir}/${f}`, 'utf8')).join('\n');
 
-// Elke kolom draagt zijn eigen mode-class. Dat werkt omdat theme.css de variabelen
-// op `.dark` zet en ze overerven — de mode hoeft dus niet op <html> te staan.
-const kolom = (mode: 'light' | 'dark') =>
-  `<div class="${mode === 'dark' ? 'dark ' : ''}bg-background text-foreground p-6 min-w-0">
-     <div class="text-xs uppercase tracking-widest text-muted-foreground mb-6">${mode}</div>
+// Eén kolom, want de app draait alleen in light. De rollaag komt uit het :root-blok
+// van theme.css; er staat geen mode-class op.
+const kolom = () =>
+  `<div class="bg-background text-foreground p-6 min-w-0">
      ${renderToStaticMarkup(h(Inhoud))}
    </div>`;
 
@@ -185,13 +184,11 @@ const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8">
 <style>
   html { color-scheme: light; }
   body { margin: 0; font-family: var(--font-sans, ui-sans-serif), system-ui, sans-serif; }
-  .kolommen { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
-  .kolommen > div + div { border-left: 1px solid #8884; }
 </style>
 </head><body>
-<div class="kolommen">${kolom('light')}${kolom('dark')}</div>
+${kolom()}
 </body></html>`;
 
 const out = process.argv[2] ?? `${ROOT}.screens-preview.html`;
 writeFileSync(out, html);
-console.log(`✓ ${ROLLEN.length} rollen + componenten in light en dark → ${out}`);
+console.log(`✓ ${ROLLEN.length} rollen + componenten → ${out}`);

@@ -30,6 +30,9 @@ ecosystem.config.js
 # packages/tokens/build: generated output is committed, intermediate files are not
 # (_merged.json = primitives-pass, _merged.<mode>.json = één per rollaag-mode)
 packages/tokens/build/_merged*.json
+# packages/rowtrack-tokens leest apps/rowtrack/tokens/tokens.json en levert de
+# web-helft; zelfde regel: theme.css en roles.mjs committen, de merge-pass niet.
+packages/rowtrack-tokens/build/_merged*.json
 
 # Manuele backups
 *.backup

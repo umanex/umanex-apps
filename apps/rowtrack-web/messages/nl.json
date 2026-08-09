@@ -9,5 +9,32 @@
   },
   "compat": {
     "disclaimer": "RowTrack is onafhankelijk en niet gelieerd aan of goedgekeurd door Fluid Rower / FDF Ltd."
+  },
+  "support": {
+    "meta": {
+      "title": "Support",
+      "description": "Hulp bij RowTrack: verbinden met je Fluid Rower Apollo XL, hartslagmeter koppelen, account beheren. Stel je vraag per e-mail."
+    },
+    "title": "Support",
+    "intro": "Loopt er iets vast, of mis je iets? Stuur een mail. Er zit één iemand achter RowTrack, dus je krijgt antwoord van de persoon die de app ook gebouwd heeft.",
+    "contact": {
+      "heading": "Contact",
+      "email": "jeroen@umanex.be",
+      "note": "Vermeld je toestel, je iOS-versie en wat je precies deed toen het misging — dan hoeft er niet heen en weer gemaild te worden."
+    },
+    "known": {
+      "heading": "Goed om te weten",
+      "items": [
+        "RowTrack is gemaakt voor de Fluid Rower Apollo XL. De app zoekt naar bluetooth-apparaten waarvan de naam met \"Rower\" begint; andere roeimachines zijn niet getest.",
+        "Je hartslag komt van een losse bluetooth-hartslagband, niet van de roeimachine zelf.",
+        "Je calorieverbruik wordt berekend uit je vermogen en je gewicht. Vul je geen gewicht in, dan rekent de app met een standaardwaarde — dat zie je aan een sterretje bij het getal.",
+        "Bij registratie wordt er nog geen bevestigingsmail gestuurd. Krijg je onverwacht mail over een account dat je niet aanmaakte, laat het weten.",
+        "Er zit nog geen exportknop in de app. Wil je je gegevens opvragen, mail dan; ze worden met de hand opgehaald en binnen een maand toegestuurd."
+      ]
+    },
+    "account": {
+      "heading": "Account verwijderen",
+      "body": "Dat doe je zelf in de app: Profiel → Account verwijderen. Je account, je profiel en al je trainingen verdwijnen onmiddellijk en onherroepelijk. Er is geen herstelperiode en geen prullenbak."
+    }
   }
 }

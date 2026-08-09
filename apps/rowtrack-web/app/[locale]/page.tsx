@@ -1,4 +1,21 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { pageMetadata } from '@/lib/metadata';
+import { applicationSchema } from '@/lib/schema';
+
+type Params = { params: { locale: string } };
+
+export async function generateMetadata({ params: { locale } }: Params): Promise<Metadata> {
+  const t = await getTranslations({ locale, namespace: 'meta' });
+
+  return pageMetadata({
+    locale,
+    path: '',
+    title: t('title'),
+    description: t('description'),
+  });
+}
 
 /**
  * Scaffold-pagina. De echte onepager (S1-S11) komt in fase 2; dit is het minimale
@@ -13,19 +30,18 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
  * packages/rowtrack-tokens/TOKENS-TODO.md §2 en §3. Zodra die tokens er zijn,
  * vervangen ze deze klassen. Tot dan is dit een scaffold, geen ontwerp.
  */
-export default async function HomePage({
-  params: { locale },
-}: {
-  params: { locale: string };
-}) {
+export default async function HomePage({ params: { locale } }: Params) {
   setRequestLocale(locale);
   const t = await getTranslations();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-6 px-6 py-24">
-      <h1 className="font-serif text-5xl text-fg-primary">{t('hero.title')}</h1>
-      <p className="text-lg text-fg-secondary">{t('hero.subtitle')}</p>
-      <p className="text-sm text-fg-tertiary">{t('compat.disclaimer')}</p>
-    </main>
+    <>
+      <JsonLd schema={applicationSchema()} />
+      <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-6 px-6 py-24">
+        <h1 className="font-serif text-5xl text-fg-primary">{t('hero.title')}</h1>
+        <p className="text-lg text-fg-secondary">{t('hero.subtitle')}</p>
+        <p className="text-sm text-fg-tertiary">{t('compat.disclaimer')}</p>
+      </main>
+    </>
   );
 }

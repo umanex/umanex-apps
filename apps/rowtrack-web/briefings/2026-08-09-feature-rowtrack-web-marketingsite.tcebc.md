@@ -96,6 +96,7 @@ Geverifieerd tegen de code op 2026-08-09. De site mag **niets** claimen dat hier
 2. **Analytics.** Plausible cloud of self-hosted Umami? Nog niet beslist; blokkeert alleen fase 6.
 3. **Voorwaarden/EULA.** Bestaat nergens. Zelf schrijven, Apple's standaard-EULA gebruiken, of een jurist?
 4. **Maker-foto en app-screenshots.** Er staat geen enkele productscreenshot in de repo. Tot die er zijn, blijft S1/S3/S5 op placeholders staan.
+5. **Hoe rendert `/nl/privacy`?** Het beleid bestaat als markdown (287 regels, met tabellen en vetgedrukte tekst) in `apps/rowtrack/docs/privacybeleid.md`, en er zit géén markdown-renderer in de monorepo. Drie wegen: (a) een renderer als dependency, zodat het markdown-bestand de enige bron blijft; (b) overzetten naar een getypeerd contentmodel — geen dependency, maar een tweede kopie van een juridisch document dat niet mag wegdrijven; (c) zelf een markdown-subset schrijven, wat bij juridische tekst het slechtste van twee werelden is. Dit blokkeert de enige pagina die écht een App Store-blocker is.
 
 ## Aannames
 
@@ -139,16 +140,18 @@ Geverifieerd tegen de code op 2026-08-09. De site mag **niets** claimen dat hier
 - [ ] De badge is de officiële zwarte badge, onvertaald, niet geanimeerd, met ≥ ¼ badgehoogte vrije ruimte
 - [ ] `/.well-known/apple-app-site-association` wordt geserveerd als `application/json` zonder extensie
 
-**SEO/GEO**
-- [ ] `generateMetadata` levert per pagina title/description binnen de lengtegrenzen
-- [ ] `alternates.canonical` en `alternates.languages` inclusief `x-default`
-- [ ] `sitemap.xml`, `robots.txt` en `llms.txt` worden geserveerd en kloppen met §14
-- [ ] JSON-LD (MobileApplication + 3 Offers, FAQPage, Organization) staat in de initiële HTML en valideert
+**SEO/GEO** — afgerond 2026-08-09 op FAQPage na
+- [x] `generateMetadata` levert per pagina title/description binnen de lengtegrenzen — gemeten: 49/60, 131/155, 18/60, 125/155
+- [x] `alternates.canonical` en `alternates.languages` inclusief `x-default` — nagelezen in de gerenderde HTML
+- [x] `sitemap.xml`, `robots.txt` en `llms.txt` worden geserveerd en kloppen met §14 — de output nagelezen, niet enkel de build
+- [x] JSON-LD MobileApplication + 3 Offers en Organization staan in de initiële HTML en parsen; `installUrl` blijft terecht weg zolang de App Store-URL null is
+- [ ] FAQPage-schema — hoort bij S10, volgt in fase 2
 - [ ] De FAQ-vragen op de pagina en in het FAQPage-schema zijn identiek
 
 **Verplichte pagina's**
-- [ ] `/nl/privacy` serveert het bestaande `apps/rowtrack/docs/privacybeleid.md` inhoudelijk gelijk
-- [ ] `/nl/voorwaarden` en `/nl/support` zijn publiek bereikbaar en indexeerbaar
+- [ ] `/nl/privacy` serveert het bestaande `apps/rowtrack/docs/privacybeleid.md` inhoudelijk gelijk — **geblokkeerd**, zie Open vragen 5
+- [ ] `/nl/voorwaarden` bestaat — de tekst bestaat nog nergens, zie Open vragen 3
+- [x] `/nl/support` is publiek bereikbaar en indexeerbaar
 - [ ] `apps/rowtrack/lib/links.ts` wijst naar de live privacy-URL — apart gepland, vóór de eerste store-inzending
 
 ## Beslissingsgeschiedenis

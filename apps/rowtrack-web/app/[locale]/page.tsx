@@ -1,6 +1,17 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { Hero } from '@/components/sections/Hero';
+import { Compat } from '@/components/sections/Compat';
+import { Metrics } from '@/components/sections/Metrics';
+import { Goals } from '@/components/sections/Goals';
+import { Analysis } from '@/components/sections/Analysis';
+import { Records } from '@/components/sections/Records';
+import { Privacy } from '@/components/sections/Privacy';
+import { Pricing } from '@/components/sections/Pricing';
+import { Maker } from '@/components/sections/Maker';
+import { Faq } from '@/components/sections/Faq';
+import { FinalCta } from '@/components/sections/FinalCta';
 import { pageMetadata } from '@/lib/metadata';
 import { applicationSchema } from '@/lib/schema';
 
@@ -18,30 +29,35 @@ export async function generateMetadata({ params: { locale } }: Params): Promise<
 }
 
 /**
- * Scaffold-pagina. De echte onepager (S1-S11) komt in fase 2; dit is het minimale
- * bewijs dat de keten werkt: locale -> messages -> tokens -> Tailwind-utilities.
+ * De onepager, S1-S11 in de volgorde uit de briefing.
  *
- * De KLEUREN hieronder komen uit RowTrack's rollaag (text-fg-primary,
- * text-fg-secondary, text-fg-tertiary) en zijn dus token-only.
+ * Alles is een server-component: er gaat geen byte JavaScript naar de browser voor de
+ * inhoud. De FAQ werkt op native `<details>`, dus ook de enige interactie op de pagina
+ * heeft er geen nodig — daarmee is "leesbaar zonder JavaScript" geen belofte maar de
+ * enige mogelijke uitkomst.
  *
- * TODO: de MATEN niet. `text-5xl`, `text-lg`, `text-sm`, `px-6`, `py-24`, `gap-6` en
- * `max-w-3xl` komen uit Tailwinds eigen schaal, omdat RowTrack's tokenset geen
- * web-typeschaal, geen spacing boven 48 en geen container-widths heeft — zie
- * packages/rowtrack-tokens/TOKENS-TODO.md §2 en §3. Zodra die tokens er zijn,
- * vervangen ze deze klassen. Tot dan is dit een scaffold, geen ontwerp.
+ * TODO: de MATEN in de secties komen uit Tailwinds eigen schaal. RowTrack's tokenset
+ * heeft geen web-typeschaal, geen spacing boven 48 en geen container-widths — zie
+ * packages/rowtrack-tokens/TOKENS-TODO.md §2 en §3. De KLEUREN zijn wel token-only, en
+ * daar staat een guard op.
  */
 export default async function HomePage({ params: { locale } }: Params) {
   setRequestLocale(locale);
-  const t = await getTranslations();
 
   return (
     <>
       <JsonLd schema={applicationSchema()} />
-      <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-6 px-6 py-24">
-        <h1 className="font-serif text-5xl text-fg-primary">{t('hero.title')}</h1>
-        <p className="text-lg text-fg-secondary">{t('hero.subtitle')}</p>
-        <p className="text-sm text-fg-tertiary">{t('compat.disclaimer')}</p>
-      </main>
+      <Hero />
+      <Compat />
+      <Metrics />
+      <Goals />
+      <Analysis />
+      <Records />
+      <Privacy locale={locale} />
+      <Pricing />
+      <Maker />
+      <Faq />
+      <FinalCta />
     </>
   );
 }

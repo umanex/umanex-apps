@@ -33,6 +33,25 @@ export function organisationSchema(): Json {
   };
 }
 
+/**
+ * FAQPage uit dezelfde items die de pagina rendert.
+ *
+ * De vragen worden bewust DOORGEGEVEN en niet hier herhaald. Een tweede lijst zou op
+ * termijn afwijken van wat de bezoeker leest, en dat is precies wat Google's richtlijn
+ * voor structured data verbiedt: het schema moet de zichtbare inhoud beschrijven.
+ */
+export function faqSchema(items: Array<{ q: string; a: string }>): Json {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  };
+}
+
 export function applicationSchema(): Json {
   const { pricing } = site;
 

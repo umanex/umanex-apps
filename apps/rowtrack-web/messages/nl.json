@@ -5,16 +5,162 @@
   },
   "hero": {
     "title": "Elke haal telt. Nu ook op je iPhone.",
-    "subtitle": "RowTrack verbindt draadloos met je Fluid Rower Apollo XL en toont je split, watt en slagfrequentie live — en bewaart elke training tot op de splits."
+    "subtitle": "RowTrack verbindt draadloos met je Fluid Rower Apollo XL en toont je split, watt en slagfrequentie live — en bewaart elke training tot op de splits.",
+    "cta": "Download in de App Store",
+    "ctaNote": "Gratis te gebruiken. RowTrack Pro komt later.",
+    "screenshotAlt": "Het active-workout-scherm van RowTrack met de live split, het vermogen in watt en de slagfrequentie."
   },
   "compat": {
-    "disclaimer": "RowTrack is onafhankelijk en niet gelieerd aan of goedgekeurd door Fluid Rower / FDF Ltd."
+    "eyebrow": "Werkt dit met mijn machine?",
+    "title": "Gemaakt voor de Fluid Rower Apollo XL.",
+    "body": "RowTrack verbindt via Bluetooth (FTMS) rechtstreeks met de Fluid Bluetooth Monitor van je Apollo XL. Geen extra hardware, geen kabels. Zodra je begint te roeien, leest RowTrack je afstand, tempo, watt en slagfrequentie live uit.",
+    "scan": "De app zoekt naar bluetooth-apparaten waarvan de naam met “Rower” begint — zo adverteert de Apollo XL zich. Andere roeimachines zijn niet getest.",
+    "disclaimer": "RowTrack is onafhankelijk en niet gelieerd aan of goedgekeurd door Fluid Rower / FDF Ltd. Fluid Rower en Apollo XL zijn handelsmerken van hun respectieve eigenaren."
+  },
+  "metrics": {
+    "eyebrow": "Live metrics",
+    "title": "Alles wat telt, terwijl je roeit.",
+    "body": "Je split per 500 meter, je vermogen in watt, je slagfrequentie — groot, rustig en leesbaar. In portret voor een snelle blik, in landschap voor het volledige beeld.",
+    "items": [
+      { "label": "SPLIT", "unit": "/500m", "note": "Je tempo per 500 meter — de maat waarop roeiers elkaar meten." },
+      { "label": "VERMOGEN", "unit": "W", "note": "Rechtstreeks uit de machine, niet afgeleid." },
+      { "label": "SLAGFREQUENTIE", "unit": "spm", "note": "Hoeveel halen je per minuut maakt." },
+      { "label": "AFSTAND", "unit": "m", "note": "Meegeteld vanaf je eerste haal." },
+      { "label": "TIJD", "unit": "min", "note": "Verstreken tijd, of wat er nog rest bij een doel." },
+      { "label": "HARTSLAG", "unit": "bpm", "note": "Vraagt een losse bluetooth-hartslagband." },
+      { "label": "CALORIEËN", "unit": "kcal", "note": "Berekend uit je vermogen en je gewicht — een schatting." }
+    ],
+    "footnote": "Hartslag komt van een aparte bluetooth-borstband, niet van de roeimachine. Calorieën worden berekend; vul je geen gewicht in, dan rekent de app met een standaardwaarde."
+  },
+  "goals": {
+    "eyebrow": "Doelmodi",
+    "title": "Train met een doel — of gewoon los.",
+    "body": "Kies vooraf je modus: op tijd, op afstand, op een streefsplit of op vermogen. Of laat alles los en roei vrij. RowTrack past zich aan.",
+    "modes": [
+      { "name": "Geen", "range": "Vrij roeien" },
+      { "name": "Duur", "range": "1 – 180 min" },
+      { "name": "Afstand", "range": "500 – 42 000 m" },
+      { "name": "Split", "range": "90 – 180 sec/500m" },
+      { "name": "Watt", "range": "50 – 500 W" }
+    ]
+  },
+  "analysis": {
+    "eyebrow": "Analyse",
+    "title": "Na afloop zie je precies wat er gebeurde.",
+    "body": "Elke training wordt bewaard met een volledige splits-analyse. Vergelijk sessies, zie je voortgang en begrijp je pacing.",
+    "tabs": [
+      { "name": "Overzicht", "note": "Afstand, tijd, gemiddeld vermogen en je beste split in één blik." },
+      { "name": "Splits", "note": "Je tempo per segment, zodat je ziet waar je wegzakte of juist aanzette." },
+      { "name": "Hartslag", "note": "Verschijnt alleen bij een training waarin je een hartslagband droeg." }
+    ]
+  },
+  "records": {
+    "eyebrow": "Persoonlijke records",
+    "title": "Je records, gevierd zoals het hoort.",
+    "body": "RowTrack houdt je langste afstand en je snelste 2000 meter bij, en markeert het moment dat je jezelf verbetert.",
+    "items": [
+      { "name": "Langste afstand", "note": "De verste rit die je ooit maakte." },
+      { "name": "Snelste 2000 m", "note": "Exact berekend uit je tijdreeks, niet geschat uit je gemiddelde." }
+    ],
+    "footnote": "Trainingen van vóór deze functie hebben geen tijdreeks en tonen bij de 2000 meter een streepje."
   },
   "privacy": {
+    "eyebrow": "Privacy",
+    "title": "Jouw trainingen, van jou.",
+    "body": "We verkopen je gegevens niet en tonen geen advertenties. Er zit geen analyse- of statistiekpakket in de app en geen crashrapportage naar een externe dienst.",
+    "points": [
+      "Je trainingen staan bij Supabase in de EU (Frankfurt). Ze verlaten de Europese Economische Ruimte niet.",
+      "De database dwingt zelf af dat je uitsluitend je eigen gegevens kunt lezen en schrijven.",
+      "Hartslag en lichaamsgegevens verwerken we alleen met je uitdrukkelijke toestemming, en je kunt die altijd intrekken.",
+      "Je verwijdert je account in de app zelf. Alles verdwijnt dan onmiddellijk en onherroepelijk."
+    ],
+    "link": "Lees het volledige privacybeleid",
     "meta": {
       "title": "Privacybeleid",
       "description": "Welke gegevens RowTrack verzamelt, waarom, waar ze staan en wat je ermee kunt doen. Inclusief je rechten en hoe je je account verwijdert."
     }
+  },
+  "pricing": {
+    "eyebrow": "Prijzen",
+    "title": "Begin gratis.",
+    "body": "De kern van RowTrack is gratis en blijft dat. RowTrack Pro is aangekondigd maar nog niet beschikbaar — er wordt op dit moment niets gefactureerd.",
+    "free": {
+      "name": "Gratis",
+      "price": "€0",
+      "period": "altijd",
+      "features": [
+        "Live metrics tijdens het roeien",
+        "Elke training bewaard",
+        "Doelmodi op tijd, afstand, split of watt",
+        "Persoonlijke records"
+      ]
+    },
+    "pro": {
+      "name": "RowTrack Pro",
+      "badge": "Binnenkort",
+      "period": "per maand, of €29.99 per jaar",
+      "features": [
+        "Volledige splits-analyse",
+        "Hartslagverloop per training",
+        "Onbeperkte historie",
+        "Alles uit Gratis"
+      ]
+    },
+    "note": "Prijzen zijn aangekondigd, nog niet actief. Wat er uiteindelijk in Pro zit, kan nog veranderen."
+  },
+  "maker": {
+    "eyebrow": "Over de maker",
+    "title": "Gebouwd door één iemand die zelf roeit.",
+    "body": "Ik ben Jeroen, designer en developer bij umanex. Ik roei op een Apollo XL en vond geen app die die machine fatsoenlijk uitleest en er ook nog eens goed uitziet. Dus bouwde ik er zelf een. Werkt er iets niet, dan krijg je antwoord van de persoon die het gemaakt heeft.",
+    "link": "Stel je vraag"
+  },
+  "faq": {
+    "eyebrow": "Vragen",
+    "title": "Wat mensen ons vragen.",
+    "items": [
+      {
+        "q": "Werkt RowTrack met de Fluid Rower Apollo XL?",
+        "a": "Ja. RowTrack verbindt via Bluetooth (FTMS) met de Fluid Bluetooth Monitor van je Apollo XL en leest je afstand, tempo, vermogen en slagfrequentie live uit."
+      },
+      {
+        "q": "Heb ik extra hardware nodig?",
+        "a": "Nee, alleen je iPhone en je Apollo XL. Wil je ook je hartslag zien, dan heb je daarnaast een bluetooth-hartslagband nodig — de roeimachine meet je hartslag niet."
+      },
+      {
+        "q": "Werkt RowTrack met andere roeimachines?",
+        "a": "Dat weten we niet. De app zoekt naar bluetooth-apparaten waarvan de naam met “Rower” begint, zoals de Apollo XL zich aanmeldt. Andere machines zijn niet getest, dus we beloven er niets over."
+      },
+      {
+        "q": "Koppelt RowTrack met Apple Health?",
+        "a": "Nee. RowTrack schrijft op dit moment niets naar Apple Health en leest er niets uit."
+      },
+      {
+        "q": "Wat kost RowTrack?",
+        "a": "De app is gratis. RowTrack Pro is aangekondigd voor €3.99 per maand of €29.99 per jaar, maar is nog niet beschikbaar — er wordt vandaag niets gefactureerd."
+      },
+      {
+        "q": "Is mijn data privé?",
+        "a": "Je trainingen staan bij Supabase in de EU (Frankfurt) en zijn alleen voor jou zichtbaar. We verkopen niets door, tonen geen advertenties en er zit geen analysesoftware in de app. Hartslag en lichaamsgegevens verwerken we alleen met je uitdrukkelijke toestemming."
+      },
+      {
+        "q": "Kan ik mijn account verwijderen?",
+        "a": "Ja, in de app zelf: Profiel → Account verwijderen. Je account, je profiel en al je trainingen verdwijnen onmiddellijk en onherroepelijk."
+      }
+    ]
+  },
+  "finalCta": {
+    "title": "Klaar om elke haal te laten tellen?",
+    "body": "RowTrack verschijnt binnenkort in de App Store."
+  },
+  "footer": {
+    "privacy": "Privacy",
+    "terms": "Voorwaarden",
+    "support": "Support",
+    "rights": "© 2026 umanex CommV"
+  },
+  "appStore": {
+    "pending": "Binnenkort in de App Store",
+    "pendingNote": "RowTrack is nog niet verschenen. Zodra hij er is, staat de downloadknop hier."
   },
   "voorwaarden": {
     "meta": {

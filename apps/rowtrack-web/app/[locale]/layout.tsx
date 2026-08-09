@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { isLocale, routing } from '@/i18n/routing';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { Footer } from '@/components/layout/Footer';
 import { organisationSchema } from '@/lib/schema';
 import { site } from '@/lib/site';
 
@@ -81,7 +82,10 @@ export default async function LocaleLayout({
       <body>
         {/* Site-brede entiteit; de MobileApplication staat op de onepager zelf. */}
         <JsonLd schema={organisationSchema()} />
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
+          {children}
+          <Footer locale={locale} />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -69,10 +69,10 @@ export default async function SupportPage({ params: { locale } }: Params) {
         <p className="mt-3 text-fg-secondary">{t('account.body')}</p>
       </section>
 
-      <footer className="mt-16 border-t border-border-subtle pt-6 text-sm text-fg-tertiary">
+      <p className="mt-16 text-sm text-fg-tertiary">
         {site.organisation.name} · {site.organisation.street},{' '}
         {site.organisation.postalCode} {site.organisation.city}
-      </footer>
+      </p>
     </main>
   );
 }

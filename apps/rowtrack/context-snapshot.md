@@ -57,20 +57,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+e866a17 docs(rowtrack): concept-gebruiksvoorwaarden op basis van Apple's minimumtermen
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
 a7a64fe feat(rowtrack): give the flow axis a driver, and record what it costs to trust it
-7a473f9 docs(rowtrack): promote the native-module fallback lesson
-89126b8 feat(rowtrack): add a seedable test account so destructive paths become verifiable
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/docs/voorwaarden.md
-   M packages/rowtrack-tokens/package.json
-   M packages/rowtrack-tokens/tailwind/preset.ts
-  ?? packages/rowtrack-tokens/scripts/
-  ?? packages/rowtrack-tokens/tailwind/roleMap.d.mts
-  ?? packages/rowtrack-tokens/tailwind/roleMap.mjs
+  M  apps/rowtrack/app/dev-active.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

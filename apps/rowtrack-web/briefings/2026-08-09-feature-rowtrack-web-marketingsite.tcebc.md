@@ -96,7 +96,8 @@ Geverifieerd tegen de code op 2026-08-09. De site mag **niets** claimen dat hier
 2. **Analytics.** Plausible cloud of self-hosted Umami? Nog niet beslist; blokkeert alleen fase 6.
 3. **Voorwaarden/EULA.** Bestaat nergens. Zelf schrijven, Apple's standaard-EULA gebruiken, of een jurist?
 4. **Maker-foto en app-screenshots.** Er staat geen enkele productscreenshot in de repo. Tot die er zijn, blijft S1/S3/S5 op placeholders staan.
-5. **Hoe rendert `/nl/privacy`?** Het beleid bestaat als markdown (287 regels, met tabellen en vetgedrukte tekst) in `apps/rowtrack/docs/privacybeleid.md`, en er zit géén markdown-renderer in de monorepo. Drie wegen: (a) een renderer als dependency, zodat het markdown-bestand de enige bron blijft; (b) overzetten naar een getypeerd contentmodel — geen dependency, maar een tweede kopie van een juridisch document dat niet mag wegdrijven; (c) zelf een markdown-subset schrijven, wat bij juridische tekst het slechtste van twee werelden is. Dit blokkeert de enige pagina die écht een App Store-blocker is.
+5. ~~**Hoe rendert `/nl/privacy`?**~~ — **beslist 2026-08-09:** `marked` als dependency, met `apps/rowtrack/docs/privacybeleid.md` als enige bron. Draait bij de build, dus er gaat geen parser naar de browser en er ontstaat geen tweede kopie van een juridische tekst.
+6. **Een verkeerd gespelde rol-utility is stil.** De preset garandeert dat je geen kleur kunt gebruiken die geen rol is — maar een tikfout wél. `border-border-default` bestaat niet (de rol heet `border.default` en landt als `DEFAULT`, dus de utility is `border-border`), en Tailwind negeert een onbekende klasse in een `className` zonder één woord; de supportpagina rendeerde daardoor een rand in Tailwinds eigen grijs. Het viel alleen op omdat dezelfde klasse in `@apply` wél hard faalt. Een gerichte guard op de namespaces `bg-`, `fg-`, `accent-`, `achievement-` en `gradient-` zou dit vangen zonder vals alarm op Tailwinds eigen utilities.
 
 ## Aannames
 
@@ -149,7 +150,7 @@ Geverifieerd tegen de code op 2026-08-09. De site mag **niets** claimen dat hier
 - [ ] De FAQ-vragen op de pagina en in het FAQPage-schema zijn identiek
 
 **Verplichte pagina's**
-- [ ] `/nl/privacy` serveert het bestaande `apps/rowtrack/docs/privacybeleid.md` inhoudelijk gelijk — **geblokkeerd**, zie Open vragen 5
+- [x] `/nl/privacy` serveert het bestaande `apps/rowtrack/docs/privacybeleid.md` inhoudelijk gelijk — het bestand is de enige bron en wordt bij de build gerenderd, dus een kopie kan niet wegdrijven
 - [ ] `/nl/voorwaarden` bestaat — de tekst bestaat nog nergens, zie Open vragen 3
 - [x] `/nl/support` is publiek bereikbaar en indexeerbaar
 - [ ] `apps/rowtrack/lib/links.ts` wijst naar de live privacy-URL — apart gepland, vóór de eerste store-inzending

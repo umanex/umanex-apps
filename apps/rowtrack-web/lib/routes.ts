@@ -22,7 +22,7 @@ export type Route = {
 export const routes: readonly Route[] = [
   { path: '', priority: 1, changeFrequency: 'monthly' },
   { path: '/support', priority: 0.5, changeFrequency: 'monthly' },
-  // TODO: '/privacy' en '/voorwaarden' toevoegen zodra die pagina's bestaan.
-  // Het privacybeleid bestaat als tekst (apps/rowtrack/docs/privacybeleid.md) maar
-  // nog niet als route; de voorwaarden bestaan nog nergens.
+  { path: '/privacy', priority: 0.5, changeFrequency: 'yearly' },
+  // TODO: '/voorwaarden' toevoegen zodra die tekst bestaat — vandaag staat hij
+  // nergens in de repo.
 ] as const;

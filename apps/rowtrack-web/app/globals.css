@@ -9,6 +9,74 @@
 }
 
 /**
+ * Juridische documenten (`/nl/privacy`) komen als gerenderde markdown binnen, dus
+ * de opmaak kan niet per element met een className geregeld worden. Vandaar deze
+ * ene plek met element-selectors.
+ *
+ * Elke kleur is een rol uit RowTrack's tokenset; er staat geen enkele waarde in die
+ * niet uit `@umanex/rowtrack-tokens` komt. De MATEN komen wel uit Tailwinds eigen
+ * schaal — zie packages/rowtrack-tokens/TOKENS-TODO.md §2 en §3.
+ */
+@layer components {
+  .legal {
+    @apply text-fg-secondary;
+  }
+
+  .legal h1 {
+    @apply mb-2 font-serif text-4xl text-fg-primary;
+  }
+
+  .legal h2 {
+    @apply mb-3 mt-12 text-2xl text-fg-primary;
+  }
+
+  .legal h3 {
+    @apply mb-2 mt-8 text-lg text-fg-primary;
+  }
+
+  .legal p {
+    @apply my-4 leading-relaxed;
+  }
+
+  .legal strong {
+    @apply font-semibold text-fg-primary;
+  }
+
+  .legal a {
+    @apply text-accent underline underline-offset-4 hover:text-accent-hover;
+  }
+
+  .legal ul {
+    @apply my-4 list-disc space-y-2 pl-6;
+  }
+
+  .legal ol {
+    @apply my-4 list-decimal space-y-2 pl-6;
+  }
+
+  .legal hr {
+    @apply my-10 border-t border-border-subtle;
+  }
+
+  .legal code {
+    @apply rounded-button-outline bg-bg-elevated px-1.5 py-0.5 text-sm text-fg-primary;
+  }
+
+  /* Tabellen mogen op smalle schermen zélf scrollen; de pagina nooit horizontaal. */
+  .legal table {
+    @apply my-6 block w-full overflow-x-auto text-left text-sm;
+  }
+
+  .legal th {
+    @apply border-b border-border py-2 pr-4 font-semibold text-fg-primary;
+  }
+
+  .legal td {
+    @apply border-b border-border-subtle py-2 pr-4 align-top;
+  }
+}
+
+/**
  * Reduced motion — harde regel uit de briefing.
  *
  * Alles wat beweegt valt terug op zijn EINDSTAAT: geen beweging, wél volledige

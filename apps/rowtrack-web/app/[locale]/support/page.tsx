@@ -57,7 +57,7 @@ export default async function SupportPage({ params: { locale } }: Params) {
         <h2 className="text-xl text-fg-primary">{t('known.heading')}</h2>
         <ul className="mt-3 space-y-3 text-fg-secondary">
           {known.map((item) => (
-            <li key={item} className="border-l border-border-default pl-4">
+            <li key={item} className="border-l border-border pl-4">
               {item}
             </li>
           ))}

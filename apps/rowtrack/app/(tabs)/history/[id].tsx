@@ -425,8 +425,9 @@ const styles = StyleSheet.create({
     paddingVertical: space['12'],
   },
   backButton: {
-    width: 40,
-    height: 40,
+    // 44 en niet 40: dit is de enige uitgang uit een fout- of niet-gevonden-scherm.
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

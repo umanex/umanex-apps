@@ -32,7 +32,10 @@ export function Chip({ value, unit, active, onPress }: ChipProps) {
 const styles = StyleSheet.create({
   chip: {
     flex: 1,
-    height: 40,
+    // 44 is de ondergrens voor een tap-target; met 40 moest je mikken. `minHeight`
+    // en geen vaste `height`, zodat de chip bij grote Dynamic Type meegroeit in
+    // plaats van zijn label af te knippen.
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.sm,

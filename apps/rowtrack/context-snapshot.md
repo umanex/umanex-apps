@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-08_
+_Gegenereerd op 2026-08-09_
 
 ## Project
 - **App:** rowtrack
@@ -56,16 +56,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a7a64fe feat(rowtrack): give the flow axis a driver, and record what it costs to trust it
 7a473f9 docs(rowtrack): promote the native-module fallback lesson
 89126b8 feat(rowtrack): add a seedable test account so destructive paths become verifiable
 23100dc docs(rowtrack): record the verify-pad and correct the consent briefing
 451e251 feat(rowtrack): ask for consent before touching health data
-812240f docs(rowtrack): privacy policy written against what the app actually does
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/.maestro/smoke.yaml
-  M  apps/rowtrack/CLAUDE.md
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  M  apps/rowtrack/components/Chip.tsx
+  M  apps/rowtrack/components/FormField.tsx
+  M  apps/rowtrack/components/Subtitle.tsx
+   M apps/rowtrack/lib/ble/ble-context.tsx
+   M apps/rowtrack/lib/ble/ble-service.ts
+   M apps/rowtrack/lib/ble/hr-service.ts
+   M apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
+   M apps/rowtrack/tsconfig.json
+  ?? apps/rowtrack/app/dev-ble.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

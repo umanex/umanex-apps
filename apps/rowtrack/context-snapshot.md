@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-08_
+_Gegenereerd op 2026-08-09_
 
 ## Project
 - **App:** rowtrack
@@ -13,6 +13,7 @@ _Gegenereerd op 2026-08-08_
 
 ## Packages
 - **@umanex/config:** 0.0.1
+- **@umanex/rowtrack-tokens:** 0.0.1
 - **@umanex/tokens:** 0.0.1
 - **@umanex/ui:** 0.0.1
 
@@ -56,16 +57,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
+899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
+a7a64fe feat(rowtrack): give the flow axis a driver, and record what it costs to trust it
 7a473f9 docs(rowtrack): promote the native-module fallback lesson
 89126b8 feat(rowtrack): add a seedable test account so destructive paths become verifiable
-23100dc docs(rowtrack): record the verify-pad and correct the consent briefing
-451e251 feat(rowtrack): ask for consent before touching health data
-812240f docs(rowtrack): privacy policy written against what the app actually does
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/.maestro/smoke.yaml
-  M  apps/rowtrack/CLAUDE.md
+  A  apps/rowtrack/docs/voorwaarden.md
+   M packages/rowtrack-tokens/package.json
+   M packages/rowtrack-tokens/tailwind/preset.ts
+  ?? packages/rowtrack-tokens/scripts/
+  ?? packages/rowtrack-tokens/tailwind/roleMap.d.mts
+  ?? packages/rowtrack-tokens/tailwind/roleMap.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

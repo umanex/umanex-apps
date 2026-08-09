@@ -4,8 +4,9 @@ name: Tokens sync
 # Tokens Studio pusht een bijgewerkte tokens.json naar main; deze workflow
 # herbouwt de outputs en commit ze automatisch terug, zodat code == Figma.
 #
-# Twee onafhankelijke token-sets, elk met een eigen bron + output:
-#   - RowTrack       : apps/rowtrack/tokens/tokens.json → apps/rowtrack/constants/*.ts
+# Twee onafhankelijke token-BRONNEN, met drie outputs — RowTrack's bron voedt er twee:
+#   - RowTrack (RN)  : apps/rowtrack/tokens/tokens.json → apps/rowtrack/constants/*.ts
+#   - RowTrack (web) : apps/rowtrack/tokens/tokens.json → packages/rowtrack-tokens/build/*
 #   - umanex (web)   : packages/tokens/tokens.json      → packages/tokens/build/*
 #
 # Beide builds zijn deterministisch/idempotent — altijd allebei draaien is veilig;
@@ -24,6 +25,9 @@ on:
       # paths bleef de gecommitte output dan stale tot de volgende Figma-push.
       - "packages/tokens/build.mjs"
       - "packages/tokens/lib/**"
+      - "packages/rowtrack-tokens/build.mjs"
+      - "packages/rowtrack-tokens/lib/**"
+      - "packages/rowtrack-tokens/tailwind/**"
   workflow_dispatch: {} # handmatige her-sync
 
 permissions:
@@ -70,6 +74,9 @@ jobs:
       - name: Rebuild RowTrack tokens (style-dictionary → constants)
         run: pnpm --filter rowtrack tokens:build
 
+      - name: Rebuild RowTrack web tokens (@umanex/rowtrack-tokens → build/)
+        run: pnpm --filter @umanex/rowtrack-tokens build
+
       - name: Rebuild umanex web tokens (@umanex/tokens → build/)
         run: pnpm --filter @umanex/tokens build
 
@@ -83,7 +90,8 @@ jobs:
           # het tussenbestand dat Style Dictionary als input krijgt en dat per definitie
           # nog onopgeloste aliassen bevat.
           HITS="$(grep -rnE ': undefined|\[object Object\]|\{[A-Za-z][A-Za-z0-9_.-]*\}' \
-            apps/rowtrack/constants packages/tokens/build/*.css 2>/dev/null || true)"
+            apps/rowtrack/constants packages/tokens/build/*.css \
+            packages/rowtrack-tokens/build/*.css 2>/dev/null || true)"
           if [ -n "$HITS" ]; then
             echo "::error::Token-build produceerde undefined / [object Object] / een onopgeloste alias. Niet gecommit."
             echo "$HITS"
@@ -103,15 +111,29 @@ jobs:
             echo "$1: $COUNT custom properties ✓"
           }
           check packages/tokens/build/theme.css 60
+          # RowTrack's Theme-set levert 33 rollen; 25 is de vloer die build.mjs zelf
+          # ook hanteert. Loopt hij daaronder, dan is de bron leeg of verkeerd
+          # geclassificeerd — geen geslaagde build.
+          check packages/rowtrack-tokens/build/theme.css 25
 
       - name: Type-check RowTrack (valideert dat de constants compileren)
         run: pnpm --filter rowtrack exec tsc --noEmit
+
+      # De web-preset is de enige consument die op de ROLNAMEN staat: hij gooit
+      # wanneer een rol bij geen enkele COLOR_GROUP hoort. Die throw vuurt pas als
+      # Tailwind de config laadt, dus tsc ziet hem niet — alleen een echte build wel.
+      #
+      # Dat is hier geen luxe: deze workflow pusht met GITHUB_TOKEN en die push
+      # triggert per ontwerp geen workflows. Zonder deze stap zou een hernoemde rol
+      # de site stukmaken op main zónder dat één check afgaat.
+      - name: Build rowtrack-web (valideert dat de rollen door de preset komen)
+        run: pnpm turbo build --filter rowtrack-web
 
       - name: Commit gegenereerde output terug naar main
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/rowtrack/constants packages/tokens/build
+          git add apps/rowtrack/constants packages/tokens/build packages/rowtrack-tokens/build
           if git diff --cached --quiet; then
             echo "Geen gegenereerde wijzigingen — code al in sync met de tokens."
             exit 0

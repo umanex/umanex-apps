@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg-base text-fg-primary font-sans antialiased;
+  }
+}
+
+/**
+ * Reduced motion — harde regel uit de briefing.
+ *
+ * Alles wat beweegt valt terug op zijn EINDSTAAT: geen beweging, wél volledige
+ * zichtbaarheid. Dat laatste is het punt. Een scroll-onthulling die op opacity 0
+ * begint en zijn animatie kwijtraakt, laat de sectie onzichtbaar achter — de
+ * bezoeker die om minder beweging vroeg, krijgt een lege pagina.
+ *
+ * Vandaar .01ms in plaats van `animation: none`: de animatie draait wel, maar zo
+ * kort dat je alleen het eindframe ziet.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

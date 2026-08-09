@@ -1,0 +1,23 @@
+{
+  "name": "@umanex/rowtrack-tokens",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./theme.css": "./build/theme.css",
+    "./roles": {
+      "types": "./build/roles.d.ts",
+      "default": "./build/roles.mjs"
+    },
+    "./tailwind/preset": "./tailwind/preset.ts"
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@tokens-studio/sd-transforms": "^1.2.0",
+    "style-dictionary": "^4.0.0",
+    "tailwindcss": "^3",
+    "typescript": "^5"
+  }
+}

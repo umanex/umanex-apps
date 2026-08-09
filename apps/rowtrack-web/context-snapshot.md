@@ -26,23 +26,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6b6d215 feat(rowtrack-web): publiceer het privacybeleid op /nl/privacy
 e90da81 feat(rowtrack-web): supportpagina plus de machine-leesbare laag
 c5e7a2c docs(rowtrack-web): leg de fundering-fase en twee kantelpunten vast in de briefing
 263cbd9 feat(rowtrack-web): scaffold Next.js App Router app met next-intl (nl)
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack-web/app/[locale]/privacy/page.tsx
-  M  apps/rowtrack-web/app/[locale]/support/page.tsx
-  M  apps/rowtrack-web/app/globals.css
+  M  apps/rowtrack-web/CLAUDE.md
+  A  apps/rowtrack-web/app/[locale]/voorwaarden/page.tsx
   M  apps/rowtrack-web/briefings/2026-08-09-feature-rowtrack-web-marketingsite.tcebc.md
-  A  apps/rowtrack-web/lib/legal.ts
-  M  apps/rowtrack-web/lib/routes.ts
+  M  apps/rowtrack-web/lib/legal.ts
   M  apps/rowtrack-web/messages/nl.json
-  M  apps/rowtrack-web/package.json
-  M  apps/rowtrack-web/scripts/flow-harness.mjs
+   M packages/rowtrack-tokens/package.json
+   M packages/rowtrack-tokens/tailwind/preset.ts
+  ?? packages/rowtrack-tokens/scripts/
+  ?? packages/rowtrack-tokens/tailwind/roleMap.d.mts
+  ?? packages/rowtrack-tokens/tailwind/roleMap.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -24,6 +24,7 @@ import { Marked } from 'marked';
 
 const DOCS = {
   privacy: '../rowtrack/docs/privacybeleid.md',
+  voorwaarden: '../rowtrack/docs/voorwaarden.md',
 } as const;
 
 export type LegalDoc = keyof typeof DOCS;

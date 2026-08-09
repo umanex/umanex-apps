@@ -16,6 +16,12 @@
       "description": "Welke gegevens RowTrack verzamelt, waarom, waar ze staan en wat je ermee kunt doen. Inclusief je rechten en hoe je je account verwijdert."
     }
   },
+  "voorwaarden": {
+    "meta": {
+      "title": "Gebruiksvoorwaarden",
+      "description": "De voorwaarden voor het gebruik van RowTrack: je licentie, je account, abonnementen, aansprakelijkheid en je rechten als consument."
+    }
+  },
   "support": {
     "meta": {
       "title": "Support",

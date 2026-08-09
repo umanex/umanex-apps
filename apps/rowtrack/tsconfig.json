@@ -9,6 +9,11 @@
   },
   "exclude": [
     "node_modules",
-    "supabase/functions"
+    "supabase/functions",
+    // node:test-bestanden draaien op Node (type-stripping), niet in de app-bundle:
+    // ze importeren `node:test`/`node:assert` en gebruiken .ts-extensies in imports,
+    // allebei buiten deze config. Metro raakt ze niet aan — niets importeert ze en ze
+    // staan buiten `app/`. Draaien met `node --test <bestand>.test.ts`.
+    "**/*.test.ts"
   ]
 }

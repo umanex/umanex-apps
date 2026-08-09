@@ -56,24 +56,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+162eb45 fix(rowtrack): give the small tap targets the 44pt they need
 a7a64fe feat(rowtrack): give the flow axis a driver, and record what it costs to trust it
 7a473f9 docs(rowtrack): promote the native-module fallback lesson
 89126b8 feat(rowtrack): add a seedable test account so destructive paths become verifiable
 23100dc docs(rowtrack): record the verify-pad and correct the consent briefing
-451e251 feat(rowtrack): ask for consent before touching health data
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/history/[id].tsx
-  M  apps/rowtrack/components/Chip.tsx
-  M  apps/rowtrack/components/FormField.tsx
-  M  apps/rowtrack/components/Subtitle.tsx
-   M apps/rowtrack/lib/ble/ble-context.tsx
-   M apps/rowtrack/lib/ble/ble-service.ts
-   M apps/rowtrack/lib/ble/hr-service.ts
-   M apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
-   M apps/rowtrack/tsconfig.json
-  ?? apps/rowtrack/app/dev-ble.tsx
+  A  apps/rowtrack/app/dev-ble.tsx
+  A  apps/rowtrack/lib/ble/adapterReady.test.ts
+  A  apps/rowtrack/lib/ble/adapterReady.ts
+  A  apps/rowtrack/lib/ble/autoConnectLog.ts
+  M  apps/rowtrack/lib/ble/ble-context.tsx
+  M  apps/rowtrack/lib/ble/ble-service.ts
+  A  apps/rowtrack/lib/ble/ergProbe.ts
+  M  apps/rowtrack/lib/ble/hr-service.ts
+  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
+  M  apps/rowtrack/tsconfig.json
 
 ## Bestanden met TODO/FIXME
   (geen)

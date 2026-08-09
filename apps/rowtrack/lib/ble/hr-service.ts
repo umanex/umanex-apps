@@ -6,6 +6,8 @@ import type {
 import { Platform, PermissionsAndroid } from 'react-native';
 import { base64ToBytes } from './base64';
 import { claimScan, ownsScan, releaseScan } from './scan-lock';
+import { recordAutoConnect } from './autoConnectLog';
+import { waitForAdapter } from './adapterReady';
 import type { HrBleError } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
@@ -78,11 +80,13 @@ export class HRBleService {
     this.onDevicesFound = onDevicesFound ?? null;
   }
 
+  /** Zie `RowerBleService.getManager()` — dezelfde reden, dezelfde wacht. */
   private async getManager(): Promise<BleManager> {
+    const { BleManager: BM, State } = await loadBlePlx();
     if (!this.manager) {
-      const { BleManager: BM } = await loadBlePlx();
       this.manager = new BM();
     }
+    await waitForAdapter(this.manager, State);
     return this.manager;
   }
 
@@ -184,6 +188,18 @@ export class HRBleService {
     await this.releaseDevice();
     this.intentionalDisconnect = false;
     this.onStatusChange('scanning');
+
+    // Zie de roeier-kant: na de adapter-wacht in `getManager()` is dit een echt
+    // antwoord, en bij een uitgeschakelde adapter is stil teruggeven beter dan de
+    // rij acht seconden op 'Zoeken…' laten staan.
+    const { State } = await loadBlePlx();
+    const adapter = await (await this.getManager()).state();
+    recordAutoConnect('hr', 'adapterstatus', String(adapter));
+    if (adapter !== State.PoweredOn) {
+      this.onStatusChange('idle');
+      return false;
+    }
+
     const ok = await this.connectToDeviceById(id, name ?? undefined, {
       silent: true,
       timeout: KNOWN_CONNECT_TIMEOUT_MS,
@@ -257,6 +273,7 @@ export class HRBleService {
     } catch (e: unknown) {
       const bleErr = e as { message?: string };
       log('connect error:', bleErr.message);
+      if (opts?.silent) recordAutoConnect('hr', 'connectToDevice faalde', bleErr.message);
       if (!opts?.silent) {
         this.onStatusChange('error', { code: 'connect_failed', detail: bleErr.message });
       }

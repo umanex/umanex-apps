@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** apps/rowtrack-web
 - **Klant:** umanex (eigen product)
-- **Status:** gepland
+- **Status:** gebouwd (fase 0 — fundering)
 
 ---
 
@@ -56,7 +56,7 @@ CONSTRAINTS: Dark-only canvas, in RowTrack-DNA (niet umanex-DNA). Token-only: ge
 
 | # | Beslissing | Gevolg |
 |---|---|---|
-| 1 | **RowTrack-DNA** via een nieuw web-platform in `apps/rowtrack/style-dictionary.config.mjs` | Site erft de dark-only rollen van de app. Cross-app commit nodig. Ontbrekende web-tokens eerst in Tokens Studio. |
+| 1 | **RowTrack-DNA** via een nieuw web-platform — uitgevoerd als `packages/rowtrack-tokens`, niet in de RN-config (zie geschiedenis) | Site erft de dark-only rollen van de app. Géén cross-app commit nodig. Ontbrekende web-tokens eerst in Tokens Studio. |
 | 2 | **Nu bouwen, publiceren ná de App Store-release** | Volledige onepager mét echte badge en QR; de App Store-URL is één config-constante met TODO. Geen wachtlijst, geen e-mailveld, dus geen backend en geen formulier-states. |
 | 3 | **€3.99 / €29.99 tonen als aankondiging** | S8 blijft staan, maar expliciet als toekomstige prijs. Er is geen IAP-code — de prijs mag niet als bestaand product geformuleerd worden. |
 | 4 | **rowtrack.app, app-constante aanpassen** | `apps/rowtrack/lib/links.ts` gaat naar `https://rowtrack.app/nl/privacy`. Vereist een nieuwe app-build vóór de eerste store-inzending. Aparte, apart geplande commit. |
@@ -108,14 +108,15 @@ Geverifieerd tegen de code op 2026-08-09. De site mag **niets** claimen dat hier
 
 ## Acceptatie
 
-**Fundering**
-- [ ] `apps/rowtrack-web` draait op poort 3004 en levert de vijf turbo-scripts (`dev`, `build`, `start`, `lint`, `type-check`) plus `clean` en `flow`
-- [ ] `pnpm turbo type-check lint build --filter rowtrack-web` slaagt vanuit een verse worktree
-- [ ] Het CSS-platform in `apps/rowtrack/style-dictionary.config.mjs` genereert de RowTrack-rollen als CSS-variabelen; `pnpm --filter rowtrack tokens:build` blijft slagen en de bestaande vijf TS-outputs zijn onveranderd
-- [ ] `tokens-sync.yml` regenereert de web-CSS mee bij een push op `tokens.json` — een generator die niets aanroept, meet niets
-- [ ] Ontbrekende web-tokens staan in `TOKENS-TODO.md`, niet verzonnen in code
-- [ ] `apps/rowtrack-web/CLAUDE.md` bevat een `## Verify-pad`-sectie met de vijf capabilities
-- [ ] De app staat in `context.json`, anders rendert de snapshot `[TODO]`-placeholders
+**Fundering** — afgerond 2026-08-09, PR #246
+- [x] `apps/rowtrack-web` draait op poort 3004 en levert de vijf turbo-scripts (`dev`, `build`, `start`, `lint`, `type-check`) plus `clean` en `flow`
+- [x] `pnpm turbo type-check lint build --filter rowtrack-web` slaagt vanuit een verse worktree — en de volledige monorepo-run doet dat ook (18/18 taken)
+- [x] `packages/rowtrack-tokens` genereert de RowTrack-rollen als CSS-variabelen (33) plus een Tailwind-preset; `pnpm --filter rowtrack tokens:build` en de vijf bestaande TS-outputs zijn onaangeraakt
+- [x] `tokens-sync.yml` regenereert de web-CSS mee bij een push op `tokens.json`, guardt hem op aliassen/leegloop, én bouwt `rowtrack-web` omdat de preset-throw pas bij het laden van de Tailwind-config vuurt
+- [x] Ontbrekende web-tokens staan in `packages/rowtrack-tokens/TOKENS-TODO.md`, niet verzonnen in code
+- [x] `apps/rowtrack-web/CLAUDE.md` bevat een `## Verify-pad`-sectie met de vijf capabilities
+- [x] De app staat in `context.json`
+- [x] De laag-discipline-guard dekt de app (137 bestanden), met tegenproef op beide kanten
 
 **Onepager**
 - [ ] S1-S11 in de gespecificeerde volgorde, elk met copy uit `messages/nl.json`
@@ -163,3 +164,16 @@ Geverifieerd tegen de code op 2026-08-09. De site mag **niets** claimen dat hier
   RowTrack's tokens zijn `Core/Theme/Component`, dark-only. Waarheidstabel toegevoegd als
   bindende bron voor alle copy; de wachtlijst-variant is afgevallen ten gunste van bouwen
   nu, publiceren na release.
+- 2026-08-09: **Uitvoeringswijziging op beslissing 1.** Het web-platform komt in een
+  eigen package `packages/rowtrack-tokens` in plaats van als tweede platform in
+  `apps/rowtrack/style-dictionary.config.mjs`. Reden: `.githooks/pre-commit` herbouwt
+  tokens en stageert daarna uitsluitend `apps/<app>/constants` (regel 100). Output die
+  elders landt wordt wél geregenereerd maar niet gestaged — precies het stille
+  wegdrijven dat die hook moet voorkomen, en `.githooks` is een canoniek upstream-bestand
+  dat niet hier aangepast hoort te worden. Als package valt de build onder turbo's
+  `^build` en vervalt bovendien de cross-app commit. Uitkomst identiek: de site draait
+  op RowTrack's rollen.
+- 2026-08-09: **Contrastmeting weerlegt een aanname van het document.** Accent-als-tekst
+  haalt 5.21:1 en dus AA — het voorgestelde extra accent-tekst-token is niet nodig. Het
+  echte probleem zit omgekeerd: wit op de accentknop haalt 3.44:1 en zakt door AA. Dat
+  raakt de primaire CTA en blokkeert de componentinventaris tot er een tokenbeslissing is.

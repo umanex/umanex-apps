@@ -77,6 +77,23 @@ jobs:
       - name: Guard — contrast van de rollaag (WCAG AA)
         run: pnpm --filter @umanex/tokens contrast
 
+      # rowtrack-web draait op RowTrack's eigen rollaag. Tailwind slaat een onbekende
+      # klasse in een className stil over, dus `border-border-defualt` rendert geen
+      # fout maar Tailwinds eigen kleur — een waarde die uit geen enkel token komt.
+      # Deze guard vangt dat; @apply deed het al, een className niet.
+      - name: Guard — rol-utilities bestaan echt (rowtrack-web)
+        run: pnpm --filter @umanex/rowtrack-tokens guard
+
+      # Twee tegenproeven, want een guard die draait is nog geen guard die meet.
+      # De zelftest bewijst dat hij afgaat op het geval waarvoor hij gebouwd is; de
+      # marge-meting bewijst dat zijn tikfout-drempel nog niet aan een echte
+      # Tailwind-klasse raakt. Zakt die marge naar nul, dan gaat CI stuk vóór de
+      # guard vals alarm begint te slaan.
+      - name: Guard — tegenproef op de rol-utility-guard
+        run: |
+          pnpm --filter @umanex/rowtrack-tokens guard:selftest
+          node packages/rowtrack-tokens/scripts/margin.mjs
+
       # De check hierboven kent alleen de tokens. Wat er in een component écht ontstaat —
       # tekst op een geneste achtergrond, een alpha-vlak boven een ander vlak — zag tot nu
       # toe alleen een mens in een browserconsole, met drie meetfouten onderweg. Deze sweep

@@ -6,6 +6,8 @@ import {
   scalarRoles,
   shadowRoles,
 } from '@umanex/rowtrack-tokens/roles';
+// De rol -> Tailwind-naam-afbeelding, gedeeld met scripts/guard.mjs.
+import { colorEntries, scalarNames } from './roleMap.mjs';
 
 /**
  * De RowTrack Tailwind-preset — de web-helft van de app-DNA.
@@ -13,8 +15,11 @@ import {
  * Dit is de enige plek waar RowTrack's rollaag op Tailwind-utilities gemapt wordt,
  * en de map wordt GEGENEREERD uit de tokens. Consequentie, en dat is het punt: de
  * utility-set is per definitie gelijk aan de tokenset. Een rol toevoegen in Tokens
- * Studio levert de utility op; een kleur die geen rol is, heeft er geen. App-code
- * kan dus niet buiten de rollaag grijpen.
+ * Studio levert de utility op; een kleur die geen rol is, heeft er geen.
+ *
+ * Wat die garantie NIET dekt is een tikfout: Tailwind negeert een onbekende klasse
+ * in een className zonder één woord, dus `border-border-defualt` rendert stil niets.
+ * Daarvoor bestaat `pnpm --filter @umanex/rowtrack-tokens guard`.
  *
  * Verschil met de umanex-preset (@umanex/config/tailwind/preset): die draagt een
  * light/dark rollaag met shadcn-rolnamen. RowTrack is dark-only en heeft zijn eigen
@@ -30,57 +35,34 @@ import {
  * hsl(var(--x)), dus bg-accent/50 werkt al.
  */
 
-// Rollen die als groep horen te landen. Zonder deze lijst zou `bg-base` een losse
-// kleur "bg-base" worden in plaats van bg.base, en zou `accent-hover` niet onder
-// accent vallen maar ernaast.
-const COLOR_GROUPS = ['bg', 'fg', 'border', 'accent', 'achievement', 'gradient'];
-
-const colorRoles: string[] = [...hslRoles, ...rawRoles];
 const colorValue = (name: string) =>
   hslRoles.includes(name) ? `hsl(var(--${name}))` : `var(--${name})`;
 
-type Group = Record<string, string>;
+function colorsFromRoles(): Record<string, Record<string, string>> {
+  const colors: Record<string, Record<string, string>> = {};
 
-function colorsFromRoles(): Record<string, Group> {
-  const colors: Record<string, Group> = {};
-
-  for (const name of colorRoles) {
-    const ns = COLOR_GROUPS.find((g) => name === g || name.startsWith(`${g}-`));
-    if (!ns) {
-      // Hard falen in plaats van stil laten vallen: een nieuwe rolgroep in Tokens
-      // Studio moet zichtbaar worden, niet onzichtbaar verdwijnen uit de utilities.
-      throw new Error(
-        `[rowtrack-preset] rol "${name}" hoort bij geen enkele groep uit COLOR_GROUPS ` +
-        `(${COLOR_GROUPS.join(', ')}). Voeg de groep toe in packages/rowtrack-tokens/tailwind/preset.ts.`
-      );
-    }
-    const group = (colors[ns] ??= {});
-    // `accent.default` wordt `bg-accent`, niet `bg-accent-default`.
-    const key = name === ns ? 'DEFAULT' : name.slice(ns.length + 1);
-    group[key === 'default' ? 'DEFAULT' : key] = colorValue(name);
+  for (const { role, group, key } of colorEntries([...hslRoles, ...rawRoles])) {
+    (colors[group] ??= {})[key] = colorValue(role);
   }
 
   return colors;
 }
 
-/** Scalars per prefix uitpakken: radius-card -> borderRadius.card. */
-function scalarsWithPrefix(prefix: string): Group {
-  return Object.fromEntries(
-    scalarRoles
-      .filter((name) => name.startsWith(`${prefix}-`))
-      .map((name) => [name.slice(prefix.length + 1), `var(--${name})`])
+/** Scalars als var()-verwijzing, met de rolnaam als sleutel. */
+const scalars = (prefix: string): Record<string, string> =>
+  Object.fromEntries(
+    scalarNames(scalarRoles, prefix).map((name) => [name, `var(--${prefix}-${name})`])
   );
-}
 
-const sizes = scalarsWithPrefix('size');
+const sizes = scalars('size');
 
 const preset: Config = {
   content: [],
   theme: {
     extend: {
       colors: colorsFromRoles(),
-      borderRadius: scalarsWithPrefix('radius'),
-      borderWidth: scalarsWithPrefix('stroke'),
+      borderRadius: scalars('radius'),
+      borderWidth: scalars('stroke'),
       boxShadow: Object.fromEntries(
         shadowRoles.map((name) => [name.replace(/^shadow-/, ''), `var(--${name})`])
       ),

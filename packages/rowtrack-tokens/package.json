@@ -12,7 +12,9 @@
     "./tailwind/preset": "./tailwind/preset.ts"
   },
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "guard": "node scripts/guard.mjs",
+    "guard:selftest": "node scripts/guard.mjs --selftest"
   },
   "devDependencies": {
     "@tokens-studio/sd-transforms": "^1.2.0",

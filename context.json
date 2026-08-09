@@ -29,6 +29,13 @@
       "figmaUrl": "[TODO]",
       "description": "[TODO: korte beschrijving van rowtrack]",
       "status": "active"
+    },
+    "rowtrack-web": {
+      "dir": "apps/rowtrack-web",
+      "figmaKey": "[TODO]",
+      "figmaUrl": "[TODO]",
+      "description": "Commerciële site voor de RowTrack iOS-app — Next.js + next-intl, RowTrack-DNA via @umanex/rowtrack-tokens",
+      "status": "active"
     }
   }
 }

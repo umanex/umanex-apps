@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "title": "RowTrack — Roei-app voor de Fluid Rower Apollo XL",
+    "description": "Verbind je Fluid Rower Apollo XL via Bluetooth en zie split, watt en slagfrequentie live. Elke training bewaard met splits-analyse."
+  },
+  "hero": {
+    "title": "Elke haal telt. Nu ook op je iPhone.",
+    "subtitle": "RowTrack verbindt draadloos met je Fluid Rower Apollo XL en toont je split, watt en slagfrequentie live — en bewaart elke training tot op de splits."
+  },
+  "compat": {
+    "disclaimer": "RowTrack is onafhankelijk en niet gelieerd aan of goedgekeurd door Fluid Rower / FDF Ltd."
+  }
+}

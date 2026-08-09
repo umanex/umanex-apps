@@ -21,7 +21,24 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..');
 
 // vyvey en rowtrack hebben bewust een eigen design-DNA en eigen tokens.
-const SCOPES = ['apps/cashflow', 'apps/jobradar', 'apps/portfolio', 'packages/ui'];
+//
+// rowtrack-web staat er WÉL in, ook al draait hij op RowTrack's rollaag in plaats
+// van de umanex-rollaag. Het onderscheid dat telt is niet wélke tokenset een app
+// gebruikt, maar óf hij er één gebruikt: vyvey heeft legitiem hardcoded hex in zijn
+// eigen theme, rowtrack-web is token-only. Vijf van de zes regels hieronder gaan
+// over die discipline en zijn tokenset-onafhankelijk; alleen `primitive-in-code`
+// zoekt naar --umanex en vindt daar simpelweg niets.
+//
+// De font-token-drift-check verderop heeft een EIGEN app-lijst en raakt deze scope
+// niet — die zou rowtrack-web anders tegen @umanex/tokens' Fira Sans afzetten
+// terwijl hij Albert Sans hoort te laden.
+const SCOPES = [
+  'apps/cashflow',
+  'apps/jobradar',
+  'apps/portfolio',
+  'apps/rowtrack-web',
+  'packages/ui',
+];
 
 const RULES = [
   {

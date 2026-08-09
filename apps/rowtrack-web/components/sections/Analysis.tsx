@@ -32,7 +32,13 @@ export const Analysis = async () => {
           </dl>
         </div>
 
-        <ScreenshotFrame alt="Het detailscherm van een training met de tabs Overzicht, Splits en Hartslag." />
+        {/* TODO(assets): het detailscherm met de drie tabs is beter voor deze sectie,
+            maar dat vraagt een ingelogd testaccount met een training die hartslag
+            bevat. Tot dan de samenvatting — ook een na-afloop-scherm, en echt. */}
+        <ScreenshotFrame
+          name="workout-summary"
+          alt="Het samenvattingsscherm na een training, met afstand, duur, energie, slagen en de gemiddelden per metric."
+        />
       </div>
     </Section>
   );

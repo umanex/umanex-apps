@@ -25,7 +25,7 @@ export const Hero = async () => {
           </div>
         </div>
 
-        <ScreenshotFrame alt={t('screenshotAlt')} />
+        <ScreenshotFrame name="active-workout" alt={t('screenshotAlt')} priority />
       </div>
     </section>
   );

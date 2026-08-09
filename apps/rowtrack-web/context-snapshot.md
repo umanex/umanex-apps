@@ -45,24 +45,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+2db75e2 feat(rowtrack-web): bouw de onepager S1-S11
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 35153a6 feat(rowtrack-web): publiceer de gebruiksvoorwaarden op /nl/voorwaarden
 6b6d215 feat(rowtrack-web): publiceer het privacybeleid op /nl/privacy
 e90da81 feat(rowtrack-web): supportpagina plus de machine-leesbare laag
-c5e7a2c docs(rowtrack-web): leg de fundering-fase en twee kantelpunten vast in de briefing
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack-web/app/[locale]/layout.tsx
-  M  apps/rowtrack-web/app/[locale]/page.tsx
-  M  apps/rowtrack-web/app/[locale]/support/page.tsx
-  A  apps/rowtrack-web/components/layout/Footer.tsx
-  A  apps/rowtrack-web/components/layout/Section.tsx
-  A  apps/rowtrack-web/components/sections/Analysis.tsx
-  A  apps/rowtrack-web/components/sections/Compat.tsx
-  A  apps/rowtrack-web/components/sections/Faq.tsx
-  A  apps/rowtrack-web/components/sections/FinalCta.tsx
-  A  apps/rowtrack-web/components/sections/Goals.tsx
+  M  apps/rowtrack-web/components/sections/Analysis.tsx
+  M  apps/rowtrack-web/components/sections/Hero.tsx
+  M  apps/rowtrack-web/components/ui/ScreenshotFrame.tsx
+  A  apps/rowtrack-web/public/screenshots/active-workout.png
+  A  apps/rowtrack-web/public/screenshots/workout-summary.png
 
 ## Bestanden met TODO/FIXME
   (geen)

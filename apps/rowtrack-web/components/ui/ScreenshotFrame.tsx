@@ -1,34 +1,40 @@
+import Image from 'next/image';
+
 type Props = {
-  /** Wat er te zien is zodra de echte schermafbeelding er staat. */
+  /** Pad onder /public/screenshots, zonder map en zonder extensie. */
+  name: string;
+  /** Wat er te zien is. Beschrijf het scherm, niet het bestand. */
   alt: string;
   /** Bijschrift onder het toestel, optioneel. */
   caption?: string;
+  /** Laadt zonder lazy-loading — alleen voor het beeld boven de vouw. */
+  priority?: boolean;
 };
 
 /**
- * Een toestelframe met — voorlopig — een lege plaat erin.
+ * Een toestelframe met een echte schermafbeelding uit de app.
  *
- * Er staat geen enkele productscreenshot in deze repo, en er wordt er hier geen
- * verzonnen. Een nagetekende UI op een marketingpagina is precies de mockup-val die
- * het onderzoek als fout aanmerkt: hij belooft een scherm dat niet bestaat, en hij
- * veroudert zonder dat iemand het merkt omdat er geen bron is om tegen te vergelijken.
+ * De beelden zijn vastgelegd op de iOS-simulator via de `__DEV__`-route
+ * `rowtrack://dev-active?...&bare=1`, die het active-workout-scherm met mock-metrics
+ * rendert zonder verbonden roeier. Geen nagetekende UI: dat is de mockup-val die het
+ * onderzoek als fout aanmerkt, want zo'n plaat belooft een scherm dat niet bestaat en
+ * veroudert zonder dat iemand het merkt.
  *
- * De alt-tekst beschrijft wél al wat er komt te staan, zodat de copy nu al klopt.
- *
- * TODO(assets): vervang door echte captures uit apps/rowtrack (active workout portrait
- * en landscape, summary, history detail, idle met de vijf doelmodi, PR-staat).
- * Specificatie in het inputdocument §16: 1290×2796, 2×/3×, PNG, dark UI.
+ * De verhouding staat vast op 9/19.5 — precies wat de simulator uitspuwt (1206×2622),
+ * dus er wordt niets bijgesneden of opgerekt.
  */
-export const ScreenshotFrame = ({ alt, caption }: Props) => (
+export const ScreenshotFrame = ({ name, alt, caption, priority = false }: Props) => (
   <figure className="mx-auto w-full max-w-[280px]">
     <div className="rounded-card border border-border-strong bg-bg-raised p-3 shadow-button-outline">
-      <div
-        role="img"
-        aria-label={alt}
-        className="flex aspect-[9/19.5] items-center justify-center rounded-card bg-bg-base px-6 text-center text-sm text-fg-tertiary"
-      >
-        Schermafbeelding volgt
-      </div>
+      <Image
+        src={`/screenshots/${name}.png`}
+        alt={alt}
+        width={386}
+        height={840}
+        priority={priority}
+        className="w-full rounded-card"
+        sizes="280px"
+      />
     </div>
     {caption ? (
       <figcaption className="mt-3 text-center text-sm text-fg-tertiary">{caption}</figcaption>

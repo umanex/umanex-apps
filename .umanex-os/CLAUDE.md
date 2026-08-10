@@ -24,106 +24,51 @@ Regel: een principe of skill hoort thuis op de **laagste laag waar hij echt vera
 
 ## TC-EBC framework
 
-**Wat is TC-EBC**
+Een prompt skeleton — **T**ask / **C**ontext / **E**lements / **B**ehaviour / **Co**nstraints — dat design- en prototype-briefings formaliseert vóór ze gebouwd worden. Geen verbose documentatie: elke regel zo kort mogelijk, alleen wat het model écht moet weten.
 
-TC-EBC is een prompt skeleton dat Jeroen gebruikt om design- en prototype-briefings te formaliseren voor ze gebouwd worden. Geen verbose documentatie — een skeleton.
+**De poort.** Bevat de input een UI- of design-element (component, scherm, flow, interactie, layout, visueel patroon)? → TC-EBC. Gaat het over puur niet-UI werk (refactor, performance, bugfix in business logic, debug, deployment)? → skip, en zeg expliciet: *"Lijkt geen design taak — TC-EBC overgeslagen."* Bij twijfel: door met TC-EBC — een onnodige is minder erg dan een gemiste.
 
-```
-T  — Task:        One line describing what the prototype or screen should do
-C  — Context:     Where this fits in the product or flow
-E  — Elements:    Literal UI components present — keep this a short list
-B  — Behaviour:   How users interact with those components
-Co — Constraints: Device, layout rules, visual constraints — concise
-```
+**Wanneer.** Bij elke design- of prototype-briefing is de TC-EBC je *eerste* actie: vóór je de codebase verkent, vóór je verduidelijkingsvragen stelt. Geen optionele stap, en geen vraag vooraf.
 
-Regels:
-- Elke regel zo kort mogelijk
-- Alleen wat het model écht moet weten
-- Geen verbose documentatie
+**Harde rail:** dit gebeurt in de **main agent context**, nooit uitbesteed aan een sub-agent — buiten de main-agent komt de `@`-import CLAUDE.md-keten niet gegarandeerd mee.
 
-**Wanneer toepassen**
+**Kritische items:** component-typologie · states · interactie-modaliteit · edge cases. Alle vier beantwoord of op de Open vragen-lijst.
 
-Bij elke design- of prototype-briefing schrijf je *eerst* een TC-EBC, vóór je de codebase verkent of verduidelijkingsvragen stelt. Dit is geen optionele stap. Geen vraag vooraf — je maakt zelf een TC-EBC voor je begint te bouwen.
-
-Belangrijk: deze stap moet plaatsvinden in de **main agent context**, niet uitbesteed worden aan een sub-agent. Als de hoofd-Claude de briefing krijgt, is de TC-EBC zijn eerste actie.
-
-**Sanity check — voor je begint**
-
-Voor je een TC-EBC schrijft, valideer eerst dat dit effectief een design- of prototype-taak is:
-
-- Bevat de input een UI- of design-element (component naam, scherm, flow, interactie, layout, visueel patroon)? → Door met TC-EBC.
-- Gaat de input over puur niet-UI werk (bv. refactor van een hook, performance optimalisatie, bug fix in business logic, debug, deployment)? → Skip TC-EBC. Zeg expliciet: *"Lijkt geen design taak — TC-EBC overgeslagen."*
-
-Bij twijfel: door met TC-EBC. Een onnodige TC-EBC is minder erg dan een gemiste.
-
-**Kritische items (altijd vragen tenzij beantwoord in klant/project context)**
-
-Component-typologie · States · Interactie-modaliteit · Edge cases. Alle vier moeten
-beantwoord zijn of op de Open vragen lijst staan. De `tc-ebc` skill heeft per item de
-vraag-formulering.
-
-**Uitvoering — roep de `tc-ebc` skill aan**
-
-Ga je een TC-EBC effectief schrijven, lees dan eerst de **`tc-ebc` skill**. Die bevat het
-stappenplan, de vraag-formuleringen per kritisch item, de bestandslocatie en -naamgeving, en
-het bestandsformaat met de acceptatie-checklist. Schrijf er nooit één op de gok zonder de
-skill te lezen — dat bestandsformaat is precies wat de Beoordeel-stap later toetst.
-
-**Inline formaat in chat**
-
-```
-TASK:        ...
-CONTEXT:     ...
-ELEMENTS:    ...
-BEHAVIOUR:   ...
-CONSTRAINTS: ...
-```
+**Uitvoering:** lees de **`tc-ebc` skill** — stappenplan, vraag-formulering per kritisch item, bestandslocatie en het bestandsformaat met acceptatie-checklist. Schrijf er nooit één op de gok zonder die skill: dat formaat is precies wat de Beoordeel-stap later toetst.
 
 ---
 
 ## Plan / Bouw / Beoordeel — werkprincipe
 
-**Wat het is**
+Een lus voor substantieel bouwwerk: **PLAN → BOUW → BEOORDEEL**, herhalend tot de taak *gevalideerd* is. De snelle, per-taak tegenhanger van de trage eval-loop (`vastleggen` → `learnings-verwerken`).
 
-Een lus voor substantieel bouwwerk: **PLAN → BOUW → BEOORDEEL**, herhalend tot de taak *gevalideerd* is. Het is de snelle, per-taak tegenhanger van de trage eval-loop (`vastleggen` → `learnings-verwerken`). Bouwt niets nieuws — het knoopt bestaande rollen aan elkaar.
+**De poort**
 
-**Wanneer toepassen — de poort**
+- **Wel:** design-to-code, nieuw component, feature-flow, business-logica met afhankelijke berekeningen — werk waar één feat doorgaans meerdere fix-iteraties vraagt.
+- **Niet (bouw direct):** copy-/token-/één-regel-fix, dep-bump, ci/config-sync, rename, pure debug/deploy/infra zonder gedragscontract.
+- **Twijfel?** Heeft de Beoordeel-stap iets *meetbaars* om tegen te valideren? Zo niet → geen cyclus.
 
-- **Wel:** design-to-code, nieuw component, feature-flow, en business-logica met afhankelijke berekeningen — werk waar één feat doorgaans meerdere fix-iteraties vraagt.
-- **Niet (bouw direct, geen cyclus):** copy-/token-/één-regel-fix, dep-bump, ci/config-sync, rename, pure debug/deploy/infra zonder gedragscontract.
-- **Twijfel?** De poort weegt of de Beoordeel-stap iets *meetbaars* heeft om tegen te valideren. Zo niet → geen cyclus.
+**De rollen in één regel** — PLAN levert de acceptatie-checklist (TC-EBC bij design, **main-agent only**; een licht taak-contract bij refactor/bugfix/infra), BOUW draait in de main-agent of de bouw-skill bij het taaktype, BEOORDEEL is een panel van `code-review` · `verify` · `ux-audit` · `security-audit` met de main-agent als scheidsrechter. De **`cyclus-tot-validatie` skill** heeft de mapping, het panel per as en de reviewer-discipline — lees hem voor je de lus start.
 
-**De drie rollen** — PLAN levert de acceptatie-checklist (TC-EBC bij design, **main-agent only**; een licht taak-contract bij refactor/bugfix/infra), BOUW draait in de main-agent of de bouw-skill bij het taaktype, BEOORDEEL is een panel van `code-review` · `verify` · `ux-audit` · `security-audit` met de main-agent als scheidsrechter. De **`cyclus-tot-validatie` skill** heeft de volledige mapping, het panel per as en de reviewer-discipline — lees hem voor je de lus start.
+**EXIT (status `gevalideerd`)** geldt pas wanneer alle drie waar zijn: elk acceptatie-item afgevinkt `- [x]` · geen P0/P1 in `code-review`, `verify` of (bij backend-werk) `security-audit` · Open vragen leeg.
 
-**De cyclus en "validatie volledig"**
+Harde rail: **max 3 iteraties**. Convergeert het niet → gecontroleerde stop: `vastleggen` niet-interactief (taak-input als Input, de aanhoudende bevinding als Fout) en escaleer naar Jeroen. Nooit stil afsluiten alsof gevalideerd. Ontbreekt de meetbare as (geen render-pad → `verify`/parity vallen terug op "overgeslagen")? Meld dat expliciet; draai de Beoordeel-stap niet alsof hij slaagde.
 
-Itereer BOUW → BEOORDEEL zolang er P0/P1 openstaan. EXIT (status `gevalideerd`) geldt pas wanneer **alle drie** waar zijn:
+**Discipline in de Beoordeel-stap** — vijf regels; deze staan hier en niet in de skill, want ze bijten in élke sessie die iets verifieert, ook zonder de cyclus.
 
-1. elk acceptatie-item afgevinkt `- [x]`;
-2. geen P0/P1 in `code-review`, `verify` of (bij backend-werk) `security-audit`;
-3. Open vragen leeg.
+*De Beoordeel-stap schrijft.* Bouwen, migreren en installeren veranderen de schijf. Serveert een langlopend proces uit diezelfde map (dev-server, PM2-app, gedeelde database), dan deployt je verificatie ongewild: jij ziet exit 0, de gebruiker ziet een witte pagina. Check vóór een build of er iets uit die map serveert (`pm2 status`, `lsof -nP -iTCP:<poort> -sTCP:LISTEN`); zo ja, gebruik het script dat bouwen en herstarten koppelt (bv. `pm2:rebuild`) of bouw naar een aparte map. Achteraf telt niet de exit code, maar of de app nog serveert wat ze zegt te serveren.
 
-Harde rail: **max 3 iteraties**. Convergeert het niet → **gecontroleerde stop**: roep `vastleggen` niet-interactief aan (taak-input als Input, de aanhoudende bevinding als Fout) en escaleer naar Jeroen. Nooit stil afsluiten alsof gevalideerd. Ontbreekt de meetbare as (geen render-pad → `verify`/parity vallen terug op "overgeslagen")? Meld dat expliciet; draai de Beoordeel-stap niet alsof hij slaagde.
+*Verifieer op het doelwit van de gebruiker.* Groen op een ander toestel, een andere build of een andere omgeving bewijst niets over zijn geval. Draai de volledige cyclus — herstart inbegrepen — op hetzelfde doelwit, of meld expliciet dat je op een surrogaat testte en wat dat níet uitsluit.
 
-**Discipline in de Beoordeel-stap**
+*Nooit een destructief pad tegen productiedata.* Dit begrenst de vorige regel. Verwijderen, wissen, overschrijven of migreren op data die de gebruiker echt gebruikt is geen verificatie maar schade met een rapport eraan vast — en dat het goed afliep bewijst niets, want die uitkomst kende je niet toen je besliste. Bouw het bewijs om het pad heen: **toets de guard in plaats van het effect** (roep het beschermde pad aan zónder rechten, toon dat de data onveranderd is), **draai de logica op synthetische invoer** (dezelfde transformatie op een verzonnen rij in een `select`, geen `update`), of gebruik een **testaccount met seed-data**. Lukt geen van de drie: `[NIET TE VERIFIËREN — destructief pad, geen testaccount]`. Dat is een leemte, geen vrijbrief. Wil je het écht uitvoeren, vraag het vooraf.
 
-*De Beoordeel-stap schrijft.* Bouwen, migreren en installeren zijn geen observaties — ze veranderen de schijf. Leest er een langlopend proces uit diezelfde plek (dev-server, PM2-app, gedeelde database), dan deployt je verificatie ongewild, en de schade valt buiten je blikveld: jij ziet "build ok" en exit 0, de gebruiker ziet een witte pagina. Kijk daarom vóór een build in een repo met draaiende processen of er iets uit die map serveert (`pm2 status`, `lsof -nP -iTCP:<poort> -sTCP:LISTEN`); zo ja, gebruik het script dat bouwen en herstarten koppelt (bv. `pm2:rebuild`), of bouw naar een aparte map. Achteraf telt niet de exit code, maar of de app nog serveert wat ze zegt te serveren.
+*Een guard krijgt een tegenproef vóór je hem vertrouwt.* Een instrument dat draait is nog geen instrument dat meet. Toets elke guard, hook of check op **béide** kanten: één geval waarin hij moet zwijgen, één waarin hij moet afgaan. Zonder de zwijg-kant weet je niet of hij vals alarm slaat; zonder de afgaan-kant niet of hij nog iets meet. Een wachter die permanent afgaat leert je hem te negeren — schadelijker dan geen wachter.
 
-*Verifieer op het doelwit van de gebruiker.* Een groene check op een ander toestel, een andere build of een andere omgeving dan waar de gebruiker de fout ziet, bewijst niets over zijn geval. Draai de volledige cyclus — herstart of reload inbegrepen — op hetzelfde doelwit, of meld expliciet dat je op een surrogaat getest hebt en wat dat níet uitsluit.
+*Bij afhankelijke berekeningen is de invariant de meetbare as.* Volgt een waarde uit een andere (saldo dat doorrolt, provisie die afgetrokken wordt, subtotaal uit losse posten), dan valideert scherm-per-scherm niets: elke fix is lokaal correct terwijl dezelfde afgeleide waarde elders anders berekend blijft — je patcht de instanties, de klasse blijft leven. PLAN levert daarom minstens één **invariant** over het hele model (`eindsaldo maand N == beginsaldo maand N+1`, `som(posten) == subtotaal`), en BEOORDEEL rékent die uit over een echte dataset in plaats van de uitkomst af te lezen. Een scenario-harness hoort in CI naast de andere guards — een harness die niets aanroept, meet niets.
 
-*Nooit een destructief pad tegen productiedata.* Het vorige principe zegt "draai op het echte doelwit"; dit begrenst het. Verwijderen, wissen, overschrijven of een migratie draaien op data die de gebruiker echt gebruikt, is geen verificatie maar schade met een rapport eraan vast. Dat de uitkomst goed afliep bewijst niets: de beslissing was al fout op het moment dat je hem nam, want je kende de uitkomst niet. Bouw het bewijs daarom om het pad heen: **toets de guard in plaats van het effect** (roep het beschermde pad aan zónder rechten en toon dat de data ná afloop onveranderd is), **draai de logica op synthetische invoer** (dezelfde transformatie op een verzonnen rij in een `select`, geen `update`), of gebruik een **testaccount met seed-data**. Kan geen van die drie, dan is het item `[NIET TE VERIFIËREN — destructief pad, geen testaccount]` — een leemte, geen reden om het toch te draaien. Vraag het pas als je het écht wil uitvoeren, en vraag het vooraf.
+**Elke app heeft een `## Verify-pad`-sectie in zijn eigen `CLAUDE.md`** — of zegt daar expliciet dat hij er geen heeft. De Beoordeel-stap kan niet elke run het terrein opnieuw ontdekken. De sectie geeft de letterlijke commando's per capability: render vastleggen · flow aandrijven · state forceren · invariant draaien · verse build. **"Geen" is een geldig antwoord en hoort er te staan** — een lege regel laat de vraag terugkomen, het woord "geen" maakt het gat telbaar. Ontbreekt de sectie, dan is dát de eerste bevinding van de run, vóór welk acceptatie-item ook. De `verify` skill heeft de volledige tabel; `.githooks/pre-commit` waarschuwt bij een app zonder sectie.
 
-*Een guard krijgt een tegenproef vóór je hem vertrouwt.* Een instrument dat draait is nog geen instrument dat meet. Toets elke guard, hook of check die je bouwt op **béide** kanten: één geval waarin hij moet zwijgen, en één waarin hij moet afgaan. Zonder de zwijg-kant weet je niet of hij vals alarm slaat; zonder de afgaan-kant niet of hij überhaupt nog iets meet. Een wachter die permanent afgaat leert je vooral hem te negeren — schadelijker dan geen wachter, want het gat blijft open terwijl jij denkt van niet.
-
-*Bij afhankelijke berekeningen is de invariant de meetbare as.* Volgt een waarde uit een andere — een saldo dat doorrolt, een provisie die afgetrokken wordt, een subtotaal dat uit losse posten opgebouwd wordt — dan valideert een controle scherm per scherm niets. Elke fix is er lokaal correct terwijl dezelfde afgeleide waarde elders anders berekend blijft: je patcht de instanties en de klasse blijft leven. PLAN levert daarom minstens één **invariant** die over het hele model moet gelden (`eindsaldo maand N == beginsaldo maand N+1`, `som(posten) == subtotaal`, `totaal na verwijderen == totaal vóór toevoegen`), en BEOORDEEL rékent die uit over een echte dataset in plaats van de uitkomst af te lezen. Bestaat er al een scenario-harness, dan hoort ze in CI naast de andere guards — een harness die door niets aangeroepen wordt, meet niets.
-
-**Elke app heeft een verify-pad — of zegt expliciet dat hij het niet heeft**
-
-De Beoordeel-stap kan niet elke run het terrein opnieuw ontdekken: welke simulator, welke build, draait de dev-server. Elke app die `verify` gebruikt hoort daarom een sectie **`## Verify-pad`** in zijn eigen `CLAUDE.md` te hebben, met de letterlijke commando's per capability: render vastleggen · flow aandrijven · state forceren · invariant draaien · verse build. **"Geen" is een geldig antwoord en hoort er expliciet te staan** — een lege regel laat de vraag elke run terugkomen, het woord "geen" maakt het gat zichtbaar en telbaar. Ontbreekt de sectie, dan is dát de eerste bevinding van de run, vóór welk acceptatie-item ook. De `verify` skill heeft de volledige tabel; `.githooks/pre-commit` waarschuwt wanneer je een app aanraakt die de sectie mist.
-
-**Brug naar de eval-loop**
-
-Een gefaalde review die een **terugkerende faalklasse** blootlegt = een `vastleggen`-trigger. De triade is de *feeder* van de trage loop, geen duplicaat. Houd de twee assen uit elkaar: triade-status (`gepland → gebouwd → gevalideerd`, per taak) staat los van learning-status (`open → verified → promoted`, over sessies heen). Die brug is het enige raakpunt.
+**Brug naar de eval-loop.** Een gefaalde review die een **terugkerende faalklasse** blootlegt = een `vastleggen`-trigger. De triade is de *feeder* van de trage loop, geen duplicaat. Houd de assen uit elkaar: triade-status (`gepland → gebouwd → gevalideerd`, per taak) staat los van learning-status (`open → verified → promoted`, over sessies heen).
 
 ---
 
@@ -146,16 +91,11 @@ Bij een probleem, bug of gefaalde check: zoek de onderliggende oorzaak en los d�
 
 ## Sessie-reflectie en handoff — werkprincipe
 
-Aan het einde van een substantiële sessie: een kritisch, eerlijk retrospectief dat de vluchtige context vastlegt vóór ze verdampt. Niet vleiend — de waarde zit in wat Claude zelf naar boven haalt: onzekerheden, onuitgesproken aannames, blinde vlekken, toekomstig breukrisico, de eerste zet voor de volgende keer. Dit draait via de **`sessie-reflectie` skill**, die de werkwijze bevat.
+Aan het einde van een substantiële sessie: een kritisch, eerlijk retrospectief dat de vluchtige context vastlegt vóór ze verdampt. Niet vleiend — de waarde zit in wat Claude zelf naar boven haalt: onzekerheden, onuitgesproken aannames, blinde vlekken, breukrisico, de eerste zet voor de volgende keer. Draait via de **`sessie-reflectie` skill**, die de werkwijze en de reflectievragen bevat.
 
-**Router, geen silo.** De reflectie is een *feeder* die elke bevinding naar het juiste bestaande huis stuurt — geen parallelle opslag (root cause boven patch):
-- terugkerende **faalklasse** → `vastleggen` (LEARNINGS, de eval-loop);
-- **durend feit** over Jeroen/project → auto-memory;
-- **vooruitkijkend & sessie-gebonden** (onzekerheid, aanname, risico, next-step, idee, debt) → `HANDOFF.md`.
+**Router, geen silo** (root cause boven patch). Elke bevinding gaat naar het juiste bestaande huis: terugkerende **faalklasse** → `vastleggen` (LEARNINGS) · **durend feit** over Jeroen/project → auto-memory · **vooruitkijkend & sessie-gebonden** → `HANDOFF.md`. Een fout hoort in LEARNINGS mét zijn verificatie-input, niet in HANDOFF; HANDOFF is enkel het vooruitkijkende restant dat (nog) geen fout is.
 
-**Grens met de eval-loop.** Een fout hoort in LEARNINGS mét zijn verificatie-input, niet in HANDOFF; HANDOFF is enkel het vooruitkijkende restant dat (nog) geen fout is. `HANDOFF.md` is gelaagd (globaal `umanex-os/` / klant repo-root / project `apps/{app}/`) met statussen `open → resolved`; open items komen bij sessiestart automatisch mee via `session-start-handoff.sh`. Diezelfde hook toont ook de LEARNINGS-entries op `open` (nog te verifiëren) en `verified` (bewezen, nog niet gehard) — zonder die herinnering was de eval-loop de enige lus zonder trigger, en bleven bewezen lessen wekenlang ongepromoveerd.
-
-**Een faalklasse hoeft niet in de sessie te zijn opgetreden.** `vastleggen` vangt van nature alleen wat iemand zag misgaan. Een klasse die zich over weken opstapelt — dezelfde soort `fix(...)` die telkens terugkomt, een as die geen enkele guard dekt — wordt pas zichtbaar door terug te kijken. De `sessie-reflectie` skill stelt die vraag expliciet; het antwoord is een `vastleggen`-trigger als elke andere, met een reproduceerbaar commando in plaats van een prompt als Input.
+Open HANDOFF-items komen bij sessiestart automatisch mee via `session-start-handoff.sh`, samen met de LEARNINGS-entries op `open` en `verified` — zonder die herinnering was de eval-loop de enige lus zonder trigger.
 
 ---
 
@@ -345,88 +285,23 @@ Geef achteraf een samenvatting van genomen beslissingen en alternatieven die je 
 
 ## Figma, design tokens en bestand-referenties
 
-**Figma node referenties**
+**Referenties in taal.** Figma-nodes: in chat alleen de naam ("de FilterCard"); in TC-EBC's, PR's en commits naam + klikbare URL. Tokens: altijd het token path in Tokens Studio-notatie (`color.primary.500`), ook in chat, briefings en rationale — dat path is bron-van-waarheid-neutraal en werkt in Figma, JSON, CSS variables én Tailwind. In code vertaal je wél naar de implementatie. Bestanden en code-locaties: **altijd vol pad vanaf project root** (`apps/enviro/src/components/forms/FilterBar.tsx`, regel 42) — in monorepos bestaat dezelfde filename in meerdere apps.
 
-In chat: alleen de naam.
-> *"Pas de padding aan op de FilterCard"*
+**Alleen token-mapping, geen hardcoded values.** Werk uitsluitend met de mapping uit `tokens.json`. Losse hex-kleuren, pixel-spacings, font-sizes, radii of shadows die niet uit een token komen horen niet in committed code — en hetzelfde geldt in Figma: een `fills`-waarde zonder variable binding is het equivalent van hardcoded hex. Heeft een benodigde waarde geen token: **eerst vragen** of er één bij moet, niet stilzwijgend hardcoden. In WIP mag het tijdelijk, mits `// TODO:` die naar de ontbrekende token verwijst.
 
-In TC-EBC briefings, PR descriptions en commit messages: naam + klikbare URL.
-> *"Pas de padding aan op [FilterCard](https://www.figma.com/design/abc123/...?node-id=142-3801)"*
+Haal vóór design- of token-werk de meest recente `tokens.json` op (`git pull` van de tokens-bron op de actieve branch). Welke repo en welk pad die bron is, staat in de klant- of project-CLAUDE.md; bij twijfel vragen.
 
-**Design tokens**
+**Token-formaat: W3C DTCG** — elke leaf gebruikt `$value` + `$type`, niet de Tokens Studio classic `value`/`type`. In Tokens Studio is dat de export-instelling "Convert to W3C DTCG format". Alle apps volgen dit; het is wat `sync-tokens.js` en de Style Dictionary v4-pipeline verwachten. Een classic-format `tokens.json` geeft 0 tokens.
 
-Verwijs altijd naar tokens via het token path (Tokens Studio notatie):
-> *"Gebruik color.primary.500 voor de border"*
+**Build-valkuil (DTCG).** Een custom Style Dictionary format of transform leest **`token.$value`** (fallback `?? token.value`), nooit enkel `token.value` — bij DTCG landt de waarde op `$value`. Een custom format dat `token.value` leest produceert **stil `undefined`**: de build slaagt zónder error, de output is kapot. Built-in formats (`css/variables`) handelen DTCG zelf af; enkel custom formats zijn de val. Verifieer een DTCG-build dus door te herbouwen en de output op echte waarden te checken, niet op een geslaagde exit.
 
-Reden: token path is bron-van-waarheid neutraal — werkt in Figma, JSON, CSS variables én Tailwind. Beschermt tegen verwarring tussen klanten met verschillende Tailwind-configuraties.
+**Referentie-schermen.** Bestaat er een `reference/`-map (in monorepos `apps/{app}/reference/`), lees de relevante schermen dan vóór je bouwt of audit — bij een TC-EBC, in `nieuw-component`, bij `ux-audit`. Dat is vastgelegd referentiebeeld: geen token-bron, geen Figma-vervanger, en niet te verwarren met `public/images/` (runtime-assets).
 
-In code zelf vertaal je wel naar de juiste implementatie (Tailwind class, CSS variable, etc.). Maar wanneer je *over* tokens praat in chat, briefings of rationale: altijd het path.
+**MCP-keuze.** Figma Console MCP (Desktop Bridge) is primair voor **alle** Figma-operaties, lezen én schrijven — geen lees/schrijf-split. Native Figma MCP is **fallback-only**: nooit de aangewezen tool, uitsluitend wanneer de Bridge niet beschikbaar is én de gebruiker daar expliciet voor kiest. **Code Connect wordt niet gebruikt**, noch native, noch via Console — stel geen mappings voor.
 
-**Alleen token-mapping, geen hardcoded values**
+Start elke Figma-operatie met `figma_get_status`. Bridge niet actief → vraag *"Wil je Desktop Bridge activeren, of overschakelen naar native MCP?"*, wacht op antwoord, ga **nooit** stilzwijgend over naar native. Noem bij elke Figma-stap expliciet welke MCP je gebruikt.
 
-Werk uitsluitend met de mapping uit `tokens.json` (via de Tokens Studio + Style Dictionary pipeline). Hardcoded waardes — losse hex-kleuren, pixel-spacings, font-sizes, radii, shadows die niet uit een token komen — worden vermeden in committed code.
-
-Wanneer een benodigde waarde geen token heeft: **eerst vragen** of er een token toegevoegd moet worden, niet stilzwijgend hardcoden. In WIP/prototype mag een hardcoded waarde tijdelijk, mits `// TODO:` comment die naar de ontbrekende token verwijst.
-
-**Altijd de meest recente `tokens.json` ophalen**
-
-Vóór design- of token-werk: haal eerst de meest recente `tokens.json` op via GitHub (`git pull` van de tokens-bron op de actieve branch). Zo wordt nooit met een stale token-set gewerkt.
-
-Welke repo en welk pad de tokens-bron is, verschilt per klant en wordt in de klant- of project-CLAUDE.md vastgelegd (bv. Columba: `tokens.json` → `packages/tokens/build/variables.css`). Bij twijfel over de bron: vraag voor je begint.
-
-**Token-formaat: W3C DTCG (standaard voor alle apps)**
-
-De canonieke `tokens.json` is **W3C DTCG**: elke leaf gebruikt `$value` + `$type` (niet de Tokens Studio classic `value`/`type`). In Tokens Studio is dit een export-instelling ("Convert to W3C DTCG format"). Alle apps — bestaand én nieuw — volgen dit; het is het formaat dat `sync-tokens.js` en de Style Dictionary v4-pipeline verwachten. Een classic-format `tokens.json` geeft in `sync-tokens.js` 0 tokens.
-
-**Build-valkuil (DTCG):** een custom Style Dictionary format of transform leest de getransformeerde waarde van **`token.$value`** (fallback `?? token.value`), nooit enkel `token.value` — bij DTCG landt de waarde op `$value`. Een custom format die `token.value` leest, produceert **stil `undefined`**: de build slaagt zónder error maar de output is kapot. Built-in formats (`css/variables`) handelen DTCG zelf af; enkel custom formats zijn de val. Verifieer een DTCG-build daarom altijd door te herbouwen en de output op echte waarden te checken, niet enkel op een geslaagde exit.
-
-**Bestand- en code-locatie referenties**
-
-Altijd vol pad vanaf project root. Geen compacte vorm, geen "in FilterBar.tsx" zonder pad.
-
-> *"In `apps/enviro/src/components/forms/FilterBar.tsx`, regel 42, vervangen we de useState door..."*
-
-Reden: in monorepos bestaat dezelfde filename vaak in meerdere apps.
-
-**Referentie-schermen (`reference/`)**
-
-Een project mag een `reference/`-map aan de root hebben (in monorepos: `apps/{app}/reference/`) met echte schermen, screenshots of exports die als **visuele context** dienen — bestaande app-schermen, concurrenten, inspiratie, of states die niet makkelijk uit Figma komen.
-
-Dit is géén token-bron (dat blijft `tokens.json`) en geen Figma-vervanger (dat blijft live via Console MCP) — het is vastgelegd referentiebeeld. Verwar het niet met `public/images/` (runtime-assets die de app zelf toont).
-
-Regel: bestaat er een `reference/`-map, lees dan de relevante schermen vóór je bouwt of audit — bij een TC-EBC, in `nieuw-component`, en bij `ux-audit`.
-
-**Figma Console MCP — primaire tool voor alle Figma-operaties**
-
-Figma Console MCP (Desktop Bridge Plugin API) is de primaire tool voor **alles** in Figma — lezen én schrijven. Geen lees/schrijf split.
-
-    Alle Figma-operaties  → Figma Console MCP (via Desktop Bridge)
-    Native Figma MCP      → uitsluitend als fallback (Desktop Bridge niet beschikbaar)
-
-**Native MCP is fallback-only.** Het is nooit de aangewezen tool voor een taak — het wordt uitsluitend gebruikt wanneer de Desktop Bridge niet beschikbaar is en de gebruiker daar expliciet voor kiest.
-
-**Figma Code Connect wordt niet gebruikt** — noch native, noch via Console. Stel geen Code Connect mappings voor of in.
-
-**Desktop Bridge check — altijd eerst**
-
-Start elke Figma-operatie met `figma_get_status`. Als de Bridge niet actief is:
-- Vraag: *"Wil je Desktop Bridge activeren, of overschakelen naar native MCP?"*
-- Wacht op antwoord voor je verdergaat
-- Ga **nooit** stilzwijgend over naar native MCP
-
-**Figma → code**
-
-Gebruik de `figma-naar-code` skill. Die is leidend voor alle stappen, token mapping en verificatie.
-
-**Code → Figma**
-
-Gebruik de `code-naar-figma` skill. Die is leidend voor alle stappen: Bridge-check, variabelen-lookup en gap-analyse, de `setBoundVariable`-execute, screenshot-verificatie en de deep-check op `boundVariables`.
-
-Hardcoded values in Figma (`fills = [{color: {r,g,b}}]` zonder variable binding) zijn het equivalent van hardcoded hex in code — verboden in committed work.
-
-**Vermeld altijd welke MCP je gebruikt**
-
-Bij elke Figma-stap: noem expliciet Console MCP of native MCP. Geen impliciete keuzes.
+**Uitvoering:** Figma → code volgt de **`figma-naar-code`** skill, code → Figma de **`code-naar-figma`** skill. Die zijn leidend voor alle stappen, de token-mapping en de verificatie.
 
 ---
 

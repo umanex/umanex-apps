@@ -4,11 +4,12 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gebouwd — 2026-08-10. Alle guards groen op de worktree-build (flow-selftest
-  19/19 inclusief vier nieuwe tegenproeven, scenarios 594/594, verify:visual 297
-  tekstelementen, type-check, lint en de laag-discipline-guard). Wat nog rest is de
-  visuele controle op het doelwit van de gebruiker: de PM2-app op `:3000` met de echte
-  data, ná `pm2:rebuild`.
+- **Status:** gevalideerd — 2026-08-10. Alle guards groen (flow-selftest 19/19 inclusief
+  vier nieuwe tegenproeven, scenarios 594/594, verify:visual 297 tekstelementen,
+  type-check, lint en de laag-discipline-guard), zowel lokaal als in CI op PR #251. Daarna
+  bevestigd op het doelwit van de gebruiker: de PM2-app op `:3000` met de echte data, ná
+  `pm2:rebuild`. Beide takken gezien — augustus toont het beginsaldo in de sectie, en met
+  het anker op oktober komt de "Vorig saldo"-regel in december terug op −€ 11.443,15.
 
 ---
 
@@ -113,8 +114,15 @@ Geen. De twee kritische keuzes zijn op 2026-08-10 door Jeroen beantwoord:
       boven AA (was 284; het verschil zijn de nieuwe fixtures).
 - [x] De typecheck dekt `scripts/` mee en blijft groen. Ook `lint` en
       `@umanex/tokens guard` (169 bestanden, 0 uitzonderingen).
-- [ ] Visueel bevestigd op het doelwit van de gebruiker: de PM2-app op `:3000` met de
-      echte data, ná `pnpm --filter cashflow pm2:rebuild`.
+- [x] Visueel bevestigd op het doelwit van de gebruiker: de PM2-app op `:3000` met de
+      echte data, ná `pnpm --filter cashflow pm2:rebuild`. Anker augustus 2026: kop
+      +€ 23.603,83 = beginsaldo € 21.487,83 + Columba € 2.116,00, en september en oktober
+      tonen géén saldo-regel omdat ze op nul openen (8.966,00 + 2.821,72 = 11.787,72 en
+      14.483,00 + 2.821,72 = 17.304,72 — beide kloppen met hun kop). Anker oktober 2026:
+      december opent op −€ 11.443,15, de "Vorig saldo"-regel staat er read-only met
+      minteken en de kop draagt hetzelfde bedrag in de negatieve kleur. Uitlijning in de
+      DOM nagemeten: de saldoregel en een inkomstenpost hebben identieke geometrie
+      (label 58,6→329,5 · bedrag 337,5→410,3), dus de bedragkolom loopt door.
 
 ## Beslissingsgeschiedenis
 

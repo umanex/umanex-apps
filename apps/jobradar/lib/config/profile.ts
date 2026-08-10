@@ -53,10 +53,34 @@ export const KEYWORD_WEIGHTS: Record<SkillKey, number> = {
   figma: 5,
   typescript: 5,
   product: 10,
-  // Lager dan de frontend-clusters: backend zegt "hier wordt software gebouwd", niet
-  // "hier is werk voor mij". Het draagt de relevantiepoort, niet de score.
-  backend: 5,
+  // Nul, en dat is de kern van het onderscheid hieronder: een .NET-vacature is geen werk
+  // voor Jeroen. Het bedrijf erachter is wél een lead.
+  backend: 0,
 }
+
+/**
+ * Welke clusters meetellen voor de **vacaturescore** — hoe interessant dit werk is om zelf
+ * te doen.
+ *
+ * `backend` staat hier bewust niet in (beslissing Jeroen, 2026-08-10). Een Cobol- of
+ * .NET-vacature moet niet omhoog komen in de vacaturelijst; het bedrijf dat erin ontwikkelt
+ * en geen designer heeft, moet wél als lead verschijnen. Dat zijn twee verschillende vragen,
+ * en ze hadden één antwoord — waardoor backend-werk als eigen opdracht scoorde.
+ *
+ * De scheiding loopt hier: `SCORE_SKILLS` voedt `scoreJob`, `DEV_SKILLS` voedt de
+ * bedrijfsclassificatie in `lib/signals.ts`.
+ */
+export const SCORE_SKILLS: readonly SkillKey[] = [
+  'ux',
+  'ui',
+  'frontend',
+  'nextjs',
+  'react',
+  'designSystem',
+  'figma',
+  'typescript',
+  'product',
+]
 
 /**
  * Welke skill-clusters aan de design- dan wel de dev-kant staan.

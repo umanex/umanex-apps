@@ -11,6 +11,7 @@ echt aan deze app gewerkt wordt — verzonnen projectcontext is schadelijker dan
 |---|---|
 | **Vacatures** | Adzuna (`lib/sources/adzuna.ts`). Zoektermen en ophaal-grenzen in `lib/config/profile.ts`. |
 | **Leads** | Afgeleid uit de vacaturedata (`lib/signals.ts`, bron `vacatures`). KBO bestaat alleen als fixtures — de live-tak is niet gebouwd. |
+| **Twee assen** | De **vacaturescore** (`SCORE_SKILLS`) zegt hoe interessant werk is om zélf te doen; de **classificatie** (`DESIGN_SKILLS`/`DEV_SKILLS` + de rolwoorden) zegt of het bedrijf een lead is. Backend staat bewust alleen in de tweede (beslissing 2026-08-10): een .NET-vacature scoort 0, maar het .NET-huis zonder designer is wél een lead. Laat die assen niet samenvallen — dat is precies de faalklasse in `LEARNINGS.md`. |
 | **Regio's** | WVL · OVL · BRU, en **dat blijft zo** (beslissing 2026-08-10). De zoekstraal rond de ankers loopt over de provinciegrens, dus Adzuna levert ook Vlaams-Brabant; die vacatures vallen weg en de bron meldt hoeveel. Bewuste keuze, geen gat. |
 | **Pagineringsplafond** | 5 pagina's × 50 per regio (beslissing 2026-08-10). Brussel heeft er meer dan 600, dus dit kápt af — de bron zet dat als waarschuwing in `sourceStatuses`. Ook bewust. |
 

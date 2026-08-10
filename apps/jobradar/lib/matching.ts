@@ -1,5 +1,5 @@
 import type { RawJob, RawLead } from './sources/types'
-import { SKILL_KEYWORDS, KEYWORD_WEIGHTS, SIGNAL_WEIGHTS, type SkillKey } from './config/profile'
+import { SKILL_KEYWORDS, KEYWORD_WEIGHTS, SCORE_SKILLS, SIGNAL_WEIGHTS, type SkillKey } from './config/profile'
 
 export type ScoreBreakdown = Record<string, number>
 
@@ -42,6 +42,14 @@ export function matchedSkills(job: Pick<RawJob, 'title' | 'description'>): Skill
   )
 }
 
+/**
+ * Hoe interessant deze vacature is om zélf te doen.
+ *
+ * Telt alleen `SCORE_SKILLS`, niet elke gematchte vaardigheid. Backend-werk raakt de
+ * relevantiepoort in `classificeer` — zodat het bedrijf erachter een lead kan worden — maar
+ * mag deze score niet aanraken: een Cobol-vacature hoort niet omhoog in de vacaturelijst.
+ * Zonder dat onderscheid scoorde .NET-werk als eigen opdracht.
+ */
 export function scoreJob(job: Pick<RawJob, 'title' | 'description'>): {
   score: number
   breakdown: ScoreBreakdown
@@ -50,6 +58,7 @@ export function scoreJob(job: Pick<RawJob, 'title' | 'description'>): {
   let total = 0
 
   for (const key of matchedSkills(job)) {
+    if (!SCORE_SKILLS.includes(key)) continue
     const w = KEYWORD_WEIGHTS[key] ?? 0
     breakdown[key] = w
     total += w

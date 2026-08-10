@@ -12,7 +12,7 @@
 import { scoreJob, scoreLead, jobDedupeHash, kiesDedupeHash, matchedSkills, normaliseerBedrijf } from '../lib/matching'
 import { deriveLeadsFromJobs, bouwBedrijfsprofielen, mergeSignalen, classificeer, rolInTitel, AFGELEIDE_BRON } from '../lib/signals'
 import { regionForArea, ALL_REGIONS } from '../lib/regions'
-import { SIGNAL_WEIGHTS, SIGNAL_THRESHOLDS, AFGELEIDE_SIGNALEN, SKILL_KEYWORDS } from '../lib/config/profile'
+import { SIGNAL_WEIGHTS, SIGNAL_THRESHOLDS, AFGELEIDE_SIGNALEN, SKILL_KEYWORDS, SCORE_SKILLS, KEYWORD_WEIGHTS, DEV_SKILLS } from '../lib/config/profile'
 import { ADZUNA_JOB_FIXTURES } from '../lib/sources/fixtures/adzuna-jobs'
 import { normaliseerAdzunaItem } from '../lib/sources/adzuna'
 import { berekenDekking } from '../lib/coverage'
@@ -476,6 +476,31 @@ for (const f of ADZUNA_JOB_FIXTURES) {
   const metNull = berekenDekking([{ title: 'UX Designer', description: null }])
   check('dekking: omschrijving null werkt', metNull.totaal === 1, JSON.stringify(metNull))
 }
+
+// ── De twee assen mogen niet samenvallen ────────────────────────────────────
+// Een .NET-vacature is geen werk voor Jeroen, maar het bedrijf dat erin ontwikkelt en geen
+// designer heeft is wél een lead (beslissing Jeroen 2026-08-10). Score en classificatie
+// beantwoorden dus verschillende vragen; ze hadden één antwoord en dat was fout.
+const BACKEND_NIET_IN_SCORE: Array<[string, string]> = [
+  ['Smals - .NET Developer', 'Je bouwt in .NET en C#.'],
+  ['Smals - Cobol Developer', 'Onderhoud van Cobol-toepassingen.'],
+  ['Java Developer', 'Java en Spring Boot, microservices.'],
+  ['DevOps Engineer', 'CI/CD, devops en API-beheer.'],
+]
+for (const [title, description] of BACKEND_NIET_IN_SCORE) {
+  const { score, breakdown } = scoreJob({ title, description })
+  check(`"${title.slice(0, 30)}" scoort 0 als vacature`, score === 0, `${score} via ${JSON.stringify(breakdown)}`)
+  check(`"${title.slice(0, 30)}" telt wél als dev voor de lead`, classificeer({ title, description }) === 'dev')
+}
+check('een frontend-vacature scoort nog steeds wél', scoreJob({ title: 'Frontend Developer', description: 'React en TypeScript.' }).score > 0)
+check('backend staat niet in SCORE_SKILLS', !SCORE_SKILLS.includes('backend'))
+check('backend staat wél in DEV_SKILLS', DEV_SKILLS.includes('backend'))
+check('elk SCORE_SKILL weegt meer dan 0', SCORE_SKILLS.every((k) => KEYWORD_WEIGHTS[k] > 0), JSON.stringify(SCORE_SKILLS.filter((k) => !(KEYWORD_WEIGHTS[k] > 0))))
+check('elk cluster buiten SCORE_SKILLS weegt 0', (Object.keys(SKILL_KEYWORDS) as Array<keyof typeof SKILL_KEYWORDS>).filter((k) => !SCORE_SKILLS.includes(k)).every((k) => KEYWORD_WEIGHTS[k] === 0))
+check('de breakdown bevat nooit een cluster buiten SCORE_SKILLS', (() => {
+  const { breakdown } = scoreJob({ title: 'Full Stack Developer', description: 'React, TypeScript, Java en .NET.' })
+  return Object.keys(breakdown).every((k) => SCORE_SKILLS.includes(k as never))
+})(), JSON.stringify(scoreJob({ title: 'Full Stack Developer', description: 'React, TypeScript, Java en .NET.' }).breakdown))
 
 // De backend-woordenschat draagt de relevantiepoort — zonder die woorden viel elke .NET-,
 // Java- of Cobol-vacature buiten élke telling (beslissing Jeroen 2026-08-10).

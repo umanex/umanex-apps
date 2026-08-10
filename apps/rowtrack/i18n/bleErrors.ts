@@ -52,5 +52,7 @@ export function hrErrorMessage(error: HrBleError): string {
       return error.detail || t.errors.hr.connectFailed;
     case 'connection_lost':
       return t.errors.hr.connectionLost;
+    case 'hr_no_data':
+      return t.errors.hr.noData;
   }
 }

@@ -8,7 +8,7 @@ import { base64ToBytes } from './base64';
 import { claimScan, ownsScan, releaseScan } from './scan-lock';
 import { recordAutoConnect } from './autoConnectLog';
 import { waitForAdapter } from './adapterReady';
-import type { HrBleError } from './types';
+import type { HrBleError, HRStatus } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
   ? (...args: unknown[]) => console.log('[HR]', ...args)
@@ -36,7 +36,16 @@ const SCAN_EXTEND_MS = 10_000;
 /** Deadline voor een gerichte verbinding met een onthouden band. */
 const KNOWN_CONNECT_TIMEOUT_MS = 8_000;
 
-export type HRStatus = 'idle' | 'scanning' | 'connected' | 'error';
+/**
+ * Hoe lang een verbonden band mag zwijgen voor we hem loslaten. Een hartslagmeter
+ * stuurt rond 1 Hz; twaalf seconden overleeft een haperende verbinding zonder een
+ * halve training lang een verzonnen hartslag te tonen.
+ */
+const HR_DATA_TIMEOUT_MS = 12_000;
+
+// HRStatus staat in `types.ts` — dit bestand had een eigen kopie, en die liep bij de
+// eerste toevoeging meteen uit de pas met de versie die de UI leest.
+export type { HRStatus };
 
 export interface HRFoundDevice {
   id: string;
@@ -66,6 +75,10 @@ export class HRBleService {
   private device: Device | null = null;
   private monitorSub: Subscription | null = null;
   private scanTimeout: ReturnType<typeof setTimeout> | null = null;
+  /** Is er sinds deze verbinding ooit een bruikbare meting binnengekomen? */
+  private hasData = false;
+  /** Bewaakt dat er metingen blíjven komen; herstart bij elke bruikbare waarde. */
+  private dataDeadline: ReturnType<typeof setTimeout> | null = null;
   /** Identiteit in het gedeelde scan-slot — één native scan voor twee diensten. */
   private readonly scanToken = Symbol('hr-scan');
   private intentionalDisconnect = false;
@@ -251,6 +264,16 @@ export class HRBleService {
           if (!char?.value) return;
           const bpm = this.parseHRMeasurement(char.value);
           if (bpm >= 30 && bpm <= 220) {
+            // Dít is het moment waarop de verbinding bewezen is. Een band die 0 of een
+            // onmogelijke waarde stuurt (horloge van de pols, geen huidcontact) telt
+            // bewust niet mee: die is technisch verbonden en praktisch nutteloos, en
+            // dat verschil moet de gebruiker kunnen zien.
+            if (!this.hasData) {
+              this.hasData = true;
+              this.onStatusChange('connected', undefined, deviceName);
+              log('eerste meting binnen:', deviceName);
+            }
+            this.armDataDeadline(deviceName, opts?.silent === true);
             this.onHR(bpm);
           }
         },
@@ -267,12 +290,23 @@ export class HRBleService {
         }
       });
 
-      this.onStatusChange('connected', undefined, deviceName);
-      log('connected:', deviceName);
+      // Bewust níet 'connected'. Een geïnstalleerd abonnement is geen bewijs dat er
+      // ooit iets binnenkomt: `connectToDevice` op een id kan bij een toestel dat al
+      // op systeemniveau aan de telefoon hangt slagen zonder één radiotransactie, en
+      // service discovery beantwoordt zich dan uit de cache van iOS. Pas de eerste
+      // meting hierboven maakt er 'connected' van.
+      this.hasData = false;
+      this.onStatusChange('waiting', undefined, deviceName);
+      this.armDataDeadline(deviceName, opts?.silent === true);
+      log('verbonden, wachten op data:', deviceName);
       return true;
     } catch (e: unknown) {
       const bleErr = e as { message?: string };
       log('connect error:', bleErr.message);
+      // Faalt de service discovery ná een geslaagde connect, dan staat de GATT-link er
+      // wél. Zonder loslaten houden we het toestel vast terwijl de rij "Verbinden"
+      // toont — en op iOS verdwijnt een vastgehouden toestel uit de scanresultaten.
+      await this.releaseDevice();
       if (opts?.silent) recordAutoConnect('hr', 'connectToDevice faalde', bleErr.message);
       if (!opts?.silent) {
         this.onStatusChange('error', { code: 'connect_failed', detail: bleErr.message });
@@ -304,6 +338,7 @@ export class HRBleService {
     this.intentionalDisconnect = true;
     this.cleanup();
     this.device = null;
+    this.hasData = false;
     await device.cancelConnection().catch(() => {});
   }
 
@@ -369,7 +404,43 @@ export class HRBleService {
 
   private cleanup(): void {
     this.stopScan();
+    this.clearDataDeadline();
     this.monitorSub?.remove();
     this.monitorSub = null;
+  }
+
+  private clearDataDeadline(): void {
+    if (this.dataDeadline) clearTimeout(this.dataDeadline);
+    this.dataDeadline = null;
+  }
+
+  /**
+   * Zet (of verzet) de termijn waarbinnen er een meting moet binnenkomen.
+   *
+   * Draait zowel vóór de eerste meting als daarna, want de twee gevallen zien er voor
+   * de gebruiker hetzelfde uit: een groene rij die niets doet. Een band meet rond 1 Hz,
+   * dus `HR_DATA_TIMEOUT_MS` is ruim genoeg voor een gemiste beat en kort genoeg om
+   * niet een halve rit lang te liegen.
+   *
+   * `silent` = deze verbinding kwam van autoconnect. Die vroeg de gebruiker niets, dus
+   * mag hij ook niets melden: de rij valt gewoon terug op "Verbinden". Een handmatige
+   * poging krijgt wél een uitleg — daar wácht iemand op een antwoord.
+   */
+  private armDataDeadline(deviceName: string, silent: boolean): void {
+    this.clearDataDeadline();
+    this.dataDeadline = setTimeout(() => {
+      this.dataDeadline = null;
+      if (this.intentionalDisconnect || !this.device) return;
+      log('geen hartslagdata binnen', HR_DATA_TIMEOUT_MS, 'ms — loslaten:', deviceName);
+      // Loslaten en niet stil blijven hangen: op iOS verdwijnt een toestel dat wij
+      // vasthouden uit de scanresultaten, dus zonder dit kan de gebruiker geen échte
+      // band meer verbinden zolang deze verbinding blijft staan.
+      void this.releaseDevice();
+      if (silent && !this.hasData) {
+        this.onStatusChange('idle');
+        return;
+      }
+      this.onStatusChange('error', { code: 'hr_no_data' });
+    }, HR_DATA_TIMEOUT_MS);
   }
 }

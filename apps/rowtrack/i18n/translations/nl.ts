@@ -428,6 +428,11 @@ export const nl = {
       scanFailed: 'Zoeken naar een hartslagmeter is mislukt.',
       connectFailed: 'Verbinden met de hartslagmeter is mislukt.',
       connectionLost: 'Verbinding met de hartslagmeter verloren.',
+      // Verbonden zijn en meten zijn twee verschillende dingen. Noem daarom de twee
+      // oorzaken die de gebruiker zélf kan wegnemen, net als bij `hrNotFound`.
+      noData:
+        'Je hartslagmeter is verbonden maar stuurt geen hartslag. Draag je hem, en '
+        + 'staat de hartslag-broadcast aan?',
     },
   },
 };

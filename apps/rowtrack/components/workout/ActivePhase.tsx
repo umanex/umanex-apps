@@ -426,7 +426,7 @@ export function ActivePhase({
                 key="BPM"
                 style={rowStyle}
                 onPress={startHRScan}
-                disabled={hrStatus === 'connected' || hrStatus === 'scanning'}
+                disabled={hrStatus === 'connected' || hrStatus === 'scanning' || hrStatus === 'waiting'}
                 activeOpacity={0.8}
               >
                 <Text style={activeStyles.kpiLabel}>{t.workout.active.kpiBpm}</Text>

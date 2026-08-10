@@ -109,8 +109,15 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         setHRStatus(newStatus);
         if (name) setHRDeviceName(name);
         if (newStatus === 'idle') {
-          setHRBpm(null);
           setHRDeviceName(null);
+        }
+        // Alleen een lopende verbinding mág een hartslag tonen. Stond dit op 'idle'
+        // alleen, dan bleef de laatste meting staan zodra de band stil viel — en
+        // `useWorkoutMetrics` telde dat bevroren getal elke tick opnieuw mee in
+        // avg/max hartslag én in elke `samples`-rij. Dat is geen weergavefoutje maar
+        // verzonnen gezondheidsdata in de opgeslagen rit.
+        if (newStatus !== 'connected') {
+          setHRBpm(null);
         }
         // Een HR-fout blokkeert de rit niet, maar hij hoort de gebruiker wel te
         // bereiken: voorheen ging hij enkel naar een dev-log, dus een mislukte scan
@@ -223,7 +230,9 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
    * fouten waarin een toestel niet in scanresultaten opduikt. Lukt het niet, dan
    * gebeurt er niets zichtbaars: de gebruiker tikt gewoon op Verbinden.
    */
-  const autoConnect = useCallback(async () => {
+  // `hr` komt van buiten en niet uit een hook hierbinnen, zodat deze functie zijn
+  // stabiele identiteit houdt — het focus-effect hangt daaraan.
+  const autoConnect = useCallback(async (opts?: { hr?: boolean }) => {
     if (autoConnecting.current) {
       recordAutoConnect('algemeen', 'overgeslagen', 'vorige poging loopt nog');
       return;
@@ -255,7 +264,10 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         tryKind('rower', statusRef.current !== 'idle' && statusRef.current !== 'error', (d) =>
           serviceRef.current?.connectKnown(d.id, d.name) ?? Promise.resolve(false),
         ),
-        tryKind('hr', hrStatusRef.current !== 'idle' && hrStatusRef.current !== 'error', (d) =>
+        // Zonder toestemming voor gezondheidsgegevens raakt autoconnect de band niet
+        // aan. De handmatige knop was al gesloten; dit pad omzeilde die gate en
+        // verwerkte dus hartslag van iemand die "nee" had geantwoord.
+        tryKind('hr', opts?.hr === false || (hrStatusRef.current !== 'idle' && hrStatusRef.current !== 'error'), (d) =>
           hrServiceRef.current?.connectKnown(d.id, d.name) ?? Promise.resolve(false),
         ),
       ]);

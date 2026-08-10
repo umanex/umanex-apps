@@ -12,7 +12,8 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
-    "flow": "node scripts/flow-harness.mjs"
+    "flow": "node scripts/flow-harness.mjs",
+    "scenarios": "node scripts/scenarios.mjs"
   },
   "dependencies": {
     "@umanex/tokens": "workspace:*",

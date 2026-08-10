@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-08-08_
+_Gegenereerd op 2026-08-10_
 
 ## Project
 - **App:** jobradar
@@ -13,6 +13,7 @@ _Gegenereerd op 2026-08-08_
 
 ## Packages
 - **@umanex/config:** 0.0.1
+- **@umanex/rowtrack-tokens:** 0.0.1
 - **@umanex/tokens:** 0.0.1
 - **@umanex/ui:** 0.0.1
 
@@ -21,6 +22,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 | Component | Pad | Categorie | Figma-node | Snapshot | Status |
 |---|---|---|---|---|---|
+| CoverageBar | `apps/jobradar/components/CoverageBar.tsx` | components | — | — | — |
 | DashboardClient | `apps/jobradar/components/DashboardClient.tsx` | components | — | — | — |
 | FilterBar | `apps/jobradar/components/FilterBar.tsx` | components | — | — | — |
 | JobCard | `apps/jobradar/components/JobCard.tsx` | components | — | — | — |
@@ -32,15 +34,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-13ed3ea fix: read the page after the network settles, not at domcontentloaded
-89e9434 fix(jobradar): do not count a link to the current page as navigation
-a96280b feat(jobradar): add a flow harness and a measured verify path
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
-e59eaa1 chore(config): remove the dead flat-config eslint files
+76c58e1 docs(jobradar): record what actually guards the class
+30e4ec5 fix(jobradar): guard the deciding power, not the vocabulary
+3258114 chore(jobradar): harden the classification failure class into a guard
+fe1e9e8 docs(jobradar): correct the invariant count in the verify path
+3d3281e fix(jobradar): score and lead-worthiness are different questions
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/scripts/flow-harness.mjs
+  M  apps/jobradar/lib/sources/adzuna.ts
+  M  apps/jobradar/lib/sources/kbo.ts
+  M  apps/jobradar/scripts/adzuna-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

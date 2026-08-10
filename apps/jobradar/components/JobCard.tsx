@@ -62,7 +62,8 @@ export function JobCard({ job, isNew, onStatusChange }: JobCardProps) {
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="flex items-center gap-2">
             <span className="rounded bg-muted px-1.5 py-0.5">{job.region}</span>
-            <span>{job.postcode}</span>
+            {/* Adzuna levert geen postcode — die stond hier als een kale "0" op elke kaart. */}
+            {(job.city || job.postcode > 0) && <span>{job.city ?? job.postcode}</span>}
             <span className="rounded bg-muted px-1.5 py-0.5">{job.source}</span>
           </span>
           <a

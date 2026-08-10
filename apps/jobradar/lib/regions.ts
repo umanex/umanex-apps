@@ -63,6 +63,10 @@ export function regionForPostcode(pc: number): RegionCode | null {
  * `null` betekent "buiten de drie geconfigureerde regio's" en is een geldig antwoord: de
  * beller hoort die vacature te laten vallen en te tellen, niet alsnog ergens onder te
  * schuiven.
+ *
+ * Vlaams-Brabant is bewust géén vierde regio (beslissing Jeroen, 2026-08-10). De
+ * Brussel-straal levert er vacatures uit — de bron meldt dat als waarschuwing — en die
+ * vallen dus weg. Dat is de bedoeling, geen gat om later dicht te lopen.
  */
 export function regionForArea(area: readonly string[] | undefined): RegionCode | null {
   if (!area?.length) return null

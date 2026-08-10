@@ -5,6 +5,15 @@ Vacature- en lead-tracker voor UX/UI-freelancers. Next.js 14 (App Router), dev o
 Dit bestand is bewust **minimaal**: het bevat alleen wat gemeten is. Vul de rest aan wanneer er
 echt aan deze app gewerkt wordt — verzonnen projectcontext is schadelijker dan geen.
 
+## Bronnen en bereik
+
+| | |
+|---|---|
+| **Vacatures** | Adzuna (`lib/sources/adzuna.ts`). Zoektermen en ophaal-grenzen in `lib/config/profile.ts`. |
+| **Leads** | Afgeleid uit de vacaturedata (`lib/signals.ts`, bron `vacatures`). KBO bestaat alleen als fixtures — de live-tak is niet gebouwd. |
+| **Regio's** | WVL · OVL · BRU, en **dat blijft zo** (beslissing 2026-08-10). De zoekstraal rond de ankers loopt over de provinciegrens, dus Adzuna levert ook Vlaams-Brabant; die vacatures vallen weg en de bron meldt hoeveel. Bewuste keuze, geen gat. |
+| **Pagineringsplafond** | 5 pagina's × 50 per regio (beslissing 2026-08-10). Brussel heeft er meer dan 600, dus dit kápt af — de bron zet dat als waarschuwing in `sourceStatuses`. Ook bewust. |
+
 ## Verify-pad
 
 Wat de `verify`-skill hier kan uitvoeren. Vastgesteld 2026-08-08 en bijgewerkt 2026-08-10, telkens

@@ -13,6 +13,7 @@ _Gegenereerd op 2026-08-10_
 
 ## Packages
 - **@umanex/config:** 0.0.1
+- **@umanex/rowtrack-tokens:** 0.0.1
 - **@umanex/tokens:** 0.0.1
 - **@umanex/ui:** 0.0.1
 
@@ -56,16 +57,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+3bfbf91 Merge pull request #248 from umanex/fix/rowtrack-autoconnect
+56e14cd docs(rowtrack): record what the erg confirmed, and what it has not been asked yet
 265cff4 fix(rowtrack): connect to a Bluetooth adapter that is actually awake
 162eb45 fix(rowtrack): give the small tap targets the 44pt they need
-a7a64fe feat(rowtrack): give the flow axis a driver, and record what it costs to trust it
-7a473f9 docs(rowtrack): promote the native-module fallback lesson
-89126b8 feat(rowtrack): add a seedable test account so destructive paths become verifiable
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
+  M  apps/rowtrack/app/dev-ble.tsx
+  A  apps/rowtrack/lib/ble/strokeIdle.test.ts
+  A  apps/rowtrack/lib/ble/strokeIdle.ts
+  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

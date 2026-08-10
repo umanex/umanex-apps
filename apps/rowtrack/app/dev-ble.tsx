@@ -109,9 +109,10 @@ export default function DevBleDiagnostics() {
         warn={probe.zeroWhileRowing > 0}
       />
       <Text style={styles.note}>
-        Blijft dit 0 na een paar minuten roeien, dan mag de watt-tegel bij een stop meteen
-        naar 0 springen in plaats van uit te doven. Staat er een getal, dan zou dat bij elke
-        haal knipperen en blijft de demping nodig.
+        Puur ter informatie: 0 hier betekent dat deze erg slaggemiddeld vermogen stuurt, een
+        getal dat hij momentaan meet. De watt-tegel hangt hier níet meer van af — die kijkt
+        naar de slagenteller (`strokeIdle.ts`), omdat 0 W na je laatste haal en 0 W in een
+        recovery niet uit elkaar te houden zijn.
       </Text>
       <View style={styles.buttons}>
         <Button label="Meting resetten" onPress={resetErgProbe} />

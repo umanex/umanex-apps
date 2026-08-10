@@ -117,6 +117,10 @@ export const nl = {
     greetingEvening: 'Goedenavond,',
     nameFallback: 'roeier',
     startButton: 'Start',
+    // Doel-sectie op Home: CTA wanneer er nog geen periodedoel is (audit F6 — Home had
+    // geen tegenhanger van de "Geen doel ingesteld"-rij op Profiel).
+    goalCtaTitle: 'Stel een doel in',
+    goalCtaBody: 'Zet een week- of maanddoel en volg je voortgang.',
     prSectionTitle: 'Persoonlijke records',
     prMaxDistance: 'Maximale\nafstand',
     prBest2k: 'Beste tijd\n2000m',
@@ -167,8 +171,10 @@ export const nl = {
       startRowing: 'Begin met roeien...',
       splitFaster: (sec: number) => `Je bent ${sec} seconden sneller`,
       splitSlower: (sec: number) => `Je bent ${sec} seconden trager`,
+      splitOnTarget: 'Je zit op doeltempo',
       wattsMore: (w: number) => `Je levert ${w} W meer`,
       wattsLess: (w: number) => `Je levert ${w} W minder dan je doel`,
+      wattsOnTarget: 'Je zit op doelvermogen',
       kpiSplit: 'Split 500/m',
       kpiWatt: 'Watt',
       kpiSpm: 'SPM',
@@ -209,9 +215,9 @@ export const nl = {
 
   history: {
     title: 'Historiek',
-    filterWeek: 'Week',
-    filterMonth: 'Maand',
-    filterYear: 'Jaar',
+    filterWeek: 'Deze week',
+    filterMonth: 'Deze maand',
+    filterYear: 'Dit jaar',
     filterAll: 'Alle',
     emptyTitle: 'Geen workouts in deze periode.',
   },

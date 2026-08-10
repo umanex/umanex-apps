@@ -71,6 +71,7 @@ export const WorkoutCard = memo(function WorkoutCard({
   return (
     <Pressable
       onPress={() => onPress(w.id)}
+      accessibilityRole="button"
       style={({ pressed }) => [
         styles.row,
         index % 2 === 1 && styles.rowAlt,

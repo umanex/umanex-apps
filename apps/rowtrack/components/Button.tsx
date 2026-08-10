@@ -84,6 +84,11 @@ export const Button = memo(function Button({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      // Expliciet label i.p.v. de samengevoegde kindtekst: bij `loading` vervangt de
+      // ActivityIndicator de Text en zou de knop naamloos zijn. `title` komt al uit t.*.
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       {isPrimary && (
         <LinearGradient
@@ -99,6 +104,9 @@ export const Button = memo(function Button({
         <>
           {iconPosition === 'leading' && iconEl}
           <Text
+            // sizeLg heeft een vaste hoogte (space['44']) en de tekst is 18px: boven ~1.3×
+            // Dynamic Type knipt het label af binnen de knop. Cap i.p.v. clip.
+            maxFontSizeMultiplier={1.3}
             style={[
               variant === 'ghost'
                 ? styles.ghostText

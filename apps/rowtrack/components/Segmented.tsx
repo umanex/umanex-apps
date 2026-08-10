@@ -42,8 +42,14 @@ export function Segmented<T extends string>({
             style={[styles.btn, active && styles.btnActive]}
             onPress={() => onChange(opt.value)}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
           >
-            <Text style={active ? styles.btnTextActive : styles.btnText} numberOfLines={1}>
+            <Text
+              style={active ? styles.btnTextActive : styles.btnText}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1.3}
+            >
               {opt.label}
             </Text>
           </TouchableOpacity>

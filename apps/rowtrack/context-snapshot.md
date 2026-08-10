@@ -57,15 +57,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+f8f9bc5 fix(rowtrack): let go of a heart-rate link in one place, not three
 9876980 ci: run the node:test invariants, so they measure something
 b9626a6 test(rowtrack): make the heart-rate connection rule testable, then test it
 29aa0f0 fix(rowtrack): let "connected" mean a heart rate actually arrived
 4be0008 revert(rowtrack): keep the last real watt reading instead of an early zero
-fb59690 Merge remote-tracking branch 'origin/main' into feature/rowtrack-web-verplichte-paginas
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/lib/ble/hr-service.ts
+  M  apps/rowtrack/app/(tabs)/_layout.tsx
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  M  apps/rowtrack/app/(tabs)/profile.tsx
+  M  apps/rowtrack/components/Button.tsx
+  M  apps/rowtrack/components/DeviceRow.tsx
+  M  apps/rowtrack/components/GoalSegments.tsx
+  M  apps/rowtrack/components/Segmented.tsx
+  M  apps/rowtrack/components/TabLabel.tsx
+  M  apps/rowtrack/components/WorkoutCard.tsx
+  M  apps/rowtrack/i18n/translations/nl.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

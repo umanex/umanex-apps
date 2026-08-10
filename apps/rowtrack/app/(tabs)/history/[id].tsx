@@ -138,7 +138,12 @@ export default function WorkoutDetailScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.notFoundHeader}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel={t.a11y.back}
+          >
             <Ionicons name="chevron-back" size={24} color={accent.default} />
           </TouchableOpacity>
         </View>
@@ -151,7 +156,12 @@ export default function WorkoutDetailScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.notFoundHeader}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel={t.a11y.back}
+          >
             <Ionicons name="chevron-back" size={24} color={accent.default} />
           </TouchableOpacity>
         </View>
@@ -181,7 +191,11 @@ export default function WorkoutDetailScreen() {
             </View>
           )}
         </View>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backLink}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backLink}
+          accessibilityRole="button"
+        >
           <Ionicons name="arrow-back" size={14} color={accent.default} />
           <Text style={styles.backLinkText}>{t.detail.backLink}</Text>
         </TouchableOpacity>

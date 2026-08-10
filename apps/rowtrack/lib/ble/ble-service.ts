@@ -15,6 +15,9 @@ import {
 } from './constants';
 import { parseRowerData } from './ftms-parser';
 import { claimScan, ownsScan, releaseScan } from './scan-lock';
+import { recordAutoConnect } from './autoConnectLog';
+import { waitForAdapter } from './adapterReady';
+import { countPowerSample } from './ergProbe';
 import type { RowerMetrics, ConnectionStatus, RowerBleError, FoundDevice } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
@@ -58,6 +61,12 @@ const COLLECT_MS = 3_000;
 /** Deadline voor een gerichte verbinding met een onthouden toestel. */
 const KNOWN_CONNECT_TIMEOUT_MS = 8_000;
 
+/**
+ * Hoeveel rust-packets sowieso doorgestuurd worden, langs de dedupe heen. Twee is
+ * precies wat `useWorkoutMetrics` nodig heeft om de rust-transitie te bevestigen.
+ */
+const IDLE_FORWARD_PACKETS = 2;
+
 let blePlxModule: typeof import('react-native-ble-plx') | null = null;
 
 async function loadBlePlx() {
@@ -75,6 +84,7 @@ export class RowerBleService {
   private scanTimeout: ReturnType<typeof setTimeout> | null = null;
   private fallbackTimeout: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
+  private idlePacketsForwarded = 0;
   private intentionalDisconnect = false;
   private isConnecting = false;
   /** Identiteit van deze dienst in het gedeelde scan-slot. Zie `stopScan()`. */
@@ -122,6 +132,18 @@ export class RowerBleService {
         return false;
       }
 
+      // `getManager()` heeft de adapter afgewacht; wat er nu staat is een echt
+      // antwoord. Staat Bluetooth uit, dan heeft verbinden geen zin — meteen
+      // teruggeven is beter dan acht seconden op een timeout wachten met de rij op
+      // 'connecting'. Nog steeds stil: de gebruiker vroeg hier niet om.
+      const { State } = await loadBlePlx();
+      const adapter = await manager.state();
+      recordAutoConnect('rower', 'adapterstatus', String(adapter));
+      if (adapter !== State.PoweredOn) {
+        this.onStatusChange('idle');
+        return false;
+      }
+
       const device = await manager.connectToDevice(id, {
         requestMTU: 512,
         timeout: KNOWN_CONNECT_TIMEOUT_MS,
@@ -129,6 +151,7 @@ export class RowerBleService {
       return await this.finishConnection(device, name || device.name || device.localName || 'Rower');
     } catch (e) {
       const detail = e instanceof Error ? e.message : undefined;
+      recordAutoConnect('rower', 'connectToDevice faalde', detail);
       log(' bekend toestel niet bereikbaar:', detail);
       // Terug naar een eindtoestand. Zonder dit blijft de rij op 'connecting' staan
       // mét een uitgeschakelde knop — een spinner zonder uitgang, precies waar de
@@ -151,11 +174,18 @@ export class RowerBleService {
     this.preferredId = id;
   }
 
+  /**
+   * Geeft een manager terug die klaar is om aangesproken te worden. Zie
+   * `adapterReady.ts`: een vers gemaakte manager staat op `Unknown` en weigert dan
+   * élke verbinding. De wacht hoort hier en niet bij de aanroepers — anders mist de
+   * volgende toevoeging de guard opnieuw, precies zoals `connectKnown` hem miste.
+   */
   private async getManager(): Promise<BleManager> {
+    const { BleManager: BM, State } = await loadBlePlx();
     if (!this.manager) {
-      const { BleManager: BM } = await loadBlePlx();
       this.manager = new BM();
     }
+    await waitForAdapter(this.manager, State);
     return this.manager;
   }
 
@@ -466,11 +496,14 @@ export class RowerBleService {
           const parsed = parseRowerData(char.value);
           const merged = mergeMetrics(this.lastMetrics, parsed);
 
+          // Ruwe meting vóór het nullen hieronder: meldt deze erg 0 W terwijl je nog
+          // roeit? Dat bepaalt of de watt-tegel bij een echte stop meteen op 0 mag
+          // springen of de EMA-staart nodig heeft. Zie `ergProbe.ts`.
+          countPowerSample(merged.instantaneousPower, merged.strokeRate);
+
           // When rower is idle (spm=0, watts=0), clear stale pace values
-          if (
-            merged.strokeRate === 0 &&
-            merged.instantaneousPower === 0
-          ) {
+          const idle = merged.strokeRate === 0 && merged.instantaneousPower === 0;
+          if (idle) {
             merged.strokeRate = null;
             merged.instantaneousPower = null;
             merged.instantaneousPace = null;
@@ -484,6 +517,21 @@ export class RowerBleService {
               break;
             }
           }
+
+          // De rust-transitie mag niet in de dedupe blijven hangen. Zodra de erg
+          // stilstaat zijn watts/spm/pace hierboven genuld en staat de afstand vast,
+          // dus twee opeenvolgende rust-packets zijn veldsgewijs identiek. De hook
+          // heeft die tweede juist nodig om naar 0 te snappen. Vandaar: de eerste
+          // rust-packets gaan altijd door, ook als er niets veranderde. Zonder dit
+          // hing het aan een ongerelateerd veld (elapsedTime) dat toevallig doortikt —
+          // en op een erg die zijn klok bij pauze stilzet, tikt die niet door.
+          if (idle) {
+            this.idlePacketsForwarded += 1;
+            if (this.idlePacketsForwarded <= IDLE_FORWARD_PACKETS) changed = true;
+          } else {
+            this.idlePacketsForwarded = 0;
+          }
+
           if (changed) {
             this.lastMetrics = merged;
             this.onMetrics(merged);

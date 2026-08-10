@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-08_
+_Gegenereerd op 2026-08-10_
 
 ## Project
 - **App:** rowtrack
@@ -56,16 +56,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+265cff4 fix(rowtrack): connect to a Bluetooth adapter that is actually awake
+162eb45 fix(rowtrack): give the small tap targets the 44pt they need
+a7a64fe feat(rowtrack): give the flow axis a driver, and record what it costs to trust it
 7a473f9 docs(rowtrack): promote the native-module fallback lesson
 89126b8 feat(rowtrack): add a seedable test account so destructive paths become verifiable
-23100dc docs(rowtrack): record the verify-pad and correct the consent briefing
-451e251 feat(rowtrack): ask for consent before touching health data
-812240f docs(rowtrack): privacy policy written against what the app actually does
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/.maestro/smoke.yaml
-  M  apps/rowtrack/CLAUDE.md
+  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

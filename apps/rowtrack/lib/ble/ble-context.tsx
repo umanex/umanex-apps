@@ -9,6 +9,7 @@ import {
 import { RowerBleService } from './ble-service';
 import { HRBleService } from './hr-service';
 import { loadKnownDevice, saveKnownDevice, type DeviceKind } from './knownDevices';
+import { beginAutoConnectLog, recordAutoConnect } from './autoConnectLog';
 import { rowerErrorMessage, hrErrorMessage } from '@/i18n/bleErrors';
 import type { BleContextValue, ConnectionStatus, FoundDevice, HRStatus, RowerMetrics } from './types';
 
@@ -89,6 +90,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         if (newStatus === 'connected') {
           const d = serviceRef.current?.currentDevice();
           if (d) saveKnownDevice('rower', { id: d.id, name: d.name });
+          recordAutoConnect('rower', d ? 'onthouden' : 'NIET onthouden', d ? d.id : 'currentDevice() was leeg');
         }
       },
       (newMetrics) => {
@@ -120,6 +122,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         if (newStatus === 'connected') {
           const d = hrServiceRef.current?.currentDevice();
           if (d) saveKnownDevice('hr', d);
+          recordAutoConnect('hr', d ? 'onthouden' : 'NIET onthouden', d ? d.id : 'currentDevice() was leeg');
         }
       },
       (bpm) => {
@@ -221,14 +224,30 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
    * gebeurt er niets zichtbaars: de gebruiker tikt gewoon op Verbinden.
    */
   const autoConnect = useCallback(async () => {
-    if (autoConnecting.current) return;
+    if (autoConnecting.current) {
+      recordAutoConnect('algemeen', 'overgeslagen', 'vorige poging loopt nog');
+      return;
+    }
     autoConnecting.current = true;
+    beginAutoConnectLog();
     try {
       const tryKind = async (kind: DeviceKind, busy: boolean, connect: (d: { id: string; name: string | null }) => Promise<boolean>) => {
-        if (busy || suppressed.current.has(kind)) return;
+        if (busy) {
+          recordAutoConnect(kind, 'overgeslagen', 'al bezig of verbonden');
+          return;
+        }
+        if (suppressed.current.has(kind)) {
+          recordAutoConnect(kind, 'overgeslagen', 'zelf verbroken — pas na handmatig verbinden weer aan');
+          return;
+        }
         const known = await loadKnownDevice(kind);
-        if (!known) return;
+        if (!known) {
+          recordAutoConnect(kind, 'niets onthouden', 'geen eerder toestel in de opslag');
+          return;
+        }
+        recordAutoConnect(kind, 'onthouden toestel', `${known.name ?? '(naamloos)'} · ${known.id}`);
         const ok = await connect(known);
+        recordAutoConnect(kind, ok ? 'verbonden' : 'niet bereikbaar');
         if (!ok) log(kind, 'bekend toestel niet bereikbaar — gebruiker kan zelf verbinden');
       };
 

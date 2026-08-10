@@ -348,8 +348,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   dezelfde reden start `splitSmoothed` nu ook op `Infinity` i.p.v. 0 (vóór de eerste haal stond er
   "0:00"). De omslag vereist **twee** opeenvolgende idle-packets, zodat een erg die tijdens de
   recovery even niets rapporteert geen flikkering geeft.
-- **Op toestel te bevestigen:** dat die twee-packet-drempel volstaat op Jeroens erg — rapporteert
-  hij tussen halen door ooit 0/0, dan flikkert de waarde alsnog en moet de drempel omhoog.
+- **Op toestel bevestigd — 2026-08-10.** Geen flikkering, maar wel merkbaar traag. Dat bleek uit
+  drie lagen te bestaan, niet één. Twee zijn weg (PR #248): de bevestigings-packet bleef in de
+  dedupe van `ble-service` hangen en kwam alleen door als een ongerelateerd veld toevallig bewoog —
+  op een erg die zijn klok bij pauze stilzet was de tegel dus nóóit naar 0 gegaan; en staat
+  `totalDistance` stil, dan is bevestiging overbodig (een recovery laat het vliegwiel draaien, een
+  pauze niet). Jeroen bevestigde de nieuwe timing op de erg. De derde laag staat hieronder.
 
 ## 2026-07-16 — Keychain-accessibility auth-refresh-fix nog device-verificatie nodig · [next-step]
 - **Bevinding:** De red-box "Calling 'getValueWithKeyAsync' has failed → User interaction is not allowed" bij de GoTrue auto-refresh (gelockt scherm) is gefixt: de auth-token wordt nu geschreven met `keychainAccessible: AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` (`lib/secureStorage.ts`, PR #146). Op de sim niet reproduceerbaar (geen echt keychain-lock-gedrag); enkel geverifieerd dat auth niet regresseert (app boot ingelogd).
@@ -409,6 +413,30 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   tijdens het verwijderen — kun je straks niet meer inloggen, dan is je account wél verwijderd."
 - **Volgende zet:** Alleen heropenen als dit in de praktijk opduikt. Een echte oplossing vraagt een
   idempotency-key of een status-endpoint, en dat is voor deze app overkill.
+- **Status:** open
+
+## 2026-08-10 — Watt-tegel dooft nog uit; de meting die dat beslist staat klaar · [next-step]
+- **Bevinding:** De derde laag van de rust-traagheid: tussen "je stopt met halen" en "de erg meldt
+  0 spm" zakt de watt-tegel via de EMA naar 0 (α 0.4 → 90% na ~4,5 s bij 1 Hz), terwijl spm en split
+  in datzelfde venster bevriezen. Weg te halen door de tegel meteen op 0 te zetten zodra de erg 0 W
+  meldt — maar dát mag alleen als deze erg tijdens het roeien nooit 0 W rapporteert. FTMS laat beide
+  interpretaties toe (slaggemiddeld vs momentaan); bij de tweede zou de tegel bij elke haal
+  knipperen. Uit code niet af te leiden.
+- **Volgende zet:** Een paar minuten roeien met `rowtrack://dev-ble` open en "0 W bij slagen"
+  aflezen (`lib/ble/ergProbe.ts` telt het mee tijdens elke rit). Staat er 0 → de EMA-staart mag weg
+  in `useWorkoutMetrics` (watts-tak, snap bij `instantaneousPower === 0`). Staat er een getal → laten
+  staan en dit item sluiten.
+- **Status:** open
+
+## 2026-08-10 — Eerste committed node:test in de repo · [next-step]
+- **Bevinding:** `lib/ble/adapterReady.test.ts` is het eerste testbestand dat blijft staan in plaats
+  van in de scratchpad te verdwijnen (`node --test`, geen dependency; `tsconfig.json` excludeert
+  `**/*.test.ts`). Daarmee heeft de invariant-as uit het Verify-pad voor het eerst een echt bestand,
+  maar niets roept hem aan: hij staat niet in CI, dus hij meet alleen wanneer iemand eraan denkt.
+- **Volgende zet:** Een `test`-stap in `ci.yml` die `node --test` over `apps/rowtrack/**/*.test.ts`
+  draait. Dan kunnen `bestDistanceTime`, `secureStorage` en `formatters` er meteen bij — die hebben
+  alledrie al een wegwerp-harness gehad. Raakt het bredere testrunner-item hieronder, maar vraagt
+  geen dependency-keuze.
 - **Status:** open
 
 ## 2026-08-06 — Geen testrunner in de repo · [debt]

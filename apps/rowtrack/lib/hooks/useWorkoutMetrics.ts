@@ -124,6 +124,8 @@ export function useWorkoutMetrics(
   const splitEmaRef = useRef<number | null>(null);
   /** Opeenvolgende packets zonder kracht én zonder slagen — zie de rust-transitie. */
   const idlePacketsRef = useRef(0);
+  /** Afstand van het vorige verwerkte packet — staat die stil, dan sta jij ook stil. */
+  const lastIdleDistanceRef = useRef<number | null>(null);
   // Laatst-verwerkte bleMetrics-referentie: dit effect her-draait ook op hrBpm-
   // wijzigingen (HR-accumulatie), en dan is bleMetrics dezelfde gemergede referentie.
   const lastProcessedMetricsRef = useRef<RowerMetrics | null>(null);
@@ -205,11 +207,22 @@ export function useWorkoutMetrics(
     //
     // Twee opeenvolgende idle-packets vereist: één enkel 0/0-packet mag geen flikkering
     // geven als een erg tijdens de recovery even niets rapporteert.
+    //
+    // Tenzij het vliegwiel óók stilstaat. Tijdens een recovery blijft het draaien en
+    // loopt `totalDistance` gewoon door (meters per seconde, ruim boven de resolutie);
+    // bij een echte pauze staat die teller stil. Is de afstand niet bewogen, dan is dit
+    // geen recovery-gaatje maar stilstand, en is wachten op bevestiging een seconde
+    // waarin je 180 W leest terwijl je uitblaast.
     if (isNewRowerPacket) {
       const idle = bleMetrics.instantaneousPower == null && bleMetrics.strokeRate == null;
       idlePacketsRef.current = idle ? idlePacketsRef.current + 1 : 0;
 
-      if (idle && idlePacketsRef.current >= IDLE_PACKETS_BEFORE_ZERO) {
+      const distanceFrozen =
+        bleMetrics.totalDistance != null &&
+        bleMetrics.totalDistance === lastIdleDistanceRef.current;
+      lastIdleDistanceRef.current = bleMetrics.totalDistance ?? lastIdleDistanceRef.current;
+
+      if (idle && (distanceFrozen || idlePacketsRef.current >= IDLE_PACKETS_BEFORE_ZERO)) {
         wattsEmaRef.current = null;
         spmEmaRef.current = null;
         splitEmaRef.current = null;
@@ -325,6 +338,7 @@ export function useWorkoutMetrics(
     spmEmaRef.current = null;
     splitEmaRef.current = null;
     idlePacketsRef.current = 0;
+    lastIdleDistanceRef.current = null;
     lastProcessedMetricsRef.current = null;
     startedAtRef.current = new Date();
   }, []);

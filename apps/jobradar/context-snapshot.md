@@ -34,18 +34,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+3d3281e fix(jobradar): score and lead-worthiness are different questions
 15614ec feat(jobradar): count backend work as a lead, and show what the leads rest on
 5e01171 fix(jobradar): take the role word out of the skill list
 d67d221 fix(jobradar): decide the role from role words, not from skill words
 990cb42 docs(jobradar): capture the classification failure class
-28475cd fix(jobradar): let the title decide the role, and stop counting noise as growth
 ```
 
 ## Uncommitted wijzigingen
   M  apps/jobradar/CLAUDE.md
-  M  apps/jobradar/lib/config/profile.ts
-  M  apps/jobradar/lib/matching.ts
-  M  apps/jobradar/scripts/signal-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

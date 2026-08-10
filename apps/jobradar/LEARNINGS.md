@@ -30,3 +30,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ```
 
 <!-- De vastleggen skill voegt hieronder de juiste laag-header toe bij de eerste capture. -->
+
+# Project — jobradar
+
+## 2026-08-10 — Root cause boven patch (classificatie in lib/signals.ts)
+- **Input:** `"Fix Adzuna en leid de signalen af uit de vacaturedata"` — branch `fix/jobradar-bronlaag`. Ook reproduceerbaar zonder de prompt, vanuit `apps/jobradar`:
+  `node --import ./scripts/ts-resolve.mjs --input-type=module -e "import {classificeer} from './lib/signals.ts'; console.log(classificeer({title:'Visual Designer', description:'Je ontwerpt schermen in Figma voor ons platform, gebouwd in React en TypeScript.'}))"`
+  — hoort `design` te geven, gaf `dev`.
+- **Fout:** Twee reviewrondes op rij een P1 in dezelfde classificatie-logica, telkens opgelost door de heuristiek bij te stellen in plaats van de oorzaak weg te nemen. Ronde 2: design werd vóór dev getest over de volledige tekst, dus één terloopse UX-zin maakte van een dev-vacature designbudget. Ronde 3: na de fix ("de titel beslist") kantelt het de andere kant op — 10 van 13 gangbare designtitels matchen geen enkel keyword op titelniveau, dus beslist de omschrijving alsnog en wint de webstack. Root cause: `SKILL_KEYWORDS` bevat *skills*, geen *rollen* — er is geen woord voor designer/ontwerper/vormgever of developer/engineer/ontwikkelaar, dus een skill-lijst kan de rolvraag principieel niet beantwoorden en elke ronde verplaatst de fout naar de andere kant. Meetbaar bijeffect: drie designtools vallen samen in één `figma`-cluster terwijl de webstack over vier clusters spreidt, wat tellen structureel dev-gunstig maakt.
+- **Status:** open

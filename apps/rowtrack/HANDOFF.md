@@ -163,7 +163,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-15 — Geen in-app account-verwijdering (AVG art. 17 + store-blocker) · [next-step]
 - **Bevinding:** Security-audit 2026-07-15 **P1-2**. Geen verwijder-actie in de app; `profiles` heeft geen DELETE-RLS-policy, dus het datamodel ondersteunt het niet eens. AVG recht-op-vergetelheid niet invulbaar + **zekere** Apple (Guideline 5.1.1(v))/Play-afwijzing bij store-submission (niet enkel een risico). Vereist het eerste server-side stuk in dit project.
 - **Volgende zet:** `Account verwijderen`-actie (Profiel) → Supabase **Edge Function** met `supabase.auth.admin.deleteUser(user.id)` (client mag admin-API niet); de bestaande `ON DELETE CASCADE` op workouts/profiles ruimt de rest op. Apart inplannen (introduceert server-side + service-role-key).
-- **Status:** open
+- **Status:** resolved — 2026-08-10. Gebouwd in commit `40568a2`; deze sessie geverifieerd tegen de code: `supabase/functions/delete-account/index.ts` leidt de gebruiker af uit het auth-token (niet uit de request-body), en `app/(tabs)/profile.tsx:381` roept hem aan. Het item stond alleen nog open omdat niemand hem sloot.
 
 ## 2026-07-15 — Sentry error-/crash-monitoring: koppeling uitgesteld · [next-step]
 - **Bevinding:** Security-audit 2026-07-15 **P2-3** (geen error-/crash-monitoring). `@sentry/react-native` werd kort geïnstalleerd maar op vraag weer verwijderd — de eigenlijke Sentry-koppeling doen we in een **latere fase**. Er staat nu een console-gebaseerde `reportError()`-shim in `lib/monitoring.ts` die de voorheen stil ingeslikte read-/save-fouten opvangt (P2-2/P2-4); die functie is het aanhechtpunt.

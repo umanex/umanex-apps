@@ -96,6 +96,8 @@ Geverifieerd tegen de code op 2026-08-09. De site mag **niets** claimen dat hier
 2. **Analytics.** Plausible cloud of self-hosted Umami? Nog niet beslist; blokkeert alleen fase 6.
 3. **Voorwaarden/EULA.** Bestaat nergens. Zelf schrijven, Apple's standaard-EULA gebruiken, of een jurist?
 4. **Maker-foto en app-screenshots.** Er staat geen enkele productscreenshot in de repo. Tot die er zijn, blijft S1/S3/S5 op placeholders staan.
+5. ~~**Hoe rendert `/nl/privacy`?**~~ — **beslist 2026-08-09:** `marked` als dependency, met `apps/rowtrack/docs/privacybeleid.md` als enige bron. Draait bij de build, dus er gaat geen parser naar de browser en er ontstaat geen tweede kopie van een juridische tekst.
+6. ~~**Een verkeerd gespelde rol-utility is stil.**~~ — **opgelost 2026-08-09** met `pnpm --filter @umanex/rowtrack-tokens guard`, incl. zelftest en een gemeten tikfout-drempel. Oorspronkelijke bevinding: De preset garandeert dat je geen kleur kunt gebruiken die geen rol is — maar een tikfout wél. `border-border-default` bestaat niet (de rol heet `border.default` en landt als `DEFAULT`, dus de utility is `border-border`), en Tailwind negeert een onbekende klasse in een `className` zonder één woord; de supportpagina rendeerde daardoor een rand in Tailwinds eigen grijs. Het viel alleen op omdat dezelfde klasse in `@apply` wél hard faalt. Een gerichte guard op de namespaces `bg-`, `fg-`, `accent-`, `achievement-` en `gradient-` zou dit vangen zonder vals alarm op Tailwinds eigen utilities.
 
 ## Aannames
 
@@ -139,16 +141,18 @@ Geverifieerd tegen de code op 2026-08-09. De site mag **niets** claimen dat hier
 - [ ] De badge is de officiële zwarte badge, onvertaald, niet geanimeerd, met ≥ ¼ badgehoogte vrije ruimte
 - [ ] `/.well-known/apple-app-site-association` wordt geserveerd als `application/json` zonder extensie
 
-**SEO/GEO**
-- [ ] `generateMetadata` levert per pagina title/description binnen de lengtegrenzen
-- [ ] `alternates.canonical` en `alternates.languages` inclusief `x-default`
-- [ ] `sitemap.xml`, `robots.txt` en `llms.txt` worden geserveerd en kloppen met §14
-- [ ] JSON-LD (MobileApplication + 3 Offers, FAQPage, Organization) staat in de initiële HTML en valideert
+**SEO/GEO** — afgerond 2026-08-09 op FAQPage na
+- [x] `generateMetadata` levert per pagina title/description binnen de lengtegrenzen — gemeten: 49/60, 131/155, 18/60, 125/155
+- [x] `alternates.canonical` en `alternates.languages` inclusief `x-default` — nagelezen in de gerenderde HTML
+- [x] `sitemap.xml`, `robots.txt` en `llms.txt` worden geserveerd en kloppen met §14 — de output nagelezen, niet enkel de build
+- [x] JSON-LD MobileApplication + 3 Offers en Organization staan in de initiële HTML en parsen; `installUrl` blijft terecht weg zolang de App Store-URL null is
+- [ ] FAQPage-schema — hoort bij S10, volgt in fase 2
 - [ ] De FAQ-vragen op de pagina en in het FAQPage-schema zijn identiek
 
 **Verplichte pagina's**
-- [ ] `/nl/privacy` serveert het bestaande `apps/rowtrack/docs/privacybeleid.md` inhoudelijk gelijk
-- [ ] `/nl/voorwaarden` en `/nl/support` zijn publiek bereikbaar en indexeerbaar
+- [x] `/nl/privacy` serveert het bestaande `apps/rowtrack/docs/privacybeleid.md` inhoudelijk gelijk — het bestand is de enige bron en wordt bij de build gerenderd, dus een kopie kan niet wegdrijven
+- [ ] `/nl/voorwaarden` bestaat — de tekst bestaat nog nergens, zie Open vragen 3
+- [x] `/nl/support` is publiek bereikbaar en indexeerbaar
 - [ ] `apps/rowtrack/lib/links.ts` wijst naar de live privacy-URL — apart gepland, vóór de eerste store-inzending
 
 ## Beslissingsgeschiedenis

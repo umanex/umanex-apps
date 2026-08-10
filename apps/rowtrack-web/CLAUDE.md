@@ -18,6 +18,16 @@ Gevolg: de utility-set is gelijk aan de tokenset. `bg-bg-base`, `text-fg-primary
 heeft geen utility. Wat ontbreekt staat in `packages/rowtrack-tokens/TOKENS-TODO.md` —
 signaleren, niet verzinnen.
 
+**Let op de DEFAULT-sleutel.** `border.default` wordt `border-border`, niet
+`border-border-default`; hetzelfde geldt voor `accent.default` → `bg-accent`. Een klasse die
+niet bestaat wordt door Tailwind in een `className` stil genegeerd — de kleur valt dan terug
+op Tailwinds eigen palet zonder één foutmelding. Daar staat een guard op:
+
+```
+pnpm --filter @umanex/rowtrack-tokens guard
+pnpm --filter @umanex/rowtrack-tokens guard:selftest   # bewijst dat hij kán falen
+```
+
 **Nog niet compleet.** Web-typeschaal, spacing boven 48, container-widths, motion en
 focus-ring ontbreken in de bron. Tot die er zijn gebruikt de scaffold Tailwinds eigen
 schaal voor maten; dat is gemarkeerd met een `TODO` in `app/[locale]/page.tsx` en het is

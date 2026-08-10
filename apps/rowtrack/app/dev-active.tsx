@@ -7,8 +7,9 @@
 // varianten + KPI's op de sim te verifiëren zijn zonder hardware.
 //
 // Gebruik:
-//   - deep-link per variant (schone screenshot): rowtrack://dev-active?goal=duration
+//   - deep-link per variant: rowtrack://dev-active?goal=duration
 //     (goal = none | duration | distance | split | watts)
+//   - schone screenshot zonder dev-controls: voeg &bare=1 toe.
 //   - of interactief: de switcher-balk onderaan.
 // Niet in een tab-group; in productie rendert het niets.
 import { useEffect, useRef } from 'react';
@@ -57,7 +58,7 @@ const VARIANTS: { key: string; label: string; goal: WorkoutGoal | null }[] = [
 export default function DevActivePreview() {
   const insets = useSafeAreaInsets();
   const pulse = useRef(new Animated.Value(1)).current;
-  const params = useLocalSearchParams<{ goal?: string; toast?: string; summary?: string; ble?: string }>();
+  const params = useLocalSearchParams<{ goal?: string; toast?: string; summary?: string; ble?: string; bare?: string }>();
 
   // Sta landscape toe in de harness (active-workout is landscape-capable), zodat de
   // landscape-layouts + celebration hier te verifiëren zijn. Herstel portrait bij verlaten.
@@ -79,6 +80,12 @@ export default function DevActivePreview() {
   // string telt; alles anders valt terug op 'connected'.
   const bleParam = typeof params.ble === 'string' ? params.ble : undefined;
   const bleStatus: ConnectionStatus = BLE_STATUSES.find(s => s === bleParam) ?? 'connected';
+
+  // ?bare=1 → zonder de switcher-balk. De header hierboven belooft per deep-link al
+  // een "schone screenshot", maar de balk rendeerde onvoorwaardelijk en lag over de
+  // onderste KPI-rij. Wie hem wegcropte verloor Kcal; wie dat niet deed hield een
+  // dev-control in beeld.
+  const bare = params.bare === '1';
 
   return (
     <View style={styles.root}>
@@ -119,20 +126,22 @@ export default function DevActivePreview() {
       />
 
       {/* Dev-only doeltype-switcher (thin bar, onderaan boven de home-indicator) */}
-      <View
-        style={[styles.switcher, { paddingBottom: Math.max(insets.bottom, 6) }]}
-        pointerEvents="box-none"
-      >
-        {VARIANTS.map((v, idx) => (
-          <Pressable
-            key={v.key}
-            onPress={() => router.setParams({ goal: v.key })}
-            style={[styles.chip, i === idx && styles.chipOn]}
-          >
-            <Text style={[styles.chipText, i === idx && styles.chipTextOn]}>{v.label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      {bare ? null : (
+        <View
+          style={[styles.switcher, { paddingBottom: Math.max(insets.bottom, 6) }]}
+          pointerEvents="box-none"
+        >
+          {VARIANTS.map((v, idx) => (
+            <Pressable
+              key={v.key}
+              onPress={() => router.setParams({ goal: v.key })}
+              style={[styles.chip, i === idx && styles.chipOn]}
+            >
+              <Text style={[styles.chipText, i === idx && styles.chipTextOn]}>{v.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
     </View>
   );
 }

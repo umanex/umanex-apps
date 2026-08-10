@@ -57,15 +57,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-9b93338 fix(rowtrack): read "you stopped" off the stroke counter, not off the power
-3bfbf91 Merge pull request #248 from umanex/fix/rowtrack-autoconnect
-56e14cd docs(rowtrack): record what the erg confirmed, and what it has not been asked yet
-265cff4 fix(rowtrack): connect to a Bluetooth adapter that is actually awake
-162eb45 fix(rowtrack): give the small tap targets the 44pt they need
+19b9b1c docs: sessie-handoff voor rowtrack-web plus twee repo-brede schulden
+923a497 chore(rowtrack): ?bare=1 op dev-active voor een screenshot zonder dev-controls
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+e866a17 docs(rowtrack): concept-gebruiksvoorwaarden op basis van Apple's minimumtermen
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/app/(tabs)/history/[id].tsx
+  A  apps/rowtrack/app/dev-ble.tsx
+  M  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
+  M  apps/rowtrack/components/Chip.tsx
+  M  apps/rowtrack/components/FormField.tsx
+  M  apps/rowtrack/components/Subtitle.tsx
+  M  apps/rowtrack/context-snapshot.md
+  A  apps/rowtrack/lib/ble/adapterReady.test.ts
+  A  apps/rowtrack/lib/ble/adapterReady.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

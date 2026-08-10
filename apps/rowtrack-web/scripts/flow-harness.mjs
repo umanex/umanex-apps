@@ -43,7 +43,7 @@ const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3104)
 const BASE = `http://127.0.0.1:${PORT}`;
 
 /** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
-const ROUTES = ['/nl'];
+const ROUTES = ['/nl', '/nl/support', '/nl/privacy'];
 
 const fails = [];
 const notes = [];

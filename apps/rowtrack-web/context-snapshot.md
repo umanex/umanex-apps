@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack-web
-_Gegenereerd op 2026-08-09_
+_Gegenereerd op 2026-08-10_
 
 ## Project
 - **App:** rowtrack-web
@@ -22,19 +22,38 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 | Component | Pad | Categorie | Figma-node | Snapshot | Status |
 |---|---|---|---|---|---|
-| _(geen componenten gevonden)_ | — | — | — | — | — |
+| Footer | `apps/rowtrack-web/components/layout/Footer.tsx` | layout | — | — | — |
+| Section | `apps/rowtrack-web/components/layout/Section.tsx` | layout | — | — | — |
+| Analysis | `apps/rowtrack-web/components/sections/Analysis.tsx` | sections | — | — | — |
+| Compat | `apps/rowtrack-web/components/sections/Compat.tsx` | sections | — | — | — |
+| Faq | `apps/rowtrack-web/components/sections/Faq.tsx` | sections | — | — | — |
+| FinalCta | `apps/rowtrack-web/components/sections/FinalCta.tsx` | sections | — | — | — |
+| Goals | `apps/rowtrack-web/components/sections/Goals.tsx` | sections | — | — | — |
+| Hero | `apps/rowtrack-web/components/sections/Hero.tsx` | sections | — | — | — |
+| Maker | `apps/rowtrack-web/components/sections/Maker.tsx` | sections | — | — | — |
+| Metrics | `apps/rowtrack-web/components/sections/Metrics.tsx` | sections | — | — | — |
+| Pricing | `apps/rowtrack-web/components/sections/Pricing.tsx` | sections | — | — | — |
+| Privacy | `apps/rowtrack-web/components/sections/Privacy.tsx` | sections | — | — | — |
+| Records | `apps/rowtrack-web/components/sections/Records.tsx` | sections | — | — | — |
+| JsonLd | `apps/rowtrack-web/components/seo/JsonLd.tsx` | seo | — | — | — |
+| AppStoreBadge | `apps/rowtrack-web/components/ui/AppStoreBadge.tsx` | ui | — | — | — |
+| FaqAccordion | `apps/rowtrack-web/components/ui/FaqAccordion.tsx` | ui | — | — | — |
+| MetricCard | `apps/rowtrack-web/components/ui/MetricCard.tsx` | ui | — | — | — |
+| PricingCard | `apps/rowtrack-web/components/ui/PricingCard.tsx` | ui | — | — | — |
+| ScreenshotFrame | `apps/rowtrack-web/components/ui/ScreenshotFrame.tsx` | ui | — | — | — |
+| SectionHeading | `apps/rowtrack-web/components/ui/SectionHeading.tsx` | ui | — | — | — |
 
 ## Recente commits (app + packages)
 ```
-263cbd9 feat(rowtrack-web): scaffold Next.js App Router app met next-intl (nl)
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
-e59eaa1 chore(config): remove the dead flat-config eslint files
+cbe0193 feat(rowtrack-web): echte app-screenshots in de hero en de analyse-sectie
+2db75e2 feat(rowtrack-web): bouw de onepager S1-S11
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+35153a6 feat(rowtrack-web): publiceer de gebruiksvoorwaarden op /nl/voorwaarden
+6b6d215 feat(rowtrack-web): publiceer het privacybeleid op /nl/privacy
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack-web/briefings/2026-08-09-feature-rowtrack-web-marketingsite.tcebc.md
+  A  apps/rowtrack-web/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

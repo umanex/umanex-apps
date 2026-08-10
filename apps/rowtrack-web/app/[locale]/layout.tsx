@@ -4,6 +4,10 @@ import { Albert_Sans, Source_Serif_4 } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { isLocale, routing } from '@/i18n/routing';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { Footer } from '@/components/layout/Footer';
+import { organisationSchema } from '@/lib/schema';
+import { site } from '@/lib/site';
 
 // Volgorde is functioneel: de rollaag moet vóór globals.css staan, anders zijn de
 // custom properties nog niet gedefinieerd wanneer Tailwind zijn base-laag uitrolt.
@@ -40,7 +44,17 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'meta' });
 
   return {
-    title: t('title'),
+    // Maakt elke relatieve URL in de metadata van onderliggende pagina's absoluut —
+    // canonical, hreflang en og:url. Zonder metadataBase logt Next een waarschuwing
+    // en valt hij terug op localhost, wat in productie stilzwijgend foute canonicals
+    // oplevert.
+    metadataBase: new URL(site.url),
+    title: {
+      default: t('title'),
+      // Subpagina's zetten alleen hun eigen naam ("Support"); de template maakt er
+      // "Support — RowTrack" van.
+      template: `%s — ${site.name}`,
+    },
     description: t('description'),
   };
 }
@@ -66,7 +80,12 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={`${sans.variable} ${serif.variable}`}>
       <body>
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        {/* Site-brede entiteit; de MobileApplication staat op de onepager zelf. */}
+        <JsonLd schema={organisationSchema()} />
+        <NextIntlClientProvider messages={messages}>
+          {children}
+          <Footer locale={locale} />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

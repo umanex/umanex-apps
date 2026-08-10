@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@umanex/rowtrack-tokens": "workspace:*",
+    "marked": "^18.0.9",
     "next": "^14",
     "next-intl": "^3",
     "react": "^18",

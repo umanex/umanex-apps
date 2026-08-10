@@ -34,14 +34,18 @@ export function SyncButton() {
 
       setLastResult(`+${data.jobsAdded} vacatures, +${data.leadsAdded} leads`)
       // Bronwaarschuwingen (afkapping, weggelaten regio's) zijn geen fout, maar wel het
-      // verschil tussen "alles opgehaald" en "een deel opgehaald".
-      setWarnings(
-        Object.values(data.sourceStatuses ?? {}).flatMap((s) =>
-          s && typeof s === 'object' && Array.isArray((s as { warnings?: string[] }).warnings)
-            ? ((s as { warnings: string[] }).warnings)
-            : []
-        )
-      )
+      // verschil tussen "alles opgehaald" en "een deel opgehaald". Een uitgevallen bron
+      // hoort er expliciet bij: de sync als geheel slaagt dan nog steeds, en "+0 vacatures"
+      // leest anders als "er was niets nieuws" in plaats van "Adzuna antwoordde niet".
+      const statussen = Object.entries(data.sourceStatuses ?? {}) as Array<
+        [string, { ok?: boolean; error?: string; warnings?: string[] } | null]
+      >
+      setWarnings([
+        ...statussen
+          .filter(([, s]) => s && s.ok === false)
+          .map(([naam, s]) => `bron "${naam}" is uitgevallen: ${s?.error ?? 'onbekende fout'}`),
+        ...statussen.flatMap(([, s]) => (Array.isArray(s?.warnings) ? s.warnings : [])),
+      ])
       router.refresh()
     } catch {
       setFailed(true)

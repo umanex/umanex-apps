@@ -12,7 +12,7 @@
 import { scoreJob, scoreLead, jobDedupeHash, kiesDedupeHash, matchedSkills, normaliseerBedrijf } from '../lib/matching'
 import { deriveLeadsFromJobs, bouwBedrijfsprofielen, mergeSignalen, classificeer, rolInTitel, AFGELEIDE_BRON } from '../lib/signals'
 import { regionForArea, ALL_REGIONS } from '../lib/regions'
-import { SIGNAL_WEIGHTS, SIGNAL_THRESHOLDS, AFGELEIDE_SIGNALEN } from '../lib/config/profile'
+import { SIGNAL_WEIGHTS, SIGNAL_THRESHOLDS, AFGELEIDE_SIGNALEN, SKILL_KEYWORDS } from '../lib/config/profile'
 import { ADZUNA_JOB_FIXTURES } from '../lib/sources/fixtures/adzuna-jobs'
 import { normaliseerAdzunaItem } from '../lib/sources/adzuna'
 import type { RawJob } from '../lib/sources/types'
@@ -194,6 +194,21 @@ for (const [title, description, verwacht] of CLASSIFICATIE) {
   check(`"${title.slice(0, 38)}" → ${verwacht ?? 'geen'}`, uit === verwacht, `kreeg ${uit ?? 'geen'}`)
 }
 
+// Een rolwoord mag nooit via de vaardighedenlijst alsnog de rol beslissen. 'product manager'
+// stond in SKILL_KEYWORDS.product en maakte van elke Product Manager een designvacature —
+// 5 van de 9 design-classificaties op 664 echte rijen.
+const GEEN_DESIGN: Array<[string, string]> = [
+  ['Senior Product Manager', 'Je stuurt de roadmap en werkt met stakeholders.'],
+  ['Product Manager met kennis Hydrodynamica', 'Je begeleidt pompinstallaties.'],
+  ['Insurance Product Manager', 'Je beheert een verzekeringsportefeuille.'],
+  ['Jr. Product Manager (Carrier/Enterprise)', 'Graduate programma bij een telecomspeler.'],
+]
+for (const [title, description] of GEEN_DESIGN) {
+  check(`"${title.slice(0, 40)}" is geen designvacature`, classificeer({ title, description }) !== 'design', String(classificeer({ title, description })))
+}
+check('"Product Designer" blijft wél design', classificeer({ title: 'Product Designer', description: 'Je ontwerpt features.' }) === 'design')
+check('"product manager" zit niet meer in de skill-lijst', !SKILL_KEYWORDS.product.some((k) => k.includes('manager')), JSON.stringify(SKILL_KEYWORDS.product))
+
 // De rol-laag apart, los van de vaardigheden-poort erboven.
 const ROLLEN: Array<[string, 'design' | 'dev' | null]> = [
   ['Visual Designer', 'design'],
@@ -300,6 +315,24 @@ check('een vacature uit de toekomst telt niet als recent', (() => {
   const toekomst = vers.map((j) => ({ ...j, postedAt: new Date(NU.getTime() + 86_400_000).toISOString() }))
   return !bouwBedrijfsprofielen(toekomst, NU)[0]?.signals.includes('recente groei')
 })())
+// De poort die irrelevante vacatures uit de groeitelling houdt, was ongedekt: haal
+// `soort !== null` weg en de suite bleef groen. Drie verse Mechanical Designers maakten
+// zo een bedrijf tot lead met "recente groei".
+check('irrelevante verse vacatures tellen niet als groei', (() => {
+  const ruis = Array.from({ length: SIGNAL_THRESHOLDS.groeiVacatures + 2 }, (_, i) =>
+    job({ title: `Mechanical Designer ${i}`, company: 'Zeta', description: 'Constructietekeningen.', postedAt: dagenGeleden(1) })
+  )
+  const p = bouwBedrijfsprofielen(ruis, NU)[0]
+  return p?.recenteVacatures === 0 && !p?.signals.includes('recente groei')
+})(), JSON.stringify(bouwBedrijfsprofielen(Array.from({ length: 5 }, (_, i) => job({ title: `Mechanical Designer ${i}`, company: 'Zeta', description: 'Constructietekeningen.', postedAt: dagenGeleden(1) })), NU)[0]))
+check('relevante verse vacatures tellen wél als groei', (() => {
+  const echt = Array.from({ length: SIGNAL_THRESHOLDS.groeiVacatures }, (_, i) =>
+    job({ title: `Frontend Developer ${i}`, company: 'Eta', description: 'React en TypeScript.', postedAt: dagenGeleden(1) })
+  )
+  const p = bouwBedrijfsprofielen(echt, NU)[0]
+  return p?.recenteVacatures === SIGNAL_THRESHOLDS.groeiVacatures && p?.signals.includes('recente groei') === true
+})())
+
 check('een onleesbare datum telt niet als recent', (() => {
   const kapot = vers.map((j) => ({ ...j, postedAt: 'binnenkort' }))
   return !bouwBedrijfsprofielen(kapot, NU)[0]?.signals.includes('recente groei')

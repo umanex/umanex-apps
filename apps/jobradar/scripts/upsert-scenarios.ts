@@ -146,6 +146,26 @@ function lead(over: Partial<RawLead> & Pick<RawLead, 'externalId' | 'companyName
   rauw.close()
 }
 
+// De twee merge-richtingen moeten van elkaar te ONDERSCHEIDEN zijn. Wissel je ze om, dan
+// hoort dit te falen — anders bewaakt de suite hierboven de richting niet, alleen de inhoud.
+{
+  const { db, rauw } = verseDb()
+  // Bestaand: één afgeleid signaal. De bron levert een ander afgeleid signaal.
+  await upsertLead(db, lead({ externalId: 'v-1', companyName: 'Theta', source: 'vacatures', signals: ['recente groei'] }), { afgeleid: true })
+  await upsertLead(db, lead({ externalId: 'v-1', companyName: 'Theta', source: 'vacatures', signals: ['UX-budget aanwezig'] }), { afgeleid: true })
+  const naAfgeleid = JSON.parse((rauw.prepare('SELECT signals FROM companies').get() as { signals: string }).signals) as string[]
+  check('afgeleide richting VERVANGT het oude afgeleide signaal', !naAfgeleid.includes('recente groei') && naAfgeleid.includes('UX-budget aanwezig'), JSON.stringify(naAfgeleid))
+
+  // Diezelfde invoer via de bron-richting hoort het afgeleide signaal juist te BEWAREN.
+  const { db: db2, rauw: rauw2 } = verseDb()
+  await upsertLead(db2, lead({ externalId: 'k-1', companyName: 'Theta', signals: ['recente groei'] }), { afgeleid: false })
+  await upsertLead(db2, lead({ externalId: 'k-1', companyName: 'Theta', signals: ['series A+'] }), { afgeleid: false })
+  const naBron = JSON.parse((rauw2.prepare('SELECT signals FROM companies').get() as { signals: string }).signals) as string[]
+  check('bron-richting BEWAART het afgeleide signaal', naBron.includes('recente groei') && naBron.includes('series A+'), JSON.stringify(naBron))
+  rauw.close()
+  rauw2.close()
+}
+
 // ── 5. Leadscore volgt de signalen die er echt staan ─────────────────────────
 {
   const { db, rauw } = verseDb()

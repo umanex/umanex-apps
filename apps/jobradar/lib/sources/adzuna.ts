@@ -109,8 +109,13 @@ async function haalRegio(regio: RegionCode): Promise<SourceResult<RawJob>> {
       break
     }
 
-    if (totaalBijBron === undefined) totaalBijBron = data.count
-    const batch = data.results ?? []
+    // `data` kan alles zijn wat de bron stuurt — ook `null` (een body van letterlijk "null"
+    // parset daartoe). Dit staat buiten de try hierboven, dus een blinde `data.count` gooide
+    // een TypeError die aan haalRegio ontsnapte en de héle bron velde, per-regio-afhandeling
+    // en al.
+    const geldig = data && typeof data === 'object' ? data : {}
+    if (totaalBijBron === undefined && typeof geldig.count === 'number') totaalBijBron = geldig.count
+    const batch = Array.isArray(geldig.results) ? geldig.results : []
     laatstePaginaVol = batch.length >= ADZUNA_SEARCH.resultatenPerPagina
 
     for (const item of batch) {

@@ -7,7 +7,12 @@ export const SKILL_KEYWORDS = {
   designSystem: ['design system', 'storybook', 'component library', 'design tokens', 'tokens studio'],
   figma: ['figma', 'sketch', 'adobe xd'],
   typescript: ['typescript'],
-  product: ['product designer', 'product design', 'product manager'],
+  // 'product manager' stond hier en hoorde er niet: dat is een *rol*, en geen designrol.
+  // Omdat `product` in DESIGN_SKILLS zit, maakte dat ene woord van elke Product Manager een
+  // designvacature — 5 van de 9 design-classificaties op 664 echte rijen, tot en met
+  // "Product Manager met kennis Hydrodynamica" en "Insurance Product Manager". Precies de
+  // faalklasse uit LEARNINGS.md: een rolwoord in de vaardighedenlijst beslist de rol.
+  product: ['product designer', 'product design'],
 } as const
 
 export type SkillKey = keyof typeof SKILL_KEYWORDS

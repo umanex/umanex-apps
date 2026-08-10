@@ -28,8 +28,14 @@ function check(naam: string, voorwaarde: boolean, detail = ''): void {
   }
 }
 
-const PER_PAGINA = ADZUNA_SEARCH.resultatenPerPagina
-const MAX_PAGINAS = ADZUNA_SEARCH.maxPaginas
+// Hard, niet afgeleid uit ADZUNA_SEARCH. Anders schuift de verwachting mee met de
+// configuratie en houdt élke waarde stand — dezelfde tautologie als de gewichten-check
+// die de vorige ronde blootlegde. Verandert de configuratie bewust, dan hoort deze suite
+// te falen en dwingt hij je de verwachting hier bij te stellen.
+const PER_PAGINA = 50
+const MAX_PAGINAS = 5
+const MAX_DAGEN_OUD = 30
+const LAND = 'be'
 
 const PROVINCIE: Record<RegionCode, string> = {
   WVL: 'West-Vlaanderen (Provincie)',
@@ -72,6 +78,34 @@ const REGIO_ANKER: Record<RegionCode, string> = { WVL: 'Brugge', OVL: 'Gent', BR
 process.env.JOBRADAR_MOCK = '0'
 process.env.ADZUNA_APP_ID = 'test-id'
 process.env.ADZUNA_APP_KEY = 'test-key'
+
+// ── 0. De configuratie is wat deze suite aanneemt ───────────────────────────
+check(`resultatenPerPagina == ${PER_PAGINA}`, ADZUNA_SEARCH.resultatenPerPagina === PER_PAGINA, String(ADZUNA_SEARCH.resultatenPerPagina))
+check(`maxPaginas == ${MAX_PAGINAS}`, ADZUNA_SEARCH.maxPaginas === MAX_PAGINAS, String(ADZUNA_SEARCH.maxPaginas))
+check(`maxDagenOud == ${MAX_DAGEN_OUD}`, ADZUNA_SEARCH.maxDagenOud === MAX_DAGEN_OUD, String(ADZUNA_SEARCH.maxDagenOud))
+check(`country == "${LAND}"`, ADZUNA_SEARCH.country === LAND, ADZUNA_SEARCH.country)
+
+// ── 0b. Misvormde antwoorden mogen de bron niet vellen ──────────────────────
+// `data.count` stond buiten de try/catch: een body van letterlijk "null" gaf een TypeError
+// die aan haalRegio ontsnapte en de per-regio afhandeling omzeilde.
+for (const [naam, body] of [
+  ['null', null],
+  ['leeg object', {}],
+  ['results: null', { results: null, count: 10 }],
+  ['count als string', { results: [], count: 'veel' }],
+  ['results geen array', { results: 'nee' }],
+] as Array<[string, unknown]>) {
+  stub(() => body)
+  let gooide = false
+  let uit: Awaited<ReturnType<typeof adzunaSource.fetch>> | null = null
+  try {
+    uit = await adzunaSource.fetch({ regions: ['OVL'] })
+  } catch {
+    gooide = true
+  }
+  check(`misvormd antwoord (${naam}) velt de bron niet`, !gooide)
+  check(`misvormd antwoord (${naam}) levert nul items`, uit?.items.length === 0, String(uit?.items.length))
+}
 
 // ── 1. Paginering stopt op een niet-volle pagina ─────────────────────────────
 {
@@ -152,10 +186,10 @@ process.env.ADZUNA_APP_KEY = 'test-key'
   const urls = stub((_u, regio, pagina) => (pagina === 1 ? { count: 1, results: [item(`${regio}-1`, PROVINCIE[regio])] } : { results: [] }))
   await adzunaSource.fetch({ regions: ['WVL'] })
   const u = urls[0] ?? ''
-  check('URL draagt het recency-filter', u.includes(`max_days_old=${ADZUNA_SEARCH.maxDagenOud}`), u)
-  check('URL draagt de paginagrootte', u.includes(`results_per_page=${PER_PAGINA}`), u)
+  check('URL draagt het recency-filter', u.includes('max_days_old=30'), u)
+  check('URL draagt de paginagrootte', u.includes('results_per_page=50'), u)
   check('URL draagt het regio-anker', u.includes('where=Brugge'), u)
-  check('URL draagt het land', u.includes(`/jobs/${ADZUNA_SEARCH.country}/search/`), u)
+  check('URL draagt het land', u.includes('/jobs/be/search/'), u)
 }
 
 // ── 8. Mock-modus raakt het netwerk niet ─────────────────────────────────────

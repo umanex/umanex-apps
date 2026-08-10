@@ -33,22 +33,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+d67d221 fix(jobradar): decide the role from role words, not from skill words
 990cb42 docs(jobradar): capture the classification failure class
 28475cd fix(jobradar): let the title decide the role, and stop counting noise as growth
 957e94d fix(jobradar): link to the vacancy, not to Adzuna's dead tracking URL
 bbbab20 docs(jobradar): record the region and paging decisions as decisions
-0e845fd fix(jobradar): do not let a changed hash shape break the first sync
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/CLAUDE.md
-  M  apps/jobradar/components/LeadCard.tsx
+  M  apps/jobradar/components/SyncButton.tsx
   M  apps/jobradar/lib/config/profile.ts
-  M  apps/jobradar/lib/signals.ts
   M  apps/jobradar/lib/sources/adzuna.ts
-  A  apps/jobradar/scripts/adzuna-scenarios.ts
-  M  apps/jobradar/scripts/scenarios.mjs
+  M  apps/jobradar/scripts/adzuna-scenarios.ts
   M  apps/jobradar/scripts/signal-scenarios.ts
+  M  apps/jobradar/scripts/upsert-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -33,24 +33,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+2aec968 feat(jobradar): repair the Adzuna source and derive leads from its data
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
 e6d6a29 fix: judge a route on what renders, not on its status code
-13ed3ea fix: read the page after the network settles, not at domcontentloaded
 ```
 
 ## Uncommitted wijzigingen
    M apps/jobradar/.env.example
    M apps/jobradar/CLAUDE.md
-  M  apps/jobradar/app/api/sync/route.ts
-  M  apps/jobradar/components/JobCard.tsx
-  M  apps/jobradar/lib/config/profile.ts
-  M  apps/jobradar/lib/db/index.ts
-  M  apps/jobradar/lib/db/schema.ts
-  M  apps/jobradar/lib/matching.ts
-  M  apps/jobradar/lib/regions.ts
-  A  apps/jobradar/lib/signals.ts
+  M  apps/jobradar/package.json
+  A  apps/jobradar/scripts/scenarios.mjs
+  A  apps/jobradar/scripts/signal-scenarios.ts
+  A  apps/jobradar/scripts/ts-resolve.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

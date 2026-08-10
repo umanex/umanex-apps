@@ -19,10 +19,10 @@ type AdzunaResponse = {
   count?: number
 }
 
-const isMockMode = () =>
-  process.env.JOBRADAR_MOCK === '1' ||
-  !process.env.ADZUNA_APP_ID ||
-  !process.env.ADZUNA_APP_KEY
+/** Alleen bij een expliciete vlag — zie `kbo.ts` voor waarom een ontbrekende sleutel dat niet is. */
+const isMockMode = () => process.env.JOBRADAR_MOCK === '1'
+
+const heeftSleutels = () => Boolean(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY)
 
 function bouwUrl(regio: RegionCode, pagina: number): string {
   const anchor = REGIONS[regio].adzunaAnchor
@@ -156,7 +156,13 @@ export const adzunaSource: JobSource = {
 
   async fetch({ regions }: { regions: RegionCode[] }): Promise<SourceResult<RawJob>> {
     if (isMockMode()) {
-      return { items: ADZUNA_JOB_FIXTURES.filter((job) => regions.includes(job.region)), warnings: [] }
+      return { items: ADZUNA_JOB_FIXTURES.filter((job) => regions.includes(job.region)), warnings: ['adzuna: MOCK-MODUS — dit zijn verzonnen vacatures, geen echte'] }
+    }
+
+    // Geen sleutels en geen mock-vlag: niets ophalen en dat zeggen. Stil fixtures serveren
+    // zou verzonnen vacatures als echte in de database zetten.
+    if (!heeftSleutels()) {
+      return { items: [], warnings: ['adzuna: ADZUNA_APP_ID/ADZUNA_APP_KEY ontbreken — niets opgehaald'] }
     }
 
     // Per regio afzonderlijk, en fouten reizen mee in plaats van de hele bron te vellen.

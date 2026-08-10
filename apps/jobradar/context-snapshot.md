@@ -34,15 +34,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+76c58e1 docs(jobradar): record what actually guards the class
 30e4ec5 fix(jobradar): guard the deciding power, not the vocabulary
 3258114 chore(jobradar): harden the classification failure class into a guard
 fe1e9e8 docs(jobradar): correct the invariant count in the verify path
 3d3281e fix(jobradar): score and lead-worthiness are different questions
-15614ec feat(jobradar): count backend work as a lead, and show what the leads rest on
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/LEARNINGS.md
+  M  apps/jobradar/lib/sources/adzuna.ts
+  M  apps/jobradar/lib/sources/kbo.ts
+  M  apps/jobradar/scripts/adzuna-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

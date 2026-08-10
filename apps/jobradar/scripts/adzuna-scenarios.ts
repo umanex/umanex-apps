@@ -206,6 +206,37 @@ for (const [naam, body] of [
   process.env.JOBRADAR_MOCK = '0'
 }
 
+// ── 9. Fixtures alleen op expliciet verzoek ─────────────────────────────────
+// Een ontbrekende API-sleutel gold als "gebruik fixtures", en dat zette tien verzonnen
+// bedrijven in de échte database — met namen die op bestaande bedrijven lijken, zonder dat
+// iets het meldde. Opgeruimde mock-rijen kwamen bij de volgende sync gewoon terug.
+{
+  const bewaardeSleutels = [process.env.ADZUNA_APP_ID, process.env.ADZUNA_APP_KEY]
+
+  delete process.env.ADZUNA_APP_ID
+  delete process.env.ADZUNA_APP_KEY
+  process.env.JOBRADAR_MOCK = '0'
+  let geraakt = false
+  globalThis.fetch = (async () => {
+    geraakt = true
+    throw new Error('zonder sleutels mag er niet gefetcht worden')
+  }) as typeof fetch
+
+  const zonder = await adzunaSource.fetch({ regions: ['WVL'] })
+  check('zonder sleutels: geen fixtures', zonder.items.length === 0, String(zonder.items.length))
+  check('zonder sleutels: geen netwerkverkeer', !geraakt)
+  check('zonder sleutels: het wordt gemeld', zonder.warnings.some((w) => w.includes('ontbreken')), JSON.stringify(zonder.warnings))
+
+  process.env.JOBRADAR_MOCK = '1'
+  const met = await adzunaSource.fetch({ regions: ['WVL'] })
+  check('mock-vlag: wél fixtures', met.items.length > 0)
+  check('mock-vlag: en een waarschuwing dat ze verzonnen zijn', met.warnings.some((w) => w.includes('MOCK')), JSON.stringify(met.warnings))
+
+  process.env.JOBRADAR_MOCK = '0'
+  if (bewaardeSleutels[0]) process.env.ADZUNA_APP_ID = bewaardeSleutels[0]
+  if (bewaardeSleutels[1]) process.env.ADZUNA_APP_KEY = bewaardeSleutels[1]
+}
+
 // ── Tegenproef ───────────────────────────────────────────────────────────────
 if (process.env.SCENARIO_SELFTEST === '1') {
   check('tegenproef: deze check hoort te falen', false, 'geïnjecteerd door SCENARIO_SELFTEST=1')

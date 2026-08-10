@@ -82,6 +82,21 @@ niet `.data/jobradar.db`):
 Status blijft `gebouwd` en niet `gevalideerd`: er is nog geen reviewronde over deze wijziging
 gedraaid.
 
+### Bekende grenzen
+
+Uit de reviewronde van 2026-08-10, allebei gemeten en allebei bewust niet gefixt:
+
+- **De indicator rekent live, de kaarten eronder zijn bevroren op sync-tijd.** Wijzig je de
+  woordenlijsten en herlaad je zonder te synchroniseren, dan beweegt het dekkingsgetal wél en
+  de scores op de kaarten niet. Dat is precies de bedoelde eigenschap (zie BEHAVIOUR), maar
+  het kan tegenspreken wat eronder staat. Beslissing over of dat verwarrend genoeg is om de
+  copy aan te passen: aan Jeroen.
+- **`berekenDekking` draait de volledige classificatie bij élke render.** Gemeten: 12 ms bij
+  662 rijen, 85 ms bij 5.000, 841 ms bij 50.000. Nu ruim voldoende. Een cache is bewust niet
+  gebouwd: bij die aantallen is de échte rem de ongelimiteerde query in `app/page.tsx`, die
+  álle rijen naar de RSC-payload stuurt. Dit optimaliseren vóór dát opgelost is, is het
+  verkeerde ding polijsten.
+
 ## Beslissingsgeschiedenis
 
 - 2026-08-10: TC-EBC aangemaakt na vier reviewrondes waarin bleek dat 97% van de opgehaalde vacatures onbepaald blijft; scope = zichtbaarheid van die dekking, niet het verbeteren ervan

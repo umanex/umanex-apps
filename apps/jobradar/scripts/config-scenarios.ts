@@ -50,21 +50,25 @@ function check(naam: string, voorwaarde: boolean, detail = ''): void {
 const alleClusters = Object.keys(SKILL_KEYWORDS) as SkillKey[]
 
 for (const k of alleClusters) {
-  check(`cluster "${k}" is in CLUSTERS verklaard`, CLUSTERS[k] !== undefined)
-  check(`cluster "${k}": gewicht volgt de verklaring`, KEYWORD_WEIGHTS[k] === CLUSTERS[k]?.score, `${KEYWORD_WEIGHTS[k]} vs ${CLUSTERS[k]?.score}`)
+  const as = CLUSTERS[k]
+  check(`cluster "${k}" is in CLUSTERS verklaard`, as !== undefined)
+  // Zonder deze `continue` gooit het blok hieronder een onafgevangen TypeError op precies
+  // de faalmodus die het hoort te melden — de suite crasht dan in plaats van te rapporteren.
+  if (!as) continue
+  check(`cluster "${k}": gewicht volgt de verklaring`, KEYWORD_WEIGHTS[k] === as.score, `${KEYWORD_WEIGHTS[k]} vs ${as.score}`)
   check(
     `cluster "${k}": score-as volgt de verklaring`,
-    SCORE_SKILLS.includes(k) === (CLUSTERS[k]!.score > 0),
-    `in SCORE_SKILLS=${SCORE_SKILLS.includes(k)}, score=${CLUSTERS[k]!.score}`
+    SCORE_SKILLS.includes(k) === (as.score > 0),
+    `in SCORE_SKILLS=${SCORE_SKILLS.includes(k)}, score=${as.score}`
   )
   check(
     `cluster "${k}": classificatie-as volgt de verklaring`,
-    DESIGN_SKILLS.includes(k) === (CLUSTERS[k]!.kant === 'design') &&
-      DEV_SKILLS.includes(k) === (CLUSTERS[k]!.kant === 'dev'),
-    `kant=${CLUSTERS[k]!.kant}`
+    DESIGN_SKILLS.includes(k) === (as.kant === 'design') &&
+      DEV_SKILLS.includes(k) === (as.kant === 'dev'),
+    `kant=${as.kant}`
   )
   check(`cluster "${k}" staat niet aan beide kanten`, !(DESIGN_SKILLS.includes(k) && DEV_SKILLS.includes(k)))
-  check(`cluster "${k}" heeft geen negatief gewicht`, CLUSTERS[k]!.score >= 0)
+  check(`cluster "${k}" heeft geen negatief gewicht`, as.score >= 0)
 }
 check('geen cluster in CLUSTERS zonder keywords', Object.keys(CLUSTERS).every((k) => alleClusters.includes(k as SkillKey)))
 
@@ -90,17 +94,39 @@ const VERWACHTE_ASSEN: Record<SkillKey, [number, 'design' | 'dev' | null]> = {
   backend: [0, 'dev'],
 }
 for (const [k, [score, kant]] of Object.entries(VERWACHTE_ASSEN) as Array<[SkillKey, [number, 'design' | 'dev' | null]]>) {
+  const werkelijk = CLUSTERS[k]
   check(
     `cluster "${k}" staat op score ${score} / kant ${kant}`,
-    CLUSTERS[k]?.score === score && CLUSTERS[k]?.kant === kant,
-    `is ${CLUSTERS[k]?.score} / ${CLUSTERS[k]?.kant}`
+    werkelijk?.score === score && werkelijk?.kant === kant,
+    `is ${werkelijk?.score} / ${werkelijk?.kant}`
   )
 }
+// Een nieuw cluster mag niet buiten de pin om binnenkomen: de tabel hierboven bewaakt alleen
+// wat erin staat, dus de omvang hoort er ook bij.
+check(
+  'elk cluster staat in de vastgepinde tabel',
+  alleClusters.every((k) => k in VERWACHTE_ASSEN),
+  JSON.stringify(alleClusters.filter((k) => !(k in VERWACHTE_ASSEN)))
+)
 
 // ── 2. Geen persoonswoorden in de vaardighedenlijst ──────────────────────────
 // Dit is instantie 3, veralgemeend. Een vaardigheid is iets wat je kent; een rol is iets wat
 // je bént. Staat een rolwoord in `SKILL_KEYWORDS`, dan beslist het via de terugval in
 // `classificeer` alsnog de rol — precies wat 'product manager' deed.
+/**
+ * Bewust NIET afgeleid uit `DESIGN_ROLE_FRASES`/`DEV_ROLE_FRASES`.
+ *
+ * Dat leek de nette oplossing voor het feit dat beide lijsten elkaar tegenspreken — en het
+ * maakte het erger: "head of design" levert bij het splitsen het woord `design`, waarna élk
+ * keyword dat op "design" eindigt ("ux design", "visual design", "product design") als
+ * persoonswoord werd afgekeurd. Een afleiding die het probleem verplaatst in plaats van
+ * oplost.
+ *
+ * Deze lijst blijft dus wat hij is: een onvolledige, handonderhouden benadering. Dat is
+ * eerlijk gezegd het mechanisme waar deze hele faalklasse op steunt, en daarom leunt de
+ * eigenlijke bewaking op sectie 2b hieronder — die kent geen persoonswoorden en heeft ze
+ * niet nodig.
+ */
 const PERSOONSWOORDEN = [
   ...DESIGN_ROLE_SUFFIXEN,
   ...DEV_ROLE_SUFFIXEN,
@@ -118,6 +144,16 @@ const PERSOONSWOORDEN = [
   'specialisten',
   'medewerker',
   'medewerkers',
+  'owner',
+  'owners',
+  'master',
+  'masters',
+  'scientist',
+  'scientists',
+  'tester',
+  'testers',
+  'marketeer',
+  'marketeers',
 ]
 
 /**
@@ -155,6 +191,47 @@ for (const kw of BASELINE.keys()) {
   )
 }
 
+
+// ── 2b. Wélke keywords in hun eentje mogen beslissen ────────────────────────
+// Sectie 2 rust op een handonderhouden woordenlijst, en dat is precies het mechanisme
+// waarop deze hele faalklasse steunt: `'product owner'` glipt er zonder meer langs, en
+// verzint dan drie designvacatures op echte data. Deze check kent geen persoonswoorden en
+// heeft ze niet nodig — hij pint wélke keywords de *macht* hebben om alleen al, als titel,
+// een classificatie af te dwingen via de skill-terugval. Groeit die verzameling, dan is dat
+// een uitbreiding van macht en hoort iemand ernaar te kijken.
+const BESLISSENDE_KEYWORDS = [
+  '.net', 'adobe xd', 'api', 'back-end', 'backend', 'c#', 'cobol', 'component library',
+  'design system', 'design tokens', 'devops', 'dotnet', 'figma', 'front end', 'front-end',
+  'frontend', 'full stack', 'full-stack', 'fullstack', 'gebruikerservaring', 'golang',
+  'interaction design', 'interface design', 'java', 'kotlin', 'microservices', 'next js',
+  'next.js', 'nextjs', 'node.js', 'nodejs', 'php', 'product design', 'python', 'react',
+  'react.js', 'reactjs', 'ruby', 'sketch', 'storybook', 'tokens studio', 'typescript', 'ui',
+  'ui design', 'usability', 'user experience', 'user interface', 'user research', 'ux',
+  'ux design', 'visual design', 'web development',
+]
+
+{
+  const werkelijk: string[] = []
+  for (const keywords of Object.values(SKILL_KEYWORDS)) {
+    for (const kw of keywords as readonly string[]) {
+      // Draagt het keyword zelf al een rolwoord, dan beslist `rolInTitel` en niet de terugval.
+      if (rolInTitel(kw) !== null) continue
+      if (classificeer({ title: kw, description: kw }) !== null) werkelijk.push(kw)
+    }
+  }
+  const verwacht = [...BESLISSENDE_KEYWORDS].sort()
+  const gevonden = [...werkelijk].sort()
+  const nieuw = gevonden.filter((k) => !verwacht.includes(k))
+  const weg = verwacht.filter((k) => !gevonden.includes(k))
+
+  check(
+    'geen nieuw keyword dwingt op eigen kracht een classificatie af',
+    nieuw.length === 0,
+    `nieuw: ${JSON.stringify(nieuw)} — is dit een vaardigheid of een rol? Een rol hoort in de rolwoorden, niet hier.`
+  )
+  check('de pin dekt nog steeds wat er is', weg.length === 0, `verdwenen: ${JSON.stringify(weg)}`)
+}
+
 // ── 3. Elk keyword kan zichzelf vinden ───────────────────────────────────────
 // `\b` naast een leesteken markeert nooit een grens, dus `\b\.net\b` matchte ".NET" nul keer
 // en niets merkte het: een keyword dat nergens op vuurt, faalt volledig stil.
@@ -171,6 +248,14 @@ for (const [cluster, keywords] of Object.entries(SKILL_KEYWORDS)) {
     )
   }
 }
+
+// Zonder ondergrens kan deze sectie stil krimpen: minder keywords is minder checks, en de
+// suite meldt dan een lager getal in plaats van een fout.
+check(
+  'sectie 3 dekt nog minstens 50 keywords',
+  Object.values(SKILL_KEYWORDS).flat().length >= 50,
+  String(Object.values(SKILL_KEYWORDS).flat().length)
+)
 
 // ── 4. De omschrijving beslist nooit over de rol ─────────────────────────────
 // Instanties 1 en 2 in één eigenschap. Draagt de titel een rol, dan mag geen enkele
@@ -212,10 +297,18 @@ for (const title of TITELS) {
   )
 }
 
+// Sectie 4 slaat een titel stil over wanneer `rolInTitel` null geeft. Zijn de rollijsten
+// leeggehaald, dan slaat hij ze állemaal over en meldt hij groen op nul werk.
+check(
+  'sectie 4 toetst nog minstens 8 titels met een rol',
+  TITELS.filter((t) => rolInTitel(t) !== null).length >= 8,
+  String(TITELS.filter((t) => rolInTitel(t) !== null).length)
+)
+
 // ── 5. De score-as raakt de classificatie-as niet ────────────────────────────
 // Een cluster met score 0 mag nergens in een breakdown opduiken, hoe vaak het ook matcht.
 {
-  const nulClusters = alleClusters.filter((k) => CLUSTERS[k]!.score === 0)
+  const nulClusters = alleClusters.filter((k) => CLUSTERS[k]?.score === 0)
   for (const k of nulClusters) {
     const kw = (SKILL_KEYWORDS[k] as readonly string[])[0]!
     const { score, breakdown } = scoreJob({ title: '', description: `Ervaring met ${kw}.` })
@@ -240,6 +333,13 @@ check(
   ![...DESIGN_ROLE_SUFFIXEN, ...DEV_ROLE_SUFFIXEN].some((s) =>
     Object.values(SKILL_KEYWORDS).some((ks) => (ks as readonly string[]).includes(s))
   )
+)
+
+check('sectie 6 toetst nog minstens 10 rolfrases', ALLE_ROLFRASES.length >= 10, String(ALLE_ROLFRASES.length))
+check(
+  'de rolsuffixen zijn niet leeggehaald',
+  [...DESIGN_ROLE_SUFFIXEN, ...DEV_ROLE_SUFFIXEN].length >= 12,
+  String([...DESIGN_ROLE_SUFFIXEN, ...DEV_ROLE_SUFFIXEN].length)
 )
 
 // ── Tegenproef ───────────────────────────────────────────────────────────────

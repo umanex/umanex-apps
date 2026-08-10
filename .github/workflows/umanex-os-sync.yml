@@ -14,6 +14,7 @@ name: Sync umanex-os layer
 #   - context.json                                              snapshot-input, seed-if-absent
 #   - LEARNINGS.md in root + elke apps/*                        capture-staging, seed-if-absent
 #   - HANDOFF.md in root + elke apps/*                          sessie-handoff, seed-if-absent
+#   - BACKLOG.md in root + elke apps/*                          gemeld-niet-gebouwd, seed-if-absent
 #
 # PAYLOAD. De dispatcher stuurt één `bundle_b64` (tar.gz met alle canonieke bestanden)
 # plus `profile_name` en `bundle_version` — drie van de tien velden die GitHub toestaat,
@@ -157,9 +158,10 @@ jobs:
           [ -f context.json ] || install_file context.json.template "context.json"
 
           # Staging-seeds in root + elke app — alleen als afwezig, nooit overschrijven.
-          # LEARNINGS is terugkijkend (waargenomen fouten), HANDOFF vooruitkijkend.
-          # Beide worden bij sessiestart uitgelezen door session-start-handoff.sh, dus een
-          # ontbrekend bestand maakt de bijbehorende lus stil in plaats van luidruchtig.
+          # LEARNINGS is terugkijkend (waargenomen fouten), HANDOFF vooruitkijkend en
+          # sessie-gebonden, BACKLOG duurzaam (benoemd maar niet gebouwd). Alle drie worden
+          # bij sessiestart uitgelezen door session-start-handoff.sh, dus een ontbrekend
+          # bestand maakt de bijbehorende lus stil in plaats van luidruchtig.
           seed_layered() { # $1=bron in SRC  $2=bestandsnaam in de repo
             [ -f "$SRC/$1" ] || return 0
             local d
@@ -172,6 +174,7 @@ jobs:
           }
           seed_layered LEARNINGS.template.md LEARNINGS.md
           seed_layered HANDOFF.template.md   HANDOFF.md
+          seed_layered BACKLOG.template.md   BACKLOG.md
 
           rm -rf "$SRC"
 
@@ -224,7 +227,7 @@ jobs:
           if gh pr view "$BRANCH" --json state -q .state 2>/dev/null | grep -q OPEN; then
             echo "Bestaande open PR aangevuld met een nieuwe commit (bestaande commits blijven staan)."
           else
-            PR_BODY="Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, sync-script, git hooks, LEARNINGS- en HANDOFF-seed), getriggerd door een wijziging in umanex-os. Skills komen via het lokale scripts/sync-os.sh.
+            PR_BODY="Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, sync-script, git hooks, LEARNINGS-, HANDOFF- en BACKLOG-seed), getriggerd door een wijziging in umanex-os. Skills komen via het lokale scripts/sync-os.sh.
 
             **Geen checks op deze PR, en dat is verwacht.** GitHub triggert geen workflows voor een push met de default github.token. De laag is daarom in de sync-job zelf gevalideerd: elk gesynct shell-bestand is niet-leeg, syntactisch geldig en executable, en context.json is geldige JSON. Was dat niet zo, dan was deze PR niet geopend.
 

@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export type ItemStatus = 'new' | 'saved' | 'dismissed' | 'contacted'
 
@@ -13,6 +13,9 @@ export const jobs = sqliteTable(
     title: text('title').notNull(),
     company: text('company').notNull(),
     postcode: integer('postcode').notNull(),
+    // Plaatsnaam van de bron. Adzuna levert geen postcode, dus draagt dit veld daar de
+    // plaatsinfo — en daarmee de plaats-component van de dedupe-sleutel.
+    city: text('city'),
     region: text('region').notNull(),
     url: text('url').notNull(),
     description: text('description'),

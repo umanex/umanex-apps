@@ -1,5 +1,5 @@
 import 'server-only'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { mkdirSync } from 'fs'
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
@@ -12,7 +12,9 @@ let client: DbClient | undefined
 function createClient() {
   const dbPath = process.env.JOBRADAR_DB_PATH ?? join(process.cwd(), '.data', 'jobradar.db')
 
-  mkdirSync(join(process.cwd(), '.data'), { recursive: true })
+  // De map van het gekozen pad, niet altijd `<cwd>/.data` — anders wijst JOBRADAR_DB_PATH
+  // ergens heen waar de map nooit wordt aangemaakt en `new Database()` eronder omvalt.
+  mkdirSync(dirname(dbPath), { recursive: true })
 
   const sqlite = new Database(dbPath)
   sqlite.pragma('journal_mode = WAL')
@@ -27,6 +29,7 @@ function createClient() {
     title TEXT NOT NULL,
     company TEXT NOT NULL,
     postcode INTEGER NOT NULL,
+    city TEXT,
     region TEXT NOT NULL,
     url TEXT NOT NULL,
     description TEXT,
@@ -34,10 +37,12 @@ function createClient() {
     dedupe_hash TEXT NOT NULL,
     score INTEGER NOT NULL DEFAULT 0,
     score_breakdown TEXT NOT NULL DEFAULT '{}',
+    job_status TEXT NOT NULL DEFAULT 'new',
     first_seen_at TEXT NOT NULL,
     last_seen_at TEXT NOT NULL
   );
   CREATE UNIQUE INDEX IF NOT EXISTS jobs_dedupe_hash_idx ON jobs (dedupe_hash);
+  CREATE INDEX IF NOT EXISTS jobs_source_external_idx ON jobs (source, external_id);
 
   CREATE TABLE IF NOT EXISTS companies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,10 +59,12 @@ function createClient() {
     rechtsgrond TEXT NOT NULL DEFAULT 'gerechtvaardigd belang',
     opt_out INTEGER NOT NULL DEFAULT 0,
     dedupe_hash TEXT NOT NULL,
+    lead_status TEXT NOT NULL DEFAULT 'new',
     first_seen_at TEXT NOT NULL,
     last_seen_at TEXT NOT NULL
   );
   CREATE UNIQUE INDEX IF NOT EXISTS companies_dedupe_hash_idx ON companies (dedupe_hash);
+  CREATE INDEX IF NOT EXISTS companies_source_external_idx ON companies (source, external_id);
 
   CREATE TABLE IF NOT EXISTS sync_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,11 +79,16 @@ function createClient() {
   );
 `)
 
-  // Migrations for existing databases (idempotent via PRAGMA table_info check)
+  // Migrations for existing databases (idempotent via PRAGMA table_info check).
+  // De CREATE TABLE hierboven draagt deze kolommen inmiddels zelf; deze checks zijn er
+  // voor databases die van vóór die kolom dateren.
   type ColInfo = { name: string }
   const jobCols = (sqlite.prepare('PRAGMA table_info(jobs)').all() as ColInfo[]).map((c) => c.name)
   if (!jobCols.includes('job_status')) {
     sqlite.exec("ALTER TABLE jobs ADD COLUMN job_status TEXT NOT NULL DEFAULT 'new'")
+  }
+  if (!jobCols.includes('city')) {
+    sqlite.exec('ALTER TABLE jobs ADD COLUMN city TEXT')
   }
   const companyCols = (sqlite.prepare('PRAGMA table_info(companies)').all() as ColInfo[]).map((c) => c.name)
   if (!companyCols.includes('lead_status')) {

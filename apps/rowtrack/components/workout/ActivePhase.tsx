@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,12 +15,9 @@ import type { EdgeInsets } from 'react-native-safe-area-context';
 import type { ConnectionStatus, HRStatus } from '@/lib/ble/types';
 import type { WorkoutGoal } from '@/lib/workout-goals';
 import { Button, KpiSingle } from '@/components';
-import {
-  GoalSetupModal,
-  MotivationalToast,
-} from '@/components/workout';
+import { MotivationalToast } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
-import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatMetersDotted, correctSpm } from '@/lib/formatters';
+import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatInt, formatDecimal, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import { t } from '@/i18n';
 import { bg, fg, accent, border, progressBar, status, buttonTokens, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
@@ -58,8 +55,6 @@ type ActivePhaseProps = {
   onStop: () => void;
   onContinue: () => void;
   onGoalContinue: () => void;
-  onSetGoal: (g: WorkoutGoal) => void;
-  onClearGoal: () => void;
   hasProfileWeight: boolean;
   hrStatus: HRStatus;
   hrBpm: number | null;
@@ -91,8 +86,6 @@ export function ActivePhase({
   onStop,
   onContinue,
   onGoalContinue,
-  onSetGoal,
-  onClearGoal,
   hasProfileWeight,
   hrStatus,
   hrBpm,
@@ -119,8 +112,6 @@ export function ActivePhase({
     ? { width: landColWidth, flexGrow: 0, flexShrink: 0 }
     : landscapeStyles.colGrow;
 
-  const [showGoalModal, setShowGoalModal] = useState(false);
-
   const isConnecting = useMemo(
     () => phase === 'active' && bleStatus !== 'connected',
     [phase, bleStatus],
@@ -136,18 +127,6 @@ export function ActivePhase({
     const m = String(now.getMinutes()).padStart(2, '0');
     return t.workout.summary.todayAt(`${h}:${m}`);
   }, [phase]);
-
-  const handleSetGoal = useCallback((g: WorkoutGoal) => {
-    onSetGoal(g);
-    setShowGoalModal(false);
-  }, [onSetGoal]);
-
-  const handleClearGoal = useCallback(() => {
-    onClearGoal();
-    setShowGoalModal(false);
-  }, [onClearGoal]);
-
-  const handleCloseGoalModal = useCallback(() => setShowGoalModal(false), []);
 
   // --- DOEL-pill waarde (nieuw compact/lowercase design) ---
   // Alle doeltypes volgen {waarde} {eenheid} met spatie: "Geen" / "20 min" /
@@ -166,9 +145,9 @@ export function ActivePhase({
       case 'distance': {
         if (goal.target >= 1000) {
           const km = goal.target / 1000;
-          return { value: Number.isInteger(km) ? `${km}` : `${km.toFixed(1).replace('.', t.format.decimalSeparator)}`, unit: 'km' };
+          return { value: Number.isInteger(km) ? formatInt(km) : formatDecimal(km, 1), unit: 'km' };
         }
-        return { value: `${goal.target}`, unit: 'm' };
+        return { value: formatInt(goal.target), unit: 'm' };
       }
       case 'split':
         return { value: formatSplit(goal.target, true), unit: t.workout.active.goalUnitSplit };
@@ -218,9 +197,9 @@ export function ActivePhase({
         fillPct = target > 0 ? Math.min(1, distanceMeters / target) : 0;
         fillKind = 'gradient';
         heroLabel = t.workout.active.remainingDistance;
-        heroText = formatMetersDotted(Math.max(0, target - distanceMeters));
+        heroText = formatInt(Math.max(0, target - distanceMeters));
         subLabel = t.workout.active.covered;
-        subtitle = progressRow(`${formatMetersDotted(distanceMeters)}m`, fillPct);
+        subtitle = progressRow(`${formatInt(distanceMeters)} m`, fillPct);
         break;
       }
       case 'split': {
@@ -263,7 +242,7 @@ export function ActivePhase({
       default:
         // Geen doel: hero = verstreken tijd, subtitle = verstreken afstand.
         heroText = formattedTimer;
-        subtitle = <Text style={activeStyles.subtitleText}>{`${formatMetersDotted(distanceMeters)}m`}</Text>;
+        subtitle = <Text style={activeStyles.subtitleText}>{`${formatInt(distanceMeters)} m`}</Text>;
     }
     return { heroLabel, heroText, subLabel, subtitle, fillPct, fillKind };
   }
@@ -402,9 +381,9 @@ export function ActivePhase({
         case 'WATT': return `${Math.round(wattsDisplay)}`;
         case 'SPM': return `${correctSpm(spmDisplay, spmHalved)}`;
         case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
-        case 'AFSTAND': return `${formatMetersDotted(distanceMeters)}m`;
+        case 'AFSTAND': return `${formatInt(distanceMeters)} m`;
         case 'TIJD': return formattedTimer;
-        case 'KCAL': return `${Math.round(calories)}${hasProfileWeight ? '' : '*'}`;
+        case 'KCAL': return `${formatInt(calories)}${hasProfileWeight ? '' : '*'}`;
       }
     }
 
@@ -586,15 +565,6 @@ export function ActivePhase({
         renderPortrait()
       ) : null}
 
-      {/* Goal setup (mid-workout) */}
-      <GoalSetupModal
-        visible={showGoalModal}
-        currentGoal={goal}
-        onSetGoal={handleSetGoal}
-        onClearGoal={handleClearGoal}
-        onClose={handleCloseGoalModal}
-      />
-
       {/* Summary Modal — volle-breedte secties (Figma 43-8278) */}
       <Modal visible={phase === 'summary'} transparent animationType="fade" statusBarTranslucent>
         <View style={summaryStyles.screen}>
@@ -632,13 +602,13 @@ export function ActivePhase({
             <View style={summaryStyles.kpiBandDivider} />
             <View style={summaryStyles.kpiRow}>
               <KpiSingle
-                value={`${Math.round(calories)}${hasProfileWeight ? '' : '*'}`}
+                value={`${formatInt(calories)}${hasProfileWeight ? '' : '*'}`}
                 unit="kcal"
                 label={t.workout.summary.kpiEnergy}
                 style={summaryStyles.kpiCell}
               />
               <KpiSingle
-                value={summaryTotalStrokes != null ? `${correctSpm(summaryTotalStrokes, spmHalved)}` : '—'}
+                value={summaryTotalStrokes != null ? formatInt(correctSpm(summaryTotalStrokes, spmHalved)) : '—'}
                 label={t.workout.summary.kpiStrokes}
                 style={summaryStyles.kpiCell}
               />

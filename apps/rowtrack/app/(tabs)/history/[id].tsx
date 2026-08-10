@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { BottomFade, Button, EmptyState, ErrorState, KpiSingle, Segmented } from '@/components';
-import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, correctSpm } from '@/lib/formatters';
+import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, formatInt, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import { samplesFromTuples } from '@/lib/bestDistanceTime';
 import { segmentSplitTimes, fastestSplit, averageSplit, distanceSplits, segmentHeartRates } from '@/lib/workoutSegments';
@@ -238,7 +238,7 @@ export default function WorkoutDetailScreen() {
                   style={styles.kpiCell}
                 />
                 <KpiSingle
-                  value={workout.total_strokes != null ? `${correctSpm(workout.total_strokes, spmHalved)}` : '—'}
+                  value={workout.total_strokes != null ? formatInt(correctSpm(workout.total_strokes, spmHalved)) : '—'}
                   unit=""
                   label={t.kpi.totalStrokes}
                   style={styles.kpiCell}

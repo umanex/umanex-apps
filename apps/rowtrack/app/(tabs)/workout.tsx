@@ -51,7 +51,7 @@ export default function WorkoutScreen() {
   const {
     toastMsg, splits, goalReached, prFlags, pulseAnim,
     avgWatts, avgSpm, avgSplit, isCountdown, paceZone, hasPR,
-    dismissToast, fetchPRs, resetGameState, resetGoalReached,
+    dismissToast, fetchPRs, resetGameState,
   } = useGoalProgress(phase, goal, metricsState, refs, user?.id);
 
   // Einde-van-rit guards: rit exact één keer opslaan, doel-einde exact één keer afhandelen.
@@ -221,16 +221,6 @@ export default function WorkoutScreen() {
     }
   }, [phase, goalReached, saveWorkout, disconnect, stopHR]);
 
-  const handleSetGoal = useCallback((g: WorkoutGoal) => {
-    setGoal(g);
-    resetGoalReached();
-  }, [resetGoalReached]);
-
-  const handleClearGoal = useCallback(() => {
-    setGoal(null);
-    resetGoalReached();
-  }, [resetGoalReached]);
-
   // --- Summary computed values ---
   const summaryMaxWatts = refs.maxWattsRef.current > 0 ? refs.maxWattsRef.current : null;
   const summaryBestSplit = refs.bestSplitRef.current < Infinity ? Math.round(refs.bestSplitRef.current) : null;
@@ -301,8 +291,6 @@ export default function WorkoutScreen() {
       onStop={handleStop}
       onContinue={handleContinue}
       onGoalContinue={handleCelebrationContinue}
-      onSetGoal={handleSetGoal}
-      onClearGoal={handleClearGoal}
       hasProfileWeight={hasProfileWeight}
       hrStatus={hrStatus}
       hrBpm={hrBpm}

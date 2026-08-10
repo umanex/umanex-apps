@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { BottomFade, EmptyState, ErrorState, KpiSingle, Segmented, WorkoutCard } from '@/components';
-import { formatTimerFull, formatDistanceDynamic } from '@/lib/formatters';
+import { formatTimerFull, formatDistanceDynamic, formatInt } from '@/lib/formatters';
 import { periodStart, type Period } from '@/lib/period';
 import { t } from '@/i18n';
 import {
@@ -184,7 +184,7 @@ export default function HistoryScreen() {
         </View>
         <View style={styles.kpiGridRow}>
           <KpiSingle
-            value={totalsReady ? `${totals.calories}` : NO_VALUE}
+            value={totalsReady ? formatInt(totals.calories) : NO_VALUE}
             unit={totalsReady ? 'kcal' : ''}
             label={t.kpi.totalEnergy}
             style={styles.kpiCell}

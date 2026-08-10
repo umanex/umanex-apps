@@ -17,6 +17,10 @@ export const nl = {
 
   format: {
     decimalSeparator: ',',
+    // Punt = duizendtal, komma = decimaal. Eén betekenis per teken: '7.515 m' is
+    // een duizendtal, '22,3 km' een decimaal. Beide scheiders staan alleen hier
+    // en in lib/formatters.ts (formatInt / formatDecimal).
+    thousandsSeparator: '.',
   },
 
   units: {
@@ -24,6 +28,8 @@ export const nl = {
     hourShort: 'u',
     hourLong: 'uur',
     minuteShort: 'min',
+    // Ritten korter dan een minuut: "17 sec", niet "0:17 min".
+    secondShort: 'sec',
     sessions: 'sessies',
   },
 
@@ -315,14 +321,7 @@ export const nl = {
     segmentSplitA11y: 'Split, doel',
     segmentWattsA11y: 'Watt, doel',
     // Doeltype-config (workout-goals.ts)
-    typeDuration: 'Tijd',
-    typeDistance: 'Afstand',
-    typeSplit: 'Split',
-    typeWatts: 'Watt',
     // GoalSetupModal (mid-workout)
-    setupTitle: 'Stel doel in',
-    setupButton: 'Stel in',
-    setupNoGoalNote: 'Geen doel voor deze training.',
     // Periode-doel (GoalSheet)
     sheetTitle: 'Doel bewerken',
     sheetPeriodLabel: 'PERIODE',

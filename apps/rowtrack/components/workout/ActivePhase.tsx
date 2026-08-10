@@ -217,9 +217,14 @@ export function ActivePhase({
         if (split > 0) {
           const diff = goal!.target - split;
           const absDiff = Math.abs(diff);
-          sub = diff >= 0 ? t.workout.active.splitFaster(absDiff) : t.workout.active.splitSlower(absDiff);
+          // diff 0 is exact doeltempo — "Je bent 0 seconden sneller" leest als een fout (audit F5).
+          sub = diff === 0
+            ? t.workout.active.splitOnTarget
+            : diff > 0
+              ? t.workout.active.splitFaster(absDiff)
+              : t.workout.active.splitSlower(absDiff);
         }
-        subtitle = <Text style={activeStyles.subtitleText}>{sub}</Text>;
+        subtitle = <Text style={[activeStyles.subtitleText, activeStyles.subtitleSentence]}>{sub}</Text>;
         break;
       }
       case 'watts': {
@@ -234,9 +239,14 @@ export function ActivePhase({
         if (w > 0) {
           const diff = w - goal!.target;
           const absDiff = Math.abs(diff);
-          sub = diff >= 0 ? t.workout.active.wattsMore(absDiff) : t.workout.active.wattsLess(absDiff);
+          // diff 0 is exact op vermogen — "Je levert 0 W meer" leest als een fout (audit F5).
+          sub = diff === 0
+            ? t.workout.active.wattsOnTarget
+            : diff > 0
+              ? t.workout.active.wattsMore(absDiff)
+              : t.workout.active.wattsLess(absDiff);
         }
-        subtitle = <Text style={activeStyles.subtitleText}>{sub}</Text>;
+        subtitle = <Text style={[activeStyles.subtitleText, activeStyles.subtitleSentence]}>{sub}</Text>;
         break;
       }
       default:
@@ -737,6 +747,14 @@ const activeStyles = StyleSheet.create({
     fontSize: fontSize['36'],
     letterSpacing: -0.9, // -2.5% van 36
     color: fg.primary,
+  },
+  // Coaching-zin (split/watt-doel) alléén. Niet op `heroPanel`: dat paneel draagt het
+  // 114px hero-getal, en een symmetrische inset van 40 knijpt "120:45" tot wrappen/krimpen.
+  // Ook niet op `subtitleText` zelf: die stijl draagt óók de twee kolommen van de
+  // progress-rij (duration/distance), waar padding de statische divider zou wegduwen.
+  subtitleSentence: {
+    paddingHorizontal: space['20'],
+    textAlign: 'center',
   },
   subtitleRow: {
     flexDirection: 'row',

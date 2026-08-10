@@ -32,6 +32,16 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Klant — umanex
 
+## 2026-08-10 — De laag-discipline-guard ziet kale hex in CSS niet · [debt]
+- **Bevinding:** De regel `hardcoded-color` in `packages/tokens/scripts/guard.mjs` matcht alleen Tailwinds arbitrary-syntax (`bg-[#fff]`), niet een gewone `color: #ff0000` in een `.css`-bestand of een `fill="#..."` in een SVG — terwijl de docstring van diezelfde guard juist zegt dat hij bestaat omdat ESLint die twee niet ziet. Ontdekt doordat een tegenproef níet afging waar ik hem verwachtte.
+- **Volgende zet:** Het gat is klein en gemeten: kale hex komt in álle guard-scopes samen **één keer** voor, in `apps/cashflow/scripts/render-charts.tsx:149` (inline `<style>` in een preview-script). Een zevende regel toevoegen kost dus één baseline-entry of één refactor. Niet zelf gedaan: het verbreedt een guard die vier apps raakt.
+- **Status:** open
+
+## 2026-08-10 — hexToHslTriplet staat nu in twee pakketten · [debt]
+- **Bevinding:** `packages/rowtrack-tokens/lib/hslTriplet.mjs` is een bewuste kopie van `packages/tokens/lib/hslTriplet.mjs`. De afweging: de twee token-pipelines zijn onafhankelijk ontworpen, en een import ertussen creëert een koppeling waar er geen hoort — voor een pure functie van vijftig regels. Prijs: verandert de afrondingsstrategie, dan moet dat op twee plekken.
+- **Volgende zet:** Niets, tenzij er een derde consument komt. Dan is een gedeeld `packages/color-utils` goedkoper dan een derde kopie.
+- **Status:** open
+
 ## 2026-08-04 — React 18 en 19 delen één platte node_modules · [risico]
 - **Verplaatst:** dit punt hoort bij RowTrack, want die app dwingt de platte layout af. De volledige bevinding — inclusief de mislukte poging met de geïsoleerde layout (alle Next-builds groen, Metro valt op de phantom dependency `@expo/metro-runtime`) en de drie uitwegen — staat in `apps/rowtrack/HANDOFF.md`, entry van dezelfde datum. Hieronder de oorspronkelijke, inmiddels achterhaalde formulering.
 - **Bevinding:** De root `.npmrc` zet `node-linker=hoisted` en `shamefully-hoist=true`, dus

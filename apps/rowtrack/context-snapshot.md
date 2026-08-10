@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-09_
+_Gegenereerd op 2026-08-10_
 
 ## Project
 - **App:** rowtrack
@@ -57,15 +57,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+923a497 chore(rowtrack): ?bare=1 op dev-active voor een screenshot zonder dev-controls
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 e866a17 docs(rowtrack): concept-gebruiksvoorwaarden op basis van Apple's minimumtermen
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-a7a64fe feat(rowtrack): give the flow axis a driver, and record what it costs to trust it
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/dev-active.tsx
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

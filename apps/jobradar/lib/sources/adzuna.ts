@@ -8,7 +8,8 @@ type AdzunaItem = {
   title: string
   company?: { display_name?: string }
   location?: { display_name?: string; area?: string[] }
-  redirect_url: string
+  /** Bewust ongebruikt — zie `vacatureUrl`. Staat er om de API-vorm te documenteren. */
+  redirect_url?: string
   description?: string
   created: string
 }
@@ -39,6 +40,20 @@ function bouwUrl(regio: RegionCode, pagina: number): string {
 }
 
 /**
+ * De pagina waar de vacature écht staat.
+ *
+ * Niet `item.redirect_url`. Dat is Adzuna's klik-tracking-link (`/land/ad/<id>?se=…`) en die
+ * geeft **"Pagina niet gevonden"** wanneer je hem koud opent — geverifieerd in Chrome op
+ * 2026-08-10 met een verse link uit de API. Elke "Bekijk"-knop in het dashboard liep daarop
+ * dood, waardoor de vacatures verzonnen léken terwijl ze bestonden.
+ *
+ * `/details/<id>` toont dezelfde vacature wél volledig, inclusief bedrijf, plaats en status.
+ */
+function vacatureUrl(id: string): string {
+  return `https://${ADZUNA_SEARCH.siteHost}/details/${encodeURIComponent(id)}`
+}
+
+/**
  * Zet één Adzuna-item om, of `null` als het buiten de geconfigureerde regio's valt.
  *
  * De regio komt uit `location.area`, niet uit de regio waarvoor we zochten. Een anker met
@@ -46,7 +61,7 @@ function bouwUrl(regio: RegionCode, pagina: number): string {
  * (West-Vlaanderen) en de Brussel-query (15 km) er in Vlaams-Brabant. De lus-regio erop
  * plakken maakt van elk van die vacatures een leugen in de dataset.
  */
-function normaliseer(item: AdzunaItem): RawJob | null {
+export function normaliseerAdzunaItem(item: AdzunaItem): RawJob | null {
   const regio = regionForArea(item.location?.area)
   if (!regio) return null
 
@@ -57,7 +72,7 @@ function normaliseer(item: AdzunaItem): RawJob | null {
     postcode: 0, // Adzuna levert geen postcode — gemeten op de live respons.
     city: item.location?.display_name ?? null,
     region: regio,
-    url: item.redirect_url,
+    url: vacatureUrl(String(item.id)),
     source: 'adzuna',
     description: item.description ?? '',
     postedAt: item.created,
@@ -89,7 +104,7 @@ async function haalRegio(regio: RegionCode): Promise<SourceResult<RawJob>> {
     const batch = data.results ?? []
 
     for (const item of batch) {
-      const job = normaliseer(item)
+      const job = normaliseerAdzunaItem(item)
       if (job) items.push(job)
       else buitenRegio++
     }

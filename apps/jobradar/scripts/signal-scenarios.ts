@@ -14,6 +14,7 @@ import { deriveLeadsFromJobs, bouwBedrijfsprofielen, mergeSignalen, AFGELEIDE_BR
 import { regionForArea, ALL_REGIONS } from '../lib/regions'
 import { SIGNAL_WEIGHTS, SIGNAL_THRESHOLDS, AFGELEIDE_SIGNALEN } from '../lib/config/profile'
 import { ADZUNA_JOB_FIXTURES } from '../lib/sources/fixtures/adzuna-jobs'
+import { normaliseerAdzunaItem } from '../lib/sources/adzuna'
 import type { RawJob } from '../lib/sources/types'
 
 let geslaagd = 0
@@ -243,6 +244,35 @@ check('Brussel (Regio) → BRU', regionForArea(['België', 'Brussel (Regio)', 'B
 check('Vlaams-Brabant → null (buiten bereik)', regionForArea(['België', 'Vlaams-Brabant (Provincie)', 'Leuven']) === null)
 check('lege area → null', regionForArea([]) === null)
 check('ontbrekende area → null', regionForArea(undefined) === null)
+
+// ── 11. De vacature-URL wijst naar de vacature ───────────────────────────────
+// `redirect_url` uit de API is Adzuna's klik-tracking-link en geeft koud geopend
+// "Pagina niet gevonden" — geverifieerd in Chrome. Elke "Bekijk"-knop liep daarop dood,
+// waardoor bestaande vacatures verzonnen léken. De bron bouwt de URL nu uit het id.
+{
+  const item = {
+    id: '5716041235',
+    title: 'Mechanical Designer',
+    company: { display_name: 'CTRL-F' },
+    location: { display_name: 'Dentergem, Tielt', area: ['België', 'West-Vlaanderen (Provincie)', 'Tielt'] },
+    redirect_url: 'https://www.adzuna.be/land/ad/5716041235?se=kapot',
+    created: NU.toISOString(),
+    description: '',
+  }
+  const uit = normaliseerAdzunaItem(item)
+  check('adzuna-item levert een job op', uit !== null)
+  check('URL is de /details/-vorm', uit?.url === 'https://www.adzuna.be/details/5716041235', uit?.url)
+  check('URL is NIET de kapotte redirect_url', !uit?.url.includes('/land/ad/'), uit?.url)
+  check('regio komt uit de provincie, niet uit het anker', uit?.region === 'WVL')
+  check('stad komt mee', uit?.city === 'Dentergem, Tielt')
+  check('buiten de drie regio\'s → geen job', normaliseerAdzunaItem({ ...item, location: { area: ['België', 'Antwerpen (Provincie)'] } }) === null)
+}
+
+// Geen enkele fixture mag een URL dragen die als echt kan doorgaan: mock-rijen belanden in
+// dezelfde database als live data, en dan is "bestaat deze vacature?" niet meer te zien.
+for (const f of ADZUNA_JOB_FIXTURES) {
+  check(`fixture "${f.title}" heeft een herkenbaar valse URL`, f.url.includes('example.test'), f.url)
+}
 
 // ── Tegenproef ───────────────────────────────────────────────────────────────
 // Een suite die niet meer kan falen, meldt voor altijd groen. `scenarios.mjs` draait deze

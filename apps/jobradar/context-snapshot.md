@@ -33,16 +33,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+bbbab20 docs(jobradar): record the region and paging decisions as decisions
 0e845fd fix(jobradar): do not let a changed hash shape break the first sync
 9492939 docs(jobradar): correct the verify path and warn about the KBO key
 bc1489f test(jobradar): put the scoring kernel under invariants, and prove they can fail
 2aec968 feat(jobradar): repair the Adzuna source and derive leads from its data
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/CLAUDE.md
-  M  apps/jobradar/lib/regions.ts
+  M  apps/jobradar/lib/config/profile.ts
+  M  apps/jobradar/lib/sources/adzuna.ts
+  M  apps/jobradar/lib/sources/fixtures/adzuna-jobs.ts
+  M  apps/jobradar/scripts/signal-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

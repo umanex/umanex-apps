@@ -58,6 +58,12 @@ export const ADZUNA_SEARCH = {
   resultatenPerPagina: 50,
   maxPaginas: 5,
   maxDagenOud: 30,
+  /**
+   * Waar een vacature te bekijken is. Apart van `country`, want het domein volgt de landcode
+   * niet (`be` → adzuna.be, maar `gb` → adzuna.co.uk). Zie `vacatureUrl` in de bron voor
+   * waarom we hem zelf bouwen in plaats van `redirect_url` te gebruiken.
+   */
+  siteHost: 'www.adzuna.be',
 } as const
 
 /**

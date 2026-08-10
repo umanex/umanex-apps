@@ -58,11 +58,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4509585 Merge pull request #266 from umanex/docs/rowtrack-handoff-opruiming
+c8c4f37 docs(rowtrack): close the entries that shipped code already settled
+9a2bc2e chore: sync umanex-os layer with global umanex-os
 d9791e3 docs(rowtrack): carry the unrendered work forward as checks, not as claims
 f88dec0 fix(rowtrack): tell the truth about a goal that failed to load
-e7e009d fix(rowtrack): one meaning per separator, and the unreachable goal path removed
-1b20c52 fix(rowtrack): raise the contrast and name the controls
-f8f9bc5 fix(rowtrack): let go of a heart-rate link in one place, not three
 ```
 
 ## Uncommitted wijzigingen

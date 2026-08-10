@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-09_
+_Gegenereerd op 2026-08-10_
 
 ## Project
 - **App:** rowtrack
@@ -56,24 +56,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+265cff4 fix(rowtrack): connect to a Bluetooth adapter that is actually awake
 162eb45 fix(rowtrack): give the small tap targets the 44pt they need
 a7a64fe feat(rowtrack): give the flow axis a driver, and record what it costs to trust it
 7a473f9 docs(rowtrack): promote the native-module fallback lesson
 89126b8 feat(rowtrack): add a seedable test account so destructive paths become verifiable
-23100dc docs(rowtrack): record the verify-pad and correct the consent briefing
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/app/dev-ble.tsx
-  A  apps/rowtrack/lib/ble/adapterReady.test.ts
-  A  apps/rowtrack/lib/ble/adapterReady.ts
-  A  apps/rowtrack/lib/ble/autoConnectLog.ts
-  M  apps/rowtrack/lib/ble/ble-context.tsx
-  M  apps/rowtrack/lib/ble/ble-service.ts
-  A  apps/rowtrack/lib/ble/ergProbe.ts
-  M  apps/rowtrack/lib/ble/hr-service.ts
-  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
-  M  apps/rowtrack/tsconfig.json
+  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/briefings/2026-08-06-feature-autoconnect-toestellen.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

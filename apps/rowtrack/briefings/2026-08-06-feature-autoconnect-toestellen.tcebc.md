@@ -88,9 +88,17 @@ Geen. De vier productkeuzes zijn beantwoord (2026-08-06):
       gaat nog altijd via het gedeelde slot in `lib/ble/scan-lock.ts`.
 - [x] `tsc --noEmit` groen.
 
-**Waarom nog niet `gevalideerd`.** Eén acceptatie-item is bewust niet gebouwd (hierboven), en niets
-hiervan is op een toestel gereden — autoconnect is per definitie hardware-gedrag. De eerste rit met
-deze build is de echte toets.
+**Op de erg gereden — 2026-08-10.** De eerste rit met de gebouwde versie liet álle scenario's falen.
+Root cause was niet de feature-logica maar de volgorde eronder: `autoConnect` is bij een koude start
+de eerste BLE-aanraking van het proces, dus hij maakte de `BleManager` en verbond er in dezelfde tick
+mee, terwijl `CBCentralManager` nog op `.unknown` stond. Elke poging werd afgewezen met BleError 103,
+vóór er naar een toestel gezocht werd. Handmatig verbinden bleef werken omdat `startScan` de
+adapterstatus wél las — `connectKnown` had die guard nooit gekregen. Gefixt in PR #248 door de wacht
+in `getManager()` te zetten in plaats van bij de aanroepers, met `lib/ble/adapterReady.test.ts` als
+tegenproef aan beide kanten. Ná die fix door Jeroen op de erg bevestigd: autoconnect werkt.
+
+**Waarom nog niet `gevalideerd`.** Eén acceptatie-item is bewust niet gebouwd (hierboven). De
+hardware-as is daarmee wél gesloten; dit is het enige dat de status nog tegenhoudt.
 
 ## Beslissingsgeschiedenis
 

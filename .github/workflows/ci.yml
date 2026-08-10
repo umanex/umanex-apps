@@ -54,6 +54,27 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
 
+      # Node draait TypeScript zelf (type-stripping), dus dit kost geen testrunner en
+      # geen dependency. De bestanden bestonden al maar werden door niets aangeroepen —
+      # een test die alleen draait wanneer iemand eraan denkt, meet niets.
+      #
+      # `git ls-files` in plaats van een glob: shell-globbing verschilt per runner en
+      # een patroon dat niets matcht faalt stil op de verkeerde manier. Zo pikt de stap
+      # bovendien elk nieuw *.test.ts vanzelf op, zonder deze lijst bij te werken.
+      #
+      # `--experimental-strip-types` is op Node 22 nodig en op nieuwere versies een
+      # geaccepteerde no-op; expliciet meegeven maakt de stap onafhankelijk van welke
+      # 22.x de runner toevallig oplevert.
+      - name: Guard — invarianten (node:test)
+        run: |
+          files=$(git ls-files '*.test.ts')
+          if [ -z "$files" ]; then
+            echo "::error::Geen *.test.ts gevonden. Deze stap hoort iets te draaien; een lege lijst is een fout, geen succes."
+            exit 1
+          fi
+          echo "$files"
+          node --experimental-strip-types --test $files
+
       # De gegenereerde token-output staat in git, maar niets toetste of hij nog
       # matcht met tokens.json. Een PR die tokens.json wijzigt zonder te herbouwen
       # (of omgekeerd) kon dus groen zijn, en de drift kwam pas boven bij de

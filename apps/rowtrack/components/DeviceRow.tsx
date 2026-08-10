@@ -40,7 +40,7 @@ export function DeviceRow({
             <View style={[styles.dot, { backgroundColor: iconColor }]} />
           )}
         </View>
-        <Text style={styles.label} numberOfLines={1}>
+        <Text style={styles.label} numberOfLines={1} maxFontSizeMultiplier={1.3}>
           {label}
         </Text>
       </View>
@@ -53,7 +53,7 @@ export function DeviceRow({
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${action}`}
       >
-        <Text style={styles.actionText}>{action}</Text>
+        <Text style={styles.actionText} maxFontSizeMultiplier={1.3}>{action}</Text>
         <Ionicons name="bluetooth-outline" size={15} color={fg.secondary} />
       </TouchableOpacity>
     </View>

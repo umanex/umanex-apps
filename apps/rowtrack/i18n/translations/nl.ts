@@ -364,6 +364,9 @@ export const nl = {
   a11y: {
     showPassword: 'Toon wachtwoord',
     hidePassword: 'Verberg wachtwoord',
+    // Icon-only chevron-back op het workout-detailscherm. Bewust niet t.detail.backLink
+    // ('OVERZICHT'): dat is de naam van de bestemming, geen actiebeschrijving.
+    back: 'Terug',
   },
 
   consent: {

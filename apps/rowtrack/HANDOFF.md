@@ -426,7 +426,19 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   aflezen (`lib/ble/ergProbe.ts` telt het mee tijdens elke rit). Staat er 0 → de EMA-staart mag weg
   in `useWorkoutMetrics` (watts-tak, snap bij `instantaneousPower === 0`). Staat er een getal → laten
   staan en dit item sluiten.
-- **Status:** open
+- **Status:** resolved — 2026-08-10, maar met een ander antwoord dan de vraag veronderstelde. Die
+  meting beslist niets: 0 W ná je laatste haal en 0 W in een recovery zijn dezelfde gebeurtenis, bij
+  1 Hz allebei twee à drie packets, dus er ligt geen drempel tussen. De apparaat-afhankelijke
+  variant die het recovery-gat per erg leert is gebouwd én weggegooid — een pauze die eindigt door
+  te hervatten vóór de spm nul haalt, leert een gat dat de drempel permanent boven het bruikbare
+  venster tilt, gepersisteerd, met de dev-route als enige herstel. **Probeer dat niet opnieuw.**
+  Opgelost via `lib/ble/strokeIdle.ts` (PR #249): de slagenteller staat stil zodra jij stilstaat,
+  dus "te lang geen slag voor je eigen cadans" meet het rechtstreeks, zonder te leren of te
+  onthouden. De teller op het dev-scherm blijft staan, maar is nu puur informatief over hoe deze
+  erg vermogen rapporteert.
+- **Nog te zien op de erg:** of dit merkbaar wint. Laat jouw erg zijn spm sneller los dan ~4 s bij
+  24 spm, dan vuurt de bestaande rust-transitie eerst en verandert er zichtbaar niets — dan is dit
+  een vangnet voor trage ergs in plaats van een verbetering voor deze.
 
 ## 2026-08-10 — Eerste committed node:test in de repo · [next-step]
 - **Bevinding:** `lib/ble/adapterReady.test.ts` is het eerste testbestand dat blijft staan in plaats

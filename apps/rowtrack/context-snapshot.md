@@ -57,18 +57,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9b93338 fix(rowtrack): read "you stopped" off the stroke counter, not off the power
 3bfbf91 Merge pull request #248 from umanex/fix/rowtrack-autoconnect
 56e14cd docs(rowtrack): record what the erg confirmed, and what it has not been asked yet
 265cff4 fix(rowtrack): connect to a Bluetooth adapter that is actually awake
 162eb45 fix(rowtrack): give the small tap targets the 44pt they need
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/dev-ble.tsx
-  A  apps/rowtrack/lib/ble/strokeIdle.test.ts
-  A  apps/rowtrack/lib/ble/strokeIdle.ts
-  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

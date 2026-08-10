@@ -88,6 +88,10 @@ async function haalRegio(regio: RegionCode): Promise<SourceResult<RawJob>> {
   // Of de laatste pagina vol was. Alleen dán kan er nog meer achter het plafond zitten —
   // en dit weten we óók wanneer de bron geen `count` meestuurt.
   let laatstePaginaVol = false
+  // Afgebroken door een fout is iets anders dan afgekapt door het plafond. Zonder dit
+  // onderscheid kreeg een 429 op pagina 3 er een plafond-waarschuwing bij, en die wijst
+  // de oorzaak naar de verkeerde knop.
+  let afgebrokenDoorFout = false
 
   for (let pagina = 1; pagina <= ADZUNA_SEARCH.maxPaginas; pagina++) {
     let data: AdzunaResponse
@@ -95,11 +99,13 @@ async function haalRegio(regio: RegionCode): Promise<SourceResult<RawJob>> {
       const res = await fetch(bouwUrl(regio, pagina), { headers: { Accept: 'application/json' } })
       if (!res.ok) {
         warnings.push(`${regio}: HTTP ${res.status} op pagina ${pagina} — regio deels opgehaald`)
+        afgebrokenDoorFout = true
         break
       }
       data = (await res.json()) as AdzunaResponse
     } catch (err) {
       warnings.push(`${regio}: ${err instanceof Error ? err.message : String(err)} op pagina ${pagina}`)
+      afgebrokenDoorFout = true
       break
     }
 
@@ -124,7 +130,7 @@ async function haalRegio(regio: RegionCode): Promise<SourceResult<RawJob>> {
     // pagina is het signaal dat werkt zónder `count` — hing de guard daar alleen aan, dan
     // zweeg hij precies wanneer de bron zijn totaal niet meestuurt.
     const opgehaald = items.length + buitenRegio
-    if (laatstePaginaVol) {
+    if (laatstePaginaVol && !afgebrokenDoorFout) {
       warnings.push(
         totaalBijBron !== undefined
           ? `${regio}: ${opgehaald} van ${totaalBijBron} vacatures opgehaald ` +

@@ -70,7 +70,9 @@ export function LeadCard({ company, isNew, onStatusChange }: LeadCardProps) {
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="flex items-center gap-2">
             <span className="rounded bg-muted px-1.5 py-0.5">{company.region}</span>
-            <span>{company.postcode}</span>
+            {/* Een uit vacatures afgeleide lead heeft zelden een postcode — Adzuna levert er
+                geen. Zonder deze guard stond er een kale "0" op elke zulke kaart. */}
+            {company.postcode > 0 && <span>{company.postcode}</span>}
             {company.naceCode && (
               <span className="rounded bg-muted px-1.5 py-0.5">{company.naceCode}</span>
             )}

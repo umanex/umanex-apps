@@ -10,7 +10,7 @@
  * Rauw:     node --import ./scripts/ts-resolve.mjs scripts/signal-scenarios.ts
  */
 import { scoreJob, scoreLead, jobDedupeHash, kiesDedupeHash, matchedSkills, normaliseerBedrijf } from '../lib/matching'
-import { deriveLeadsFromJobs, bouwBedrijfsprofielen, mergeSignalen, classificeer, AFGELEIDE_BRON } from '../lib/signals'
+import { deriveLeadsFromJobs, bouwBedrijfsprofielen, mergeSignalen, classificeer, rolInTitel, AFGELEIDE_BRON } from '../lib/signals'
 import { regionForArea, ALL_REGIONS } from '../lib/regions'
 import { SIGNAL_WEIGHTS, SIGNAL_THRESHOLDS, AFGELEIDE_SIGNALEN } from '../lib/config/profile'
 import { ADZUNA_JOB_FIXTURES } from '../lib/sources/fixtures/adzuna-jobs'
@@ -153,28 +153,75 @@ for (let i = 0; i < 12; i++) {
   check('meerderheidspostcode wint van de eerste rij', acmeProfiel?.postcode === 9000, String(acmeProfiel?.postcode))
 }
 
-// ── 4b. De titel beslist over de rol ─────────────────────────────────────────
-// De faalklasse die de suite hiervóór niet zag: op titel én omschrijving samen matchen, met
-// design eerst getest, laat één terloopse zin een dev-vacature omklappen. Over de fixtureset
-// vuurde het zwaarste signaal daardoor nul keer — en de uitsluitings-check hieronder slaagde
-// vacuüm, omdat er niets meer langskwam om uit te sluiten.
+// ── 4b. De rol komt uit de titel, de relevantie uit de vaardigheden ─────────
+// Twee reviewrondes vielen hier om, elk in de tegenovergestelde richting. Deze tabel
+// draagt beide faalrichtingen plus de gevallen die de tweede fix blootlegde; hij is de
+// eigenlijke regressietest van `LEARNINGS.md` 2026-08-10.
+const STACK = 'Je ontwerpt schermen in Figma voor ons platform, gebouwd in React en TypeScript.'
 const CLASSIFICATIE: Array<[string, string, 'design' | 'dev' | null]> = [
+  // Ronde 2: één terloopse designzin mocht een dev-vacature niet omklappen.
   ['Frontend Developer', 'React en TypeScript verplicht, UX affiniteit is een pluspunt.', 'dev'],
   ['Frontend Developer', 'Je bouwt en onderhoudt ons design system in React.', 'dev'],
-  ['UX Designer', 'Je werkt nauw samen met React-developers.', 'design'],
-  ['UI Developer — React/TypeScript', '', 'dev'],
-  ['UI/UX Designer — Design System', '', 'design'],
-  ['Senior Product Designer', '', 'design'],
-  ['Frontend Engineer — Next.js', 'Figma-kennis is mooi meegenomen.', 'dev'],
+  ['UI Developer — React/TypeScript', 'React en TypeScript', 'dev'],
+  // Ronde 3: stille designtitels mochten niet naar dev kantelen door één stack-zin.
+  ['Visual Designer', STACK, 'design'],
+  ['Digital Designer', STACK, 'design'],
+  ['Interaction Designer', STACK, 'design'],
+  ['Service Designer', STACK, 'design'],
+  ['Design Lead', STACK, 'design'],
+  ['Head of Design', STACK, 'design'],
+  ['Art Director', STACK, 'design'],
+  ['Creative Lead', STACK, 'design'],
+  ['Design Director', STACK, 'design'],
+  // Nederlandse samenstellingen: een woordgrens-match loopt hier stuk, een suffix niet.
+  ['Webdesigner', STACK, 'design'],
+  ['Grafisch vormgever', STACK, 'design'],
+  ['Softwareontwikkelaar', 'Je werkt met React en TypeScript.', 'dev'],
+  ['Frontendontwikkelaar', 'React en TypeScript.', 'dev'],
+  // Rol in de titel, maar buiten het vakgebied: telt nergens mee.
   ['Mechanical Designer', 'Constructietekeningen van inox machines.', null],
-  ['Boekhouder', 'Je verwerkt facturen.', null],
-  // Titel zegt niets over de rol → dan pas de omschrijving, en alleen bij een meerderheid.
+  ['Ontwerper matrijzen', 'Je tekent matrijzen uit.', null],
+  ['Sales Engineer', 'Je verkoopt machines aan klanten.', null],
+  ['Junior R&D Engineer', 'Labowerk en prototypes.', null],
+  // Geen rolwoord, wel een ondubbelzinnig skill-signaal ín de titel.
+  ['Stagiaire Web-Front, UX/UI Design, Graphics Branding', '', 'design'],
   ['Software Engineer', 'Je werkt met React, TypeScript en Next.js.', 'dev'],
-  ['Creative Lead', 'Je stuurt het UX-team aan en werkt in Figma.', 'design'],
+  // Geen rol, geen skill in de titel: niet raden.
+  ['Boekhouder', 'Je verwerkt facturen.', null],
 ]
 for (const [title, description, verwacht] of CLASSIFICATIE) {
   const uit = classificeer({ title, description })
-  check(`"${title.slice(0, 34)}" → ${verwacht ?? 'geen'}`, uit === verwacht, `kreeg ${uit ?? 'geen'}`)
+  check(`"${title.slice(0, 38)}" → ${verwacht ?? 'geen'}`, uit === verwacht, `kreeg ${uit ?? 'geen'}`)
+}
+
+// De rol-laag apart, los van de vaardigheden-poort erboven.
+const ROLLEN: Array<[string, 'design' | 'dev' | null]> = [
+  ['Visual Designer', 'design'],
+  ['Webdesigner', 'design'],
+  ['Grafisch vormgever', 'design'],
+  ['Head of Design', 'design'],
+  ['Frontend Developer', 'dev'],
+  ['Softwareontwikkelaar', 'dev'],
+  ['Software Engineer', 'dev'],
+  ['Tech Lead', 'dev'],
+  ['UI Developer', 'dev'],
+  ['Designer / Developer', 'design'],
+  ['Stagiaire Web-Front', null],
+  ['Boekhouder', null],
+]
+for (const [titel, verwacht] of ROLLEN) {
+  check(`rolInTitel("${titel}") → ${verwacht ?? 'geen'}`, rolInTitel(titel) === verwacht, `kreeg ${rolInTitel(titel) ?? 'geen'}`)
+}
+
+// De omschrijving mag de rol NOOIT bepalen. Dat pad was twee keer de oorzaak: draai de
+// omschrijving om en de uitkomst hoort gelijk te blijven.
+for (const [titel] of ROLLEN) {
+  const a = classificeer({ title: titel, description: 'React en TypeScript en Next.js en frontend.' })
+  const b = classificeer({ title: titel, description: 'UX en user research en Figma en design system.' })
+  const heeftRol = rolInTitel(titel) !== null
+  if (heeftRol) {
+    check(`"${titel}": omschrijving verandert de rol niet`, a === b, `${a} vs ${b}`)
+  }
 }
 
 // En het signaal moet over de échte fixtureset ook daadwerkelijk vuren — anders is de

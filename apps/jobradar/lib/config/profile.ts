@@ -25,15 +25,62 @@ export const KEYWORD_WEIGHTS: Record<SkillKey, number> = {
 }
 
 /**
- * Welke skill-clusters een vacature tot een *design*- dan wel *dev*-vacature maken.
+ * Welke skill-clusters aan de design- dan wel de dev-kant staan.
  *
- * Dit is de as waarop de afgeleide bedrijfssignalen draaien (`lib/signals.ts`): een bedrijf
- * dat dev-vacatures post en geen design-vacature, heeft werk waar geen designer aan komt.
+ * Let op wat deze lijsten wél en niet doen. Ze zeggen aan welke kant een *vaardigheid*
+ * hoort — niet welke **rol** een vacature is. Dat onderscheid is hier twee reviewrondes
+ * lang misgegaan: een skill-lijst gebruiken om de rolvraag te beantwoorden kán niet kloppen,
+ * en elke bijstelling verplaatste de fout alleen naar de andere kant (zie `LEARNINGS.md`,
+ * 2026-08-10). De rol komt uit `DESIGN_ROLES`/`DEV_ROLES` hieronder; deze lijsten bepalen
+ * alleen nog óf een vacature überhaupt in Jeroens vakgebied ligt.
+ *
  * `frontend` telt bewust als dev en niet als design — een frontender die een design system
  * bouwt is nog steeds geen bewijs dat er een designer in het team zit.
  */
 export const DESIGN_SKILLS: readonly SkillKey[] = ['ux', 'ui', 'designSystem', 'figma', 'product']
 export const DEV_SKILLS: readonly SkillKey[] = ['frontend', 'nextjs', 'react', 'typescript']
+
+/**
+ * Rolwoorden: wát iemand is, niet wat hij kent.
+ *
+ * **Suffixen, geen hele woorden.** Nederlands stapelt: "Webdesigner",
+ * "Softwareontwikkelaar", "Frontendontwikkelaar". Een woordgrens-match (`\bdesigner\b`)
+ * loopt daar stuk — precies de valkuil waardoor 10 van 13 gangbare designtitels stil bleven.
+ * De match kijkt daarom of een woord in de titel op één van deze suffixen *eindigt*.
+ */
+export const DESIGN_ROLE_SUFFIXEN = [
+  'designer',
+  'designers',
+  'ontwerper',
+  'ontwerpers',
+  'vormgever',
+  'vormgevers',
+] as const
+
+export const DEV_ROLE_SUFFIXEN = [
+  'developer',
+  'developers',
+  'ontwikkelaar',
+  'ontwikkelaars',
+  'engineer',
+  'engineers',
+  'programmeur',
+  'programmeurs',
+] as const
+
+/** Rollen die uit meerdere woorden bestaan en dus geen suffix hebben. */
+export const DESIGN_ROLE_FRASES = [
+  'art director',
+  'design lead',
+  'lead design',
+  'design director',
+  'design manager',
+  'head of design',
+  'creative lead',
+  'creative director',
+] as const
+
+export const DEV_ROLE_FRASES = ['tech lead', 'head of engineering', 'software architect'] as const
 
 /** Drempels voor de signaal-afleiding. Hier draaien, niet in de logica zelf. */
 export const SIGNAL_THRESHOLDS = {

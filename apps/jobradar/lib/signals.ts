@@ -3,6 +3,10 @@ import { matchedSkills, normaliseerBedrijf } from './matching'
 import {
   DESIGN_SKILLS,
   DEV_SKILLS,
+  DESIGN_ROLE_SUFFIXEN,
+  DEV_ROLE_SUFFIXEN,
+  DESIGN_ROLE_FRASES,
+  DEV_ROLE_FRASES,
   SIGNAL_THRESHOLDS,
   AFGELEIDE_SIGNALEN,
   type AfgeleidSignaal,
@@ -30,34 +34,65 @@ function tel(skills: readonly SkillKey[], set: readonly SkillKey[]): number {
 }
 
 /**
+ * De rol die de titel noemt, of `null` als hij er geen noemt.
+ *
+ * Kijkt uitsluitend naar rolwoorden — wát iemand is — en nooit naar vaardigheden. "UI
+ * Developer" is een developer; dat er "UI" voor staat maakt het geen designvacature.
+ *
+ * Woorden worden op *suffix* getoetst, want Nederlands stapelt: "Webdesigner" en
+ * "Softwareontwikkelaar" bevatten hun rolwoord zonder woordgrens ervoor.
+ */
+export function rolInTitel(title: string): 'design' | 'dev' | null {
+  const laag = title.toLowerCase()
+  const woorden = laag.split(/[^a-zà-ÿ]+/).filter(Boolean)
+
+  const heeft = (suffixen: readonly string[], frases: readonly string[]) =>
+    frases.some((f) => laag.includes(f)) || woorden.some((w) => suffixen.some((s) => w.endsWith(s)))
+
+  const design = heeft(DESIGN_ROLE_SUFFIXEN, DESIGN_ROLE_FRASES)
+  const dev = heeft(DEV_ROLE_SUFFIXEN, DEV_ROLE_FRASES)
+
+  // Beide genoemd ("Designer / Developer"): design wint. Een vals "design" kost een lead,
+  // een vals "dev" stuurt je naar een bedrijf dat net een designer aanwierf — duurder.
+  if (design) return 'design'
+  if (dev) return 'dev'
+  return null
+}
+
+/**
  * Deelt één vacature in als design-werk, dev-werk, of geen van beide.
  *
- * **De titel beslist over de rol.** Dat is geen detail: hiervóór werd op titel én
- * omschrijving samen gematcht, met design vóór dev getest, en dan kantelt één terloopse
- * zin een dev-vacature om. "Frontend Developer — React en TypeScript verplicht, UX
- * affiniteit is een pluspunt" werd zo een designvacature. Over de fixtureset boekte dat
- * vier zuivere dev-vacatures (Belfius, Codifly, Odoo, Teamleader) als designbudget, en het
- * zwaarstwegende signaal — "dev-vacature zonder design", de reden dat dit bestand bestaat —
- * vuurde daardoor geen enkele keer.
+ * **De rol komt uit de titel, de relevantie uit de vaardigheden.** Die scheiding is de hele
+ * les van twee mislukte reviewrondes (`LEARNINGS.md`, 2026-08-10). Eerst won design altijd
+ * omdat het als eerste getest werd; na de correctie won dev altijd, omdat 10 van 13
+ * gangbare designtitels geen enkel *skill*-woord bevatten en de omschrijving het dan
+ * overnam — waarna één stack-zin een Visual Designer tot dev-vacature maakte. Een
+ * skill-lijst kan de rolvraag niet beantwoorden; elke bijstelling verplaatst de fout.
  *
- * Zegt de titel niets over de rol, dan pas de omschrijving, en alleen bij een duidelijke
- * meerderheid. Bij gelijkspel design: een vals "design" kost een lead, een vals "dev" kost
- * een verkeerde benadering, en dat laatste is duurder.
+ * Nu:
+ *   1. de titel noemt de rol — of hij noemt er geen, en dan raden we niet;
+ *   2. de vaardigheden bepalen alleen óf de vacature in Jeroens vakgebied ligt.
  *
- * "Geen van beide" is een echte uitkomst en geen restcategorie: Adzuna's `what_or` is los,
- * dus een query op "designer" levert ook Mechanical Designers. Die tellen nergens in mee.
+ * Punt 2 vangt wat punt 1 te ruim laat: "Mechanical Designer" is een designer-rol, maar
+ * zonder één relevante vaardigheid telt hij nergens mee. Adzuna's `what_or` is los, dus die
+ * vacatures komen echt binnen.
+ *
+ * Noemt de titel geen rol, dan mag een ondubbelzinnig *skill*-signaal ín de titel het nog
+ * beslissen ("Stagiaire Web-Front, UX/UI Design"). De omschrijving beslist nooit over de
+ * rol — dat is precies het pad waarlangs het twee keer misging.
  */
 export function classificeer(job: Pick<RawJob, 'title' | 'description'>): 'design' | 'dev' | null {
-  const titel = matchedSkills({ title: job.title, description: '' })
-  const titelDesign = tel(titel, DESIGN_SKILLS)
-  const titelDev = tel(titel, DEV_SKILLS)
-  if (titelDesign || titelDev) return titelDesign >= titelDev ? 'design' : 'dev'
+  // Buiten het vakgebied telt niets, welke rol de titel ook noemt.
+  if (matchedSkills(job).length === 0) return null
 
-  const volledig = matchedSkills(job)
-  const design = tel(volledig, DESIGN_SKILLS)
-  const dev = tel(volledig, DEV_SKILLS)
-  if (design > dev) return 'design'
-  if (dev > design) return 'dev'
+  const rol = rolInTitel(job.title)
+  if (rol) return rol
+
+  const titelSkills = matchedSkills({ title: job.title, description: '' })
+  const design = tel(titelSkills, DESIGN_SKILLS)
+  const dev = tel(titelSkills, DEV_SKILLS)
+  if (design > 0 && dev === 0) return 'design'
+  if (dev > 0 && design === 0) return 'dev'
   return null
 }
 

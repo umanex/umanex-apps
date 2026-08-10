@@ -57,17 +57,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b9626a6 test(rowtrack): make the heart-rate connection rule testable, then test it
 29aa0f0 fix(rowtrack): let "connected" mean a heart rate actually arrived
 4be0008 revert(rowtrack): keep the last real watt reading instead of an early zero
 fb59690 Merge remote-tracking branch 'origin/main' into feature/rowtrack-web-verplichte-paginas
 19b9b1c docs: sessie-handoff voor rowtrack-web plus twee repo-brede schulden
-788771b docs(rowtrack): close the watt tile item with the reason not to retry it
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/lib/ble/hr-service.ts
-  A  apps/rowtrack/lib/ble/hrLink.test.ts
-  A  apps/rowtrack/lib/ble/hrLink.ts
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

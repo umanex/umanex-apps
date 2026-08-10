@@ -457,11 +457,25 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   rit aan diezelfde status, dus een stille erg laat je een training starten die nullen opneemt.
   Precies dezelfde klasse als de hartslagmeter, alleen minder zichtbaar omdat een erg via de
   gefilterde scan verbonden wordt en dus meestal echt praat.
-- **Volgende zet:** Dezelfde vorm als `HR_DATA_TIMEOUT_MS`: een deadline die bij het abonneren
-  wordt gezet en bij elk packet verzet. Ruimer dan bij HR (een erg tussen twee ritten in stuurt
-  legitiem niets), dus eerder ~15 s en alleen tijdens een actieve rit. Bewust niet meegenomen in
-  PR #254 — één statuscontract per keer verbouwen.
-- **Status:** open
+- **Volgende zet:** Nog niet bouwen. De voor de hand liggende vorm — dezelfde deadline als
+  `HR_DATA_TIMEOUT_MS` — heeft hier een faalmodus die de HR-kant niet heeft, en die is erger dan
+  het probleem. `status === 'connected'` is de poort waarachter `handleStart` zit, dus een
+  detector die te vroeg afgaat blokkeert het starten van een training. En of een verbonden erg in
+  rust blíjft notificeren weet niemand: de 1 Hz die in de opgeslagen `samples` zichtbaar is, is
+  gemeten tijdens het roeien. Stuurt jouw erg niets terwijl je stilstaat, dan valt de rij na de
+  deadline om precies wanneer je op Start wil drukken. Dat is niet uit de bron af te leiden — de
+  dedupe in `ble-service` verbergt juist of er packets binnenkomen.
+- **Wat het wél zou ontgrendelen:** één meting. Tel in de notificatie-callback (vóór de dedupe)
+  hoeveel packets er binnenkomen terwijl de erg stilstaat, en lees dat af op `rowtrack://dev-ble`.
+  Blijft die teller lopen bij stilstand, dan is een deadline veilig en is ~15 s ruim. Staat hij
+  stil, dan moet de detector aan de actieve fase hangen in plaats van aan de verbinding, en is het
+  een grotere ingreep dan hij lijkt.
+- **Waarom dit hier stopt:** vandaag zijn twee wijzigingen op deze as teruggedraaid — een
+  leerregel die niet kon werken en een detector die correct werkte maar ongewenst gedrag gaf.
+  Allebei gingen ze over de app die iets afleidt wat het apparaat niet gezegd heeft. Een derde
+  gok, op het pad dat het starten van een rit bewaakt, zonder de meting die hem zou dragen:
+  dezelfde fout, groter oppervlak.
+- **Status:** open — bewust, met een meetbare volgende stap in plaats van een ontwerp.
 
 ## 2026-08-10 — Eerste committed node:test in de repo · [next-step]
 - **Bevinding:** `lib/ble/adapterReady.test.ts` is het eerste testbestand dat blijft staan in plaats
@@ -472,7 +486,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   draait. Dan kunnen `bestDistanceTime`, `secureStorage` en `formatters` er meteen bij — die hebben
   alledrie al een wegwerp-harness gehad. Raakt het bredere testrunner-item hieronder, maar vraagt
   geen dependency-keuze.
-- **Status:** open
+- **Status:** resolved — 2026-08-10, PR #256. De stap heet "Guard — invarianten (node:test)" en
+  draait `node --experimental-strip-types --test $(git ls-files '*.test.ts')`, dus elk nieuw
+  testbestand rijdt vanzelf mee en een lege lijst is een fout in plaats van een stille pass.
+  Tegenproef gedraaid: één omgedraaide assert geeft exit 1, herstellen geeft exit 0.
+  `bestDistanceTime`, `secureStorage` en `formatters` hebben nu een plek om naartoe te groeien —
+  dat blijft het open item hieronder.
 
 ## 2026-08-06 — Geen testrunner in de repo · [debt]
 - **Bevinding:** De chunk-fix in `secureStorage.ts` is geverifieerd met een wegwerp-harness in de

@@ -1,6 +1,3 @@
-export { GoalSetupModal } from '../GoalSetupModal';
-export type { GoalSetupModalProps } from '../GoalSetupModal';
-
 export { getPaceZone } from '../PaceZone';
 export type { PaceZoneLevel } from '../PaceZone';
 

@@ -17,57 +17,9 @@ export interface GoalProgress {
   reached: boolean;
 }
 
-// --- Config per goal type ---
-
-export interface GoalTypeConfig {
-  label: string;
-  icon: IoniconsName;
-  unit: string;
-  placeholder: string;
-  formatTarget: (value: number) => string;
-  formatCurrent: (value: number) => string;
-}
-
-function fmtTime(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = Math.round(sec % 60);
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-export const GOAL_TYPES: Record<GoalType, GoalTypeConfig> = {
-  duration: {
-    label: t.goals.typeDuration,
-    icon: 'time-outline',
-    unit: 'min',
-    placeholder: '30',
-    formatTarget: (v) => `${v / 60} min`,
-    formatCurrent: (v) => fmtTime(v),
-  },
-  distance: {
-    label: t.goals.typeDistance,
-    icon: 'navigate-outline',
-    unit: 'm',
-    placeholder: '5000',
-    formatTarget: (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)} km` : `${v} m`),
-    formatCurrent: (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)} km` : `${Math.round(v)} m`),
-  },
-  split: {
-    label: t.goals.typeSplit,
-    icon: 'speedometer-outline',
-    unit: 'sec/500m',
-    placeholder: '120',
-    formatTarget: (v) => `${fmtTime(v)}/500m`,
-    formatCurrent: (v) => `${fmtTime(v)}/500m`,
-  },
-  watts: {
-    label: t.goals.typeWatts,
-    icon: 'flash-outline',
-    unit: 'W',
-    placeholder: '180',
-    formatTarget: (v) => `${v} W`,
-    formatCurrent: (v) => `${Math.round(v)} W`,
-  },
-};
+// GOAL_TYPES / GoalTypeConfig / fmtTime stonden hier. Hun enige consument was
+// `GoalSetupModal`, het mid-workout doel-scherm dat in code volledig bedraad was maar
+// dat niets ooit opende (UX-audit F12). Met dat pad weg is dit dode config.
 
 export const GOAL_TYPE_ORDER: GoalType[] = ['duration', 'distance', 'split', 'watts'];
 

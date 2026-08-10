@@ -116,8 +116,6 @@ export default function DevActivePreview() {
         onStop={() => {}}
         onContinue={() => {}}
         onGoalContinue={() => {}}
-        onSetGoal={() => {}}
-        onClearGoal={() => {}}
         hasProfileWeight
         hrStatus="connected"
         hrBpm={140}

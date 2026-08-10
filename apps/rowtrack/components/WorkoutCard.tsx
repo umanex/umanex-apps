@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Dot } from './Dot';
 import { t } from '@/i18n';
+import { formatInt } from '@/lib/formatters';
 import { bg, fg, accent, space, typeStyles } from '@/constants';
 
 function fmtDate(iso: string): string {
@@ -25,20 +26,22 @@ function fmtDate(iso: string): string {
 
 function fmtDuration(sec: number | null): { value: string; unit: string } | null {
   if (sec == null) return null;
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = Math.round(sec % 60);
+  // Eerst afronden, dán splitsen: op de losse rest landt 119,6 s als '1:60'.
+  const total = Math.round(sec);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
   if (h > 0) return { value: `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`, unit: t.units.hourLong };
+  // Onder de minuut is '0:17 min' twee keer fout: het getal leest als een decimaal
+  // en de eenheid klopt niet. Seconden krijgen hun eigen eenheid.
+  if (total < 60) return { value: `${total}`, unit: t.units.secondShort };
   return { value: `${m}:${String(s).padStart(2, '0')}`, unit: t.units.minuteShort };
 }
 
+// Duizendtal-groepering via de gedeelde formatter. De handgerolde variant hardcodeerde
+// de punt én schaduwde de i18n-`t` met een lokale variabele van dezelfde naam.
 function fmtMetersVU(m: number): { value: string; unit: string } {
-  if (m >= 1000) {
-    const t = Math.floor(m / 1000);
-    const r = m % 1000;
-    return { value: `${t}.${String(r).padStart(3, '0')}`, unit: 'm' };
-  }
-  return { value: `${m}`, unit: 'm' };
+  return { value: formatInt(m), unit: 'm' };
 }
 
 /** Minimale rij-data — zowel WorkoutSummary (historiek) als HomeWorkout (home) voldoen. */

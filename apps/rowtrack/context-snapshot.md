@@ -35,7 +35,6 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | FormField | `apps/rowtrack/components/FormField.tsx` | components | — | — | — |
 | GoalProgressCard | `apps/rowtrack/components/GoalProgressCard.tsx` | components | — | — | — |
 | GoalSegments | `apps/rowtrack/components/GoalSegments.tsx` | components | — | — | — |
-| GoalSetupModal | `apps/rowtrack/components/GoalSetupModal.tsx` | components | — | — | — |
 | GoalSheet | `apps/rowtrack/components/GoalSheet.tsx` | components | — | — | — |
 | HealthConsentScreen | `apps/rowtrack/components/HealthConsentScreen.tsx` | components | — | — | — |
 | HrStatusBar | `apps/rowtrack/components/HrStatusBar.tsx` | components | — | — | — |
@@ -57,24 +56,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+1b20c52 fix(rowtrack): raise the contrast and name the controls
 f8f9bc5 fix(rowtrack): let go of a heart-rate link in one place, not three
 9876980 ci: run the node:test invariants, so they measure something
 b9626a6 test(rowtrack): make the heart-rate connection rule testable, then test it
 29aa0f0 fix(rowtrack): let "connected" mean a heart rate actually arrived
-4be0008 revert(rowtrack): keep the last real watt reading instead of an early zero
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/_layout.tsx
   M  apps/rowtrack/app/(tabs)/history/[id].tsx
-  M  apps/rowtrack/app/(tabs)/profile.tsx
-  M  apps/rowtrack/components/Button.tsx
-  M  apps/rowtrack/components/DeviceRow.tsx
-  M  apps/rowtrack/components/GoalSegments.tsx
-  M  apps/rowtrack/components/Segmented.tsx
-  M  apps/rowtrack/components/TabLabel.tsx
+  M  apps/rowtrack/app/(tabs)/history/index.tsx
+  M  apps/rowtrack/app/(tabs)/index.tsx
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/app/dev-active.tsx
+  M  apps/rowtrack/components/GoalProgressCard.tsx
+  D  apps/rowtrack/components/GoalSetupModal.tsx
   M  apps/rowtrack/components/WorkoutCard.tsx
-  M  apps/rowtrack/i18n/translations/nl.ts
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/components/workout/index.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

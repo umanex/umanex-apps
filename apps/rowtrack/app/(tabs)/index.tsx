@@ -17,6 +17,7 @@ import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard, GoalSheet } fro
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
+import { formatDecimal, formatInt } from '@/lib/formatters';
 import { t } from '@/i18n';
 import {
   bg,
@@ -52,9 +53,9 @@ function getGreeting(): string {
 function fmtPrDistance(m: number): { value: string; unit: string } {
   if (m >= 1000) {
     const km = m / 1000;
-    return { value: km % 1 === 0 ? `${km}` : `${km.toFixed(1)}`, unit: 'km' };
+    return { value: Number.isInteger(km) ? formatInt(km) : formatDecimal(km, 1), unit: 'km' };
   }
-  return { value: `${m}`, unit: 'm' };
+  return { value: formatInt(m), unit: 'm' };
 }
 
 function fmtPr2k(sec: number): { value: string; unit: string } {

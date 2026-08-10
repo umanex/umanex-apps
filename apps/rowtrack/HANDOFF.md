@@ -449,6 +449,20 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   eerdere pogingen struikelden over die grens, langs verschillende wegen.
 - **Status:** resolved — bewust geen verdere actie.
 
+## 2026-08-10 — De roeier meldt 'verbonden' op dezelfde onbewezen grond als de band deed · [risico]
+- **Bevinding:** Bovengekomen bij de HR-fix. `ble-service` stuurt 'connected' vlak na een
+  fire-and-forget `startMonitoring()`; de enige data-gerelateerde uitweg is de 403-afhandeling
+  (terugvallen op 2ACC, dan `no_data`), en die vuurt wanneer de erg het abonnement **weigert** —
+  nooit wanneer hij het accepteert en vervolgens zwijgt. `app/(tabs)/workout.tsx` hangt de hele
+  rit aan diezelfde status, dus een stille erg laat je een training starten die nullen opneemt.
+  Precies dezelfde klasse als de hartslagmeter, alleen minder zichtbaar omdat een erg via de
+  gefilterde scan verbonden wordt en dus meestal echt praat.
+- **Volgende zet:** Dezelfde vorm als `HR_DATA_TIMEOUT_MS`: een deadline die bij het abonneren
+  wordt gezet en bij elk packet verzet. Ruimer dan bij HR (een erg tussen twee ritten in stuurt
+  legitiem niets), dus eerder ~15 s en alleen tijdens een actieve rit. Bewust niet meegenomen in
+  PR #254 — één statuscontract per keer verbouwen.
+- **Status:** open
+
 ## 2026-08-10 — Eerste committed node:test in de repo · [next-step]
 - **Bevinding:** `lib/ble/adapterReady.test.ts` is het eerste testbestand dat blijft staan in plaats
   van in de scratchpad te verdwijnen (`node --test`, geen dependency; `tsconfig.json` excludeert

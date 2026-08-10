@@ -28,7 +28,8 @@ export interface RowerBleError {
   detail?: string;
 }
 
-// HR-fouten zijn non-blocking en bereiken de UI niet (alleen dev-log).
+// HR-fouten blokkeren de rit niet, maar bereiken de gebruiker wél — `ble-context`
+// vertaalt ze naar `hrError` en de toestellen-rij toont ze.
 export type HrBleErrorCode =
   | 'bluetooth_off'
   | 'permission_denied'
@@ -36,7 +37,8 @@ export type HrBleErrorCode =
   | 'scan_error'
   | 'scan_failed'
   | 'connect_failed'
-  | 'connection_lost';
+  | 'connection_lost'
+  | 'hr_no_data';
 
 export interface HrBleError {
   code: HrBleErrorCode;
@@ -58,7 +60,10 @@ export interface RowerMetrics {
   remainingTime: number | null;
 }
 
-export type HRStatus = 'idle' | 'scanning' | 'connected' | 'error';
+// 'waiting' = de verbinding staat en we luisteren, maar er is nog geen hartslag
+// binnengekomen. Zonder die tussenstand betekende 'connected' alleen dat er een
+// GATT-link was — waar dat waar kan zijn terwijl de band niets meet.
+export type HRStatus = 'idle' | 'scanning' | 'waiting' | 'connected' | 'error';
 
 /** Een toestel uit een scan, klaar om in de keuzelijst te tonen. */
 export interface FoundDevice {
@@ -92,7 +97,7 @@ export interface BleContextValue {
   selectDevice: (deviceId: string) => void;
   cancelSelection: () => void;
   /** Verbindt met de toestellen van vorige keer; stil wanneer dat niet lukt. */
-  autoConnect: () => Promise<void>;
+  autoConnect: (opts?: { hr?: boolean }) => Promise<void>;
 }
 
 export type DataSource = 'ble';

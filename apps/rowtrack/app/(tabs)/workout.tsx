@@ -178,8 +178,10 @@ export default function WorkoutScreen() {
   useFocusEffect(
     useCallback(() => {
       if (phase !== 'idle') return;
-      autoConnect();
-    }, [phase, autoConnect]),
+      // Zonder toestemming blijft de hartslagmeter buiten beeld — ook hier, niet
+      // alleen achter de knop.
+      autoConnect({ hr: healthGranted });
+    }, [phase, autoConnect, healthGranted]),
   );
 
   // Handmatig stoppen → rit opslaan (achtergrond) + BLE stoppen + naar de samenvatting.

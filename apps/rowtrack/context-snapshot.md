@@ -57,19 +57,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4be0008 revert(rowtrack): keep the last real watt reading instead of an early zero
 fb59690 Merge remote-tracking branch 'origin/main' into feature/rowtrack-web-verplichte-paginas
 19b9b1c docs: sessie-handoff voor rowtrack-web plus twee repo-brede schulden
 788771b docs(rowtrack): close the watt tile item with the reason not to retry it
 9b93338 fix(rowtrack): read "you stopped" off the stroke counter, not off the power
-3bfbf91 Merge pull request #248 from umanex/fix/rowtrack-autoconnect
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/dev-ble.tsx
-  D  apps/rowtrack/lib/ble/strokeIdle.test.ts
-  D  apps/rowtrack/lib/ble/strokeIdle.ts
-  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/components/HrStatusBar.tsx
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/i18n/bleErrors.ts
+  M  apps/rowtrack/i18n/translations/nl.ts
+  M  apps/rowtrack/lib/ble/ble-context.tsx
+  M  apps/rowtrack/lib/ble/hr-service.ts
+  M  apps/rowtrack/lib/ble/types.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

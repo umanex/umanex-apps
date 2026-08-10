@@ -9,7 +9,7 @@
  * Draaien:  pnpm --filter jobradar scenarios
  * Rauw:     node --import ./scripts/ts-resolve.mjs scripts/signal-scenarios.ts
  */
-import { scoreJob, scoreLead, jobDedupeHash, matchedSkills, normaliseerBedrijf } from '../lib/matching'
+import { scoreJob, scoreLead, jobDedupeHash, kiesDedupeHash, matchedSkills, normaliseerBedrijf } from '../lib/matching'
 import { deriveLeadsFromJobs, bouwBedrijfsprofielen, mergeSignalen, AFGELEIDE_BRON } from '../lib/signals'
 import { regionForArea, ALL_REGIONS } from '../lib/regions'
 import { SIGNAL_WEIGHTS, SIGNAL_THRESHOLDS, AFGELEIDE_SIGNALEN } from '../lib/config/profile'
@@ -225,6 +225,14 @@ check('zonder stad valt de hash terug op de postcode', (() => {
   return jobDedupeHash(a) !== jobDedupeHash(b)
 })())
 check('normaliseerBedrijf haalt de rechtsvorm weg', normaliseerBedrijf('Acme BV') === normaliseerBedrijf('ACME'))
+
+// De keerzijde van diezelfde normalisatie, op een bestáánde database: "Acme BV" en "Acme NV"
+// bleven onder de oude hash uit elkaar en vallen onder de nieuwe samen. Blind bijwerken gaf
+// SQLITE_CONSTRAINT_UNIQUE en velde de hele sync — gereproduceerd vóór `kiesDedupeHash`.
+const botsend = jobDedupeHash(job({ title: 'UX Designer', company: 'Acme BV', postcode: 9000 }))
+check('BV en NV botsen inderdaad op dezelfde nieuwe sleutel', botsend === jobDedupeHash(job({ title: 'UX Designer', company: 'Acme NV', postcode: 9000 })))
+check('bezette sleutel → de rij houdt zijn oude hash', kiesDedupeHash(botsend, 'ux designer|acme nv|9000', false) === 'ux designer|acme nv|9000')
+check('vrije sleutel → de rij krijgt de nieuwe hash', kiesDedupeHash(botsend, 'ux designer|acme nv|9000', true) === botsend)
 
 // ── 10. Regio komt uit de provincie, niet uit de zoeklus ─────────────────────
 // Gemeten op de live API: een query op Gent (25 km) levert vacatures in West-Vlaanderen,

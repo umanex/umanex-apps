@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import { getDb } from '@/lib/db'
 import * as schema from '@/lib/db/schema'
 import { adzunaSource } from '@/lib/sources/adzuna'
 import { kboSource } from '@/lib/sources/kbo'
-import { scoreJob, scoreLead, jobDedupeHash, leadDedupeHash } from '@/lib/matching'
+import { scoreJob, scoreLead, jobDedupeHash, leadDedupeHash, kiesDedupeHash } from '@/lib/matching'
 import { deriveLeadsFromJobs, mergeSignalen } from '@/lib/signals'
 import { ALL_REGIONS, regionForPostcode } from '@/lib/regions'
 import type { RawJob, RawLead } from '@/lib/sources/types'
@@ -174,6 +174,11 @@ export async function POST() {
       })) ?? (await db.query.jobs.findFirst({ where: eq(schema.jobs.dedupeHash, hash) }))
 
     if (bestaand) {
+      // Een andere rij kan de nieuwe sleutel al dragen; dan houdt deze de zijne.
+      const bezet = await db.query.jobs.findFirst({
+        where: and(eq(schema.jobs.dedupeHash, hash), ne(schema.jobs.id, bestaand.id)),
+      })
+
       // `jobStatus` staat er bewust niet bij: die is van de gebruiker, niet van de bron.
       await db
         .update(schema.jobs)
@@ -185,7 +190,7 @@ export async function POST() {
           region: job.region,
           url: job.url,
           description: job.description,
-          dedupeHash: hash,
+          dedupeHash: kiesDedupeHash(hash, bestaand.dedupeHash, !bezet),
           score,
           scoreBreakdown: JSON.stringify(breakdown),
           lastSeenAt: now,
@@ -227,6 +232,9 @@ export async function POST() {
       })) ?? (await db.query.companies.findFirst({ where: eq(schema.companies.dedupeHash, hash) }))
 
     if (bestaand) {
+      const bezet = await db.query.companies.findFirst({
+        where: and(eq(schema.companies.dedupeHash, hash), ne(schema.companies.id, bestaand.id)),
+      })
       const huidige = veiligParseSignalen(bestaand.signals)
       // Een afgeleide run vervangt alleen de afgeleide signalen; een externe bron levert
       // zijn eigen set en laat de afgeleide staan.
@@ -246,7 +254,7 @@ export async function POST() {
           signals: JSON.stringify(signals),
           leadScore: score,
           scoreBreakdown: JSON.stringify(breakdown),
-          dedupeHash: hash,
+          dedupeHash: kiesDedupeHash(hash, bestaand.dedupeHash, !bezet),
           lastSeenAt: now,
         })
         .where(eq(schema.companies.id, bestaand.id))

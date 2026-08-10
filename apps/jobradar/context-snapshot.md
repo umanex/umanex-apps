@@ -33,16 +33,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9492939 docs(jobradar): correct the verify path and warn about the KBO key
 bc1489f test(jobradar): put the scoring kernel under invariants, and prove they can fail
 2aec968 feat(jobradar): repair the Adzuna source and derive leads from its data
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/.env.example
-  M  apps/jobradar/CLAUDE.md
+  M  apps/jobradar/app/api/sync/route.ts
+  M  apps/jobradar/lib/matching.ts
+  M  apps/jobradar/scripts/signal-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

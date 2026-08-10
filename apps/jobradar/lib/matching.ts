@@ -88,6 +88,23 @@ export function jobDedupeHash(job: Pick<RawJob, 'title' | 'company' | 'city' | '
   ].join('|')
 }
 
+/**
+ * Welke dedupe-hash een bestaande rij mag krijgen bij het bijwerken.
+ *
+ * De hash-vorm is veranderd, en `jobs_dedupe_hash_idx` is uniek. Twee rijen die onder de
+ * óude vorm uit elkaar bleven — "Acme BV" en "Acme NV", zelfde titel, zelfde plaats — komen
+ * onder de nieuwe vorm op dezelfde sleutel uit. Blind bijwerken gooit dan
+ * `SQLITE_CONSTRAINT_UNIQUE` en velt de hele sync; gereproduceerd op een wegwerp-database
+ * vóór deze functie bestond.
+ *
+ * De rij houdt in dat geval zijn oude sleutel. Dat kost alleen kruis-bron-dedupe voor dat
+ * ene paar — de rij blijft gewoon vindbaar op `source + external_id`. Samenvoegen zou een
+ * van de twee statussen weggooien, en dat is gebruikersdata.
+ */
+export function kiesDedupeHash(nieuweHash: string, huidigeHash: string, hashIsVrij: boolean): string {
+  return hashIsVrij ? nieuweHash : huidigeHash
+}
+
 export function leadDedupeHash(lead: Pick<RawLead, 'companyName' | 'postcode' | 'region'>): string {
   return [normaliseerBedrijf(lead.companyName), plaatsSleutel({ ...lead, city: null })].join('|')
 }

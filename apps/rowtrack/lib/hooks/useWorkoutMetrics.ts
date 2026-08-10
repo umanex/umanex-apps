@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { calculateCalories } from '@/lib/calories';
 import { ema, SMOOTHING } from '@/lib/smoothing';
+import { isStrokeIdle } from '@/lib/ble/strokeIdle';
 
 /** Zoveel opeenvolgende idle-packets vóór de live-waarden naar 0 zakken. */
 const IDLE_PACKETS_BEFORE_ZERO = 2;
@@ -126,6 +127,12 @@ export function useWorkoutMetrics(
   const idlePacketsRef = useRef(0);
   /** Afstand van het vorige verwerkte packet — staat die stil, dan sta jij ook stil. */
   const lastIdleDistanceRef = useRef<number | null>(null);
+  /** Slagenteller-stand en het moment waarop hij voor het laatst opliep. */
+  const lastStrokeCountRef = useRef<number | null>(null);
+  const lastStrokeAtRef = useRef<number | null>(null);
+  /** Aankomsttijd van het vorige packet + de laatste paar intervallen (gemeten cadans). */
+  const lastPacketAtRef = useRef<number | null>(null);
+  const packetIntervalsRef = useRef<number[]>([]);
   // Laatst-verwerkte bleMetrics-referentie: dit effect her-draait ook op hrBpm-
   // wijzigingen (HR-accumulatie), en dan is bleMetrics dezelfde gemergede referentie.
   const lastProcessedMetricsRef = useRef<RowerMetrics | null>(null);
@@ -213,7 +220,30 @@ export function useWorkoutMetrics(
     // bij een echte pauze staat die teller stil. Is de afstand niet bewogen, dan is dit
     // geen recovery-gaatje maar stilstand, en is wachten op bevestiging een seconde
     // waarin je 180 W leest terwijl je uitblaast.
+    //
+    // En er is een tweede ingang, want het bovenstaande wacht tot de érg zijn
+    // slagfrequentie loslaat — en dat duurt seconden waarin de tegel een getal toont
+    // dat niet meer klopt. De slagenteller weet het eerder: die loopt op bij elke
+    // haal en staat stil zodra je stopt. Blijft een nieuwe slag langer uit dan je
+    // eigen tempo toelaat, dan roei je niet meer, wat de erg ook nog rapporteert.
+    // Zie `strokeIdle.ts` voor waarom dit op de teller moet en niet op het vermogen.
     if (isNewRowerPacket) {
+      const now = Date.now();
+      if (lastPacketAtRef.current != null) {
+        // De cadans meten in plaats van aannemen: 1 Hz op deze erg, maar de marge in
+        // de drempel moet meeschuiven met wat er werkelijk binnenkomt.
+        packetIntervalsRef.current = [...packetIntervalsRef.current, now - lastPacketAtRef.current].slice(-5);
+      }
+      lastPacketAtRef.current = now;
+
+      if (
+        bleMetrics.strokeCount != null &&
+        (lastStrokeCountRef.current == null || bleMetrics.strokeCount > lastStrokeCountRef.current)
+      ) {
+        lastStrokeCountRef.current = bleMetrics.strokeCount;
+        lastStrokeAtRef.current = now;
+      }
+
       const idle = bleMetrics.instantaneousPower == null && bleMetrics.strokeRate == null;
       idlePacketsRef.current = idle ? idlePacketsRef.current + 1 : 0;
 
@@ -222,7 +252,16 @@ export function useWorkoutMetrics(
         bleMetrics.totalDistance === lastIdleDistanceRef.current;
       lastIdleDistanceRef.current = bleMetrics.totalDistance ?? lastIdleDistanceRef.current;
 
-      if (idle && (distanceFrozen || idlePacketsRef.current >= IDLE_PACKETS_BEFORE_ZERO)) {
+      const strokeIdle = isStrokeIdle({
+        power: bleMetrics.instantaneousPower,
+        spm: bleMetrics.strokeRate,
+        msSinceLastStroke: lastStrokeAtRef.current == null ? null : now - lastStrokeAtRef.current,
+        // De slechtste recente cadans, niet de gemiddelde: één trage packet mag geen
+        // valse rust opleveren tussen twee normale halen door.
+        packetIntervalMs: Math.max(0, ...packetIntervalsRef.current),
+      });
+
+      if (strokeIdle || (idle && (distanceFrozen || idlePacketsRef.current >= IDLE_PACKETS_BEFORE_ZERO))) {
         wattsEmaRef.current = null;
         spmEmaRef.current = null;
         splitEmaRef.current = null;
@@ -339,6 +378,10 @@ export function useWorkoutMetrics(
     splitEmaRef.current = null;
     idlePacketsRef.current = 0;
     lastIdleDistanceRef.current = null;
+    lastStrokeCountRef.current = null;
+    lastStrokeAtRef.current = null;
+    lastPacketAtRef.current = null;
+    packetIntervalsRef.current = [];
     lastProcessedMetricsRef.current = null;
     startedAtRef.current = new Date();
   }, []);

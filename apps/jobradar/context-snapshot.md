@@ -33,17 +33,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+957e94d fix(jobradar): link to the vacancy, not to Adzuna's dead tracking URL
 bbbab20 docs(jobradar): record the region and paging decisions as decisions
 0e845fd fix(jobradar): do not let a changed hash shape break the first sync
 9492939 docs(jobradar): correct the verify path and warn about the KBO key
 bc1489f test(jobradar): put the scoring kernel under invariants, and prove they can fail
-2aec968 feat(jobradar): repair the Adzuna source and derive leads from its data
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/jobradar/app/api/sync/route.ts
+  M  apps/jobradar/components/SyncButton.tsx
   M  apps/jobradar/lib/config/profile.ts
+  A  apps/jobradar/lib/db/ddl.ts
+  M  apps/jobradar/lib/db/index.ts
+  M  apps/jobradar/lib/signals.ts
   M  apps/jobradar/lib/sources/adzuna.ts
-  M  apps/jobradar/lib/sources/fixtures/adzuna-jobs.ts
+  A  apps/jobradar/lib/sync/upsert.ts
+  M  apps/jobradar/scripts/scenarios.mjs
   M  apps/jobradar/scripts/signal-scenarios.ts
 
 ## Bestanden met TODO/FIXME

@@ -85,6 +85,9 @@ async function haalRegio(regio: RegionCode): Promise<SourceResult<RawJob>> {
   const warnings: string[] = []
   let buitenRegio = 0
   let totaalBijBron: number | undefined
+  // Of de laatste pagina vol was. Alleen dán kan er nog meer achter het plafond zitten —
+  // en dit weten we óók wanneer de bron geen `count` meestuurt.
+  let laatstePaginaVol = false
 
   for (let pagina = 1; pagina <= ADZUNA_SEARCH.maxPaginas; pagina++) {
     let data: AdzunaResponse
@@ -102,6 +105,7 @@ async function haalRegio(regio: RegionCode): Promise<SourceResult<RawJob>> {
 
     if (totaalBijBron === undefined) totaalBijBron = data.count
     const batch = data.results ?? []
+    laatstePaginaVol = batch.length >= ADZUNA_SEARCH.resultatenPerPagina
 
     for (const item of batch) {
       const job = normaliseerAdzunaItem(item)
@@ -110,18 +114,23 @@ async function haalRegio(regio: RegionCode): Promise<SourceResult<RawJob>> {
     }
 
     // Laatste pagina: de bron gaf er minder terug dan we vroegen.
-    if (batch.length < ADZUNA_SEARCH.resultatenPerPagina) return afronden()
+    if (!laatstePaginaVol) return afronden()
   }
 
   return afronden()
 
   function afronden(): SourceResult<RawJob> {
-    // Geen stille afkapping: wie het plafond raakt, hoort dat te weten.
+    // Geen stille afkapping: wie het plafond raakt, hoort dat te weten. De volle laatste
+    // pagina is het signaal dat werkt zónder `count` — hing de guard daar alleen aan, dan
+    // zweeg hij precies wanneer de bron zijn totaal niet meestuurt.
     const opgehaald = items.length + buitenRegio
-    if (totaalBijBron !== undefined && totaalBijBron > opgehaald) {
+    if (laatstePaginaVol) {
       warnings.push(
-        `${regio}: ${opgehaald} van ${totaalBijBron} vacatures opgehaald ` +
-          `(plafond ${ADZUNA_SEARCH.maxPaginas} pagina's × ${ADZUNA_SEARCH.resultatenPerPagina})`
+        totaalBijBron !== undefined
+          ? `${regio}: ${opgehaald} van ${totaalBijBron} vacatures opgehaald ` +
+            `(plafond ${ADZUNA_SEARCH.maxPaginas} pagina's × ${ADZUNA_SEARCH.resultatenPerPagina})`
+          : `${regio}: ${opgehaald} vacatures opgehaald en het plafond geraakt ` +
+            `(${ADZUNA_SEARCH.maxPaginas} pagina's); de bron meldde geen totaal, dus er kan meer zijn`
       )
     }
     if (buitenRegio > 0) {
@@ -141,10 +150,28 @@ export const adzunaSource: JobSource = {
 
     // Per regio afzonderlijk, en fouten reizen mee in plaats van de hele bron te vellen.
     const perRegio = await Promise.all(regions.map((regio) => haalRegio(regio)))
+    const warnings = perRegio.flatMap((r) => r.warnings)
 
-    return {
-      items: perRegio.flatMap((r) => r.items),
-      warnings: perRegio.flatMap((r) => r.warnings),
+    // De ankers overlappen fysiek — Brugge (30 km) en Gent (25 km) delen Tielt, Deinze,
+    // Waregem en Aalter — dus dezelfde vacature komt uit twee queries terug. De database
+    // vangt dat later op via (source, external_id), maar de signaal-afleiding krijgt de
+    // rauwe lijst: daar telde één vacature dubbel en haalde een bedrijf zijn drempels
+    // met kopieën van zichzelf.
+    const gezien = new Set<string>()
+    const items: RawJob[] = []
+    let dubbel = 0
+    for (const job of perRegio.flatMap((r) => r.items)) {
+      if (gezien.has(job.externalId)) {
+        dubbel++
+        continue
+      }
+      gezien.add(job.externalId)
+      items.push(job)
     }
+    if (dubbel > 0) {
+      warnings.push(`${dubbel} vacatures kwamen uit meerdere regio-queries terug (overlappende zoekstralen)`)
+    }
+
+    return { items, warnings }
   },
 }

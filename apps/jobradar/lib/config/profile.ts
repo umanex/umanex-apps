@@ -37,10 +37,17 @@ export const DEV_SKILLS: readonly SkillKey[] = ['frontend', 'nextjs', 'react', '
 
 /** Drempels voor de signaal-afleiding. Hier draaien, niet in de logica zelf. */
 export const SIGNAL_THRESHOLDS = {
-  /** Vanaf hoeveel gelijktijdige vacatures een bedrijf als groeiend telt. */
+  /** Vanaf hoeveel gelijktijdige *relevante* vacatures een bedrijf als groeiend telt. */
   groeiVacatures: 3,
-  /** Binnen hoeveel dagen een vacature nog als "recent" meetelt voor het groeisignaal. */
-  groeiVensterDagen: 60,
+  /**
+   * Binnen hoeveel dagen een vacature nog als "recent" meetelt.
+   *
+   * Bewust gelijk aan `ADZUNA_SEARCH.maxDagenOud`: de bron levert per definitie niets
+   * ouders, dus een ruimer venster hier zou niets extra's toelaten en het signaal alleen
+   * doen lijken alsof het meer meet dan het doet. Zo gelezen betekent "recente groei"
+   * eerlijk: minstens `groeiVacatures` relevante vacatures open binnen het ophaalvenster.
+   */
+  groeiVensterDagen: 30,
   /** Vanaf hoeveel design- of dev-vacatures een bedrijf een digitaal productteam heet. */
   productteamVacatures: 2,
 } as const

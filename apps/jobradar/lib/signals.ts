@@ -6,6 +6,7 @@ import {
   SIGNAL_THRESHOLDS,
   AFGELEIDE_SIGNALEN,
   type AfgeleidSignaal,
+  type SkillKey,
 } from './config/profile'
 import { ALL_REGIONS, type RegionCode } from './regions'
 
@@ -24,16 +25,39 @@ export type Bedrijfsprofiel = {
   signals: AfgeleidSignaal[]
 }
 
+function tel(skills: readonly SkillKey[], set: readonly SkillKey[]): number {
+  return skills.filter((s) => set.includes(s)).length
+}
+
 /**
  * Deelt één vacature in als design-werk, dev-werk, of geen van beide.
+ *
+ * **De titel beslist over de rol.** Dat is geen detail: hiervóór werd op titel én
+ * omschrijving samen gematcht, met design vóór dev getest, en dan kantelt één terloopse
+ * zin een dev-vacature om. "Frontend Developer — React en TypeScript verplicht, UX
+ * affiniteit is een pluspunt" werd zo een designvacature. Over de fixtureset boekte dat
+ * vier zuivere dev-vacatures (Belfius, Codifly, Odoo, Teamleader) als designbudget, en het
+ * zwaarstwegende signaal — "dev-vacature zonder design", de reden dat dit bestand bestaat —
+ * vuurde daardoor geen enkele keer.
+ *
+ * Zegt de titel niets over de rol, dan pas de omschrijving, en alleen bij een duidelijke
+ * meerderheid. Bij gelijkspel design: een vals "design" kost een lead, een vals "dev" kost
+ * een verkeerde benadering, en dat laatste is duurder.
  *
  * "Geen van beide" is een echte uitkomst en geen restcategorie: Adzuna's `what_or` is los,
  * dus een query op "designer" levert ook Mechanical Designers. Die tellen nergens in mee.
  */
-function classificeer(job: Pick<RawJob, 'title' | 'description'>): 'design' | 'dev' | null {
-  const skills = matchedSkills(job)
-  if (skills.some((s) => DESIGN_SKILLS.includes(s))) return 'design'
-  if (skills.some((s) => DEV_SKILLS.includes(s))) return 'dev'
+export function classificeer(job: Pick<RawJob, 'title' | 'description'>): 'design' | 'dev' | null {
+  const titel = matchedSkills({ title: job.title, description: '' })
+  const titelDesign = tel(titel, DESIGN_SKILLS)
+  const titelDev = tel(titel, DEV_SKILLS)
+  if (titelDesign || titelDev) return titelDesign >= titelDev ? 'design' : 'dev'
+
+  const volledig = matchedSkills(job)
+  const design = tel(volledig, DESIGN_SKILLS)
+  const dev = tel(volledig, DEV_SKILLS)
+  if (design > dev) return 'design'
+  if (dev > design) return 'dev'
   return null
 }
 
@@ -90,7 +114,10 @@ export function bouwBedrijfsprofielen(jobs: RawJob[], nu: Date): Bedrijfsprofiel
       const soort = classificeer(job)
       if (soort === 'design') design++
       else if (soort === 'dev') dev++
-      if (isRecent(job.postedAt, nu, SIGNAL_THRESHOLDS.groeiVensterDagen)) recent++
+      // Alleen relevante vacatures tellen mee voor groei. Anders werd een bedrijf met drie
+      // verse Mechanical Designers een lead met "recente groei" — een naam zonder aanleiding,
+      // precies wat deze module hoort uit te sluiten.
+      if (soort !== null && isRecent(job.postedAt, nu, SIGNAL_THRESHOLDS.groeiVensterDagen)) recent++
     }
 
     const relevant = design + dev
@@ -142,10 +169,19 @@ export function bouwBedrijfsprofielen(jobs: RawJob[], nu: Date): Bedrijfsprofiel
 export function mergeSignalen(bestaand: readonly string[], afgeleid: readonly string[]): string[] {
   const afgeleideSet = new Set<string>(AFGELEIDE_SIGNALEN)
   const vreemd = bestaand.filter((s) => !afgeleideSet.has(s))
-  const uniek = [...new Set([...vreemd, ...afgeleid])]
+  return sorteerSignalen([...vreemd, ...afgeleid])
+}
 
-  // Vreemde signalen alfabetisch, afgeleide in hun vaste volgorde erachter.
-  return uniek.sort((a, b) => {
+/**
+ * Vaste volgorde en geen duplicaten: vreemde signalen alfabetisch, afgeleide in hun eigen
+ * volgorde erachter.
+ *
+ * Hoort op élk schrijfpad te draaien, ook op de INSERT. Deed alleen de UPDATE het, dan
+ * verschilde de opgeslagen JSON tussen de eerste en de tweede sync terwijl de inhoud gelijk
+ * was — genoeg om een vergelijking op de rauwe kolom te laten schuiven.
+ */
+export function sorteerSignalen(signalen: readonly string[]): string[] {
+  return [...new Set(signalen)].sort((a, b) => {
     const ia = AFGELEIDE_SIGNALEN.indexOf(a as AfgeleidSignaal)
     const ib = AFGELEIDE_SIGNALEN.indexOf(b as AfgeleidSignaal)
     if (ia === -1 && ib === -1) return a.localeCompare(b, 'nl')
@@ -153,6 +189,25 @@ export function mergeSignalen(bestaand: readonly string[], afgeleid: readonly st
     if (ib === -1) return 1
     return ia - ib
   })
+}
+
+/**
+ * De omgekeerde kant: een externe bron levert zijn eigen set en laat de afgeleide staan.
+ *
+ * Zonder deze functie liep de externe tak door `mergeSignalen(lead.signals, …)`, en die
+ * stript per contract de afgeleide namen uit zijn *eerste* argument. KBO's signalen dragen
+ * precies die namen ("recente groei", "digital product team"), dus sync 1 sloeg ze op via
+ * het INSERT-pad en sync 2 wiste ze via het UPDATE-pad. Stille datavernietiging die pas bij
+ * de tweede run zichtbaar werd.
+ *
+ * Dat twee bronnen dezelfde signaalnamen gebruiken blijft dubbelzinnig: wint de afgeleide
+ * waarde of die van de bron, dan is dat een keuze en geen feit. Hier wint de bron voor zijn
+ * eigen signalen, en blijft alles wat de afleiding zei staan.
+ */
+export function mergeBronSignalen(huidige: readonly string[], vanBron: readonly string[]): string[] {
+  const afgeleideSet = new Set<string>(AFGELEIDE_SIGNALEN)
+  const afgeleidBehouden = huidige.filter((s) => afgeleideSet.has(s))
+  return mergeSignalen(vanBron, afgeleidBehouden)
 }
 
 /**

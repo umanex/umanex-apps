@@ -19,7 +19,10 @@ import { fileURLToPath } from 'node:url'
 const HIER = dirname(fileURLToPath(import.meta.url))
 const APP = resolve(HIER, '..')
 
-const SUITES = [{ naam: 'signalen', bestand: 'scripts/signal-scenarios.ts' }]
+const SUITES = [
+  { naam: 'signalen', bestand: 'scripts/signal-scenarios.ts' },
+  { naam: 'upserts', bestand: 'scripts/upsert-scenarios.ts' },
+]
 
 /** Draait één suite en geeft exitcode + uitvoer terug. Gooit niet: de uitkomst ís het antwoord. */
 function draai(bestand, env = {}) {

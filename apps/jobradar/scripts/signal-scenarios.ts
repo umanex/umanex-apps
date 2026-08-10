@@ -10,7 +10,7 @@
  * Rauw:     node --import ./scripts/ts-resolve.mjs scripts/signal-scenarios.ts
  */
 import { scoreJob, scoreLead, jobDedupeHash, kiesDedupeHash, matchedSkills, normaliseerBedrijf } from '../lib/matching'
-import { deriveLeadsFromJobs, bouwBedrijfsprofielen, mergeSignalen, AFGELEIDE_BRON } from '../lib/signals'
+import { deriveLeadsFromJobs, bouwBedrijfsprofielen, mergeSignalen, classificeer, AFGELEIDE_BRON } from '../lib/signals'
 import { regionForArea, ALL_REGIONS } from '../lib/regions'
 import { SIGNAL_WEIGHTS, SIGNAL_THRESHOLDS, AFGELEIDE_SIGNALEN } from '../lib/config/profile'
 import { ADZUNA_JOB_FIXTURES } from '../lib/sources/fixtures/adzuna-jobs'
@@ -80,34 +80,54 @@ check('"UI/UX Designer" matcht ui én ux', (() => {
 })())
 
 // ── 3. Leadscore is de som van zijn signaalgewichten ─────────────────────────
-const SIGNAALSETS = [
-  ['UX-budget aanwezig'],
-  ['dev-vacature zonder design', 'digital product team'],
-  ['dev-vacature zonder design', 'digital product team', 'recente groei', 'series A+', 'startup'],
-  [],
+// De verwachte uitkomsten staan hier hard, niet herberekend uit SIGNAL_WEIGHTS.
+// Hiervóór deed de check `SIGNAL_WEIGHTS[s] ?? 5` — precies de uitdrukking uit de
+// implementatie, fallback inbegrepen — waardoor de gelijkheid standhield voor élke
+// gewichtentabel. Een hernoemde of weggevallen sleutel viel aan beide kanten op 5 terug en
+// bleef onzichtbaar; `Record<string, number>` laat tsc er ook niet over vallen.
+const VERWACHT: Array<[string[], number]> = [
+  [['UX-budget aanwezig'], 25],
+  [['dev-vacature zonder design', 'digital product team'], 55],
+  [['dev-vacature zonder design', 'recente groei', 'startup'], 65],
+  [['dev-vacature zonder design', 'digital product team', 'recente groei', 'UX-budget aanwezig', 'series A+', 'startup', 'no designer on team'], 100],
+  [[], 0],
 ]
-for (const signals of SIGNAALSETS) {
+for (const [signals, verwacht] of VERWACHT) {
   const { score, breakdown } = scoreLead({ signals })
-  const som = signals.reduce((a, s) => a + (SIGNAL_WEIGHTS[s] ?? 5), 0)
-  check(`leadScore==som(gewichten) voor [${signals.join(', ')}]`, score === Math.min(100, som), `${score} vs ${som}`)
-  check(`leadScore gecapt op 100 voor [${signals.join(', ')}]`, score <= 100)
+  check(`leadScore is ${verwacht} voor [${signals.join(', ')}]`, score === verwacht, String(score))
   check(
     `breakdown dekt elk signaal voor [${signals.join(', ')}]`,
     Object.keys(breakdown).length === new Set(signals).size
   )
 }
+// En de tabel zelf: een hernoemde sleutel valt hier op, niet pas in de UI.
+for (const [naam, gewicht] of Object.entries({
+  'dev-vacature zonder design': 30,
+  'digital product team': 25,
+  'recente groei': 20,
+  'UX-budget aanwezig': 25,
+  startup: 15,
+  'series A+': 20,
+  'no designer on team': 30,
+})) {
+  check(`SIGNAL_WEIGHTS["${naam}"] == ${gewicht}`, SIGNAL_WEIGHTS[naam] === gewicht, String(SIGNAL_WEIGHTS[naam]))
+}
+check('elk afgeleid signaal heeft een expliciet gewicht', AFGELEIDE_SIGNALEN.every((s) => typeof SIGNAL_WEIGHTS[s] === 'number'))
 
 // ── 4. Permutatie-invariantie ────────────────────────────────────────────────
 // Als de volgorde van de vacaturelijst de uitkomst verandert, verandert een leadscore
 // doordat een bron zijn paginering wijzigt. Dat is precies de stille drift die deze
 // suite moet uitsluiten.
+// Bedrijven staan bewust in méér dan één regio en met verschillende postcodes: de
+// determinisme-logica voor regio en postcode werd anders door geen enkele permutatie
+// geraakt, en `groep[0].region` zou de suite gewoon zijn gepasseerd.
 const GEMENGD: RawJob[] = [
-  job({ title: 'Frontend Developer', company: 'Acme BV', description: 'React en TypeScript', region: 'OVL' }),
-  job({ title: 'Backend Developer', company: 'Acme BV', description: 'Node en Postgres', region: 'OVL' }),
-  job({ title: 'UX Designer', company: 'Beta NV', description: 'user research', region: 'WVL' }),
-  job({ title: 'React Developer', company: 'Beta NV', description: 'React', region: 'WVL' }),
+  job({ title: 'Frontend Developer', company: 'Acme BV', description: 'React en TypeScript', region: 'OVL', postcode: 9000 }),
+  job({ title: 'Backend Developer', company: 'Acme BV', description: 'Node en Postgres', region: 'WVL', postcode: 8000 }),
+  job({ title: 'UX Designer', company: 'Beta NV', description: 'user research', region: 'WVL', postcode: 8500 }),
+  job({ title: 'React Developer', company: 'Beta NV', description: 'React', region: 'BRU', postcode: 1000 }),
   job({ title: 'Mechanical Designer', company: 'Gamma', description: 'constructietekeningen', region: 'BRU' }),
-  job({ title: 'Next.js Developer', company: 'acme bv', description: 'Next.js', region: 'OVL' }),
+  job({ title: 'Next.js Developer', company: 'acme bv', description: 'Next.js', region: 'OVL', postcode: 9000 }),
 ]
 const basis = JSON.stringify(deriveLeadsFromJobs(GEMENGD, NU))
 for (let i = 0; i < 12; i++) {
@@ -116,6 +136,60 @@ for (let i = 0; i < 12; i++) {
   const geroteerd = [...GEMENGD.slice(i % GEMENGD.length), ...GEMENGD.slice(0, i % GEMENGD.length)]
   const volgorde = i % 2 === 0 ? geroteerd : geroteerd.reverse()
   check(`permutatie ${i} geeft dezelfde leads`, JSON.stringify(deriveLeadsFromJobs(volgorde, NU)) === basis)
+  // Expliciet ook op regio en postcode, want die staan niet in élke lead-vergelijking los
+  // genoeg om een `groep[0]`-mutant te betrappen.
+  const profielen = bouwBedrijfsprofielen(volgorde, NU)
+  check(
+    `permutatie ${i} kiest dezelfde regio en postcode`,
+    JSON.stringify(profielen.map((p) => [p.bedrijfssleutel, p.region, p.postcode])) ===
+      JSON.stringify(bouwBedrijfsprofielen(GEMENGD, NU).map((p) => [p.bedrijfssleutel, p.region, p.postcode]))
+  )
+}
+// En de tiebreak moet écht een keuze maken, niet de eerste rij overnemen: Acme staat 2× OVL
+// tegen 1× WVL, dus OVL hoort te winnen ongeacht waar de WVL-rij in de lijst staat.
+{
+  const acmeProfiel = bouwBedrijfsprofielen(GEMENGD, NU).find((p) => p.bedrijfssleutel === 'acme')
+  check('meerderheidsregio wint van de eerste rij', acmeProfiel?.region === 'OVL', acmeProfiel?.region)
+  check('meerderheidspostcode wint van de eerste rij', acmeProfiel?.postcode === 9000, String(acmeProfiel?.postcode))
+}
+
+// ── 4b. De titel beslist over de rol ─────────────────────────────────────────
+// De faalklasse die de suite hiervóór niet zag: op titel én omschrijving samen matchen, met
+// design eerst getest, laat één terloopse zin een dev-vacature omklappen. Over de fixtureset
+// vuurde het zwaarste signaal daardoor nul keer — en de uitsluitings-check hieronder slaagde
+// vacuüm, omdat er niets meer langskwam om uit te sluiten.
+const CLASSIFICATIE: Array<[string, string, 'design' | 'dev' | null]> = [
+  ['Frontend Developer', 'React en TypeScript verplicht, UX affiniteit is een pluspunt.', 'dev'],
+  ['Frontend Developer', 'Je bouwt en onderhoudt ons design system in React.', 'dev'],
+  ['UX Designer', 'Je werkt nauw samen met React-developers.', 'design'],
+  ['UI Developer — React/TypeScript', '', 'dev'],
+  ['UI/UX Designer — Design System', '', 'design'],
+  ['Senior Product Designer', '', 'design'],
+  ['Frontend Engineer — Next.js', 'Figma-kennis is mooi meegenomen.', 'dev'],
+  ['Mechanical Designer', 'Constructietekeningen van inox machines.', null],
+  ['Boekhouder', 'Je verwerkt facturen.', null],
+  // Titel zegt niets over de rol → dan pas de omschrijving, en alleen bij een meerderheid.
+  ['Software Engineer', 'Je werkt met React, TypeScript en Next.js.', 'dev'],
+  ['Creative Lead', 'Je stuurt het UX-team aan en werkt in Figma.', 'design'],
+]
+for (const [title, description, verwacht] of CLASSIFICATIE) {
+  const uit = classificeer({ title, description })
+  check(`"${title.slice(0, 34)}" → ${verwacht ?? 'geen'}`, uit === verwacht, `kreeg ${uit ?? 'geen'}`)
+}
+
+// En het signaal moet over de échte fixtureset ook daadwerkelijk vuren — anders is de
+// uitsluitings-check hieronder een wachter voor een deur waar niemand langskomt.
+{
+  const uitFixtures = deriveLeadsFromJobs(ADZUNA_JOB_FIXTURES, new Date('2026-05-27T00:00:00.000Z'))
+  check(
+    '"dev-vacature zonder design" vuurt over de fixtures',
+    uitFixtures.some((l) => l.signals.includes('dev-vacature zonder design')),
+    JSON.stringify(uitFixtures.map((l) => l.signals))
+  )
+  check(
+    '"UX-budget aanwezig" vuurt óók over de fixtures',
+    uitFixtures.some((l) => l.signals.includes('UX-budget aanwezig'))
+  )
 }
 
 // ── 5. Wederzijdse uitsluiting van de twee kernsignalen ──────────────────────

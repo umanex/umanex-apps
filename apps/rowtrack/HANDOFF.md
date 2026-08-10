@@ -158,7 +158,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-15 — Geen privacybeleid / rechtsgrond / consent voor (gezondheids)PII · [next-step]
 - **Bevinding:** Security-audit 2026-07-15 **P1-1** (`apps/rowtrack/audits/2026-07-15-security-audit-rowtrack.md`). RowTrack verzamelt e-mail + voornaam én gezondheids-nabije data (hartslag avg/max + volledige per-tick HR-tijdreeks in `workouts.samples`, gewicht/lengte/geboortedatum/geslacht in `profiles`) zonder privacybeleid, rechtsgrond (AVG art. 6), transparantie-notice (art. 13) of consent. Hartslag+biometrie kunnen als bijzondere categorie (art. 9) gelden.
 - **Volgende zet:** Privacybeleid schrijven (verantwoordelijke = umanex/Jeroen, datacategorieën incl. hartslag, rechtsgrond, retentie, verwerker = Supabase) + linken bij signup en in Profiel; expliciete opt-in voor de gezondheidsdata. Niet-code werk — bij Jeroen.
-- **Status:** open
+- **Status:** open — sterk versmald. Gebouwd: het toestemmingsscherm met opt-in en intrekken (`451e251`), het privacybeleid (`812240f`) en een publieke pagina in `apps/rowtrack-web`. **Wat rest is één ding:** `PRIVACY_POLICY_URL` moet ook echt bereikbaar zijn — op 2026-08-07 gaf hij 404. Toestemming die naar een onbereikbaar beleid verwijst is niet "geïnformeerd", dus dit blijft de blocker.
 
 ## 2026-07-15 — Geen in-app account-verwijdering (AVG art. 17 + store-blocker) · [next-step]
 - **Bevinding:** Security-audit 2026-07-15 **P1-2**. Geen verwijder-actie in de app; `profiles` heeft geen DELETE-RLS-policy, dus het datamodel ondersteunt het niet eens. AVG recht-op-vergetelheid niet invulbaar + **zekere** Apple (Guideline 5.1.1(v))/Play-afwijzing bij store-submission (niet enkel een risico). Vereist het eerste server-side stuk in dit project.
@@ -222,7 +222,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-15 — rowtrack CLAUDE.md Supabase-schema is stale · [next-step]
 - **Bevinding:** De schema-tabel in `apps/rowtrack/CLAUDE.md` lijst `created_at`/`distance_m`/`avg_split`; de echte kolommen zijn `started_at`/`distance_meters`/`best_split` (+ `best_2k_seconds`, `samples`) — bevestigd doordat de P2-6 perf-indexes op die kolommen zijn aangemaakt. De doc-tabel misleidt bij DB-werk.
 - **Volgende zet:** De Supabase-tabellen-sectie in `apps/rowtrack/CLAUDE.md` bijwerken naar de echte kolomnamen.
-- **Status:** open
+- **Status:** resolved — de schematabel staat er niet meer; `apps/rowtrack/CLAUDE.md` zegt nu "lees het schema live via de `supabase-rowtrack` MCP-server (`list_tables`)". Deze entry vroeg om een fix die al gebeurd was.
 
 ## 2026-07-16 — Summary KPI-band toont ENERGIE dubbel (4e KPI ontbreekt) · [debt]
 - **Bevinding:** In het samenvattingsscherm (`ActivePhase.tsx`, summary Modal KPI-band) staan AFSTAND/DUUR bovenaan en ENERGIE/ENERGIE eronder — de calorieën-cel is een copy-paste, de 4e KPI ontbreekt. Pre-existing op main (niet in de flow-diff), maar sinds de auto-save-flow is dit hét eindscherm dat elke rit toont (stop én doel-bereikt), dus nu prominenter (review 2026-07-16 wf_d16eec5f-075, P2).
@@ -262,37 +262,37 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — UX-audit P1: WIJZIG-doellink onraakbaar/mogelijk dood + sub-44pt targets · [risico]
 - **Bevinding:** UX-audit 2026-07-16 **F3** (`audits/2026-07-16-ux-audit-rowtrack.md`). De Subtitle-action (WIJZIG op de doel-kaart) is ±16pt hoog zonder padding/hitSlop (`components/Subtitle.tsx:44-53`) en vuurde in 5+ pixel-precieze robot-kliks op Home én Profiel nooit, terwijl het identieke "ALLE" wél werkte. Ook sub-44: chevron-backs 40×40, password-reveal 36×36, Chips 40pt.
 - **Volgende zet:** Eerst op toestel met een vinger checken of WIJZIG überhaupt werkt; daarna Subtitle-action padding + hitSlop ≥44pt geven (of de hele doel-kaart tappable maken) en de overige sub-44-targets meenemen.
-- **Status:** open
+- **Status:** resolved (code) — 2026-08-10, commit `162eb45`. `Subtitle` heeft hitSlop naar 44pt plus `accessibilityRole`/`Label`; wachtwoord-oog, detail-chevron en chips zijn mee. Jeroen bevestigde op de erg dat WIJZIG wérkt maar mikken vroeg — dat was de aanleiding. De vingertoets ná de fix staat in het toestel-blok.
 
 ## 2026-07-16 — UX-audit P1: a11y-pass (contrast + labels + dynamic type) · [next-step]
 - **Bevinding:** UX-audit 2026-07-16 **F4**, exact berekend: inactieve tab-labels `fg.quaternary` op `bg.raised` = 2.47:1 (fail), witte 18px-knoptekst op `accent.default` = 3.44:1 (fail AA-klein), `status.error` op raised = 4.12:1, quaternary-chevrons 2.85:1 (non-text 3:1 fail). Accessibility-props op 6 van ±79 touchables; `Button.tsx` heeft er geen; geen `maxFontSizeMultiplier`-vangnet bij vaste hoogtes.
 - **Volgende zet:** Inactieve tabs → `fg.tertiary` (4.73:1 ✓); knoptekst zwaarder/donkerder óf accent verdiepen (token-keuze Jeroen); `accessibilityRole/Label` op Button/TabLabel/rijen/backs; VoiceOver-pass op toestel.
-- **Status:** open
+- **Status:** resolved (code) — 2026-08-10, PR #259. `fg.quaternary` komt in app-code nergens meer voor, `accessibilityRole` staat op de gedeelde primitives en de profielrijen, en `maxFontSizeMultiplier` waar een vaste hoogte niet kan groeien. **Twee helften blijven bij jou:** de VoiceOver- en dynamic-type-pass (render-item 2026-08-10) en de knoptekst-contrastkeuze (token-item 2026-08-10).
 
 ## 2026-07-16 — UX-audit P1: vergelijkingszin split/watt loopt tegen de schermrand · [next-step]
 - **Bevinding:** UX-audit 2026-07-16 **F5**, live gezien: de coaching-zin ("Je levert 10 W minder dan je doel", 36px) rendert edge-to-edge — `subtitleText` zonder horizontale padding in een `heroPanel` zonder paddingHorizontal (`ActivePhase.tsx` activeStyles). Copy-randje: "Je bent 0 seconden sneller" op exact doeltempo.
 - **Volgende zet:** `paddingHorizontal: space['20']` op de zin of het paneel; copy-variant "Op doeltempo" bij verschil 0. Effort XS.
-- **Status:** open
+- **Status:** resolved (code) — 2026-08-10, PR #261. Eigen stijl met `paddingHorizontal: space['20']`, plus de "op doel"-copy bij verschil 0. Het kíjken staat in het render-item van 2026-08-10.
 
 ## 2026-07-16 — UX-audit P2: stille fouten rond het periode-doel · [next-step]
 - **Bevinding:** UX-audit 2026-07-16 **F6**. `usePeriodGoal` exposeert geen error en Home leest ook `loading` niet — een gefaalde fetch is identiek aan "geen doel" (sectie verdwijnt stil); Home mist een "stel een doel in"-CTA (Profiel heeft die wél); GoalSheet-Opslaan zonder periode/type-keuze schrijft stil `NO_GOAL` (geen `disabled={!isValid}` zoals GoalSetupModal).
 - **Volgende zet:** `error`/`loading` uit `usePeriodGoal` consumeren op Home (+ ErrorState/skeleton), doel-CTA op Home, validatie-guard op GoalSheet-Opslaan.
-- **Status:** open
+- **Status:** resolved (code) — 2026-08-10, PR #261. `usePeriodGoal` exposeert `error`, Home consumeert `error` én `loading`, de CTA staat er, en GoalSheet-Opslaan is disabled tot de keuze compleet is. Het kíjken staat in het render-item van 2026-08-10.
 
 ## 2026-07-16 — UX-audit P2: "Week/Maand" = rollend op Historiek vs kalender in het doel · [onzekerheid]
 - **Bevinding:** UX-audit 2026-07-16 **F8**. Historiek filtert rollend (laatste 7 dagen/maand, `history/index.tsx:57-64`); `usePeriodGoal` rekent kalenderweek/-maand. Live staat "DEZE MAAND 22.3 km" naast Historiek-"Week 22.33 km" — leest als dezelfde stat met andere precisie.
 - **Volgende zet:** Productkeuze Jeroen: één definitie kiezen, of de Historiek-labels expliciteren ("Laatste 7 dagen").
-- **Status:** open
+- **Status:** resolved — 2026-08-05, commit `e247059`. `lib/period.ts` is nu de enige bron voor zowel de historiek-filter als `usePeriodGoal`, allebei kalendergebaseerd; de labels zeggen "Deze week" / "Deze maand". De twee getallen kúnnen niet meer uiteenlopen. Dit item stond vijf dagen verkeerd op open en vroeg op 2026-08-10 nog om een productkeuze die al gemaakt was — de aanleiding voor deze opruiming.
 
 ## 2026-07-16 — UX-audit P2: laad-flits "roeier" + sectie-pop-in op Home · [next-step]
 - **Bevinding:** UX-audit 2026-07-16 **F9**, live gezien: cold start toont "GOEDEMIDDAG, roeier" (fallback) die naar de echte naam flitst; DEZE MAAND- en PR-secties ontbreken tijdens de fetch en poppen in (layout-shift). Alleen de trainingslijst heeft een spinner.
 - **Volgende zet:** Naam pas tonen ná de fetch (of skeleton), sectie-skeletons voor doel/PR-blok.
-- **Status:** open
+- **Status:** resolved (code) — 2026-08-10, PR #261. Skeletten voor de begroeting, de doelkaart en het PR-blok. Het kíjken staat in het render-item van 2026-08-10.
 
 ## 2026-07-16 — UX-audit P2: getal-/unitformattering inconsistent · [next-step]
 - **Bevinding:** UX-audit 2026-07-16 **F10**. Decimaalpunt ("22.3 km", "9:10 min") naast duizendtal-punt ("7.515 m") — zelfde teken, twee betekenissen (NL zou komma-decimaal zijn); "0:17 min" voor een 17-seconden-rit; "2.500m" (zonder spatie) vs "7.515 m" (met).
 - **Volgende zet:** Eén formatter-conventie kiezen (komma-decimaal of consequent punt-duizendtal) + unit-spatie gelijktrekken; zit geconcentreerd in `lib/formatters.ts`.
-- **Status:** open
+- **Status:** resolved (code) — 2026-08-10, PR #260. Punt = duizendtal, komma = decimaal, één spatie vóór de eenheid; beide scheiders staan nog op twee plekken (`t.format` en `formatInt`/`formatDecimal`). Het kíjken staat in het render-item van 2026-08-10.
 
 ## 2026-07-16 — UX-audit P2: geen datavisualisatie (HR-verloop, split-trend) · [idee]
 - **Bevinding:** UX-audit 2026-07-16 **F11** (was F8 op 13/07): nul grafieken in een data-product, terwijl `workouts.samples` (1Hz t/d/hr-reeks) er al ligt. Grootste zichtbare waardesprong na de P0's: Useful 4→5, Desirable 4→5.
@@ -302,7 +302,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — UX-audit P2: mid-workout doel wijzigen is gebouwd maar onbereikbaar · [onzekerheid]
 - **Bevinding:** UX-audit 2026-07-16 **F12**. `GoalSetupModal` is volledig bedraad in `ActivePhase` (state, handlers, render), maar niets roept `setShowGoalModal(true)` aan — de DOEL-pill is een kale View. Feature bestaat in code, geen gebruiker kan hem triggeren.
 - **Volgende zet:** Productkeuze Jeroen: DOEL-pill tappable maken (feature aan) óf het pad verwijderen (dead weight weg).
-- **Status:** open
+- **Status:** resolved — 2026-08-10, PR #260. Jeroen koos het dode pad weg te halen; `GoalSetupModal` en zijn config zijn verwijderd. Er valt niets meer te beslissen.
 
 ## 2026-07-16 — Lopende BLE-scan overleeft disconnect() (ghost-reconnect mogelijk) · [risico]
 - **Bevinding:** Review-vondst bij de P0-fixes (cross-file tracer): `RowerBleService.disconnect()/cleanup()` roept nooit `manager.stopDeviceScan()` aan — dat gebeurt alleen ín de scan-callback. Pre-existing gat, maar de nieuwe overlay-Stop naast "Opnieuw proberen" geeft het een tweede ingang: Retry-scan starten → meteen Stop → de scan loopt door en kan later alsnog verbinden → spook-status 'connected' op het Idle-scherm.

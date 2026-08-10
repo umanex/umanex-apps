@@ -58,11 +58,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+d9791e3 docs(rowtrack): carry the unrendered work forward as checks, not as claims
 f88dec0 fix(rowtrack): tell the truth about a goal that failed to load
 e7e009d fix(rowtrack): one meaning per separator, and the unreachable goal path removed
 1b20c52 fix(rowtrack): raise the contrast and name the controls
 f8f9bc5 fix(rowtrack): let go of a heart-rate link in one place, not three
-9876980 ci: run the node:test invariants, so they measure something
 ```
 
 ## Uncommitted wijzigingen

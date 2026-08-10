@@ -34,15 +34,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+fe1e9e8 docs(jobradar): correct the invariant count in the verify path
 3d3281e fix(jobradar): score and lead-worthiness are different questions
 15614ec feat(jobradar): count backend work as a lead, and show what the leads rest on
 5e01171 fix(jobradar): take the role word out of the skill list
 d67d221 fix(jobradar): decide the role from role words, not from skill words
-990cb42 docs(jobradar): capture the classification failure class
 ```
 
 ## Uncommitted wijzigingen
   M  apps/jobradar/CLAUDE.md
+  M  apps/jobradar/LEARNINGS.md
+  M  apps/jobradar/lib/config/profile.ts
+  A  apps/jobradar/scripts/config-scenarios.ts
+  M  apps/jobradar/scripts/scenarios.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -23,6 +23,7 @@ const SUITES = [
   { naam: 'signalen', bestand: 'scripts/signal-scenarios.ts' },
   { naam: 'upserts', bestand: 'scripts/upsert-scenarios.ts' },
   { naam: 'adzuna', bestand: 'scripts/adzuna-scenarios.ts' },
+  { naam: 'config', bestand: 'scripts/config-scenarios.ts' },
 ]
 
 /** Draait één suite en geeft exitcode + uitvoer terug. Gooit niet: de uitkomst ís het antwoord. */

@@ -43,60 +43,65 @@ export const SKILL_KEYWORDS = {
 
 export type SkillKey = keyof typeof SKILL_KEYWORDS
 
-export const KEYWORD_WEIGHTS: Record<SkillKey, number> = {
-  ux: 20,
-  ui: 15,
-  frontend: 10,
-  nextjs: 15,
-  react: 10,
-  designSystem: 15,
-  figma: 5,
-  typescript: 5,
-  product: 10,
-  // Nul, en dat is de kern van het onderscheid hieronder: een .NET-vacature is geen werk
-  // voor Jeroen. Het bedrijf erachter is wél een lead.
-  backend: 0,
+/**
+ * De twee assen per cluster, in één verklaring.
+ *
+ * Hiervóór stonden ze in drie parallelle lijsten — `KEYWORD_WEIGHTS`, `SCORE_SKILLS`,
+ * `DESIGN_SKILLS`/`DEV_SKILLS` — en die konden uit elkaar lopen zonder dat iets protesteerde.
+ * Dat gebeurde ook: `backend` kreeg een gewicht (telde mee voor de vacaturescore) én een
+ * plek aan de dev-kant, waardoor een .NET-vacature scoorde als eigen opdracht. Zie
+ * `LEARNINGS.md` 2026-08-10.
+ *
+ * Nu is er één verklaring en zijn de lijsten eruit afgeleid. `Record<SkillKey, ClusterAssen>`
+ * maakt een vergeten cluster een compileerfout, en de twee assen staan naast elkaar op de
+ * regel waar je ze kiest — je kunt ze niet meer half invullen zonder het te zien.
+ *
+ * - `score`  — gewicht voor de **vacaturescore**: hoe interessant is dit werk om zelf te doen.
+ *              0 betekent: telt niet mee, hoe relevant het bedrijf ook is.
+ * - `kant`   — aan welke kant van de **bedrijfsclassificatie** dit cluster telt, of `null`.
+ */
+export type ClusterAssen = {
+  score: number
+  kant: 'design' | 'dev' | null
 }
 
-/**
- * Welke clusters meetellen voor de **vacaturescore** — hoe interessant dit werk is om zelf
- * te doen.
- *
- * `backend` staat hier bewust niet in (beslissing Jeroen, 2026-08-10). Een Cobol- of
- * .NET-vacature moet niet omhoog komen in de vacaturelijst; het bedrijf dat erin ontwikkelt
- * en geen designer heeft, moet wél als lead verschijnen. Dat zijn twee verschillende vragen,
- * en ze hadden één antwoord — waardoor backend-werk als eigen opdracht scoorde.
- *
- * De scheiding loopt hier: `SCORE_SKILLS` voedt `scoreJob`, `DEV_SKILLS` voedt de
- * bedrijfsclassificatie in `lib/signals.ts`.
- */
-export const SCORE_SKILLS: readonly SkillKey[] = [
-  'ux',
-  'ui',
-  'frontend',
-  'nextjs',
-  'react',
-  'designSystem',
-  'figma',
-  'typescript',
-  'product',
-]
+export const CLUSTERS: Record<SkillKey, ClusterAssen> = {
+  ux: { score: 20, kant: 'design' },
+  ui: { score: 15, kant: 'design' },
+  designSystem: { score: 15, kant: 'design' },
+  figma: { score: 5, kant: 'design' },
+  product: { score: 10, kant: 'design' },
+  frontend: { score: 10, kant: 'dev' },
+  nextjs: { score: 15, kant: 'dev' },
+  react: { score: 10, kant: 'dev' },
+  typescript: { score: 5, kant: 'dev' },
+  // De enige met score 0, en dat is de hele beslissing van Jeroen op 2026-08-10: een
+  // .NET-vacature is geen werk voor hem, het .NET-huis zonder designer is wél een lead.
+  backend: { score: 0, kant: 'dev' },
+}
+
+const clusters = Object.entries(CLUSTERS) as Array<[SkillKey, ClusterAssen]>
+
+export const KEYWORD_WEIGHTS: Record<SkillKey, number> = Object.fromEntries(
+  clusters.map(([k, a]) => [k, a.score])
+) as Record<SkillKey, number>
+
+/** Clusters die meetellen voor de vacaturescore. Afgeleid — niet los onderhouden. */
+export const SCORE_SKILLS: readonly SkillKey[] = clusters.filter(([, a]) => a.score > 0).map(([k]) => k)
 
 /**
- * Welke skill-clusters aan de design- dan wel de dev-kant staan.
+ * Welke clusters aan de design- dan wel de dev-kant staan.
  *
- * Let op wat deze lijsten wél en niet doen. Ze zeggen aan welke kant een *vaardigheid*
- * hoort — niet welke **rol** een vacature is. Dat onderscheid is hier twee reviewrondes
- * lang misgegaan: een skill-lijst gebruiken om de rolvraag te beantwoorden kán niet kloppen,
- * en elke bijstelling verplaatste de fout alleen naar de andere kant (zie `LEARNINGS.md`,
- * 2026-08-10). De rol komt uit `DESIGN_ROLES`/`DEV_ROLES` hieronder; deze lijsten bepalen
- * alleen nog óf een vacature überhaupt in Jeroens vakgebied ligt.
+ * Deze lijsten zeggen aan welke kant een *vaardigheid* hoort — niet welke **rol** een
+ * vacature is. Dat onderscheid ging hier drie reviewrondes lang mis: een skill-lijst
+ * gebruiken om de rolvraag te beantwoorden kán niet kloppen, en elke bijstelling verplaatste
+ * de fout naar de andere kant. De rol komt uit de rolwoorden hieronder.
  *
  * `frontend` telt bewust als dev en niet als design — een frontender die een design system
  * bouwt is nog steeds geen bewijs dat er een designer in het team zit.
  */
-export const DESIGN_SKILLS: readonly SkillKey[] = ['ux', 'ui', 'designSystem', 'figma', 'product']
-export const DEV_SKILLS: readonly SkillKey[] = ['frontend', 'nextjs', 'react', 'typescript', 'backend']
+export const DESIGN_SKILLS: readonly SkillKey[] = clusters.filter(([, a]) => a.kant === 'design').map(([k]) => k)
+export const DEV_SKILLS: readonly SkillKey[] = clusters.filter(([, a]) => a.kant === 'dev').map(([k]) => k)
 
 /**
  * Rolwoorden: wát iemand is, niet wat hij kent.

@@ -7,6 +7,32 @@ export const SKILL_KEYWORDS = {
   designSystem: ['design system', 'storybook', 'component library', 'design tokens', 'tokens studio'],
   figma: ['figma', 'sketch', 'adobe xd'],
   typescript: ['typescript'],
+  // Backend- en platformwerk. Stond hier niet, en daardoor viel élke .NET-, Java- of
+  // Cobol-vacature buiten de relevantiepoort in `classificeer` — 32 echte
+  // softwarevacatures bij 14 bedrijven, terwijl dát juist de bedrijven zijn die software
+  // bouwen zonder designer. Beslissing Jeroen 2026-08-10: die tellen als lead.
+  backend: [
+    '.net',
+    'dotnet',
+    'c#',
+    'java',
+    'kotlin',
+    'python',
+    'php',
+    'ruby',
+    'golang',
+    'node.js',
+    'nodejs',
+    'cobol',
+    'backend',
+    'back-end',
+    'full stack',
+    'full-stack',
+    'fullstack',
+    'devops',
+    'api',
+    'microservices',
+  ],
   // 'product manager' stond hier en hoorde er niet: dat is een *rol*, en geen designrol.
   // Omdat `product` in DESIGN_SKILLS zit, maakte dat ene woord van elke Product Manager een
   // designvacature — 5 van de 9 design-classificaties op 664 echte rijen, tot en met
@@ -27,6 +53,9 @@ export const KEYWORD_WEIGHTS: Record<SkillKey, number> = {
   figma: 5,
   typescript: 5,
   product: 10,
+  // Lager dan de frontend-clusters: backend zegt "hier wordt software gebouwd", niet
+  // "hier is werk voor mij". Het draagt de relevantiepoort, niet de score.
+  backend: 5,
 }
 
 /**
@@ -43,7 +72,7 @@ export const KEYWORD_WEIGHTS: Record<SkillKey, number> = {
  * bouwt is nog steeds geen bewijs dat er een designer in het team zit.
  */
 export const DESIGN_SKILLS: readonly SkillKey[] = ['ux', 'ui', 'designSystem', 'figma', 'product']
-export const DEV_SKILLS: readonly SkillKey[] = ['frontend', 'nextjs', 'react', 'typescript']
+export const DEV_SKILLS: readonly SkillKey[] = ['frontend', 'nextjs', 'react', 'typescript', 'backend']
 
 /**
  * Rolwoorden: wát iemand is, niet wat hij kent.

@@ -11,12 +11,26 @@ export type ScoreBreakdown = Record<string, number>
  * Elke Nederlandstalige vacature scoorde daardoor 15 punten voor UI die ze niet verdiende —
  * en erger, de design/dev-classificatie waarop de bedrijfssignalen draaien werd onzin.
  */
+function bouwPatroon(kw: string): RegExp {
+  const letterlijk = kw.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')
+
+  // `\b` markeert een overgang tussen woord- en niet-woordteken. Zet je hem naast een
+  // keyword dat zélf op een leesteken begint of eindigt, dan staan er twee niet-woordtekens
+  // naast elkaar en is er per definitie geen grens: `\b\.net\b` matcht ".NET" nooit, en
+  // `\bc#\b` matcht "C#" nooit. Daarom anker alleen aan de kant waar het keyword een
+  // woordteken heeft; aan de andere kant is het leesteken zijn eigen begrenzing.
+  const links = /^[\p{L}\p{N}]/u.test(kw) ? '\\b' : ''
+  const rechts = /[\p{L}\p{N}]$/u.test(kw) ? '\\b' : ''
+
+  // Geen `u`-vlag: in unicode-modus is `\-` een illegale identity escape, en die produceert
+  // `letterlijk` wel. De `\p{L}`-tests hierboven dragen hun eigen vlag.
+  return new RegExp(`${links}${letterlijk}${rechts}`, 'i')
+}
+
 const KEYWORD_PATRONEN: Record<SkillKey, RegExp[]> = Object.fromEntries(
   Object.entries(SKILL_KEYWORDS).map(([key, keywords]) => [
     key,
-    (keywords as readonly string[]).map(
-      (kw) => new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')}\\b`, 'i')
-    ),
+    (keywords as readonly string[]).map(bouwPatroon),
   ])
 ) as Record<SkillKey, RegExp[]>
 

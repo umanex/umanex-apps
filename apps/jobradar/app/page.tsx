@@ -2,6 +2,7 @@ import { desc, eq } from 'drizzle-orm'
 import { getDb } from '@/lib/db'
 import * as schema from '@/lib/db/schema'
 import { DashboardClient } from '@/components/DashboardClient'
+import { berekenDekking } from '@/lib/coverage'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,12 +21,16 @@ export default async function HomePage() {
   // Items first seen after this timestamp are "new"
   const previousSyncAt = syncRuns[1]?.startedAt ?? '1970-01-01T00:00:00.000Z'
 
+  // Op de huidige classificatie, niet op wat bij de sync gold — zie lib/coverage.ts.
+  const dekking = berekenDekking(jobs)
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <DashboardClient
         jobs={jobs}
         companies={companies}
         previousSyncAt={previousSyncAt}
+        dekking={dekking}
       />
     </main>
   )

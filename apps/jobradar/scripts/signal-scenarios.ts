@@ -15,6 +15,7 @@ import { regionForArea, ALL_REGIONS } from '../lib/regions'
 import { SIGNAL_WEIGHTS, SIGNAL_THRESHOLDS, AFGELEIDE_SIGNALEN, SKILL_KEYWORDS } from '../lib/config/profile'
 import { ADZUNA_JOB_FIXTURES } from '../lib/sources/fixtures/adzuna-jobs'
 import { normaliseerAdzunaItem } from '../lib/sources/adzuna'
+import { berekenDekking } from '../lib/coverage'
 import type { RawJob } from '../lib/sources/types'
 
 let geslaagd = 0
@@ -78,6 +79,23 @@ check('"UI/UX Designer" matcht ui én ux', (() => {
   const s = matchedSkills({ title: 'UI/UX Designer', description: '' })
   return s.includes('ui') && s.includes('ux')
 })())
+
+// Keywords met een leesteken op de rand. `\b` naast een leesteken markeert nooit een grens,
+// dus `\b\.net\b` matcht ".NET" niet en `\bc#\b` matcht "C#" niet — dezelfde klasse als
+// `\bvisual design\b` dat "Visual Designer" miste.
+const LEESTEKENS: Array<[string, boolean]> = [
+  ['Ervaring met .NET en C#', true],
+  ['ASP.NET Core ontwikkelaar', true],
+  ['Je werkt met Node.js', true],
+  ['Kennis van C# is een must', true],
+  ['We bouwen in Next.js', true],
+  ['Een planeet is geen framework', false],
+  ['Sonnet is geen taal', false],
+]
+for (const [tekst, verwacht] of LEESTEKENS) {
+  const geraakt = matchedSkills({ title: '', description: tekst }).length > 0
+  check(`leesteken-keyword in "${tekst.slice(0, 34)}" → ${verwacht ? 'match' : 'geen match'}`, geraakt === verwacht, JSON.stringify(matchedSkills({ title: '', description: tekst })))
+}
 
 // ── 3. Leadscore is de som van zijn signaalgewichten ─────────────────────────
 // De verwachte uitkomsten staan hier hard, niet herberekend uit SIGNAL_WEIGHTS.
@@ -272,7 +290,7 @@ for (const lead of deriveLeadsFromJobs([...GEMENGD, ...ADZUNA_JOB_FIXTURES], NU)
 // ── 6. De classificatie zelf ─────────────────────────────────────────────────
 const acme = bouwBedrijfsprofielen(GEMENGD, NU).find((p) => p.bedrijfssleutel === 'acme')
 check('Acme is één bedrijf ondanks "BV" en kleine letters', acme !== undefined && acme.totaalVacatures === 3)
-check('Acme telt 2 dev-vacatures', acme?.devVacatures === 2, `kreeg ${acme?.devVacatures}`)
+check('Acme telt 3 dev-vacatures', acme?.devVacatures === 3, `kreeg ${acme?.devVacatures}`)
 check('Acme telt 0 design-vacatures', acme?.designVacatures === 0)
 check('Acme krijgt "dev-vacature zonder design"', acme?.signals.includes('dev-vacature zonder design') === true)
 check('Acme krijgt geen "UX-budget aanwezig"', acme?.signals.includes('UX-budget aanwezig') !== true)
@@ -426,6 +444,50 @@ check('ontbrekende area → null', regionForArea(undefined) === null)
 // dezelfde database als live data, en dan is "bestaat deze vacature?" niet meer te zien.
 for (const f of ADZUNA_JOB_FIXTURES) {
   check(`fixture "${f.title}" heeft een herkenbaar valse URL`, f.url.includes('example.test'), f.url)
+}
+
+// ── 12. Dekking: de acceptatie-invarianten uit de briefing ──────────────────
+// briefings/2026-08-10-component-dekkingsindicator.tcebc.md. De indicator bestaat om een
+// leemte zichtbaar te maken; klopt zijn eigen rekensom niet, dan verbergt hij er juist een.
+{
+  const zaak = [
+    ...ADZUNA_JOB_FIXTURES,
+    job({ title: 'Mechanical Designer', company: 'Gamma', description: 'constructietekeningen' }),
+    job({ title: 'Boekhouder', company: 'Delta', description: 'facturen' }),
+  ]
+  const d = berekenDekking(zaak)
+  check('dekking: design + dev + onbepaald == totaal', d.design + d.dev + d.onbepaald === d.totaal, JSON.stringify(d))
+  check('dekking: geclassificeerd == design + dev', d.geclassificeerd === d.design + d.dev, JSON.stringify(d))
+  check('dekking: totaal == aantal rijen', d.totaal === zaak.length, JSON.stringify(d))
+  check('dekking: irrelevante vacatures landen op onbepaald', d.onbepaald >= 2, JSON.stringify(d))
+  check('dekking: geen enkel getal is negatief', [d.design, d.dev, d.onbepaald, d.totaal, d.geclassificeerd].every((n) => n >= 0))
+
+  const leeg = berekenDekking([])
+  check('dekking: lege dataset geeft nullen, geen NaN', leeg.totaal === 0 && leeg.geclassificeerd === 0 && !Number.isNaN(leeg.geclassificeerd), JSON.stringify(leeg))
+
+  const alles = berekenDekking([job({ title: 'UX Designer', company: 'A', description: 'user research' })])
+  check('dekking: alles geclassificeerd → onbepaald is 0', alles.onbepaald === 0 && alles.geclassificeerd === 1, JSON.stringify(alles))
+
+  // De telling moet de huidige classificatie volgen, niet een eigen kopie ervan.
+  const perHand = zaak.reduce((n, j) => n + (classificeer({ title: j.title, description: j.description ?? '' }) !== null ? 1 : 0), 0)
+  check('dekking volgt classificeer()', d.geclassificeerd === perHand, `${d.geclassificeerd} vs ${perHand}`)
+
+  // Een null-omschrijving mag niet omvallen: de kolom is nullable in het schema.
+  const metNull = berekenDekking([{ title: 'UX Designer', description: null }])
+  check('dekking: omschrijving null werkt', metNull.totaal === 1, JSON.stringify(metNull))
+}
+
+// De backend-woordenschat draagt de relevantiepoort — zonder die woorden viel elke .NET-,
+// Java- of Cobol-vacature buiten élke telling (beslissing Jeroen 2026-08-10).
+const BACKEND: Array<[string, string]> = [
+  ['Smals - .NET Developer', 'Je bouwt in .NET en C#.'],
+  ['Smals - Cobol Developer', 'Onderhoud van Cobol-toepassingen.'],
+  ['NTT DATA - Java Developer', 'Java en Spring Boot.'],
+  ['Senior Full-Stack Developer', 'Full-stack werk aan onze API.'],
+  ['DevOps Engineer', 'CI/CD en infrastructuur, devops-cultuur.'],
+]
+for (const [title, description] of BACKEND) {
+  check(`"${title.slice(0, 34)}" telt als dev`, classificeer({ title, description }) === 'dev', String(classificeer({ title, description })))
 }
 
 // ── Tegenproef ───────────────────────────────────────────────────────────────

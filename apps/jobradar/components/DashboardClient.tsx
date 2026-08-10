@@ -5,20 +5,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
 import { FilterBar } from './FilterBar'
 import { SyncButton } from './SyncButton'
+import { CoverageBar } from './CoverageBar'
 import { JobCard } from './JobCard'
 import { LeadCard } from './LeadCard'
 import type { Job, Company, ItemStatus } from '@/lib/db/schema'
 import type { RegionCode } from '@/lib/regions'
+import type { Dekking } from '@/lib/coverage'
 
 type DashboardClientProps = {
   jobs: Job[]
   companies: Company[]
   previousSyncAt: string
+  dekking: Dekking
 }
 
 const ALL_REGIONS: RegionCode[] = ['WVL', 'OVL', 'BRU']
 
-export function DashboardClient({ jobs: initialJobs, companies: initialCompanies, previousSyncAt }: DashboardClientProps) {
+export function DashboardClient({
+  jobs: initialJobs,
+  companies: initialCompanies,
+  previousSyncAt,
+  dekking,
+}: DashboardClientProps) {
   const [jobs, setJobs] = useState(initialJobs)
   const [companies, setCompanies] = useState(initialCompanies)
   const [regions, setRegions] = useState<RegionCode[]>(ALL_REGIONS)
@@ -56,6 +64,8 @@ export function DashboardClient({ jobs: initialJobs, companies: initialCompanies
           <h1 className="text-xl font-semibold tracking-tight">JobRadar</h1>
           <SyncButton />
         </div>
+
+        <CoverageBar dekking={dekking} />
 
         <FilterBar
           regions={regions}

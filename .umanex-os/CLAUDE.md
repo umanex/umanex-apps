@@ -97,6 +97,8 @@ Aan het einde van een substantiële sessie: een kritisch, eerlijk retrospectief 
 
 Open HANDOFF-items komen bij sessiestart automatisch mee via `session-start-handoff.sh`, samen met de LEARNINGS-entries op `open` en `verified` — zonder die herinnering was de eval-loop de enige lus zonder trigger.
 
+Een HANDOFF-entry legt de **check** vast waarmee je nagaat of het item nog leeft, niet de staat van de code op dat moment. Een staat veroudert stil zodra de code eronder verandert en komt daarna elke ochtend terug als openstaand werk. `.githooks/pre-commit` waarschuwt bij een nieuwe open entry zonder `Check`.
+
 ---
 
 ## Buiten scope = een backlog-item, geen zin

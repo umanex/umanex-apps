@@ -86,7 +86,8 @@ export const FormField = memo(function FormField({
         {isPassword && (
           <TouchableOpacity
             onPress={() => setRevealed((r) => !r)}
-            hitSlop={8}
+            // 20pt glyph + 12 rondom = 44pt. Met de vorige 8 was het 36 — net te klein.
+            hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={revealed ? t.a11y.hidePassword : t.a11y.showPassword}
           >

@@ -21,6 +21,13 @@ export function Subtitle({ label, action }: SubtitleProps) {
           style={styles.actionRow}
           onPress={action.onPress}
           activeOpacity={0.8}
+          // De rij is maar ~15,6pt hoog — de tekst en niets meer. Dat is een derde van
+          // de 44pt-richtlijn, en in de praktijk moest je mikken en meermaals proberen.
+          // hitSlop en geen padding: `container` lijnt op `flex-start`, dus verticale
+          // padding zou de actie onder het sectielabel duwen en de kaart hoger maken.
+          hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={action.label}
         >
           <Text style={styles.actionLabel}>{action.label}</Text>
           <Ionicons name="arrow-forward" size={14} color={accent.default} />

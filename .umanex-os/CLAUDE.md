@@ -93,9 +93,17 @@ Bij een probleem, bug of gefaalde check: zoek de onderliggende oorzaak en los d�
 
 Aan het einde van een substantiële sessie: een kritisch, eerlijk retrospectief dat de vluchtige context vastlegt vóór ze verdampt. Niet vleiend — de waarde zit in wat Claude zelf naar boven haalt: onzekerheden, onuitgesproken aannames, blinde vlekken, breukrisico, de eerste zet voor de volgende keer. Draait via de **`sessie-reflectie` skill**, die de werkwijze en de reflectievragen bevat.
 
-**Router, geen silo** (root cause boven patch). Elke bevinding gaat naar het juiste bestaande huis: terugkerende **faalklasse** → `vastleggen` (LEARNINGS) · **durend feit** over Jeroen/project → auto-memory · **vooruitkijkend & sessie-gebonden** → `HANDOFF.md`. Een fout hoort in LEARNINGS mét zijn verificatie-input, niet in HANDOFF; HANDOFF is enkel het vooruitkijkende restant dat (nog) geen fout is.
+**Router, geen silo** (root cause boven patch). Elke bevinding gaat naar het juiste bestaande huis: terugkerende **faalklasse** → `vastleggen` (LEARNINGS) · **durend feit** over Jeroen/project → auto-memory · **vooruitkijkend & sessie-gebonden** → `HANDOFF.md` · **werk dat blijft liggen** → `BACKLOG.md`. Een fout hoort in LEARNINGS mét zijn verificatie-input, niet in HANDOFF; HANDOFF is enkel het vooruitkijkende restant dat (nog) geen fout is.
 
 Open HANDOFF-items komen bij sessiestart automatisch mee via `session-start-handoff.sh`, samen met de LEARNINGS-entries op `open` en `verified` — zonder die herinnering was de eval-loop de enige lus zonder trigger.
+
+---
+
+## Buiten scope = een backlog-item, geen zin
+
+Laat je iets bewust buiten scope — "gemeld, niet gebouwd" — dan leg je het **op het moment van de melding** vast in de dichtstbijzijnde `BACKLOG.md` (project `apps/{app}/` → klant repo-root → globaal), en je noemt dat pad in je antwoord. Niet aan het einde van de sessie: eindigt die zonder reflectie, dan is het alsnog een zin die wegscrollt. Hetzelfde geldt voor P3-bevindingen uit `ux-audit` en `security-audit` — die heten al "backlog" en horen daar te landen.
+
+Statussen `open → gepland → gebouwd → verworpen`; **`verworpen` vraagt een reden**, anders komt hetzelfde voorstel over drie maanden terug en begint de afweging van nul. Het formaat staat in de kop van `BACKLOG.md`. Grens met de andere twee lussen: een *fout* hoort in LEARNINGS, *sessie-context* in HANDOFF, en werk dat blijft liggen hier. Bij sessiestart wordt het **aantal** open items per laag getoond, niet de lijst — een backlog mag lang worden zonder het signaal onbruikbaar te maken.
 
 ---
 

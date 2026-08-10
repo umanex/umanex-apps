@@ -17,6 +17,7 @@
 # - ~/.claude/hooks/session-start-handoff.sh + settings.json  (SessionStart handoff-hook, user-level)
 # - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
 # - HANDOFF.md                     (sessie-handoff in root + elke app, geseed als afwezig — nooit overschreven)
+# - BACKLOG.md                     (gemeld-niet-gebouwd in root + elke app, geseed als afwezig — nooit overschreven)
 # - scripts/gen-snapshot.sh + .githooks/pre-commit   (context-snapshots, incl. core.hooksPath-activatie)
 # - .githooks/commit-msg           (commit-scope guard: een app-scope mag geen andere app raken)
 #
@@ -215,6 +216,37 @@ else
     for app_dir in apps/*/; do
       [ -d "$app_dir" ] || continue          # geen match → overslaan
       seed_handoff "${app_dir%/}"
+    done
+  fi
+fi
+
+# Seed BACKLOG.md (root + elke app) — het derde staging-bestand. LEARNINGS is terugkijkend
+# (waargenomen fouten), HANDOFF sessie-gebonden (context voor de volgende sessie), BACKLOG
+# duurzaam: werk dat benoemd is maar niet gebouwd, plus de P3's uit de audit-skills. Zelfde
+# regel als de andere twee: repo-eigen staging, dus NOOIT overschrijven.
+BACKLOG_TEMPLATE="$UMANEX_OS_PATH/templates/BACKLOG.template.md"
+
+seed_backlog() {
+  # $1 = doelmap; seedt $1/BACKLOG.md alleen als die nog niet bestaat
+  local target="$1/BACKLOG.md"
+  if [ -f "$target" ]; then
+    echo "  • $target bestaat al — ongemoeid gelaten"
+  else
+    cp "$BACKLOG_TEMPLATE" "$target"
+    echo "  ✓ $target aangemaakt uit template"
+  fi
+}
+
+echo ""
+echo "→ Seed BACKLOG.md (root + elke app, alleen als afwezig)..."
+if [ ! -f "$BACKLOG_TEMPLATE" ]; then
+  echo "  ⚠ templates/BACKLOG.template.md niet gevonden — seed overgeslagen"
+else
+  seed_backlog "."
+  if [ -d "apps" ]; then
+    for app_dir in apps/*/; do
+      [ -d "$app_dir" ] || continue          # geen match → overslaan
+      seed_backlog "${app_dir%/}"
     done
   fi
 fi

@@ -4,6 +4,8 @@ Klant-laag voor umanex (jouw eigen werk). Gelaagd op de globale `CLAUDE.md` in `
 
 Belangrijk verschil met klant-profiles: hier ben *jij* het merk. Het profile beschrijft jou als product-stijl en werkstijl, niet een externe klant.
 
+**Wat hier niet hoort:** een opsomming van concrete apps of hun status. Die is afleidbaar met één `ls apps/` in `umanex-apps`, en veroudert hier stil — zodat een sessie redeneert over een app die er niet meer is. Per-app context staat in `apps/{app}/CLAUDE.md`. Wat wél hier hoort: wat je nergens uit de code kan aflezen.
+
 ---
 
 ## Wie en wat
@@ -14,12 +16,16 @@ Positionering: **"Design Team Of One"** — helpt complexe B2B software teams sn
 
 **Toekomst:** AI-gedreven aanpak. Het umanex-os project (waarvan dit profile deel uitmaakt) is de praktische uitwerking daarvan. Een evolutie van "Design Team Of One" naar "Design Team Of One + AI".
 
-### Outputs onder umanex-merk
+### Soorten output
 
-- **umanex.be portfolio site** — Next.js, eigen showcase
-- **Eigen producten** — apps, tools, websites die je verkoopt of weggeeft (cashflow, watermark-remover, RowTrack)
+Vier categorieën, die bepalen hoe je over een vraag redeneert:
+
+- **Portfolio** — eigen showcase op umanex.be
+- **Eigen producten** — apps, tools en websites die je verkoopt of weggeeft
 - **Klantwerk** — niet onder umanex-merk gepubliceerd, maar onder de hood gebouwd door umanex
 - **Consultancy** — strategisch werk, AI-aanpakken, design system rollouts
+
+Alle eigen web- en mobile-apps leven in de `umanex-apps` monorepo, onder `apps/{app}/`.
 
 ### Doelgroep
 
@@ -28,11 +34,6 @@ Drie groepen, met dezelfde umanex-stem maar nuance per context:
 - **Designers en dev teams in business software** — voor consultancy en klantwerk
 - **Freelancers en kleine bedrijven** — die hun eigen tools willen bouwen
 - **Jezelf** — tools die je dagelijks gebruikt en deelt
-
-### Project-status
-
-- **Actief:** RowTrack (React Native, BLE, Supabase) — zie `RowTrack/CLAUDE.md`
-- **Op pauze / experiments:** cashflow, watermark-remover — geen actief werk nu
 
 ---
 
@@ -93,11 +94,11 @@ Concreet, met expert-signaal, met tijdsindicatie. Niet *"Bedankt voor je bericht
 
 ### Centrale design source
 
-umanex heeft een **eigen `tokens.json` + Figma library** — gedeeld over portfolio en eigen producten. Eén umanex-DNA voor visueel werk.
+umanex heeft een **eigen `tokens.json` + Figma library** — gedeeld over portfolio en eigen producten. Eén umanex-DNA voor visueel werk. Dat is de default voor élk umanex-project.
 
-**Uitzondering:** RowTrack gebruikt eigen tokens.json (mobile app, andere context). Wanneer je voor RowTrack werkt: gebruik RowTrack-tokens, niet umanex-tokens.
+**Een app mag een eigen token-set hebben** wanneer de context genoeg verschilt van web-DNA. De staande uitzondering is RowTrack (mobile): eigen `tokens.json`, eigen Figma-bron. Werk je aan zo'n app, gebruik dan de token-set van die app, niet de gedeelde umanex-set.
 
-Bij twijfel welke tokens te gebruiken: vraag of het project umanex-DNA volgt of project-eigen DNA heeft.
+Bij twijfel welke tokens te gebruiken: vraag of het project umanex-DNA volgt of project-eigen DNA heeft. Welke set een app effectief gebruikt, lees je in zijn eigen `CLAUDE.md` — niet hier.
 
 ### Visuele karakteristiek
 
@@ -109,9 +110,9 @@ Niet "eigen merkstijl met sterke kleur en typografie". Niet "luxe en visueel rij
 
 Geen vaste regel — wat past per project. Geen verplichte icon-bron over alle umanex projecten heen.
 
-Bekende keuzes uit projecten:
-- **Web werk:** typisch Lucide
-- **RowTrack (mobile):** `@expo/vector-icons` (Ionicons) — om historische redenen rond Fabric renderer
+Staande keuzes per platform:
+- **Web:** typisch Lucide
+- **Mobile (Expo):** `@expo/vector-icons` (Ionicons) — om historische redenen rond de Fabric renderer, niet uit voorkeur
 
 Bij twijfel: kijk naar het project zelf, of vraag.
 
@@ -123,7 +124,7 @@ Geen vast voorgeschreven layout-patroon op profile-niveau. Per project context-p
 
 Twee regels die wel altijd gelden:
 
-- **Mobile-first denken** voor portfolio en consumer-tools (RowTrack is sowieso mobile-first qua aard)
+- **Mobile-first denken** voor portfolio en consumer-tools
 - **Toegankelijkheid** als basisprincipe — keyboard navigatie, screen readers, semantische HTML
 
 ---
@@ -137,12 +138,12 @@ Twee regels die wel altijd gelden:
 
 ### Mobile werk
 
-- **React Native + Expo** — voor RowTrack en eventuele andere mobile projecten
+- **React Native + Expo** — standaard stack voor mobile
 
 ### Hosting en infra
 
 - **Vercel** — web hosting voor portfolio en web producten
-- **Supabase** — backend voor RowTrack
+- **Supabase** — default backend waar een app er een nodig heeft (auth, data, realtime)
 - **GitHub** — code hosting voor alle umanex projecten (organisatie: github.com/umanex)
 
 ### Deploys
@@ -158,7 +159,7 @@ Vercel deployments doe **ik zelf manueel** — niet automatisch laten triggeren 
 - **Snelle iteraties met tussentijdse demo's** — *"ship to learn"*. Niet maandenlang in stealth bouwen
 - **Klant betrekken in keuzes** — design-as-conversation. Niet beslissen voor de klant maar mét de klant
 - **Pragmatisme boven perfectie** — 80/20 regel actief toepassen. Goed genoeg dat verzonden kan, niet eindeloos polijsten
-- **Eigen onderzoek/experiment integreren in elk project** — RowTrack is een uitloper van onderzoek naar BLE-integratie en gamification, niet een geïsoleerd product
+- **Eigen onderzoek/experiment integreren in elk project** — RowTrack ontstond als uitloper van onderzoek naar BLE-integratie en gamification, niet als geïsoleerd product
 
 ### Don'ts
 

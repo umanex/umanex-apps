@@ -258,6 +258,11 @@ export class HRBleService {
           if (error) {
             log('monitor error:', error.message);
             if (!this.intentionalDisconnect) {
+              // Loslaten en niet enkel melden: zonder dit bleef het toestel vasthangen
+              // (op iOS verdwijnt het dan uit de scanresultaten, dus geen andere band
+              // meer te verbinden) én bleef de data-deadline lopen, die twaalf seconden
+              // later nóg een statuswissel over deze fout heen legde.
+              void this.releaseDevice();
               this.onStatusChange('error', { code: 'connection_lost', detail: error.message });
             }
             return;
@@ -278,8 +283,7 @@ export class HRBleService {
         log('disconnected, intentional:', this.intentionalDisconnect);
         if (this.device !== device) return;
         if (!this.intentionalDisconnect) {
-          this.cleanup();
-          this.device = null;
+          this.letGo();
           this.onStatusChange('error', { code: 'connection_lost' });
         }
       });
@@ -306,11 +310,8 @@ export class HRBleService {
 
   stop(): void {
     this.intentionalDisconnect = true;
-    this.cleanup();
-    if (this.device) {
-      this.device.cancelConnection().catch(() => {});
-      this.device = null;
-    }
+    this.device?.cancelConnection().catch(() => {});
+    this.letGo();
     this.onStatusChange('idle');
   }
 
@@ -325,10 +326,24 @@ export class HRBleService {
     if (!device) return;
     log('bestaande verbinding loslaten vóór de scan');
     this.intentionalDisconnect = true;
+    this.letGo();
+    await device.cancelConnection().catch(() => {});
+  }
+
+  /**
+   * Timers, abonnement, toestel én de staat waarin we denken te zitten — alle vier
+   * horen samen los te gaan.
+   *
+   * Drie plekken deden hier hun eigen versie van, en elke versie vergat iets anders.
+   * Juist de vergeten vierde is de gevaarlijkste: blijft `link` op 'live' staan nadat
+   * het toestel weg is, dan denkt de dienst dat een bewezen verbinding bestaat die er
+   * niet meer is. Dat is precies de klasse fout die `hrLink.ts` moest wegnemen, en ze
+   * zou via de bedrading terug naar binnen zijn gekomen.
+   */
+  private letGo(): void {
     this.cleanup();
     this.device = null;
     this.link = stepHrLink(this.link, { type: 'released' }).state;
-    await device.cancelConnection().catch(() => {});
   }
 
   destroy(): void {

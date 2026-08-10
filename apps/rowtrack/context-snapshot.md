@@ -57,15 +57,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9876980 ci: run the node:test invariants, so they measure something
 b9626a6 test(rowtrack): make the heart-rate connection rule testable, then test it
 29aa0f0 fix(rowtrack): let "connected" mean a heart rate actually arrived
 4be0008 revert(rowtrack): keep the last real watt reading instead of an early zero
 fb59690 Merge remote-tracking branch 'origin/main' into feature/rowtrack-web-verplichte-paginas
-19b9b1c docs: sessie-handoff voor rowtrack-web plus twee repo-brede schulden
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/lib/ble/hr-service.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

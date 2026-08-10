@@ -8,6 +8,7 @@ import { base64ToBytes } from './base64';
 import { claimScan, ownsScan, releaseScan } from './scan-lock';
 import { recordAutoConnect } from './autoConnectLog';
 import { waitForAdapter } from './adapterReady';
+import { initialHrLink, stepHrLink, type HrLinkEvent, type HrLinkState } from './hrLink';
 import type { HrBleError, HRStatus } from './types';
 
 const log: (...args: unknown[]) => void = __DEV__
@@ -75,8 +76,8 @@ export class HRBleService {
   private device: Device | null = null;
   private monitorSub: Subscription | null = null;
   private scanTimeout: ReturnType<typeof setTimeout> | null = null;
-  /** Is er sinds deze verbinding ooit een bruikbare meting binnengekomen? */
-  private hasData = false;
+  /** Wat we tot nu toe over deze verbinding kunnen hárd maken — zie `hrLink.ts`. */
+  private link: HrLinkState = initialHrLink;
   /** Bewaakt dat er metingen blíjven komen; herstart bij elke bruikbare waarde. */
   private dataDeadline: ReturnType<typeof setTimeout> | null = null;
   /** Identiteit in het gedeelde scan-slot — één native scan voor twee diensten. */
@@ -263,19 +264,12 @@ export class HRBleService {
           }
           if (!char?.value) return;
           const bpm = this.parseHRMeasurement(char.value);
-          if (bpm >= 30 && bpm <= 220) {
-            // Dít is het moment waarop de verbinding bewezen is. Een band die 0 of een
-            // onmogelijke waarde stuurt (horloge van de pols, geen huidcontact) telt
-            // bewust niet mee: die is technisch verbonden en praktisch nutteloos, en
-            // dat verschil moet de gebruiker kunnen zien.
-            if (!this.hasData) {
-              this.hasData = true;
-              this.onStatusChange('connected', undefined, deviceName);
-              log('eerste meting binnen:', deviceName);
-            }
-            this.armDataDeadline(deviceName, opts?.silent === true);
-            this.onHR(bpm);
-          }
+          // Wat een bruikbare meting ís, bepaalt de overgangsfunctie niet — dat is een
+          // fysiologische grens en die hoort hier. Wat een bruikbare meting betékent
+          // voor de status, bepaalt zij wél.
+          const usable = bpm >= 30 && bpm <= 220;
+          this.dispatch({ type: 'measurement', usable }, deviceName);
+          if (usable) this.onHR(bpm);
         },
         'hr-measurement',
       );
@@ -290,14 +284,9 @@ export class HRBleService {
         }
       });
 
-      // Bewust níet 'connected'. Een geïnstalleerd abonnement is geen bewijs dat er
-      // ooit iets binnenkomt: `connectToDevice` op een id kan bij een toestel dat al
-      // op systeemniveau aan de telefoon hangt slagen zonder één radiotransactie, en
-      // service discovery beantwoordt zich dan uit de cache van iOS. Pas de eerste
-      // meting hierboven maakt er 'connected' van.
-      this.hasData = false;
-      this.onStatusChange('waiting', undefined, deviceName);
-      this.armDataDeadline(deviceName, opts?.silent === true);
+      // Bewust níet 'connected' — zie `hrLink.ts`. Een geïnstalleerd abonnement is
+      // geen bewijs dat er ooit iets binnenkomt.
+      this.dispatch({ type: 'subscribed', silent: opts?.silent === true }, deviceName);
       log('verbonden, wachten op data:', deviceName);
       return true;
     } catch (e: unknown) {
@@ -338,7 +327,7 @@ export class HRBleService {
     this.intentionalDisconnect = true;
     this.cleanup();
     this.device = null;
-    this.hasData = false;
+    this.link = stepHrLink(this.link, { type: 'released' }).state;
     await device.cancelConnection().catch(() => {});
   }
 
@@ -415,32 +404,40 @@ export class HRBleService {
   }
 
   /**
-   * Zet (of verzet) de termijn waarbinnen er een meting moet binnenkomen.
+   * De enige plek waar de verbindingsstaat verandert. De regel zelf staat in
+   * `hrLink.ts` en is daar getoetst; hier blijft alleen het uitvoeren over — status
+   * publiceren, de deadline zetten, het toestel loslaten.
    *
-   * Draait zowel vóór de eerste meting als daarna, want de twee gevallen zien er voor
-   * de gebruiker hetzelfde uit: een groene rij die niets doet. Een band meet rond 1 Hz,
-   * dus `HR_DATA_TIMEOUT_MS` is ruim genoeg voor een gemiste beat en kort genoeg om
-   * niet een halve rit lang te liegen.
-   *
-   * `silent` = deze verbinding kwam van autoconnect. Die vroeg de gebruiker niets, dus
-   * mag hij ook niets melden: de rij valt gewoon terug op "Verbinden". Een handmatige
-   * poging krijgt wél een uitleg — daar wácht iemand op een antwoord.
+   * Loslaten is geen detail: op iOS verdwijnt een toestel dat wíj vasthouden uit de
+   * scanresultaten, dus een dode verbinding laten staan sluit een échte band buiten
+   * voor de rest van de rit.
    */
-  private armDataDeadline(deviceName: string, silent: boolean): void {
+  private dispatch(event: HrLinkEvent, deviceName?: string): void {
+    const { state, effect } = stepHrLink(this.link, event);
+    this.link = state;
+
+    if (effect.release) void this.releaseDevice();
+    if (effect.rearmDeadline) this.rearmDeadline(deviceName);
+    if (effect.status) {
+      this.onStatusChange(
+        effect.status,
+        effect.error ? { code: effect.error } : undefined,
+        deviceName,
+      );
+    }
+  }
+
+  /**
+   * Een band meet rond 1 Hz, dus `HR_DATA_TIMEOUT_MS` is ruim genoeg voor een gemiste
+   * beat en kort genoeg om niet een halve rit lang een verzonnen hartslag te tonen.
+   */
+  private rearmDeadline(deviceName?: string): void {
     this.clearDataDeadline();
     this.dataDeadline = setTimeout(() => {
       this.dataDeadline = null;
       if (this.intentionalDisconnect || !this.device) return;
       log('geen hartslagdata binnen', HR_DATA_TIMEOUT_MS, 'ms — loslaten:', deviceName);
-      // Loslaten en niet stil blijven hangen: op iOS verdwijnt een toestel dat wij
-      // vasthouden uit de scanresultaten, dus zonder dit kan de gebruiker geen échte
-      // band meer verbinden zolang deze verbinding blijft staan.
-      void this.releaseDevice();
-      if (silent && !this.hasData) {
-        this.onStatusChange('idle');
-        return;
-      }
-      this.onStatusChange('error', { code: 'hr_no_data' });
+      this.dispatch({ type: 'silence' }, deviceName);
     }, HR_DATA_TIMEOUT_MS);
   }
 }

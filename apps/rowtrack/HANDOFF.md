@@ -477,6 +477,58 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   dezelfde fout, groter oppervlak.
 - **Status:** open — bewust, met een meetbare volgende stap in plaats van een ontwerp.
 
+## 2026-08-10 — Vier gemergede PR's zijn nog nooit gerenderd · [next-step]
+- **Bevinding:** #257 (HR-bedrading), #259 (a11y/F4), #260 (formattering/F10 + dood pad/F12) en
+  #261 (doel-states/F5+F6+F9) staan alle vier op main met `tsc` groen, 18/18 node:test en een
+  volledige iOS-bundle — maar geen enkel scherm is bekeken. Bij #259 en #261 is dat het meest
+  wringend: die veranderen wat je zíet, en juist dat is niet getoetst.
+- **Volgende zet — op de simulator, geen hardware nodig:**
+  1. **Getalweergave (#260):** `rowtrack://dev-active?goal=distance` en `…?goal=split`, plus
+     `?summary=1`. Let op duizendtal-punt (`7.515 m`), komma-decimaal (`22,3 km`) en één spatie
+     vóór de eenheid. De historiekschermen vragen echte data — daar de KPI's, de GEM/PIEK-tabel en
+     de splits-tabel naast elkaar leggen.
+  2. **Coaching-zin (#261/F5):** `rowtrack://dev-active?goal=watts` — de zin mag de schermrand niet
+     meer raken. Forceer verschil 0 om de nieuwe "op doel"-copy te zien.
+  3. **Home-states (#261/F6+F9):** testaccount `rowtrack-test@umanex.be` resetten met
+     `supabase/seed/test-account.sql` → geen doel → de nieuwe CTA. Vliegtuigmodus → de foutstaat
+     in plaats van een stil verdwenen sectie. Cold start → skeletten, en let op de verticale
+     positie van "Recente trainingen" op t=0 en t=1s (dat is de layout-shift die weg moest).
+  4. **GoalSheet-guard (#261):** sheet openen zonder doel → Opslaan grijs; één segment → nog grijs;
+     beide → actief. Tegenproef in beide richtingen, met de hand te doen.
+- **Volgende zet — vraagt jouw oog of je toestel:**
+  5. **Inactieve tabs (#259):** die zijn nu lichter (`fg.tertiary`). Rekenkundig correct, maar of
+     het contrast actief-vs-inactief nog leest is een designoordeel dat alleen jij kunt vellen.
+  6. **Dynamic type (#259):** grootste iOS-tekstinstelling, dan tabbar, segmentlabels en DeviceRow
+     nakijken. De caps moeten clippen wegnemen; dat is niet uit code te bewijzen.
+  7. **VoiceOver-pass:** de nieuwe `accessibilityRole`s doorlopen. Let vooral op de profielrijen:
+     die horen "Voornaam, Jeroen, knop" te zeggen — hoor je alleen "Voornaam", dan schrijft ergens
+     een expliciet label de waarde weg.
+- **Status:** open
+
+## 2026-08-10 — HR-verbinding: de regel is bewezen, de bedrading gelezen · [risico]
+- **Bevinding:** `hrLink.ts` heeft elf scenario's en een tegenproef (de bug terugzetten laat er 9
+  vallen). Dát een aanroeper die regel correct bereikt is nagelopen in #257, niet bewezen — het is
+  bedrading rond een `BleManager` en een timer, en die zijn buiten een toestel niet te draaien.
+- **Volgende zet:** vier gevallen op het toestel, met je horloge:
+  (1) horloge niet aan het casten → rij kort oranje met spinner, daarna terug op "Verbinden",
+  nooit groen; (2) wél casten → groen zodra de eerste hartslag binnenkomt, BPM toont een getal;
+  (3) casten midden in een rit uitzetten → binnen ~12 s valt BPM terug op "—" in plaats van te
+  bevriezen (dít is het geval dat verzonnen hartslag in de opgeslagen rit voorkwam);
+  (4) toestemming op "Weigeren" → autoconnect raakt de band niet aan.
+- **Status:** open
+
+## 2026-08-10 — Twee tokenkeuzes die code niet kan maken · [next-step]
+- **Bevinding:** Uit de a11y- en skeleton-passes rolden twee waarden die geen bestaande rol hebben.
+  (1) Witte 18px-knoptekst op `accent.default` = **3,44:1** — faalt AA voor kleine tekst. Geen
+  bestaande rol lost dit op: het is knoptekst zwaarder/donkerder óf het accent verdiepen.
+  (2) Er is geen skeleton-/placeholder-rol. `components/Skeleton.tsx` leent `bg.raised` als vulling
+  en `radii.xs` — allebei bestaand, dus geen verzonnen hex, maar wel een rol die iets anders
+  betekent dan waarvoor hij hier gebruikt wordt.
+- **Volgende zet:** Beide via Tokens Studio, in **beide** mode-sets (de build faalt op asymmetrie).
+  Daarna `Skeleton.tsx` op de nieuwe rol zetten — één plek. Let op: er staan al twee andere
+  token-items open (`accent.selected` 0.20 en een `bg.raised`-alpha), dus dit kan in één push mee.
+- **Status:** open
+
 ## 2026-08-10 — Eerste committed node:test in de repo · [next-step]
 - **Bevinding:** `lib/ble/adapterReady.test.ts` is het eerste testbestand dat blijft staan in plaats
   van in de scratchpad te verdwijnen (`node --test`, geen dependency; `tsconfig.json` excludeert

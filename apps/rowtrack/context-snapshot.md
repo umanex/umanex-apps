@@ -58,22 +58,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+f88dec0 fix(rowtrack): tell the truth about a goal that failed to load
 e7e009d fix(rowtrack): one meaning per separator, and the unreachable goal path removed
 1b20c52 fix(rowtrack): raise the contrast and name the controls
 f8f9bc5 fix(rowtrack): let go of a heart-rate link in one place, not three
 9876980 ci: run the node:test invariants, so they measure something
-b9626a6 test(rowtrack): make the heart-rate connection rule testable, then test it
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  A  apps/rowtrack/components/GoalCardSkeleton.tsx
-  M  apps/rowtrack/components/GoalSheet.tsx
-  A  apps/rowtrack/components/Skeleton.tsx
-  M  apps/rowtrack/components/index.ts
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-  M  apps/rowtrack/i18n/translations/nl.ts
-  M  apps/rowtrack/lib/hooks/usePeriodGoal.ts
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

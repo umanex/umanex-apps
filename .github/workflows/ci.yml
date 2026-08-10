@@ -156,3 +156,11 @@ jobs:
           # hij moet dichtzetten — zonder die waarde weigert hij te starten, en dat hoort zo.
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+      # De leadscore van jobradar is een afgeleide van een afgeleide: hij volgt uit de
+      # signalen, die volgen uit de design/dev-classificatie, die volgt uit de keyword-match.
+      # Een fout onderin is per kaart onzichtbaar en over de hele feed structureel — dus
+      # invarianten die over de dataset rekenen, geen verwachte uitkomst per geval. De suite
+      # draait zijn eigen tegenproef vooraf en heeft netwerk noch database nodig.
+      - name: Guard — invarianten op de scorekern (jobradar)
+        run: pnpm --filter jobradar scenarios

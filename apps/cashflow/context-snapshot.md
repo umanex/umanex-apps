@@ -49,23 +49,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+bab65e5 feat(cashflow): beginsaldo wordt de eerste regel van de inkomsten
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
 a28ec78 docs(cashflow): record the review round in the harness plan
-ab6f074 chore(cashflow): close three holes the review found in the guards
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/CLAUDE.md
-  M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
-  A  apps/cashflow/briefings/2026-08-10-feature-beginsaldo-in-inkomsten.tcebc.md
-  M  apps/cashflow/components/cashflow/IncomeSection.tsx
-  M  apps/cashflow/components/cashflow/MonthCard.tsx
-  M  apps/cashflow/components/cashflow/SectionBar.tsx
-  M  apps/cashflow/components/cashflow/StartBalanceRow.tsx
-  M  apps/cashflow/scripts/flow-harness.mjs
-  M  apps/cashflow/scripts/render-screens.tsx
+  M  apps/cashflow/briefings/2026-08-10-feature-beginsaldo-in-inkomsten.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -6,7 +6,13 @@ type SectionBarProps = {
   label: string;
   /** Stapbedrag van deze ledger-regel. Weglaten voor een regel zonder totaal. */
   amount?: number;
-  /** Bepaalt teken en kleur; `neutral` voor een saldo zoals het beginsaldo. */
+  /**
+   * Bepaalt teken en kleur. `neutral` is voor een kop die een stand toont in plaats van
+   * een mutatie; geen enkele sectie gebruikt hem vandaag. De inkomstenkop draagt sinds
+   * 2026-08-10 wél een saldo (het beginsaldo zit erin) maar blijft bewust `in`: `neutral`
+   * loopt via `formatSigned` naar de absolute waarde, en dan verliest een doorgerold
+   * tekort zijn minteken.
+   */
   direction?: AmountDirection;
   // showPaid: undefined = geen filter toggle (inkomsten), anders split button
   showPaid?: boolean;

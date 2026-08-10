@@ -5,12 +5,24 @@ import { useDraggable } from '@dnd-kit/core';
 import type { IncomeItem, MonthKey } from '../../lib/cashflow/types';
 import { formatSigned, generateId, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
 import { SectionBar } from './SectionBar';
+import { StartBalanceRow } from './StartBalanceRow';
 
 interface IncomeSectionProps {
   monthKey: MonthKey;
   items: IncomeItem[];
-  /** Stapbedrag van deze ledger-regel, uit de calculator. */
+  /**
+   * Stapbedrag van deze ledger-regel, uit de calculator: `subtotals.incoming`, dus
+   * beginsaldo plus inkomsten. Niet `totalIncome` — het beginsaldo staat als eerste
+   * regel ín deze sectie en moet dus in de kop meetellen.
+   */
   amount: number;
+  /** Saldo waarmee deze maand opent. */
+  startBalance: number;
+  /**
+   * Alleen de ankerkolom mag het beginsaldo corrigeren — daar is het je échte banksaldo,
+   * en alleen daar grijpt een `balanceOverride` aan. Laat weg voor de andere maanden.
+   */
+  onStartBalanceChange?: (balance: number) => void;
   onAdd: (item: IncomeItem) => void;
   onUpdate: (id: string, patch: Partial<IncomeItem>) => void;
   onToggleReceived: (id: string, received: boolean) => void;
@@ -136,6 +148,8 @@ export function IncomeSection({
   monthKey,
   items,
   amount,
+  startBalance,
+  onStartBalanceChange,
   onAdd,
   onUpdate,
   onToggleReceived: _onToggleReceived,
@@ -144,6 +158,15 @@ export function IncomeSection({
   const [adding, setAdding] = useState(false);
   const [label, setLabel] = useState('');
   const [newAmount, setNewAmount] = useState('');
+
+  // De ankerkolom toont het beginsaldo altijd: daar corrigeer je je echte banksaldo, ook
+  // als het toevallig op nul staat. Een latere maand opent op het eindsaldo van de maand
+  // ervoor, en dat legt een actieve bufferpot per constructie op €0 — die regel zou daar
+  // alleen "€ 0,00" herhalen. Zodra de buffer een tekort níét meer draagt (calculator.ts
+  // begrenst de opname tot wat er in de pot zit) of er helemaal geen bufferpot is, rolt
+  // er wél een bedrag door. Dan moet het in beeld: anders verdwijnt geld uit de kolom en
+  // telt ze niet meer op tot haar eigen kop.
+  const showStartBalance = onStartBalanceChange !== undefined || Math.abs(startBalance) >= 0.005;
 
   function handleAdd() {
     const parsed = parseFloat(newAmount.replace(',', '.'));
@@ -180,12 +203,19 @@ export function IncomeSection({
       />
 
       <div className="flex flex-col gap-1 w-full">
-        {/* Het beginsaldo staat als eigen ledger-regel boven deze sectie. */}
+        {/* Het beginsaldo is de eerste regel van deze sectie: de kop telt hem mee, dus
+            hoort hij eronder te staan. Hij is geen post — niet versleepbaar, niet te
+            verwijderen — en schuift daarom ook de zebra van de posten één op, zodat het
+            streepjespatroon over de hele lijst doorloopt. */}
+        {showStartBalance && (
+          <StartBalanceRow balance={startBalance} onChange={onStartBalanceChange} />
+        )}
+
         {items.map((item, index) => (
           <DraggableIncomeItem
             key={item.id}
             item={item}
-            index={index}
+            index={showStartBalance ? index + 1 : index}
             onRemove={onRemove}
             onUpdate={onUpdate}
           />

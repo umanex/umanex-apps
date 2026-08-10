@@ -130,3 +130,12 @@ uitwerking staat in `briefings/2026-08-05-tokens-finance-inventaris.md`.
   gereserveerd. Een provisie moet weg, de buffer is eigen geld dat een tekort opvangt —
   in één regel betekende "gereserveerd" twee dingen tegelijk. Buiten de oorspronkelijke
   scope; het plan had de buffer pas in fase 4 als runway-metric staan.
+- 2026-08-10: het beginsaldo is geen eigen ledger-stap meer. Het staat sinds
+  `briefings/2026-08-10-feature-beginsaldo-in-inkomsten.tcebc.md` als eerste regel bínnen
+  de inkomstenstap, en in een latere maand verdwijnt de regel zodra het doorgerolde saldo
+  nul is — met een actieve bufferpot herhaalde hij daar alleen "€ 0,00". Het eerste
+  acceptatie-item hierboven ("beginsaldo, vier kostenstappen en het eindsaldo in de
+  volgorde van de kernformule") is daarmee vervangen: lees het als vier kostenstappen na
+  één inkomstenstap die het beginsaldo bevat. Het item eronder — "de som van de zichtbare
+  ledger-regels is exact het eindsaldo" — blijft onverkort gelden en is precies waarom de
+  inkomstenkop nu `subtotals.incoming` toont in plaats van `totalIncome`.

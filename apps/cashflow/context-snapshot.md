@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-08-08_
+_Gegenereerd op 2026-08-10_
 
 ## Project
 - **App:** cashflow
@@ -13,6 +13,7 @@ _Gegenereerd op 2026-08-08_
 
 ## Packages
 - **@umanex/config:** 0.0.1
+- **@umanex/rowtrack-tokens:** 0.0.1
 - **@umanex/tokens:** 0.0.1
 - **@umanex/ui:** 0.0.1
 
@@ -48,15 +49,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
+899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
+a28ec78 docs(cashflow): record the review round in the harness plan
 ab6f074 chore(cashflow): close three holes the review found in the guards
-664937a fix(cashflow): make the overlays behave like dialogs
-b4acf02 test(cashflow): cover MonthCard, the modals and the three states
-1d32df2 docs(cashflow): close the last acceptance item of the ledger briefing
-f9f871c ci: run the cashflow calculation and flow harnesses in the pipeline
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-08-08-plan-harness-dekking.md
+  M  apps/cashflow/CLAUDE.md
+  M  apps/cashflow/briefings/2026-08-04-feature-maandkolom-ledger.tcebc.md
+  A  apps/cashflow/briefings/2026-08-10-feature-beginsaldo-in-inkomsten.tcebc.md
+  M  apps/cashflow/components/cashflow/IncomeSection.tsx
+  M  apps/cashflow/components/cashflow/MonthCard.tsx
+  M  apps/cashflow/components/cashflow/SectionBar.tsx
+  M  apps/cashflow/components/cashflow/StartBalanceRow.tsx
+  M  apps/cashflow/scripts/flow-harness.mjs
+  M  apps/cashflow/scripts/render-screens.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

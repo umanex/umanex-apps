@@ -136,13 +136,33 @@ const Inhoud = () => h('div', null,
     h(SectionBar, { label: 'Inkomsten', amount: 2116, direction: 'in', onAdd: () => {} }),
     h(SectionBar, { label: 'Vaste uitgaves', amount: 6124.61, direction: 'out', showPaid: false, onFilterToggle: () => {}, onAdd: () => {} }),
     h(SectionBar, { label: 'Uitgaves met creditering', amount: -50, direction: 'out' }),
-    h(SectionBar, { label: 'Beginsaldo', amount: 22728, direction: 'neutral' }),
+    // De inkomstenkop draagt sinds 2026-08-10 `subtotals.incoming`, dus beginsaldo plus
+    // inkomsten. Rolt er een tekort door, dan is die kop negatief — met `direction: 'in'`
+    // houdt hij zijn minteken en de negatieve kleur. Dit is de nieuwe combinatie die de
+    // contrast-sweep moet meten.
+    h(SectionBar, { label: 'Inkomsten met doorgerold tekort', amount: -1250.5, direction: 'in', onAdd: () => {} }),
+    h(SectionBar, { label: 'Stand zonder mutatie (neutral)', amount: 22728, direction: 'neutral' }),
     h(SectionBar, { label: 'Nul', amount: 0, direction: 'out' }),
     h(SectionBar, { label: 'Zonder bedrag' })) }),
 
-  h(Sectie, { titel: 'StartBalanceRow', kind: h('div', { className: 'space-y-1 max-w-lg' },
-    h(StartBalanceRow, { balance: 22728, onChange: () => {} }),
-    h(StartBalanceRow, { balance: -1250.5 })) }),
+  // De saldoregel staat sinds 2026-08-10 bínnen de inkomstensectie, dus meten we hem daar:
+  // bewerkbaar 'Beginsaldo' in de ankerkolom, read-only 'Vorig saldo' met een doorgerold
+  // tekort daarbuiten, en een post ernaast zodat de kolomuitlijning zichtbaar blijft.
+  h(Sectie, { titel: 'StartBalanceRow — eerste regel van de inkomstensectie', kind:
+    h('div', { className: 'space-y-2 max-w-lg' },
+      h('div', { className: 'flex flex-col gap-2' },
+        h(SectionBar, { label: 'Inkomsten', amount: 25928, direction: 'in', onAdd: () => {} }),
+        h('div', { className: 'flex flex-col gap-1' },
+          h(StartBalanceRow, { balance: 22728, onChange: () => {} }),
+          h('div', { className: 'flex items-center gap-2 h-7 px-2 rounded-sm bg-muted' },
+            h('span', { className: 'text-muted-foreground text-sm leading-none shrink-0' }, '⠿'),
+            h('span', { className: 'flex-1 text-sm truncate min-w-0' }, 'Factuur Columba'),
+            h('span', { className: 'text-sm font-semibold tabular-nums text-finance-positive shrink-0' }, '+€ 3.200,00'),
+            h('span', { className: 'text-muted-foreground text-xs leading-none shrink-0' }, '×')))),
+      h('div', { className: 'flex flex-col gap-2' },
+        h(SectionBar, { label: 'Inkomsten', amount: -1250.5, direction: 'in', onAdd: () => {} }),
+        h('div', { className: 'flex flex-col gap-1' },
+          h(StartBalanceRow, { balance: -1250.5 })))) }),
 
   h(Sectie, { titel: 'BalanceFooter — de vier standen', kind:
     h('div', { className: 'grid grid-cols-2 gap-3 max-w-3xl' },

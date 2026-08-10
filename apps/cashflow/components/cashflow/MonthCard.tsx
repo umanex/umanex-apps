@@ -6,7 +6,6 @@ import { addMonth, getMonthLabel } from '../../lib/cashflow/recurring';
 import { bufferSummary } from '../../lib/cashflow/buffer';
 import { BalanceFooter } from './BalanceFooter';
 import { MonthVariance } from './MonthVariance';
-import { StartBalanceRow } from './StartBalanceRow';
 import { IncomeSection } from './IncomeSection';
 import { RecurringSection } from './RecurringSection';
 import { ReservationSection } from './ReservationSection';
@@ -73,7 +72,6 @@ export function MonthCard({
   const {
     monthKey,
     startBalance,
-    totalIncome,
     subtotals,
     cashOverflowItems,
     incomeItems,
@@ -157,16 +155,22 @@ export function MonthCard({
         )}
       </div>
 
-      {/* Ledger: beginsaldo, dan de vier kostenstappen in volgorde van de kernformule. */}
+      {/* Ledger: de inkomstenstap — met het beginsaldo als eerste regel erin — en dan de
+          vier kostenstappen in volgorde van de kernformule. */}
       <fieldset
         disabled={locked}
         className="flex-1 min-h-0 overflow-y-auto p-4 m-0 border-0 flex flex-col gap-5"
       >
         {locked && <MonthVariance data={monthData} />}
 
-        <StartBalanceRow
-          balance={startBalance}
-          onChange={isFirst ? (balance) => {
+        <IncomeSection
+          monthKey={monthKey}
+          items={incomeItems}
+          // `subtotals.incoming` is beginsaldo + inkomsten en wordt hier al berekend; de
+          // kop mag er geen tweede optelling naast zetten (lib/cashflow/subtotals.ts).
+          amount={subtotals.incoming}
+          startBalance={startBalance}
+          onStartBalanceChange={isFirst ? (balance) => {
             // Het veld bevestigt ook zonder toetsaanslag: één klik erop en een klik
             // ernaast volstaat. Staat er niets anders dan wat er al stond, dan is er
             // niets gebeurd — anders zou wegklikken een bestaande correctie wissen.
@@ -177,12 +181,6 @@ export function MonthCard({
               upsertBalanceOverride(monthKey, balance);
             }
           } : undefined}
-        />
-
-        <IncomeSection
-          monthKey={monthKey}
-          items={incomeItems}
-          amount={totalIncome}
           onAdd={addIncomeItem}
           onUpdate={(id, patch) => updateIncomeItem(id, patch)}
           onToggleReceived={(id, received) => updateIncomeItem(id, { received })}

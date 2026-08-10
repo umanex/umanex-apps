@@ -394,6 +394,62 @@ function greep(page, label) {
   return page.locator('div', { hasText: label }).locator('button[aria-label="Versleep"]').last();
 }
 
+// ── De saldoregel ────────────────────────────────────────────────────────────
+
+const SALDO = /Beginsaldo|Vorig saldo/;
+
+/**
+ * Bedrag uit een rijtekst als getal. nl-BE schrijft `€ -11.443,15`: punt is duizendtal,
+ * komma is decimaal, en het minteken staat ná het euroteken.
+ */
+function bedragUit(tekst) {
+  const cijfers = tekst.replace(/[^\d.,-]/g, '').replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(cijfers);
+  return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * De saldoregel van elke maandkolom: staat hij er, welk label draagt hij, welk bedrag, en
+ * staat hij bínnen de inkomstensectie? Sinds 2026-08-10 hoort hij daar te staan — de
+ * inkomstenkop draagt `subtotals.incoming` en de regels eronder moeten tot die kop
+ * optellen — en verdwijnt hij uit een latere maand zodra het doorgerolde saldo nul is.
+ *
+ * `.last()` is bewust: elke voorouder van de rij bevat het label ook, en in
+ * documentvolgorde komt de rij zelf als laatste. Dezelfde truc als in `greep()`.
+ */
+async function saldoPerKolom(page) {
+  const kolommen = page.locator(KOLOM);
+  const aantal = await kolommen.count();
+  const uit = [];
+
+  for (let i = 0; i < aantal; i++) {
+    const kolom = kolommen.nth(i);
+    const tekst = (await kolom.innerText()).replace(/\s+/g, ' ');
+    const treffer = tekst.match(SALDO);
+
+    if (!treffer) {
+      uit.push({ kolom: i, aanwezig: false });
+      continue;
+    }
+
+    const rijtekst = (await kolom.locator('div').filter({ hasText: SALDO }).last().innerText())
+      .replace(/\s+/g, ' ');
+
+    uit.push({
+      kolom: i,
+      aanwezig: true,
+      label: treffer[0],
+      bedrag: bedragUit(rijtekst),
+      // Binnen de sectie = ná de inkomstenkop en vóór de kop van de volgende sectie.
+      inSectie:
+        tekst.indexOf('Inkomsten') < treffer.index && treffer.index < tekst.indexOf('Vaste uitgaves'),
+      rijtekst,
+    });
+  }
+
+  return uit;
+}
+
 // ── De twee sleeppaden ───────────────────────────────────────────────────────
 
 /**
@@ -667,6 +723,103 @@ function scenarios() {
       },
     },
     {
+      // De fixture heeft geen bufferpot, dus het eindsaldo wordt nergens naar €0 geveegd
+      // en elke kolom opent op een echt bedrag. Alle drie horen dus een saldoregel te
+      // tonen — binnen de inkomstensectie, want de kop telt hem mee.
+      naam: 'saldo — regel staat in de inkomstensectie',
+      actie: async (page, { state, schrijfVoor }) => {
+        const rijen = await saldoPerKolom(page);
+        if (rijen.length !== 3) throw new Error(`${rijen.length} kolommen in plaats van 3`);
+
+        const ontbreekt = rijen.filter((r) => !r.aanwezig);
+        if (ontbreekt.length) {
+          throw new Error(
+            `kolom ${ontbreekt.map((r) => r.kolom).join(', ')} toont geen saldoregel terwijl er zonder bufferpot wél een saldo doorrolt`,
+          );
+        }
+
+        const buiten = rijen.filter((r) => !r.inSectie);
+        if (buiten.length) {
+          throw new Error(
+            `saldoregel staat buiten de inkomstensectie in kolom ${buiten.map((r) => r.kolom).join(', ')}`,
+          );
+        }
+
+        // Kolom 0 is de ankerkolom: daar is het je banksaldo en dus bewerkbaar. De rest
+        // toont het doorgerolde saldo en is read-only.
+        if (rijen[0].label !== 'Beginsaldo') {
+          throw new Error(`kolom 0 draagt "${rijen[0].label}" in plaats van "Beginsaldo"`);
+        }
+        const verkeerd = rijen.slice(1).filter((r) => r.label !== 'Vorig saldo');
+        if (verkeerd.length) {
+          throw new Error(
+            `kolom ${verkeerd.map((r) => r.kolom).join(', ')} draagt "${verkeerd[0].label}" in plaats van "Vorig saldo"`,
+          );
+        }
+
+        // Bewerkbaar in de ankerkolom, read-only daarbuiten. Meetbaar aan de rij zelf: daar
+        // draagt het bedrag een knop, elders is het tekst. En de rij is geen post — geen
+        // sleepgreep, geen verwijderknop — dus dat is meteen de hele knoppentelling.
+        const rij = (i) => page.locator(KOLOM).nth(i).locator('div').filter({ hasText: SALDO }).last();
+        const knoppen = [];
+        for (const r of rijen) knoppen.push(await rij(r.kolom).locator('button').count());
+        if (knoppen[0] !== 1) {
+          throw new Error(`kolom 0 heeft ${knoppen[0]} knoppen in de saldoregel in plaats van één aanklikbaar bedrag`);
+        }
+        if (knoppen[1] || knoppen[2]) {
+          throw new Error(`een doorgerold saldo is bewerkbaar (kolom 1: ${knoppen[1]}, kolom 2: ${knoppen[2]} knoppen)`);
+        }
+
+        // Klikken en wégklikken zónder iets te typen mag niets wegschrijven — dat is de
+        // bug uit HANDOFF 2026-08-05, en het pad verhuist met deze regel mee. Meetbaar aan
+        // de onderschepte wegschrijf-calls, niet aan het scherm.
+        await rij(0).locator('button').click();
+        await page.waitForSelector('[aria-label="Beginsaldo aanpassen"]', { timeout: 5_000, state: 'visible' });
+        await page.locator('h1').click();
+        await page.waitForSelector('[aria-label="Beginsaldo aanpassen"]', { timeout: 5_000, state: 'detached' });
+        // Ruim voorbij de 800 ms debounce van lib/cashflow/sync.ts — dezelfde marge als
+        // `verhuisd()`. Korter en de teller staat gegarandeerd op nul, ongeacht de code.
+        await page.waitForTimeout(1_200);
+        const extra = state.schrijfpogingen.length - schrijfVoor;
+        if (extra > 0) {
+          throw new Error(`wegklikken zonder wijziging stuurde ${extra} wegschrijf-call(s) — de correctie-guard is weg`);
+        }
+
+        if (rijen.some((r) => r.bedrag === null)) throw new Error(`onleesbaar bedrag: ${JSON.stringify(rijen)}`);
+        return {
+          ok: true,
+          bewijs: `3 saldoregels binnen de inkomstensectie (${rijen.map((r) => `${r.label} ${r.bedrag}`).join(' · ')}), alleen kolom 0 bewerkbaar, wegklikken schrijft niets`,
+        };
+      },
+    },
+    {
+      // Zonder posten en zonder referentiebalans staat elke maand op nul. De ankerkolom
+      // toont zijn beginsaldo dan nog steeds — daar corrigeer je je banksaldo — maar een
+      // latere maand hoort geen regel te tonen die alleen "€ 0,00" herhaalt.
+      naam: 'saldo — geen nulregel in latere maanden',
+      gedrag: { leeg: true },
+      actie: async (page) => {
+        const rijen = await saldoPerKolom(page);
+        if (rijen.length !== 3) throw new Error(`${rijen.length} kolommen in plaats van 3`);
+
+        if (!rijen[0].aanwezig) throw new Error('de ankerkolom toont geen beginsaldo');
+        if (rijen[0].label !== 'Beginsaldo') {
+          throw new Error(`kolom 0 draagt "${rijen[0].label}" in plaats van "Beginsaldo"`);
+        }
+        if (Math.abs(rijen[0].bedrag) >= 0.005) {
+          throw new Error(`de lege fixture geeft kolom 0 een saldo van ${rijen[0].bedrag} in plaats van 0`);
+        }
+
+        const blijvers = rijen.slice(1).filter((r) => r.aanwezig);
+        if (blijvers.length) {
+          throw new Error(
+            `kolom ${blijvers.map((r) => r.kolom).join(', ')} toont nog een saldoregel: "${blijvers[0].rijtekst}"`,
+          );
+        }
+        return { ok: true, bewijs: 'ankerkolom houdt zijn beginsaldo, kolom 1 en 2 tonen geen nulregel' };
+      },
+    },
+    {
       // Een trage fetch hoort een skeleton te geven, geen leeg scherm en geen nullen.
       naam: 'state — laden',
       gedrag: { vertragingMs: 2_500 },
@@ -788,6 +941,48 @@ function tegenproeven() {
         // Het document komt gewoon door; het foutscherm hoort er dus níet te staan.
         await page.waitForSelector('text=Gegevens niet geladen', { timeout: 3_000, state: 'visible' });
         return { ok: true, bewijs: 'foutscherm verscheen terwijl de fetch slaagde' };
+      },
+    },
+    {
+      // Toetst dat `inSectie` echt de plaats meet en niet alleen de aanwezigheid: dit is
+      // de oude indeling, met de saldoregel bóven de inkomstenkop.
+      naam: 'tegenproef — saldoregel boven de sectie',
+      moetFalen: true,
+      actie: async (page) => {
+        const rijen = await saldoPerKolom(page);
+        const boven = rijen.filter((r) => r.aanwezig && !r.inSectie);
+        if (!boven.length) throw new Error('elke saldoregel staat binnen de inkomstensectie');
+        return { ok: true, bewijs: 'saldoregel stond nog boven de sectie' };
+      },
+    },
+    {
+      // Toetst dat de wegschrijf-teller in het saldo-scenario écht kan afgaan: een échte
+      // correctie hóórt wél weg te schrijven. Meldt hij ook hier nul, dan meet hij niets.
+      naam: 'tegenproef — correctie schrijft niets weg',
+      moetFalen: true,
+      actie: async (page, { state, schrijfVoor }) => {
+        const rij = page.locator(KOLOM).nth(0).locator('div').filter({ hasText: SALDO }).last();
+        await rij.locator('button').click();
+        const veld = page.locator('[aria-label="Beginsaldo aanpassen"]');
+        await veld.waitFor({ timeout: 5_000, state: 'visible' });
+        await veld.fill('4242');
+        await page.locator('h1').click();
+        await page.waitForTimeout(1_200);
+        const extra = state.schrijfpogingen.length - schrijfVoor;
+        if (extra > 0) throw new Error(`de correctie schreef ${extra} keer weg, zoals het hoort`);
+        return { ok: true, bewijs: 'een echte correctie schreef niets weg' };
+      },
+    },
+    {
+      // Toetst de andere kant: de verdwijn-regel moet ook echt kunnen afgaan. Op de lege
+      // fixture staat elke maand op nul, dus een saldoregel in kolom 1 hoort er niet te zijn.
+      naam: 'tegenproef — nulregel in een latere maand',
+      moetFalen: true,
+      gedrag: { leeg: true },
+      actie: async (page) => {
+        const rijen = await saldoPerKolom(page);
+        if (!rijen[1]?.aanwezig) throw new Error('kolom 1 toont terecht geen nulregel');
+        return { ok: true, bewijs: `kolom 1 toonde "${rijen[1].rijtekst}"` };
       },
     },
   ];

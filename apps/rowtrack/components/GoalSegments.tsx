@@ -80,7 +80,12 @@ function SegmentButton({ type, isActive, onPress }: SegmentButtonProps) {
         color={isActive ? accent.default : fg.tertiary}
       />
       {isActive && (
-        <Animated.Text entering={pillEnter} style={styles.activeLabel} numberOfLines={1}>
+        <Animated.Text
+          entering={pillEnter}
+          style={styles.activeLabel}
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.3}
+        >
           {SEGMENT_LABELS[type]}
         </Animated.Text>
       )}

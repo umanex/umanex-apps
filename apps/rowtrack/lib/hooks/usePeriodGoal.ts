@@ -43,9 +43,20 @@ export function usePeriodGoal(userId: string | undefined) {
     fastestSplit: null,
   });
   const [loading, setLoading] = useState(true);
+  // `error` dekt bewust alléén de doel-reads (profiel + de workouts van de periode).
+  // Faalt enkel een PR-query, dan verdwijnt de PR-sectie — die staat elders in de boom
+  // en mag de doel-kaart niet op een ErrorState zetten.
+  const [error, setError] = useState(false);
 
   const fetchAll = useCallback(async () => {
-    if (!userId) return;
+    // Zonder user valt er niets te laden: `loading` moet hier omlaag. Bleef hij staan,
+    // dan houdt de skeleton op Home het scherm eeuwig bezet bij een uitgelogde sessie.
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    // Per run resetten, anders blijft een gelukte retry op een oude fout hangen.
+    setError(false);
 
     // Fetch goal from profile + PRs from workouts in parallel
     const [profileRes, prDistRes, prBest2kRes, prSplitRes] = await Promise.all([
@@ -83,6 +94,10 @@ export function usePeriodGoal(userId: string | undefined) {
       }
     }
 
+    // Het profiel draagt het doel zélf. Faalt die read, dan is "geen doel" een gok en
+    // geen feit — precies de verwisseling uit F6. PGRST116 (geen rij) is wél een feit.
+    if (profileRes.error && profileRes.error.code !== 'PGRST116') setError(true);
+
     // Personal records
     setRecords({
       longestDistance: prDistRes.data?.[0]?.distance_meters ?? null,
@@ -105,7 +120,15 @@ export function usePeriodGoal(userId: string | undefined) {
         .select('distance_meters, duration_seconds')
         .eq('user_id', userId)
         .gte('started_at', periodStart);
-      if (periodError) reportError(periodError, { where: 'usePeriodGoal.periodWorkouts' });
+      if (periodError) {
+        reportError(periodError, { where: 'usePeriodGoal.periodWorkouts' });
+        // Zonder deze rijen is `current` een 0 die als échte voortgang leest: de kaart
+        // zou "0% voldaan" tonen op een mislukte read. Liever de ErrorState.
+        setError(true);
+        setGoalProgress(null);
+        setLoading(false);
+        return;
+      }
 
       let current = 0;
       if (goal.metric === 'distance') {
@@ -134,5 +157,5 @@ export function usePeriodGoal(userId: string | undefined) {
     }, [fetchAll]),
   );
 
-  return { goalProgress, records, loading, refetch: fetchAll };
+  return { goalProgress, records, loading, error, refetch: fetchAll };
 }

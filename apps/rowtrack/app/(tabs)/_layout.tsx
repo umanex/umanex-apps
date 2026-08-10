@@ -30,7 +30,10 @@ function TabsInner() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: accent.default,
-        tabBarInactiveTintColor: fg.quaternary,
+        // fg.quaternary op bg.raised = 2.47:1 — faalt AA voor het 11px-label én de
+        // 3:1 non-text-regel voor het 22px-icoon. fg.tertiary = 4.73:1 en haalt beide.
+        // Eén prop voedt label + icoon, dus dit dekt de hele inactieve tab (audit F4).
+        tabBarInactiveTintColor: fg.tertiary,
         tabBarStyle: hideTabBar
           ? { display: 'none' }
           : {

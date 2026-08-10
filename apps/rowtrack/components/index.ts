@@ -10,6 +10,9 @@ export type { EmptyStateProps } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export type { ErrorStateProps } from './ErrorState';
 
+export { Skeleton } from './Skeleton';
+export type { SkeletonProps } from './Skeleton';
+
 export { SectionHeader } from './SectionHeader';
 export type { SectionHeaderProps } from './SectionHeader';
 
@@ -36,6 +39,7 @@ export { KPI } from './KPI';
 export { KpiSingle } from './KPI_single';
 
 export { GoalProgressCard } from './GoalProgressCard';
+export { GoalCardSkeleton } from './GoalCardSkeleton';
 export { GoalSheet } from './GoalSheet';
 export type { GoalSheetProps } from './GoalSheet';
 export { Segmented } from './Segmented';

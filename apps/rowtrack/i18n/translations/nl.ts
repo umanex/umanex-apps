@@ -17,6 +17,10 @@ export const nl = {
 
   format: {
     decimalSeparator: ',',
+    // Punt = duizendtal, komma = decimaal. Eén betekenis per teken: '7.515 m' is
+    // een duizendtal, '22,3 km' een decimaal. Beide scheiders staan alleen hier
+    // en in lib/formatters.ts (formatInt / formatDecimal).
+    thousandsSeparator: '.',
   },
 
   units: {
@@ -24,6 +28,8 @@ export const nl = {
     hourShort: 'u',
     hourLong: 'uur',
     minuteShort: 'min',
+    // Ritten korter dan een minuut: "17 sec", niet "0:17 min".
+    secondShort: 'sec',
     sessions: 'sessies',
   },
 
@@ -111,6 +117,10 @@ export const nl = {
     greetingEvening: 'Goedenavond,',
     nameFallback: 'roeier',
     startButton: 'Start',
+    // Doel-sectie op Home: CTA wanneer er nog geen periodedoel is (audit F6 — Home had
+    // geen tegenhanger van de "Geen doel ingesteld"-rij op Profiel).
+    goalCtaTitle: 'Stel een doel in',
+    goalCtaBody: 'Zet een week- of maanddoel en volg je voortgang.',
     prSectionTitle: 'Persoonlijke records',
     prMaxDistance: 'Maximale\nafstand',
     prBest2k: 'Beste tijd\n2000m',
@@ -161,8 +171,10 @@ export const nl = {
       startRowing: 'Begin met roeien...',
       splitFaster: (sec: number) => `Je bent ${sec} seconden sneller`,
       splitSlower: (sec: number) => `Je bent ${sec} seconden trager`,
+      splitOnTarget: 'Je zit op doeltempo',
       wattsMore: (w: number) => `Je levert ${w} W meer`,
       wattsLess: (w: number) => `Je levert ${w} W minder dan je doel`,
+      wattsOnTarget: 'Je zit op doelvermogen',
       kpiSplit: 'Split 500/m',
       kpiWatt: 'Watt',
       kpiSpm: 'SPM',
@@ -203,9 +215,9 @@ export const nl = {
 
   history: {
     title: 'Historiek',
-    filterWeek: 'Week',
-    filterMonth: 'Maand',
-    filterYear: 'Jaar',
+    filterWeek: 'Deze week',
+    filterMonth: 'Deze maand',
+    filterYear: 'Dit jaar',
     filterAll: 'Alle',
     emptyTitle: 'Geen workouts in deze periode.',
   },
@@ -315,14 +327,7 @@ export const nl = {
     segmentSplitA11y: 'Split, doel',
     segmentWattsA11y: 'Watt, doel',
     // Doeltype-config (workout-goals.ts)
-    typeDuration: 'Tijd',
-    typeDistance: 'Afstand',
-    typeSplit: 'Split',
-    typeWatts: 'Watt',
     // GoalSetupModal (mid-workout)
-    setupTitle: 'Stel doel in',
-    setupButton: 'Stel in',
-    setupNoGoalNote: 'Geen doel voor deze training.',
     // Periode-doel (GoalSheet)
     sheetTitle: 'Doel bewerken',
     sheetPeriodLabel: 'PERIODE',
@@ -364,6 +369,9 @@ export const nl = {
   a11y: {
     showPassword: 'Toon wachtwoord',
     hidePassword: 'Verberg wachtwoord',
+    // Icon-only chevron-back op het workout-detailscherm. Bewust niet t.detail.backLink
+    // ('OVERZICHT'): dat is de naam van de bestemming, geen actiebeschrijving.
+    back: 'Terug',
   },
 
   consent: {

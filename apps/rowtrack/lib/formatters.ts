@@ -33,24 +33,35 @@ export function correctSpm(spm: number, halved: boolean): number {
   return Math.round(halved ? spm / 2 : spm);
 }
 
+/**
+ * Duizendtal-groepering, zonder eenheid: 7515 -> '7.515', 850 -> '850'.
+ * Samen met `formatDecimal` de enige plek waar een cijferscheider in code staat:
+ * punt = duizendtal, komma = decimaal. Rondt af — groeperen op een float zou
+ * '1.234.5' opleveren.
+ */
+export function formatInt(value: number): string {
+  return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, t.format.thousandsSeparator);
+}
+
+/**
+ * Decimaal getal met locale-komma én duizendtal-groepering: 1234.5 -> '1.234,5'.
+ * `digits` = aantal decimalen na afronding.
+ */
+export function formatDecimal(value: number, digits: number): string {
+  const [whole, frac] = value.toFixed(digits).split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, t.format.thousandsSeparator);
+  return frac ? `${grouped}${t.format.decimalSeparator}${frac}` : grouped;
+}
+
 export function formatDistance(meters: number): string {
-  return `${(meters / 1000).toFixed(2)} km`;
+  return `${formatDecimal(meters / 1000, 2)} km`;
 }
 
 export function formatDistanceDynamic(meters: number): { value: string; unit: string } {
   if (meters < 1000) {
-    return { value: `${Math.round(meters)}`, unit: 'm' };
+    return { value: formatInt(meters), unit: 'm' };
   }
-  return { value: (meters / 1000).toFixed(2), unit: 'km' };
-}
-
-/**
- * Meters with a Dutch thousands separator, no unit: 1234 -> '1.234', 850 -> '850'.
- * Landscape-only notation (portrait/design uses km); append ' m' at the call site if needed.
- */
-export function formatMetersDotted(meters: number): string {
-  const m = Math.round(meters);
-  return String(m).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return { value: formatDecimal(meters / 1000, 2), unit: 'km' };
 }
 
 /**
@@ -68,7 +79,7 @@ export function formatSplit(splitSec: number, padMinutes = false, tenths = false
     const s = Math.floor(rem / 10);
     const d = rem % 10;
     const mm = padMinutes ? m.toString().padStart(2, '0') : m.toString();
-    return `${mm}:${s.toString().padStart(2, '0')}.${d}`;
+    return `${mm}:${s.toString().padStart(2, '0')}${t.format.decimalSeparator}${d}`;
   }
   const m = Math.floor(splitSec / 60);
   const s = Math.round(splitSec % 60);
@@ -147,8 +158,8 @@ export function buildDistItems(): WheelItem[] {
     } else {
       const km = m / 1000;
       label = Number.isInteger(km)
-        ? `${km} km`
-        : `${km.toFixed(1).replace('.', t.format.decimalSeparator)} km`;
+        ? `${formatInt(km)} km`
+        : `${formatDecimal(km, 1)} km`;
       unit = 'km';
     }
     items.push({ label, unit, value: m });

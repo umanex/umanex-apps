@@ -19,7 +19,7 @@ function celebrationMessage(goal: WorkoutGoal): string {
       return t.workout.celebration.duration(Math.round(goal.target / 60));
     case 'distance': {
       const { value, unit } = formatDistanceDynamic(goal.target);
-      return t.workout.celebration.distance(value.replace('.', t.format.decimalSeparator), unit);
+      return t.workout.celebration.distance(value, unit);
     }
     case 'split':
       return t.workout.celebration.split(formatSplit(goal.target));

@@ -115,12 +115,16 @@ export function GoalSheet({ visible, currentGoal, userId, onClose, onSaved }: Go
     onClose();
   }
 
+  // Opslaan zonder periode én type schreef stil NO_GOAL weg en sloot de sheet alsof het
+  // gelukt was (audit F6): de gebruiker koos niets, drukte Opslaan, en kreeg een wissing.
+  // Wissen heeft een eigen knop — Opslaan mag nooit wissen.
+  const canSave = period !== null && metric !== null;
+
   function save() {
-    if (period && metric) {
-      persist({ period_goal_period: period, period_goal_metric: metric, period_goal_target: toStored(metric, target) });
-    } else {
-      persist(NO_GOAL);
-    }
+    // Bewust `!period || !metric` i.p.v. `!canSave`: dit narrowt beide waarden voor de
+    // aanroep hieronder zonder op aliased-condition-narrowing te leunen.
+    if (!period || !metric) return;
+    persist({ period_goal_period: period, period_goal_metric: metric, period_goal_target: toStored(metric, target) });
   }
   function removeGoal() {
     persist(NO_GOAL);
@@ -150,6 +154,7 @@ export function GoalSheet({ visible, currentGoal, userId, onClose, onSaved }: Go
             icon="arrow-forward"
             iconPosition="trailing"
             onPress={save}
+            disabled={!canSave}
             loading={saving}
           />
         </View>

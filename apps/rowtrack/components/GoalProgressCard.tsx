@@ -3,6 +3,7 @@ import { bg, fg, accent, border, progressBar, typeStyles, space, radii } from '@
 import { Subtitle } from './Subtitle';
 import { Dot } from './Dot';
 import { t } from '@/i18n';
+import { formatDecimal, formatInt } from '@/lib/formatters';
 import type { PeriodGoalMetric, PeriodGoalPeriod, PeriodGoalProgress } from '@/lib/hooks/usePeriodGoal';
 
 type GoalProgressCardProps = {
@@ -18,15 +19,17 @@ function fmtDistance(meters: number): string {
   if (meters >= 1000) {
     const km = meters / 1000;
     const rounded = Math.round(km * 10) / 10;
-    return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded} km`;
+    return `${Number.isInteger(rounded) ? formatInt(rounded) : formatDecimal(rounded, 1)} km`;
   }
-  return `${Math.round(meters)} m`;
+  return `${formatInt(meters)} m`;
 }
 
 function fmtDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}${t.units.hourShort}${m > 0 ? ` ${m} ${t.units.minuteShort}` : ''}`;
+  // Spatie vóór 'u', gelijk aan formatDurationLabel ('1 u 10 min') — die twee
+  // stonden op hetzelfde scherm met verschillende spatiëring.
+  if (h > 0) return `${h} ${t.units.hourShort}${m > 0 ? ` ${m} ${t.units.minuteShort}` : ''}`;
   return `${m} ${t.units.minuteShort}`;
 }
 

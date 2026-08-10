@@ -52,6 +52,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Volledige historie. De default is depth 1, en dan heeft `git merge origin/main`
+          # verderop geen gemeenschappelijke voorouder in de lokale objecten: git meldt
+          # "refusing to merge unrelated histories" terwijl de branches op GitHub wél een
+          # merge-base delen. Dat bijt pas wanneer de sync-branch al bestaat én main intussen
+          # doorgelopen is — dus precies in de drukste repo, en nooit in een rustige test.
+          # Een vaste diepte lost het niet op: de divergentie kan altijd groter zijn.
+          fetch-depth: 0
 
       - name: Schrijf umanex-os laag uit payload en open PR
         env:

@@ -6,17 +6,20 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { drainPendingWorkout } from '@/lib/pendingWorkout';
-import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard, GoalSheet } from '@/components';
+import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard, GoalSheet, GoalCardSkeleton, Skeleton } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
-import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
+import { usePeriodGoal, type PeriodGoalProgress } from '@/lib/hooks/usePeriodGoal';
+import { formatDecimal, formatInt } from '@/lib/formatters';
 import { t } from '@/i18n';
 import {
   bg,
@@ -24,6 +27,7 @@ import {
   accent,
   border,
   typeStyles,
+  body,
   space,
   fontFamily,
   fontSize,
@@ -52,9 +56,9 @@ function getGreeting(): string {
 function fmtPrDistance(m: number): { value: string; unit: string } {
   if (m >= 1000) {
     const km = m / 1000;
-    return { value: km % 1 === 0 ? `${km}` : `${km.toFixed(1)}`, unit: 'km' };
+    return { value: Number.isInteger(km) ? formatInt(km) : formatDecimal(km, 1), unit: 'km' };
   }
-  return { value: `${m}`, unit: 'm' };
+  return { value: formatInt(m), unit: 'm' };
 }
 
 function fmtPr2k(sec: number): { value: string; unit: string } {
@@ -63,6 +67,15 @@ function fmtPr2k(sec: number): { value: string; unit: string } {
   const s = total % 60;
   return { value: `${m}:${String(s).padStart(2, '0')}`, unit: 'min' };
 }
+
+// Maatvoerder voor het doel-skelet: de echte kaart wordt onzichtbaar gerenderd, zodat de
+// skelet-hoogte uit het component komt i.p.v. uit een hardcoded pixelwaarde (er is geen
+// size-token voor blokhoogtes). De waarden zijn dummy's en nooit zichtbaar.
+const GOAL_SKELETON_PROGRESS: PeriodGoalProgress = {
+  goal: { period: 'week', metric: 'distance', target: 1 },
+  current: 0,
+  percentage: 0,
+};
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -75,7 +88,15 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [workoutsError, setWorkoutsError] = useState(false);
 
-  const { goalProgress, records, refetch: refetchGoal } = usePeriodGoal(user?.id);
+  // `loading`/`error` bewust gealiast: dit scherm heeft al een eigen `loading` en
+  // `workoutsError` voor de recente-trainingen-lijst.
+  const {
+    goalProgress,
+    records,
+    loading: goalLoading,
+    error: goalError,
+    refetch: refetchGoal,
+  } = usePeriodGoal(user?.id);
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -157,7 +178,16 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>{greeting}</Text>
-          <Text style={styles.name}>{name}</Text>
+          {/* Naam pas tonen als het profiel binnen is: anders flitst de fallback "roeier"
+              kort in beeld (audit F9). Het skelet erft zijn regelhoogte van dezelfde
+              tekststijl, dus de kop verspringt niet wanneer de echte naam landt. */}
+          {loading ? (
+            <Skeleton style={styles.nameSkeleton}>
+              <Text style={styles.name}>{t.home.nameFallback}</Text>
+            </Skeleton>
+          ) : (
+            <Text style={styles.name}>{name}</Text>
+          )}
         </View>
         <Button
           variant="primary"
@@ -169,18 +199,57 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* Goal progress */}
-      {goalProgress && (
+      {/* Doel-sectie. Vier uitkomsten op dezelfde plek: laden → skeleton, leesfout →
+          ErrorState met retry, geen doel → CTA, doel → kaart. Vóór F6 rendeerde alléén
+          de laatste, dus een gefaalde fetch zag er identiek uit als "geen doel" en
+          verdween de sectie geruisloos. */}
+      {goalLoading ? (
+        <GoalCardSkeleton />
+      ) : goalError ? (
+        <View style={styles.goalSlot}>
+          <ErrorState onRetry={refetchGoal} />
+        </View>
+      ) : goalProgress ? (
         <GoalProgressCard
           progress={goalProgress}
           // Wijzigen opent de doel-bottomsheet in-place (gedeelde GoalSheet, geen redirect).
           onEdit={() => setGoalSheetOpen(true)}
         />
+      ) : (
+        <TouchableOpacity
+          style={[styles.goalSlot, styles.goalCta]}
+          onPress={() => setGoalSheetOpen(true)}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+        >
+          <View style={styles.goalCtaText}>
+            <Text style={styles.goalCtaTitle}>{t.home.goalCtaTitle}</Text>
+            <Text style={styles.goalCtaBody}>{t.home.goalCtaBody}</Text>
+          </View>
+          <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
+        </TouchableOpacity>
       )}
 
       {/* PR + Recent sections */}
       <View style={styles.body}>
-        {hasPrRecords && (
+        {goalLoading && (
+          // PR's komen uit dezelfde fetch als het doel; zonder skelet schuift de sectie pas
+          // ná de fetch in beeld en springt de lijst eronder mee (audit F9). De echte
+          // Subtitle blijft staan — die is niet data-afhankelijk.
+          <View style={styles.prSection}>
+            <Subtitle label={t.home.prSectionTitle} />
+            <View style={styles.prRow}>
+              <Skeleton style={styles.prCell}>
+                <KpiSingle value="0" unit="km" label={t.home.prMaxDistance} />
+              </Skeleton>
+              <Skeleton style={styles.prCell}>
+                <KpiSingle value="0:00" unit="min" label={t.home.prBest2k} />
+              </Skeleton>
+            </View>
+          </View>
+        )}
+
+        {!goalLoading && hasPrRecords && (
           <View style={styles.prSection}>
             <Subtitle label={t.home.prSectionTitle} />
             <View style={styles.prRow}>
@@ -210,7 +279,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        <View style={[styles.recentSection, hasPrRecords && styles.recentSectionBorder]}>
+        <View style={[styles.recentSection, (goalLoading || hasPrRecords) && styles.recentSectionBorder]}>
           <Subtitle
             label={t.home.recentTitle}
             action={{ label: t.home.allAction, onPress: () => router.push('/(tabs)/history') }}
@@ -282,6 +351,40 @@ const styles = StyleSheet.create({
   name: {
     ...typeStyles.sectionValue,
     color: fg.primary,
+  },
+  // Het skelet erft zijn hoogte van de onzichtbare naam-Text erin; flex-start houdt de
+  // breedte op die van de ghost i.p.v. de volle kolom.
+  nameSkeleton: {
+    alignSelf: 'flex-start',
+  },
+
+  // Doel-sectie — dezelfde full-bleed chrome als GoalProgressCard, zodat CTA en
+  // ErrorState exact de plek van de kaart innemen en de states niet t.o.v. elkaar
+  // verspringen.
+  goalSlot: {
+    backgroundColor: bg.raised,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: border.default,
+    padding: space['20'],
+  },
+  goalCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space['16'],
+  },
+  goalCtaText: {
+    flex: 1,
+    gap: space['4'],
+  },
+  goalCtaTitle: {
+    ...body.lg,
+    color: fg.primary,
+  },
+  goalCtaBody: {
+    ...body.sm,
+    color: fg.secondary,
   },
 
   // Body

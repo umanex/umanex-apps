@@ -33,9 +33,9 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | ErrorMessage | `apps/rowtrack/components/ErrorMessage.tsx` | components | — | — | — |
 | ErrorState | `apps/rowtrack/components/ErrorState.tsx` | components | — | — | — |
 | FormField | `apps/rowtrack/components/FormField.tsx` | components | — | — | — |
+| GoalCardSkeleton | `apps/rowtrack/components/GoalCardSkeleton.tsx` | components | — | — | — |
 | GoalProgressCard | `apps/rowtrack/components/GoalProgressCard.tsx` | components | — | — | — |
 | GoalSegments | `apps/rowtrack/components/GoalSegments.tsx` | components | — | — | — |
-| GoalSetupModal | `apps/rowtrack/components/GoalSetupModal.tsx` | components | — | — | — |
 | GoalSheet | `apps/rowtrack/components/GoalSheet.tsx` | components | — | — | — |
 | HealthConsentScreen | `apps/rowtrack/components/HealthConsentScreen.tsx` | components | — | — | — |
 | HrStatusBar | `apps/rowtrack/components/HrStatusBar.tsx` | components | — | — | — |
@@ -46,6 +46,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | PaceZone | `apps/rowtrack/components/PaceZone.tsx` | components | — | — | — |
 | SectionHeader | `apps/rowtrack/components/SectionHeader.tsx` | components | — | — | — |
 | Segmented | `apps/rowtrack/components/Segmented.tsx` | components | — | — | — |
+| Skeleton | `apps/rowtrack/components/Skeleton.tsx` | components | — | — | — |
 | SplitsList | `apps/rowtrack/components/SplitsList.tsx` | components | — | — | — |
 | Subtitle | `apps/rowtrack/components/Subtitle.tsx` | components | — | — | — |
 | TabLabel | `apps/rowtrack/components/TabLabel.tsx` | components | — | — | — |
@@ -57,15 +58,22 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e7e009d fix(rowtrack): one meaning per separator, and the unreachable goal path removed
+1b20c52 fix(rowtrack): raise the contrast and name the controls
+f8f9bc5 fix(rowtrack): let go of a heart-rate link in one place, not three
+9876980 ci: run the node:test invariants, so they measure something
 b9626a6 test(rowtrack): make the heart-rate connection rule testable, then test it
-29aa0f0 fix(rowtrack): let "connected" mean a heart rate actually arrived
-4be0008 revert(rowtrack): keep the last real watt reading instead of an early zero
-fb59690 Merge remote-tracking branch 'origin/main' into feature/rowtrack-web-verplichte-paginas
-19b9b1c docs: sessie-handoff voor rowtrack-web plus twee repo-brede schulden
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/app/(tabs)/index.tsx
+  A  apps/rowtrack/components/GoalCardSkeleton.tsx
+  M  apps/rowtrack/components/GoalSheet.tsx
+  A  apps/rowtrack/components/Skeleton.tsx
+  M  apps/rowtrack/components/index.ts
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/i18n/translations/nl.ts
+  M  apps/rowtrack/lib/hooks/usePeriodGoal.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

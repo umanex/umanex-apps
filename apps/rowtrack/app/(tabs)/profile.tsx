@@ -473,9 +473,14 @@ export default function ProfileScreen() {
               <GoalProgressCard progress={goalProgress} onEdit={openDoel} />
             </View>
           ) : (
-            <TouchableOpacity style={styles.listRow} onPress={openDoel} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.listRow}
+              onPress={openDoel}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text style={styles.listLabel}>{t.profile.noGoal}</Text>
-              <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
+              <Ionicons name="arrow-forward" size={16} color={fg.tertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -484,19 +489,29 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t.profile.sectionAccount}</Text>
           <View style={styles.listCard}>
-            <TouchableOpacity style={styles.listRow} onPress={openVoornaam} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.listRow}
+              onPress={openVoornaam}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text style={styles.listLabel}>{t.profile.firstName}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{nameLabel}</Text>
-                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.tertiary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
-            <TouchableOpacity style={styles.listRow} onPress={openEmail} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.listRow}
+              onPress={openEmail}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text style={styles.listLabel}>{t.profile.email}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{user?.email ?? '—'}</Text>
-                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.tertiary} />
               </View>
             </TouchableOpacity>
           </View>
@@ -508,35 +523,55 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t.profile.sectionBody}</Text>
           <View style={styles.listCard}>
-            <TouchableOpacity style={styles.listRow} onPress={openGeslacht} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.listRow}
+              onPress={openGeslacht}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text style={styles.listLabel}>{t.profile.gender}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{genderLabel(gender)}</Text>
-                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.tertiary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
-            <TouchableOpacity style={styles.listRow} onPress={openGeboortedatum} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.listRow}
+              onPress={openGeboortedatum}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text style={styles.listLabel}>{t.profile.birthDate}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{formatBirthDate(birthDate)}</Text>
-                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.tertiary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
-            <TouchableOpacity style={styles.listRow} onPress={openLengte} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.listRow}
+              onPress={openLengte}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text style={styles.listLabel}>{t.profile.height}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{heightLabel}</Text>
-                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.tertiary} />
               </View>
             </TouchableOpacity>
             <View style={styles.listDivider} />
-            <TouchableOpacity style={styles.listRow} onPress={openGewicht} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.listRow}
+              onPress={openGewicht}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+            >
               <Text style={styles.listLabel}>{t.profile.weight}</Text>
               <View style={styles.listRight}>
                 <Text style={styles.listValue}>{weightLabel}</Text>
-                <Ionicons name="arrow-forward" size={16} color={fg.quaternary} />
+                <Ionicons name="arrow-forward" size={16} color={fg.tertiary} />
               </View>
             </TouchableOpacity>
           </View>

@@ -436,9 +436,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   dus "te lang geen slag voor je eigen cadans" meet het rechtstreeks, zonder te leren of te
   onthouden. De teller op het dev-scherm blijft staan, maar is nu puur informatief over hoe deze
   erg vermogen rapporteert.
-- **Nog te zien op de erg:** of dit merkbaar wint. Laat jouw erg zijn spm sneller los dan ~4 s bij
-  24 spm, dan vuurt de bestaande rust-transitie eerst en verandert er zichtbaar niets — dan is dit
-  een vangnet voor trage ergs in plaats van een verbetering voor deze.
+- **Op de erg gereden en teruggedraaid — 2026-08-10.** De slagenteller-variant deed technisch wat
+  hij moest (geen enkele valse nul tijdens het roeien, ook niet bij laag tempo), maar Jeroen vond
+  het resultaat slechter. Wat je bij een stop ziet is: de waarde blijft even op de laatste échte
+  meting staan — de erg stuurt dan geen vermogen meer mee, en `mergeMetrics` houdt daardoor de
+  vorige waarde vast — en klapt daarna naar 0. Die laatste échte waarde vasthouden is bruikbaarder
+  dan een vroege nul: tijdens een adempauze wil je zien wat je net trok, niet dat je stilstaat.
+  Teruggedraaid in PR #251; `strokeIdle.ts` bestaat niet meer.
+- **De grens die hieruit volgt** — en die het overwegen waard is vóór iemand hier weer aan begint:
+  naar 0 gaan is goed wanneer de **erg zelf** zegt dat je stilstaat (dat blijft, keuze van
+  2026-08-07), maar niet wanneer de app dat zelf afleidt en de erg nog niets gezegd heeft. Beide
+  eerdere pogingen struikelden over die grens, langs verschillende wegen.
+- **Status:** resolved — bewust geen verdere actie.
 
 ## 2026-08-10 — Eerste committed node:test in de repo · [next-step]
 - **Bevinding:** `lib/ble/adapterReady.test.ts` is het eerste testbestand dat blijft staan in plaats

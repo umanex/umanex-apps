@@ -1,40 +1,38 @@
-# BACKLOG.md — gemeld, niet gebouwd
+# BACKLOG.md — jobradar
 
-Dit bestand vangt het werk dat **buiten scope** viel: wat er benoemd is maar niet gedaan, plus de P3-bevindingen uit `ux-audit` en `security-audit`. Zonder deze lijst is "buiten scope gelaten" alleen een zin in een antwoord dat wegscrollt — de melding bestaat dan wel, het werk niet, en niemand kan er later op terugkomen.
+Kleine, afgebakende items die geen eigen briefing verdienen maar wel ergens moeten staan.
+Een P3 die alleen in een auditrapport staat, verdwijnt met dat rapport.
 
-Entries komen erbij **op het moment van de melding**, niet aan het einde van de sessie. Een sessie die zonder reflectie afloopt mag geen scope-drop verliezen; dat is precies de vorm waarin ze vandaag verdwijnen.
+Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
 
-## Waarom dit geen HANDOFF is
+## UX
 
-Een handoff-item is **sessie-gebonden**: het zorgt dat de volgende sessie niet koud begint en verdwijnt zodra het opgepakt is. Een backlog-item is **werk** — het blijft bestaan tot het gebouwd of bewust verworpen is, ook als er tien sessies overheen gaan. Ze in één bestand gooien maakt het sessiestart-signaal onbruikbaar: de handoff-lijst hoort kort te zijn, een backlog mag lang worden.
+- [ ] `ux`: Contrast van de `|`-scheiding in `CoverageBar.tsx` — `text-border` meet 1.24 tegen
+      een drempel van 4.5; visueel vrijwel onzichtbaar, waardoor de scheiding niets doet.
+      Overweeg `text-muted-foreground` of hem vervangen door witruimte.
+      (ux-audit 2026-08-11, P3)
+- [ ] `ux`: Kopstructuur springt van h1 naar h3 — 1× h1, 327× h3, geen h2. De koppen-outline van
+      een schermlezer is daarmee 327 items lang en draagt geen structuur. Overweeg een h2 per
+      tabblad en de kaarttitels als niet-kop of h3 onder die h2.
+      (ux-audit 2026-08-11, P3)
+- [ ] `ux`: Focus is inconsistent — knoppen uit `@umanex/ui` dragen `focus-visible:ring-2`, de
+      links in app-code (`Instellingen`, `Bekijk`, `Terug naar het dashboard`) vallen terug op
+      de browserstandaard. Zichtbaar, maar twee verschillende vormen.
+      (ux-audit 2026-08-11, P3)
+- [ ] `ux`: Signaalbadges dragen geen gewicht — alle vier `variant="outline"`, terwijl
+      `dev-vacature zonder design` 30 punten weegt en `recente groei` 20. Het zwaarste signaal
+      is visueel niet te onderscheiden van het lichtste.
+      (ux-audit 2026-08-11, P3)
+- [ ] `ux`: "Min. score" is ambigu tussen de tabbladen — filtert op de vacaturescore bij
+      Vacatures en op de leadscore bij Leads. Twee schalen, één label.
+      (ux-audit 2026-08-11, P3)
 
-| Soort bevinding | Huis |
-|---|---|
-| Werk dat benoemd is maar niet gebouwd (scope-drop) | **hier** |
-| P3 / nice-to-have uit `ux-audit` of `security-audit` | **hier** |
-| Waargenomen fout van een skill of werkprincipe | `LEARNINGS.md` (via `vastleggen`) |
-| Onzekerheid, aanname, risico, next-step van déze sessie | `HANDOFF.md` (via `sessie-reflectie`) |
-| Durend feit over Jeroen of het project | auto-memory |
+## Verificatie
 
-## Statussen
-
-- `open` — vastgelegd, nog geen beslissing over genomen. Telt mee bij sessiestart.
-- `gepland` — dit gebeurt; het wacht op een plek in de planning.
-- `gebouwd` — gedaan. Blijft staan als spoor, met commit of PR erbij.
-- `verworpen` — bewust niet doen. **Reden verplicht**, anders komt hetzelfde voorstel over drie maanden terug en begint de afweging van nul.
-
-## Types
-
-`feature` · `refactor` · `fix` · `test` · `infra` · `ux` · `security` · `docs`
-
-## Format
-
-Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Project — {app}`) en heeft deze vorm:
-
-    ## YYYY-MM-DD — {korte titel} · [{type}]
-    - **Wat:** {1-2 zinnen — wat er gebouwd zou worden}
-    - **Waarom niet nu:** {waarom het buiten scope viel}
-    - **Eerste zet:** {concreet startpunt of "-"}
-    - **Status:** open
-
-<!-- De eerste entry maakt hieronder de juiste laag-header aan. -->
+- [ ] `test`: Flow-harness op meerdere viewportbreedtes laten renderen — responsive gedrag is nu
+      nergens geverifieerd, en met de huidige browserautomatisering ook niet te meten (het
+      venster verkleinen liet `innerWidth` op 1417 staan).
+      (ux-audit 2026-08-11, limiet)
+- [ ] `test`: Toetsenbordvolgorde en focusvolgorde ongemeten — Tab bereikte de pagina niet via
+      de automatisering. Vraagt een handmatige doorloop of een andere harness.
+      (ux-audit 2026-08-11, limiet)

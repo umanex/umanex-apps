@@ -36,23 +36,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ef4acc0 feat(jobradar): allow exact phrases as search terms
 bc95d61 fix(jobradar): ask Adzuna politely, and try again when it says no
 6942afb feat(jobradar): make the search terms visible and editable
 c36692b fix(jobradar): drop the search word that was pulling in warehouse work
 eef1820 Merge pull request #268 from umanex/fix/jobradar-bronlaag
-1f7f72e fix(jobradar): serve fixtures only when asked, never as a fallback
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/app/api/settings/route.ts
-  M  apps/jobradar/app/api/settings/test/route.ts
-  M  apps/jobradar/briefings/2026-08-11-feature-zoekinstellingen.tcebc.md
-  M  apps/jobradar/components/SearchSettingsForm.tsx
-  M  apps/jobradar/components/TermChips.tsx
-  M  apps/jobradar/lib/settings.ts
-  M  apps/jobradar/lib/sources/adzuna.ts
-  M  apps/jobradar/scripts/config-scenarios.ts
-  M  apps/jobradar/scripts/upsert-scenarios.ts
+  M  apps/jobradar/BACKLOG.md
+  A  apps/jobradar/audits/2026-08-11-ux-audit-jobradar.md
 
 ## Bestanden met TODO/FIXME
   (geen)

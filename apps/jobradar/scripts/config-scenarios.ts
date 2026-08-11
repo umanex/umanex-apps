@@ -31,6 +31,16 @@ import {
 } from '../lib/config/profile'
 import { matchedSkills, scoreJob } from '../lib/matching'
 import { classificeer, rolInTitel } from '../lib/signals'
+import {
+  splitsTermen,
+  valideerZoekopdracht,
+  standaardZoekopdracht,
+  parseZoekopdracht,
+  serialiseerZoekopdracht,
+  isStandaard,
+  MAX_TERMEN,
+} from '../lib/settings'
+import { bouwUrl } from '../lib/sources/adzuna'
 
 let geslaagd = 0
 let gezakt = 0
@@ -341,6 +351,60 @@ check(
   [...DESIGN_ROLE_SUFFIXEN, ...DEV_ROLE_SUFFIXEN].length >= 12,
   String([...DESIGN_ROLE_SUFFIXEN, ...DEV_ROLE_SUFFIXEN].length)
 )
+
+// ── 7. De bewerkbare zoekopdracht ───────────────────────────────────────────
+// De termen zijn sinds 2026-08-11 in de app aanpasbaar. Daarmee verschuift de pin op
+// `whatOr` van "wat er draait" naar "wat de standaard is" — zie de bekende grens in
+// briefings/2026-08-11-feature-zoekinstellingen.tcebc.md. Wat hier gebbewaakt wordt is de
+// laag eronder: splitsen, valideren en terugvallen mogen niet stil veranderen.
+{
+  // Splitsen op witruimte is de kern van het scherm: `what_or` matcht losse woorden, dus
+  // "product designer" ís twee termen. Wie dat verbergt, verbergt de bug van 2026-08-11.
+  check('een term met een spatie wordt gesplitst', splitsTermen(['product designer']).length === 2, JSON.stringify(splitsTermen(['product designer'])))
+  check('meerdere spaties en tabs splitsen ook', splitsTermen(['  ux   ui\tfrontend ']).join(',') === 'ux,ui,frontend', JSON.stringify(splitsTermen(['  ux   ui\tfrontend '])))
+  check('dubbele termen verdwijnen', splitsTermen(['ux', 'ux']).length === 1)
+  check('ontdubbelen is hoofdletter-ongevoelig', splitsTermen(['UX', 'ux']).length === 1, JSON.stringify(splitsTermen(['UX', 'ux'])))
+  check('de eerste schrijfwijze blijft staan', splitsTermen(['UX', 'ux'])[0] === 'UX')
+  check('lege invoer geeft een lege lijst', splitsTermen(['', '   ']).length === 0)
+
+  // Zónder `what_or` geeft Adzuna élke vacature binnen de straal terug. Leeg opslaan
+  // betekent dus niet "niets zoeken" maar "alles".
+  check('geen zoektermen wordt geweigerd', valideerZoekopdracht({ termen: [], uitsluiten: [] }) !== null)
+  check('één zoekterm volstaat', valideerZoekopdracht({ termen: ['ux'], uitsluiten: [] }) === null)
+  check('te veel termen wordt geweigerd', valideerZoekopdracht({ termen: Array.from({ length: MAX_TERMEN + 1 }, (_, i) => `t${i}`), uitsluiten: [] }) !== null)
+  check('precies het maximum mag', valideerZoekopdracht({ termen: Array.from({ length: MAX_TERMEN }, (_, i) => `t${i}`), uitsluiten: [] }) === null)
+  check('een term die ook uitgesloten wordt, wordt geweigerd', valideerZoekopdracht({ termen: ['ux'], uitsluiten: ['UX'] }) !== null)
+  check('de foutmelding is leesbaar', (valideerZoekopdracht({ termen: [], uitsluiten: [] }) ?? '').length > 20)
+
+  // Terugvallen op de standaard: een ontbrekende, kapotte of ongeldig geworden waarde mag
+  // de sync nooit zonder zoektermen laten draaien.
+  const standaard = standaardZoekopdracht()
+  check('de standaard is geldig', valideerZoekopdracht(standaard) === null)
+  check('de standaard heeft termen', standaard.termen.length > 0)
+  for (const [naam, rauw] of [
+    ['null', null],
+    ['lege string', ''],
+    ['geen json', '{kapot'],
+    ['json zonder velden', '{}'],
+    ['lege termen', '{"termen":[],"uitsluiten":[]}'],
+    ['termen geen lijst', '{"termen":"ux","uitsluiten":[]}'],
+  ] as Array<[string, string | null]>) {
+    check(`parse valt terug op de standaard bij ${naam}`, isStandaard(parseZoekopdracht(rauw)), JSON.stringify(parseZoekopdracht(rauw)))
+  }
+  const eigen = { termen: ['ux', 'react'], uitsluiten: ['sales'] }
+  check('parse behoudt een geldige opgeslagen waarde', JSON.stringify(parseZoekopdracht(serialiseerZoekopdracht(eigen))) === JSON.stringify(eigen))
+  check('heen en terug verandert niets', serialiseerZoekopdracht(parseZoekopdracht(serialiseerZoekopdracht(eigen))) === serialiseerZoekopdracht(eigen))
+  check('isStandaard herkent een eigen zoekopdracht niet als standaard', !isStandaard(eigen))
+
+  // De bron moet de meegegeven zoekopdracht gebruiken, niet de constante uit profile.ts —
+  // anders is het hele scherm decoratie.
+  const url = bouwUrl('OVL', 1, { termen: ['kotlin', 'rust'], uitsluiten: ['stage'] })
+  check('bouwUrl gebruikt de meegegeven termen', url.includes('what_or=kotlin+rust'), url)
+  check('bouwUrl gebruikt de meegegeven uitsluitingen', url.includes('what_exclude=stage'), url)
+  check('bouwUrl gebruikt NIET de constante', !url.includes('webdesign'), url)
+  const zonder = bouwUrl('OVL', 1, { termen: ['ux'], uitsluiten: [] })
+  check('zonder uitsluitingen staat what_exclude niet in de url', !zonder.includes('what_exclude'), zonder)
+}
 
 // ── Tegenproef ───────────────────────────────────────────────────────────────
 if (process.env.SCENARIO_SELFTEST === '1') {

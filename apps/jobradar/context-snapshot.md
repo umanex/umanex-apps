@@ -29,22 +29,25 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | LeadCard | `apps/jobradar/components/LeadCard.tsx` | components | — | — | — |
 | RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
 | ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
+| SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
 | StatusDropdown | `apps/jobradar/components/StatusDropdown.tsx` | components | — | — | — |
 | SyncButton | `apps/jobradar/components/SyncButton.tsx` | components | — | — | — |
+| TermChips | `apps/jobradar/components/TermChips.tsx` | components | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+6942afb feat(jobradar): make the search terms visible and editable
+c36692b fix(jobradar): drop the search word that was pulling in warehouse work
 eef1820 Merge pull request #268 from umanex/fix/jobradar-bronlaag
 1f7f72e fix(jobradar): serve fixtures only when asked, never as a fallback
 76c58e1 docs(jobradar): record what actually guards the class
-30e4ec5 fix(jobradar): guard the deciding power, not the vocabulary
-3258114 chore(jobradar): harden the classification failure class into a guard
 ```
 
 ## Uncommitted wijzigingen
   M  apps/jobradar/CLAUDE.md
   M  apps/jobradar/lib/config/profile.ts
   M  apps/jobradar/lib/sources/adzuna.ts
+  M  apps/jobradar/lib/sources/types.ts
   M  apps/jobradar/scripts/adzuna-scenarios.ts
 
 ## Bestanden met TODO/FIXME

@@ -6,6 +6,7 @@ import { adzunaSource } from '@/lib/sources/adzuna'
 import { kboSource } from '@/lib/sources/kbo'
 import { deriveLeadsFromJobs } from '@/lib/signals'
 import { upsertJob, upsertLead } from '@/lib/sync/upsert'
+import { leesZoekopdracht } from '@/lib/sync/settings-store'
 import { ALL_REGIONS, regionForPostcode } from '@/lib/regions'
 import type { RawJob } from '@/lib/sources/types'
 
@@ -42,9 +43,12 @@ export async function POST() {
   }
 
   try {
+    // De opgeslagen zoekopdracht, of de gemeten standaard als er niets is opgeslagen.
+    const zoek = await leesZoekopdracht(db)
+
     // ── Vacatures ────────────────────────────────────────────────────────────
     const jobSourceResults = await Promise.allSettled(
-      JOB_SOURCES.map((s) => s.fetch({ regions: ALL_REGIONS }))
+      JOB_SOURCES.map((s) => s.fetch({ regions: ALL_REGIONS, zoek }))
     )
 
     // Bewaard omdat de signaal-afleiding hieronder over álle bronnen samen rekent: een
@@ -84,7 +88,7 @@ export async function POST() {
 
     // ── Leads uit externe bronnen ────────────────────────────────────────────
     const leadSourceResults = await Promise.allSettled(
-      LEAD_SOURCES.map((s) => s.fetch({ regions: ALL_REGIONS }))
+      LEAD_SOURCES.map((s) => s.fetch({ regions: ALL_REGIONS, zoek }))
     )
 
     for (let i = 0; i < leadSourceResults.length; i++) {

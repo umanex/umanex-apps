@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-08-10_
+_Gegenereerd op 2026-08-11_
 
 ## Project
 - **App:** jobradar
@@ -34,16 +34,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+eef1820 Merge pull request #268 from umanex/fix/jobradar-bronlaag
+1f7f72e fix(jobradar): serve fixtures only when asked, never as a fallback
 76c58e1 docs(jobradar): record what actually guards the class
 30e4ec5 fix(jobradar): guard the deciding power, not the vocabulary
 3258114 chore(jobradar): harden the classification failure class into a guard
-fe1e9e8 docs(jobradar): correct the invariant count in the verify path
-3d3281e fix(jobradar): score and lead-worthiness are different questions
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/jobradar/CLAUDE.md
+  M  apps/jobradar/lib/config/profile.ts
   M  apps/jobradar/lib/sources/adzuna.ts
-  M  apps/jobradar/lib/sources/kbo.ts
   M  apps/jobradar/scripts/adzuna-scenarios.ts
 
 ## Bestanden met TODO/FIXME

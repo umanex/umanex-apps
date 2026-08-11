@@ -170,7 +170,26 @@ export const SIGNAL_THRESHOLDS = {
  * afkapping leest als volledige dekking.
  */
 export const ADZUNA_SEARCH = {
-  whatOr: 'UX designer UI designer frontend developer product designer',
+  /**
+   * `what_or` matcht op losse woorden, niet op zinsdelen — en Adzuna rekt ze op.
+   *
+   * Daar zat de ruis: `product` matchte óók "productie", en West-Vlaanderen zit vol
+   * productievacatures. Eén woord bracht 743 van de 1222 treffers binnen, tot en met
+   * magazijnier, winkelbediende en chauffeur. Het is eruit; "Product Designer" komt nog
+   * steeds binnen via `designer`.
+   *
+   * Gemeten op de live API (2026-08-11, drie regio's, 30 dagen):
+   *   oud: 1222 treffers, 18% classificeerbaar, alle drie de regio's afgekapt
+   *   nu :  547 treffers, 27% classificeerbaar, alleen Brussel nog afgekapt
+   * Recall bleef volledig: dezelfde 6 dev-leads én dezelfde 4 designbedrijven.
+   */
+  whatOr: 'UX UI frontend front-end webdesign developer designer',
+  /**
+   * Smal gehouden, en dat is gemeten. Een bredere lijst (productie, magazijn, nacht,
+   * ploegen…) haalde er nog 1 procentpunt ruis uit en kostte Smals als lead — één van de
+   * vacatures daar noemt een uitgesloten woord. Ruis wegnemen mag geen leads kosten.
+   */
+  whatUitsluiten: 'mechanical mechanisch matrijzen elektrisch hvac machinebouw',
   country: 'be',
   resultatenPerPagina: 50,
   maxPaginas: 5,

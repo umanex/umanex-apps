@@ -31,7 +31,7 @@ export const Records = async () => {
           {items.map((item) => (
             <li
               key={item.name}
-              className="shine hairline-achievement rounded-card p-px"
+              className="shine hairline-achievement rounded-card border border-transparent"
             >
               <div className="h-full rounded-card bg-bg-base p-6">
                 <p className="font-serif text-2xl text-achievement">{item.name}</p>

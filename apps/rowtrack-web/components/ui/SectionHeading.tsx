@@ -21,7 +21,7 @@ export const SectionHeading = ({ eyebrow, title, body }: Props) => (
       <span aria-hidden="true" className="rule-draw h-px w-8 bg-accent" />
       {eyebrow}
     </p>
-    <h2 className="mt-4 font-serif text-4xl tracking-tight text-fg-primary md:text-5xl">
+    <h2 className="mt-4 font-serif text-4xl leading-tight tracking-tight text-fg-primary md:text-5xl md:leading-tight">
       {title}
     </h2>
     {body ? <p className="mt-5 text-lg leading-relaxed text-fg-secondary">{body}</p> : null}

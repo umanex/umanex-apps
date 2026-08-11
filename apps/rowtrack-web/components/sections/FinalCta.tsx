@@ -24,7 +24,7 @@ export const FinalCta = async () => {
 
       <Reveal>
         <div className="relative mx-auto max-w-2xl text-center">
-          <h2 className="font-serif text-4xl tracking-tight text-fg-primary text-balance md:text-5xl">
+          <h2 className="font-serif text-4xl leading-tight tracking-tight text-fg-primary text-balance md:text-5xl md:leading-tight">
             {t('title')}
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-fg-secondary">{t('body')}</p>

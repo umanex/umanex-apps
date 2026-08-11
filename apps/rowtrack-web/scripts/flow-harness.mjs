@@ -42,8 +42,10 @@ const SHOT = args.find((a) => a.startsWith('--shot='))?.slice(7) ?? null;
 const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3104);
 const BASE = `http://127.0.0.1:${PORT}`;
 
-/** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
-const ROUTES = ['/nl', '/nl/support', '/nl/privacy'];
+/** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. `/nl/voorwaarden`
+ * staat bewust niet in de sitemap (concept-status) maar is wél publiek gelinkt vanuit
+ * de footer — publiek bereikbaar betekent hier meetbaar. */
+const ROUTES = ['/nl', '/nl/support', '/nl/privacy', '/nl/voorwaarden'];
 
 const fails = [];
 const notes = [];
@@ -155,11 +157,15 @@ async function main() {
         }
         window.scrollTo(0, 0);
       });
-      // De langste reveal-transitie (0.7s + stagger) uit laten lopen vóór de capture.
-      await page.waitForTimeout(1000);
+      // Korte settle voor de reveal-attributen; de animaties zelf hoeven niet uit
+      // te lopen, want de capture schakelt ze uit. `animations: 'disabled'` spoelt
+      // eindige animaties/transities door naar hun eindstaat en zet oneindige
+      // (float, pulse) op hun beginstand — twee runs op dezelfde code leveren
+      // daardoor pixel-identieke beelden in plaats van een toevallig animatieframe.
+      await page.waitForTimeout(400);
       const name = route === '/' ? 'index' : route.replace(/\//g, '-').replace(/^-/, '');
       const file = resolve(process.cwd(), `${SHOT}/${name}.png`);
-      await page.screenshot({ path: file, fullPage: true });
+      await page.screenshot({ path: file, fullPage: true, animations: 'disabled' });
       ok(`render vastgelegd: ${file}`);
     }
   }

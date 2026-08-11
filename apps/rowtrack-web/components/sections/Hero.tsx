@@ -31,7 +31,7 @@ export const Hero = async () => {
         <div className="grid items-center gap-16 md:grid-cols-2">
           <div>
             <Reveal>
-              <h1 className="font-serif text-5xl tracking-tight text-fg-primary text-balance md:text-6xl">
+              <h1 className="font-serif text-5xl leading-tight tracking-tight text-fg-primary text-balance md:text-6xl md:leading-tight">
                 {t('title')}
               </h1>
             </Reveal>
@@ -50,8 +50,12 @@ export const Hero = async () => {
           </div>
 
           <Reveal delay={200}>
-            <div className="float-slow md:rotate-2">
-              <ScreenshotFrame name="active-workout" alt={t('screenshotAlt')} priority />
+            {/* Rotatie en zweving op aparte wrappers: de float-animatie animeert
+                `transform` en zou een rotate-utility op hetzelfde element wissen. */}
+            <div className="md:rotate-2">
+              <div className="float-slow">
+                <ScreenshotFrame name="active-workout" alt={t('screenshotAlt')} priority />
+              </div>
             </div>
           </Reveal>
         </div>

@@ -17,10 +17,16 @@ type Props = {
  * lijn draagt dezelfde kleur geen tekst en speelt dat niet. Het uitgelichte plan
  * krijgt die rand als gradient-hairline (vol accent bovenaan, uitlopend naar de
  * subtiele rand) plus een zachte gloed — meer gewicht, nul extra tekst op accent.
+ *
+ * De "rand" is een achtergrond die door een TRANSPARANTE echte border heen toont
+ * (background-clip: border-box, de default). Dat is geen omweg om een p-px maar de
+ * forced-colors-vangrail: Windows High Contrast strijkt achtergronden en shadows
+ * weg maar geeft een echte border een kleur — zonder deze border verdwenen de
+ * kaartranden en de featured-markering daar volledig.
  */
 export const PricingCard = ({ name, price, period, features, featured = false, badge }: Props) => (
   <div
-    className={`rounded-card p-px ${
+    className={`rounded-card border border-transparent ${
       featured ? 'card-glow-accent hairline-accent' : 'bg-border-subtle'
     }`}
   >

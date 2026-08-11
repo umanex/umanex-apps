@@ -37,7 +37,7 @@ Top-3 aandachtspunten (allemaal P2/P3):
 |---|---|---|
 | Effectiveness | 4 | Bezoeker kan het enige doel (begrijpen + willen downloaden) zonder obstakels bereiken. |
 | Efficiency | 4 | Statisch SSG, first load ~87 kB gedeeld; hero-beeld met `priority`; motion compositor-only. |
-| Engagement | 4 | Reveal/stagger/shine geven ritme zonder te vertragen; float op de hero-telefoon is de enige doorlopende beweging. |
+| Engagement | 4 | Reveal/stagger/shine geven ritme zonder te vertragen; doorlopende beweging beperkt tot de hero-float en de twee pulserende statusstippen, alle drie alleen bij `no-preference`. |
 | Error tolerance | 4 | Er valt weinig fout te doen (geen formulieren); onbekende locale → 404; externe origins geblokkeerd in de harness bewijzen geen stille afhankelijkheden. |
 | Ease of learning | 5 | Standaard marketingpatronen, niets te leren. |
 

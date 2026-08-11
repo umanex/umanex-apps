@@ -26,7 +26,10 @@ export const Privacy = async ({ locale }: Props) => {
       </Reveal>
 
       <Reveal>
-        <ul className="reveal-stagger mt-10 max-w-2xl divide-y divide-border-subtle border-y border-border-subtle">
+        {/* Bewust géén stagger: de ul draagt vaste border-y-lijnen en de divide-y
+            zit op de kinderen — gestaggerde kinderen schuiven dan zichtbaar langs
+            het stilstaande kader. De lijst onthult als één blok. */}
+        <ul className="mt-10 max-w-2xl divide-y divide-border-subtle border-y border-border-subtle">
           {points.map((point) => (
             <li key={point} className="flex gap-3 py-4 leading-relaxed text-fg-secondary">
               <span aria-hidden="true" className="text-accent">

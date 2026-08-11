@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** apps/rowtrack-web
 - **Klant:** umanex (eigen product)
-- **Status:** gebouwd
+- **Status:** gevalideerd (iteratie 2/3 — code-review 15 bevindingen, alle verwerkt; herverificatie groen incl. hover-lift- en chunk-faal-tegenproef)
 
 ---
 
@@ -21,24 +21,29 @@ CONTEXT:     De site staat er functioneel (S1-S11 + privacy/voorwaarden/support)
 
 ELEMENTS:    Zelfde sectiecomponenten S1-S11 + Footer, Section, SectionHeading,
              MetricCard, PricingCard, FaqAccordion, ScreenshotFrame, AppStoreBadge.
-             Nieuw (design-laag): Reveal (IntersectionObserver client-component),
-             CountUp, sectie-eyebrows, gradient/glow-achtergrondlagen uit token-rollen,
-             card-treatments. Geen nieuwe pagina's, geen nieuwe copy-keys, geen nieuwe
-             dependencies.
+             Nieuw (design-laag): Reveal (server-marker) + één gedeeld inline
+             observer-script in layout, sectie-eyebrows met accentlijn, gradient/
+             glow-achtergrondlagen uit token-rollen, card-treatments. Subpagina's:
+             alleen de typografische stijl-laag (kop-schaal, tracking). Geen nieuwe
+             pagina's, geen nieuwe copy-keys, geen nieuwe dependencies.
 
-BEHAVIOUR:   Scroll-onthulling per sectie (fade+rise, stagger), count-up op metrics,
-             shine op PR-kaarten (S6) — one-shot, compositor-only (transform/opacity).
-             Hover: kaart-lift + accentrand; focus-visible ring overal. FAQ blijft
-             native <details>, toetsenbord-bedienbaar. Zonder JS: alles direct
-             zichtbaar (reveal-styles alleen achter een data-js gate op <html>). Bij
-             prefers-reduced-motion: eindstaat, geen beweging.
+BEHAVIOUR:   Scroll-onthulling per sectie (fade+rise, stagger via CSS-animation),
+             shine op PR-kaarten (S6) — one-shot, compositor-only (transform/
+             opacity), onafhankelijk van React-hydration. Hover: kaart-lift +
+             accentrand; focus-visible ring overal; focus in een nog niet onthuld
+             blok onthult het (focusin-vangnet). FAQ blijft native <details>,
+             toetsenbord-bedienbaar. Zonder JS of zonder IntersectionObserver:
+             alles direct zichtbaar (data-js gate). Bij prefers-reduced-motion en
+             in print: eindstaat, geen beweging, geen verborgen begintoestand.
 
 CONSTRAINTS: Dark-only, RowTrack-DNA. Kleuren token-only (guard blijft groen); maten
              op Tailwind-schaal met TODO-markers zolang web-tokens ontbreken (geen
              precedent). Geen tekst op accent-achtergrond onder 18.66px bold — wit op
              accent meet 3.44:1 en haalt alleen large-text AA. Achievement-kleur enkel
-             S6; accent enkel CTA/links/hover/actief. Geen nieuwe deps (geen
-             framer-motion): CSS keyframes + één kleine client-component. Hero licht:
+             S6. Accent: CTA/links/hover/actief plus de bestaande micro-signalen
+             (eyebrow + regel, lijststreepjes, kaart- en callout-randen, statusstip);
+             geen nieuwe accent-vlakken, nooit als tekstachtergrond. Geen nieuwe deps
+             (geen framer-motion): CSS keyframes + inline observer-script. Hero licht:
              geen extra render-blocking assets. Semantiek ongewijzigd: één h1, één h2
              per sectie, pagina volledig leesbaar zonder JavaScript.
 ```
@@ -107,4 +112,18 @@ van 2026-08-09 (typologie, states, interactie en edge cases erven van wat er sta
 - 2026-08-11: **Flow-harness scrollt nu door vóór de screenshot.** De full-page
   capture rendert buiten de viewport zonder dat de IntersectionObserver ooit vuurt;
   zonder doorloop legde hij secties op opacity 0 vast. Zelfde bevinding leidde tot
-  het print-vangnet in `globals.css`.
+  het print-gedrag in `globals.css`.
+- 2026-08-11: **Iteratie 2 na code-review (15 bevindingen, geen enkele genegeerd).**
+  Architectuurwijziging: de onthulling hangt niet meer aan React-hydration — Reveal
+  is een server-marker, één inline observer-script doet het werk, en `data-js` wordt
+  alleen gezet als IntersectionObserver bestaat (blanco-pagina-bij-gefaalde-chunk
+  weg, LCP-regressie weg). Stagger werd een CSS-animation omdat de vorige
+  transition-regels de hover-utilities permanent overschreven. Verder: line-height
+  hersteld op alle display-koppen (Tailwinds text-5xl/6xl = lh 1), rotate en float
+  op aparte wrappers, echte transparante borders als forced-colors-vangrail,
+  privacy-stagger geschrapt (kader stond stil terwijl de rijen schoven),
+  motion-gate `screen and` i.p.v. een apart print-blok, nth-child-catch-all,
+  focusin-vangnet, `/nl/voorwaarden` in de harness-routes, deterministische
+  screenshots (`animations: 'disabled'`), subpagina's kregen de beloofde
+  typografische laag, en het accent-beleid staat nu expliciet in CONSTRAINTS in
+  plaats van impliciet in een afvink-formulering.

@@ -58,11 +58,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4108515 docs: session retrospective — handoff checks and Apollo XL follow-up
 2810551 feat(rowtrack): accept any FTMS-advertising rower in device scan
 be05bdb docs(rowtrack): fix two checks that could not answer themselves
 a3b58f1 docs(rowtrack): give all 26 open entries a check that can answer them
 4509585 Merge pull request #266 from umanex/docs/rowtrack-handoff-opruiming
-c8c4f37 docs(rowtrack): close the entries that shipped code already settled
 ```
 
 ## Uncommitted wijzigingen

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
 import { FilterBar } from './FilterBar'
@@ -62,7 +63,15 @@ export function DashboardClient({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">JobRadar</h1>
-          <SyncButton />
+          <div className="flex items-center gap-4">
+            <Link
+              href="/instellingen"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Instellingen
+            </Link>
+            <SyncButton />
+          </div>
         </div>
 
         <CoverageBar dekking={dekking} />

@@ -17,6 +17,9 @@ import * as schema from '../lib/db/schema'
 import { SCHEMA_DDL, pasKolomMigratiesToe } from '../lib/db/ddl'
 import { upsertJob, upsertLead, type JobradarDb } from '../lib/sync/upsert'
 import { jobDedupeHash } from '../lib/matching'
+import { leesZoekopdracht, schrijfZoekopdracht, herstelZoekopdracht } from '../lib/sync/settings-store'
+import { standaardZoekopdracht, isStandaard, serialiseerZoekopdracht } from '../lib/settings'
+import { eq } from 'drizzle-orm'
 import type { RawJob, RawLead } from '../lib/sources/types'
 
 let geslaagd = 0
@@ -173,6 +176,42 @@ function lead(over: Partial<RawLead> & Pick<RawLead, 'externalId' | 'companyName
   const r = rauw.prepare('SELECT signals, lead_score FROM companies').get() as { signals: string; lead_score: number }
   const s = JSON.parse(r.signals) as string[]
   check('leadScore hoort bij de opgeslagen signalen', r.lead_score === 35, `${r.lead_score} bij ${JSON.stringify(s)}`)
+  rauw.close()
+}
+
+// ── 6. De opgeslagen zoekopdracht ───────────────────────────────────────────
+// De sync leest deze waarde bij élke run. Valt hij verkeerd terug, dan haalt Adzuna zonder
+// `what_or` álles binnen de straal op — leeg is hier niet "niets" maar "alles".
+{
+  const { db, rauw } = verseDb()
+
+  const leeg = await leesZoekopdracht(db)
+  check('zonder opgeslagen rij geldt de gemeten standaard', isStandaard(leeg), JSON.stringify(leeg))
+
+  const eigen = { termen: ['kotlin', 'rust'], uitsluiten: ['stage'] }
+  await schrijfZoekopdracht(db, eigen)
+  const na = await leesZoekopdracht(db)
+  check('opslaan en teruglezen levert hetzelfde', serialiseerZoekopdracht(na) === serialiseerZoekopdracht(eigen), JSON.stringify(na))
+  check('er staat één rij', (rauw.prepare('SELECT COUNT(*) c FROM settings').get() as { c: number }).c === 1)
+
+  await schrijfZoekopdracht(db, eigen)
+  check('twee keer opslaan geeft geen tweede rij', (rauw.prepare('SELECT COUNT(*) c FROM settings').get() as { c: number }).c === 1)
+
+  const anders = { termen: ['ux'], uitsluiten: [] }
+  await schrijfZoekopdracht(db, anders)
+  check('overschrijven werkt', serialiseerZoekopdracht(await leesZoekopdracht(db)) === serialiseerZoekopdracht(anders))
+
+  // Een handmatig bedorven waarde mag de sync niet zonder zoektermen laten draaien.
+  rauw.prepare("UPDATE settings SET value='{kapot' WHERE key='zoekopdracht'").run()
+  check('een kapotte waarde valt terug op de standaard', isStandaard(await leesZoekopdracht(db)))
+  rauw.prepare(`UPDATE settings SET value='{"termen":[],"uitsluiten":[]}' WHERE key='zoekopdracht'`).run()
+  check('een lege waarde valt terug op de standaard', isStandaard(await leesZoekopdracht(db)))
+
+  await herstelZoekopdracht(db)
+  check('herstellen verwijdert de rij', (rauw.prepare('SELECT COUNT(*) c FROM settings').get() as { c: number }).c === 0)
+  check('en daarna geldt de standaard weer', isStandaard(await leesZoekopdracht(db)))
+  check('herstellen op een lege tabel gooit niet', await herstelZoekopdracht(db).then(() => true).catch(() => false))
+
   rauw.close()
 }
 

@@ -1,4 +1,5 @@
 import type { RegionCode } from '../regions'
+import type { Zoekopdracht } from '../settings'
 
 export type RawJob = {
   externalId: string
@@ -39,12 +40,18 @@ export type SourceResult<T> = {
   warnings: string[]
 }
 
+/**
+ * `zoek` is optioneel zodat een bron die er niets mee doet hem kan negeren, en zodat een
+ * aanroeper zonder database (een test, een telling) de standaard krijgt.
+ */
+export type FetchParams = { regions: RegionCode[]; zoek?: Zoekopdracht }
+
 export interface JobSource {
   name: string
-  fetch(params: { regions: RegionCode[] }): Promise<SourceResult<RawJob>>
+  fetch(params: FetchParams): Promise<SourceResult<RawJob>>
 }
 
 export interface LeadSource {
   name: string
-  fetch(params: { regions: RegionCode[] }): Promise<SourceResult<RawLead>>
+  fetch(params: FetchParams): Promise<SourceResult<RawLead>>
 }

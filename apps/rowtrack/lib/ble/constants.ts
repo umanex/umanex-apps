@@ -10,7 +10,11 @@ export const ROWER_DATA_ALT_UUID = '00002acc-0000-1000-8000-00805f9b34fb';
 /** FTMS Control Point Characteristic UUID (0x2AD9) — write 0x01 to RESET session */
 export const FTMS_CONTROL_POINT_UUID = '00002ad9-0000-1000-8000-00805f9b34fb';
 
-/** Device name prefix — Fluid Rower Apollo XL advertises as "Rower XXXX" */
+/**
+ * Device name prefix — fallback naast de geadverteerde FTMS UUID, voor toestellen
+ * die de UUID niet in hun advertisement zetten. De Fluid Rower Apollo XL
+ * adverteert als "Rower XXXX"; zie `rowerCandidate.ts`.
+ */
 export const ROWER_NAME_PREFIX = 'Rower';
 
 /** Scan timeout in milliseconds */

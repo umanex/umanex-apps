@@ -8,7 +8,7 @@ import { cn } from '@umanex/ui/lib/utils'
 import { TermChips } from './TermChips'
 import { valideerZoekopdracht, minimaleVerzoeken, MAX_ZINSNEDES, type Zoekopdracht } from '@/lib/settings'
 
-type Telling = { regio: string; treffers: number; afgekapt: boolean; fout?: string }
+type Telling = { regio: string; treffers: number; afgekapt: boolean; bovengrens: boolean; fout?: string }
 
 type SearchSettingsFormProps = {
   begin: Zoekopdracht
@@ -174,7 +174,10 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
                   <span className="text-destructive">{t.fout}</span>
                 ) : (
                   <>
-                    <span className="w-24 tabular-nums">{t.treffers} treffers</span>
+                    <span className="w-32 tabular-nums">
+                      {t.bovengrens ? 'hoogstens ' : ''}
+                      {t.treffers} treffers
+                    </span>
                     <span className={cn(t.afgekapt && 'text-destructive')}>
                       {t.afgekapt ? 'wordt afgekapt door het plafond' : 'past onder het plafond'}
                     </span>
@@ -185,6 +188,8 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
           </ul>
           <p className="pt-1 text-xs text-muted-foreground">
             Een telling haalt niets op en slaat niets op — hij vraagt alleen het aantal.
+            {tellingen.some((t) => t.bovengrens) &&
+              ' Met woordcombinaties is het een bovengrens: een vacature die op meerdere ervan matcht telt hier meerdere keren, en wordt bij een sync één keer bewaard.'}
           </p>
         </div>
       )}

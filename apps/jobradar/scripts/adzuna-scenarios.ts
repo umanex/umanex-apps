@@ -13,7 +13,7 @@
  *
  * Draaien: node --import ./scripts/ts-resolve.mjs scripts/adzuna-scenarios.ts
  */
-import { adzunaSource, haalMetGeduld } from '../lib/sources/adzuna'
+import { adzunaSource, haalMetGeduld, telTreffers } from '../lib/sources/adzuna'
 import { ADZUNA_SEARCH } from '../lib/config/profile'
 import type { RegionCode } from '../lib/regions'
 
@@ -296,6 +296,71 @@ for (const [naam, body] of [
   await adzunaSource.fetch({ netwerk: SNEL, regions: ['WVL', 'OVL', 'BRU'] })
   const overlappend = volgorde.some((_, i) => i > 0 && volgorde[i]!.startsWith('start') && volgorde[i - 1]!.startsWith('start'))
   check('regio\'s worden serieel opgehaald, niet tegelijk', !overlappend, volgorde.join(' → '))
+}
+
+// ── 11. De deelvraag-laag ───────────────────────────────────────────────────
+// Deze hele laag was ongedekt: drie sloopmutaties bleven 646/646 groen. `telTreffers` werd
+// door geen enkele suite geïmporteerd, alleen door de test-route.
+{
+  const ZOEK_MET_ZIN = { termen: ['ux'], zinsnedes: ['design system', 'user experience'], uitsluiten: [] }
+
+  // Welke verzoeken gaan eruit, en met welke parameter?
+  const urls = stub(() => ({ count: 5, results: [] }))
+  await telTreffers('OVL', ZOEK_MET_ZIN, SNEL)
+  check('één verzoek per deelvraag', urls.length === 3, String(urls.length))
+  check('het eerste verzoek gebruikt what_or', urls[0]?.includes('what_or=ux') === true, urls[0])
+  check('de zinsnede-verzoeken gebruiken what_phrase', urls.slice(1).every((u) => u.includes('what_phrase=')), JSON.stringify(urls.slice(1)))
+  check('een zinsnede-verzoek zet geen what_or', urls.slice(1).every((u) => !u.includes('what_or=')), JSON.stringify(urls.slice(1)))
+  check('elk verzoek vraagt maar één resultaat', urls.every((u) => u.includes('results_per_page=1')))
+
+  // Het plafond geldt PER deelvraag. Dit is de P1: de som tegen een meegroeiende drempel
+  // leggen zette de waarschuwing uit zodra je een zinsnede toevoegde.
+  const PLAFOND = 250
+  stub((_u, _r, _p) => ({ count: PLAFOND + 50, results: [] }))
+  const alleenWoorden = await telTreffers('OVL', { termen: ['ux'], zinsnedes: [], uitsluiten: [] }, SNEL)
+  check('woordenvraag boven het plafond → afgekapt', alleenWoorden.afgekapt === true, JSON.stringify(alleenWoorden))
+
+  // Dezelfde woordenvraag, maar nu met drie zinsnedes die NIETS vinden. De afkapping van de
+  // woordenvraag mag daardoor niet verdwijnen.
+  let beurt = 0
+  stub(() => ({ count: beurt++ === 0 ? PLAFOND + 50 : 0, results: [] }))
+  const metLegeZinnen = await telTreffers('OVL', { termen: ['ux'], zinsnedes: ['a b', 'c d', 'e f'], uitsluiten: [] }, SNEL)
+  check('lege zinsnedes verbergen de afkapping niet', metLegeZinnen.afgekapt === true, JSON.stringify(metLegeZinnen))
+  check('de som telt alleen wat er is', metLegeZinnen.treffers === PLAFOND + 50, String(metLegeZinnen.treffers))
+
+  // Onder het plafond blijft onder het plafond, hoeveel deelvragen er ook zijn.
+  stub(() => ({ count: 10, results: [] }))
+  const rustig = await telTreffers('OVL', ZOEK_MET_ZIN, SNEL)
+  check('alles onder het plafond → niet afgekapt', rustig.afgekapt === false, JSON.stringify(rustig))
+  check('meerdere deelvragen → de som is een bovengrens', rustig.bovengrens === true)
+  const enkel = await telTreffers('OVL', { termen: ['ux'], zinsnedes: [], uitsluiten: [] }, SNEL)
+  check('één deelvraag → geen bovengrens-voorbehoud', enkel.bovengrens === false)
+
+  // Een tijdelijke 429 hoort door de herkansing opgevangen te worden — dat is precies waar
+  // haalMetGeduld voor bestaat, en het is hier per ongeluk ontdekt door een te strenge check.
+  let n = 0
+  stub(() => (n++ === 1 ? 429 : { count: 5, results: [] }))
+  const hersteld = await telTreffers('OVL', ZOEK_MET_ZIN, SNEL)
+  check('een enkele 429 wordt door de herkansing opgevangen', hersteld.fout === undefined, JSON.stringify(hersteld))
+  check('en de telling is volledig', hersteld.treffers === 15, String(hersteld.treffers))
+
+  // Een blijvende fout hoort de telling als geheel ongeldig te maken, niet half.
+  stub(() => 429)
+  const stuk = await telTreffers('OVL', ZOEK_MET_ZIN, SNEL)
+  check('een blijvende 429 geeft een fout terug', stuk.fout !== undefined, JSON.stringify(stuk))
+  check('en geen half getal', stuk.treffers === 0, String(stuk.treffers))
+  check('de foutmelding noemt de oorzaak', /te veel verzoeken/.test(stuk.fout ?? ''), stuk.fout)
+
+  // Ophalen: dubbels tussen deelvragen worden binnen de regio opgeruimd.
+  stub((_u, regio, pagina) =>
+    pagina === 1
+      ? { count: 2, results: [item('gedeeld', PROVINCIE[regio]), item(`${regio}-eigen`, PROVINCIE[regio])] }
+      : { results: [] }
+  )
+  const opgehaald = await adzunaSource.fetch({ netwerk: SNEL, regions: ['OVL'], zoek: ZOEK_MET_ZIN })
+  const ids = opgehaald.items.map((j) => j.externalId)
+  check('dezelfde vacature uit twee deelvragen komt één keer voor', ids.filter((i) => i === 'gedeeld').length === 1, JSON.stringify(ids))
+  check('de waarschuwingen dragen de zinsnede als etiket', opgehaald.warnings.every((w) => !w.includes('design system')) || opgehaald.warnings.some((w) => w.includes('"design system"')), JSON.stringify(opgehaald.warnings))
 }
 
 // ── Tegenproef ───────────────────────────────────────────────────────────────

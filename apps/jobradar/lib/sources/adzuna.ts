@@ -140,7 +140,20 @@ export async function haalMetGeduld(
   return res
 }
 
-export type Telling = { regio: RegionCode; treffers: number; afgekapt: boolean; fout?: string }
+export type Telling = {
+  regio: RegionCode
+  /**
+   * De som over alle deelvragen — een **bovengrens**, geen aantal. Een vacature die zowel op
+   * een los woord als op een zinsnede matcht, telt hier twee keer; de sync bewaart hem één
+   * keer. Het scherm hoort dat te zeggen zodra er meer dan één deelvraag is.
+   */
+  treffers: number
+  /** Waar zodra één deelvraag het plafond raakt — het plafond geldt per deelvraag. */
+  afgekapt: boolean
+  /** Of de som dubbels kan bevatten, d.w.z. of er meer dan één deelvraag was. */
+  bovengrens: boolean
+  fout?: string
+}
 
 /**
  * Telt hoeveel treffers een zoekopdracht in één regio zou opleveren, zonder ze op te halen.
@@ -158,12 +171,11 @@ export async function telTreffers(
   netwerk?: FetchParams['netwerk']
 ): Promise<Telling> {
   const plafond = ADZUNA_SEARCH.maxPaginas * ADZUNA_SEARCH.resultatenPerPagina
+  const vragen = deelvragen(zoek)
   let treffers = 0
+  let afgekapt = false
 
-  // Eén telling per deelvraag: de losse woorden en elke zinsnede zijn aparte verzoeken, dus
-  // ook aparte tellingen. Het totaal is een bovengrens — een vacature die op twee
-  // deelvragen matcht telt hier twee keer, terwijl de sync hem één keer bewaart.
-  for (const vraag of deelvragen(zoek)) {
+  for (const vraag of vragen) {
     try {
       const res = await haalMetGeduld(bouwUrl(regio, 1, vraag, zoek.uitsluiten, { perPagina: 1 }), netwerk)
       if (!res.ok) {
@@ -171,19 +183,23 @@ export async function telTreffers(
           regio,
           treffers: 0,
           afgekapt: false,
+          bovengrens: false,
           fout: res.status === 429 ? 'Adzuna: te veel verzoeken' : `Adzuna: HTTP ${res.status}`,
         }
       }
       const data = (await res.json()) as { count?: unknown }
-      treffers += typeof data?.count === 'number' ? data.count : 0
+      const n = typeof data?.count === 'number' ? data.count : 0
+      treffers += n
+      // Per deelvraag toetsen. De som tegen een meegroeiende drempel leggen zette de
+      // waarschuwing uit zodra je een zinsnede toevoegde — drie zinsnedes die níets vinden
+      // verhoogden de drempel met 750 en verborgen daarmee een afkapping van de woordenvraag.
+      if (n > plafond) afgekapt = true
     } catch (err) {
-      return { regio, treffers: 0, afgekapt: false, fout: err instanceof Error ? err.message : String(err) }
+      return { regio, treffers: 0, afgekapt: false, bovengrens: false, fout: err instanceof Error ? err.message : String(err) }
     }
   }
 
-  // Het plafond geldt per deelvraag, niet over de som — vandaar de vergelijking met het
-  // plafond maal het aantal deelvragen.
-  return { regio, treffers, afgekapt: treffers > plafond * deelvragen(zoek).length }
+  return { regio, treffers, afgekapt, bovengrens: vragen.length > 1 }
 }
 
 /** Haalt één regio volledig op. Gooit niet: de uitkomst draagt zijn eigen fouten. */

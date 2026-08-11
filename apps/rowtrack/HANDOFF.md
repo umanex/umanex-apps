@@ -166,7 +166,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-15 — Geen privacybeleid / rechtsgrond / consent voor (gezondheids)PII · [next-step]
 - **Bevinding:** Security-audit 2026-07-15 **P1-1** (`apps/rowtrack/audits/2026-07-15-security-audit-rowtrack.md`). RowTrack verzamelt e-mail + voornaam én gezondheids-nabije data (hartslag avg/max + volledige per-tick HR-tijdreeks in `workouts.samples`, gewicht/lengte/geboortedatum/geslacht in `profiles`) zonder privacybeleid, rechtsgrond (AVG art. 6), transparantie-notice (art. 13) of consent. Hartslag+biometrie kunnen als bijzondere categorie (art. 9) gelden.
 - **Volgende zet:** Privacybeleid schrijven (verantwoordelijke = umanex/Jeroen, datacategorieën incl. hartslag, rechtsgrond, retentie, verwerker = Supabase) + linken bij signup en in Profiel; expliciete opt-in voor de gezondheidsdata. Niet-code werk — bij Jeroen.
-- **Check:** `curl -s -o /dev/null -w '%{http_code}' https://umanex.be/rowtrack/privacy` → 404 = beleid nog niet bereikbaar, 200 = rond.
+- **Check:** `curl -sL -o /dev/null -w '%{http_code}' https://umanex.be/rowtrack/privacy` → 404 = beleid nog niet bereikbaar, 200 = rond. De `-L` is niet optioneel: umanex.be stuurt apex-verkeer met een 308 naar `www`, en zonder volgen leest de check die redirect als antwoord — een derde uitkomst die de legenda niet kent. (Gemeten 2026-08-11: 308 → `www.umanex.be/rowtrack/privacy` → 404.)
 - **Status:** open — sterk versmald. Gebouwd: het toestemmingsscherm met opt-in en intrekken (`451e251`), het privacybeleid (`812240f`) en een publieke pagina in `apps/rowtrack-web`. **Wat rest is één ding:** `PRIVACY_POLICY_URL` moet ook echt bereikbaar zijn — op 2026-08-07 gaf hij 404. Toestemming die naar een onbereikbaar beleid verwijst is niet "geïnformeerd", dus dit blijft de blocker.
 
 ## 2026-07-15 — Geen in-app account-verwijdering (AVG art. 17 + store-blocker) · [next-step]
@@ -265,7 +265,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — Translucente celebration-card gebruikt hardcoded rgba · [debt]
 - **Bevinding:** `MotivationalToast.tsx` card-bg is `rgba(33, 36, 44, 0.75)` (= `bg.raised` @ 75%) met `// TODO` — er is geen token voor een translucente `bg.raised`. Drift-gevoelig als `bg.raised` wijzigt.
 - **Volgende zet:** Een `bg.raised`-alpha-token (of overlay-token) toevoegen via Tokens Studio → `tokens.json`, rebuilden, de hardcode vervangen.
-- **Check:** `grep -rn "rgba(33, 36, 44, 0.75)" apps/rowtrack` — één treffer (`MotivationalToast.tsx:196`) = er is nog geen translucente `bg.raised`-rol; leeg = token gepusht en vervangen.
+- **Check:** `grep -rn "rgba(33, 36, 44, 0.75)" apps/rowtrack/components` — één treffer (`MotivationalToast.tsx:196`) = er is nog geen translucente `bg.raised`-rol; leeg = token gepusht en vervangen.
 - **Status:** open
 
 ## 2026-07-16 — BLE-replay test-harness voor de workout-flow · [idee]

@@ -77,15 +77,215 @@
 }
 
 /**
+ * Design-laag: achtergronden.
+ *
+ * Elke kleur hieronder is een var()-verwijzing naar een rol uit
+ * @umanex/rowtrack-tokens — er staat geen enkel hex of rauw palet in. Radiale
+ * gradients bestaan niet als Tailwind-utility, vandaar deze component-classes.
+ *
+ * TODO: de MATEN (background-size, spreads, blurs) komen niet uit tokens —
+ * RowTrack's tokenset heeft geen web-effects; zie TOKENS-TODO.md §3 en §4.
+ */
+@layer components {
+  /* Fijn blauwdruk-raster, alleen als textuur onder de hero. */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border-subtle) / 0.6) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border-subtle) / 0.6) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+
+  /* Laat het raster naar de randen oplossen in de basiskleur — geen mask nodig,
+     dus ook geen niet-token zwart: de fade is zelf een token-kleur. */
+  .bg-grid-fade {
+    background: radial-gradient(
+      ellipse 70% 65% at 50% 35%,
+      transparent 30%,
+      hsl(var(--bg-base)) 95%
+    );
+  }
+
+  /* Ambient accentgloed, voor achter de hero-telefoon en de slot-CTA. */
+  .glow-accent {
+    background: radial-gradient(
+      ellipse closest-side,
+      hsl(var(--accent-default) / 0.16),
+      transparent 70%
+    );
+  }
+
+  /* Zachte gloed voor de uitgelichte pricing-kaart. */
+  .card-glow-accent {
+    box-shadow: 0 0 64px 0 hsl(var(--accent-default) / 0.14);
+  }
+
+  /* Gradient-hairlines voor kaartranden (op een p-px wrapper): vol bovenaan,
+     uitlopend naar de subtiele rand. Bewust custom CSS en niet Tailwinds eigen
+     verloop-utility: die draagt de wortel `gradient` en botst daarmee met de
+     gradient-ROLLEN uit de tokenset, dus de guard keurt hem terecht af.
+     accent.muted is een rauwe rgba-rol, vandaar var() zonder hsl()-wrapper. */
+  .hairline-accent {
+    background: linear-gradient(
+      to bottom,
+      hsl(var(--accent-default)),
+      var(--accent-muted) 45%,
+      hsl(var(--border-subtle))
+    );
+  }
+
+  .hairline-achievement {
+    background: linear-gradient(
+      to bottom,
+      hsl(var(--achievement-muted)),
+      hsl(var(--border-subtle)) 45%,
+      hsl(var(--border-subtle))
+    );
+  }
+}
+
+/**
+ * Motion-laag: scroll-onthulling, stagger, lijn-teken, PR-shine.
+ *
+ * Twee poorten, allebei bewust:
+ *
+ * 1. `[data-js]` — de begintoestand (opacity 0) bestaat alleen wanneer JavaScript
+ *    draait en het inline script in layout.tsx het attribuut gezet heeft. Zonder JS
+ *    is er geen verborgen sectie, dus "leesbaar zonder JavaScript" blijft waar.
+ * 2. `prefers-reduced-motion: no-preference` — wie om minder beweging vraagt krijgt
+ *    niet "snelle animatie" maar helemaal géén begintoestand: alles staat direct in
+ *    de eindstaat, ook vóór het scrollen.
+ *
+ * Alles beweegt uitsluitend op transform en opacity (compositor-only), en één keer:
+ * de Reveal-observer koppelt af na de eerste onthulling.
+ *
+ * TODO: duur en easing zijn hier rauwe waarden — RowTrack's tokenset heeft geen
+ * motion-tokens; zie TOKENS-TODO.md §4. Staat die er, dan verandert alleen dit blok.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  [data-js] .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  [data-js] .reveal[data-revealed] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Kinderen van een .reveal-stagger onthullen ná elkaar — pure CSS, geen extra
+     client-component per kaart. Acht slots dekken de langste lijst (7 metrics). */
+  [data-js] .reveal .reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  [data-js] .reveal[data-revealed] .reveal-stagger > * {
+    opacity: 1;
+    transform: none;
+  }
+
+  [data-js] .reveal[data-revealed] .reveal-stagger > *:nth-child(1) { transition-delay: 0.05s; }
+  [data-js] .reveal[data-revealed] .reveal-stagger > *:nth-child(2) { transition-delay: 0.12s; }
+  [data-js] .reveal[data-revealed] .reveal-stagger > *:nth-child(3) { transition-delay: 0.19s; }
+  [data-js] .reveal[data-revealed] .reveal-stagger > *:nth-child(4) { transition-delay: 0.26s; }
+  [data-js] .reveal[data-revealed] .reveal-stagger > *:nth-child(5) { transition-delay: 0.33s; }
+  [data-js] .reveal[data-revealed] .reveal-stagger > *:nth-child(6) { transition-delay: 0.4s; }
+  [data-js] .reveal[data-revealed] .reveal-stagger > *:nth-child(7) { transition-delay: 0.47s; }
+  [data-js] .reveal[data-revealed] .reveal-stagger > *:nth-child(8) { transition-delay: 0.54s; }
+
+  /* Accentlijn onder de eyebrow tekent zichzelf bij onthulling. */
+  [data-js] .reveal .rule-draw {
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+  }
+
+  [data-js] .reveal[data-revealed] .rule-draw {
+    transform: scaleX(1);
+  }
+
+  /* PR-shine: één lichtveeg over de recordkaarten, na de onthulling. De kleur is
+     de achievement-rol — die komt alleen in S6 voor, net als deze class. */
+  .shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shine::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-130%) skewX(-12deg);
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      hsl(var(--achievement-default) / 0.14) 50%,
+      transparent 60%
+    );
+    pointer-events: none;
+  }
+
+  [data-js] .reveal[data-revealed] .shine::after {
+    animation: shine 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.6s both;
+  }
+
+  @keyframes shine {
+    to {
+      transform: translateX(130%) skewX(-12deg);
+    }
+  }
+
+  /* Ambient zweven van de hero-telefoon — de enige doorlopende beweging op de
+     pagina, en ook die alleen bij no-preference. */
+  .float-slow {
+    animation: float 7s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+}
+
+/**
+ * Print kent geen scroll, dus de onthulling vuurt nooit: zonder dit vangnet drukt
+ * een bezoeker lege pagina's af terwijl het scherm er prima uitziet.
+ */
+@media print {
+  .reveal,
+  .reveal .reveal-stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .reveal .rule-draw {
+    transform: none !important;
+  }
+}
+
+/**
  * Reduced motion — harde regel uit de briefing.
  *
  * Alles wat beweegt valt terug op zijn EINDSTAAT: geen beweging, wél volledige
  * zichtbaarheid. Dat laatste is het punt. Een scroll-onthulling die op opacity 0
  * begint en zijn animatie kwijtraakt, laat de sectie onzichtbaar achter — de
- * bezoeker die om minder beweging vroeg, krijgt een lege pagina.
+ * bezoeker die om minder beweging vroeg, krijgt een lege pagina. De motion-laag
+ * hierboven staat daarom volledig achter `no-preference`: bij reduce bestaat er
+ * geen begintoestand die verborgen kan blijven.
  *
- * Vandaar .01ms in plaats van `animation: none`: de animatie draait wel, maar zo
- * kort dat je alleen het eindframe ziet.
+ * Vandaar ook .01ms in plaats van `animation: none`: wat er nog draait (bv. een
+ * hover-transitie) toont alleen het eindframe.
  */
 @media (prefers-reduced-motion: reduce) {
   *,

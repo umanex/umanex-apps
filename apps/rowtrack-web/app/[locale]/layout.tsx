@@ -80,6 +80,16 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={`${sans.variable} ${serif.variable}`}>
       <body>
+        {/* De data-js-gate voor de motion-laag in globals.css. Inline en synchroon,
+            vóór de rest van de body parset: de verborgen begintoestand van de
+            scroll-onthulling bestaat alleen wanneer dit attribuut er staat, dus
+            zonder JavaScript is elke sectie gewoon direct zichtbaar — en een flits
+            van verborgen content kan niet, want het attribuut staat er vóór paint. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.setAttribute('data-js','')",
+          }}
+        />
         {/* Site-brede entiteit; de MobileApplication staat op de onepager zelf. */}
         <JsonLd schema={organisationSchema()} />
         <NextIntlClientProvider messages={messages}>

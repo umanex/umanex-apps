@@ -141,6 +141,22 @@ async function main() {
     if (text.length < 20) fail(`${where} rendert vrijwel niets (${text.length} tekens)`);
     else ok(`${where} → ${status}, ${text.length} tekens tekst`);
     if (SHOT) {
+      // Eerst de hele pagina doorscrollen, in viewport-stappen. De scroll-onthulling
+      // (IntersectionObserver) vuurt alleen voor content die echt in beeld komt, en
+      // een fullPage-capture rendert buiten de viewport zonder dat ooit te doen —
+      // zonder deze doorloop legt de screenshot secties op opacity 0 vast: een leeg
+      // beeld van een werkende pagina. Scrollen is bovendien precies wat een echte
+      // bezoeker doet, dus dit ís de eindstaat die het beeld moet bewijzen.
+      await page.evaluate(async () => {
+        const step = Math.max(200, Math.floor(window.innerHeight * 0.8));
+        for (let y = 0; y <= document.body.scrollHeight; y += step) {
+          window.scrollTo(0, y);
+          await new Promise((r) => setTimeout(r, 120));
+        }
+        window.scrollTo(0, 0);
+      });
+      // De langste reveal-transitie (0.7s + stagger) uit laten lopen vóór de capture.
+      await page.waitForTimeout(1000);
       const name = route === '/' ? 'index' : route.replace(/\//g, '-').replace(/^-/, '');
       const file = resolve(process.cwd(), `${SHOT}/${name}.png`);
       await page.screenshot({ path: file, fullPage: true });

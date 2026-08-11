@@ -32,6 +32,30 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-08-11 — Subtitle-action vuurt niet op synthetische taps; ALLE's a11y-frame staat scheef · [risico]
+- **Bevinding:** Bij de sim-verify van #257-261: de `Subtitle`-action (WIJZIG op Home én Profiel)
+  opent de GoalSheet niet bij Maestro/XCTest-taps — 4 pogingen, twee adresseer-modi (punt-tap op de
+  exacte visuele positie én a11y-tekst-tap; WIJZIG's a11y-frame [299,195][382,211]pt klopt met de
+  render, de tap landde op (340,203)pt, dead-center). Andere touchables (tabbar, Splits/Hartslag-
+  toggle) vuren in dezelfde runs wél. Dit is exact het F3-symptoom uit de UX-audit van 2026-07-16
+  ("5+ pixel-precieze robot-kliks vuurden nooit") — de hitSlop-fix uit `162eb45` heeft het dus níet
+  weggenomen; die vergrootte het raakvlak, maar het mechanisme dat synthetische taps laat
+  verdwijnen zit ergens anders. Daarbovenop een tweede defect: **ALLE's a11y-frame staat ~240pt te
+  hoog** ([318,296][382,312]pt gerapporteerd terwijl de tekst op ~543pt rendert) — een tap op het
+  a11y-frame landt midden in de doelkaart. VoiceOver gebruikt diezelfde frames: de focus-rechthoek
+  tekent daar dus verkeerd en dubbeltik-activatie kan op beide plekken falen. Dat raakt de
+  VoiceOver-pass die nog openstaat. Vinger-op-toestel vuurde WIJZIG wél (Jeroens waarneming,
+  vóór de fix), dus het gebruikerspad werkt vermoedelijk — bewezen is dat niet.
+- **Check:** Maestro-miniflow: `launchApp` → `tapOn: "(?i).*wijzig.*"` → opent de GoalSheet
+  (Opslaan zichtbaar)? Nee = het item leeft. De flow-yamls van deze run staan niet in git; zes
+  regels, zo herschreven.
+- **Volgende zet:** Twee sporen. (a) Bij de VoiceOver-pass op het toestel expliciet WIJZIG en ALLE
+  proberen te focussen en activeren — dat beslist of dit assistive tech raakt of alleen
+  test-tooling. (b) BOUW-diagnose in `components/Subtitle.tsx`: waarom slikt de row synthetische
+  taps in (Fabric/New-Arch touch-hittest?) en waarom rapporteert ALLE's node een verschoven frame;
+  de `onEdit`-bedrading zelf is correct (`setGoalSheetOpen(true)`, app/(tabs)/index.tsx:216).
+- **Status:** open
+
 ## 2026-08-11 — Adverteert de Apollo XL FTMS? · [onzekerheid]
 - **Bevinding:** De rower-scan matcht sinds PR #276 primair op de geadverteerde FTMS UUID (0x1826), met naam-prefix "Rower" als vangnet. Of de Fluid Rower Apollo XL die UUID adverteert is niet vastgesteld — BLE-scan kan niet op de simulator. Adverteert hij hem wél, dan kan de prefix eruit en kan het filter op OS-niveau (`startDeviceScan([FTMS_SERVICE_UUID], …)`), wat scanruis en batterij scheelt.
 - **Volgende zet:** Op de fysieke iPhone één scan starten met de Apollo XL aan en in de `[BLE]`-log de `adv:`-regel lezen. Let op: is `adv:` leeg, log dan ook `dev.overflowServiceUUIDs` vóór je concludeert dat hij niet adverteert — iOS parkeert service-UUIDs van sommige toestellen in de overflow area, en het predicaat leest alleen `serviceUUIDs`. De uitkomst documenteren in het commentaar van `apps/rowtrack/lib/ble/rowerCandidate.ts`, dan beslissen: prefix-vangnet houden of verwijderen.
@@ -532,7 +556,21 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
      die horen "Voornaam, Jeroen, knop" te zeggen — hoor je alleen "Voornaam", dan schrijft ergens
      een expliciet label de waarde weg.
 - **Check:** Alleen jij (of een sessie met de sim) kunt dit beantwoorden: heb je dev-active, de Home-states en de GoalSheet-guard bekeken? Nee = open — niets in git legt een render vast.
-- **Status:** open
+- **Sim-run 2026-08-11 (verify, dev-client + verse Metro-bundle):** punten 1 t/m 3 grotendeels
+  gehaald, punt 4 geblokkeerd. **(1) Getalweergave ✓** — dev-active distance toont `7.500` /
+  `2.500 m | 25%` (punt-duizendtal + spatie), summary toont `2,50 km` (komma-decimaal) naast
+  `48 kcal`/`95 SLAGEN`; historiek-detail (rit 9 aug) toont `12,00 km` naast `1.137` slagen op één
+  scherm, en de Splits-tab `2:16,1 /500m` met komma-decimalen in de hele tabel. GEM/PIEK-tabellen
+  renderen, `—` voor lege waarden, geen crash. **(2) Coaching-zin ✓** — watts-variant: "Je levert
+  10 W minder dan je doel" netjes binnen de marges; split-variant (verschil 0): "Je zit op
+  doeltempo". **(3) Home-states deels** — in 12 frames over 3 cold starts géén "roeier"-flits en
+  géén sectie-pop-in; het skelet zelf was niet te vangen (datavenster < 150 ms op de sim) en de
+  foutstaat vergt netwerk-knippen (niet gedaan). Geen-doel-CTA en GoalSheet-guard niet toetsbaar:
+  de sim is ingelogd op het échte account (jeroen@ikbenjeroen.be, doel aanwezig) — geen writes.
+  **(4) GoalSheet-guard geblokkeerd** — zie de Subtitle-entry van 2026-08-11 hieronder: de
+  WIJZIG-actie vuurt niet op synthetische taps, dus de sheet is met Maestro niet te openen.
+  Punten 5 t/m 7 (tabs-oordeel, dynamic type, VoiceOver) blijven bij jou.
+- **Status:** open — rest: skelet/foutstaat, geen-doel-CTA + guard (vergt testaccount op de sim), en jouw punten 5-7
 
 ## 2026-08-10 — HR-verbinding: de regel is bewezen, de bedrading gelezen · [risico]
 - **Bevinding:** `hrLink.ts` heeft elf scenario's en een tegenproef (de bug terugzetten laat er 9

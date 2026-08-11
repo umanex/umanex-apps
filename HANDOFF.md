@@ -35,11 +35,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-08-10 — De laag-discipline-guard ziet kale hex in CSS niet · [debt]
 - **Bevinding:** De regel `hardcoded-color` in `packages/tokens/scripts/guard.mjs` matcht alleen Tailwinds arbitrary-syntax (`bg-[#fff]`), niet een gewone `color: #ff0000` in een `.css`-bestand of een `fill="#..."` in een SVG — terwijl de docstring van diezelfde guard juist zegt dat hij bestaat omdat ESLint die twee niet ziet. Ontdekt doordat een tegenproef níet afging waar ik hem verwachtte.
 - **Volgende zet:** Het gat is klein en gemeten: kale hex komt in álle guard-scopes samen **één keer** voor, in `apps/cashflow/scripts/render-charts.tsx:149` (inline `<style>` in een preview-script). Een zevende regel toevoegen kost dus één baseline-entry of één refactor. Niet zelf gedaan: het verbreedt een guard die vier apps raakt.
+- **Check:** `grep -c "id: '" packages/tokens/scripts/guard.mjs` — 7 = status quo (zes regels + font-token-drift), de kale-hex-regel is er nog niet; 8+ = er is een regel bij, toets of die kale hex in CSS/SVG dekt.
 - **Status:** open
 
 ## 2026-08-10 — hexToHslTriplet staat nu in twee pakketten · [debt]
 - **Bevinding:** `packages/rowtrack-tokens/lib/hslTriplet.mjs` is een bewuste kopie van `packages/tokens/lib/hslTriplet.mjs`. De afweging: de twee token-pipelines zijn onafhankelijk ontworpen, en een import ertussen creëert een koppeling waar er geen hoort — voor een pure functie van vijftig regels. Prijs: verandert de afrondingsstrategie, dan moet dat op twee plekken.
 - **Volgende zet:** Niets, tenzij er een derde consument komt. Dan is een gedeeld `packages/color-utils` goedkoper dan een derde kopie.
+- **Check:** `grep -rln hexToHslTriplet packages/ apps/ | wc -l` — 4 = status quo (twee kopieën + hun twee builds); 5+ = er is een derde consument en het gedeelde pakket wordt goedkoper dan een derde kopie.
 - **Status:** open
 
 ## 2026-08-04 — React 18 en 19 delen één platte node_modules · [risico]
@@ -154,6 +156,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   beoordeling, geen defect.
 - **Volgende zet:** De pill in jobradar naast de kaart beoordelen en beslissen: bruin houden, of
   een eigen rol voor een pil-achtergrond met donkere tekst erop (dan haalt helder amber wél AA).
+- **Check:** `grep -n "'warning'" apps/jobradar/components/ScoreBadge.tsx` — treffer = de pill hangt nog aan de generieke warning-rol (het bruin uit de contrastfix); leeg = er is een eigen rol gekozen en het besluit is gevallen.
 - **Status:** open
 
 ## 2026-08-05 — Een nieuwe token-set levert stil geen output · [risico]

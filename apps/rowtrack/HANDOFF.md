@@ -32,6 +32,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-08-11 — Adverteert de Apollo XL FTMS? · [onzekerheid]
+- **Bevinding:** De rower-scan matcht sinds PR #276 primair op de geadverteerde FTMS UUID (0x1826), met naam-prefix "Rower" als vangnet. Of de Fluid Rower Apollo XL die UUID adverteert is niet vastgesteld — BLE-scan kan niet op de simulator. Adverteert hij hem wél, dan kan de prefix eruit en kan het filter op OS-niveau (`startDeviceScan([FTMS_SERVICE_UUID], …)`), wat scanruis en batterij scheelt.
+- **Volgende zet:** Op de fysieke iPhone één scan starten met de Apollo XL aan en in de `[BLE]`-log de `adv:`-regel lezen. Let op: is `adv:` leeg, log dan ook `dev.overflowServiceUUIDs` vóór je concludeert dat hij niet adverteert — iOS parkeert service-UUIDs van sommige toestellen in de overflow area, en het predicaat leest alleen `serviceUUIDs`. De uitkomst documenteren in het commentaar van `apps/rowtrack/lib/ble/rowerCandidate.ts`, dan beslissen: prefix-vangnet houden of verwijderen.
+- **Check:** `grep -n "is nog niet op het toestel" apps/rowtrack/lib/ble/rowerCandidate.ts` — treffer = de uitkomst is nog niet gedocumenteerd en dit item leeft; leeg = gedocumenteerd, item resolved.
+- **Status:** open
+
 ## 2026-08-05 — Unieke index op workouts staat nog niet in de database · [next-step]
 - **Bevinding:** `supabase/migrations/add_workouts_unique_started_at.sql` staat op main maar is niet toegepast. Zolang die index ontbreekt, dekt de client alleen de race binnen één app-run: wordt de app afgesloten tussen een geslaagde insert en het wissen van de pending-slot, dan schrijft de volgende start dezelfde rit nog een keer weg en telt elke KPI-som hem dubbel.
 - **Volgende zet:** Het bestand in de Supabase SQL Editor draaien (deze repo past migrations handmatig toe). Daarna controleren dat een tweede drain-poging netjes foutcode 23505 geeft in plaats van een tweede rij.
@@ -271,7 +277,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-07-16 — BLE-replay test-harness voor de workout-flow · [idee]
 - **Bevinding:** De workout→save→summary-flow is niet testbaar zonder fysieke erg; deze sessie liep daar herhaaldelijk tegenaan (auto-save flow enkel per stuk geverifieerd).
 - **Volgende zet:** Een harness die een opgenomen FTMS-packetreeks (fixture) door `useWorkoutMetrics` + `useGoalProgress` + de save-flow speelt, zodat dubbel-save/empty-guard/disconnect-timing deterministisch getest worden. Bouwt voort op de bestaande `dev-active`-harness.
-- **Check:** `git ls-files apps/rowtrack | grep -Ei 'replay|fixture|\.test\.ts$'` — alleen `lib/ble/adapterReady.test.ts` en `lib/ble/hrLink.test.ts` (BLE-bedrading) = nog geen packetreeks die door `useWorkoutMetrics` en de save-flow loopt.
+- **Check:** `git ls-files apps/rowtrack | grep -Ei 'replay|fixture|\.test\.ts$'` — alleen `lib/ble/adapterReady.test.ts`, `lib/ble/hrLink.test.ts` en `lib/ble/rowerCandidate.test.ts` (BLE-bedrading, geen flow) = nog geen packetreeks die door `useWorkoutMetrics` en de save-flow loopt.
 - **Status:** open
 
 ## 2026-07-16 — UX-audit P1: WIJZIG-doellink onraakbaar/mogelijk dood + sub-44pt targets · [risico]

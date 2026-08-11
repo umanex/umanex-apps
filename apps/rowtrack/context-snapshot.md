@@ -58,19 +58,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+2810551 feat(rowtrack): accept any FTMS-advertising rower in device scan
 be05bdb docs(rowtrack): fix two checks that could not answer themselves
 a3b58f1 docs(rowtrack): give all 26 open entries a check that can answer them
 4509585 Merge pull request #266 from umanex/docs/rowtrack-handoff-opruiming
 c8c4f37 docs(rowtrack): close the entries that shipped code already settled
-9a2bc2e chore: sync umanex-os layer with global umanex-os
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/lib/ble/ble-service.ts
-  M  apps/rowtrack/lib/ble/constants.ts
-  A  apps/rowtrack/lib/ble/rowerCandidate.test.ts
-  A  apps/rowtrack/lib/ble/rowerCandidate.ts
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

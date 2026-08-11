@@ -51,4 +51,4 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** De 7 metric-kaarten in een 4-koloms grid eindigen op 4+3 met een leeg vierde slot (P2/P3-grens uit de ux-audit). Opties: laatste kaart laten spannen, terug naar 3 kolommen, of de rij bewust zo laten.
 - **Waarom niet nu:** Een achtste kaart verzinnen mag niet (waarheidstabel); de overige opties zijn smaak en verdienen een blik van Jeroen in plaats van een stille keuze.
 - **Eerste zet:** Twee varianten naast elkaar renderen (`col-span`-variant vs. 3-koloms) en kiezen.
-- **Status:** open
+- **Status:** gebouwd — Jeroen koos 2026-08-11 zelf voor een achtste kaart; SLAGEN (FTMS-totaal, in de waarheidstabel) vult het slot als 4+4-grid, expliciet geformuleerd als totaal-na-afloop. Zit in PR #274.

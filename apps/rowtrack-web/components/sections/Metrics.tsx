@@ -9,10 +9,12 @@ type Metric = { label: string; unit: string; note: string };
 /**
  * S3 — Live metrics.
  *
- * Zeven kaarten, precies de zeven KPI's die het active-workout-scherm kent. De
- * voetnoot is niet optioneel: hartslag komt van een losse band en calorieën worden
- * berekend, en zonder die twee zinnen leest de lijst als zeven dingen die de
- * roeimachine meet.
+ * Acht kaarten in een 4+4-grid: de zeven KPI's die het active-workout-scherm kent,
+ * plus SLAGEN — dat totaal komt uit dezelfde FTMS-stroom (waarheidstabel) en staat
+ * in de samenvatting; de kaarttekst zegt dat expliciet, dus er is geen valse
+ * live-claim. De voetnoot is niet optioneel: hartslag komt van een losse band en
+ * calorieën worden berekend, en zonder die twee zinnen leest de lijst als dingen
+ * die de roeimachine allemaal zelf meet.
  */
 export const Metrics = async () => {
   const t = await getTranslations('metrics');

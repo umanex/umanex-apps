@@ -22,6 +22,7 @@ export const Hero = async () => {
     <section id="hero" className="relative overflow-hidden">
       <div aria-hidden="true" className="bg-grid absolute inset-0" />
       <div aria-hidden="true" className="bg-grid-fade absolute inset-0" />
+      <div aria-hidden="true" className="hero-wash absolute inset-0" />
       <div
         aria-hidden="true"
         className="glow-accent absolute -top-24 right-0 h-96 w-96 md:-right-24"

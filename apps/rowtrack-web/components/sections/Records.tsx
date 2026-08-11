@@ -33,7 +33,7 @@ export const Records = async () => {
               key={item.name}
               className="shine hairline-achievement rounded-card border border-transparent"
             >
-              <div className="h-full rounded-card bg-bg-base p-6">
+              <div className="card-sheen h-full rounded-card bg-bg-base p-6">
                 <p className="font-serif text-2xl text-achievement">{item.name}</p>
                 <p className="mt-3 leading-relaxed text-fg-secondary">{item.note}</p>
               </div>

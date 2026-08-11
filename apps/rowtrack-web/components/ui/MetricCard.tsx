@@ -15,7 +15,7 @@ type Props = {
  * blijft voorbehouden aan de hover-staat, conform de accent-afspraak uit de briefing.
  */
 export const MetricCard = ({ label, unit, note }: Props) => (
-  <li className="rounded-card border border-border-subtle bg-bg-raised p-5 shadow-button-outline transition duration-300 hover:-translate-y-1 hover:border-accent">
+  <li className="card-sheen rounded-card border border-border-subtle bg-bg-raised p-5 transition duration-300 hover:-translate-y-1 hover:border-accent">
     <p className="flex items-baseline justify-between gap-2">
       <span className="text-xs font-semibold uppercase tracking-widest text-fg-tertiary">
         {label}

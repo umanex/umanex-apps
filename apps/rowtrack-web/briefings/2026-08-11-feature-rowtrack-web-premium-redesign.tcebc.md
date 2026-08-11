@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** apps/rowtrack-web
 - **Klant:** umanex (eigen product)
-- **Status:** gevalideerd (iteratie 2/3 — code-review 15 bevindingen, alle verwerkt; herverificatie groen incl. hover-lift- en chunk-faal-tegenproef)
+- **Status:** gevalideerd (iteratie 3 — designfeedback Jeroen verwerkt; guard, builds, harness, state- en hover-checks opnieuw groen)
 
 ---
 
@@ -71,9 +71,11 @@ van 2026-08-09 (typologie, states, interactie en edge cases erven van wat er sta
 
 ## Acceptatie
 
-- [x] Alle S1-S11 secties + subpagina's renderen met identieke copy-keys uit
-      `messages/nl.json`; geen key toegevoegd, verwijderd of gewijzigd —
-      `messages/` staat niet in de diff; harness rendert alle routes
+- [x] Alle S1-S11 secties + subpagina's renderen met de copy-keys uit
+      `messages/nl.json`; één sanctioneerde uitzondering op "geen nieuwe keys":
+      het achtste metrics-item SLAGEN (designfeedback Jeroen 2026-08-11, binnen
+      de waarheidstabel — FTMS-slagen, geformuleerd als totaal-na-afloop);
+      harness rendert alle routes
 - [x] Routes, metadata, JSON-LD, robots en sitemap onaangeraakt — geen van
       `lib/schema.ts`, `lib/metadata.ts`, `app/robots.ts`, `app/sitemap.ts` in de diff
 - [x] Eén `<h1>`, één `<h2>` per sectie — SectionHeading/FinalCta dragen dezelfde
@@ -127,3 +129,15 @@ van 2026-08-09 (typologie, states, interactie en edge cases erven van wat er sta
   screenshots (`animations: 'disabled'`), subpagina's kregen de beloofde
   typografische laag, en het accent-beleid staat nu expliciet in CONSTRAINTS in
   plaats van impliciet in een afvink-formulering.
+- 2026-08-11: **Iteratie 3 — designfeedback van Jeroen op het gevalideerde voorstel.**
+  (1) Lichte gradients door het geheel voor meer dynamiek: raised secties faden
+  naar de basiskleur, kaarten krijgen een subtiele licht-sheen bovenaan. (2) De
+  telefoonbeelden krijgen diepte via dropshadow + subtiele accentglow. (3) Het
+  quoteblock-met-linkerrand-patroon (Compat-callout, Analysis-tabs) is verboden
+  patroon — vervangen door een neutrale kaart resp. pill-stijl tab-labels die het
+  app-UI spiegelen. (4) De live-metrics-grid gaat naar **acht** kaarten (4+4) voor
+  visueel evenwicht; de achtste is SLAGEN — FTMS levert het slagen-totaal
+  (waarheidstabel) en de samenvatting toont het; de kaart formuleert dat expliciet
+  als totaal-na-afloop, geen valse live-claim. Dit voegt één copy-key toe aan
+  `messages/nl.json` — bewuste afwijking van "geen nieuwe copy-keys", op vraag van
+  Jeroen. Lost meteen het BACKLOG-item "Metrics-grid laat een leeg slot" op.

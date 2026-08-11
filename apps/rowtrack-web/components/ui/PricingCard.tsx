@@ -30,7 +30,7 @@ export const PricingCard = ({ name, price, period, features, featured = false, b
       featured ? 'card-glow-accent hairline-accent' : 'bg-border-subtle'
     }`}
   >
-    <div className="h-full rounded-card bg-bg-raised p-6">
+    <div className="card-sheen h-full rounded-card bg-bg-raised p-6">
       <div className="flex items-start justify-between gap-4">
         <h3 className="text-lg text-fg-primary">{name}</h3>
         {badge ? (

@@ -28,7 +28,8 @@
       { "label": "AFSTAND", "unit": "m", "note": "Meegeteld vanaf je eerste haal." },
       { "label": "TIJD", "unit": "min", "note": "Verstreken tijd, of wat er nog rest bij een doel." },
       { "label": "HARTSLAG", "unit": "bpm", "note": "Vraagt een losse bluetooth-hartslagband." },
-      { "label": "CALORIEËN", "unit": "kcal", "note": "Berekend uit je vermogen en je gewicht — een schatting." }
+      { "label": "CALORIEËN", "unit": "kcal", "note": "Berekend uit je vermogen en je gewicht — een schatting." },
+      { "label": "SLAGEN", "unit": "totaal", "note": "Elke haal geteld tijdens het roeien; het totaal staat in je samenvatting." }
     ],
     "footnote": "Hartslag komt van een aparte bluetooth-borstband, niet van de roeimachine. Calorieën worden berekend; vul je geen gewicht in, dan rekent de app met een standaardwaarde."
   },

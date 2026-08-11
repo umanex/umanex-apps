@@ -23,7 +23,7 @@ export const Section = ({ id, children, raised = false }: Props) => (
     id={id}
     className={
       raised
-        ? 'relative overflow-hidden border-t border-border-subtle bg-bg-elevated'
+        ? 'band-gradient relative overflow-hidden border-t border-border-subtle bg-bg-elevated'
         : 'relative overflow-hidden'
     }
   >

@@ -28,7 +28,7 @@ export const Goals = async () => {
           {modes.map((mode) => (
             <li
               key={mode.name}
-              className="rounded-card border border-border-subtle bg-bg-base p-5 text-center transition duration-300 hover:-translate-y-1 hover:border-border-strong"
+              className="card-sheen rounded-card border border-border-subtle bg-bg-base p-5 text-center transition duration-300 hover:-translate-y-1 hover:border-border-strong"
             >
               <p className="text-lg text-fg-primary">{mode.name}</p>
               <p className="mt-1 text-sm tabular-nums text-fg-tertiary">{mode.range}</p>

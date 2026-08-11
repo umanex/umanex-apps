@@ -141,6 +141,36 @@
       hsl(var(--border-subtle))
     );
   }
+
+  /* Subtiele licht-sheen bovenaan een kaart. Bewust background-IMAGE: hij stapelt
+     op de background-COLOR van de kaart-utility (bg-bg-raised e.d.) in plaats van
+     hem te vervangen. De "lichtkleur" is fg.primary op lage alpha — geen wit. */
+  .card-sheen {
+    background-image: linear-gradient(180deg, hsl(var(--fg-primary) / 0.045), transparent 45%);
+  }
+
+  /* Raised secties lopen van elevated bovenaan uit naar de basiskleur onderaan —
+     de banden ademen in plaats van te blokken. De bg-kleur-utility blijft staan
+     als fallback onder de image. */
+  .band-gradient {
+    background-image: linear-gradient(180deg, hsl(var(--bg-elevated)), hsl(var(--bg-base)));
+  }
+
+  /* Diagonale accentwas over de hero, boven het raster en onder de gloed. */
+  .hero-wash {
+    background: linear-gradient(120deg, hsl(var(--accent-default) / 0.06), transparent 55%);
+  }
+
+  /* Diepte voor de telefoonframes: het inset-toplicht van het frame (de
+     shadow-rol als var, zodat hij composeert), een dropshadow en een subtiele
+     accentglow. TODO: de zwart-alpha is een rauwe waarde — er bestaan geen
+     effect-tokens (TOKENS-TODO.md §4); zelfde regime als Tailwinds shadow-schaal. */
+  .phone-depth {
+    box-shadow:
+      var(--shadow-button-outline),
+      0 24px 48px -12px rgb(0 0 0 / 0.55),
+      0 0 72px 0 hsl(var(--accent-default) / 0.12);
+  }
 }
 
 /**

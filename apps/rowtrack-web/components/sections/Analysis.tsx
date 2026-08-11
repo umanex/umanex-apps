@@ -29,14 +29,15 @@ export const Analysis = async () => {
           </Reveal>
 
           <Reveal>
-            <dl className="reveal-stagger mt-10 space-y-6">
+            {/* De tabnamen als pills — zo tonen de tabs zich ook in de app. Het
+                eerdere linkerrand-patroon is afgekeurd (designfeedback 2026-08-11). */}
+            <dl className="reveal-stagger mt-10 space-y-7">
               {tabs.map((tab) => (
-                <div
-                  key={tab.name}
-                  className="rounded-highlight-row border-l border-border-strong pl-5"
-                >
-                  <dt className="text-lg text-fg-primary">{tab.name}</dt>
-                  <dd className="mt-1 leading-relaxed text-fg-secondary">{tab.note}</dd>
+                <div key={tab.name}>
+                  <dt className="card-sheen inline-flex items-center rounded-pill border border-border-strong bg-bg-raised px-4 py-1.5 text-sm font-medium text-fg-primary">
+                    {tab.name}
+                  </dt>
+                  <dd className="mt-3 leading-relaxed text-fg-secondary">{tab.note}</dd>
                 </div>
               ))}
             </dl>

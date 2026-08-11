@@ -44,7 +44,16 @@ export type SourceResult<T> = {
  * `zoek` is optioneel zodat een bron die er niets mee doet hem kan negeren, en zodat een
  * aanroeper zonder database (een test, een telling) de standaard krijgt.
  */
-export type FetchParams = { regions: RegionCode[]; zoek?: Zoekopdracht }
+export type FetchParams = {
+  regions: RegionCode[]
+  zoek?: Zoekopdracht
+  /**
+   * Timing en herkansingen, injecteerbaar. Productie geeft niets mee en krijgt de waarden
+   * uit de configuratie; een suite zet de pauzes op 0 zodat hij het retry-pad kan uitrijden
+   * zonder er secondenlang op te wachten.
+   */
+  netwerk?: { pauzeMs?: number; retries?: number; retryPauzeMs?: number }
+}
 
 export interface JobSource {
   name: string

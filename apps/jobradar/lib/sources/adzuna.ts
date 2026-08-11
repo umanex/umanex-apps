@@ -86,6 +86,42 @@ export function normaliseerAdzunaItem(item: AdzunaItem): RawJob | null {
   }
 }
 
+const wacht = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+/**
+ * Eén verzoek, met een pauze vooraf en een herkansing bij 429.
+ *
+ * Adzuna stuurt geen limiet-headers, dus we kunnen niet vooruit kijken — alleen netjes
+ * doseren en, als het toch misgaat, even wachten en het nog eens proberen. Zonder dit stopte
+ * één 429 de hele regio bij die pagina en kwam de rest pas de vólgende sync binnen.
+ *
+ * `injecteerFetch` bestaat alleen om de suite dit pad te laten uitrijden zonder netwerk en
+ * zonder echte wachttijden.
+ */
+export async function haalMetGeduld(
+  url: string,
+  opties: { pauzeMs?: number; retries?: number; retryPauzeMs?: number; fetcher?: typeof fetch } = {}
+): Promise<Response> {
+  const pauze = opties.pauzeMs ?? ADZUNA_SEARCH.pauzeMs
+  const retries = opties.retries ?? ADZUNA_SEARCH.retriesBij429
+  const retryPauze = opties.retryPauzeMs ?? ADZUNA_SEARCH.retryPauzeMs
+  const doe = opties.fetcher ?? fetch
+
+  let res = await (async () => {
+    if (pauze > 0) await wacht(pauze)
+    return doe(url, { headers: { Accept: 'application/json' } })
+  })()
+
+  for (let poging = 0; poging < retries && res.status === 429; poging++) {
+    // Lineair oplopend: 2s, dan 4s. Exponentieel is hier overdreven — het gaat om een
+    // handvol verzoeken, niet om een verkeersstorm.
+    await wacht(retryPauze * (poging + 1))
+    res = await doe(url, { headers: { Accept: 'application/json' } })
+  }
+
+  return res
+}
+
 export type Telling = { regio: RegionCode; treffers: number; afgekapt: boolean; fout?: string }
 
 /**
@@ -98,12 +134,14 @@ export type Telling = { regio: RegionCode; treffers: number; afgekapt: boolean; 
  *
  * Gooit niet: een gefaalde telling is een uitkomst, geen uitzondering.
  */
-export async function telTreffers(regio: RegionCode, zoek: Zoekopdracht): Promise<Telling> {
+export async function telTreffers(
+  regio: RegionCode,
+  zoek: Zoekopdracht,
+  netwerk?: FetchParams['netwerk']
+): Promise<Telling> {
   const plafond = ADZUNA_SEARCH.maxPaginas * ADZUNA_SEARCH.resultatenPerPagina
   try {
-    const res = await fetch(bouwUrl(regio, 1, zoek, { perPagina: 1 }), {
-      headers: { Accept: 'application/json' },
-    })
+    const res = await haalMetGeduld(bouwUrl(regio, 1, zoek, { perPagina: 1 }), netwerk)
     if (!res.ok) {
       return { regio, treffers: 0, afgekapt: false, fout: res.status === 429 ? 'Adzuna: te veel verzoeken' : `Adzuna: HTTP ${res.status}` }
     }
@@ -116,7 +154,11 @@ export async function telTreffers(regio: RegionCode, zoek: Zoekopdracht): Promis
 }
 
 /** Haalt één regio volledig op. Gooit niet: de uitkomst draagt zijn eigen fouten. */
-async function haalRegio(regio: RegionCode, zoek: Zoekopdracht): Promise<SourceResult<RawJob>> {
+async function haalRegio(
+  regio: RegionCode,
+  zoek: Zoekopdracht,
+  netwerk: FetchParams['netwerk']
+): Promise<SourceResult<RawJob>> {
   const items: RawJob[] = []
   const warnings: string[] = []
   let buitenRegio = 0
@@ -132,9 +174,13 @@ async function haalRegio(regio: RegionCode, zoek: Zoekopdracht): Promise<SourceR
   for (let pagina = 1; pagina <= ADZUNA_SEARCH.maxPaginas; pagina++) {
     let data: AdzunaResponse
     try {
-      const res = await fetch(bouwUrl(regio, pagina, zoek), { headers: { Accept: 'application/json' } })
+      const res = await haalMetGeduld(bouwUrl(regio, pagina, zoek), netwerk)
       if (!res.ok) {
-        warnings.push(`${regio}: HTTP ${res.status} op pagina ${pagina} — regio deels opgehaald`)
+        warnings.push(
+          res.status === 429
+            ? `${regio}: Adzuna weigerde na ${ADZUNA_SEARCH.retriesBij429} herkansingen (429) op pagina ${pagina} — regio deels opgehaald`
+            : `${regio}: HTTP ${res.status} op pagina ${pagina} — regio deels opgehaald`
+        )
         afgebrokenDoorFout = true
         break
       }
@@ -190,7 +236,7 @@ async function haalRegio(regio: RegionCode, zoek: Zoekopdracht): Promise<SourceR
 export const adzunaSource: JobSource = {
   name: 'adzuna',
 
-  async fetch({ regions, zoek = standaardZoekopdracht() }: FetchParams): Promise<SourceResult<RawJob>> {
+  async fetch({ regions, zoek = standaardZoekopdracht(), netwerk }: FetchParams): Promise<SourceResult<RawJob>> {
     if (isMockMode()) {
       return { items: ADZUNA_JOB_FIXTURES.filter((job) => regions.includes(job.region)), warnings: ['adzuna: MOCK-MODUS — dit zijn verzonnen vacatures, geen echte'] }
     }
@@ -201,8 +247,13 @@ export const adzunaSource: JobSource = {
       return { items: [], warnings: ['adzuna: ADZUNA_APP_ID/ADZUNA_APP_KEY ontbreken — niets opgehaald'] }
     }
 
-    // Per regio afzonderlijk, en fouten reizen mee in plaats van de hele bron te vellen.
-    const perRegio = await Promise.all(regions.map((regio) => haalRegio(regio, zoek)))
+    // Serieel, niet parallel. Drie regio's tegelijk was het burst-patroon dat de 429's
+    // uitlokte; een sync mag rustig een paar seconden trager zijn. Fouten reizen nog steeds
+    // mee in plaats van de hele bron te vellen.
+    const perRegio: SourceResult<RawJob>[] = []
+    for (const regio of regions) {
+      perRegio.push(await haalRegio(regio, zoek, netwerk))
+    }
     const warnings = perRegio.flatMap((r) => r.warnings)
 
     // De ankers overlappen fysiek — Brugge (30 km) en Gent (25 km) delen Tielt, Deinze,

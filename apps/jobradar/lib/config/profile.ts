@@ -200,6 +200,21 @@ export const ADZUNA_SEARCH = {
    * waarom we hem zelf bouwen in plaats van `redirect_url` te gebruiken.
    */
   siteHost: 'www.adzuna.be',
+  /**
+   * Hoe beleefd we vragen.
+   *
+   * Adzuna stuurt géén limiet-headers mee — geen `X-RateLimit-Remaining`, geen
+   * `Retry-After` — dus je kunt niet zien hoeveel je nog hebt; een 429 is het enige
+   * signaal. Op 2026-08-10 en -11 kwamen die er meerdere, en het patroon was van ons:
+   * drie regio's tegelijk, pagina's zo snel als het netwerk toeliet, geen retry.
+   *
+   * `pauzeMs` zit tussen twee opeenvolgende verzoeken, `retriesBij429` is hoe vaak we het
+   * na een wachttijd nog eens proberen. Een sync duurt daardoor seconden langer en dat is
+   * de bedoeling: onvolledige data kost meer dan een trage sync.
+   */
+  pauzeMs: 300,
+  retriesBij429: 2,
+  retryPauzeMs: 2000,
 } as const
 
 /**

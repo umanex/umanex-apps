@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** apps/rowtrack-web
 - **Klant:** umanex (eigen product)
-- **Status:** gepland
+- **Status:** gebouwd
 
 ---
 
@@ -66,27 +66,45 @@ van 2026-08-09 (typologie, states, interactie en edge cases erven van wat er sta
 
 ## Acceptatie
 
-- [ ] Alle S1-S11 secties + subpagina's renderen met identieke copy-keys uit
-      `messages/nl.json`; geen key toegevoegd, verwijderd of gewijzigd
-- [ ] Routes, metadata, JSON-LD, robots en sitemap onaangeraakt (diff raakt
-      `lib/schema.ts`, `lib/metadata.ts`, `app/robots.ts`, `app/sitemap.ts` niet)
-- [ ] Eén `<h1>`, één `<h2>` per sectie — semantiek gelijk aan vóór het redesign
-- [ ] `pnpm --filter @umanex/rowtrack-tokens guard` groen; geen hex of rauwe
-      paletklasse in de diff
-- [ ] `pnpm turbo type-check lint build --filter rowtrack-web` groen; flow-harness
-      groen (0 console-fouten per route)
-- [ ] Zonder JavaScript is elke sectie direct volledig zichtbaar (reveal-styles
-      uitsluitend achter de data-js gate)
-- [ ] Met `prefers-reduced-motion: reduce` toont elke sectie direct de eindstaat —
-      vastgelegd met een emulatie-screenshot
-- [ ] Geen tekst op accent-achtergrond onder 18.66px bold; elke nieuwe kleurcombinatie
-      gemeten en genoteerd
-- [ ] Achievement-kleur uitsluitend in S6; accent uitsluitend CTA/links/hover/actief
-- [ ] Geen nieuwe dependency in `package.json`
-- [ ] Render-screenshots per route vastgelegd (`flow --shot`) als voor/na-bewijs
+- [x] Alle S1-S11 secties + subpagina's renderen met identieke copy-keys uit
+      `messages/nl.json`; geen key toegevoegd, verwijderd of gewijzigd —
+      `messages/` staat niet in de diff; harness rendert alle routes
+- [x] Routes, metadata, JSON-LD, robots en sitemap onaangeraakt — geen van
+      `lib/schema.ts`, `lib/metadata.ts`, `app/robots.ts`, `app/sitemap.ts` in de diff
+- [x] Eén `<h1>`, één `<h2>` per sectie — SectionHeading/FinalCta dragen dezelfde
+      elementen als vóór het redesign; hero blijft de enige h1
+- [x] `pnpm --filter @umanex/rowtrack-tokens guard` groen (40 bestanden schoon);
+      geen hex of rauwe paletklasse in de diff (grep op `#`-waarden: leeg)
+- [x] `pnpm turbo type-check lint build --filter rowtrack-web` groen (5/5);
+      flow-harness groen — 3 routes 200, klik-navigatie, console schoon, geen
+      extern verzoek
+- [x] Zonder JavaScript is elke sectie direct volledig zichtbaar — gemeten met
+      Playwright (`javaScriptEnabled: false`): 24 reveal-blokken, 0 verborgen
+- [x] Met `prefers-reduced-motion: reduce` toont elke sectie direct de eindstaat —
+      gemeten zonder scroll: 0 verborgen; tegenproef bij normale load: 23/24
+      verborgen vóór scroll, dus de meting onderscheidt echt
+- [x] Geen tekst op accent-achtergrond geïntroduceerd (nergens, dus ook niet onder
+      18.66px bold); nieuw kleurpaar FAQ-hover accent-op-accent-subtle gemeten:
+      4.90:1, alle overige paren ≥ 4.5:1 — genoteerd in
+      `audits/2026-08-11-ux-audit-premium-redesign.md`
+- [x] Achievement-kleur uitsluitend in S6 (grep: alleen `Records.tsx` + de
+      `.shine`/`.hairline-achievement`-definities in `globals.css`); accent-gebruik
+      op pariteit met vóór het redesign (CTA, links, hover/actief, eyebrow, randen)
+- [x] Geen nieuwe dependency — `package.json` staat niet in de diff
+- [x] Render-screenshots per route vastgelegd (`flow --shot=.flow-shots`), met
+      scroll-doorloop zodat de capture de onthulde eindstaat toont; mobiel 375px
+      apart vastgelegd (0px horizontale overflow)
 
 ## Beslissingsgeschiedenis
 
 - 2026-08-11: Briefing aangemaakt als redesign-laag bovenop
   `2026-08-09-feature-rowtrack-web-marketingsite.tcebc.md`. Inhoud en functionaliteit
   bevroren; alleen de visuele laag en motion gaan omhoog.
+- 2026-08-11: **CountUp geschrapt uit ELEMENTS.** De pagina bevat geen numerieke
+  statistieken om op te tellen — de metric-kaarten dragen eenheden, geen waarden, en
+  een getal verzinnen zou de waarheidstabel schenden. De motion-laag is fade+rise,
+  stagger, rule-draw en PR-shine geworden.
+- 2026-08-11: **Flow-harness scrollt nu door vóór de screenshot.** De full-page
+  capture rendert buiten de viewport zonder dat de IntersectionObserver ooit vuurt;
+  zonder doorloop legde hij secties op opacity 0 vast. Zelfde bevinding leidde tot
+  het print-vangnet in `globals.css`.

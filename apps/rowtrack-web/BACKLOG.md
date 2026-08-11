@@ -38,3 +38,17 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
     - **Status:** open
 
 <!-- De eerste entry maakt hieronder de juiste laag-header aan. -->
+
+# Project — rowtrack-web
+
+## 2026-08-11 — Hero-kop breekt na "telt." op desktop · [ux]
+- **Wat:** De slogan "Elke haal telt." op één regel houden in de hero op brede viewports; nu breekt `text-balance` na "telt." (P3 uit de ux-audit van het premium redesign).
+- **Waarom niet nu:** Kop-tuning raakt copy-balans en wordt beter één keer gedaan zodra de EN-locale erbij komt.
+- **Eerste zet:** `max-w`-tuning op de h1-kolom in `apps/rowtrack-web/components/sections/Hero.tsx` en op beide locales nameten.
+- **Status:** open
+
+## 2026-08-11 — Metrics-grid laat een leeg slot rechtsonder · [ux]
+- **Wat:** De 7 metric-kaarten in een 4-koloms grid eindigen op 4+3 met een leeg vierde slot (P2/P3-grens uit de ux-audit). Opties: laatste kaart laten spannen, terug naar 3 kolommen, of de rij bewust zo laten.
+- **Waarom niet nu:** Een achtste kaart verzinnen mag niet (waarheidstabel); de overige opties zijn smaak en verdienen een blik van Jeroen in plaats van een stille keuze.
+- **Eerste zet:** Twee varianten naast elkaar renderen (`col-span`-variant vs. 3-koloms) en kiezen.
+- **Status:** open

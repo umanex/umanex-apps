@@ -14,6 +14,7 @@ import {
   MAX_RECONNECT_ATTEMPTS,
 } from './constants';
 import { parseRowerData } from './ftms-parser';
+import { isRowerCandidate } from './rowerCandidate';
 import { claimScan, ownsScan, releaseScan } from './scan-lock';
 import { recordAutoConnect } from './autoConnectLog';
 import { waitForAdapter } from './adapterReady';
@@ -281,7 +282,7 @@ export class RowerBleService {
         this.scanTimeout = setTimeout(decide, SCAN_TIMEOUT_MS - COLLECT_MS);
       }, COLLECT_MS);
 
-      log(' scan started (filter: name prefix "' + ROWER_NAME_PREFIX + '")');
+      log(' scan started (filter: FTMS UUID, name prefix "' + ROWER_NAME_PREFIX + '" as fallback)');
       claimScan(this.scanToken);
       manager.startDeviceScan(null, null, (err, dev) => {
         // `BleManager` is een singleton met één scan-subscription: start de andere
@@ -297,15 +298,14 @@ export class RowerBleService {
         }
         if (!dev) return;
 
-        // Log every device for debugging
+        // Log every device for debugging — mét geadverteerde service UUIDs, zodat
+        // op het toestel te zien is of een trainer (bv. de Apollo XL) FTMS
+        // adverteert of enkel via de naam-prefix binnenkomt.
         if (dev.name || dev.localName) {
-          log(' found:', dev.name, dev.localName, dev.id);
+          log(' found:', dev.name, dev.localName, dev.id, 'adv:', dev.serviceUUIDs?.join(',') ?? '-');
         }
 
-        if (
-          dev.name?.startsWith(ROWER_NAME_PREFIX) ||
-          dev.localName?.startsWith(ROWER_NAME_PREFIX)
-        ) {
+        if (isRowerCandidate(dev)) {
           found.set(dev.id, dev);
           // Het onthouden toestel hoeft niet op de anderen te wachten.
           if (dev.id === this.preferredId) decide();

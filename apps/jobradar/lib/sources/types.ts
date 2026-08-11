@@ -25,6 +25,11 @@ export type RawLead = {
   url?: string
   source: string
   signals: string[]
+  /**
+   * Waarop de lead rust. Alleen afgeleide leads hebben dit; een externe bron weet niet
+   * hoeveel vacatures er achter zitten en hoort daar dan ook niets over te beweren.
+   */
+  tellingen?: { totaal: number; design: number; dev: number }
 }
 
 /**

@@ -515,6 +515,63 @@ for (const [title, description] of BACKEND) {
   check(`"${title.slice(0, 34)}" telt als dev`, classificeer({ title, description }) === 'dev', String(classificeer({ title, description })))
 }
 
+// ── 13. Een lead draagt zijn bewijs ─────────────────────────────────────────
+// De tellingen werden al berekend en weggegooid; een leadkaart was daardoor een bewering
+// zonder bewijspad (UX-audit 2026-08-11, P1).
+{
+  const leads = deriveLeadsFromJobs(GEMENGD, NU)
+  for (const l of leads) {
+    check(`"${l.companyName}" draagt tellingen`, l.tellingen !== undefined, JSON.stringify(l.tellingen))
+    const t = l.tellingen!
+    check(`"${l.companyName}": design + dev <= totaal`, t.design + t.dev <= t.totaal, JSON.stringify(t))
+    check(`"${l.companyName}": geen negatieve tellingen`, t.totaal >= 0 && t.design >= 0 && t.dev >= 0)
+    check(`"${l.companyName}": minstens één relevante vacature`, t.design + t.dev >= 1, JSON.stringify(t))
+  }
+  // De tellingen moeten overeenkomen met het profiel waaruit ze komen.
+  const profielen = bouwBedrijfsprofielen(GEMENGD, NU)
+  for (const l of leads) {
+    const p = profielen.find((x) => x.companyName === l.companyName)!
+    check(
+      `"${l.companyName}": tellingen volgen het profiel`,
+      l.tellingen!.totaal === p.totaalVacatures && l.tellingen!.design === p.designVacatures && l.tellingen!.dev === p.devVacatures
+    )
+  }
+  // Acme heeft drie dev-vacatures en geen design: dat moet exact zo op de kaart komen.
+  const acmeLead = leads.find((l) => l.companyName.toLowerCase().startsWith('acme'))
+  check('Acme telt 3 vacatures, 0 design, 3 dev', JSON.stringify(acmeLead?.tellingen) === JSON.stringify({ totaal: 3, design: 0, dev: 3 }), JSON.stringify(acmeLead?.tellingen))
+}
+
+// ── 14. De doorklik telt dezelfde verzameling als de kaart ──────────────────
+// De kaart groepeert via `normaliseerBedrijf`; het vrije zoekveld kijkt óók naar titels.
+// Die twee liepen uiteen: "Volvo Group" toonde 3 op de kaart en 6 na de klik, omdat een
+// uitzendkantoor de klantnaam in de titel zet. Twee getallen die elkaar tegenspreken op één
+// klik afstand, terwijl herleidbaarheid het hele punt van die knop is.
+{
+  const UITZEND: RawJob[] = [
+    job({ title: 'Frontend Developer', company: 'Volvo Group', description: 'React en TypeScript' }),
+    job({ title: 'Backend Developer', company: 'Volvo Group', description: 'Java en Spring' }),
+    // Zelfde naam in de TITEL, ander bedrijf — dit is wat de vrije zoekterm meepakte.
+    job({ title: 'Truck Engineer | Volvo Group Oostakker', company: 'Adecco', description: 'React' }),
+    job({ title: 'Customer Engineer | Volvo Group', company: 'Adecco', description: 'React' }),
+  ]
+  const leads = deriveLeadsFromJobs(UITZEND, NU)
+  const volvo = leads.find((l) => l.companyName === 'Volvo Group')!
+  const sleutel = normaliseerBedrijf(volvo.companyName)
+
+  const opBedrijfssleutel = UITZEND.filter((j) => normaliseerBedrijf(j.company) === sleutel).length
+  const opVrijeTekst = UITZEND.filter(
+    (j) => j.title.toLowerCase().includes('volvo group') || j.company.toLowerCase().includes('volvo group')
+  ).length
+
+  check('de kaartwaarde en de bedrijfssleutel tellen hetzelfde', volvo.tellingen!.totaal === opBedrijfssleutel, `${volvo.tellingen!.totaal} vs ${opBedrijfssleutel}`)
+  check('de vrije zoekterm zou méér tonen — daarom de aparte sleutel', opVrijeTekst > opBedrijfssleutel, `${opVrijeTekst} vs ${opBedrijfssleutel}`)
+  check('de sleutel pakt de vacatures van het andere bedrijf niet mee', opBedrijfssleutel === 2, String(opBedrijfssleutel))
+
+  // De sleutel is dezelfde die de groepering gebruikt — rechtsvorm en hoofdletters doen niets.
+  check('rechtsvorm verandert de sleutel niet', normaliseerBedrijf('Volvo Group NV') === sleutel)
+  check('hoofdletters veranderen de sleutel niet', normaliseerBedrijf('VOLVO GROUP') === sleutel)
+}
+
 // ── Tegenproef ───────────────────────────────────────────────────────────────
 // Een suite die niet meer kan falen, meldt voor altijd groen. `scenarios.mjs` draait deze
 // suite één keer mét deze vlag en verwacht dan een niet-nul exitcode.

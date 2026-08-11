@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 
 export type ItemStatus = 'new' | 'saved' | 'dismissed' | 'contacted'
 
@@ -44,6 +44,11 @@ export const companies = sqliteTable(
     naceCode: text('nace_code'),
     url: text('url'),
     signals: text('signals').notNull().default('[]'),
+    // Waarop de lead rust. Nullable met opzet: een lead van vóór deze kolommen is niet
+    // "0 vacatures" maar "nog niet geteld", en dat verschil hoort zichtbaar te blijven.
+    vacatureAantal: integer('vacature_aantal'),
+    designVacatures: integer('design_vacatures'),
+    devVacatures: integer('dev_vacatures'),
     leadScore: integer('lead_score').notNull().default(0),
     scoreBreakdown: text('score_breakdown').notNull().default('{}'),
     rechtsgrond: text('rechtsgrond').notNull().default('gerechtvaardigd belang'),

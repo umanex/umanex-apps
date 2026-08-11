@@ -1,5 +1,6 @@
 'use client'
 
+import { Search, X } from 'lucide-react'
 import { Slider } from '@umanex/ui/components/ui/slider'
 import { RegionFilter } from './RegionFilter'
 import type { RegionCode } from '@/lib/regions'
@@ -14,6 +15,9 @@ const STATUS_OPTIONS: { value: ItemStatus | ''; label: string }[] = [
 ]
 
 type FilterBarProps = {
+  veldRef?: React.Ref<HTMLInputElement>
+  zoek: string
+  onZoekChange: (zoek: string) => void
   regions: RegionCode[]
   minScore: number
   statusFilter: ItemStatus | ''
@@ -23,6 +27,9 @@ type FilterBarProps = {
 }
 
 export function FilterBar({
+  veldRef,
+  zoek,
+  onZoekChange,
   regions,
   minScore,
   statusFilter,
@@ -33,6 +40,31 @@ export function FilterBar({
   return (
     <div className="flex flex-col gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:items-center">
       <RegionFilter selected={regions} onChange={onRegionsChange} />
+
+      {/* Geen debounce: er wordt gefilterd op rijen die al in het geheugen staan, dus er is
+          niets om te vertragen. */}
+      <div className="relative flex items-center">
+        <Search className="pointer-events-none absolute left-2 h-4 w-4 text-muted-foreground" aria-hidden />
+        <input
+          ref={veldRef}
+          type="search"
+          value={zoek}
+          onChange={(e) => onZoekChange(e.target.value)}
+          aria-label="Zoek op titel of bedrijf"
+          placeholder="Zoek op titel of bedrijf"
+          className="w-56 rounded border border-input bg-background py-1 pl-8 pr-8 text-sm text-foreground outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+        />
+        {zoek && (
+          <button
+            type="button"
+            onClick={() => onZoekChange('')}
+            aria-label="Zoekterm wissen"
+            className="absolute right-1 rounded p-1 text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
       <select
         value={statusFilter}
         onChange={(e) => onStatusFilterChange(e.target.value as ItemStatus | '')}

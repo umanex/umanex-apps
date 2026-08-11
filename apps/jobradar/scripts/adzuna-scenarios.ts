@@ -84,6 +84,11 @@ check(`resultatenPerPagina == ${PER_PAGINA}`, ADZUNA_SEARCH.resultatenPerPagina 
 check(`maxPaginas == ${MAX_PAGINAS}`, ADZUNA_SEARCH.maxPaginas === MAX_PAGINAS, String(ADZUNA_SEARCH.maxPaginas))
 check(`maxDagenOud == ${MAX_DAGEN_OUD}`, ADZUNA_SEARCH.maxDagenOud === MAX_DAGEN_OUD, String(ADZUNA_SEARCH.maxDagenOud))
 check(`country == "${LAND}"`, ADZUNA_SEARCH.country === LAND, ADZUNA_SEARCH.country)
+// Vastgepind: de zoekopdracht is op de live API gemeten (zie de doc-comment bij whatOr).
+// Wijzig je hem, meet dan opnieuw en werk deze verwachting bij — anders schuift precisie
+// en recall stil mee.
+check('whatOr is de gemeten variant', ADZUNA_SEARCH.whatOr === 'UX UI frontend front-end webdesign developer designer', ADZUNA_SEARCH.whatOr)
+check('whatUitsluiten is smal gehouden', ADZUNA_SEARCH.whatUitsluiten.split(' ').length <= 8, ADZUNA_SEARCH.whatUitsluiten)
 
 // ── 0b. Misvormde antwoorden mogen de bron niet vellen ──────────────────────
 // `data.count` stond buiten de try/catch: een body van letterlijk "null" gaf een TypeError
@@ -190,6 +195,10 @@ for (const [naam, body] of [
   check('URL draagt de paginagrootte', u.includes('results_per_page=50'), u)
   check('URL draagt het regio-anker', u.includes('where=Brugge'), u)
   check('URL draagt het land', u.includes('/jobs/be/search/'), u)
+  check('URL draagt de uitsluitingen', u.includes('what_exclude=mechanical'), u)
+  // `product` matchte ook "productie" en haalde daarmee magazijn- en winkelwerk binnen.
+  check('zoektermen bevatten "product" niet meer', !/(^|[^a-z])product([^a-z]|$)/i.test(ADZUNA_SEARCH.whatOr), ADZUNA_SEARCH.whatOr)
+  check('zoektermen bevatten "designer" nog wél', /designer/i.test(ADZUNA_SEARCH.whatOr), ADZUNA_SEARCH.whatOr)
 }
 
 // ── 8. Mock-modus raakt het netwerk niet ─────────────────────────────────────

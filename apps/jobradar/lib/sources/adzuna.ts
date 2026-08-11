@@ -36,6 +36,7 @@ function bouwUrl(regio: RegionCode, pagina: number): string {
   url.searchParams.set('distance', String(anchor.radiusKm))
   url.searchParams.set('results_per_page', String(ADZUNA_SEARCH.resultatenPerPagina))
   url.searchParams.set('max_days_old', String(ADZUNA_SEARCH.maxDagenOud))
+  if (ADZUNA_SEARCH.whatUitsluiten) url.searchParams.set('what_exclude', ADZUNA_SEARCH.whatUitsluiten)
   return url.toString()
 }
 

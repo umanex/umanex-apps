@@ -7,7 +7,7 @@ import { kboSource } from '@/lib/sources/kbo'
 import { deriveLeadsFromJobs } from '@/lib/signals'
 import { upsertJob, upsertLead, verouderdeLeadsOpruimen } from '@/lib/sync/upsert'
 import { leesZoekopdracht } from '@/lib/sync/settings-store'
-import { ALL_REGIONS, regionForPostcode } from '@/lib/regions'
+import { ALL_REGIONS, regionForPostcode, type RegionCode } from '@/lib/regions'
 import type { RawJob } from '@/lib/sources/types'
 
 const JOB_SOURCES = [adzunaSource] as const
@@ -122,8 +122,16 @@ export async function POST() {
     // een vorige run. Gemeten op 2026-08-11: afleiden uit de fetch gaf 11 leads waarvan 15
     // zonder telling; afleiden uit de database gaf 25 leads en nul zonder.
     const opgeslagenJobs = await db.query.jobs.findMany()
+    // Smalle cast op het enige veld dat werkelijk afwijkt (`region` is in de database een
+    // vrije string, in RawJob een RegionCode). Een brede `as RawJob[]` compileerde net zo
+    // goed maar slikte ook toekomstige verbredingen: `posted_at` nullable maken kwam er stil
+    // doorheen, terwijl deze vorm dat wél afkeurt.
     const afgeleideLeads = deriveLeadsFromJobs(
-      opgeslagenJobs.map((j) => ({ ...j, description: j.description ?? '' })) as RawJob[],
+      opgeslagenJobs.map((j) => ({
+        ...j,
+        description: j.description ?? '',
+        region: j.region as RegionCode,
+      })),
       new Date()
     )
     for (const lead of afgeleideLeads) {
@@ -136,7 +144,10 @@ export async function POST() {
     stats.sourceStatuses['vacatures'] = {
       ok: true,
       count: afgeleideLeads.length,
-      ...(verouderd > 0 ? { warnings: [`${verouderd} leads verloren hun signaal: de vacatures eronder zijn verlopen`] } : {}),
+      // Geen oorzaak noemen die hier niet vastgesteld is — alleen wat er gebeurde.
+      ...(verouderd > 0
+        ? { warnings: [`${verouderd} leads worden niet meer afgeleid en verloren hun signaal`] }
+        : {}),
     }
 
     await db

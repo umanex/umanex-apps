@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
@@ -10,6 +10,7 @@ import { CoverageBar } from './CoverageBar'
 import { JobCard } from './JobCard'
 import { LeadCard } from './LeadCard'
 import type { Job, Company, ItemStatus } from '@/lib/db/schema'
+import { normaliseerBedrijf } from '@/lib/matching'
 import type { RegionCode } from '@/lib/regions'
 import type { Dekking } from '@/lib/coverage'
 
@@ -44,10 +45,28 @@ export function DashboardClient({
   const term = zoek.trim().toLowerCase()
   const raakt = (...velden: string[]) => term === '' || velden.some((v) => v.toLowerCase().includes(term))
 
+  /**
+   * Bij een doorklik matchen we op de bedrijfssleutel, niet op de vrije zoektekst.
+   *
+   * De telling op de kaart groepeert via `normaliseerBedrijf`; het zoekveld kijkt ook naar
+   * titels. Dat liep uiteen: "Volvo Group" toonde 3 op de kaart en 6 na de klik, want een
+   * uitzendkantoor zet de klantnaam in de titel. Twee getallen die elkaar tegenspreken op
+   * één klik afstand, terwijl herleidbaarheid het hele punt van die knop is.
+   */
+  const bedrijfsSleutel = viaLead ? normaliseerBedrijf(zoek) : null
+  const raaktJob = (titel: string, bedrijf: string) =>
+    bedrijfsSleutel !== null ? normaliseerBedrijf(bedrijf) === bedrijfsSleutel : raakt(titel, bedrijf)
+
+  const zoekveldRef = useRef<HTMLInputElement>(null)
+
   const toonVacaturesVan = (bedrijf: string) => {
     setZoek(bedrijf)
     setViaLead(true)
     setTab('jobs')
+    // Het leadpaneel unmount bij het wisselen van tabblad, dus de knop verdwijnt onder de
+    // focus vandaan en die valt terug op body. De focus verhuist mee naar het zoekveld, dat
+    // nu de bedrijfsnaam draagt en waar je hem ook weer kunt wissen.
+    requestAnimationFrame(() => zoekveldRef.current?.focus())
   }
 
   const wijzigZoek = (waarde: string) => {
@@ -60,7 +79,7 @@ export function DashboardClient({
       regions.includes(j.region as RegionCode) &&
       j.score >= minScore &&
       (statusFilter === '' || j.jobStatus === statusFilter) &&
-      raakt(j.title, j.company)
+      raaktJob(j.title, j.company)
     )
     .sort((a, b) => b.score - a.score)
 
@@ -100,6 +119,7 @@ export function DashboardClient({
         <CoverageBar dekking={dekking} />
 
         <FilterBar
+          veldRef={zoekveldRef}
           zoek={zoek}
           onZoekChange={wijzigZoek}
           regions={regions}
@@ -109,6 +129,14 @@ export function DashboardClient({
           onMinScoreChange={setMinScore}
           onStatusFilterChange={setStatusFilter}
         />
+
+        {/* Na een doorklik verandert de lijst zonder dat er iets verplaatst; zonder dit hoort
+            een schermlezergebruiker niet wat er gebeurde. */}
+        <p aria-live="polite" className="sr-only">
+          {viaLead
+            ? `${filteredJobs.length} ${filteredJobs.length === 1 ? 'vacature' : 'vacatures'} van ${zoek}`
+            : ''}
+        </p>
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
@@ -130,8 +158,13 @@ export function DashboardClient({
             {filteredJobs.length === 0 ? (
               <EmptyState
                 message={
-                  viaLead
-                    ? `Geen vacatures van "${zoek}" in de lijst. De lead is gebaseerd op vacatures die intussen uit het venster van 30 dagen kunnen zijn gelopen — een sync haalt de huidige op.`
+                  // Geen diagnose die niet gecontroleerd is. Er zijn twee toestanden en het
+                  // verschil is meetbaar: staat het bedrijf wél in de database, dan filteren
+                  // regio, score of status het weg. Staat het er niet, dan is dat het antwoord.
+                  bedrijfsSleutel !== null
+                    ? jobs.some((j) => normaliseerBedrijf(j.company) === bedrijfsSleutel)
+                      ? `Geen vacatures van "${zoek}" binnen je huidige filters — pas regio, status of minimumscore aan.`
+                      : `Er staan geen vacatures van "${zoek}" in de database.`
                     : term
                       ? `Geen vacatures gevonden voor "${zoek}".`
                       : "Geen vacatures gevonden. Druk op 'Sync nu' om data op te halen."

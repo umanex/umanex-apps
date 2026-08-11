@@ -153,10 +153,16 @@ export async function upsertLead(
 /**
  * Haalt de afgeleide signalen weg bij leads die deze run niet meer afgeleid werden.
  *
- * Zonder dit veroudert een lead nooit: hij houdt zijn score en signalen ook nadat de
- * vacatures die hem droegen uit het venster van 30 dagen zijn gelopen. De rij blijft staan —
- * een status die jij erop gezet hebt is van jou — maar de bewering verdwijnt, en daarmee de
- * score. Wat een externe bron ooit zei blijft wél staan.
+ * Zonder dit houdt een lead zijn score en signalen ook nadat de afleiding hem niet meer
+ * oplevert. De rij blijft staan — een status die jij erop gezet hebt is van jou — maar de
+ * bewering verdwijnt, en daarmee de score. Wat een externe bron ooit zei blijft wél staan.
+ *
+ * **Wanneer dit in de praktijk vuurt.** Sinds de afleiding over álle opgeslagen vacatures
+ * loopt, blijft een bedrijf afgeleid zolang zijn vacatures in de database staan — en er is
+ * vandaag geen enkel pad dat vacatures verwijdert. Dit vuurt dus alleen na een handmatige
+ * opruiming, of wanneer een bedrijf onder de drempels zakt doordat de classificatie
+ * verandert. Dat is zeldzaam, en het is geen reden om de guard weg te laten: hij is er voor
+ * het moment dat verlopen vacatures wél opgeruimd worden.
  */
 export async function verouderdeLeadsOpruimen(
   db: JobradarDb,

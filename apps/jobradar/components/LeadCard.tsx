@@ -73,7 +73,10 @@ export function LeadCard({ company, isNew, onStatusChange, onToonVacatures }: Le
             de tellingen werden al berekend en vervolgens weggegooid (UX-audit, P1). */}
         <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {company.vacatureAantal === null ? (
-            <span>— nog niet geteld</span>
+            // Twee verschillende toestanden die allebei op null uitkomen. Zonder dit
+            // onderscheid leest een lead die zijn signaal verloor als een lead die nog
+            // geteld moet worden — en dat is het tegenovergestelde.
+            <span>{signals.length === 0 ? '— geen signaal meer' : '— nog niet geteld'}</span>
           ) : (
             <span className="tabular-nums">
               {company.vacatureAantal} {company.vacatureAantal === 1 ? 'vacature' : 'vacatures'} ·{' '}

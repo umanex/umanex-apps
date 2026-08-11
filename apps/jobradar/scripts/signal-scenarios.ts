@@ -541,6 +541,37 @@ for (const [title, description] of BACKEND) {
   check('Acme telt 3 vacatures, 0 design, 3 dev', JSON.stringify(acmeLead?.tellingen) === JSON.stringify({ totaal: 3, design: 0, dev: 3 }), JSON.stringify(acmeLead?.tellingen))
 }
 
+// ── 14. De doorklik telt dezelfde verzameling als de kaart ──────────────────
+// De kaart groepeert via `normaliseerBedrijf`; het vrije zoekveld kijkt óók naar titels.
+// Die twee liepen uiteen: "Volvo Group" toonde 3 op de kaart en 6 na de klik, omdat een
+// uitzendkantoor de klantnaam in de titel zet. Twee getallen die elkaar tegenspreken op één
+// klik afstand, terwijl herleidbaarheid het hele punt van die knop is.
+{
+  const UITZEND: RawJob[] = [
+    job({ title: 'Frontend Developer', company: 'Volvo Group', description: 'React en TypeScript' }),
+    job({ title: 'Backend Developer', company: 'Volvo Group', description: 'Java en Spring' }),
+    // Zelfde naam in de TITEL, ander bedrijf — dit is wat de vrije zoekterm meepakte.
+    job({ title: 'Truck Engineer | Volvo Group Oostakker', company: 'Adecco', description: 'React' }),
+    job({ title: 'Customer Engineer | Volvo Group', company: 'Adecco', description: 'React' }),
+  ]
+  const leads = deriveLeadsFromJobs(UITZEND, NU)
+  const volvo = leads.find((l) => l.companyName === 'Volvo Group')!
+  const sleutel = normaliseerBedrijf(volvo.companyName)
+
+  const opBedrijfssleutel = UITZEND.filter((j) => normaliseerBedrijf(j.company) === sleutel).length
+  const opVrijeTekst = UITZEND.filter(
+    (j) => j.title.toLowerCase().includes('volvo group') || j.company.toLowerCase().includes('volvo group')
+  ).length
+
+  check('de kaartwaarde en de bedrijfssleutel tellen hetzelfde', volvo.tellingen!.totaal === opBedrijfssleutel, `${volvo.tellingen!.totaal} vs ${opBedrijfssleutel}`)
+  check('de vrije zoekterm zou méér tonen — daarom de aparte sleutel', opVrijeTekst > opBedrijfssleutel, `${opVrijeTekst} vs ${opBedrijfssleutel}`)
+  check('de sleutel pakt de vacatures van het andere bedrijf niet mee', opBedrijfssleutel === 2, String(opBedrijfssleutel))
+
+  // De sleutel is dezelfde die de groepering gebruikt — rechtsvorm en hoofdletters doen niets.
+  check('rechtsvorm verandert de sleutel niet', normaliseerBedrijf('Volvo Group NV') === sleutel)
+  check('hoofdletters veranderen de sleutel niet', normaliseerBedrijf('VOLVO GROUP') === sleutel)
+}
+
 // ── Tegenproef ───────────────────────────────────────────────────────────────
 // Een suite die niet meer kan falen, meldt voor altijd groen. `scenarios.mjs` draait deze
 // suite één keer mét deze vlag en verwacht dan een niet-nul exitcode.

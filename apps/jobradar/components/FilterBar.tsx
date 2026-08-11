@@ -15,6 +15,7 @@ const STATUS_OPTIONS: { value: ItemStatus | ''; label: string }[] = [
 ]
 
 type FilterBarProps = {
+  veldRef?: React.Ref<HTMLInputElement>
   zoek: string
   onZoekChange: (zoek: string) => void
   regions: RegionCode[]
@@ -26,6 +27,7 @@ type FilterBarProps = {
 }
 
 export function FilterBar({
+  veldRef,
   zoek,
   onZoekChange,
   regions,
@@ -44,6 +46,7 @@ export function FilterBar({
       <div className="relative flex items-center">
         <Search className="pointer-events-none absolute left-2 h-4 w-4 text-muted-foreground" aria-hidden />
         <input
+          ref={veldRef}
           type="search"
           value={zoek}
           onChange={(e) => onZoekChange(e.target.value)}

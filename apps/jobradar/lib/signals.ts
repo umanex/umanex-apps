@@ -266,5 +266,8 @@ export function deriveLeadsFromJobs(jobs: RawJob[], nu: Date): RawLead[] {
       naceCode: null,
       source: AFGELEIDE_BRON,
       signals: [...p.signals],
+      // De cijfers waarop het signaal rust. Ze werden al berekend en vervolgens weggegooid;
+      // zonder hen is een lead een bewering zonder bewijs (UX-audit 2026-08-11, P1).
+      tellingen: { totaal: p.totaalVacatures, design: p.designVacatures, dev: p.devVacatures },
     }))
 }

@@ -36,17 +36,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+cdefebf wip(jobradar): lead-tellingen en zoekveld
+4c6860b fix(jobradar): test the ceiling per sub-query, not against a growing threshold
 5e49969 docs(jobradar): UX-audit van het dashboard en de zoekinstellingen
 ef4acc0 feat(jobradar): allow exact phrases as search terms
 bc95d61 fix(jobradar): ask Adzuna politely, and try again when it says no
-6942afb feat(jobradar): make the search terms visible and editable
-c36692b fix(jobradar): drop the search word that was pulling in warehouse work
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/components/SearchSettingsForm.tsx
-  M  apps/jobradar/lib/sources/adzuna.ts
-  M  apps/jobradar/scripts/adzuna-scenarios.ts
+  M  apps/jobradar/app/api/sync/route.ts
+  M  apps/jobradar/briefings/2026-08-11-feature-lead-herleidbaarheid.tcebc.md
+  M  apps/jobradar/lib/sync/upsert.ts
+  M  apps/jobradar/scripts/upsert-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

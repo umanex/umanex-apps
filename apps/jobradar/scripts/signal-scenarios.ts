@@ -515,6 +515,32 @@ for (const [title, description] of BACKEND) {
   check(`"${title.slice(0, 34)}" telt als dev`, classificeer({ title, description }) === 'dev', String(classificeer({ title, description })))
 }
 
+// ── 13. Een lead draagt zijn bewijs ─────────────────────────────────────────
+// De tellingen werden al berekend en weggegooid; een leadkaart was daardoor een bewering
+// zonder bewijspad (UX-audit 2026-08-11, P1).
+{
+  const leads = deriveLeadsFromJobs(GEMENGD, NU)
+  for (const l of leads) {
+    check(`"${l.companyName}" draagt tellingen`, l.tellingen !== undefined, JSON.stringify(l.tellingen))
+    const t = l.tellingen!
+    check(`"${l.companyName}": design + dev <= totaal`, t.design + t.dev <= t.totaal, JSON.stringify(t))
+    check(`"${l.companyName}": geen negatieve tellingen`, t.totaal >= 0 && t.design >= 0 && t.dev >= 0)
+    check(`"${l.companyName}": minstens één relevante vacature`, t.design + t.dev >= 1, JSON.stringify(t))
+  }
+  // De tellingen moeten overeenkomen met het profiel waaruit ze komen.
+  const profielen = bouwBedrijfsprofielen(GEMENGD, NU)
+  for (const l of leads) {
+    const p = profielen.find((x) => x.companyName === l.companyName)!
+    check(
+      `"${l.companyName}": tellingen volgen het profiel`,
+      l.tellingen!.totaal === p.totaalVacatures && l.tellingen!.design === p.designVacatures && l.tellingen!.dev === p.devVacatures
+    )
+  }
+  // Acme heeft drie dev-vacatures en geen design: dat moet exact zo op de kaart komen.
+  const acmeLead = leads.find((l) => l.companyName.toLowerCase().startsWith('acme'))
+  check('Acme telt 3 vacatures, 0 design, 3 dev', JSON.stringify(acmeLead?.tellingen) === JSON.stringify({ totaal: 3, design: 0, dev: 3 }), JSON.stringify(acmeLead?.tellingen))
+}
+
 // ── Tegenproef ───────────────────────────────────────────────────────────────
 // Een suite die niet meer kan falen, meldt voor altijd groen. `scenarios.mjs` draait deze
 // suite één keer mét deze vlag en verwacht dan een niet-nul exitcode.

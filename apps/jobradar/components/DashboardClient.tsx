@@ -33,12 +33,34 @@ export function DashboardClient({
   const [regions, setRegions] = useState<RegionCode[]>(ALL_REGIONS)
   const [minScore, setMinScore] = useState(0)
   const [statusFilter, setStatusFilter] = useState<ItemStatus | ''>('')
+  const [zoek, setZoek] = useState('')
+  // Controlled, want de doorklik vanaf een lead moet het tabblad kunnen zetten.
+  const [tab, setTab] = useState('jobs')
+  // Onthouden of de huidige zoekterm van een doorklik komt: dan verdient een lege lijst
+  // een andere uitleg dan een gewone mistreffer.
+  const [viaLead, setViaLead] = useState(false)
+
+  // Gewone substring, geen regex — een zoekterm met een haakje erin is een zoekterm, geen patroon.
+  const term = zoek.trim().toLowerCase()
+  const raakt = (...velden: string[]) => term === '' || velden.some((v) => v.toLowerCase().includes(term))
+
+  const toonVacaturesVan = (bedrijf: string) => {
+    setZoek(bedrijf)
+    setViaLead(true)
+    setTab('jobs')
+  }
+
+  const wijzigZoek = (waarde: string) => {
+    setZoek(waarde)
+    setViaLead(false)
+  }
 
   const filteredJobs = jobs
     .filter((j) =>
       regions.includes(j.region as RegionCode) &&
       j.score >= minScore &&
-      (statusFilter === '' || j.jobStatus === statusFilter)
+      (statusFilter === '' || j.jobStatus === statusFilter) &&
+      raakt(j.title, j.company)
     )
     .sort((a, b) => b.score - a.score)
 
@@ -46,7 +68,8 @@ export function DashboardClient({
     .filter((c) =>
       regions.includes(c.region as RegionCode) &&
       c.leadScore >= minScore &&
-      (statusFilter === '' || c.leadStatus === statusFilter)
+      (statusFilter === '' || c.leadStatus === statusFilter) &&
+      raakt(c.companyName)
     )
     .sort((a, b) => b.leadScore - a.leadScore)
 
@@ -77,6 +100,8 @@ export function DashboardClient({
         <CoverageBar dekking={dekking} />
 
         <FilterBar
+          zoek={zoek}
+          onZoekChange={wijzigZoek}
           regions={regions}
           minScore={minScore}
           statusFilter={statusFilter}
@@ -85,7 +110,7 @@ export function DashboardClient({
           onStatusFilterChange={setStatusFilter}
         />
 
-        <Tabs defaultValue="jobs">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="jobs">
               Vacatures
@@ -103,7 +128,15 @@ export function DashboardClient({
 
           <TabsContent value="jobs">
             {filteredJobs.length === 0 ? (
-              <EmptyState message="Geen vacatures gevonden. Druk op 'Sync nu' om data op te halen." />
+              <EmptyState
+                message={
+                  viaLead
+                    ? `Geen vacatures van "${zoek}" in de lijst. De lead is gebaseerd op vacatures die intussen uit het venster van 30 dagen kunnen zijn gelopen — een sync haalt de huidige op.`
+                    : term
+                      ? `Geen vacatures gevonden voor "${zoek}".`
+                      : "Geen vacatures gevonden. Druk op 'Sync nu' om data op te halen."
+                }
+              />
             ) : (
               <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {filteredJobs.map((job) => (
@@ -120,7 +153,13 @@ export function DashboardClient({
 
           <TabsContent value="leads">
             {filteredCompanies.length === 0 ? (
-              <EmptyState message="Geen leads gevonden. Druk op 'Sync nu' om data op te halen." />
+              <EmptyState
+                message={
+                  term
+                    ? `Geen leads gevonden voor "${zoek}".`
+                    : "Geen leads gevonden. Druk op 'Sync nu' om data op te halen."
+                }
+              />
             ) : (
               <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {filteredCompanies.map((company) => (
@@ -129,6 +168,7 @@ export function DashboardClient({
                     company={company}
                     isNew={company.firstSeenAt >= previousSyncAt}
                     onStatusChange={(status) => handleLeadStatusChange(company.id, status)}
+                onToonVacatures={toonVacaturesVan}
                   />
                 ))}
               </div>

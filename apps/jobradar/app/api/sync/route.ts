@@ -5,7 +5,7 @@ import * as schema from '@/lib/db/schema'
 import { adzunaSource } from '@/lib/sources/adzuna'
 import { kboSource } from '@/lib/sources/kbo'
 import { deriveLeadsFromJobs } from '@/lib/signals'
-import { upsertJob, upsertLead } from '@/lib/sync/upsert'
+import { upsertJob, upsertLead, verouderdeLeadsOpruimen } from '@/lib/sync/upsert'
 import { leesZoekopdracht } from '@/lib/sync/settings-store'
 import { ALL_REGIONS, regionForPostcode } from '@/lib/regions'
 import type { RawJob } from '@/lib/sources/types'
@@ -115,14 +115,29 @@ export async function POST() {
       }
     }
 
-    // ── Leads afgeleid uit de vacatures van deze run ─────────────────────────
-    const afgeleideLeads = deriveLeadsFromJobs(alleJobs, new Date())
+    // ── Leads afgeleid uit álle opgeslagen vacatures ──────────────────────────
+    // Niet alleen uit `alleJobs`, de fetch van deze run. Een bedrijf waarvan de vacatures
+    // deze keer niet terugkwamen — omdat de zoektermen versmald zijn, of omdat de bron er
+    // die dag minder gaf — hoort niet zonder tellingen achter te blijven met een score uit
+    // een vorige run. Gemeten op 2026-08-11: afleiden uit de fetch gaf 11 leads waarvan 15
+    // zonder telling; afleiden uit de database gaf 25 leads en nul zonder.
+    const opgeslagenJobs = await db.query.jobs.findMany()
+    const afgeleideLeads = deriveLeadsFromJobs(
+      opgeslagenJobs.map((j) => ({ ...j, description: j.description ?? '' })) as RawJob[],
+      new Date()
+    )
     for (const lead of afgeleideLeads) {
       const { added } = await upsertLead(db, lead, { afgeleid: true })
       if (added) stats.leadsAdded++
       else stats.leadsUpdated++
     }
-    stats.sourceStatuses['vacatures'] = { ok: true, count: afgeleideLeads.length }
+    // En wat niet meer afgeleid wordt, verliest zijn bewering — anders veroudert een lead nooit.
+    const verouderd = await verouderdeLeadsOpruimen(db, afgeleideLeads.map((l) => l.externalId))
+    stats.sourceStatuses['vacatures'] = {
+      ok: true,
+      count: afgeleideLeads.length,
+      ...(verouderd > 0 ? { warnings: [`${verouderd} leads verloren hun signaal: de vacatures eronder zijn verlopen`] } : {}),
+    }
 
     await db
       .update(schema.syncRuns)

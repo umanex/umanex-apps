@@ -16,9 +16,11 @@ type LeadCardProps = {
   company: Company
   isNew: boolean
   onStatusChange: (status: ItemStatus) => void
+  /** Springt naar het Vacatures-tabblad met dit bedrijf als zoekterm. */
+  onToonVacatures: (bedrijf: string) => void
 }
 
-export function LeadCard({ company, isNew, onStatusChange }: LeadCardProps) {
+export function LeadCard({ company, isNew, onStatusChange, onToonVacatures }: LeadCardProps) {
   const signals = JSON.parse(company.signals) as string[]
   const breakdown = JSON.parse(company.scoreBreakdown) as Record<string, number>
   const hasBreakdown = Object.keys(breakdown).length > 0
@@ -67,6 +69,26 @@ export function LeadCard({ company, isNew, onStatusChange }: LeadCardProps) {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Waarop het signaal rust. Zonder dit is de kaart een bewering zonder bewijs —
+            de tellingen werden al berekend en vervolgens weggegooid (UX-audit, P1). */}
+        <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          {company.vacatureAantal === null ? (
+            <span>— nog niet geteld</span>
+          ) : (
+            <span className="tabular-nums">
+              {company.vacatureAantal} {company.vacatureAantal === 1 ? 'vacature' : 'vacatures'} ·{' '}
+              {company.designVacatures ?? 0} design · {company.devVacatures ?? 0} dev
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => onToonVacatures(company.companyName)}
+            className="rounded text-foreground underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            toon deze vacatures
+          </button>
+        </div>
+
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="flex items-center gap-2">
             <span className="rounded bg-muted px-1.5 py-0.5">{company.region}</span>

@@ -188,7 +188,7 @@ function lead(over: Partial<RawLead> & Pick<RawLead, 'externalId' | 'companyName
   const leeg = await leesZoekopdracht(db)
   check('zonder opgeslagen rij geldt de gemeten standaard', isStandaard(leeg), JSON.stringify(leeg))
 
-  const eigen = { termen: ['kotlin', 'rust'], uitsluiten: ['stage'] }
+  const eigen = { termen: ['kotlin', 'rust'], zinsnedes: [], uitsluiten: ['stage'] }
   await schrijfZoekopdracht(db, eigen)
   const na = await leesZoekopdracht(db)
   check('opslaan en teruglezen levert hetzelfde', serialiseerZoekopdracht(na) === serialiseerZoekopdracht(eigen), JSON.stringify(na))
@@ -197,7 +197,7 @@ function lead(over: Partial<RawLead> & Pick<RawLead, 'externalId' | 'companyName
   await schrijfZoekopdracht(db, eigen)
   check('twee keer opslaan geeft geen tweede rij', (rauw.prepare('SELECT COUNT(*) c FROM settings').get() as { c: number }).c === 1)
 
-  const anders = { termen: ['ux'], uitsluiten: [] }
+  const anders = { termen: ['ux'], zinsnedes: [], uitsluiten: [] }
   await schrijfZoekopdracht(db, anders)
   check('overschrijven werkt', serialiseerZoekopdracht(await leesZoekopdracht(db)) === serialiseerZoekopdracht(anders))
 

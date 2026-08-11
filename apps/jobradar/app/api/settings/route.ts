@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { leesZoekopdracht, schrijfZoekopdracht, herstelZoekopdracht } from '@/lib/sync/settings-store'
-import { splitsTermen, valideerZoekopdracht, standaardZoekopdracht, isStandaard } from '@/lib/settings'
+import { splitsTermen, normaliseerZinsnedes, valideerZoekopdracht, standaardZoekopdracht, isStandaard } from '@/lib/settings'
 
 export async function GET() {
   const zoek = await leesZoekopdracht(getDb())
@@ -16,7 +16,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ ok: false, error: 'Ongeldige JSON in het verzoek.' }, { status: 400 })
   }
 
-  const b = (body ?? {}) as { termen?: unknown; uitsluiten?: unknown }
+  const b = (body ?? {}) as { termen?: unknown; zinsnedes?: unknown; uitsluiten?: unknown }
   if (!Array.isArray(b.termen) || !Array.isArray(b.uitsluiten)) {
     return NextResponse.json({ ok: false, error: '`termen` en `uitsluiten` moeten lijsten zijn.' }, { status: 400 })
   }
@@ -26,6 +26,8 @@ export async function PUT(request: Request) {
   // regel te krijgen als wie het scherm gebruikt.
   const zoek = {
     termen: splitsTermen(b.termen.map(String)),
+    // Niet splitsen: een zinsnede gaat als geheel naar `what_phrase`.
+    zinsnedes: normaliseerZinsnedes(Array.isArray(b.zinsnedes) ? b.zinsnedes.map(String) : []),
     uitsluiten: splitsTermen(b.uitsluiten.map(String)),
   }
 

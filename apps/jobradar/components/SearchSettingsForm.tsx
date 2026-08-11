@@ -6,9 +6,9 @@ import { RefreshCw, AlertTriangle, Check } from 'lucide-react'
 import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
 import { TermChips } from './TermChips'
-import { valideerZoekopdracht, type Zoekopdracht } from '@/lib/settings'
+import { valideerZoekopdracht, minimaleVerzoeken, MAX_ZINSNEDES, type Zoekopdracht } from '@/lib/settings'
 
-type Telling = { regio: string; treffers: number; afgekapt: boolean; fout?: string }
+type Telling = { regio: string; treffers: number; afgekapt: boolean; bovengrens: boolean; fout?: string }
 
 type SearchSettingsFormProps = {
   begin: Zoekopdracht
@@ -104,6 +104,23 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
       />
 
       <TermChips
+        label="Woordcombinaties"
+        beschrijving="Een exacte zinsnede, als geheel gezocht. Elke combinatie kost een eigen verzoek per regio — daarom het maximum."
+        termen={zoek.zinsnedes}
+        onChange={(zinsnedes) => wijzig({ ...zoek, zinsnedes })}
+        disabled={bezig !== null}
+        modus="zinsnede"
+        max={MAX_ZINSNEDES}
+      />
+
+      <p className="text-sm text-muted-foreground">
+        Een sync kost hiermee minstens{' '}
+        <span className="font-medium tabular-nums text-foreground">{minimaleVerzoeken(zoek, 3)}</span> verzoeken aan
+        Adzuna — paginering komt daar nog bij. Adzuna stuurt geen limiet-headers mee, dus te vaak vragen merk je
+        pas aan een weigering.
+      </p>
+
+      <TermChips
         label="Uitsluiten"
         beschrijving="Vacatures met een van deze woorden komen niet binnen. Houd de lijst kort: te breed uitsluiten kost echte leads."
         termen={zoek.uitsluiten}
@@ -157,7 +174,10 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
                   <span className="text-destructive">{t.fout}</span>
                 ) : (
                   <>
-                    <span className="w-24 tabular-nums">{t.treffers} treffers</span>
+                    <span className="w-32 tabular-nums">
+                      {t.bovengrens ? 'hoogstens ' : ''}
+                      {t.treffers} treffers
+                    </span>
                     <span className={cn(t.afgekapt && 'text-destructive')}>
                       {t.afgekapt ? 'wordt afgekapt door het plafond' : 'past onder het plafond'}
                     </span>
@@ -168,6 +188,8 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
           </ul>
           <p className="pt-1 text-xs text-muted-foreground">
             Een telling haalt niets op en slaat niets op — hij vraagt alleen het aantal.
+            {tellingen.some((t) => t.bovengrens) &&
+              ' Met woordcombinaties is het een bovengrens: een vacature die op meerdere ervan matcht telt hier meerdere keren, en wordt bij een sync één keer bewaard.'}
           </p>
         </div>
       )}

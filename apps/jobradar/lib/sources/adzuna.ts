@@ -25,10 +25,27 @@ const isMockMode = () => process.env.JOBRADAR_MOCK === '1'
 
 const heeftSleutels = () => Boolean(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY)
 
+/**
+ * Eén deelvraag aan de bron: óf de losse woorden samen, óf één exacte zinsnede.
+ *
+ * Ze zijn niet te combineren. `what_or` en `what_phrase` in hetzelfde verzoek geven de
+ * dóórsnede, niet de vereniging — gemeten op 2026-08-11: `what_or=UX` (14 treffers) plus
+ * `what_phrase=design system` (1) leverde 1. Vandaar een verzoek per zinsnede.
+ */
+export type Deelvraag = { soort: 'woorden'; woorden: string[] } | { soort: 'zinsnede'; zinsnede: string }
+
+export function deelvragen(zoek: Zoekopdracht): Deelvraag[] {
+  return [
+    { soort: 'woorden' as const, woorden: zoek.termen },
+    ...zoek.zinsnedes.map((zinsnede) => ({ soort: 'zinsnede' as const, zinsnede })),
+  ]
+}
+
 export function bouwUrl(
   regio: RegionCode,
   pagina: number,
-  zoek: Zoekopdracht,
+  vraag: Deelvraag,
+  uitsluiten: readonly string[],
   opties: { perPagina?: number } = {}
 ): string {
   const anchor = REGIONS[regio].adzunaAnchor
@@ -37,12 +54,13 @@ export function bouwUrl(
   )
   url.searchParams.set('app_id', process.env.ADZUNA_APP_ID!)
   url.searchParams.set('app_key', process.env.ADZUNA_APP_KEY!)
-  url.searchParams.set('what_or', zoek.termen.join(' '))
+  if (vraag.soort === 'woorden') url.searchParams.set('what_or', vraag.woorden.join(' '))
+  else url.searchParams.set('what_phrase', vraag.zinsnede)
   url.searchParams.set('where', anchor.place)
   url.searchParams.set('distance', String(anchor.radiusKm))
   url.searchParams.set('results_per_page', String(opties.perPagina ?? ADZUNA_SEARCH.resultatenPerPagina))
   url.searchParams.set('max_days_old', String(ADZUNA_SEARCH.maxDagenOud))
-  if (zoek.uitsluiten.length) url.searchParams.set('what_exclude', zoek.uitsluiten.join(' '))
+  if (uitsluiten.length) url.searchParams.set('what_exclude', uitsluiten.join(' '))
   return url.toString()
 }
 
@@ -122,7 +140,20 @@ export async function haalMetGeduld(
   return res
 }
 
-export type Telling = { regio: RegionCode; treffers: number; afgekapt: boolean; fout?: string }
+export type Telling = {
+  regio: RegionCode
+  /**
+   * De som over alle deelvragen — een **bovengrens**, geen aantal. Een vacature die zowel op
+   * een los woord als op een zinsnede matcht, telt hier twee keer; de sync bewaart hem één
+   * keer. Het scherm hoort dat te zeggen zodra er meer dan één deelvraag is.
+   */
+  treffers: number
+  /** Waar zodra één deelvraag het plafond raakt — het plafond geldt per deelvraag. */
+  afgekapt: boolean
+  /** Of de som dubbels kan bevatten, d.w.z. of er meer dan één deelvraag was. */
+  bovengrens: boolean
+  fout?: string
+}
 
 /**
  * Telt hoeveel treffers een zoekopdracht in één regio zou opleveren, zonder ze op te halen.
@@ -140,25 +171,45 @@ export async function telTreffers(
   netwerk?: FetchParams['netwerk']
 ): Promise<Telling> {
   const plafond = ADZUNA_SEARCH.maxPaginas * ADZUNA_SEARCH.resultatenPerPagina
-  try {
-    const res = await haalMetGeduld(bouwUrl(regio, 1, zoek, { perPagina: 1 }), netwerk)
-    if (!res.ok) {
-      return { regio, treffers: 0, afgekapt: false, fout: res.status === 429 ? 'Adzuna: te veel verzoeken' : `Adzuna: HTTP ${res.status}` }
+  const vragen = deelvragen(zoek)
+  let treffers = 0
+  let afgekapt = false
+
+  for (const vraag of vragen) {
+    try {
+      const res = await haalMetGeduld(bouwUrl(regio, 1, vraag, zoek.uitsluiten, { perPagina: 1 }), netwerk)
+      if (!res.ok) {
+        return {
+          regio,
+          treffers: 0,
+          afgekapt: false,
+          bovengrens: false,
+          fout: res.status === 429 ? 'Adzuna: te veel verzoeken' : `Adzuna: HTTP ${res.status}`,
+        }
+      }
+      const data = (await res.json()) as { count?: unknown }
+      const n = typeof data?.count === 'number' ? data.count : 0
+      treffers += n
+      // Per deelvraag toetsen. De som tegen een meegroeiende drempel leggen zette de
+      // waarschuwing uit zodra je een zinsnede toevoegde — drie zinsnedes die níets vinden
+      // verhoogden de drempel met 750 en verborgen daarmee een afkapping van de woordenvraag.
+      if (n > plafond) afgekapt = true
+    } catch (err) {
+      return { regio, treffers: 0, afgekapt: false, bovengrens: false, fout: err instanceof Error ? err.message : String(err) }
     }
-    const data = (await res.json()) as { count?: unknown }
-    const treffers = typeof data?.count === 'number' ? data.count : 0
-    return { regio, treffers, afgekapt: treffers > plafond }
-  } catch (err) {
-    return { regio, treffers: 0, afgekapt: false, fout: err instanceof Error ? err.message : String(err) }
   }
+
+  return { regio, treffers, afgekapt, bovengrens: vragen.length > 1 }
 }
 
 /** Haalt één regio volledig op. Gooit niet: de uitkomst draagt zijn eigen fouten. */
-async function haalRegio(
+async function haalDeelvraag(
   regio: RegionCode,
-  zoek: Zoekopdracht,
+  vraag: Deelvraag,
+  uitsluiten: readonly string[],
   netwerk: FetchParams['netwerk']
 ): Promise<SourceResult<RawJob>> {
+  const etiket = vraag.soort === 'woorden' ? regio : `${regio} "${vraag.zinsnede}"`
   const items: RawJob[] = []
   const warnings: string[] = []
   let buitenRegio = 0
@@ -174,19 +225,19 @@ async function haalRegio(
   for (let pagina = 1; pagina <= ADZUNA_SEARCH.maxPaginas; pagina++) {
     let data: AdzunaResponse
     try {
-      const res = await haalMetGeduld(bouwUrl(regio, pagina, zoek), netwerk)
+      const res = await haalMetGeduld(bouwUrl(regio, pagina, vraag, uitsluiten), netwerk)
       if (!res.ok) {
         warnings.push(
           res.status === 429
-            ? `${regio}: Adzuna weigerde na ${ADZUNA_SEARCH.retriesBij429} herkansingen (429) op pagina ${pagina} — regio deels opgehaald`
-            : `${regio}: HTTP ${res.status} op pagina ${pagina} — regio deels opgehaald`
+            ? `${etiket}: Adzuna weigerde na ${ADZUNA_SEARCH.retriesBij429} herkansingen (429) op pagina ${pagina} — deels opgehaald`
+            : `${etiket}: HTTP ${res.status} op pagina ${pagina} — deels opgehaald`
         )
         afgebrokenDoorFout = true
         break
       }
       data = (await res.json()) as AdzunaResponse
     } catch (err) {
-      warnings.push(`${regio}: ${err instanceof Error ? err.message : String(err)} op pagina ${pagina}`)
+      warnings.push(`${etiket}: ${err instanceof Error ? err.message : String(err)} op pagina ${pagina}`)
       afgebrokenDoorFout = true
       break
     }
@@ -220,17 +271,43 @@ async function haalRegio(
     if (laatstePaginaVol && !afgebrokenDoorFout) {
       warnings.push(
         totaalBijBron !== undefined
-          ? `${regio}: ${opgehaald} van ${totaalBijBron} vacatures opgehaald ` +
+          ? `${etiket}: ${opgehaald} van ${totaalBijBron} vacatures opgehaald ` +
             `(plafond ${ADZUNA_SEARCH.maxPaginas} pagina's × ${ADZUNA_SEARCH.resultatenPerPagina})`
-          : `${regio}: ${opgehaald} vacatures opgehaald en het plafond geraakt ` +
+          : `${etiket}: ${opgehaald} vacatures opgehaald en het plafond geraakt ` +
             `(${ADZUNA_SEARCH.maxPaginas} pagina's); de bron meldde geen totaal, dus er kan meer zijn`
       )
     }
     if (buitenRegio > 0) {
-      warnings.push(`${regio}: ${buitenRegio} vacatures buiten de regio laten vallen (zoekstraal loopt over de grens)`)
+      warnings.push(`${etiket}: ${buitenRegio} vacatures buiten de regio laten vallen (zoekstraal loopt over de grens)`)
     }
     return { items, warnings }
   }
+}
+
+/**
+ * Alle deelvragen voor één regio, serieel. Dubbels tussen de deelvragen — een vacature die
+ * zowel op "UX" als op de zinsnede "user experience" matcht — worden hier al opgeruimd.
+ */
+async function haalRegio(
+  regio: RegionCode,
+  zoek: Zoekopdracht,
+  netwerk: FetchParams['netwerk']
+): Promise<SourceResult<RawJob>> {
+  const items: RawJob[] = []
+  const warnings: string[] = []
+  const gezien = new Set<string>()
+
+  for (const vraag of deelvragen(zoek)) {
+    const uit = await haalDeelvraag(regio, vraag, zoek.uitsluiten, netwerk)
+    warnings.push(...uit.warnings)
+    for (const job of uit.items) {
+      if (gezien.has(job.externalId)) continue
+      gezien.add(job.externalId)
+      items.push(job)
+    }
+  }
+
+  return { items, warnings }
 }
 
 export const adzunaSource: JobSource = {

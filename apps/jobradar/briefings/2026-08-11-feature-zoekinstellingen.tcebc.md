@@ -22,7 +22,8 @@ CONTEXT:     jobradar. De termen staan nu hardcoded in lib/config/profile.ts. Op
 
 ELEMENTS:    - Route /instellingen, met een link "Instellingen" in de dashboardkop
              - TermChips: chip per term met kruisje + invoerveld om toe te voegen
-             - Twee velden: zoektermen (verplicht) en uitsluitingen (optioneel)
+             - Drie velden: zoektermen (verplicht), woordcombinaties (max 3) en
+               uitsluitingen (optioneel)
              - QueryTest: knop + uitslag per regio (treffers, en of het plafond raakt)
              - Opslaan-knop met bevestiging; Herstel-naar-standaard
 
@@ -33,6 +34,9 @@ BEHAVIOUR:   - Een term met een spatie wordt bij invoer gesplitst in losse chips
                toont alleen de telling — het slaat niets op en raakt de database niet
              - Opslaan werkt pas door bij de volgende sync; dat staat er ook
              - Leeg opslaan mag niet: zonder zoektermen haalt Adzuna álles op
+             - Een woordcombinatie wordt NIET gesplitst en gaat als geheel naar
+               `what_phrase` — dat kost een eigen verzoek per regio, want `what_or` en
+               `what_phrase` combineren als AND en niet als OR
 
 CONSTRAINTS: - Desktop-first, Tailwind + bestaande rollaag, geen nieuwe dependency
              - Alleen de zoektermen zijn bewerkbaar. SKILL_KEYWORDS, de rolwoorden en
@@ -100,7 +104,24 @@ Gedraaid op 2026-08-11 tegen een kopie van de echte database, in Chrome en via d
 - **`/api/settings` wordt net als de andere routes niet geautoriseerd.** Dat staat al als
   bekende grens voor `/api/sync` en de PATCH-routes; dit voegt er een schrijfpad aan toe.
 
+### Acceptatie — woordcombinaties (2026-08-11)
+
+- [x] Een tweede veld accepteert een term mét spatie zonder te splitsen
+- [x] Zo'n combinatie gaat naar `what_phrase`, nooit naar `what_or`
+- [x] Elke combinatie levert een eigen verzoek per regio; de sync-waarschuwingen dragen het
+      etiket `REGIO "combinatie"` zodat zichtbaar is welke deelvraag wat deed
+- [x] Maximaal 3 combinaties; meer wordt geweigerd met de reden (verzoek-budget)
+- [x] Een combinatie van één woord wordt geweigerd, met de verwijzing naar het andere veld
+- [x] Overtollige spaties worden genormaliseerd (`"  design   system  "` → `"design system"`)
+- [x] Hoofdletter-ongevoelig ontdubbeld
+- [x] Het scherm toont hoeveel verzoeken een sync minstens kost
+- [x] Dubbels tussen deelvragen worden binnen de regio al opgeruimd
+
+Gemeten: een sync met `UX`, `UI` en de combinatie `design system` gaf waarschuwingen met de
+etiketten `BRU` én `BRU "design system"` — twee aparte queries, zoals bedoeld.
+
 ## Beslissingsgeschiedenis
 
 - 2026-08-11: TC-EBC aangemaakt nadat één zoekwoord 61% van de opgehaalde ruis bleek te veroorzaken; scope = de termen bewerkbaar maken, niet de scoring
+- 2026-08-11: scope uitgebreid met woordcombinaties. Gemeten dat `what_or` en `what_phrase` als AND combineren (`what_or=UX` 14 treffers + `what_phrase=design system` 1 → 1), dus elke combinatie kost een eigen verzoek per regio. Jeroen koos een maximum van 3 en twee aparte velden
 - 2026-08-11: vier kritische items beantwoord door Jeroen — alleen de zoektermen bewerkbaar (scoring blijft gepind), aparte pagina, chips, en een testknop vóór opslaan

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { telTreffers } from '@/lib/sources/adzuna'
 import { ALL_REGIONS } from '@/lib/regions'
-import { splitsTermen, valideerZoekopdracht } from '@/lib/settings'
+import { splitsTermen, normaliseerZinsnedes, valideerZoekopdracht } from '@/lib/settings'
 import { ADZUNA_SEARCH } from '@/lib/config/profile'
 
 /**
@@ -21,9 +21,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'Ongeldige JSON in het verzoek.' }, { status: 400 })
   }
 
-  const b = (body ?? {}) as { termen?: unknown; uitsluiten?: unknown }
+  const b = (body ?? {}) as { termen?: unknown; zinsnedes?: unknown; uitsluiten?: unknown }
   const zoek = {
     termen: splitsTermen(Array.isArray(b.termen) ? b.termen.map(String) : []),
+    zinsnedes: normaliseerZinsnedes(Array.isArray(b.zinsnedes) ? b.zinsnedes.map(String) : []),
     uitsluiten: splitsTermen(Array.isArray(b.uitsluiten) ? b.uitsluiten.map(String) : []),
   }
 

@@ -3,7 +3,7 @@
 import { useId, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@umanex/ui/components/ui/button'
-import { splitsTermen } from '@/lib/settings'
+import { splitsTermen, normaliseerZinsnedes } from '@/lib/settings'
 
 type TermChipsProps = {
   label: string
@@ -11,6 +11,13 @@ type TermChipsProps = {
   termen: string[]
   onChange: (termen: string[]) => void
   disabled?: boolean
+  /**
+   * `woorden` splitst op spaties — dat is hoe `what_or` werkt. `zinsnede` doet dat juist
+   * niet: die gaat als geheel naar `what_phrase`, en opdelen zou hem terugveranderen in
+   * losse woorden.
+   */
+  modus?: 'woorden' | 'zinsnede'
+  max?: number
 }
 
 /**
@@ -20,14 +27,26 @@ type TermChipsProps = {
  * `what_or` matcht per woord, dus die spatie ís een scheiding. Precies dat onzichtbare
  * gedrag maakte één woord goed voor 743 van de 1222 opgehaalde vacatures.
  */
-export function TermChips({ label, beschrijving, termen, onChange, disabled = false }: TermChipsProps) {
+export function TermChips({
+  label,
+  beschrijving,
+  termen,
+  onChange,
+  disabled = false,
+  modus = 'woorden',
+  max,
+}: TermChipsProps) {
   const [invoer, setInvoer] = useState('')
   const veldId = useId()
   const hulpId = useId()
 
+  const vol = max !== undefined && termen.length >= max
+
   function voegToe() {
-    const nieuw = splitsTermen([...termen, invoer])
-    if (nieuw.length !== termen.length) onChange(nieuw)
+    if (!invoer.trim() || vol) return
+    const nieuw =
+      modus === 'zinsnede' ? normaliseerZinsnedes([...termen, invoer]) : splitsTermen([...termen, invoer])
+    if (nieuw.length !== termen.length) onChange(max === undefined ? nieuw : nieuw.slice(0, max))
     setInvoer('')
   }
 
@@ -39,6 +58,9 @@ export function TermChips({ label, beschrijving, termen, onChange, disabled = fa
         </label>
         <p id={hulpId} className="text-sm text-muted-foreground">
           {beschrijving}
+          {max !== undefined && (
+            <span className="tabular-nums"> — {termen.length} van {max} gebruikt.</span>
+          )}
         </p>
       </div>
 
@@ -67,10 +89,10 @@ export function TermChips({ label, beschrijving, termen, onChange, disabled = fa
           id={veldId}
           aria-describedby={hulpId}
           value={invoer}
-          disabled={disabled}
+          disabled={disabled || vol}
           onChange={(e) => setInvoer(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ',') {
+            if (e.key === 'Enter' || (e.key === ',' && modus === 'woorden')) {
               e.preventDefault()
               voegToe()
             }
@@ -80,11 +102,11 @@ export function TermChips({ label, beschrijving, termen, onChange, disabled = fa
             }
           }}
           onBlur={voegToe}
-          placeholder="term toevoegen…"
+          placeholder={vol ? 'maximum bereikt' : modus === 'zinsnede' ? 'combinatie toevoegen…' : 'term toevoegen…'}
           className="min-w-[10rem] flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50"
         />
 
-        <Button type="button" size="sm" variant="secondary" onClick={voegToe} disabled={disabled || !invoer.trim()}>
+        <Button type="button" size="sm" variant="secondary" onClick={voegToe} disabled={disabled || vol || !invoer.trim()}>
           Toevoegen
         </Button>
       </div>

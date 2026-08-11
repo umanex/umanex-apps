@@ -6,7 +6,7 @@ import { RefreshCw, AlertTriangle, Check } from 'lucide-react'
 import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
 import { TermChips } from './TermChips'
-import { valideerZoekopdracht, type Zoekopdracht } from '@/lib/settings'
+import { valideerZoekopdracht, minimaleVerzoeken, MAX_ZINSNEDES, type Zoekopdracht } from '@/lib/settings'
 
 type Telling = { regio: string; treffers: number; afgekapt: boolean; fout?: string }
 
@@ -102,6 +102,23 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
         onChange={(termen) => wijzig({ ...zoek, termen })}
         disabled={bezig !== null}
       />
+
+      <TermChips
+        label="Woordcombinaties"
+        beschrijving="Een exacte zinsnede, als geheel gezocht. Elke combinatie kost een eigen verzoek per regio — daarom het maximum."
+        termen={zoek.zinsnedes}
+        onChange={(zinsnedes) => wijzig({ ...zoek, zinsnedes })}
+        disabled={bezig !== null}
+        modus="zinsnede"
+        max={MAX_ZINSNEDES}
+      />
+
+      <p className="text-sm text-muted-foreground">
+        Een sync kost hiermee minstens{' '}
+        <span className="font-medium tabular-nums text-foreground">{minimaleVerzoeken(zoek, 3)}</span> verzoeken aan
+        Adzuna — paginering komt daar nog bij. Adzuna stuurt geen limiet-headers mee, dus te vaak vragen merk je
+        pas aan een weigering.
+      </p>
 
       <TermChips
         label="Uitsluiten"

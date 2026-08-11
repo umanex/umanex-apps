@@ -46,24 +46,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+48e2f4b feat(rowtrack-web): design iteration on Jeroen's feedback
 be61b93 fix(rowtrack-web): address all 15 code-review findings on the motion layer
 b55f640 docs(rowtrack-web): ux-audit report and acceptance evidence for redesign
 5c9b867 feat(rowtrack-web): premium redesign with scroll-motion layer
 cb5139a docs(rowtrack-web): add premium redesign TC-EBC briefing
-9a2bc2e chore: sync umanex-os layer with global umanex-os
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack-web/BACKLOG.md
-  M  apps/rowtrack-web/app/globals.css
-  M  apps/rowtrack-web/briefings/2026-08-11-feature-rowtrack-web-premium-redesign.tcebc.md
-  M  apps/rowtrack-web/components/layout/Section.tsx
-  M  apps/rowtrack-web/components/sections/Analysis.tsx
-  M  apps/rowtrack-web/components/sections/Compat.tsx
-  M  apps/rowtrack-web/components/sections/Goals.tsx
   M  apps/rowtrack-web/components/sections/Hero.tsx
-  M  apps/rowtrack-web/components/sections/Metrics.tsx
-  M  apps/rowtrack-web/components/sections/Records.tsx
+  M  apps/rowtrack-web/messages/nl.json
 
 ## Bestanden met TODO/FIXME
   (geen)

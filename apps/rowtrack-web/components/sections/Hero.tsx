@@ -32,7 +32,11 @@ export const Hero = async () => {
         <div className="grid items-center gap-16 md:grid-cols-2">
           <div>
             <Reveal>
-              <h1 className="font-serif text-5xl leading-tight tracking-tight text-fg-primary text-balance md:text-6xl md:leading-tight">
+              {/* whitespace-pre-line honoreert de \n in de copy: "Elke haal telt."
+                  op één regel, de rest eronder. Vrije omloop kan die splitsing
+                  niet geven — de eerste regel neemt dan "Nu" gulzig mee — en
+                  text-balance verdeelde de slogan juist over drie regels. */}
+              <h1 className="whitespace-pre-line font-serif text-5xl leading-tight tracking-tight text-fg-primary md:text-6xl md:leading-tight">
                 {t('title')}
               </h1>
             </Reveal>

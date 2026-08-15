@@ -271,3 +271,38 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   tweede afwijkend merk in beeld, dus de zes overrides in `apps/jobradar/app/globals.css`
   blijven de hele oplossing. Blijft hier staan als spoor: kantelt dat ooit, dan is dit het
   vertrekpunt.
+
+# Klant — SODAplus (prospect)
+
+## 2026-08-13 — De wireframes staan, de toelichting nog niet · [next-step]
+- **Bevinding:** Elf wireframes staan in het Figma-bestand `Soda+` (board "SODA+ — digitaal
+  attituderapport"), maar de opdracht wordt beoordeeld op probleeminterpretatie en denkproces —
+  en die zitten in de gevraagde video, niet in de schermen. Zonder video is er feitelijk niets
+  ingediend. De briefing staat in `briefings/2026-08-13-flow-soda-attituderapport.tcebc.md`
+  (branch `feature/sodaplus-attituderapport`, commit `ccd76ee`).
+- **Volgende zet:** Script van 3–5 min: probleeminterpretatie (het lege oplossingskader heeft
+  drie oorzaken tegelijk — geen plan mogelijk tegen een karaktertrek, B1-schrijftaak aan een
+  A1–A2-lezer, en niemand komt er ooit op terug) → flow → per doelstelling de keuze mét het
+  verworpen alternatief → open vragen. Begrens de opdracht expliciet tot schermen 01–07 en
+  presenteer 08–09 (schoolzijde) en 10–11 (randgevallen) als bewust extra; anders claimt de set
+  impliciet een uur dat er niet in zat, en dat leest als scope-blindheid bij een opdrachtgever
+  die het uur zelf als grens stelde.
+- **Check:** `grep -c '^- \[ \] Video' briefings/2026-08-13-flow-soda-attituderapport.tcebc.md`
+  — 1 = het laatste acceptatie-item staat nog open, de video bestaat niet; 0 = afgevinkt.
+- **Status:** open
+
+## 2026-08-13 — "OKANOR" als OKAN-context is een lezing, geen feit · [aanname]
+- **Bevinding:** Het scherpste argument in het ontwerp — gedragsitems in plaats van abstracte
+  domeinnamen, kiezen in plaats van schrijven — rust op de lezing dat "OKANOR" op het papieren
+  rapport een OKAN-klas aanduidt (anderstalige nieuwkomers). Het staat op de plek waar normaal
+  een leerlingnaam staat. De klassenraadfeedback maakt het waarschijnlijk ("praat geen Nederlands
+  in de klas", "herhalingsbundel taaltaak", "doet geen moeite om de taal te verbeteren"), maar
+  bevestigd is het niet.
+- **Volgende zet:** In de video formuleren als observatie plus vraag, niet als vaststelling.
+  Klopt de lezing niet, dan blijft het ontwerp overeind — frequentie-items en als-dan-slots
+  werken ook zonder taalbarrière — maar valt de sterkste onderbouwing weg, en stellig zijn kost
+  dan meer dan het oplevert.
+- **Check:** `grep -c '^- \[ \] Is OKAN' briefings/2026-08-13-flow-soda-attituderapport.tcebc.md`
+  — 1 = SODAplus heeft niet geantwoord, de lezing staat nog op hypothese; 0 = afgevinkt of
+  geschrapt, dus bevestigd of weerlegd.
+- **Status:** open

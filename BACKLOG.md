@@ -38,3 +38,19 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
     - **Status:** open
 
 <!-- De eerste entry maakt hieronder de juiste laag-header aan. -->
+
+# Klant — SODAplus (prospect)
+
+## 2026-08-13 — Klikbaar prototype van de SODA-kernflow · [feature]
+- **Wat:** De drie schermen die de doelstellingen dragen — zelfcheck (02), onthulling (04) en
+  planbouwer (06) — als klikbaar prototype in Next.js, zodat de flow te doorlópen is in plaats
+  van te bekijken. De hold-to-reveal en de als-dan-slots zijn de twee interacties die statisch
+  niet over te brengen zijn.
+- **Waarom niet nu:** Jeroen koos eerst de Figma-set. De opdracht is begrensd op één uur en
+  vraagt uitdrukkelijk geen afgewerkt ontwerp; een prototype is onderscheidend (front-end staat
+  bij "preferred" in de vacature) maar alleen als het zichtbaar buiten die grens gepresenteerd
+  wordt.
+- **Eerste zet:** Beslissen waar het leeft — `apps/sodaplus/` met eigen worktree, of los buiten
+  de repo. Beide opties met hun afweging staan in
+  `briefings/2026-08-13-flow-soda-attituderapport.tcebc.md`.
+- **Status:** open

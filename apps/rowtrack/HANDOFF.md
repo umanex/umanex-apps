@@ -32,6 +32,60 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-08-16 — Twee calorieformules die elkaar kruisen, en de erg-waarde wordt weggegooid · [onzekerheid]
+- **Bevinding:** De app rekent calorieën zelf uit en negeert het kcal-veld dat de erg meestuurt.
+  Beide formules zijn nu uit de rauwe pakketten van twee volledige trainingen gereconstrueerd.
+
+  **De app** (`apps/rowtrack/lib/calories.ts`) rekent via VO2:
+  `vo2 = W·14,4/kg + 7`, `met = vo2/3,5`, `kcal = met·kg·h`. Dat vereenvoudigt tot
+  **`kcal/h = 4,114·W + 2·gewicht`** — het gewicht komt er dus alleen via een constante term in,
+  niet als schaalfactor. Terugrekenen uit de opgeslagen waarden geeft een impliciet profielgewicht
+  van 85,9 kg (15/08) en 86,5 kg (16/08), consistent, dus de reconstructie klopt.
+
+  **De erg** (FTMS Expended Energy, bit 8: totaal uint16 + per uur uint16 + per minuut uint8) volgt
+  exact de Concept2-formule **`kcal/h = 3,442·W + 300`** — mediane afwijking 1,2 kcal/h over 1135
+  slagen, en `perMin == floor(perHour/60)` in 1135 van 1135 gevallen. De parser slaat het veld
+  bewust over: `apps/rowtrack/lib/ble/ftms-parser.ts:113` doet `offset += 5` met de comment
+  *"Skipped — calories are calculated app-side"*.
+
+  **De twee kruisen elkaar.** Bij 86 kg snijden ze op **189 W**: daaronder leest de app te laag,
+  daarboven te hoog. "De app zit er 4-5% naast" is dus geen vaste uitspraak maar een functie van
+  vermogen én lichaamsgewicht, met een tekenwissel erin. Het kruispunt schuift hard met gewicht:
+  70 kg → 238 W · 80 kg → 208 W · 95 kg → 164 W · 110 kg → 119 W.
+
+  Gemeten op de twee sessies (erg-teller eind-min-start tegen de opgeslagen `calories`):
+
+  | Datum | Vermogen | Duur | Erg | App | Afwijking |
+  |---|---|---|---|---|---|
+  | 15/08 | 125 W | 1800 s | 363 kcal | 343 | −5,5% |
+  | 16/08 | 138 W | 3416 s | 735 kcal | 703 | −4,4% |
+
+  De erg-teller is **cumulatief sinds erg-reset**, niet sinds workoutstart: op 15/08 stond hij op 0
+  bij aanvang, op 16/08 op 386. Overnemen vraagt dus eind-min-start, niet de absolute waarde.
+
+  Eén verdachte die ná meting afvalt: `apps/rowtrack/lib/hooks/useWorkoutMetrics.ts:294-305`
+  bemonstert elke 5 s puntsgewijs `currentWattsRef.current` in plaats van het intervalgemiddelde dat
+  er vlak naast al bijgehouden wordt (`splitIntervalWattsSum/Count`). Nagerekend op 16/08 is dat
+  137,84 W tegen 137,98 W tijd-gewogen — 0,5 kcal verschil op 703. Reëel maar verwaarloosbaar bij
+  constant tempo; bij intervalwerk kan het kantelen, dus het blijft een latente kwestie, geen fout.
+
+- **Volgende zet:** Niet meteen bouwen — dit is de diepe analyse die Jeroen apart wil doen. De
+  open vragen: (1) welk getal is leidend voor een waterroeier, de C2-curve van de erg of een
+  VO2-model, wetende dat de erg-formule gewichtsonafhankelijk is en dus per definitie fout voor
+  lichte of zware roeiers; (2) is de VO2-formule in `calories.ts` überhaupt correct toegepast — hij
+  gebruikt het gemiddelde vermogen over een interval, terwijl VO2 niet lineair in vermogen hoeft te
+  zijn; (3) hoort er een `erg_calories`-kolom naast de eigen waarde te komen zodat de eigen formule
+  ijkbaar wordt in plaats van onvergelijkbaar; (4) wat toont de app als het profielgewicht ontbreekt
+  — `ActivePhase.tsx:396` zet er een asterisk bij, maar de default is 75 kg en dat verschuift het
+  kruispunt naar 238 W. Ruwe data voor die analyse: de twee gedecodeerde opnames met het `kcal`-veld
+  per pakket (de scratchpad van sessie 4632c7f0 is vluchtig — opnieuw opnemen kan via de opnameketen
+  die in de referentiepagina staat beschreven).
+- **Check:** `grep -n "offset += 5" apps/rowtrack/lib/ble/ftms-parser.ts` — treffer = het
+  energieveld wordt nog steeds overgeslagen en de vraag staat nog open; geen treffer = de parser
+  leest het en er is een besluit gevallen. Aanvullend `grep -rn "erg_calories" apps/rowtrack` —
+  treffer = de erg-waarde wordt naast de eigen bewaard en de formules zijn vergelijkbaar geworden.
+- **Status:** open
+
 ## 2026-08-11 — Subtitle-action vuurt niet op synthetische taps; ALLE's a11y-frame staat scheef · [risico]
 - **Bevinding:** Bij de sim-verify van #257-261: de `Subtitle`-action (WIJZIG op Home én Profiel)
   opent de GoalSheet niet bij Maestro/XCTest-taps — 4 pogingen, twee adresseer-modi (punt-tap op de

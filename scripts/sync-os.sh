@@ -12,7 +12,8 @@
 # Wat dit script synct:
 # - .umanex-os/CLAUDE.md          (globale werkprincipes)
 # - .umanex-os/profiles/{X}.md     (klant-specifiek profile)
-# - ~/.claude/skills/<naam>        (globale skills uit umanex-os/skills/, user-level discovery)
+# - .claude/skills/<naam>          (globale skills uit umanex-os/.claude/skills/, project-level
+#                                   discovery — reist mee met de repo, dus ook naar CI en cloud)
 # - ~/.claude/hooks/tcebc-reminder.sh + settings.json  (TC-EBC UserPromptSubmit hook, user-level)
 # - ~/.claude/hooks/session-start-handoff.sh + settings.json  (SessionStart handoff-hook, user-level)
 # - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
@@ -21,18 +22,26 @@
 # - scripts/gen-snapshot.sh + .githooks/pre-commit   (context-snapshots, incl. core.hooksPath-activatie)
 # - .githooks/commit-msg           (commit-scope guard: een app-scope mag geen andere app raken)
 #
+# SKILLS ZIJN REPO-BESTANDEN, GEEN USER-LEVEL KOPIEËN. Tot 2026-08-17 stonden de globale
+# skills in ~/.claude/skills/ — het enige laag-onderdeel dat niet via git reisde. Gevolg:
+# handmatige sync per machine, geen drift-signaal, en cloud-/CI-agents zagen niets. Nu
+# staan ze in <repo>/.claude/skills/ en reizen ze met elke checkout mee. GEMETEN
+# (2026-08-17, verse headless sessies): project-level discovery werkt, maar bij een
+# naamconflict wint de USER-LEVEL kopie — precies andersom dan dit script eerder beweerde.
+# Een achtergebleven user-level kopie MASKEERT dus de repo-versie; daarom ruimt dit script
+# de beheerde namen uit ~/.claude/skills/ op, in beide modi.
+#
+# Welke namen "beheerd" zijn staat per klant-repo in .claude/skills/.umanex-managed —
+# geschreven door deze sync en door de CI-receiver. Alles buiten die lijst is een
+# klant-eigen skill en wordt nooit aangeraakt.
+#
 # ZELF-MODUS. Draait dit script in umanex-os zelf (scripts/sync-os.sh is daar een symlink
 # naar templates/sync-os.sh), dan slaat het over wat alleen voor een klant zinvol is — de
 # `.umanex-os/`-kopie van de laag, het profiel, de marker, het snapshot-systeem en de
-# commit-scope guard, die allemaal een klant-repo of `apps/` veronderstellen. Wat wél
-# geïnstalleerd wordt is alles dat universeel geldt: de branch-guard (als symlink, geen
-# kopie), de user-level hooks, de skills en de LEARNINGS/HANDOFF-seed.
-#
-# Wat dit script NOOIT aanraakt:
-# - <klant-repo>/.claude/skills/   — klant-specifieke skills (project-level discovery)
-#                                    blijven in de klant-repo en worden niet overschreven.
-#                                    Project-level skills hebben voorrang op user-level, dus
-#                                    een klant-skill met dezelfde naam wint van een globale.
+# commit-scope guard, die allemaal een klant-repo of `apps/` veronderstellen — én de
+# skill-kopie: de bron heeft zijn skills al live in zijn eigen .claude/skills/. Wat wél
+# draait: de branch-guard (als symlink, geen kopie), de user-level hooks, de seeds en de
+# user-level skill-opruiming.
 
 set -uo pipefail
 
@@ -69,9 +78,10 @@ CLIENT_ROOT="$( cd "$SCRIPT_DIR/.." 2>/dev/null && pwd )" \
 # iemand het gat toevallig opmerkte — de branch-guard ontbrak er maanden, HANDOFF.md ook.
 #
 # In zelf-modus slaat het script over wat alleen voor een klant zinvol is (de `.umanex-os/`
-# kopie van de laag, het profiel, de marker, het snapshot-systeem dat `apps/` veronderstelt)
-# en installeert het wél alles wat universeel geldt: de branch-guard, de user-level hooks,
-# de skills en de staging-bestanden. De bron krijgt zo nooit een kopie van zichzelf.
+# kopie van de laag, het profiel, de marker, het snapshot-systeem dat `apps/` veronderstelt,
+# en de skill-kopie — de bron heeft zijn skills al live in .claude/skills/) en installeert
+# het wél alles wat universeel geldt: de branch-guard, de user-level hooks en de
+# staging-bestanden. De bron krijgt zo nooit een kopie van zichzelf.
 # `-ef` vergelijkt device+inode, geen tekst. Dat is hier nodig: op een hoofdletter-
 # ongevoelig macOS-bestandssysteem leveren `~/Documents/...` en `~/documents/...` dezelfde
 # map maar verschillende strings op, en dan zou zelf-modus stil niet aanslaan. Het dekt
@@ -255,59 +265,86 @@ fi
 if [ -d ".umanex-os/skills" ]; then
   echo "→ Oude .umanex-os/skills/ folder gevonden — opruimen..."
   rm -rf ".umanex-os/skills"
-  echo "  ✓ Verwijderd. Globale skills staan nu user-level in ~/.claude/skills/"
+  echo "  ✓ Verwijderd. Globale skills staan nu in <repo>/.claude/skills/"
 fi
 
-# Sync globale skills naar user-level discovery (~/.claude/skills/).
-# Alleen de skills die in umanex-os/skills/ staan worden beheerd — per skill schoon
-# vervangen. Andere user-level skills en alle klant-repo .claude/skills/ blijven ongemoeid.
-echo ""
-echo "→ Sync globale skills naar ~/.claude/skills/..."
-USER_SKILLS="$HOME/.claude/skills"
-if [ -d "$UMANEX_OS_PATH/skills" ]; then
-  mkdir -p "$USER_SKILLS"
-  synced=0
-  for skill_dir in "$UMANEX_OS_PATH"/skills/*/; do
-    [ -d "$skill_dir" ] || continue          # geen match → overslaan
-    name="$(basename "$skill_dir")"
-    [ -n "$name" ] || continue               # defensief: nooit een lege naam verwijderen
-    rm -rf "${USER_SKILLS:?}/$name"          # schoon vervangen; :? voorkomt rm op lege var
-    cp -R "$skill_dir" "$USER_SKILLS/$name"
-    echo "  ✓ $name"
-    synced=$((synced + 1))
-  done
-  [ "$synced" -eq 0 ] && echo "  (geen globale skills gevonden in umanex-os/skills/)"
+# ── Skills: repo-bestanden met project-level discovery ──
+#
+# Bron: umanex-os/.claude/skills/. Doel in klant-modus: <klant-repo>/.claude/skills/ —
+# dezelfde bestanden die de CI-sync levert; dit is enkel de lokale versneller. In
+# zelf-modus is er niets te kopiëren: de bron ís zijn eigen .claude/skills/.
+#
+# Het manifest .claude/skills/.umanex-managed somt de beheerde namen op. Alleen die
+# namen worden vervangen of (als wees) opgeruimd; elke andere map is een klant-eigen
+# skill en blijft ongemoeid. Zonder manifest (eerste sync) wordt alleen geplaatst,
+# nooit verwijderd.
+OS_SKILLS="$UMANEX_OS_PATH/.claude/skills"
 
-  # Wezen opruimen: skills die user-level staan maar niet meer in umanex-os/skills/.
-  #
-  # De lus hierboven loopt alleen over de bron, dus een hernoemde of verwijderde skill
-  # bleef eeuwig staan. Hernoem `verify` naar `verifieer` en je hebt er user-level twee,
-  # met overlappende trigger-frasen, waarvan één permanent bevroren op de inhoud van vóór
-  # de hernoeming — en die blijft gewoon vuren met verouderde instructies. Beide wachters
-  # deelden die blinde vlek (doctor.sh en session-start-handoff.sh lopen ook over de bron),
-  # dus niets meldde de wees.
-  #
-  # Alleen wat umanex-os ooit beheerde wordt opgeruimd: een map zonder SKILL.md blijft
-  # staan, want dat is dan iets van jou en niet van deze sync.
-  orphans=""
-  for target in "$USER_SKILLS"/*/; do
-    [ -d "$target" ] || continue
-    tname="$(basename "$target")"
-    [ -n "$tname" ] || continue
-    [ -d "$UMANEX_OS_PATH/skills/$tname" ] && continue    # bestaat nog in de bron
-    [ -f "$target/SKILL.md" ] || continue                 # geen door ons beheerde skill
-    orphans="$orphans $tname"
-  done
-  if [ -n "$orphans" ]; then
-    echo "  → wees(en) gevonden die niet meer in umanex-os/skills/ staan:$orphans"
-    for tname in $orphans; do
-      rm -rf "${USER_SKILLS:?}/$tname"
-      echo "    ✓ $tname verwijderd"
+if [ "$SELF_MODE" -eq 0 ]; then
+  echo ""
+  echo "→ Sync globale skills naar .claude/skills/ (project-level)..."
+  if [ -d "$OS_SKILLS" ]; then
+    mkdir -p ".claude/skills"
+    MANIFEST=".claude/skills/.umanex-managed"
+    old_managed=""
+    [ -f "$MANIFEST" ] && old_managed="$(cat "$MANIFEST")"
+
+    synced=0
+    new_managed=""
+    for skill_dir in "$OS_SKILLS"/*/; do
+      [ -d "$skill_dir" ] || continue          # geen match → overslaan
+      name="$(basename "$skill_dir")"
+      [ -n "$name" ] || continue               # defensief: nooit een lege naam verwijderen
+      rm -rf "./.claude/skills/${name:?}"      # schoon vervangen; :? voorkomt rm op lege var
+      cp -R "$skill_dir" ".claude/skills/$name"
+      find ".claude/skills/$name" -name .DS_Store -delete 2>/dev/null
+      new_managed="$new_managed$name
+"
+      echo "  ✓ $name"
+      synced=$((synced + 1))
     done
+    printf '%s' "$new_managed" > "$MANIFEST"
+    [ "$synced" -eq 0 ] && echo "  (geen globale skills gevonden in umanex-os/.claude/skills/)"
+
+    # Wezen: namen uit het vórige manifest die niet meer in de bron staan. Alleen die —
+    # een hernoemde skill zou anders eeuwig blijven vuren met bevroren instructies,
+    # maar een klant-eigen skill (nooit in een manifest) mag hier niet sneuvelen.
+    if [ -n "$old_managed" ]; then
+      for tname in $old_managed; do
+        [ -n "$tname" ] || continue
+        [ -d "$OS_SKILLS/$tname" ] && continue           # bestaat nog in de bron
+        [ -d ".claude/skills/$tname" ] || continue        # al weg
+        rm -rf "./.claude/skills/${tname:?}"
+        echo "  ✓ wees '$tname' verwijderd (stond in het manifest, niet meer in de bron)"
+      done
+    fi
+  else
+    echo "  ⚠ Geen umanex-os/.claude/skills/ folder gevonden — skill-sync overgeslagen"
   fi
-else
-  echo "  ⚠ Geen umanex-os/skills/ folder gevonden — skill-sync overgeslagen"
 fi
+
+# User-level opruiming — in béide modi. GEMETEN 2026-08-17: bij een naamconflict wint de
+# user-level kopie van de project-level versie. Een beheerde naam die nog in
+# ~/.claude/skills/ staat maskeert dus de repo-versie op deze machine — inclusief elke
+# toekomstige update die via git binnenkomt. Alleen de namen uit de bron worden
+# verwijderd; eigen user-level skills blijven staan.
+echo ""
+echo "→ Ruim beheerde skills op uit ~/.claude/skills/ (user-level maskeert project-level)..."
+USER_SKILLS="$HOME/.claude/skills"
+removed=0
+if [ -d "$OS_SKILLS" ] && [ -d "$USER_SKILLS" ]; then
+  for skill_dir in "$OS_SKILLS"/*/; do
+    [ -d "$skill_dir" ] || continue
+    name="$(basename "$skill_dir")"
+    [ -n "$name" ] || continue
+    if [ -d "$USER_SKILLS/$name" ]; then
+      rm -rf "${USER_SKILLS:?}/$name"
+      echo "  ✓ $name verwijderd (repo-versie in .claude/skills/ geldt nu)"
+      removed=$((removed + 1))
+    fi
+  done
+fi
+[ "$removed" -eq 0 ] && echo "  • niets op te ruimen"
 
 # Context-snapshot systeem: generieke generator + dependency-vrije git hook.
 # Snapshots zijn commit-time tooling (lokaal), dus dit rijdt mee met de lokale sync,

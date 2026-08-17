@@ -37,12 +37,13 @@ De as volgt uit het taaktype, niet uit wat toevallig makkelijk te draaien is.
 | **Backend / API** | request → response → statewijziging | een echte call tegen een echte store; de rij die erna in de database staat |
 | **Bugfix** | de reproductie | dezelfde input faalt vóór de fix en slaagt erna — beide kanten getoond |
 | **States** (loading/empty/error) | de toestand forceren | de app in die toestand brengen (mock, throttle, lege dataset), niet de branch in de code aanwijzen |
+| **Diagnose / meting** ("klopt waarde X?", "wordt Y nog juist berekend?") | de directe meting aan de bron | de grootheid zelf gemeten — een log, een opname, een teller, een testrun op synthetische invoer. Nooit een aggregaat, vuistregel of verwachtingswaarde als afsluiting: dat is de hypothese, niet het bewijs (CLAUDE.md, *"Een verwachtingswaarde is geen meting"*) |
 
 Meerdere assen tegelijk is normaal: een feature-flow met een berekening heeft er twee. Draai ze allebei of meld welke je oversloeg.
 
 ---
 
-## Zes rails — de discipline van de Beoordeel-stap
+## Zeven rails — de discipline van de Beoordeel-stap
 
 Deze staan als werkprincipe in `CLAUDE.md`; hier zijn ze operationeel.
 
@@ -83,6 +84,10 @@ Een niet-getrouw instrument levert een vals-negatief dat er identiek uitziet als
 *Je observatiepunt is óók een instrument.* Kijk naar wat de bibliotheek zelf vertelt — bij dnd-kit de `[aria-live]`-narratie ("Picked up…", "was moved over droppable area…") — niet naar een afgeleid symptoom. Een observer die op de DragOverlay lette meldde nul terwijl de sleep aantoonbaar was opgepakt: bij een burst commit React die overlay nooit. Twee instrumenten, twee tegengestelde antwoorden, en het zichtbaarste was het foute.
 
 *En de omgeving van je instrument.* In een achtergrond-tabblad staat `document.visibilityState` op `hidden` en vuurt `requestAnimationFrame` niet meer: een wachtlus op frames hangt tot de tool-timeout, en animaties maken hun exit nooit af. Wat je dan meet is de tab-staat, niet de app. Gebruik timers in plaats van frames, of breng het doelwit naar de voorgrond.
+
+**7. De verwachting is de reden om te meten, nooit het bewijs.** Een vuistregel uit de literatuur, een typische waarde, een aggregaat dat logisch oogt — dat is de hypothese die de meting motiveert, niet de meting zelf. Bestaat de meetbare as (een log, een opname, een teller, het Verify-pad van de app), dan sluit alleen díe de vraag; kun je niet meten, dan lever je een hypothese mét het meetpad erbij, geen conclusie met een tabel eronder.
+
+*Herkenningsteken:* wijkt het getal af met precies een ronde factor (×2, ×½, ×60), dan is dat vrijwel zeker een tel- of eenheidsfout — die ga je meten, niet verklaren, en de kant waarop hij valt beslis je nooit uit plausibiliteit. Gemeten op rowtrack (2026-08-16): "20-24 spm is je echte slagfrequentie" klonk sluitend met twee vuistregels als steun; een FTMS-opname en een handtelling dezelfde avond wezen het tegendeel uit, en de echte oorzaak (een noemer die rustpackets meetelde) produceerde exact het klachtgetal 24.
 
 ---
 

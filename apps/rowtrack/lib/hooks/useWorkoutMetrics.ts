@@ -62,7 +62,9 @@ function metricsReducer(state: WorkoutMetricsState, action: MetricsAction): Work
 
 export interface AccumulatorRefs {
   wattsSum: React.MutableRefObject<number>;
+  wattsCount: React.MutableRefObject<number>;
   spmSum: React.MutableRefObject<number>;
+  spmCount: React.MutableRefObject<number>;
   splitSum: React.MutableRefObject<number>;
   tickCount: React.MutableRefObject<number>;
   splitTickCount: React.MutableRefObject<number>;
@@ -93,7 +95,9 @@ export function useWorkoutMetrics(
   const [state, dispatch] = useReducer(metricsReducer, initialState);
 
   const wattsSum = useRef(0);
+  const wattsCount = useRef(0);
   const spmSum = useRef(0);
+  const spmCount = useRef(0);
   const splitSum = useRef(0);
   const tickCount = useRef(0);
   const splitTickCount = useRef(0);
@@ -154,8 +158,14 @@ export function useWorkoutMetrics(
     // draait echter óók op een hrBpm-update (HR zit in de dep-array), terwijl
     // bleMetrics dan dezelfde gemergede referentie is en de rower-velden non-null
     // blijven. Stap de EMA's daarom enkel op een écht nieuw rower-packet. (De rauwe
-    // sommen mogen dubbel-tellen — ze zelf-corrigeren via tickCount; enkel de
+    // sommen mogen dubbel-tellen — ze zelf-corrigeren via hun eigen teller; enkel de
     // orde-afhankelijke EMA heeft deze gate nodig.)
+    //
+    // Elke som telt op in dezelfde guard als zijn teller. Dat is geen stijlkeuze:
+    // deelt een gemiddelde door `tickCount`, dan tellen de packets waarin het veld
+    // ontbreekt (idle-nulling in ble-service, of een losse hr-update) wél in de
+    // noemer en niet in de teller — het gemiddelde wordt dan het echte gemiddelde
+    // maal de duty-cycle. Nieuwe som erbij? Nieuwe teller erbij.
     const isNewRowerPacket = bleMetrics !== lastProcessedMetricsRef.current;
     lastProcessedMetricsRef.current = bleMetrics;
 
@@ -164,6 +174,7 @@ export function useWorkoutMetrics(
     if (bleMetrics.instantaneousPower != null) {
       partial.watts = bleMetrics.instantaneousPower;
       wattsSum.current += bleMetrics.instantaneousPower;
+      wattsCount.current += 1;
       splitIntervalWattsSum.current += bleMetrics.instantaneousPower;
       splitIntervalWattsCount.current += 1;
       if (bleMetrics.instantaneousPower > maxWattsRef.current) {
@@ -179,6 +190,7 @@ export function useWorkoutMetrics(
       // (zie correctSpm + useSpmHalved) zodat álle historiek consistent is.
       partial.spm = bleMetrics.strokeRate;
       spmSum.current += bleMetrics.strokeRate;
+      spmCount.current += 1;
       if (bleMetrics.strokeRate > maxSpmRef.current) {
         maxSpmRef.current = bleMetrics.strokeRate;
       }
@@ -311,7 +323,9 @@ export function useWorkoutMetrics(
   const resetAll = useCallback(() => {
     dispatch({ type: 'RESET' });
     wattsSum.current = 0;
+    wattsCount.current = 0;
     spmSum.current = 0;
+    spmCount.current = 0;
     splitSum.current = 0;
     tickCount.current = 0;
     splitTickCount.current = 0;
@@ -345,7 +359,9 @@ export function useWorkoutMetrics(
 
   const refs: AccumulatorRefs = {
     wattsSum,
+    wattsCount,
     spmSum,
+    spmCount,
     splitSum,
     tickCount,
     splitTickCount,

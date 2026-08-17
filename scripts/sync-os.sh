@@ -14,6 +14,7 @@
 # - .umanex-os/profiles/{X}.md     (klant-specifiek profile)
 # - .claude/skills/<naam>          (globale skills uit umanex-os/.claude/skills/, project-level
 #                                   discovery — reist mee met de repo, dus ook naar CI en cloud)
+# - .claude/agents/<naam>.md       (subagent-definities met tool-beperking, zelfde regime)
 # - ~/.claude/hooks/tcebc-reminder.sh + settings.json  (TC-EBC UserPromptSubmit hook, user-level)
 # - ~/.claude/hooks/session-start-handoff.sh + settings.json  (SessionStart handoff-hook, user-level)
 # - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
@@ -321,6 +322,51 @@ if [ "$SELF_MODE" -eq 0 ]; then
   else
     echo "  ⚠ Geen umanex-os/.claude/skills/ folder gevonden — skill-sync overgeslagen"
   fi
+
+  # Agents: platte .md-definities, zelfde manifest-regime als skills. Klant-eigen
+  # agents (namen buiten het manifest) blijven onaantastbaar.
+  OS_AGENTS="$UMANEX_OS_PATH/.claude/agents"
+  if [ -d "$OS_AGENTS" ]; then
+    echo ""
+    echo "→ Sync globale agents naar .claude/agents/ (project-level)..."
+    mkdir -p ".claude/agents"
+    A_MANIFEST=".claude/agents/.umanex-managed"
+    a_old=""
+    [ -f "$A_MANIFEST" ] && a_old="$(cat "$A_MANIFEST")"
+    : > "$A_MANIFEST.new"
+    for f in "$OS_AGENTS"/*.md; do
+      [ -f "$f" ] || continue
+      aname="$(basename "$f")"
+      [ -n "$aname" ] || continue
+      cp "$f" ".claude/agents/$aname"
+      printf '%s\n' "$aname" >> "$A_MANIFEST.new"
+      echo "  ✓ $aname"
+    done
+    mv "$A_MANIFEST.new" "$A_MANIFEST"
+    if [ -n "$a_old" ]; then
+      for tname in $a_old; do
+        [ -n "$tname" ] || continue
+        [ -f "$OS_AGENTS/$tname" ] && continue
+        [ -f ".claude/agents/$tname" ] || continue
+        rm -f "./.claude/agents/${tname:?}"
+        echo "  ✓ agent-wees '$tname' verwijderd"
+      done
+    fi
+  fi
+fi
+
+# User-level agents-opruiming — zelfde maskering-voorzorg als bij skills: een beheerde
+# naam onder ~/.claude/agents/ hoort daar nooit; de repo-versie is de waarheid.
+OS_AGENTS="$UMANEX_OS_PATH/.claude/agents"
+if [ -d "$OS_AGENTS" ] && [ -d "$HOME/.claude/agents" ]; then
+  for f in "$OS_AGENTS"/*.md; do
+    [ -f "$f" ] || continue
+    aname="$(basename "$f")"
+    if [ -f "$HOME/.claude/agents/$aname" ]; then
+      rm -f "$HOME/.claude/agents/${aname:?}"
+      echo "  ✓ user-level agent $aname verwijderd (repo-versie geldt)"
+    fi
+  done
 fi
 
 # User-level opruiming — in béide modi. GEMETEN 2026-08-17: bij een naamconflict wint de

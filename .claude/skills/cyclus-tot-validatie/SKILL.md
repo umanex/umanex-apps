@@ -50,6 +50,8 @@ De main-agent is **scheidsrechter**: hij consolideert alle bevindingen tot één
 
 **Harde rail:** geef een reviewer-sub-agent **nooit** een hint over de verwachte fout. Dat besmet de test — zelfde discipline als `learnings-verwerken` stap 3.
 
+**Review-assen draaien bij voorkeur als read-only agent in een verse context.** Voor de assen die niet hoeven uit te voeren (design-review, diff-review) bestaat het agent-type **`design-reviewer`** (`.claude/agents/design-reviewer.md`): geen Write/Edit-tools — een reviewer die fysiek niet kán fixen — en geen zicht op de bouw-conversatie, dus geen self-review-bias. Dat maakt twee bestaande instructies machinaal: "de reviewer schrijft niet" en de blinde-replay-rail hierboven. `verify` blijft buiten dit patroon: die as moet flows aandrijven en houdt zijn volledige gereedschap.
+
 ---
 
 ## De cyclus

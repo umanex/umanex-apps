@@ -9,7 +9,7 @@ Deze skill is de **verwerk-helft** van de eval/feedback-loop van umanex-os; `vas
 
 Waarom dit nodig is: een entry op `open` in een `LEARNINGS.md` is **inert** — `LEARNINGS.md` wordt nergens in een sessie ingeladen (geen `@`-import, geen hook). Een learning voorkomt een fout pas wanneer de les óf als regel in een CLAUDE.md-laag staat (die elke sessie via `@`-import geladen wordt) óf in een code-guard zit. Deze skill verzorgt precies die overgang.
 
-De skill werkt op alle drie de lagen (globaal / klant / project) en is daarom user-level: gesynct naar `~/.claude/skills/` triggert hij zowel binnen umanex-os zelf als in elke klant-repo. De kop van de bron-`LEARNINGS.md` legt de statussen en het entry-format uit — dupliceer die uitleg hier niet.
+De skill werkt op alle drie de lagen (globaal / klant / project) en reist daarom als repo-bestand mee: hij staat in `.claude/skills/` van umanex-os zelf én — via de sync-pipeline — van elke klant-repo, en triggert dus overal (sinds 2026-08-17; daarvóór user-level via `~/.claude/skills/`). De kop van de bron-`LEARNINGS.md` legt de statussen en het entry-format uit — dupliceer die uitleg hier niet.
 
 ### Stap 0 — Sanity check
 

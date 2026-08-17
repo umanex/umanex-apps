@@ -97,5 +97,5 @@ Die brug is het enige raakpunt.
 Zoals TC-EBC: eerst principe, dan hardenen.
 
 - **v1** — het werkprincipe in `CLAUDE.md` (model-gedreven, geen skill).
-- **v2** — deze skill: de lus is triggerbaar, met een Stap-0 overkill-poort; propageert user-level via `sync-os.sh`.
+- **v2** — deze skill: de lus is triggerbaar, met een Stap-0 overkill-poort; propageerde destijds user-level via `sync-os.sh`, sinds 2026-08-17 als repo-bestand (`.claude/skills/`) via de sync-pipeline.
 - **v3** — een deterministisch Workflow-script plus render-paden per app, pas wanneer de Beoordeel-as echt machine-checkbaar meet. De design-snapshot (`figma-naar-code` stap 4b) is de eerste bouwsteen daarvan: een persistente, diff-bare toetssteen in plaats van een vluchtige in-context mapping.

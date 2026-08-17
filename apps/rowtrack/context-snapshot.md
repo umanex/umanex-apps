@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-11_
+_Gegenereerd op 2026-08-17_
 
 ## Project
 - **App:** rowtrack
@@ -58,15 +58,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ee95e7a fix(rowtrack): elk gemiddelde deelt door zijn eigen teller, niet door tickCount
+aa0cb47 docs(rowtrack): record sim render-verify of #257-261 in HANDOFF
 4108515 docs: session retrospective — handoff checks and Apollo XL follow-up
 2810551 feat(rowtrack): accept any FTMS-advertising rower in device scan
 be05bdb docs(rowtrack): fix two checks that could not answer themselves
-a3b58f1 docs(rowtrack): give all 26 open entries a check that can answer them
-4509585 Merge pull request #266 from umanex/docs/rowtrack-handoff-opruiming
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/BACKLOG.md
 
 ## Bestanden met TODO/FIXME
   (geen)

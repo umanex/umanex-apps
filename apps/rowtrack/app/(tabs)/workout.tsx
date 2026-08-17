@@ -112,8 +112,12 @@ export default function WorkoutScreen() {
     if (refs.tickCount.current === 0) return;
     savedRef.current = true;
 
-    const t = refs.tickCount.current;
-    const avgW = Math.round(refs.wattsSum.current / t);
+    // Elk gemiddelde deelt door de teller die in dezelfde guard optelt als zijn som —
+    // niet door tickCount. Die telt ook packets waarin het veld ontbrak (idle-nulling,
+    // losse hr-update) en drukt het gemiddelde dan met de duty-cycle omlaag.
+    const avgW = refs.wattsCount.current > 0
+      ? Math.round(refs.wattsSum.current / refs.wattsCount.current)
+      : null;
 
     // Exacte beste 2000m uit de {tijd, afstand}-tijdreeks (two-pointer + interpolatie).
     // null wanneer de sessie < 2000m was. Samples compact als [t, d]-tuples opgeslagen.
@@ -135,7 +139,9 @@ export default function WorkoutScreen() {
       duration_seconds: Math.round(metricsState.seconds),
       distance_meters: Math.round(metricsState.distanceMeters),
       avg_watts: avgW,
-      avg_spm: Math.round(refs.spmSum.current / t),
+      avg_spm: refs.spmCount.current > 0
+        ? Math.round(refs.spmSum.current / refs.spmCount.current)
+        : null,
       avg_split_seconds: refs.splitTickCount.current > 0
         ? Math.round(refs.splitSum.current / refs.splitTickCount.current)
         : null,

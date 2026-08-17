@@ -1,0 +1,96 @@
+---
+name: vastleggen
+description: Legt een waargenomen fout van een skill of werkprincipe vast in de juiste LEARNINGS.md, met behoud van de input die de fout uitlokte zodat die later als verificatie-test dient. Gebruik deze skill altijd wanneer de gebruiker een fout van Claude wil vastleggen voor later, of zegt "leg dit vast", "vastleggen", "dit ging fout", "noteer deze les", "capture deze fout", "dit klopt niet, onthoud dit".
+---
+
+## Werkwijze
+
+Deze skill is de **capture-helft** van de eval/feedback-loop van umanex-os. Doel: lessen verdampen niet meer, en de input die een fout uitlokte wordt letterlijk bewaard zodat hij later in een fresh sessie als verificatie-test kan dienen.
+
+De skill schrijft naar een `LEARNINGS.md` — de staging-area die los staat van CLAUDE.md. CLAUDE.md blijft schone instructie; LEARNINGS.md is de rauwe vangst waaruit bewezen regels later handmatig naar de juiste CLAUDE.md promoveren. De kop van `umanex-os/LEARNINGS.md` legt de statussen en het format uit; dupliceer die uitleg hier niet.
+
+**Capture moet wrijvingsloos zijn.** Stel alleen de strikt noodzakelijke vragen (zie stap 2 en 3), schrijf, en toon het resultaat. Geen score, geen severity, geen categorie.
+
+### Stap 0 — Sanity check
+
+Gaat dit echt over het vastleggen van een waargenomen fout van een skill of werkprincipe? → door.
+
+Vraagt de gebruiker iets anders (een feature bouwen, een bug in zíjn code fixen, een vraag beantwoorden)? → dit is geen `vastleggen`-taak; zeg dat en stop.
+
+### Stap 1 — Reconstrueer Input en Fout
+
+Twee velden zijn verplicht:
+
+- **Input** — de letterlijke prompt of het bestandspad dat de fout uitlokte. Haal dit uit de conversatie zelf: meestal is het de prompt enkele berichten terug die het foute gedrag triggerde. Citeer letterlijk, niet geparafraseerd. Is het een bestand dat verkeerd verwerkt werd, gebruik dan het volledige pad vanaf project root. Twijfel je welke prompt de trigger was → vraag het kort.
+- **Fout** — wat er misging, in 1-2 zinnen. Beschrijf het waargenomen gedrag, niet de fix.
+
+Vul beide zelf in op basis van de conversatie en laat de gebruiker corrigeren; vraag alleen wanneer je het echt niet uit de context kunt afleiden.
+
+**Faalklasse uit de historie — er is geen trigger-prompt.** Komt de klasse niet uit deze sessie maar uit terugkijken (een soort fix die zich herhaalt, een as die geen enkele guard dekt — zie de historie-vragen in `sessie-reflectie`), dan bestaat de uitlokkende prompt niet. Gebruik als **Input** dan een reproduceerbare wijzer die dezelfde rol vervult: het commando dat de klasse zichtbaar maakt (`git log --since="90 days ago" --oneline -- <pad> | grep -iE "..."`) plus de paden die het bewijs dragen. De eis verandert niet — iemand moet er later mee kunnen nagaan of de klasse nog leeft. Verzin nooit een prompt achteraf om het veld te vullen.
+
+### Stap 2 — Identificeer welke skill of welk principe faalde
+
+Bepaal de header-tekst: de naam van de skill (bv. `nieuw-component`) of het werkprincipe (bv. `TC-EBC werkprincipe`, `Git workflow`, `token-mapping`) dat faalde. Kort en herkenbaar — dit wordt de `##`-header van de entry.
+
+### Stap 3 — Routing-vraag (verplicht, altijd stellen)
+
+Vraag: **"Hoort deze fout thuis op globaal, klant- of project-niveau?"**
+
+Op basis van het antwoord bepaal je het doelbestand en de laag-header:
+
+| Niveau | Doelbestand | Laag-header in dat bestand |
+|--------|-------------|----------------------------|
+| Globaal | `~/Documents/umanex-os/LEARNINGS.md` | `# Globaal` |
+| Klant | `{repo-root}/LEARNINGS.md` | `# Klant — {naam}` |
+| Project | `apps/{app}/LEARNINGS.md` | `# Project — {app}` |
+
+**Path-resolutie** — capture gebeurt vaak in een klant-repo (andere cwd) dan umanex-os zelf:
+
+- **Globaal** → altijd het absolute pad `~/Documents/umanex-os/LEARNINGS.md`, ongeacht de huidige werkdirectory.
+- **Klant** → de root van de actieve repo: `git rev-parse --show-toplevel`. De `{naam}` in de laag-header is de klantnaam (bv. de repo-/profile-naam: columba, luminus, umanex).
+- **Project** → `apps/{app}/LEARNINGS.md` binnen de actieve (monorepo-)klant-repo. Leid `{app}` af uit cwd als die binnen `apps/{app}/…` ligt; anders vraag kort welke app.
+
+**Edge case:** is de actieve repo umanex-os zélf, dan zijn klant en project niet zinvol — leg dan globaal vast.
+
+### Stap 4 — Bepaal de datum
+
+Haal de datum vandaag op met `date +%F` (Bash). Verzin geen datum en leid hem niet af uit context — altijd ophalen, zodat de entry-datum klopt. Formaat: `YYYY-MM-DD`.
+
+### Stap 5 — Zorg dat het doelbestand bestaat (on-demand creatie)
+
+Bestaat de `LEARNINGS.md` op het doelpad nog niet (typisch bij de eerste capture in een klant-repo of app), maak hem dan eerst aan uit de template:
+
+- Kopieer `~/Documents/umanex-os/templates/LEARNINGS.template.md` naar het doelpad.
+- De template bevat de kop, statussen en het format, maar nog geen laag-header — die voegt stap 6 toe bij de eerste entry.
+
+Bestaat het bestand al → niets kopiëren, ga door naar stap 6. Overschrijf een bestaande `LEARNINGS.md` nooit met de template.
+
+### Stap 6 — Append de entry (nooit overschrijven)
+
+Voeg de entry **toe** aan het doelbestand onder de juiste laag-header — overschrijf nooit bestaande inhoud.
+
+Entry-format:
+
+```
+## YYYY-MM-DD — {skill of principe dat faalde}
+- **Input:** {letterlijke prompt of bestandspad}
+- **Fout:** {wat er misging, 1-2 zinnen}
+- **Status:** open
+```
+
+Regels:
+- Bestaat de laag-header al → voeg de entry toe als laatste entry onder die header (na de bestaande entries, vóór een eventuele volgende `#`-header).
+- Bestaat de laag-header nog niet → maak hem aan onderaan het bestand, met de entry eronder.
+- Nieuwe entries krijgen altijd `Status: open`.
+- Gebruik de Edit-tool om gericht in te voegen; herschrijf het bestand niet in zijn geheel.
+
+### Stap 7 — Toon het resultaat
+
+Toon de zojuist toegevoegde entry inline als codeblock, en vermeld het volledige pad van het bestand waarin hij geschreven is. Stilzwijgend opslaan mag niet — de gebruiker moet zien wat vastgelegd is.
+
+---
+
+## Bewust niet in deze skill
+
+- **De verify-stap** (input opnieuw afspelen, status → `verified`) en **de promotie-flow** (`LEARNINGS.md` → CLAUDE.md harden, status → `promoted`) horen bij de `learnings-verwerken` skill, niet bij capture. Deze skill zet altijd `open`.
+- **Status bijwerken** van bestaande entries hoort niet bij capture; gebruik daarvoor `learnings-verwerken`.

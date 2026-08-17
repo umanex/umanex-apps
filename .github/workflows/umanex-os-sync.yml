@@ -1,13 +1,17 @@
 name: Sync umanex-os layer
 
 # Ontvangt een repository_dispatch vanuit umanex-os wanneer de globale CLAUDE.md,
-# een profile, het sync-script of een staging-template wijzigt, en opent een PR met
-# de bijgewerkte umanex-os-laag. Alle inhoud komt mee in de payload, zodat deze repo
-# geen leestoegang tot de private umanex-os repo nodig heeft.
+# een profile, de skills, het sync-script of een staging-template wijzigt, en opent
+# een PR met de bijgewerkte umanex-os-laag.
 #
 # Wat deze workflow schrijft:
 #   - .umanex-os/CLAUDE.md, .umanex-os/profiles/<profile>.md   globale laag
 #   - .umanex-os/profile                                        marker voor scripts/sync-os.sh
+#   - .claude/skills/<naam>                                     globale skills (project-level
+#                                                               discovery; sinds 2026-08-17
+#                                                               repo-bestanden, geen user-level)
+#   - .claude/skills/.umanex-managed                            manifest: welke namen deze
+#                                                               sync beheert — de wees-grens
 #   - scripts/sync-os.sh                                        canoniek sync-script
 #   - scripts/gen-snapshot.sh, .githooks/pre-commit             snapshot-systeem (bestanden)
 #   - .githooks/commit-msg                                      commit-scope guard (bestand)
@@ -16,15 +20,15 @@ name: Sync umanex-os layer
 #   - HANDOFF.md in root + elke apps/*                          sessie-handoff, seed-if-absent
 #   - BACKLOG.md in root + elke apps/*                          gemeld-niet-gebouwd, seed-if-absent
 #
-# PAYLOAD. De dispatcher stuurt één `bundle_b64` (tar.gz met alle canonieke bestanden)
-# plus `profile_name` en `bundle_version` — drie van de tien velden die GitHub toestaat,
-# dus het aantal bestanden is geen limiet meer. De oude vorm (elk bestand een eigen veld)
-# werd hier nog als fallback gelezen; die tak is verwijderd nadat alle klant-repos de
-# bundel-versie draaiden. Dode code in een receiver is duur: hij propageert naar drie
-# repo's en suggereert een pad dat allang niet meer bestaat.
-#
-# Skills worden NIET via CI gesynct: die staan user-level (~/.claude/skills) en komen
-# via het lokale scripts/sync-os.sh. GitHub Actions kan niet naar de runner-home schrijven.
+# TRANSPORT (bundle v2). De payload draagt geen inhoud meer maar een verwijzing:
+# `asset_id` + `bundle_sha256` van een tar.gz die de dispatcher als asset op een vaste
+# draft-release ín deze repo heeft gezet (geüpload met zijn PAT — releases vallen onder
+# Contents). Deze workflow downloadt uit zijn éígen releases met het standaard
+# github.token; leestoegang tot de private umanex-os repo blijft dus onnodig, precies
+# zoals bij het oude payload-transport. De sha-check maakt het transport bewijsbaar:
+# een asset die niet exact de gedispatchte bytes draagt wordt geweigerd. De ~64KB
+# client_payload-limiet die de v1-bundel begrensde (en skills principieel uitsloot)
+# bestaat in dit model niet meer.
 #
 # De hook-ACTIVATIE (git config core.hooksPath .githooks) zet CI NIET — dat is lokale
 # git-config van je werkkopie. Draai één keer scripts/sync-os.sh lokaal.
@@ -62,11 +66,12 @@ jobs:
           # Een vaste diepte lost het niet op: de divergentie kan altijd groter zijn.
           fetch-depth: 0
 
-      - name: Schrijf umanex-os laag uit payload en open PR
+      - name: Haal bundel-asset op, schrijf umanex-os laag en open PR
         env:
           GH_TOKEN: ${{ github.token }}
           PROFILE_NAME: ${{ github.event.client_payload.profile_name }}
-          BUNDLE_B64: ${{ github.event.client_payload.bundle_b64 }}
+          ASSET_ID: ${{ github.event.client_payload.asset_id }}
+          BUNDLE_SHA256: ${{ github.event.client_payload.bundle_sha256 }}
           BUNDLE_VERSION: ${{ github.event.client_payload.bundle_version }}
         run: |
           set -euo pipefail
@@ -80,18 +85,46 @@ jobs:
             *[!a-zA-Z0-9_-]* ) echo "✗ profile_name '$PROFILE_NAME' bevat iets anders dan letters, cijfers, - of _ — afgebroken."; exit 1 ;;
           esac
 
-          SRC="$(mktemp -d)"
-
-          [ -n "${BUNDLE_B64:-}" ] || { echo "✗ Payload zonder bundle_b64 — afgebroken."; exit 1; }
-
           # Onbekende bundelversie = hard falen. Stil de verkeerde bestanden wegschrijven
-          # is precies de faalvorm die de receiver-drift ooit onzichtbaar hield.
-          case "${BUNDLE_VERSION:-1}" in
-            1) : ;;
-            *) echo "Bundelversie '${BUNDLE_VERSION}' is nieuwer dan deze receiver kent. Werk de receiver bij via een handmatige PR."; exit 1 ;;
+          # is precies de faalvorm die de receiver-drift ooit onzichtbaar hield. Een
+          # v1-payload (bundle_b64) betekent: de dispatcher is ouder dan deze receiver —
+          # ook dan luid stoppen, niet stil half installeren.
+          case "${BUNDLE_VERSION:-}" in
+            2) : ;;
+            "" | 1) echo "✗ Deze receiver verwacht bundle v2 (asset-transport); de dispatcher stuurde v${BUNDLE_VERSION:-1}. Merge de bijbehorende umanex-os-kant of draai de dispatcher opnieuw."; exit 1 ;;
+            *) echo "✗ Bundelversie '${BUNDLE_VERSION}' is nieuwer dan deze receiver kent. Werk de receiver bij via een handmatige PR."; exit 1 ;;
           esac
-          printf '%s' "$BUNDLE_B64" | base64 -d | tar -xzf - -C "$SRC" --strip-components=1
-          echo "Payload: bundel v${BUNDLE_VERSION:-1}"
+
+          # De verwijzing valideren vóór hij in een API-pad belandt — zelfde principe als
+          # de profile_name-guard: payload-inhoud bepaalt hier een URL en een vergelijking.
+          case "${ASSET_ID:-}" in
+            "" ) echo "✗ Payload zonder asset_id — afgebroken."; exit 1 ;;
+            *[!0-9]* ) echo "✗ asset_id '$ASSET_ID' is geen getal — afgebroken."; exit 1 ;;
+          esac
+          case "${BUNDLE_SHA256:-}" in
+            "" ) echo "✗ Payload zonder bundle_sha256 — afgebroken."; exit 1 ;;
+            *[!0-9a-f]* ) echo "✗ bundle_sha256 bevat niet-hex tekens — afgebroken."; exit 1 ;;
+          esac
+          [ "${#BUNDLE_SHA256}" -eq 64 ] || { echo "✗ bundle_sha256 is ${#BUNDLE_SHA256} tekens, geen 64 — afgebroken."; exit 1; }
+
+          # Asset uit de éígen releases halen (github.token volstaat; geen toegang tot
+          # umanex-os nodig) en tegen de gedispatchte sha leggen. Pas na die check wordt
+          # er ook maar iets uitgepakt.
+          SRC="$(mktemp -d)"
+          BUNDLE="$SRC/bundle.tar.gz"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/assets/${ASSET_ID}" \
+            -H "Accept: application/octet-stream" > "$BUNDLE" \
+            || { echo "✗ Kon asset ${ASSET_ID} niet downloaden — is de transport-release aangeraakt?"; exit 1; }
+          got_sha="$(sha256sum "$BUNDLE" | cut -d' ' -f1)"
+          if [ "$got_sha" != "$BUNDLE_SHA256" ]; then
+            echo "✗ sha256-mismatch: asset draagt ${got_sha}, payload beloofde ${BUNDLE_SHA256}."
+            echo "  Vermoedelijk is de asset intussen door een nieuwere sync vervangen — die"
+            echo "  dispatch levert de laag zo dadelijk zelf. Niets geïnstalleerd."
+            exit 1
+          fi
+          tar -xzf "$BUNDLE" -C "$SRC" --strip-components=1
+          rm -f "$BUNDLE"
+          echo "Payload: bundel v${BUNDLE_VERSION} via asset ${ASSET_ID} (sha256 geverifieerd)"
 
           # ── Eerst de doelbranch, dán installeren. Die volgorde is het hele punt. ──
           #
@@ -154,6 +187,46 @@ jobs:
           # Marker voor het lokale scripts/sync-os.sh
           printf '%s\n' "$PROFILE_NAME" > .umanex-os/profile
 
+          # ── Skills: per beheerde naam schoon vervangen, manifest-gedreven wezen. ──
+          #
+          # Elke map in bundle/skills/ landt in .claude/skills/<naam>. Het manifest
+          # .claude/skills/.umanex-managed administreert welke namen déze sync beheert;
+          # alleen namen uit het vorige manifest die uit de bron verdwenen worden als
+          # wees opgeruimd. Alles daarbuiten is een klant-eigen skill (project-level)
+          # en wordt nooit aangeraakt. Een bundel zonder skills-map faalt luid — zelfde
+          # filosofie als install_file: een halve laag installeren en als schone sync
+          # rapporteren is de duurste stille fout die deze workflow kan maken.
+          if [ ! -d "$SRC/skills" ]; then
+            echo "✗ Bundel mist 'skills/' — de payload is onvolledig. Niets geïnstalleerd."
+            echo "  Controleer de dispatcher: de skills horen in \$work/bundle/skills."
+            exit 1
+          fi
+          mkdir -p .claude/skills
+          MANIFEST=".claude/skills/.umanex-managed"
+          old_managed=""
+          [ -f "$MANIFEST" ] && old_managed="$(cat "$MANIFEST")"
+
+          : > "$MANIFEST.new"
+          for d in "$SRC"/skills/*/; do
+            [ -d "$d" ] || continue
+            name="$(basename "$d")"
+            [ -n "$name" ] || continue
+            rm -rf "./.claude/skills/${name:?}"
+            cp -R "$d" ".claude/skills/$name"
+            printf '%s\n' "$name" >> "$MANIFEST.new"
+          done
+          mv "$MANIFEST.new" "$MANIFEST"
+
+          if [ -n "$old_managed" ]; then
+            for tname in $old_managed; do
+              [ -n "$tname" ] || continue
+              [ -d "$SRC/skills/$tname" ] && continue     # bestaat nog in de bron
+              [ -d ".claude/skills/$tname" ] || continue   # al weg
+              rm -rf "./.claude/skills/${tname:?}"
+              echo "  wees '$tname' opgeruimd (stond in het manifest, niet meer in de bron)"
+            done
+          fi
+
           # context.json is repo-eigen input → alleen scaffolden als afwezig.
           [ -f context.json ] || install_file context.json.template "context.json"
 
@@ -207,6 +280,18 @@ jobs:
             echo "  ⚠ context.json is geen geldige JSON — snapshots krijgen [TODO]-placeholders"
             echo "    (repo-eigen bestand, dus dit houdt de sync niet tegen)"
           fi
+          # Elke geïnstalleerde skill draagt een niet-lege SKILL.md — zonder die file is
+          # de map geen skill en ontdekt geen enkele sessie hem; dat is dan een halve
+          # installatie die eruitziet als een hele.
+          while IFS= read -r sname; do
+            [ -n "$sname" ] || continue
+            if [ ! -s ".claude/skills/$sname/SKILL.md" ]; then
+              echo "  ✗ .claude/skills/$sname/SKILL.md ontbreekt of is leeg"
+              layer_ok=0
+            fi
+          done < "$MANIFEST"
+          echo "  ✓ $(grep -c . "$MANIFEST") skills geïnstalleerd (manifest: $MANIFEST)"
+
           if [ "$layer_ok" -ne 1 ]; then
             echo ""
             echo "✗ De gesyncte laag is kapot — geen PR geopend."
@@ -227,7 +312,7 @@ jobs:
           if gh pr view "$BRANCH" --json state -q .state 2>/dev/null | grep -q OPEN; then
             echo "Bestaande open PR aangevuld met een nieuwe commit (bestaande commits blijven staan)."
           else
-            PR_BODY="Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, sync-script, git hooks, LEARNINGS-, HANDOFF- en BACKLOG-seed), getriggerd door een wijziging in umanex-os. Skills komen via het lokale scripts/sync-os.sh.
+            PR_BODY="Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, skills in .claude/skills/, sync-script, git hooks, LEARNINGS-, HANDOFF- en BACKLOG-seed), getriggerd door een wijziging in umanex-os. De bundel kwam als sha256-geverifieerde release-asset binnen (bundle v2); skills zijn repo-bestanden met project-level discovery en reizen met deze PR mee.
 
             **Geen checks op deze PR, en dat is verwacht.** GitHub triggert geen workflows voor een push met de default github.token. De laag is daarom in de sync-job zelf gevalideerd: elk gesynct shell-bestand is niet-leeg, syntactisch geldig en executable, en context.json is geldige JSON. Was dat niet zo, dan was deze PR niet geopend.
 

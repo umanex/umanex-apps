@@ -12,6 +12,9 @@ name: Sync umanex-os layer
 #                                                               repo-bestanden, geen user-level)
 #   - .claude/skills/.umanex-managed                            manifest: welke namen deze
 #                                                               sync beheert — de wees-grens
+#   - .claude/agents/<naam>.md                                  subagent-definities met
+#                                                               tool-beperking (v3)
+#   - .claude/agents/.umanex-managed                            agents-manifest, zelfde regime
 #   - scripts/sync-os.sh                                        canoniek sync-script
 #   - scripts/gen-snapshot.sh, .githooks/pre-commit             snapshot-systeem (bestanden)
 #   - .githooks/commit-msg                                      commit-scope guard (bestand)
@@ -90,8 +93,8 @@ jobs:
           # v1-payload (bundle_b64) betekent: de dispatcher is ouder dan deze receiver —
           # ook dan luid stoppen, niet stil half installeren.
           case "${BUNDLE_VERSION:-}" in
-            2) : ;;
-            "" | 1) echo "✗ Deze receiver verwacht bundle v2 (asset-transport); de dispatcher stuurde v${BUNDLE_VERSION:-1}. Merge de bijbehorende umanex-os-kant of draai de dispatcher opnieuw."; exit 1 ;;
+            3) : ;;
+            "" | 1 | 2) echo "✗ Deze receiver verwacht bundle v3 (met agents/); de dispatcher stuurde v${BUNDLE_VERSION:-1}. Merge de bijbehorende umanex-os-kant of draai de dispatcher opnieuw."; exit 1 ;;
             *) echo "✗ Bundelversie '${BUNDLE_VERSION}' is nieuwer dan deze receiver kent. Werk de receiver bij via een handmatige PR."; exit 1 ;;
           esac
 
@@ -227,6 +230,40 @@ jobs:
             done
           fi
 
+          # ── Agents: zelfde regime als skills, maar platte .md-bestanden. ──
+          # Subagent-definities met tool-beperking (bv. de read-only design-reviewer).
+          # Manifest .claude/agents/.umanex-managed begrenst wat deze sync beheert;
+          # klant-eigen agents blijven onaantastbaar.
+          if [ ! -d "$SRC/agents" ]; then
+            echo "✗ Bundel mist 'agents/' — de payload is onvolledig. Niets geïnstalleerd."
+            echo "  Controleer de dispatcher: de agents horen in \$work/bundle/agents."
+            exit 1
+          fi
+          mkdir -p .claude/agents
+          A_MANIFEST=".claude/agents/.umanex-managed"
+          a_old=""
+          [ -f "$A_MANIFEST" ] && a_old="$(cat "$A_MANIFEST")"
+
+          : > "$A_MANIFEST.new"
+          for f in "$SRC"/agents/*.md; do
+            [ -f "$f" ] || continue
+            aname="$(basename "$f")"
+            [ -n "$aname" ] || continue
+            cp "$f" ".claude/agents/$aname"
+            printf '%s\n' "$aname" >> "$A_MANIFEST.new"
+          done
+          mv "$A_MANIFEST.new" "$A_MANIFEST"
+
+          if [ -n "$a_old" ]; then
+            for tname in $a_old; do
+              [ -n "$tname" ] || continue
+              [ -f "$SRC/agents/$tname" ] && continue
+              [ -f ".claude/agents/$tname" ] || continue
+              rm -f "./.claude/agents/${tname:?}"
+              echo "  agent-wees '$tname' opgeruimd (stond in het manifest, niet meer in de bron)"
+            done
+          fi
+
           # context.json is repo-eigen input → alleen scaffolden als afwezig.
           [ -f context.json ] || install_file context.json.template "context.json"
 
@@ -291,6 +328,14 @@ jobs:
             fi
           done < "$MANIFEST"
           echo "  ✓ $(grep -c . "$MANIFEST") skills geïnstalleerd (manifest: $MANIFEST)"
+          while IFS= read -r aname; do
+            [ -n "$aname" ] || continue
+            if [ ! -s ".claude/agents/$aname" ]; then
+              echo "  ✗ .claude/agents/$aname ontbreekt of is leeg"
+              layer_ok=0
+            fi
+          done < "$A_MANIFEST"
+          echo "  ✓ $(grep -c . "$A_MANIFEST") agent(s) geïnstalleerd (manifest: $A_MANIFEST)"
 
           if [ "$layer_ok" -ne 1 ]; then
             echo ""
@@ -312,7 +357,7 @@ jobs:
           if gh pr view "$BRANCH" --json state -q .state 2>/dev/null | grep -q OPEN; then
             echo "Bestaande open PR aangevuld met een nieuwe commit (bestaande commits blijven staan)."
           else
-            PR_BODY="Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, skills in .claude/skills/, sync-script, git hooks, LEARNINGS-, HANDOFF- en BACKLOG-seed), getriggerd door een wijziging in umanex-os. De bundel kwam als sha256-geverifieerde release-asset binnen (bundle v2); skills zijn repo-bestanden met project-level discovery en reizen met deze PR mee.
+            PR_BODY="Automatische sync van de umanex-os laag (CLAUDE.md, profile, marker, skills in .claude/skills/, agents in .claude/agents/, sync-script, git hooks, LEARNINGS-, HANDOFF- en BACKLOG-seed), getriggerd door een wijziging in umanex-os. De bundel kwam als sha256-geverifieerde release-asset binnen (bundle v3); skills en agent-definities zijn repo-bestanden en reizen met deze PR mee.
 
             **Geen checks op deze PR, en dat is verwacht.** GitHub triggert geen workflows voor een push met de default github.token. De laag is daarom in de sync-job zelf gevalideerd: elk gesynct shell-bestand is niet-leeg, syntactisch geldig en executable, en context.json is geldige JSON. Was dat niet zo, dan was deze PR niet geopend.
 

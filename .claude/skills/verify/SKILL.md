@@ -34,6 +34,7 @@ De as volgt uit het taaktype, niet uit wat toevallig makkelijk te draaien is.
 | **Design-to-code** | de design-snapshot (`figma-naar-code` stap 4b) + parity- en token-checklist | een render van het gebouwde, gediff tegen de snapshot — niet tegen een vluchtige in-context mapping |
 | **Business-logica met afhankelijke berekeningen** | de **invariant** over het hele model | de invariant uitgerekend over een echte dataset (`eindsaldo maand N == beginsaldo maand N+1`), niet een scherm dat het juiste getal toont |
 | **Flow / interactie** | het pad daadwerkelijk afleggen | de flow doorlopen op het doeltoestel, inclusief toetsenbordpad waar dat geldt |
+| **Prototype / klikbaar design** (Figma, klikdummy) | de klik zelf; kun je niet klikken, dan het **trefvlak** van de node die de reaction draagt | een werkend exemplaar in hetzelfde bestand als ijkpunt — niet de reaction-properties, want die zijn op een dode hotspot even groen. Leeg `fills`/`strokes` op de dragende node is een rode vlag (LQB: 217 van 219 werkende hotspots hebben er wél een), maar een container kan zijn trefvlak van een kind erven — het ijkpunt beslist, niet de vuistregel |
 | **Backend / API** | request → response → statewijziging | een echte call tegen een echte store; de rij die erna in de database staat |
 | **Bugfix** | de reproductie | dezelfde input faalt vóór de fix en slaagt erna — beide kanten getoond |
 | **States** (loading/empty/error) | de toestand forceren | de app in die toestand brengen (mock, throttle, lege dataset), niet de branch in de code aanwijzen |
@@ -43,7 +44,7 @@ Meerdere assen tegelijk is normaal: een feature-flow met een berekening heeft er
 
 ---
 
-## Zeven rails — de discipline van de Beoordeel-stap
+## Acht rails — de discipline van de Beoordeel-stap
 
 Deze staan als werkprincipe in `CLAUDE.md`; hier zijn ze operationeel.
 
@@ -88,6 +89,14 @@ Een niet-getrouw instrument levert een vals-negatief dat er identiek uitziet als
 **7. De verwachting is de reden om te meten, nooit het bewijs.** Een vuistregel uit de literatuur, een typische waarde, een aggregaat dat logisch oogt — dat is de hypothese die de meting motiveert, niet de meting zelf. Bestaat de meetbare as (een log, een opname, een teller, het Verify-pad van de app), dan sluit alleen díe de vraag; kun je niet meten, dan lever je een hypothese mét het meetpad erbij, geen conclusie met een tabel eronder.
 
 *Herkenningsteken:* wijkt het getal af met precies een ronde factor (×2, ×½, ×60), dan is dat vrijwel zeker een tel- of eenheidsfout — die ga je meten, niet verklaren, en de kant waarop hij valt beslis je nooit uit plausibiliteit. Gemeten op rowtrack (2026-08-16): "20-24 spm is je echte slagfrequentie" klonk sluitend met twee vuistregels als steun; een FTMS-opname en een handtelling dezelfde avond wezen het tegendeel uit, en de echte oorzaak (een noemer die rustpackets meetelde) produceerde exact het klachtgetal 24.
+
+**8. Toets of je check rood kan worden.** Rail 6 gaat over de getrouwheid van je *instrument*, deze over de **grootheid** die je meet. Een assertie kan gevuld, waar en volledig groen zijn en tóch niets bewijzen, omdat ze de vorm van het artefact toetst in plaats van zijn gedrag — en dat voelt van binnenuit identiek aan verificatie.
+
+Vóór je een check vertrouwt: benoem het defect dat hij moet vangen en toon dat hij daarop **afgaat** — op de toestand vóór de fix, op een kapot exemplaar elders in hetzelfde bestand, of op een geconstrueerd geval. Blijft hij groen mét het defect → proxy. Ligt zijn uitkomst per constructie vast → tautologie.
+
+Gemeten op LQB (2026-08-18): "reaction bestaat · trigger `ON_CLICK` · actie `NAVIGATE` · bestemming geldig" stond 4 van 4 groen op een link waar klikken niets deed. Die vier asserties staan wóórd voor woord even groen op de kapotte als op de herstelde staat — de reaction hing op het `link`-FRAME (`604:43106`, `fills:0`, `strokes:0`) in plaats van op de TEXT-node eronder (`604:43108`, `fills:1`), waar hij na het herstel wél staat. Wat de twee onderscheidt, werd nooit geasserteerd. Het ijkpunt lag in het bestand zelf: op dezelfde pagina hebben 217 van de 219 eigen NAVIGATE-hotspots een trefvlak, en alle acht de structureel identieke tekstlinks dragen hun reaction op de TEXT-node. In dezelfde sessie faalde een overloop-check op de tweede manier: `CONTENT`-hoogte ís de som van de kinderen, dus "0px speling" stond voor alle 27 frames vast vóór de meting begon.
+
+*De moeilijk meetbare as krijgt geen lagere lat.* Kun je het gedrag niet opwekken, dan is dat rail 3 (`[NIET TE VERIFIËREN — reden]`), niet een goedkopere check die er verifiërend uitziet. Signaal: één taak, twee oppervlakken, ongelijke latten — de code-kant getoetst door te klikken, het design-bestand door een property te lezen.
 
 ---
 
@@ -148,7 +157,7 @@ Toon:
 3. **Bevindingen** — P0→P3, elk met de waargenomen output.
 4. **Niet te verifiëren** — met de reden en hoe het wél zou kunnen.
 5. **Overgeslagen assen** — expliciet, met de reden. Bij de tweede keer in dezelfde app: het HANDOFF-item dat je aanmaakte.
-6. **Rails-verantwoording** — één regel per rail (1–7): *nageleefd* (hoe) of *n.v.t.* (waarom). Een verify-output zonder dit blok is onaf; het blok is niet in te vullen zonder de rails te herlezen — de bescherming tegen handelen uit sessiegeheugen.
+6. **Rails-verantwoording** — één regel per rail (1–8): *nageleefd* (hoe) of *n.v.t.* (waarom). Een verify-output zonder dit blok is onaf; het blok is niet in te vullen zonder de rails te herlezen — de bescherming tegen handelen uit sessiegeheugen.
 
 Vraagt de gebruiker om een blijvend rapport, of is dit de afsluitende verificatie van een grote briefing → schrijf ook naar `/audits/{YYYY-MM-DD}-verify-{naam}.md`.
 

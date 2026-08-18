@@ -34,7 +34,7 @@ De as volgt uit het taaktype, niet uit wat toevallig makkelijk te draaien is.
 | **Design-to-code** | de design-snapshot (`figma-naar-code` stap 4b) + parity- en token-checklist | een render van het gebouwde, gediff tegen de snapshot — niet tegen een vluchtige in-context mapping |
 | **Business-logica met afhankelijke berekeningen** | de **invariant** over het hele model | de invariant uitgerekend over een echte dataset (`eindsaldo maand N == beginsaldo maand N+1`), niet een scherm dat het juiste getal toont |
 | **Flow / interactie** | het pad daadwerkelijk afleggen | de flow doorlopen op het doeltoestel, inclusief toetsenbordpad waar dat geldt |
-| **Prototype / klikbaar design** (Figma, klikdummy) | de klik zelf; kun je niet klikken, dan het **trefvlak** van de node die de reaction draagt | een werkend exemplaar in hetzelfde bestand als ijkpunt — niet de reaction-properties, want die zijn op een dode hotspot even groen. Leeg `fills`/`strokes` op de dragende node is een rode vlag (LQB: 217 van 219 werkende hotspots hebben er wél een), maar een container kan zijn trefvlak van een kind erven — het ijkpunt beslist, niet de vuistregel |
+| **Prototype / klikbaar design** (Figma, klikdummy) | de klik in de échte prototype-player — het pad staat in `references/figma-prototype-verify-pad.md` | de `node-id` in de player-URL die naar de verwachte bestemming springt, mét de interpretatiepoort uit dat pad (stilte bewijzen met een bekend-werkende hotspot in dezelfde page-load). Lukt de player niet, dan is de terugval het **trefvlak** van de dragende node, geijkt aan een werkend exemplaar in hetzelfde bestand — nooit de reaction-properties, die zijn op een dode hotspot even groen |
 | **Backend / API** | request → response → statewijziging | een echte call tegen een echte store; de rij die erna in de database staat |
 | **Bugfix** | de reproductie | dezelfde input faalt vóór de fix en slaagt erna — beide kanten getoond |
 | **States** (loading/empty/error) | de toestand forceren | de app in die toestand brengen (mock, throttle, lege dataset), niet de branch in de code aanwijzen |
@@ -115,6 +115,8 @@ Elke app die `verify` gebruikt hoort daarom een sectie **`## Verify-pad`** in zi
 | **Verse build** | hoe je zeker weet dat je de huidige code test, niet een oude binary |
 
 **"Geen" is een geldige waarde en hoort er expliciet te staan.** Een lege regel laat de vraag elke run terugkomen; het woord "geen" maakt het gat zichtbaar en telbaar. Ontbreekt de sectie helemaal, dan is dát de eerste bevinding van de run — vóór welk acceptatie-item ook.
+
+**Figma-prototypes hebben hun eigen contract**, want ze horen bij geen enkele app-repo: `references/figma-prototype-verify-pad.md` bevat de capabilities, de twee schaalslagen van het klikpunt en de gereedheidspoort. De per-bestand specifics (fileKey, startframes, de bekend-werkende ijk-hotspot) horen in de `CLAUDE.md` van de klant-repo waar dat prototype leeft.
 
 De sectie beschrijft het pad, ze bouwt het niet. Welk gereedschap de flow aandrijft verschilt fundamenteel per platform (browser-automatisering voor web, een UI-driver voor native) en is dus een keuze op app-niveau, niet hier.
 

@@ -148,6 +148,7 @@ Toon:
 3. **Bevindingen** — P0→P3, elk met de waargenomen output.
 4. **Niet te verifiëren** — met de reden en hoe het wél zou kunnen.
 5. **Overgeslagen assen** — expliciet, met de reden. Bij de tweede keer in dezelfde app: het HANDOFF-item dat je aanmaakte.
+6. **Rails-verantwoording** — één regel per rail (1–7): *nageleefd* (hoe) of *n.v.t.* (waarom). Een verify-output zonder dit blok is onaf; het blok is niet in te vullen zonder de rails te herlezen — de bescherming tegen handelen uit sessiegeheugen.
 
 Vraagt de gebruiker om een blijvend rapport, of is dit de afsluitende verificatie van een grote briefing → schrijf ook naar `/audits/{YYYY-MM-DD}-verify-{naam}.md`.
 

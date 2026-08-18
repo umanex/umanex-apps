@@ -217,6 +217,7 @@ Stap 7 bewijst *aanwezigheid* — alles gebonden, geen raw waarden. Stap 8 bewij
   Read-back-skelet:
 
   ```javascript
+  if (figma.root.name !== DOELBESTAND) return { meting_ongeldig: 'verkeerd bestand: ' + figma.root.name }
   const nm = async id => { try { const v = await figma.variables.getVariableByIdAsync(id); return v ? v.name : id } catch { return id } }
   const resolveBV = async bv => {
     const r = {}
@@ -279,6 +280,8 @@ return { total: items.length, buckets }   // verwacht: exact 2 sleutels, samen =
 Een derde sleutel in `buckets` **is** de bevinding — je hoeft hem niet te herkennen, hij telt zichzelf. Zelfde vorm als de invariant-rail in `CLAUDE.md` (*Discipline in de Beoordeel-stap*): bij een herhaalde of afgeleide waarde is de invariant de meetbare as, niet het exemplaar dat je toevallig opent.
 
 **Pass-conditie:** elke bedoeld-gebonden property matcht (naam én laag), auto-layout aanwezig waar spacing bindt, hiërarchie komt overeen, elke property uit bak 3 is expliciet verantwoord, en bij herhaalde exemplaren valt élk exemplaar in een toegestane signatuur. Nul mismatches.
+
+**Verantwoording in de output:** som per check (1–5) expliciet op wat gemeten is en wat de uitkomst was — vijf regels, geen samenvatting. Een export-rapport zonder die vijf regels is onaf; het dwingt herlezen af op het beslismoment i.p.v. leunen op sessiegeheugen.
 
 **Bij elke mismatch — capture via de `vastleggen`-skill (schrijflogica niet dupliceren):**
 

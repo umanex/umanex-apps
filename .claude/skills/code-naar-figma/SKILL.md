@@ -37,6 +37,7 @@ figma_get_status
 
 - Actief → ga verder
 - Niet actief → stop. Vraag: "Wil je de Figma Desktop Bridge activeren, of overschakelen naar native MCP?" — wacht op antwoord, ga nooit stilzwijgend verder.
+- **Meerdere bestanden verbonden?** De actieve file kan stil terugwisselen (reconnects). Assert het doelbestand in élke `figma_execute` (`if (figma.root.name !== '<doel>') return {fout: …}`) — zeker vóór schrijfacties; een write in het verkeerde klantbestand is de duurste stille fout van deze skill (les 2026-08-18).
 
 ---
 

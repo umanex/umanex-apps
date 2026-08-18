@@ -19,6 +19,7 @@ Twee regels die de hele skill sturen:
 
 1. **Kies altijd het semantisch juiste token, niet het eerste token met de juiste waarde.** Dezelfde hex-waarde komt vaak voor op meerdere tokens over meerdere lagen heen — een achtergrond-, tekst-, border- en component-token kunnen dezelfde kleur delen. Alleen één is correct per context.
 2. **Bij twijfel: voorstel + bevestiging, nooit gokken.** Een verkeerde stille mapping is duurder dan een extra vraag.
+3. **Identificeer het scherm aan zijn inhoud, niet aan zijn laagnaam.** Een laagnaam is een bewering van de designer, geen eigenschap van het scherm — en hij groeit zelden mee. Lees de titel, de velden en de knoppen vóór je een Figma-frame aan een code-scherm koppelt. Gemeten op LQB (2026-08-18): frame `604:42883` heet `unit:04-contact`, zijn kind `screen:d1-account-manager-handoff`, en de kaart erin draagt de titel "Add your company details" met de velden `Company name` en `Street` — de naam wees een bedankscherm aan, de inhoud een invulformulier. Spreekt een tweede signaal de naam tegen (een connector-label in het flow-diagram, de node-id in de `@figma`-header van een bestaand component), dan is die tegenspraak het alarm: verklaar hem vóór je koppelt, en trek een onbevestigde koppeling nooit door naar zusterschermen "voor de consistentie".
 
 ---
 

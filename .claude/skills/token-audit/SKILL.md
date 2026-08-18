@@ -28,6 +28,16 @@ Bepaal met de gebruiker de doelset (heel bestand · pagina · node-subtree) vó�
 2. **Token-bron** per klant-CLAUDE.md: `tokens.json` (vers gepulld) en/of de library. Dit is de bron-van-waarheid voor *wat er zou moeten bestaan* — stap 4 toetst het bestand ertegen.
 3. Optioneel, voor de code-kant: `token-mapping.json` uit het actieve project (`figma-naar-code` stap 2) en het `## Verify-pad` van de app.
 
+**Instrument-skelet — elk faalpad krijgt een eigen type.** Een enumeratie die leeg terugkomt retourneert `{meting_ongeldig: reden}`, nooit een lege lijst: "instrument kapot" en "niets gevonden" mogen niet hetzelfde type dragen, anders leest de een als de ander (zo werd op 2026-08-17 "bestaat niet" geconcludeerd uit een lege `teamLibrary`-uitkomst die een dag later gewoon 41 variables gaf). En elke lege uitkomst vraagt een **positieve controle** in dezelfde run — CLAUDE.md, *"Een lege meting vraagt een positieve controle"*:
+
+```javascript
+if (figma.root.name !== DOELBESTAND) return { meting_ongeldig: 'verkeerd bestand: ' + figma.root.name }
+const cols = await figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync()
+if (!cols.length) return { meting_ongeldig: 'teamLibrary leeg — instrumentfout of geen enabled libraries; GEEN afwezigheidsbewijs' }
+// positieve controle: een binding waarvan je wéét dat hij uit een library komt, moet
+// zijn collectie in deze lijst hebben — zo niet, dan meet de enumeratie niet
+```
+
 ---
 
 ## Stap 2 — Foto van het token-gebruik
@@ -112,6 +122,8 @@ Per bevinding: **node-id + property + gebonden vs verwacht + bak + prioriteit**,
 - **P3** — dekking en hygiëne (ongebruikte tokens, naamgeving). → dichtstbijzijnde `BACKLOG.md`, conform de globale regel.
 
 Sluit af met: de nulmeting (stap 2-telling), de fix-voorstellen als exacte calls (import → rebind, in die volgorde waar bak 4 speelt) mét de herinnering dat uitvoeren een bevestigde design-system-wijziging is, en — bij een herhaalbare doelset — het commando/de node-ids waarmee de volgende run tegen deze uitkomst dift.
+
+**Rails-verantwoording — verplicht slotblok van elk rapport.** Eén regel per rail (1–6): *nageleefd* (met het hoe: welke guard, welke controle) of *n.v.t.* (met waarom). Een rapport zonder dit blok is onaf — het blok is niet in te vullen zonder de rails te herlezen, en dat is precies de bedoeling: rails in proza werken alleen op het beslismoment, en sessiegeheugen vervangt dat sluipend (zo werd rail 4 op 2026-08-17 gemist door de auteur van diezelfde rail, één dag na het schrijven).
 
 **Brug naar de eval-loop:** een bevinding die een terugkerende faalklasse blootlegt (zelfde bak, meerdere componenten of bestanden) is een `vastleggen`-trigger; losse instanties horen in het rapport, niet in LEARNINGS.
 

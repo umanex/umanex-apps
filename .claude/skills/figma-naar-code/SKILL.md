@@ -19,6 +19,7 @@ Twee regels die de hele skill sturen:
 
 1. **Kies altijd het semantisch juiste token, niet het eerste token met de juiste waarde.** Dezelfde hex-waarde komt vaak voor op meerdere tokens over meerdere lagen heen — een achtergrond-, tekst-, border- en component-token kunnen dezelfde kleur delen. Alleen één is correct per context.
 2. **Bij twijfel: voorstel + bevestiging, nooit gokken.** Een verkeerde stille mapping is duurder dan een extra vraag.
+3. **Identificeer het scherm aan zijn inhoud, niet aan zijn laagnaam.** Een laagnaam is een bewering van de designer, geen eigenschap van het scherm — en hij groeit zelden mee. Lees de titel, de velden en de knoppen vóór je een Figma-frame aan een code-scherm koppelt. Gemeten op LQB (2026-08-18): frame `604:42883` heet `unit:04-contact`, zijn kind `screen:d1-account-manager-handoff`, en de kaart erin draagt de titel "Add your company details" met de velden `Company name` en `Street` — de naam wees een bedankscherm aan, de inhoud een invulformulier. Spreekt een tweede signaal de naam tegen (een connector-label in het flow-diagram, de node-id in de `@figma`-header van een bestaand component), dan is die tegenspraak het alarm: verklaar hem vóór je koppelt, en trek een onbevestigde koppeling nooit door naar zusterschermen "voor de consistentie".
 
 ---
 
@@ -68,6 +69,19 @@ figma_get_component_for_development_deep(
 ```
 
 **Plugin-versie-afhankelijkheid.** `figma_get_component_for_development_deep` is een plugin-methode. Faalt hij met "Unknown method: DEEP_GET_COMPONENT", dan komt de geladen Desktop Bridge-plugin niet overeen met de `figma-console-mcp`-serverversie — "in de tool-lijst staan" garandeert geen werkende methode. Fix: laad de gebundelde plugin (`~/.figma-console-mcp/plugin`), niet een oudere losse build.
+
+**Verf is het bewijs, niet de instelling ernaast.** Een Figma-node houdt zijn
+`strokeWeight`, `strokeBottomWeight`, `cornerRadius` en `dashPattern` óók wanneer er geen
+stroke-*paint* meer op staat — die waarden beschrijven hoe een lijn eruit zou zien *áls* hij
+bestond. Wie de weight uitleest en "er staat een rand" concludeert, bouwt een rand die het
+design niet heeft. Toets daarom altijd de paints:
+`strokes.filter(p => p.visible !== false && p.opacity !== 0).length > 0` — en hetzelfde voor
+`fills` vóór je een blok een kaart noemt. Gemeten in Luminus `fleet-manager` (2026-08-19):
+élk `pt`- en `st`-titelframe draagt `strokeBottomWeight: 2` bij een **lege** `strokes`-array;
+een implementatie op de weight zette een onderlijn onder 34 titels die in het design nergens
+staat. **Tegenproef vóór je concludeert:** meet in dezelfde run één node die aantoonbaar wél
+een rand heeft naast één die er geen heeft. Rapporteren ze allebei "rand", dan meet je de
+instelling in plaats van de verf.
 
 **Wat deze tool teruggeeft (relevant voor de stappen hierna):**
 - `boundVariables`: alle toegepaste design tokens als opgeloste namen (niet IDs) → input voor de token-ladder in stap 4
@@ -165,6 +179,34 @@ Token-correctheid (stap 7) bewijst niet dat het component eruitziet als het desi
 
    Diff daarom getallen tegen getallen, niet beeld tegen beeld. De Figma-kant staat machine-leesbaar in de design-snapshot (stap 4b) en `token-mapping.json` (stap 3); de code-kant komt uit `getComputedStyle` op de gerenderde component. Vergelijk per property — de vier paddings, gap, `font-size`, `line-height`, `border-radius`, `border-width`, kleur — en rapporteer elk verschil mét zijn twee waarden, ook 1 px. Heeft het doelwit geen DOM (React Native, native preview), dan bestaat dit pad niet: meld dat als `[NIET GEMETEN — geen computed-style-pad]` en behandel de visuele vergelijking als wat ze dan is, een zwakkere as.
 
+6. **Meet ook de structuur, niet alleen de waarden.** Een diff op tekst en op losse
+   properties mist nog steeds de vorm: of een blok een **kaart** is (vulling + rand-paint +
+   radius), of een titel een lijn draagt, of een sectie op hetzelfde niveau staat als in het
+   design. Neem die as expliciet mee — per contentblok "kaart ja/nee" en per titel
+   "onderlijn ja/nee" — anders keurt de check een scherm goed dat structureel anders is
+   opgebouwd. Gemeten in Luminus `fleet-manager` (2026-08-19): een tekst-only parity-ronde
+   gaf "geen onverklaarde verschillen", terwijl acht schermen de kaart misten die het design
+   voorschrijft en elke titel 16px was in plaats van 24.
+
+7. **Een klasse in de source is geen bewijs dat de stijl rendert.** Meet de *uitkomst*
+   (`getComputedStyle`), nooit de className die je zelf net schreef. Class-merge-lagen
+   (`tailwind-merge`, `cva`, `clsx`-wrappers) gooien klassen weg die ze niet herkennen — een
+   custom schaal-sleutel wordt bijvoorbeeld voor een kleur aangezien en sneuvelt zodra er een
+   echte kleur naast staat. Dat compileert, rendert door, en is overal even fout, dus
+   onzichtbaar zonder vergelijkingspunt. In `fleet-manager` viel daardoor élke kop en
+   body-tekst terug op de 16px browser-default; zichtbaar geworden pas toen de gemeten
+   font-size naast de Figma-waarde kwam te liggen.
+
+8. **Je meetscript verdient dezelfde argwaan als je code.** De positieve-controle-regel uit
+   `CLAUDE.md` geldt niet alleen voor lege uitkomsten maar ook voor een niet-lege meting die
+   stil iets ánders telt dan je bedoelt — de weight in plaats van de verf, de kinderen van een
+   node in plaats van de node zelf, een `<option>` die geen `offsetParent` heeft en dus
+   "onzichtbaar" lijkt. Alle drie kwamen voor in één ronde (2026-08-19) en produceerden
+   elk een "bevinding" die er geen was. Bouw daarom een controle ín het script: laat het in
+   dezelfde run iets vinden waarvan je zeker weet dát het er is, en laat het **afbreken** als
+   dat mislukt. Een parity-run die zijn eigen instrument niet toetst, rapporteert vertrouwen
+   dat hij niet heeft.
+
 Pas door naar stap 7 als de render visueel overeenkomt met de Figma-referentie **én** de numerieke diff nul verschillen geeft — of expliciet als niet-meetbaar gemeld is. Kan het component niet gerenderd worden (geen preview-pad beschikbaar) → meld expliciet dat de parity-check is overgeslagen; sluit nooit stil af alsof hij geslaagd is.
 
 ---
@@ -180,6 +222,14 @@ Aanwezigheid én correctheid. De eerste vier checks vangen hardcoded waarden; de
 - [ ] **Is elk gekozen token het semantisch juiste token, niet alleen een token met de juiste waarde?**
 - [ ] **Is de juiste laag gekozen volgens de ladder — component-token waar een rol bestaat, semantisch als default, primitief alleen voor de in klant-CLAUDE.md gemarkeerde primitief-only categorieën?**
 - [ ] Ontbrekende token voorstellen bevestigd en gedocumenteerd in de token-lijst?
+- [ ] Randen, vullingen en kaarten beoordeeld op **paint**, niet op `strokeWeight` /
+      `cornerRadius` — met een tegenproef op een node die er wél en een die er géén heeft?
+- [ ] Structurele as meegenomen (kaart ja/nee per blok, onderlijn ja/nee per titel), niet
+      alleen tekst en losse waarden?
+- [ ] Gemeten op de **gerenderde uitkomst** (`getComputedStyle`), niet op de geschreven
+      className — class-merge-lagen kunnen klassen stil verwijderen?
+- [ ] Het meetscript zelf draagt een positieve controle die de run laat falen als de meting
+      ongeldig is?
 - [ ] **Design parity (stap 6) geslaagd — render komt visueel overeen met de Figma-node én de numerieke per-property diff geeft nul verschillen — of expliciet als overgeslagen/niet-meetbaar gemeld?**
 - [ ] States afgeleid uit `reactions` (stap 5), geen speculatieve states toegevoegd?
 - [ ] `codebasePath`-scan (stap 3) nagekeken — geen dubbele implementatie van een bestaand component?

@@ -118,6 +118,18 @@ Structureel in te stellen:
 - `layoutSizingVertical = 'HUG'` expliciet zetten op een frame in een auto-layout parent voorkomt dat het de volledige hoogte vult.
 - Een verse `figma.createFrame()` start op 100×100 met **FIXED** sizing; enkel `layoutMode` zetten hugt de inhoud niet — zet expliciet `counterAxisSizingMode = 'AUTO'` (en waar nodig `primaryAxisSizingMode = 'AUTO'`) **ná** `layoutMode`, anders houdt het frame zijn 100px. (Zie stap 4b: bij een bestaande DS-component instantiëren i.p.v. dit hand-frame vermijdt dit probleem sowieso.)
 - **Kolombreedtes verdeel je uit een budget dat de padding meetelt:** `budget = container.width − padLeft − padRight − (n−1)·gap`. Zonder de padding-term verdeel je te veel, valt de laatste kolom buiten het frame en slaagt de build zonder error — dezelfde klasse als de DTCG-`$value`-val (geslaagde exit, kapotte output). Assert de som van de kolombreedtes tegen het budget vóór je resiz't, en bewijs na afloop geometrisch dat `lastChild.x + lastChild.width ≤ container.width`. Die assert ving op fleet-manager twee echte mismatches vóór ze schade deden (Luminus, 2026-08-17).
+- **"Geen wees-nodes" is niet hetzelfde als "geen dubbele nodes".** Een opruimcheck die naar
+  *lege* frames en losse restanten zoekt, ziet een blok dat twee keer is aangemaakt niet: geen
+  van die nodes is leeg, ze zijn allemaal gevuld en kloppen op zichzelf. Tel daarom bij
+  oplevering de **voorkomens van dragende blokken** — sectiekoppen, threads, invoervelden,
+  actieknoppen — en eis er precies één; en behandel een frame dat veel hoger is dan zijn
+  inhoud vraagt als bevinding in plaats van als gegeven. Gemeten in Luminus `fleet-manager`
+  (2026-08-19): `FM/15 Ticket Detail & Reply` droeg zijn hele onderste helft dubbel — twee
+  keer "Conversation", twee identieke threads, twee antwoordvelden, twee Send-knoppen, plus
+  drie dubbele detailregels. Het frame was 1922px waar 1158 volstond; die hoogte stond in de
+  eigen meetuitkomst en is als gegeven gelezen in plaats van als signaal. De acceptatieregel
+  "geen wees-nodes van gefaalde pogingen" was afgevinkt en had gelijk — hij meette alleen iets
+  anders dan wat er mis was.
 - **Kloon vóór je verwijdert.** `node.clone()` op een kind van een net verwijderde parent gooit ("node does not exist") en laat het script halverwege sterven. Volgorde: eerst de prototype-node naar een variabele klonen, dán pas de oude children/container verwijderen. En faalt een run halverwege: ruim de partiële artefacten (een leeg 100×100-frame) op vóór de retry — de idempotentie-check van "Bestaande node afhandelen" hieronder matcht er anders stil op en bouwt voort op een wees (Luminus fleet-manager, 2026-08-17).
 
 #### Bestaande node afhandelen

@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-16_
+_Gegenereerd op 2026-08-20_
 
 ## Project
 - **App:** rowtrack
@@ -58,15 +58,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+39ddbf8 docs(rowtrack): capture the calorie discrepancy before it evaporates
 1e5f8bf docs(rowtrack): record what the live SPM measurement left unbuilt
 aa0cb47 docs(rowtrack): record sim render-verify of #257-261 in HANDOFF
 4108515 docs: session retrospective — handoff checks and Apollo XL follow-up
 2810551 feat(rowtrack): accept any FTMS-advertising rower in device scan
-be05bdb docs(rowtrack): fix two checks that could not answer themselves
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/lib/ble/hr-service.ts
+  M  apps/rowtrack/lib/ble/hrLink.test.ts
+  M  apps/rowtrack/lib/ble/hrLink.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

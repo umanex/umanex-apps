@@ -35,6 +35,7 @@ function replay(events: HrLinkEvent[], from: HrLinkState = initialHrLink) {
     statuses: effects.map((e) => e.status).filter(Boolean),
     rearms: effects.filter((e) => e.rearmDeadline).length,
     releases: effects.filter((e) => e.release).length,
+    clears: effects.filter((e) => e.clearDeadline).length,
   };
 }
 
@@ -42,6 +43,8 @@ const subscribed = (silent: boolean): HrLinkEvent => ({ type: 'subscribed', sile
 const beat: HrLinkEvent = { type: 'measurement', usable: true };
 const junk: HrLinkEvent = { type: 'measurement', usable: false };
 const silence: HrLinkEvent = { type: 'silence' };
+const suspended: HrLinkEvent = { type: 'suspended' };
+const resumed: HrLinkEvent = { type: 'resumed' };
 
 test('een abonnement alléén is nooit genoeg voor "verbonden"', () => {
   // Dit is de bug in één regel: hier stond vroeger 'connected'.
@@ -117,6 +120,45 @@ test('stilte in rust doet niets — er valt niets los te laten', () => {
   const { state, effects } = replay([silence]);
   assert.equal(state.phase, 'idle');
   assert.deepEqual(effects, [{}]);
+});
+
+test('een app-wissel midden in een rit laat de band met rust', () => {
+  // Het scenario van 2026-08-20: even naar een andere app, iOS schorst RowTrack op,
+  // en bij terugkeer vuurde de achterstallige deadline meteen af over een band die
+  // gewoon lag te meten. De rest van de rit was daarna zonder hartslag.
+  const { state, statuses, clears, releases } = replay([
+    subscribed(false), beat, suspended, resumed, beat,
+  ]);
+  assert.equal(state.phase, 'live', 'de verbinding overleeft het wegkijken');
+  assert.deepEqual(statuses, ['waiting', 'connected'], 'geen fout over stilte die niet van de band kwam');
+  assert.equal(clears, 1, 'de klok gaat uit zolang we niet kunnen luisteren');
+  assert.equal(releases, 0, 'niets losgelaten');
+});
+
+test('terugkeren geeft de band een vol venster, geen restant', () => {
+  const { rearms } = replay([subscribed(false), beat, suspended, resumed]);
+  // abonnement + meting + terugkeer. Zonder de derde begint de band met wat er van
+  // de vorige deadline over was — en dat kan één tik zijn.
+  assert.equal(rearms, 3);
+});
+
+test('een band die tijdens het wegkijken écht stierf valt ná terugkeer alsnog af', () => {
+  // De andere kant van de tegenproef: de wachter mag niet zó toegeeflijk worden dat
+  // hij niets meer meet. Komt er na de terugkeer niets, dan volgt de stilte gewoon.
+  const { state, statuses, effects } = replay([
+    subscribed(false), beat, suspended, resumed, silence,
+  ]);
+  assert.equal(state.phase, 'idle');
+  assert.deepEqual(statuses, ['waiting', 'connected', 'error']);
+  assert.equal(effects.at(-1)?.error, 'hr_no_data');
+  assert.equal(effects.at(-1)?.release, true);
+});
+
+test('achtergrond zonder band doet niets', () => {
+  // Wisselen van app terwijl er niets hangt mag geen timer aan- of uitzetten.
+  const { state, effects } = replay([suspended, resumed]);
+  assert.equal(state.phase, 'idle');
+  assert.deepEqual(effects, [{}, {}]);
 });
 
 test('opnieuw verbinden begint schoon, ook na een geslaagde sessie', () => {

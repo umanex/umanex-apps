@@ -48,7 +48,47 @@ if [ ! -d "$git_dir/rebase-merge" ] && [ ! -d "$git_dir/rebase-apply" ] \
   fi
 fi
 
-# 1. HANDOFF-check-signaal — legt een nieuwe open entry een check vast of een staat?
+# 1. Scratch-guard — een wegwerpbestand hoort niet in een commit.
+#
+# GEMETEN op 2026-08-20 in Luminus (`git show --stat 8861a5e`): zeven
+# `apps/fleet-manager/scripts/.tmp-*.mjs` van parallel draaiende sub-agents reisden mee in
+# één `git add -A`. Ze werden pas opgemerkt aan de `Warning: 7 uncommitted changes` van
+# `gh pr create` — ná het pushen.
+#
+# Waarom een hook en niet .gitignore: Luminus kreeg achteraf `apps/*/scripts/.tmp-*`, maar
+# dat is één repo en één map. Gemeten op 2026-08-21 stageren Columba, umanex-apps en
+# umanex-os zo'n bestand nog zonder enige weerstand. Deze guard reist met de laag mee en
+# geldt overal, op elk pad, ook bij `git add -f`.
+#
+# Bewust nauw: alleen een PUNT-geprefixt wegwerppatroon. Een dotfile die `.tmp-`, `.scratch`,
+# `.probe` of `.refute` heet is per conventie verborgen werkmateriaal — een echt bestand
+# heet zo niet. Breder matchen (`tmp-*`, `*-probe.mjs`) zou test-fixtures raken die legitiem
+# zo heten, en een wachter die geregeld vals alarm slaat leer je negeren.
+#
+# Blokkeert, en bewust zonder trailer-escape: de juiste actie is hier altijd dezelfde
+# — unstage. Wil je zo'n bestand écht bewaren, dan hoort het een naam te dragen die geen
+# wegwerpbestand belooft.
+scratch=""
+for f in $(git diff --cached --name-only --diff-filter=ACM || true); do
+  case "${f##*/}" in
+    .tmp-*|.scratch*|.probe*|.refute*) scratch="$scratch $f" ;;
+  esac
+done
+
+if [ -n "$scratch" ]; then
+  echo ""
+  echo "✗ Commit gestopt — wegwerpbestand(en) staan gestaged:"
+  for f in $scratch; do echo "    $f"; done
+  echo ""
+  echo "  Zo'n bestand komt doorgaans van een parallel draaiende agent of een eigen probe."
+  echo "  Het is geen werk dat je wilt bewaren, en in de geschiedenis is het niet meer weg."
+  echo ""
+  echo "    git restore --staged$(printf ' %s' $scratch)"
+  echo ""
+  exit 1
+fi
+
+# 2. HANDOFF-check-signaal — legt een nieuwe open entry een check vast of een staat?
 #    Waarschuwt, blokkeert niet.
 #
 #    Dit blok staat bewust vóór de app-poort hieronder. Een `HANDOFF.md` leeft in de
@@ -102,7 +142,7 @@ changed_apps="$(git diff --cached --name-only --diff-filter=ACMRD \
 
 [ -z "$changed_apps" ] && exit 0
 
-# 2. Context-snapshots.
+# 3. Context-snapshots.
 #
 # De uitkomst van gen-snapshot.sh wordt gecontroleerd, en de ✅ komt alleen als er ook echt
 # iets gelukt is. Voorheen draaide de generator, mocht hij falen, werd de `git add` met
@@ -133,7 +173,7 @@ if [ -f ./scripts/gen-snapshot.sh ]; then
   fi
 fi
 
-# 3. Design tokens — constants/ in sync houden met tokens.json.
+# 4. Design tokens — constants/ in sync houden met tokens.json.
 #    Strikt gegateerd: alleen apps die een tokens:build-script én constants/ hebben.
 for app in $changed_apps; do
   [ -d "apps/$app/constants" ] || continue
@@ -151,7 +191,7 @@ for app in $changed_apps; do
   fi
 done
 
-# 4. Parallel-werk-signaal — onvastgelegd werk in apps buiten deze commit.
+# 5. Parallel-werk-signaal — onvastgelegd werk in apps buiten deze commit.
 #    Dat is op zichzelf legitiem (je bent aan twee dingen bezig), dus dit blokkeert niet.
 #    Het maakt alleen het moment zichtbaar waarop een tweede taak in dezelfde working tree
 #    leeft — precies het moment waarop een worktree goedkoper is dan de opruiming achteraf.
@@ -172,7 +212,7 @@ if [ -n "$parallel_apps" ]; then
   echo "  Twee taken in één working tree? 'git worktree add' scheidt ze fysiek — zie CLAUDE.md, Git workflow."
 fi
 
-# 5. Verify-pad-signaal — heeft de app die je aanraakt een uitvoerbaar verificatiepad?
+# 6. Verify-pad-signaal — heeft de app die je aanraakt een uitvoerbaar verificatiepad?
 #    Waarschuwt, blokkeert niet. Toen deze guard gebouwd werd had 1 van de 11 apps een
 #    `## Verify-pad`-sectie; hard falen zou dus op dag één tien apps blokkeren en vooral
 #    aanleren hoe je `--no-verify` typt. Door op *aanraking* te waarschuwen komt de druk

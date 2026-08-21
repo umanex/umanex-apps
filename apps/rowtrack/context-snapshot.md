@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-20_
+_Gegenereerd op 2026-08-21_
 
 ## Project
 - **App:** rowtrack
@@ -58,18 +58,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+43714ad fix(rowtrack): stop dropping the HR strap when the app goes to background
 39ddbf8 docs(rowtrack): capture the calorie discrepancy before it evaporates
 1e5f8bf docs(rowtrack): record what the live SPM measurement left unbuilt
 aa0cb47 docs(rowtrack): record sim render-verify of #257-261 in HANDOFF
 4108515 docs: session retrospective — handoff checks and Apollo XL follow-up
-2810551 feat(rowtrack): accept any FTMS-advertising rower in device scan
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/rowtrack/BACKLOG.md
   M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/lib/ble/hr-service.ts
-  M  apps/rowtrack/lib/ble/hrLink.test.ts
-  M  apps/rowtrack/lib/ble/hrLink.ts
+  M  apps/rowtrack/context-snapshot.md
+  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
+  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

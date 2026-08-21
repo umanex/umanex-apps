@@ -69,14 +69,16 @@ export function useGoalProgress(
 
   // --- Computed (useMemo) ---
 
+  // Deel door de teller die in dezelfde guard optelt als de som, niet door tickCount:
+  // die telt ook de packets waarin het veld ontbrak en drukt het gemiddelde omlaag.
   const avgWatts = useMemo(() => {
-    const tc = refs.tickCount.current || 1;
-    return Math.round(refs.wattsSum.current / tc);
+    const c = refs.wattsCount.current || 1;
+    return Math.round(refs.wattsSum.current / c);
   }, [seconds, refs]);
 
   const avgSpm = useMemo(() => {
-    const tc = refs.tickCount.current || 1;
-    return Math.round(refs.spmSum.current / tc);
+    const c = refs.spmCount.current || 1;
+    return Math.round(refs.spmSum.current / c);
   }, [seconds, refs]);
 
   const avgSplit = useMemo(() => {
@@ -90,8 +92,8 @@ export function useGoalProgress(
       seconds,
       distanceMeters,
       splitSeconds,
-      avgWatts: refs.tickCount.current > 0
-        ? Math.round(refs.wattsSum.current / refs.tickCount.current)
+      avgWatts: refs.wattsCount.current > 0
+        ? Math.round(refs.wattsSum.current / refs.wattsCount.current)
         : 0,
     });
   }, [goal, seconds, distanceMeters, splitSeconds, refs]);

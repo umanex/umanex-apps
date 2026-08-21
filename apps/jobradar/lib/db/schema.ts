@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 5
 
 export type ItemStatus = 'new' | 'saved' | 'dismissed' | 'contacted'
 
@@ -44,6 +44,11 @@ export const companies = sqliteTable(
     naceCode: text('nace_code'),
     url: text('url'),
     signals: text('signals').notNull().default('[]'),
+    // Waarop de lead rust. Nullable met opzet: een lead van vóór deze kolommen is niet
+    // "0 vacatures" maar "nog niet geteld", en dat verschil hoort zichtbaar te blijven.
+    vacatureAantal: integer('vacature_aantal'),
+    designVacatures: integer('design_vacatures'),
+    devVacatures: integer('dev_vacatures'),
     leadScore: integer('lead_score').notNull().default(0),
     scoreBreakdown: text('score_breakdown').notNull().default('{}'),
     rechtsgrond: text('rechtsgrond').notNull().default('gerechtvaardigd belang'),
@@ -57,6 +62,20 @@ export const companies = sqliteTable(
     dedupeHashIdx: uniqueIndex('companies_dedupe_hash_idx').on(table.dedupeHash),
   })
 )
+
+/**
+ * Kleine key/value-opslag voor instellingen die in de app bewerkbaar zijn.
+ *
+ * Bewust key/value en geen kolom per instelling: er is er vandaag één (de zoekopdracht) en
+ * een tabel met één kolom die telkens moet migreren is duurder dan een rij erbij.
+ */
+export const settings = sqliteTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+export type Setting = typeof settings.$inferSelect
 
 export const syncRuns = sqliteTable('sync_runs', {
   id: integer('id').primaryKey({ autoIncrement: true }),

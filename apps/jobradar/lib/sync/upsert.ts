@@ -1,4 +1,4 @@
-import { and, eq, ne } from 'drizzle-orm'
+import { and, eq, ne, notInArray } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '../db/schema'
 import { scoreJob, scoreLead, jobDedupeHash, leadDedupeHash, kiesDedupeHash } from '../matching'
@@ -109,6 +109,15 @@ export async function upsertLead(
         signals: JSON.stringify(signals),
         leadScore: score,
         scoreBreakdown: JSON.stringify(breakdown),
+        // Alleen schrijven wanneer de bron ze levert: een externe bron mag de tellingen van
+        // een eerdere afleiding niet wissen met niets.
+        ...(lead.tellingen
+          ? {
+              vacatureAantal: lead.tellingen.totaal,
+              designVacatures: lead.tellingen.design,
+              devVacatures: lead.tellingen.dev,
+            }
+          : {}),
         dedupeHash: kiesDedupeHash(hash, bestaand.dedupeHash, !bezet),
         lastSeenAt: now,
       })
@@ -131,11 +140,61 @@ export async function upsertLead(
     signals: JSON.stringify(nieuweSignalen),
     leadScore: score,
     scoreBreakdown: JSON.stringify(breakdown),
+    vacatureAantal: lead.tellingen?.totaal ?? null,
+    designVacatures: lead.tellingen?.design ?? null,
+    devVacatures: lead.tellingen?.dev ?? null,
     dedupeHash: hash,
     firstSeenAt: now,
     lastSeenAt: now,
   })
   return { added: true }
+}
+
+/**
+ * Haalt de afgeleide signalen weg bij leads die deze run niet meer afgeleid werden.
+ *
+ * Zonder dit houdt een lead zijn score en signalen ook nadat de afleiding hem niet meer
+ * oplevert. De rij blijft staan — een status die jij erop gezet hebt is van jou — maar de
+ * bewering verdwijnt, en daarmee de score. Wat een externe bron ooit zei blijft wél staan.
+ *
+ * **Wanneer dit in de praktijk vuurt.** Sinds de afleiding over álle opgeslagen vacatures
+ * loopt, blijft een bedrijf afgeleid zolang zijn vacatures in de database staan — en er is
+ * vandaag geen enkel pad dat vacatures verwijdert. Dit vuurt dus alleen na een handmatige
+ * opruiming, of wanneer een bedrijf onder de drempels zakt doordat de classificatie
+ * verandert. Dat is zeldzaam, en het is geen reden om de guard weg te laten: hij is er voor
+ * het moment dat verlopen vacatures wél opgeruimd worden.
+ */
+export async function verouderdeLeadsOpruimen(
+  db: JobradarDb,
+  actueleExternalIds: readonly string[]
+): Promise<number> {
+  const verouderd = await db.query.companies.findMany({
+    where:
+      actueleExternalIds.length > 0
+        ? and(eq(schema.companies.source, 'vacatures'), notInArray(schema.companies.externalId, [...actueleExternalIds]))
+        : eq(schema.companies.source, 'vacatures'),
+  })
+
+  let opgeruimd = 0
+  for (const rij of verouderd) {
+    const huidige = veiligParseSignalen(rij.signals)
+    const resterend = mergeSignalen(huidige, [])
+    if (resterend.length === huidige.length) continue
+    const { score, breakdown } = scoreLead({ signals: resterend })
+    await db
+      .update(schema.companies)
+      .set({
+        signals: JSON.stringify(resterend),
+        leadScore: score,
+        scoreBreakdown: JSON.stringify(breakdown),
+        vacatureAantal: null,
+        designVacatures: null,
+        devVacatures: null,
+      })
+      .where(eq(schema.companies.id, rij.id))
+    opgeruimd++
+  }
+  return opgeruimd
 }
 
 /** Eén corrupte rij mag de sync niet vellen; een onleesbare signaallijst telt als leeg. */

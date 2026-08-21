@@ -17,6 +17,10 @@ import * as schema from '../lib/db/schema'
 import { SCHEMA_DDL, pasKolomMigratiesToe } from '../lib/db/ddl'
 import { upsertJob, upsertLead, type JobradarDb } from '../lib/sync/upsert'
 import { jobDedupeHash } from '../lib/matching'
+import { leesZoekopdracht, schrijfZoekopdracht, herstelZoekopdracht } from '../lib/sync/settings-store'
+import { verouderdeLeadsOpruimen } from '../lib/sync/upsert'
+import { standaardZoekopdracht, isStandaard, serialiseerZoekopdracht } from '../lib/settings'
+import { eq } from 'drizzle-orm'
 import type { RawJob, RawLead } from '../lib/sources/types'
 
 let geslaagd = 0
@@ -173,6 +177,109 @@ function lead(over: Partial<RawLead> & Pick<RawLead, 'externalId' | 'companyName
   const r = rauw.prepare('SELECT signals, lead_score FROM companies').get() as { signals: string; lead_score: number }
   const s = JSON.parse(r.signals) as string[]
   check('leadScore hoort bij de opgeslagen signalen', r.lead_score === 35, `${r.lead_score} bij ${JSON.stringify(s)}`)
+  rauw.close()
+}
+
+// ── 6. De opgeslagen zoekopdracht ───────────────────────────────────────────
+// De sync leest deze waarde bij élke run. Valt hij verkeerd terug, dan haalt Adzuna zonder
+// `what_or` álles binnen de straal op — leeg is hier niet "niets" maar "alles".
+{
+  const { db, rauw } = verseDb()
+
+  const leeg = await leesZoekopdracht(db)
+  check('zonder opgeslagen rij geldt de gemeten standaard', isStandaard(leeg), JSON.stringify(leeg))
+
+  const eigen = { termen: ['kotlin', 'rust'], zinsnedes: [], uitsluiten: ['stage'] }
+  await schrijfZoekopdracht(db, eigen)
+  const na = await leesZoekopdracht(db)
+  check('opslaan en teruglezen levert hetzelfde', serialiseerZoekopdracht(na) === serialiseerZoekopdracht(eigen), JSON.stringify(na))
+  check('er staat één rij', (rauw.prepare('SELECT COUNT(*) c FROM settings').get() as { c: number }).c === 1)
+
+  await schrijfZoekopdracht(db, eigen)
+  check('twee keer opslaan geeft geen tweede rij', (rauw.prepare('SELECT COUNT(*) c FROM settings').get() as { c: number }).c === 1)
+
+  const anders = { termen: ['ux'], zinsnedes: [], uitsluiten: [] }
+  await schrijfZoekopdracht(db, anders)
+  check('overschrijven werkt', serialiseerZoekopdracht(await leesZoekopdracht(db)) === serialiseerZoekopdracht(anders))
+
+  // Een handmatig bedorven waarde mag de sync niet zonder zoektermen laten draaien.
+  rauw.prepare("UPDATE settings SET value='{kapot' WHERE key='zoekopdracht'").run()
+  check('een kapotte waarde valt terug op de standaard', isStandaard(await leesZoekopdracht(db)))
+  rauw.prepare(`UPDATE settings SET value='{"termen":[],"uitsluiten":[]}' WHERE key='zoekopdracht'`).run()
+  check('een lege waarde valt terug op de standaard', isStandaard(await leesZoekopdracht(db)))
+
+  await herstelZoekopdracht(db)
+  check('herstellen verwijdert de rij', (rauw.prepare('SELECT COUNT(*) c FROM settings').get() as { c: number }).c === 0)
+  check('en daarna geldt de standaard weer', isStandaard(await leesZoekopdracht(db)))
+  check('herstellen op een lege tabel gooit niet', await herstelZoekopdracht(db).then(() => true).catch(() => false))
+
+  rauw.close()
+}
+
+// ── 7. Tellingen overleven de sync, en worden niet verzonnen ────────────────
+{
+  const { db, rauw } = verseDb()
+  const lees = () => rauw.prepare('SELECT vacature_aantal a, design_vacatures d, dev_vacatures v FROM companies').get() as { a: number | null; d: number | null; v: number | null }
+
+  // Een externe bron levert geen tellingen: dan hoort er niets te staan, geen 0.
+  await upsertLead(db, lead({ externalId: 'k1', companyName: 'Acme', signals: ['series A+'] }), { afgeleid: false })
+  check('externe lead krijgt geen verzonnen tellingen', lees().a === null, JSON.stringify(lees()))
+
+  // De afgeleide run vult ze.
+  await upsertLead(
+    db,
+    { ...lead({ externalId: 'v1', companyName: 'Acme', signals: ['dev-vacature zonder design'] }), source: 'vacatures', tellingen: { totaal: 8, design: 0, dev: 5 } },
+    { afgeleid: true }
+  )
+  const na = lees()
+  check('afgeleide lead schrijft de tellingen weg', na.a === 8 && na.d === 0 && na.v === 5, JSON.stringify(na))
+
+  // En een externe bron mag ze daarna niet wissen.
+  await upsertLead(db, lead({ externalId: 'k1', companyName: 'Acme', signals: ['startup'] }), { afgeleid: false })
+  const naExtern = lees()
+  check('een externe bron wist de tellingen niet', naExtern.a === 8 && naExtern.v === 5, JSON.stringify(naExtern))
+
+  rauw.close()
+}
+
+// ── 8. Een lead veroudert ───────────────────────────────────────────────────
+// Zonder dit houdt een lead zijn score ook nadat de vacatures eronder verlopen zijn — de
+// bewering blijft staan terwijl het bewijs weg is.
+{
+  const { db, rauw } = verseDb()
+  const afgeleid = (naam: string, id: string) => ({
+    ...lead({ externalId: id, companyName: naam, signals: ['dev-vacature zonder design'] }),
+    source: 'vacatures',
+    tellingen: { totaal: 4, design: 0, dev: 2 },
+  })
+
+  await upsertLead(db, afgeleid('Acme', 'vacatures:acme'), { afgeleid: true })
+  await upsertLead(db, afgeleid('Beta', 'vacatures:beta'), { afgeleid: true })
+  // Een lead uit een externe bron mag hier niet door geraakt worden.
+  await upsertLead(db, lead({ externalId: 'kbo-1', companyName: 'Gamma', signals: ['series A+'] }), { afgeleid: false })
+
+  const opgeruimd = await verouderdeLeadsOpruimen(db, ['vacatures:acme'])
+  check('alleen de niet meer afgeleide lead wordt opgeruimd', opgeruimd === 1, String(opgeruimd))
+
+  const rijen = rauw.prepare('SELECT company_name, signals, lead_score, vacature_aantal FROM companies ORDER BY company_name').all() as Array<{ company_name: string; signals: string; lead_score: number; vacature_aantal: number | null }>
+  const acme = rijen.find((r) => r.company_name === 'Acme')!
+  const beta = rijen.find((r) => r.company_name === 'Beta')!
+  const gamma = rijen.find((r) => r.company_name === 'Gamma')!
+
+  check('Acme houdt zijn signaal', JSON.parse(acme.signals).includes('dev-vacature zonder design'))
+  check('Acme houdt zijn tellingen', acme.vacature_aantal === 4)
+  check('Beta verliest zijn signaal', JSON.parse(beta.signals).length === 0, beta.signals)
+  check('Beta zakt naar score 0', beta.lead_score === 0, String(beta.lead_score))
+  check('Beta verliest ook zijn tellingen', beta.vacature_aantal === null, String(beta.vacature_aantal))
+  check('Beta blijft wél bestaan als rij', beta !== undefined)
+  check('de externe lead blijft ongemoeid', JSON.parse(gamma.signals).includes('series A+'), gamma.signals)
+
+  // Twee keer opruimen mag niets meer doen.
+  check('opnieuw opruimen is een no-op', (await verouderdeLeadsOpruimen(db, ['vacatures:acme'])) === 0)
+
+  // Geen enkele afgeleide lead meer: dan verliezen ze allemaal hun bewering.
+  const alles = await verouderdeLeadsOpruimen(db, [])
+  check('een lege afleiding ruimt de rest op', alles === 1, String(alles))
   rauw.close()
 }
 

@@ -39,6 +39,9 @@ export const SCHEMA_DDL = `
     nace_code TEXT,
     url TEXT,
     signals TEXT NOT NULL DEFAULT '[]',
+    vacature_aantal INTEGER,
+    design_vacatures INTEGER,
+    dev_vacatures INTEGER,
     lead_score INTEGER NOT NULL DEFAULT 0,
     score_breakdown TEXT NOT NULL DEFAULT '{}',
     rechtsgrond TEXT NOT NULL DEFAULT 'gerechtvaardigd belang',
@@ -50,6 +53,12 @@ export const SCHEMA_DDL = `
   );
   CREATE UNIQUE INDEX IF NOT EXISTS companies_dedupe_hash_idx ON companies (dedupe_hash);
   CREATE INDEX IF NOT EXISTS companies_source_external_idx ON companies (source, external_id);
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
 
   CREATE TABLE IF NOT EXISTS sync_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,5 +94,8 @@ export function pasKolomMigratiesToe(sqlite: {
   const companyCols = kolommen('companies')
   if (!companyCols.includes('lead_status')) {
     sqlite.exec("ALTER TABLE companies ADD COLUMN lead_status TEXT NOT NULL DEFAULT 'new'")
+  }
+  for (const kolom of ['vacature_aantal', 'design_vacatures', 'dev_vacatures']) {
+    if (!companyCols.includes(kolom)) sqlite.exec(`ALTER TABLE companies ADD COLUMN ${kolom} INTEGER`)
   }
 }

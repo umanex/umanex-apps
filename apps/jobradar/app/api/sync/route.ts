@@ -5,8 +5,9 @@ import * as schema from '@/lib/db/schema'
 import { adzunaSource } from '@/lib/sources/adzuna'
 import { kboSource } from '@/lib/sources/kbo'
 import { deriveLeadsFromJobs } from '@/lib/signals'
-import { upsertJob, upsertLead } from '@/lib/sync/upsert'
-import { ALL_REGIONS, regionForPostcode } from '@/lib/regions'
+import { upsertJob, upsertLead, verouderdeLeadsOpruimen } from '@/lib/sync/upsert'
+import { leesZoekopdracht } from '@/lib/sync/settings-store'
+import { ALL_REGIONS, regionForPostcode, type RegionCode } from '@/lib/regions'
 import type { RawJob } from '@/lib/sources/types'
 
 const JOB_SOURCES = [adzunaSource] as const
@@ -42,9 +43,12 @@ export async function POST() {
   }
 
   try {
+    // De opgeslagen zoekopdracht, of de gemeten standaard als er niets is opgeslagen.
+    const zoek = await leesZoekopdracht(db)
+
     // ── Vacatures ────────────────────────────────────────────────────────────
     const jobSourceResults = await Promise.allSettled(
-      JOB_SOURCES.map((s) => s.fetch({ regions: ALL_REGIONS }))
+      JOB_SOURCES.map((s) => s.fetch({ regions: ALL_REGIONS, zoek }))
     )
 
     // Bewaard omdat de signaal-afleiding hieronder over álle bronnen samen rekent: een
@@ -84,7 +88,7 @@ export async function POST() {
 
     // ── Leads uit externe bronnen ────────────────────────────────────────────
     const leadSourceResults = await Promise.allSettled(
-      LEAD_SOURCES.map((s) => s.fetch({ regions: ALL_REGIONS }))
+      LEAD_SOURCES.map((s) => s.fetch({ regions: ALL_REGIONS, zoek }))
     )
 
     for (let i = 0; i < leadSourceResults.length; i++) {
@@ -111,14 +115,40 @@ export async function POST() {
       }
     }
 
-    // ── Leads afgeleid uit de vacatures van deze run ─────────────────────────
-    const afgeleideLeads = deriveLeadsFromJobs(alleJobs, new Date())
+    // ── Leads afgeleid uit álle opgeslagen vacatures ──────────────────────────
+    // Niet alleen uit `alleJobs`, de fetch van deze run. Een bedrijf waarvan de vacatures
+    // deze keer niet terugkwamen — omdat de zoektermen versmald zijn, of omdat de bron er
+    // die dag minder gaf — hoort niet zonder tellingen achter te blijven met een score uit
+    // een vorige run. Gemeten op 2026-08-11: afleiden uit de fetch gaf 11 leads waarvan 15
+    // zonder telling; afleiden uit de database gaf 25 leads en nul zonder.
+    const opgeslagenJobs = await db.query.jobs.findMany()
+    // Smalle cast op het enige veld dat werkelijk afwijkt (`region` is in de database een
+    // vrije string, in RawJob een RegionCode). Een brede `as RawJob[]` compileerde net zo
+    // goed maar slikte ook toekomstige verbredingen: `posted_at` nullable maken kwam er stil
+    // doorheen, terwijl deze vorm dat wél afkeurt.
+    const afgeleideLeads = deriveLeadsFromJobs(
+      opgeslagenJobs.map((j) => ({
+        ...j,
+        description: j.description ?? '',
+        region: j.region as RegionCode,
+      })),
+      new Date()
+    )
     for (const lead of afgeleideLeads) {
       const { added } = await upsertLead(db, lead, { afgeleid: true })
       if (added) stats.leadsAdded++
       else stats.leadsUpdated++
     }
-    stats.sourceStatuses['vacatures'] = { ok: true, count: afgeleideLeads.length }
+    // En wat niet meer afgeleid wordt, verliest zijn bewering — anders veroudert een lead nooit.
+    const verouderd = await verouderdeLeadsOpruimen(db, afgeleideLeads.map((l) => l.externalId))
+    stats.sourceStatuses['vacatures'] = {
+      ok: true,
+      count: afgeleideLeads.length,
+      // Geen oorzaak noemen die hier niet vastgesteld is — alleen wat er gebeurde.
+      ...(verouderd > 0
+        ? { warnings: [`${verouderd} leads worden niet meer afgeleid en verloren hun signaal`] }
+        : {}),
+    }
 
     await db
       .update(schema.syncRuns)

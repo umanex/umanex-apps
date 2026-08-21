@@ -13,7 +13,7 @@
  *
  * Draaien: node --import ./scripts/ts-resolve.mjs scripts/adzuna-scenarios.ts
  */
-import { adzunaSource } from '../lib/sources/adzuna'
+import { adzunaSource, haalMetGeduld, telTreffers } from '../lib/sources/adzuna'
 import { ADZUNA_SEARCH } from '../lib/config/profile'
 import type { RegionCode } from '../lib/regions'
 
@@ -36,6 +36,9 @@ const PER_PAGINA = 50
 const MAX_PAGINAS = 5
 const MAX_DAGEN_OUD = 30
 const LAND = 'be'
+
+/** Geen pauzes en geen wachttijd tussen herkansingen: de suite toetst gedrag, niet geduld. */
+const SNEL = { pauzeMs: 0, retryPauzeMs: 0 }
 
 const PROVINCIE: Record<RegionCode, string> = {
   WVL: 'West-Vlaanderen (Provincie)',
@@ -104,7 +107,7 @@ for (const [naam, body] of [
   let gooide = false
   let uit: Awaited<ReturnType<typeof adzunaSource.fetch>> | null = null
   try {
-    uit = await adzunaSource.fetch({ regions: ['OVL'] })
+    uit = await adzunaSource.fetch({ netwerk: SNEL, regions: ['OVL'] })
   } catch {
     gooide = true
   }
@@ -118,7 +121,7 @@ for (const [naam, body] of [
     count: 60,
     results: pagina === 1 ? Array.from({ length: PER_PAGINA }, (_, i) => item(`${regio}-1-${i}`, PROVINCIE[regio])) : [item(`${regio}-2-0`, PROVINCIE[regio])],
   }))
-  const uit = await adzunaSource.fetch({ regions: ['OVL'] })
+  const uit = await adzunaSource.fetch({ netwerk: SNEL, regions: ['OVL'] })
   check('paginering haalt pagina 2 op', urls.some((u) => u.includes('/search/2')))
   check('paginering stopt na een niet-volle pagina', !urls.some((u) => u.includes('/search/3')), urls.join('\n'))
   check('alle items komen mee', uit.items.length === PER_PAGINA + 1, String(uit.items.length))
@@ -130,13 +133,13 @@ for (const [naam, body] of [
   // Id's per pagina uniek: anders ruimt de kruis-regio dedupe pagina 2 t/m 5 op — wat hij
   // terecht doet, maar dan meet dit scenario de dedupe in plaats van het plafond.
   stub((_u, regio, pagina) => ({ count: 999, results: Array.from({ length: PER_PAGINA }, (_, i) => item(`${regio}-x-${pagina}-${i}`, PROVINCIE[regio])) }))
-  const met = await adzunaSource.fetch({ regions: ['OVL'] })
+  const met = await adzunaSource.fetch({ netwerk: SNEL, regions: ['OVL'] })
   check('plafond stopt op maxPaginas', met.items.length === PER_PAGINA * MAX_PAGINAS, String(met.items.length))
   check('plafond meldt zich mét count', met.warnings.some((w) => w.includes('van 999')), JSON.stringify(met.warnings))
 
   // Dezelfde afkapping, maar de bron stuurt geen totaal mee. Hierop zweeg de guard.
   stub((_u, regio, pagina) => ({ results: Array.from({ length: PER_PAGINA }, (_, i) => item(`${regio}-y-${pagina}-${i}`, PROVINCIE[regio])) }))
-  const zonder = await adzunaSource.fetch({ regions: ['OVL'] })
+  const zonder = await adzunaSource.fetch({ netwerk: SNEL, regions: ['OVL'] })
   check('plafond meldt zich óók zónder count', zonder.warnings.some((w) => w.includes('plafond geraakt')), JSON.stringify(zonder.warnings))
 }
 
@@ -146,16 +149,16 @@ for (const [naam, body] of [
     if (regio === 'BRU') return 429
     return { count: 1, results: pagina === 1 ? [item(`${regio}-ok`, PROVINCIE[regio])] : [] }
   })
-  const uit = await adzunaSource.fetch({ regions: ['WVL', 'OVL', 'BRU'] })
+  const uit = await adzunaSource.fetch({ netwerk: SNEL, regions: ['WVL', 'OVL', 'BRU'] })
   check('de twee gezonde regio\'s leveren gewoon', uit.items.length === 2, String(uit.items.length))
-  check('de gefaalde regio meldt zich', uit.warnings.some((w) => w.includes('HTTP 429')), JSON.stringify(uit.warnings))
+  check('de gefaalde regio meldt zich', uit.warnings.some((w) => w.includes('429')), JSON.stringify(uit.warnings))
   check('een fout krijgt geen plafond-waarschuwing erbij', !uit.warnings.some((w) => w.includes('plafond')), JSON.stringify(uit.warnings))
 }
 
 // ── 4. Een netwerkfout gedraagt zich als een HTTP-fout ───────────────────────
 {
   stub((_u, regio) => (regio === 'WVL' ? new Error('ECONNRESET') : { count: 1, results: [item(`${regio}-ok`, PROVINCIE[regio])] }))
-  const uit = await adzunaSource.fetch({ regions: ['WVL', 'OVL'] })
+  const uit = await adzunaSource.fetch({ netwerk: SNEL, regions: ['WVL', 'OVL'] })
   check('netwerkfout velt de bron niet', uit.items.length === 1, String(uit.items.length))
   check('netwerkfout staat in de waarschuwingen', uit.warnings.some((w) => w.includes('ECONNRESET')), JSON.stringify(uit.warnings))
 }
@@ -167,7 +170,7 @@ for (const [naam, body] of [
   stub((_u, regio, pagina) =>
     pagina === 1 ? { count: 2, results: [item('gedeeld-1', PROVINCIE[regio]), item(`${regio}-eigen`, PROVINCIE[regio])] } : { results: [] }
   )
-  const uit = await adzunaSource.fetch({ regions: ['WVL', 'OVL'] })
+  const uit = await adzunaSource.fetch({ netwerk: SNEL, regions: ['WVL', 'OVL'] })
   const ids = uit.items.map((j) => j.externalId)
   check('de dubbele vacature komt één keer voor', ids.filter((i) => i === 'gedeeld-1').length === 1, JSON.stringify(ids))
   check('de eigen vacatures blijven', uit.items.length === 3, String(uit.items.length))
@@ -181,7 +184,7 @@ for (const [naam, body] of [
       ? { count: 2, results: [item(`${regio}-in`, PROVINCIE[regio]), item(`${regio}-uit`, 'Vlaams-Brabant (Provincie)')] }
       : { results: [] }
   )
-  const uit = await adzunaSource.fetch({ regions: ['BRU'] })
+  const uit = await adzunaSource.fetch({ netwerk: SNEL, regions: ['BRU'] })
   check('de buiten-regio vacature valt weg', uit.items.length === 1, String(uit.items.length))
   check('en wordt gemeld', uit.warnings.some((w) => w.includes('buiten de regio')), JSON.stringify(uit.warnings))
 }
@@ -189,7 +192,7 @@ for (const [naam, body] of [
 // ── 7. De opgevraagde URL draagt wat hij hoort te dragen ─────────────────────
 {
   const urls = stub((_u, regio, pagina) => (pagina === 1 ? { count: 1, results: [item(`${regio}-1`, PROVINCIE[regio])] } : { results: [] }))
-  await adzunaSource.fetch({ regions: ['WVL'] })
+  await adzunaSource.fetch({ netwerk: SNEL, regions: ['WVL'] })
   const u = urls[0] ?? ''
   check('URL draagt het recency-filter', u.includes('max_days_old=30'), u)
   check('URL draagt de paginagrootte', u.includes('results_per_page=50'), u)
@@ -209,7 +212,7 @@ for (const [naam, body] of [
     geraakt = true
     throw new Error('mock-modus mag niet fetchen')
   }) as typeof fetch
-  const uit = await adzunaSource.fetch({ regions: ['WVL'] })
+  const uit = await adzunaSource.fetch({ netwerk: SNEL, regions: ['WVL'] })
   check('mock-modus doet geen enkel verzoek', !geraakt)
   check('mock-modus levert fixtures', uit.items.length > 0 && uit.items.every((j) => j.region === 'WVL'))
   process.env.JOBRADAR_MOCK = '0'
@@ -231,19 +234,133 @@ for (const [naam, body] of [
     throw new Error('zonder sleutels mag er niet gefetcht worden')
   }) as typeof fetch
 
-  const zonder = await adzunaSource.fetch({ regions: ['WVL'] })
+  const zonder = await adzunaSource.fetch({ netwerk: SNEL, regions: ['WVL'] })
   check('zonder sleutels: geen fixtures', zonder.items.length === 0, String(zonder.items.length))
   check('zonder sleutels: geen netwerkverkeer', !geraakt)
   check('zonder sleutels: het wordt gemeld', zonder.warnings.some((w) => w.includes('ontbreken')), JSON.stringify(zonder.warnings))
 
   process.env.JOBRADAR_MOCK = '1'
-  const met = await adzunaSource.fetch({ regions: ['WVL'] })
+  const met = await adzunaSource.fetch({ netwerk: SNEL, regions: ['WVL'] })
   check('mock-vlag: wél fixtures', met.items.length > 0)
   check('mock-vlag: en een waarschuwing dat ze verzonnen zijn', met.warnings.some((w) => w.includes('MOCK')), JSON.stringify(met.warnings))
 
   process.env.JOBRADAR_MOCK = '0'
   if (bewaardeSleutels[0]) process.env.ADZUNA_APP_ID = bewaardeSleutels[0]
   if (bewaardeSleutels[1]) process.env.ADZUNA_APP_KEY = bewaardeSleutels[1]
+}
+
+// ── 10. Geduld bij een 429 ──────────────────────────────────────────────────
+// Adzuna stuurt geen limiet-headers, dus een 429 is het enige signaal dat we te snel
+// vragen. Vóór dit pad stopte één 429 de hele regio bij die pagina, en kwam de rest pas de
+// vólgende sync binnen.
+{
+  let pogingen = 0
+  const stubMet = (statussen: number[]) => {
+    pogingen = 0
+    globalThis.fetch = (async () => {
+      const status = statussen[Math.min(pogingen, statussen.length - 1)]!
+      pogingen++
+      if (status !== 200) return { ok: false, status, json: async () => ({}) } as Response
+      return { ok: true, status: 200, json: async () => ({ count: 1, results: [] }) } as Response
+    }) as typeof fetch
+  }
+
+  stubMet([429, 200])
+  const na1 = await haalMetGeduld('https://test.invalid/x', { pauzeMs: 0, retryPauzeMs: 0 })
+  check('één 429 wordt opnieuw geprobeerd', na1.status === 200, String(na1.status))
+  check('en dat kostte precies twee pogingen', pogingen === 2, String(pogingen))
+
+  stubMet([429, 429, 200])
+  const na2 = await haalMetGeduld('https://test.invalid/x', { pauzeMs: 0, retryPauzeMs: 0 })
+  check('twee keer 429 wordt ook nog opgevangen', na2.status === 200, String(na2.status))
+
+  stubMet([429])
+  const op = await haalMetGeduld('https://test.invalid/x', { pauzeMs: 0, retryPauzeMs: 0, retries: 2 })
+  check('na de herkansingen geeft hij de 429 terug', op.status === 429)
+  check('en probeert hij niet eindeloos door', pogingen === 3, String(pogingen))
+
+  stubMet([500, 200])
+  const vijf = await haalMetGeduld('https://test.invalid/x', { pauzeMs: 0, retryPauzeMs: 0 })
+  check('een 500 wordt NIET opnieuw geprobeerd', vijf.status === 500 && pogingen === 1, `status ${vijf.status}, ${pogingen} pogingen`)
+
+  // De regio's gaan serieel: parallel was het burst-patroon dat de 429's uitlokte.
+  const volgorde: string[] = []
+  globalThis.fetch = (async (input: string | URL) => {
+    const u = String(input)
+    const regio = ['Brugge', 'Gent', 'Brussel'].find((p) => u.includes(`where=${p}`)) ?? '?'
+    volgorde.push('start ' + regio)
+    await new Promise((r) => setTimeout(r, 5))
+    volgorde.push('klaar ' + regio)
+    return { ok: true, status: 200, json: async () => ({ count: 0, results: [] }) } as Response
+  }) as typeof fetch
+  await adzunaSource.fetch({ netwerk: SNEL, regions: ['WVL', 'OVL', 'BRU'] })
+  const overlappend = volgorde.some((_, i) => i > 0 && volgorde[i]!.startsWith('start') && volgorde[i - 1]!.startsWith('start'))
+  check('regio\'s worden serieel opgehaald, niet tegelijk', !overlappend, volgorde.join(' → '))
+}
+
+// ── 11. De deelvraag-laag ───────────────────────────────────────────────────
+// Deze hele laag was ongedekt: drie sloopmutaties bleven 646/646 groen. `telTreffers` werd
+// door geen enkele suite geïmporteerd, alleen door de test-route.
+{
+  const ZOEK_MET_ZIN = { termen: ['ux'], zinsnedes: ['design system', 'user experience'], uitsluiten: [] }
+
+  // Welke verzoeken gaan eruit, en met welke parameter?
+  const urls = stub(() => ({ count: 5, results: [] }))
+  await telTreffers('OVL', ZOEK_MET_ZIN, SNEL)
+  check('één verzoek per deelvraag', urls.length === 3, String(urls.length))
+  check('het eerste verzoek gebruikt what_or', urls[0]?.includes('what_or=ux') === true, urls[0])
+  check('de zinsnede-verzoeken gebruiken what_phrase', urls.slice(1).every((u) => u.includes('what_phrase=')), JSON.stringify(urls.slice(1)))
+  check('een zinsnede-verzoek zet geen what_or', urls.slice(1).every((u) => !u.includes('what_or=')), JSON.stringify(urls.slice(1)))
+  check('elk verzoek vraagt maar één resultaat', urls.every((u) => u.includes('results_per_page=1')))
+
+  // Het plafond geldt PER deelvraag. Dit is de P1: de som tegen een meegroeiende drempel
+  // leggen zette de waarschuwing uit zodra je een zinsnede toevoegde.
+  const PLAFOND = 250
+  stub((_u, _r, _p) => ({ count: PLAFOND + 50, results: [] }))
+  const alleenWoorden = await telTreffers('OVL', { termen: ['ux'], zinsnedes: [], uitsluiten: [] }, SNEL)
+  check('woordenvraag boven het plafond → afgekapt', alleenWoorden.afgekapt === true, JSON.stringify(alleenWoorden))
+
+  // Dezelfde woordenvraag, maar nu met drie zinsnedes die NIETS vinden. De afkapping van de
+  // woordenvraag mag daardoor niet verdwijnen.
+  let beurt = 0
+  stub(() => ({ count: beurt++ === 0 ? PLAFOND + 50 : 0, results: [] }))
+  const metLegeZinnen = await telTreffers('OVL', { termen: ['ux'], zinsnedes: ['a b', 'c d', 'e f'], uitsluiten: [] }, SNEL)
+  check('lege zinsnedes verbergen de afkapping niet', metLegeZinnen.afgekapt === true, JSON.stringify(metLegeZinnen))
+  check('de som telt alleen wat er is', metLegeZinnen.treffers === PLAFOND + 50, String(metLegeZinnen.treffers))
+
+  // Onder het plafond blijft onder het plafond, hoeveel deelvragen er ook zijn.
+  stub(() => ({ count: 10, results: [] }))
+  const rustig = await telTreffers('OVL', ZOEK_MET_ZIN, SNEL)
+  check('alles onder het plafond → niet afgekapt', rustig.afgekapt === false, JSON.stringify(rustig))
+  check('meerdere deelvragen → de som is een bovengrens', rustig.bovengrens === true)
+  const enkel = await telTreffers('OVL', { termen: ['ux'], zinsnedes: [], uitsluiten: [] }, SNEL)
+  check('één deelvraag → geen bovengrens-voorbehoud', enkel.bovengrens === false)
+
+  // Een tijdelijke 429 hoort door de herkansing opgevangen te worden — dat is precies waar
+  // haalMetGeduld voor bestaat, en het is hier per ongeluk ontdekt door een te strenge check.
+  let n = 0
+  stub(() => (n++ === 1 ? 429 : { count: 5, results: [] }))
+  const hersteld = await telTreffers('OVL', ZOEK_MET_ZIN, SNEL)
+  check('een enkele 429 wordt door de herkansing opgevangen', hersteld.fout === undefined, JSON.stringify(hersteld))
+  check('en de telling is volledig', hersteld.treffers === 15, String(hersteld.treffers))
+
+  // Een blijvende fout hoort de telling als geheel ongeldig te maken, niet half.
+  stub(() => 429)
+  const stuk = await telTreffers('OVL', ZOEK_MET_ZIN, SNEL)
+  check('een blijvende 429 geeft een fout terug', stuk.fout !== undefined, JSON.stringify(stuk))
+  check('en geen half getal', stuk.treffers === 0, String(stuk.treffers))
+  check('de foutmelding noemt de oorzaak', /te veel verzoeken/.test(stuk.fout ?? ''), stuk.fout)
+
+  // Ophalen: dubbels tussen deelvragen worden binnen de regio opgeruimd.
+  stub((_u, regio, pagina) =>
+    pagina === 1
+      ? { count: 2, results: [item('gedeeld', PROVINCIE[regio]), item(`${regio}-eigen`, PROVINCIE[regio])] }
+      : { results: [] }
+  )
+  const opgehaald = await adzunaSource.fetch({ netwerk: SNEL, regions: ['OVL'], zoek: ZOEK_MET_ZIN })
+  const ids = opgehaald.items.map((j) => j.externalId)
+  check('dezelfde vacature uit twee deelvragen komt één keer voor', ids.filter((i) => i === 'gedeeld').length === 1, JSON.stringify(ids))
+  check('de waarschuwingen dragen de zinsnede als etiket', opgehaald.warnings.every((w) => !w.includes('design system')) || opgehaald.warnings.some((w) => w.includes('"design system"')), JSON.stringify(opgehaald.warnings))
 }
 
 // ── Tegenproef ───────────────────────────────────────────────────────────────

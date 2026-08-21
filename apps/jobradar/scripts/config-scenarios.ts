@@ -31,6 +31,19 @@ import {
 } from '../lib/config/profile'
 import { matchedSkills, scoreJob } from '../lib/matching'
 import { classificeer, rolInTitel } from '../lib/signals'
+import {
+  splitsTermen,
+  valideerZoekopdracht,
+  standaardZoekopdracht,
+  parseZoekopdracht,
+  serialiseerZoekopdracht,
+  isStandaard,
+  MAX_TERMEN,
+  MAX_ZINSNEDES,
+  normaliseerZinsnedes,
+  minimaleVerzoeken,
+} from '../lib/settings'
+import { bouwUrl, deelvragen } from '../lib/sources/adzuna'
 
 let geslaagd = 0
 let gezakt = 0
@@ -341,6 +354,80 @@ check(
   [...DESIGN_ROLE_SUFFIXEN, ...DEV_ROLE_SUFFIXEN].length >= 12,
   String([...DESIGN_ROLE_SUFFIXEN, ...DEV_ROLE_SUFFIXEN].length)
 )
+
+// ── 7. De bewerkbare zoekopdracht ───────────────────────────────────────────
+// De termen zijn sinds 2026-08-11 in de app aanpasbaar. Daarmee verschuift de pin op
+// `whatOr` van "wat er draait" naar "wat de standaard is" — zie de bekende grens in
+// briefings/2026-08-11-feature-zoekinstellingen.tcebc.md. Wat hier gebbewaakt wordt is de
+// laag eronder: splitsen, valideren en terugvallen mogen niet stil veranderen.
+{
+  // Splitsen op witruimte is de kern van het scherm: `what_or` matcht losse woorden, dus
+  // "product designer" ís twee termen. Wie dat verbergt, verbergt de bug van 2026-08-11.
+  check('een term met een spatie wordt gesplitst', splitsTermen(['product designer']).length === 2, JSON.stringify(splitsTermen(['product designer'])))
+  check('meerdere spaties en tabs splitsen ook', splitsTermen(['  ux   ui\tfrontend ']).join(',') === 'ux,ui,frontend', JSON.stringify(splitsTermen(['  ux   ui\tfrontend '])))
+  check('dubbele termen verdwijnen', splitsTermen(['ux', 'ux']).length === 1)
+  check('ontdubbelen is hoofdletter-ongevoelig', splitsTermen(['UX', 'ux']).length === 1, JSON.stringify(splitsTermen(['UX', 'ux'])))
+  check('de eerste schrijfwijze blijft staan', splitsTermen(['UX', 'ux'])[0] === 'UX')
+  check('lege invoer geeft een lege lijst', splitsTermen(['', '   ']).length === 0)
+
+  // Zónder `what_or` geeft Adzuna élke vacature binnen de straal terug. Leeg opslaan
+  // betekent dus niet "niets zoeken" maar "alles".
+  check('geen zoektermen wordt geweigerd', valideerZoekopdracht({ termen: [], zinsnedes: [], uitsluiten: [] }) !== null)
+  check('één zoekterm volstaat', valideerZoekopdracht({ termen: ['ux'], zinsnedes: [], uitsluiten: [] }) === null)
+  check('te veel termen wordt geweigerd', valideerZoekopdracht({ termen: Array.from({ length: MAX_TERMEN + 1 }, (_, i) => `t${i}`), zinsnedes: [], uitsluiten: [] }) !== null)
+  check('precies het maximum mag', valideerZoekopdracht({ termen: Array.from({ length: MAX_TERMEN }, (_, i) => `t${i}`), zinsnedes: [], uitsluiten: [] }) === null)
+  check('een term die ook uitgesloten wordt, wordt geweigerd', valideerZoekopdracht({ termen: ['ux'], zinsnedes: [], uitsluiten: ['UX'] }) !== null)
+  check('de foutmelding is leesbaar', (valideerZoekopdracht({ termen: [], zinsnedes: [], uitsluiten: [] }) ?? '').length > 20)
+
+  // Terugvallen op de standaard: een ontbrekende, kapotte of ongeldig geworden waarde mag
+  // de sync nooit zonder zoektermen laten draaien.
+  const standaard = standaardZoekopdracht()
+  check('de standaard is geldig', valideerZoekopdracht(standaard) === null)
+  check('de standaard heeft termen', standaard.termen.length > 0)
+  for (const [naam, rauw] of [
+    ['null', null],
+    ['lege string', ''],
+    ['geen json', '{kapot'],
+    ['json zonder velden', '{}'],
+    ['lege termen', '{"termen":[],"uitsluiten":[]}'],
+    ['termen geen lijst', '{"termen":"ux","uitsluiten":[]}'],
+  ] as Array<[string, string | null]>) {
+    check(`parse valt terug op de standaard bij ${naam}`, isStandaard(parseZoekopdracht(rauw)), JSON.stringify(parseZoekopdracht(rauw)))
+  }
+  const eigen = { termen: ['ux', 'react'], zinsnedes: [], uitsluiten: ['sales'] }
+  check('parse behoudt een geldige opgeslagen waarde', JSON.stringify(parseZoekopdracht(serialiseerZoekopdracht(eigen))) === JSON.stringify(eigen))
+  check('heen en terug verandert niets', serialiseerZoekopdracht(parseZoekopdracht(serialiseerZoekopdracht(eigen))) === serialiseerZoekopdracht(eigen))
+  check('isStandaard herkent een eigen zoekopdracht niet als standaard', !isStandaard(eigen))
+
+  // De bron moet de meegegeven zoekopdracht gebruiken, niet de constante uit profile.ts —
+  // anders is het hele scherm decoratie.
+  const url = bouwUrl('OVL', 1, { soort: 'woorden', woorden: ['kotlin', 'rust'] }, ['stage'])
+  check('bouwUrl gebruikt de meegegeven termen', url.includes('what_or=kotlin+rust'), url)
+  check('bouwUrl gebruikt de meegegeven uitsluitingen', url.includes('what_exclude=stage'), url)
+  check('bouwUrl gebruikt NIET de constante', !url.includes('webdesign'), url)
+  const zonder = bouwUrl('OVL', 1, { soort: 'woorden', woorden: ['ux'] }, [])
+  check('zonder uitsluitingen staat what_exclude niet in de url', !zonder.includes('what_exclude'), zonder)
+
+  // Een zinsnede gaat als geheel naar `what_phrase` — nooit naar `what_or`, want dan valt
+  // hij weer uiteen in losse woorden en is het verschil weg.
+  const zin = bouwUrl('OVL', 1, { soort: 'zinsnede', zinsnede: 'design system' }, [])
+  check('een zinsnede gebruikt what_phrase', zin.includes('what_phrase=design+system'), zin)
+  check('een zinsnede zet géén what_or', !zin.includes('what_or'), zin)
+  check('deelvragen: één voor de woorden plus één per zinsnede', deelvragen({ termen: ['ux'], zinsnedes: ['design system', 'user experience'], uitsluiten: [] }).length === 3)
+  check('deelvragen: de eerste is de woorden-vraag', deelvragen({ termen: ['ux'], zinsnedes: [], uitsluiten: [] })[0]?.soort === 'woorden')
+
+  // Zinsnedes worden niet gesplitst — dat is het hele verschil met losse woorden.
+  check('normaliseerZinsnedes splitst niet', normaliseerZinsnedes(['design system']).length === 1)
+  check('normaliseerZinsnedes trimt en normaliseert spaties', normaliseerZinsnedes(['  design   system  '])[0] === 'design system')
+  check('normaliseerZinsnedes ontdubbelt hoofdletter-ongevoelig', normaliseerZinsnedes(['Design System', 'design system']).length === 1)
+  check('een zinsnede van één woord wordt geweigerd', valideerZoekopdracht({ termen: ['ux'], zinsnedes: ['figma'], uitsluiten: [] }) !== null)
+  check('meer dan het maximum aan zinsnedes wordt geweigerd', valideerZoekopdracht({ termen: ['ux'], zinsnedes: Array.from({ length: MAX_ZINSNEDES + 1 }, (_, i) => `zin ${i}`), uitsluiten: [] }) !== null)
+  check('precies het maximum aan zinsnedes mag', valideerZoekopdracht({ termen: ['ux'], zinsnedes: Array.from({ length: MAX_ZINSNEDES }, (_, i) => `zin ${i}`), uitsluiten: [] }) === null)
+
+  // Het verzoek-budget: elke zinsnede kost er één per regio, en dat is de reden voor de grens.
+  check('zonder zinsnedes: één verzoek per regio', minimaleVerzoeken({ termen: ['ux'], zinsnedes: [], uitsluiten: [] }, 3) === 3)
+  check('met twee zinsnedes: drie per regio', minimaleVerzoeken({ termen: ['ux'], zinsnedes: ['a b', 'c d'], uitsluiten: [] }, 3) === 9)
+}
 
 // ── Tegenproef ───────────────────────────────────────────────────────────────
 if (process.env.SCENARIO_SELFTEST === '1') {

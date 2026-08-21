@@ -29,23 +29,27 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | LeadCard | `apps/jobradar/components/LeadCard.tsx` | components | — | — | — |
 | RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
 | ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
+| SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
 | StatusDropdown | `apps/jobradar/components/StatusDropdown.tsx` | components | — | — | — |
 | SyncButton | `apps/jobradar/components/SyncButton.tsx` | components | — | — | — |
+| TermChips | `apps/jobradar/components/TermChips.tsx` | components | — | — | — |
 
 ## Recente commits (app + packages)
 ```
-eef1820 Merge pull request #268 from umanex/fix/jobradar-bronlaag
-1f7f72e fix(jobradar): serve fixtures only when asked, never as a fallback
-76c58e1 docs(jobradar): record what actually guards the class
-30e4ec5 fix(jobradar): guard the deciding power, not the vocabulary
-3258114 chore(jobradar): harden the classification failure class into a guard
+f1ecf3e feat(jobradar): make a lead checkable, and give the list a search field
+4c6860b fix(jobradar): test the ceiling per sub-query, not against a growing threshold
+5e49969 docs(jobradar): UX-audit van het dashboard en de zoekinstellingen
+ef4acc0 feat(jobradar): allow exact phrases as search terms
+bc95d61 fix(jobradar): ask Adzuna politely, and try again when it says no
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/CLAUDE.md
-  M  apps/jobradar/lib/config/profile.ts
-  M  apps/jobradar/lib/sources/adzuna.ts
-  M  apps/jobradar/scripts/adzuna-scenarios.ts
+  M  apps/jobradar/app/api/sync/route.ts
+  M  apps/jobradar/components/DashboardClient.tsx
+  M  apps/jobradar/components/FilterBar.tsx
+  M  apps/jobradar/components/LeadCard.tsx
+  M  apps/jobradar/lib/sync/upsert.ts
+  M  apps/jobradar/scripts/signal-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

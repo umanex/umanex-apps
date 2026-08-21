@@ -191,10 +191,12 @@ Gebruik `figma_get_variables` opnieuw (andere scope of collection) vóór je de 
 ### Stap 6 — Visuele check
 
 ```
-figma_take_screenshot
+figma_capture_screenshot
 ```
 
 Controleer: uitlijning, spacing, proporties, visuele balans. Max 3 iteraties (execute → screenshot → fix). Bij structurele issues: ga terug naar stap 5.
+
+**Niet `figma_take_screenshot`** — die leest via REST de laatst *opgeslagen* cloud-staat en toont dus het beeld van vóór je `figma_execute` uit stap 5, zonder foutmelding. Zie *Valideer je eigen edits op de runtime, niet op de cloud* in CLAUDE.md.
 
 ---
 
@@ -224,7 +226,7 @@ Stap 7 bewijst *aanwezigheid* — alles gebonden, geen raw waarden. Stap 8 bewij
 - **Bedoeld** — de `token path → variable ID` lookup uit stap 4: wat de component-code per property voorschreef. **Let op bij een hex-source:** gebruikt de component rauwe hex i.p.v. token-referenties, dan is "bedoeld" geen code-feit maar de *bevestigde* reverse-lookup uit stap 4 (na voorstel + bevestiging). De gate verifieert dan dat de write dat bevestigde mapping volgt en flagt collisions — maar certificeert de laag-keuze niet autonoom, want de source droeg geen semantische intentie.
 - **Werkelijk** — lees de geschreven node terug via **`figma_execute`** (Console MCP, **nooit native MCP** — native geeft enkel hex en herintroduceert de hex-collision-ambiguïteit die deze check moet vangen). Eén call doet traversal + binding-extractie + naam-resolutie: loop met `findAll` over de node, lees per property de `boundVariables` en resolve elke variable-ID naar zijn tokennaam via `figma.variables.getVariableByIdAsync(id).name`. Lees in dezelfde call ook `layoutMode` (auto-layout-check) en de node-structuur (hiërarchie).
 
-  **Waarom `figma_execute` en niet `figma_get_component_for_development_deep`:** bij **library-tokens** (de normale klant-opzet met tokens in een gedeelde library) geeft `_deep` de `boundVariables` terug als **IDs**, niet als namen (`variablesResolved: 0`, geen lokale variable-map) — je moet ze dan toch resolven — en het levert een zware, generieke boom op die je niet nodig hebt. `figma_execute` geeft in één call exact de per-property tokennamen die de diff vereist, en `getVariableByIdAsync` resolvet óók library-variabelen. `_deep` blijft wél de juiste tool in `figma-naar-code` stap 3, waar de volledige boom (reactions, instance-refs) het doel is.
+  **Waarom `figma_execute` en niet `figma_get_component_for_development_deep`:** bij **library-tokens** (de normale klant-opzet met tokens in een gedeelde library) geeft `_deep` de `boundVariables` terug als **IDs**, niet als namen (`variablesResolved: 0`, geen lokale variable-map) — je moet ze dan toch resolven — en het levert een zware, generieke boom op die je niet nodig hebt. `figma_execute` geeft in één call exact de per-property tokennamen die de diff vereist, en `getVariableByIdAsync` resolvet óók library-variabelen. `_deep` blijft wél de juiste tool in `figma-naar-code` stap 3, waar de volledige boom (reactions, instance-refs) het doel is. Tweede reden, en de dwingende: `figma_execute` en `_deep` draaien op de plugin-runtime, terwijl `figma_get_component_for_development` de depth-4 **REST**-variant is en dus de cloud-staat van vóór je `figma_execute` teruggeeft. Downgrade hier nooit naar die variant op grond van "de component is ondiep genoeg" — de read-back van een gate leest nooit de cloud.
 
   Read-back-skelet:
 

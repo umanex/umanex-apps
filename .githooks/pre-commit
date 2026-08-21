@@ -71,7 +71,16 @@ fi
 scratch=""
 for f in $(git diff --cached --name-only --diff-filter=ACM || true); do
   case "${f##*/}" in
-    .tmp-*|.scratch*|.probe*|.refute*) scratch="$scratch $f" ;;
+    .tmp-*|.scratch*|.probe*|.refute*) scratch="$scratch $f"; continue ;;
+  esac
+  # Een agent-worktree is het tweede geval, en het venijnigste: `isolation: "worktree"`
+  # zet hem ÍN de repo (.claude/worktrees/agent-<id>/). GEMETEN op 2026-08-21: van de vier
+  # repos negeert alleen Columba dat pad, dus elders wordt de isolatie-map zelf untracked
+  # repo-inhoud die een `git add -A` zo meeneemt — de klasse die de isolatie net sloot,
+  # opnieuw binnengelaten langs de achterdeur. Een .gitignore-regel dekt dit ook, maar die
+  # reist niet mee met de laag; deze hook wel.
+  case "$f" in
+    .claude/worktrees/*|*/.claude/worktrees/*) scratch="$scratch $f" ;;
   esac
 done
 

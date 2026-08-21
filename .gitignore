@@ -43,3 +43,6 @@ apps/watermark-remover/start.sh
 apps/rowtrack/package-lock.json
 .expo/
 *.tsbuildinfo
+
+# Agent-worktrees (isolation: "worktree") worden ín de repo aangemaakt.
+.claude/worktrees/

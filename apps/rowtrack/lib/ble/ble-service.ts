@@ -15,7 +15,7 @@ import {
 } from './constants';
 import { parseRowerData } from './ftms-parser';
 import { isRowerCandidate } from './rowerCandidate';
-import { claimScan, ownsScan, releaseScan } from './scan-lock';
+import { requestScan, ownsScan, releaseScan } from './scan-lock';
 import { recordAutoConnect } from './autoConnectLog';
 import { waitForAdapter } from './adapterReady';
 import { countPowerSample } from './ergProbe';
@@ -90,6 +90,9 @@ export class RowerBleService {
   private isConnecting = false;
   /** Identiteit van deze dienst in het gedeelde scan-slot. Zie `stopScan()`. */
   private readonly scanToken = Symbol('rower-scan');
+  /** Volgnummer van de huidige scan-toekenning — zie `scan-lock.ts`. */
+  private scanGrant: number | null = null;
+
   /** Onthouden toestel: verschijnt dat in de scan, dan hoeft er niet gewacht te worden. */
   private preferredId: string | null = null;
   /** Toestellen uit de laatste scan, zodat een keuze uit de lijst te verbinden is. */
@@ -219,8 +222,22 @@ export class RowerBleService {
           this.onStatusChange('error', { code: 'bluetooth_unauthorized' });
           return;
         }
+        // Een deadline hoort erbij. `waitForAdapter` valt na 3 s terug op `State.Unknown`,
+        // en zonder timer bleef de rij dán voorgoed op 'Zoeken…' staan met een
+        // uitgeschakelde knop — geen fout, geen uitgang, alleen een app-herstart. Dat is
+        // exact de stille hang die de scan-arbiter elders dichtzet.
+        this.scanTimeout = setTimeout(() => {
+          this.scanTimeout = null;
+          this.stateSub?.remove();
+          this.stateSub = null;
+          if (this.aborted('adapter kwam niet aan, maar intussen gestopt')) return;
+          log(' adapter kwam niet op PoweredOn binnen', SCAN_TIMEOUT_MS, 'ms');
+          this.onStatusChange('error', { code: 'bluetooth_off' });
+        }, SCAN_TIMEOUT_MS);
+
         this.stateSub = manager.onStateChange((s) => {
           if (s === State.PoweredOn) {
+            this.clearScanTimeout();
             this.stateSub?.remove();
             this.stateSub = null;
             // Deze callback kan ná een disconnect() vuren: wordt hij pas ná
@@ -252,9 +269,9 @@ export class RowerBleService {
       const found = new Map<string, Device>();
 
       const decide = () => {
-        // Nam de hartslagdienst de gedeelde scan intussen over, dan zijn onze
-        // resultaten niet meer van ons — dan mag deze scan ook niets beslissen.
-        if (!ownsScan(this.scanToken)) return;
+        // Bewust géén eigenaarscheck meer — zie hr-service: die check liet een dienst die
+        // zijn slot verloor stil hangen zonder ooit een status te publiceren. De arbiter
+        // serialiseert nu, en `found` bevat alleen wat onze eigen callback binnenliet.
         this.stopScan();
         const matches = [...found.values()];
         if (matches.length === 0) {
@@ -275,42 +292,77 @@ export class RowerBleService {
         );
       };
 
-      this.scanTimeout = setTimeout(() => {
-        if (found.size > 0) return decide();
-        // Niets binnen het korte venster: doorzoeken tot de volle timeout in plaats
-        // van opgeven — een trainer die net aangezet is adverteert niet meteen.
-        this.scanTimeout = setTimeout(decide, SCAN_TIMEOUT_MS - COLLECT_MS);
-      }, COLLECT_MS);
+      // Aanvragen in plaats van claimen: scant de hartslagdienst nog, dan wachten we onze
+      // beurt af. `BleManager` heeft één native scan, en er twee tegelijk op starten liet
+      // ze op 2026-08-22 allebei leeg terugkomen. De timers horen ín deze callback, anders
+      // tikt het zoekvenster weg terwijl er nog niets gescand wordt.
+      requestScan(
+        this.scanToken,
+        (handle) => {
+          this.scanGrant = handle;
+          this.scanTimeout = setTimeout(() => {
+            if (found.size > 0) return decide();
+            // Niets binnen het korte venster: doorzoeken tot de volle timeout in plaats
+            // van opgeven — een trainer die net aangezet is adverteert niet meteen.
+            this.scanTimeout = setTimeout(decide, SCAN_TIMEOUT_MS - COLLECT_MS);
+          }, COLLECT_MS);
 
-      log(' scan started (filter: FTMS UUID, name prefix "' + ROWER_NAME_PREFIX + '" as fallback)');
-      claimScan(this.scanToken);
-      manager.startDeviceScan(null, null, (err, dev) => {
-        // `BleManager` is een singleton met één scan-subscription: start de andere
-        // dienst een scan, dan blijft déze callback geabonneerd maar zijn de
-        // resultaten niet meer van ons. Zwijgen dus — anders melden we een fout of
-        // verbinden we met iets uit de scan van iemand anders.
-        if (!ownsScan(this.scanToken)) return;
-        if (err) {
-          this.stopScan();
-          log(' scan error:', err.message);
-          this.onStatusChange('error', { code: 'scan_error', detail: err.message });
-          return;
-        }
-        if (!dev) return;
+          log(' scan started (filter: FTMS UUID, name prefix "' + ROWER_NAME_PREFIX + '" as fallback)');
+          manager
+            .startDeviceScan(null, null, (err, dev) => {
+              // De arbiter serialiseert de scans, dus dit hoort niet meer te kunnen — maar
+              // een verweesde callback van een vorige scan moet zwijgen in plaats van
+              // resultaten van iemand anders te verwerken.
+              if (!ownsScan(this.scanToken)) return;
+              if (err) {
+                this.stopScan();
+                log(' scan error:', err.message);
+                this.onStatusChange('error', { code: 'scan_error', detail: err.message });
+                return;
+              }
+              if (!dev) return;
 
-        // Log every device for debugging — mét geadverteerde service UUIDs, zodat
-        // op het toestel te zien is of een trainer (bv. de Apollo XL) FTMS
-        // adverteert of enkel via de naam-prefix binnenkomt.
-        if (dev.name || dev.localName) {
-          log(' found:', dev.name, dev.localName, dev.id, 'adv:', dev.serviceUUIDs?.join(',') ?? '-');
-        }
+              // Log every device for debugging — mét geadverteerde service UUIDs, zodat
+              // op het toestel te zien is of een trainer (bv. de Apollo XL) FTMS
+              // adverteert of enkel via de naam-prefix binnenkomt.
+              if (dev.name || dev.localName) {
+                log(' found:', dev.name, dev.localName, dev.id, 'adv:', dev.serviceUUIDs?.join(',') ?? '-');
+              }
 
-        if (isRowerCandidate(dev)) {
-          found.set(dev.id, dev);
-          // Het onthouden toestel hoeft niet op de anderen te wachten.
-          if (dev.id === this.preferredId) decide();
-        }
-      });
+              if (isRowerCandidate(dev)) {
+                found.set(dev.id, dev);
+                // Het onthouden toestel hoeft niet op de anderen te wachten.
+                if (dev.id === this.preferredId) decide();
+              }
+            })
+            // `startDeviceScan` is async en gooit dus niet synchroon: zonder deze catch
+            // blijft een mislukte start (adapter uit tussen `state()` en de scan, manager
+            // vernietigd) onafgehandeld, en meldt de app 15 s later 'geen roeimachine
+            // gevonden' in plaats van de echte reden.
+            .catch((e: unknown) => {
+              const detail = e instanceof Error ? e.message : undefined;
+              log(' startDeviceScan faalde:', detail);
+              this.stopScan();
+              this.onStatusChange('error', { code: 'scan_error', detail });
+            });
+        },
+        {
+          // Komt de start uit de wachtrij en gooit hij daar, dan is de try/catch van deze
+          // `startScan` allang teruggekeerd; zonder deze haak zou de dienst stil op
+          // 'Zoeken…' blijven staan.
+          onStartError: (e: unknown) => {
+            const detail = e instanceof Error ? e.message : undefined;
+            this.onStatusChange('error', { code: 'scan_failed', detail });
+          },
+          onPreempted: () => {
+            // Het vangnet pakt het slot af. Zwijgen zou de rij op 'Zoeken…' laten staan met
+            // een dode knop — precies de klasse fout die deze arbiter moest sluiten.
+            log(' scan-slot afgepakt na de maximale houdtijd');
+            this.clearScanTimeout();
+            this.onStatusChange('error', { code: 'scan_error', detail: 'scan afgebroken' });
+          },
+        },
+      );
     } catch (e) {
       const detail = e instanceof Error ? e.message : undefined;
       log(' startScan error:', detail);
@@ -633,13 +685,36 @@ export class RowerBleService {
    */
   private stopScan(): void {
     this.clearScanTimeout();
-    if (!ownsScan(this.scanToken)) return;
-    releaseScan(this.scanToken);
+
+    // Ook een aanvraag die nog in de wachtrij stond moet weg. Vandaag is de enige trigger
+    // een expliciete stop/disconnect: er is geen cleanup op `useFocusEffect` en geen
+    // AppState-listener, dus wegnavigeren of naar de achtergrond gaan breekt een wachtende
+    // scan níet af. Dat staat als backlog-item.
+    if (!ownsScan(this.scanToken)) {
+      releaseScan(this.scanToken);
+      return;
+    }
+
+    // Loslaten pás nadat de native scan echt gestopt is. Doen we het eerder, dan start de
+    // wachtende dienst zijn scan terwijl deze nog afbouwt — en de dispose van de oude
+    // subscription roept `centralManager.stopScan()` aan, wat de nieuwe scan meteen weer
+    // stillegt. Precies de race die op 2026-08-22 beide scans leeg liet terugkomen.
+    //
+    // De handle hoort erbij: `stopScan()` en een nieuwe `requestScan()` staan in `startScan`
+    // in één synchroon blok, dus deze uitgestelde release kan landen nádat dezelfde dienst
+    // het slot alweer gekregen heeft. Zonder handle breekt hij dan zijn eigen verse scan af
+    // en start hij de wachtende eroverheen — gemeten, niet bedacht.
+    const handle = this.scanGrant ?? undefined;
+    this.scanGrant = null;
+    const handOver = () => releaseScan(this.scanToken, handle);
     try {
       // Geeft een Promise terug: een synchrone catch vangt de rejection niet.
-      this.manager?.stopDeviceScan().catch(() => {});
+      const stopping = this.manager?.stopDeviceScan();
+      if (stopping) stopping.then(handOver, handOver);
+      else handOver();
     } catch {
       // Manager al vernietigd — dan loopt er per definitie ook geen scan meer.
+      handOver();
     }
   }
 

@@ -5,7 +5,7 @@ import type {
 } from 'react-native-ble-plx';
 import { Platform, PermissionsAndroid } from 'react-native';
 import { base64ToBytes } from './base64';
-import { claimScan, ownsScan, releaseScan } from './scan-lock';
+import { requestScan, ownsScan, releaseScan } from './scan-lock';
 import { recordAutoConnect } from './autoConnectLog';
 import { waitForAdapter } from './adapterReady';
 import { initialHrLink, stepHrLink, type HrLinkEvent, type HrLinkState } from './hrLink';
@@ -82,6 +82,9 @@ export class HRBleService {
   private dataDeadline: ReturnType<typeof setTimeout> | null = null;
   /** Identiteit in het gedeelde scan-slot — één native scan voor twee diensten. */
   private readonly scanToken = Symbol('hr-scan');
+  /** Volgnummer van de huidige scan-toekenning — zie `scan-lock.ts`. */
+  private scanGrant: number | null = null;
+
   private intentionalDisconnect = false;
 
   private onStatusChange: StatusListener;
@@ -114,6 +117,10 @@ export class HRBleService {
     // `cancelConnection`) juist alleen bij status 'connected' getoond wordt. Dat was
     // een lus zonder uitgang: enkel de app killen hielp nog.
     await this.releaseDevice();
+    // Een vorige poging kan nog een timer hebben lopen of in de wachtrij staan; die zou
+    // straks over deze scan heen beslissen. De roeier-dienst deed dit al aan het begin van
+    // zijn eigen startScan.
+    this.stopScan();
 
     this.intentionalDisconnect = false;
     this.onStatusChange('scanning');
@@ -122,6 +129,12 @@ export class HRBleService {
       const { State } = await loadBlePlx();
       const manager = await this.getManager();
       const state = await manager.state();
+
+      // Voorbij de eerste awaits (module laden, adapter-wacht tot 3 s, status opvragen).
+      // Viel daar een stop(), dan mag hieronder niets meer vuren — anders zet een scan
+      // die niemand meer vroeg straks 'geen hartslagmeter gevonden' over de 'idle' heen.
+      // De roeier-dienst heeft deze poort al; de hartslagdienst was hier asymmetrisch.
+      if (this.aborted()) return;
 
       if (state !== State.PoweredOn) {
         this.onStatusChange('error', { code: 'bluetooth_off' });
@@ -134,45 +147,86 @@ export class HRBleService {
           this.onStatusChange('error', { code: 'permission_denied' });
           return;
         }
+        // De permissie-dialoog kan minuten open blijven staan.
+        if (this.aborted()) return;
       }
 
       const foundDevices: HRFoundDevice[] = [];
       const seenIds = new Set<string>();
 
       const decide = () => {
-        if (!ownsScan(this.scanToken)) return;
+        // Bewust géén eigenaarscheck meer. Die stond hier toen een tweede scan de eerste
+        // nog kon verdringen, en was precies het mechanisme waardoor deze dienst stil
+        // bleef hangen: verloor hij het slot, dan draaide `handleScanComplete` nooit en
+        // publiceerde hij nooit meer een status — de rij bleef op 'Zoeken…' met een dode
+        // knop, en autoconnect sloeg 'hr' over zolang de status niet 'idle'/'error' was.
+        // De arbiter serialiseert nu, en de resultaten in `foundDevices` zijn per definitie
+        // van ons: de scan-callback filtert bij binnenkomst al op eigenaarschap.
         this.stopScan();
         this.handleScanComplete(foundDevices);
       };
 
-      this.scanTimeout = setTimeout(() => {
-        // Al iets gevonden? Dan meteen beslissen — doorzoeken levert alleen wachttijd op.
-        if (foundDevices.length > 0) return decide();
-        log('niets in', SCAN_COLLECT_MS, 'ms — doorzoeken');
-        this.scanTimeout = setTimeout(decide, SCAN_EXTEND_MS);
-      }, SCAN_COLLECT_MS);
+      // Aanvragen, niet claimen: loopt er al een scan van de roeier-dienst, dan starten we
+      // niet ernaast maar wachten we onze beurt af. De rij staat toch al op 'Zoeken…'.
+      // De timers horen ín deze callback: zouden ze bij het aanvragen al lopen, dan tikt
+      // het zoekvenster weg terwijl er nog niets gescand wordt.
+      requestScan(
+        this.scanToken,
+        (handle) => {
+          this.scanGrant = handle;
+          this.scanTimeout = setTimeout(() => {
+            // Al iets gevonden? Dan meteen beslissen — doorzoeken levert alleen wachttijd op.
+            if (foundDevices.length > 0) return decide();
+            log('niets in', SCAN_COLLECT_MS, 'ms — doorzoeken');
+            this.scanTimeout = setTimeout(decide, SCAN_EXTEND_MS);
+          }, SCAN_COLLECT_MS);
 
-      log('scan started (filter: service 0x180D, collecting for 5s)');
-      claimScan(this.scanToken);
-      manager.startDeviceScan([HR_SERVICE_UUID], null, (err, dev) => {
-        // Zie ble-service: één gedeelde scan-subscription, dus een verweesde
-        // callback moet zwijgen in plaats van de scan van de ander te kapen.
-        if (!ownsScan(this.scanToken)) return;
-        if (err) {
-          this.stopScan();
-          log('scan error:', err.message);
-          this.onStatusChange('error', { code: 'scan_error', detail: err.message });
-          return;
-        }
-        if (!dev) return;
+          log('scan started (filter: service 0x180D, collecting for 5s)');
+          manager
+            .startDeviceScan([HR_SERVICE_UUID], null, (err, dev) => {
+              // De arbiter serialiseert de scans, dus dit hoort niet meer te kunnen — maar
+              // een verweesde callback van een vorige scan moet zwijgen in plaats van
+              // resultaten van iemand anders te verwerken.
+              if (!ownsScan(this.scanToken)) return;
+              if (err) {
+                this.stopScan();
+                log('scan error:', err.message);
+                this.onStatusChange('error', { code: 'scan_error', detail: err.message });
+                return;
+              }
+              if (!dev) return;
 
-        const name = dev.name || dev.localName;
-        if (!name || seenIds.has(dev.id)) return;
+              const name = dev.name || dev.localName;
+              if (!name || seenIds.has(dev.id)) return;
 
-        seenIds.add(dev.id);
-        log('found HR device:', name, dev.id, 'rssi:', dev.rssi);
-        foundDevices.push({ id: dev.id, name, rssi: dev.rssi ?? -100 });
-      });
+              seenIds.add(dev.id);
+              log('found HR device:', name, dev.id, 'rssi:', dev.rssi);
+              foundDevices.push({ id: dev.id, name, rssi: dev.rssi ?? -100 });
+            })
+            // Zie ble-service: async, dus een mislukte start meldt zich nergens tenzij we
+            // hem hier opvangen.
+            .catch((e: unknown) => {
+              const detail = e instanceof Error ? e.message : undefined;
+              log('startDeviceScan faalde:', detail);
+              this.stopScan();
+              this.onStatusChange('error', { code: 'scan_error', detail });
+            });
+        },
+        {
+          // Komt de start uit de wachtrij en gooit hij daar, dan is de try/catch van deze
+          // `startScan` allang teruggekeerd; zonder deze haak zou de dienst stil op
+          // 'Zoeken…' blijven staan.
+          onStartError: (e: unknown) => {
+            const detail = e instanceof Error ? e.message : undefined;
+            this.onStatusChange('error', { code: 'scan_failed', detail });
+          },
+          onPreempted: () => {
+            log('scan-slot afgepakt na de maximale houdtijd');
+            this.clearScanTimeout();
+            this.onStatusChange('error', { code: 'scan_error', detail: 'scan afgebroken' });
+          },
+        },
+      );
     } catch (e) {
       const detail = e instanceof Error ? e.message : undefined;
       log('startScan error:', detail);
@@ -203,26 +257,39 @@ export class HRBleService {
     this.intentionalDisconnect = false;
     this.onStatusChange('scanning');
 
-    // Zie de roeier-kant: na de adapter-wacht in `getManager()` is dit een echt
-    // antwoord, en bij een uitgeschakelde adapter is stil teruggeven beter dan de
-    // rij acht seconden op 'Zoeken…' laten staan.
-    const { State } = await loadBlePlx();
-    const adapter = await (await this.getManager()).state();
-    recordAutoConnect('hr', 'adapterstatus', String(adapter));
-    if (adapter !== State.PoweredOn) {
+    // Alles in de try: `loadBlePlx`, `getManager` (met zijn adapter-wacht) en `state()`
+    // kunnen alle drie gooien — ontbrekende native module, een vernietigde manager. Die
+    // rejection ontsnapte langs `autoConnect` naar een floating call in workout.tsx, en
+    // liet de rij achter op 'Zoeken…' met een uitgeschakelde knop. De roeier-kant vangt
+    // hier al alles af; nu deze ook.
+    try {
+      // Zie de roeier-kant: na de adapter-wacht in `getManager()` is dit een echt
+      // antwoord, en bij een uitgeschakelde adapter is stil teruggeven beter dan de
+      // rij acht seconden op 'Zoeken…' laten staan.
+      const { State } = await loadBlePlx();
+      const adapter = await (await this.getManager()).state();
+      recordAutoConnect('hr', 'adapterstatus', String(adapter));
+      if (adapter !== State.PoweredOn) {
+        this.onStatusChange('idle');
+        return false;
+      }
+
+      const ok = await this.connectToDeviceById(id, name ?? undefined, {
+        silent: true,
+        timeout: KNOWN_CONNECT_TIMEOUT_MS,
+      });
+      // De silent-vlag onderdrukt de foutmélding, niet de statusreset: zonder dit
+      // bleef de rij op 'Zoeken…' hangen met een uitgeschakelde knop, waardoor de
+      // gebruiker de band ook handmatig niet meer kon verbinden.
+      if (!ok) this.onStatusChange('idle');
+      return ok;
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : undefined;
+      log('connectKnown error:', detail);
+      recordAutoConnect('hr', 'connectKnown faalde', detail);
       this.onStatusChange('idle');
       return false;
     }
-
-    const ok = await this.connectToDeviceById(id, name ?? undefined, {
-      silent: true,
-      timeout: KNOWN_CONNECT_TIMEOUT_MS,
-    });
-    // De silent-vlag onderdrukt de foutmélding, niet de statusreset: zonder dit
-    // bleef de rij op 'Zoeken…' hangen met een uitgeschakelde knop, waardoor de
-    // gebruiker de band ook handmatig niet meer kon verbinden.
-    if (!ok) this.onStatusChange('idle');
-    return ok;
   }
 
   /** De band waarmee nu verbonden is — de context bewaart dit als 'bekend'. */
@@ -383,6 +450,17 @@ export class HRBleService {
     }
   }
 
+  /**
+   * Heeft de gebruiker intussen gestopt? Tussen de eerste awaits van `startScan` en het
+   * moment dat de scan écht begint zit een venster van seconden; wat daarna nog vuurt,
+   * legt zich over een status die de gebruiker zelf gevraagd heeft.
+   */
+  private aborted(): boolean {
+    if (!this.intentionalDisconnect) return false;
+    log('gestopt tijdens het opstarten van de scan — niets meer publiceren');
+    return true;
+  }
+
   private clearScanTimeout(): void {
     if (this.scanTimeout) {
       clearTimeout(this.scanTimeout);
@@ -397,12 +475,36 @@ export class HRBleService {
    */
   private stopScan(): void {
     this.clearScanTimeout();
-    if (!ownsScan(this.scanToken)) return;
-    releaseScan(this.scanToken);
+
+    // Ook een aanvraag die nog in de wachtrij stond moet weg. Vandaag is de enige trigger
+    // een expliciete stop/disconnect: er is geen cleanup op `useFocusEffect` en geen
+    // AppState-listener, dus wegnavigeren of naar de achtergrond gaan breekt een wachtende
+    // scan níet af. Dat staat als backlog-item.
+    if (!ownsScan(this.scanToken)) {
+      releaseScan(this.scanToken);
+      return;
+    }
+
+    // Loslaten pás nadat de native scan echt gestopt is. Doen we het eerder, dan start de
+    // wachtende dienst zijn scan terwijl deze nog afbouwt — en de dispose van de oude
+    // subscription roept `centralManager.stopScan()` aan, wat de nieuwe scan meteen weer
+    // stillegt. Precies de race die op 2026-08-22 beide scans leeg liet terugkomen.
+    //
+    // De handle hoort erbij: `stopScan()` en een nieuwe `requestScan()` staan in `startScan`
+    // in één synchroon blok, dus deze uitgestelde release kan landen nádat dezelfde dienst
+    // het slot alweer gekregen heeft. Zonder handle breekt hij dan zijn eigen verse scan af
+    // en start hij de wachtende eroverheen — gemeten, niet bedacht.
+    const handle = this.scanGrant ?? undefined;
+    this.scanGrant = null;
+    const handOver = () => releaseScan(this.scanToken, handle);
     try {
-      this.manager?.stopDeviceScan().catch(() => {});
+      // Geeft een Promise terug: een synchrone catch vangt de rejection niet.
+      const stopping = this.manager?.stopDeviceScan();
+      if (stopping) stopping.then(handOver, handOver);
+      else handOver();
     } catch {
-      // Manager al vernietigd — dan loopt er ook geen scan meer.
+      // Manager al vernietigd — dan loopt er per definitie ook geen scan meer.
+      handOver();
     }
   }
 

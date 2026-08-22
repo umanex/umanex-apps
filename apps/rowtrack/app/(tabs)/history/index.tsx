@@ -25,6 +25,8 @@ import {
   typeStyles,
 } from '@/constants';
 import type { WorkoutSummary } from '@/types/workout';
+import { usePrHistory } from '@/lib/hooks/usePrHistory';
+import { selectWithPrMetrics } from '@/lib/prColumn';
 
 type HistoryFilter = Period;
 
@@ -46,6 +48,8 @@ export default function HistoryScreen() {
   // Op de id afhangen, niet op het user-object: de auth-context levert bij elk
   // auth-event een nieuwe referentie, wat anders een extra fetch de race in stuurt.
   const userId = user?.id;
+  // Zegt per rij welke records hij brak — uit `pr_metrics`, of afgeleid voor oudere ritten.
+  const { entriesFor, refresh: refreshPrHistory } = usePrHistory(userId);
 
   const [filter, setFilter] = useState<HistoryFilter>('week');
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
@@ -68,16 +72,23 @@ export default function HistoryScreen() {
 
     // user_id expliciet meegeven, net als elke andere workouts-query in de app;
     // RLS dekt dit al af, maar de intentie hoort in de query te staan.
-    let query = supabase
-      .from('workouts')
-      .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories')
-      .eq('user_id', userId)
-      .order('started_at', { ascending: false });
+    // `pr_metrics` gaat via selectWithPrMetrics: zolang die kolom niet gemigreerd is, zou
+    // hij deze hele lijst op een ErrorState zetten in plaats van op één badge minder.
+    const { data, error: queryError } = await selectWithPrMetrics<WorkoutSummary[]>((prColumn) => {
+      // Als `string` getypeerd en niet als template-literal: de select-parser van
+      // postgrest-js leest de kolomlijst op typeniveau en struikelt over een dynamische
+      // staart. De rij-vorm wordt hieronder toch al met een cast vastgelegd.
+      const columns: string = `id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, is_pr${prColumn}`;
+      let query = supabase
+        .from('workouts')
+        .select(columns)
+        .eq('user_id', userId)
+        .order('started_at', { ascending: false });
 
-    const from = periodStart(filter);
-    if (from) query = query.gte('started_at', from.toISOString());
-
-    const { data, error: queryError } = await query;
+      const from = periodStart(filter);
+      if (from) query = query.gte('started_at', from.toISOString());
+      return query;
+    });
 
     // Alleen het nieuwste verzoek mag schrijven — een traag antwoord van een vorig
     // filter (of van een scherm dat intussen verlaten is) wordt genegeerd.
@@ -104,10 +115,13 @@ export default function HistoryScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchWorkouts();
+      // De afgeleide records mee bijwerken: zonder dit draagt een net gereden PR-rit
+      // wél zijn badge (uit pr_metrics) maar blijven oudere rijen op de vorige stand.
+      void refreshPrHistory();
       return () => {
         requestSeq.current += 1;
       };
-    }, [fetchWorkouts]),
+    }, [fetchWorkouts, refreshPrHistory]),
   );
 
   const handleFilterChange = useCallback((next: HistoryFilter) => {
@@ -220,6 +234,7 @@ export default function HistoryScreen() {
             workout={item}
             onPress={handleWorkoutPress}
             index={index}
+            prEntries={entriesFor(item)}
           />
         )}
         ListHeaderComponent={listHeader}

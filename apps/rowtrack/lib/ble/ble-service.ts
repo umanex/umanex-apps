@@ -355,6 +355,11 @@ export class RowerBleService {
             this.onStatusChange('error', { code: 'scan_failed', detail });
           },
           onPreempted: () => {
+            // Alleen melden zolang we nog echt zoeken. De vangnet-timer loopt door
+            // wanneer een release blijft hangen op een `stopDeviceScan()` die niet
+            // settelt, en zou dan een fout leggen over een verbinding die intussen
+            // gewoon staat te meten.
+            if (this.device) return;
             // Het vangnet pakt het slot af. Zwijgen zou de rij op 'Zoeken…' laten staan met
             // een dode knop — precies de klasse fout die deze arbiter moest sluiten.
             log(' scan-slot afgepakt na de maximale houdtijd');
@@ -686,10 +691,11 @@ export class RowerBleService {
   private stopScan(): void {
     this.clearScanTimeout();
 
-    // Ook een aanvraag die nog in de wachtrij stond moet weg. Vandaag is de enige trigger
-    // een expliciete stop/disconnect: er is geen cleanup op `useFocusEffect` en geen
-    // AppState-listener, dus wegnavigeren of naar de achtergrond gaan breekt een wachtende
-    // scan níet af. Dat staat als backlog-item.
+    // Ook een aanvraag die nog in de wachtrij stond moet weg. Er zijn twee AppState-
+    // listeners (hr-service voor de stilte-deadline, workout.tsx voor autoconnect) en de
+    // `useFocusEffect` daar ruimt zichzelf op, maar géén van drieën raakt het scan-slot
+    // aan: wegnavigeren of naar de achtergrond gaan breekt een wachtende scan dus niet af.
+    // Dat staat als backlog-item.
     if (!ownsScan(this.scanToken)) {
       releaseScan(this.scanToken);
       return;

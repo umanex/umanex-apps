@@ -3,8 +3,9 @@ import type {
   Device,
   Subscription,
 } from 'react-native-ble-plx';
-import { Platform, PermissionsAndroid } from 'react-native';
+import { AppState, Platform, PermissionsAndroid } from 'react-native';
 import { base64ToBytes } from './base64';
+import { RECONNECT_DELAY_MS, MAX_RECONNECT_ATTEMPTS } from './constants';
 import { requestScan, ownsScan, releaseScan } from './scan-lock';
 import { recordAutoConnect } from './autoConnectLog';
 import { waitForAdapter } from './adapterReady';
@@ -86,6 +87,35 @@ export class HRBleService {
   private scanGrant: number | null = null;
 
   private intentionalDisconnect = false;
+  /**
+   * Zette de gebruiker (of het einde van een rit) deze dienst stil? Dan geen herstel.
+   *
+   * Bewust náást `intentionalDisconnect` en niet in de plaats ervan: die vlag gaat
+   * óók aan bij ons eigen opruimen (`releaseDevice`), en een herstelpoging die op
+   * haar eigen opruimactie afgaat breekt zichzelf meteen af.
+   */
+  private stopped = false;
+  /**
+   * Loopt op bij elk nieuw verbindings- of zoekverzoek. Een herstellus die vóór die
+   * ophoging begon, is daarna verlopen: zonder dit token zet een verse `startScan()` de
+   * `stopped`-vlag en het herstelbudget terug op 'ga door', waarna de oude lus alsnog
+   * verbindt met het toestel dat de gebruiker net níet koos.
+   */
+  private connectGeneration = 0;
+  /** Waar we naar terug mogen na een verbroken link — zie `attemptReconnect`. */
+  private lastDevice: { id: string; name: string } | null = null;
+  private reconnectAttempts = 0;
+  /**
+   * Loopt er een eigen herstelpoging? Dan blijft autoconnect eraf. Beide worden bij
+   * terugkeer uit de achtergrond ongeveer tegelijk wakker, en `hrStatusRef` in de
+   * context is een gerenderde spiegel: die kan nog op 'error' staan terwijl deze
+   * dienst al aan het herstellen is. Twee gelijktijdige connects op hetzelfde
+   * toestel laten een abonnement achter dat niemand meer opruimt.
+   */
+  private recovering = false;
+  /** Naam van de band waar we nu aan hangen; de deadline logt ermee. */
+  private deviceName: string | null = null;
+  private appStateSub: { remove: () => void } | null = null;
 
   private onStatusChange: StatusListener;
   private onHR: HRListener;
@@ -95,6 +125,20 @@ export class HRBleService {
     this.onStatusChange = onStatusChange;
     this.onHR = onHR;
     this.onDevicesFound = onDevicesFound ?? null;
+
+    // De stilte-wachter mag geen achtergrondtijd meetellen. RowTrack vraagt geen
+    // `bluetooth-central` background mode (`app.json` → isBackgroundEnabled: false),
+    // dus iOS schorst de app op zodra je naar een andere app wisselt: er komt niets
+    // binnen én de timer staat stil. Bij terugkeer vuurde de achterstallige deadline
+    // meteen af en liet de app een gezonde band los — waarna niets hem terughaalde
+    // en de rest van de rit zonder hartslag verliep. Elke app-wissel van meer dan
+    // HR_DATA_TIMEOUT_MS deed dat, gegarandeerd (gemeten 2026-08-20).
+    this.appStateSub = AppState.addEventListener('change', (next) => {
+      this.dispatch(
+        { type: next === 'active' ? 'resumed' : 'suspended' },
+        this.deviceName ?? undefined,
+      );
+    });
   }
 
   /** Zie `RowerBleService.getManager()` — dezelfde reden, dezelfde wacht. */
@@ -123,6 +167,10 @@ export class HRBleService {
     this.stopScan();
 
     this.intentionalDisconnect = false;
+    this.stopped = false;
+    this.reconnectAttempts = 0;
+    this.recovering = false;
+    this.connectGeneration += 1;
     this.onStatusChange('scanning');
 
     try {
@@ -221,6 +269,11 @@ export class HRBleService {
             this.onStatusChange('error', { code: 'scan_failed', detail });
           },
           onPreempted: () => {
+            // Alleen melden zolang we nog echt zoeken. De vangnet-timer loopt door
+            // wanneer een release blijft hangen op een `stopDeviceScan()` die niet
+            // settelt, en zou dan een fout leggen over een verbinding die intussen
+            // gewoon staat te meten.
+            if (this.device) return;
             log('scan-slot afgepakt na de maximale houdtijd');
             this.clearScanTimeout();
             this.onStatusChange('error', { code: 'scan_error', detail: 'scan afgebroken' });
@@ -253,8 +306,18 @@ export class HRBleService {
    * mislukte poging op een onthouden toestel is voor de gebruiker geen mislukking.
    */
   async connectKnown(id: string, name: string | null): Promise<boolean> {
+    // Stil terug, zonder de status aan te raken: de dienst is al bezig hetzelfde te
+    // doen en 'scanning' hoort niet overschreven te worden door een tweede poging.
+    if (this.recovering) {
+      recordAutoConnect('hr', 'overgeslagen', 'eigen herstelpoging loopt al');
+      return false;
+    }
     await this.releaseDevice();
     this.intentionalDisconnect = false;
+    this.stopped = false;
+    this.reconnectAttempts = 0;
+    this.recovering = false;
+    this.connectGeneration += 1;
     this.onStatusChange('scanning');
 
     // Alles in de try: `loadBlePlx`, `getManager` (met zijn adapter-wacht) en `state()`
@@ -304,16 +367,49 @@ export class HRBleService {
     name?: string,
     opts?: { silent?: boolean; timeout?: number },
   ): Promise<boolean> {
+    // Bewust géén `stopped = false` hier. Dat hoort bij de expliciete instappunten
+    // (`startScan`, `connectKnown`, en de keuzelijst die via die twee komt): een
+    // herstelpoging die zichzelf de stop-vlag van de gebruiker laat wissen, verbindt
+    // opnieuw met een band die niemand meer vroeg.
+    //
+    // Ook een wachtende scanaanvraag moet weg. Zonder dit blijft hij in de arbiter-rij
+    // staan en start hij ná deze geslaagde verbinding alsnog een scan, die 15 s later
+    // 'geen hartslagmeter gevonden' over een levende, metende link legt.
+    this.stopScan();
+    // Ook de afbreek-vlag, en niet alleen in `startScan`/`connectKnown`: een mislukte
+    // poging zet hem via `releaseDevice()` op true, en bleef hij dan staan, dan zweeg
+    // op de vólgende (geslaagde) verbinding élke bewaking — monitorfout, disconnect
+    // én de stilte-deadline hangen alle drie aan deze vlag.
+    this.intentionalDisconnect = false;
     try {
       const manager = await this.getManager();
       const device = await manager.connectToDevice(
         deviceId,
         opts?.timeout ? { timeout: opts.timeout } : undefined,
       );
+      // De connect duurt seconden; viel er een stop() in dat venster, dan mag deze
+      // verbinding niet alsnog tot stand komen. Zonder deze poort stond de hartslagrij
+      // ná de samenvatting weer groen te meten op een rit die al opgeslagen was.
+      if (this.aborted()) {
+        await device.cancelConnection().catch(() => {});
+        return false;
+      }
+
       this.device = device;
       const deviceName = name || device.name || device.localName || 'HR Monitor';
+      this.deviceName = deviceName;
+      // Waar we naar terug mogen als de link straks wegvalt. Pas hier gezet: vóór
+      // een geslaagde connect is er geen band om naar terug te keren.
+      this.lastDevice = { id: deviceId, name: deviceName };
 
       await device.discoverAllServicesAndCharacteristics();
+
+      // Service discovery is de tweede lange await; dezelfde poort, dezelfde reden.
+      if (this.aborted()) {
+        this.device = null;
+        await device.cancelConnection().catch(() => {});
+        return false;
+      }
 
       this.monitorSub = device.monitorCharacteristicForService(
         HR_SERVICE_UUID,
@@ -329,8 +425,7 @@ export class HRBleService {
               // (op iOS verdwijnt het dan uit de scanresultaten, dus geen andere band
               // meer te verbinden) én bleef de data-deadline lopen, die twaalf seconden
               // later nóg een statuswissel over deze fout heen legde.
-              void this.releaseDevice();
-              this.onStatusChange('error', { code: 'connection_lost', detail: error.message });
+              this.handleLinkLost(error.message);
             }
             return;
           }
@@ -341,7 +436,13 @@ export class HRBleService {
           // voor de status, bepaalt zij wél.
           const usable = bpm >= 30 && bpm <= 220;
           this.dispatch({ type: 'measurement', usable }, deviceName);
-          if (usable) this.onHR(bpm);
+          if (usable) {
+            // Pas hier is de link bewezen, dus pas hier is het herstelbudget weer
+            // vol. Zou een geslaagde connect al volstaan, dan zou een band die
+            // verbindt en meteen weer wegvalt eindeloos blijven proberen.
+            this.reconnectAttempts = 0;
+            this.onHR(bpm);
+          }
         },
         'hr-measurement',
       );
@@ -350,8 +451,7 @@ export class HRBleService {
         log('disconnected, intentional:', this.intentionalDisconnect);
         if (this.device !== device) return;
         if (!this.intentionalDisconnect) {
-          this.letGo();
-          this.onStatusChange('error', { code: 'connection_lost' });
+          this.handleLinkLost();
         }
       });
 
@@ -377,6 +477,13 @@ export class HRBleService {
 
   stop(): void {
     this.intentionalDisconnect = true;
+    // Een lopende herstelpoging hoort hier te eindigen: de gebruiker (of het einde
+    // van de rit) zei nee, en een dienst die dan alsnog terugverbindt vecht tegen
+    // datgene wat net gevraagd werd.
+    this.stopped = true;
+    this.recovering = false;
+    this.reconnectAttempts = 0;
+    this.lastDevice = null;
     this.device?.cancelConnection().catch(() => {});
     this.letGo();
     this.onStatusChange('idle');
@@ -410,11 +517,14 @@ export class HRBleService {
   private letGo(): void {
     this.cleanup();
     this.device = null;
+    this.deviceName = null;
     this.link = stepHrLink(this.link, { type: 'released' }).state;
   }
 
   destroy(): void {
     this.stop();
+    this.appStateSub?.remove();
+    this.appStateSub = null;
     this.manager?.destroy();
     this.manager = null;
   }
@@ -456,7 +566,12 @@ export class HRBleService {
    * legt zich over een status die de gebruiker zelf gevraagd heeft.
    */
   private aborted(): boolean {
-    if (!this.intentionalDisconnect) return false;
+    // `stopped` en niet `intentionalDisconnect`: die tweede gaat óók aan bij ons eigen
+    // opruimen (`releaseDevice`), en dat kan tijdens de awaits van `startScan` gebeuren —
+    // een monitorfout, een AppState-wissel. Daarop afgaan zou een scan afbreken die de
+    // gebruiker net gevraagd heeft. `stopped` betekent alleen: de gebruiker of het einde
+    // van de rit heeft deze dienst stilgezet.
+    if (!this.stopped) return false;
     log('gestopt tijdens het opstarten van de scan — niets meer publiceren');
     return true;
   }
@@ -476,10 +591,11 @@ export class HRBleService {
   private stopScan(): void {
     this.clearScanTimeout();
 
-    // Ook een aanvraag die nog in de wachtrij stond moet weg. Vandaag is de enige trigger
-    // een expliciete stop/disconnect: er is geen cleanup op `useFocusEffect` en geen
-    // AppState-listener, dus wegnavigeren of naar de achtergrond gaan breekt een wachtende
-    // scan níet af. Dat staat als backlog-item.
+    // Ook een aanvraag die nog in de wachtrij stond moet weg. Er zijn twee AppState-
+    // listeners (hr-service voor de stilte-deadline, workout.tsx voor autoconnect) en de
+    // `useFocusEffect` daar ruimt zichzelf op, maar géén van drieën raakt het scan-slot
+    // aan: wegnavigeren of naar de achtergrond gaan breekt een wachtende scan dus niet af.
+    // Dat staat als backlog-item.
     if (!ownsScan(this.scanToken)) {
       releaseScan(this.scanToken);
       return;
@@ -534,6 +650,7 @@ export class HRBleService {
     this.link = state;
 
     if (effect.release) void this.releaseDevice();
+    if (effect.clearDeadline) this.clearDataDeadline();
     if (effect.rearmDeadline) this.rearmDeadline(deviceName);
     if (effect.status) {
       this.onStatusChange(
@@ -545,8 +662,73 @@ export class HRBleService {
   }
 
   /**
+   * Een verbinding die wíj niet verbroken hebben. De roeier-dienst probeert dit al
+   * een paar keer opnieuw (`attemptReconnect` in `ble-service.ts`); de band deed dat
+   * niet, en daarmee was elke onderbreking tijdens een rit definitief — `autoConnect`
+   * draait alleen bij het openen van het trainingsscherm in de idle-fase, dus midden
+   * in een rit kwam er niets meer langs dat de band terughaalde.
+   *
+   * Loslaten zonder `intentionalDisconnect`: die vlag is hier de afbreek-knop van de
+   * gebruiker, en `releaseDevice()` zou hem opzetten waarna het herstel zichzelf
+   * meteen zou afbreken. De GATT-link gaat wél dicht — op iOS verdwijnt een toestel
+   * dat wij vasthouden uit de scanresultaten.
+   */
+  private handleLinkLost(detail?: string): void {
+    const device = this.device;
+    this.letGo();
+    void device?.cancelConnection().catch(() => {});
+    void this.attemptReconnect(detail);
+  }
+
+  private async attemptReconnect(detail?: string): Promise<void> {
+    const target = this.lastDevice;
+    // De generatie van het moment waarop deze lus begon. Komt er intussen een nieuw
+    // verzoek van de gebruiker, dan is deze lus verlopen — ook wanneer dat verzoek
+    // `stopped` en het herstelbudget alweer op 'ga door' heeft gezet.
+    const generation = this.connectGeneration;
+    if (this.stopped) {
+      this.recovering = false;
+      return;
+    }
+    if (!target || this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      this.recovering = false;
+      this.reconnectAttempts = 0;
+      this.onStatusChange('error', { code: 'connection_lost', detail });
+      return;
+    }
+
+    this.recovering = true;
+    this.reconnectAttempts++;
+    log('verbinding verloren — poging', this.reconnectAttempts, 'van', MAX_RECONNECT_ATTEMPTS, ':', target.name);
+    // 'scanning' en niet 'error': er lóópt iets. Een foutmelding zou vragen om een
+    // ingreep die de app zelf al aan het doen is.
+    this.onStatusChange('scanning', undefined, target.name);
+
+    await this.delay(RECONNECT_DELAY_MS);
+    if (this.stopped || this.device || generation !== this.connectGeneration) {
+      this.recovering = false;
+      return;
+    }
+
+    const ok = await this.connectToDeviceById(target.id, target.name, {
+      silent: true,
+      timeout: KNOWN_CONNECT_TIMEOUT_MS,
+    });
+    if (ok || generation !== this.connectGeneration) {
+      this.recovering = false;
+      return;
+    }
+    void this.attemptReconnect(detail);
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
    * Een band meet rond 1 Hz, dus `HR_DATA_TIMEOUT_MS` is ruim genoeg voor een gemiste
    * beat en kort genoeg om niet een halve rit lang een verzonnen hartslag te tonen.
+   * Achtergrondtijd telt niet mee — zie de AppState-koppeling in de constructor.
    */
   private rearmDeadline(deviceName?: string): void {
     this.clearDataDeadline();

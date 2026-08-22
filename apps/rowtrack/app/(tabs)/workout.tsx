@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Platform, UIManager } from 'react-native';
+import { Alert, AppState, Platform, UIManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -239,10 +239,23 @@ export default function WorkoutScreen() {
   // app-start — dan zou de app ook Bluetooth doen als je enkel je historiek bekijkt.
   useFocusEffect(
     useCallback(() => {
-      if (phase !== 'idle') return;
+      // Op de samenvatting hoort de app niets meer te zoeken.
+      if (phase === 'summary') return;
       // Zonder toestemming blijft de hartslagmeter buiten beeld — ook hier, niet
       // alleen achter de knop.
-      autoConnect({ hr: healthGranted });
+      if (phase === 'idle') autoConnect({ hr: healthGranted });
+
+      // Terugkeren uit een andere app is het tweede moment waarop een toestel weg
+      // kan zijn — en daar kwam niets langs dat het merkte: `useFocusEffect` vuurt
+      // niet op een app-wissel, dus een verbinding die tijdens het wegkijken sneuvelde
+      // bleef de rest van de rit weg. Bewust óók in de active-fase: juist dán kijk je
+      // even weg. `autoConnect` slaat alles over wat al hangt, bezig is of door de
+      // gebruiker zelf verbroken werd, dus in het normale geval kost dit niets.
+      const sub = AppState.addEventListener('change', (next) => {
+        if (next !== 'active') return;
+        autoConnect({ hr: healthGranted });
+      });
+      return () => sub.remove();
     }, [phase, autoConnect, healthGranted]),
   );
 

@@ -16,6 +16,11 @@ import { reportError } from '@/lib/monitoring';
 import { BottomFade, Button, EmptyState, ErrorState, KpiSingle, Segmented } from '@/components';
 import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, formatInt, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
+import { useAuth } from '@/lib/auth-context';
+import { usePrHistory } from '@/lib/hooks/usePrHistory';
+import { selectWithPrMetrics } from '@/lib/prColumn';
+import { PrBadge } from '@/components/PrBadge';
+import { prMetricLabel, formatPrValue, formatPrPrevious, prEntrySpoken } from '@/lib/prDisplay';
 import { samplesFromTuples } from '@/lib/bestDistanceTime';
 import { segmentSplitTimes, fastestSplit, averageSplit, distanceSplits, segmentHeartRates } from '@/lib/workoutSegments';
 import { t } from '@/i18n';
@@ -24,8 +29,8 @@ import {
   fg,
   accent,
   achievement,
+  body,
   border,
-  neutral,
   space,
   radii,
   typeStyles,
@@ -45,6 +50,10 @@ export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  // Ritten van vóór `pr_metrics` dragen alleen `is_pr`; deze hook leidt de metric dan af
+  // uit de chronologie, met exact dezelfde regel als de archieflijst.
+  const { entriesFor } = usePrHistory(user?.id);
   const spmHalved = useSpmHalved();
 
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
@@ -56,11 +65,11 @@ export default function WorkoutDetailScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(false);
-    const { data, error: queryError } = await supabase
-      .from('workouts')
-      .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, max_watts, max_spm, best_split, avg_heart_rate, max_heart_rate, resistance_level, notes, goal_type, goal_target, goal_reached, splits, is_pr, samples, total_strokes')
-      .eq('id', id)
-      .single();
+    const { data, error: queryError } = await selectWithPrMetrics<WorkoutDetail>((prColumn) => {
+      // Zie history/index.tsx: `string`, niet template-literal.
+      const columns: string = `id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, max_watts, max_spm, best_split, avg_heart_rate, max_heart_rate, resistance_level, notes, goal_type, goal_target, goal_reached, splits, is_pr, best_2k_seconds, samples, total_strokes${prColumn}`;
+      return supabase.from('workouts').select(columns).eq('id', id).single();
+    });
 
     // PGRST116 = 0 rijen (verwijderd of RLS-gefilterd) → "niet gevonden", geen fout.
     // Elke andere fout is een echte lees-/netwerkfout (security-audit P2-2).
@@ -175,6 +184,9 @@ export default function WorkoutDetailScreen() {
   }
 
   const dist = formatDistanceDynamic(workout.distance_meters);
+  // `null` = geen record. Een lege lijst is wél een record, maar zonder bekende metric —
+  // dan blijft het bij de kale badge in de header, zonder blok met lege regels.
+  const prEntries = entriesFor(workout);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -184,12 +196,7 @@ export default function WorkoutDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Text style={styles.headerDate}>{formatDateTitle(workout.started_at)}</Text>
           </TouchableOpacity>
-          {workout.is_pr && (
-            <View style={styles.prBadge}>
-              <Text style={styles.prBadgeEmoji}>🏅</Text>
-              <Text style={styles.prBadgeText}>{t.detail.prBadge}</Text>
-            </View>
-          )}
+          {prEntries != null && <PrBadge />}
         </View>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -215,6 +222,28 @@ export default function WorkoutDetailScreen() {
         {/* Overzicht tab */}
         {activeTab === 'overview' && (
           <>
+            {/* Gebroken records: welke metric, en wat hij verving */}
+            {prEntries != null && prEntries.length > 0 && (
+              <View style={styles.prSection}>
+                {prEntries.map((entry) => (
+                  // Eén a11y-stop per record: drie losse Text-nodes worden anders drie
+                  // aankondigingen die pas samen een zin vormen.
+                  <View
+                    key={entry.metric}
+                    accessible
+                    accessibilityLabel={prEntrySpoken(entry)}
+                    style={styles.prRow}
+                  >
+                    <Text style={styles.prMetric}>{prMetricLabel(entry.metric)}</Text>
+                    <View style={styles.prValues}>
+                      <Text style={styles.prValue}>{formatPrValue(entry.metric, entry.value)}</Text>
+                      <Text style={styles.prPrevious}>{formatPrPrevious(entry)}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* 2×2 KPI container */}
             <View style={styles.kpiContainer}>
               <View style={[styles.kpiGridRow, styles.kpiGridRowBordered]}>
@@ -472,22 +501,47 @@ const styles = StyleSheet.create({
     ...typeStyles.labelGoalPrefix,
     color: accent.default,
   },
-  prBadge: {
+  // De badge zelf staat sinds 2026-08-22 in components/PrBadge.tsx — gedeeld met de
+  // archiefrij en de samenvatting. Hier blijft alleen het blok dat de records uitlegt.
+  prSection: {
+    gap: space['8'],
+    marginBottom: space['28'],
+  },
+  prRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['4'],
-    backgroundColor: achievement.default,
-    borderRadius: radii.full,
-    paddingHorizontal: space['10'],
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: space['12'],
+    // TODO: er is geen borderWidth-token in constants/ — deze 2 is een bewuste eenmalige
+    // keuze, spiegelend aan de PR-banner in ActivePhase. Komt er een derde plek, dan hoort
+    // er een rol in tokens.json bij.
+    borderLeftWidth: 2,
+    borderLeftColor: achievement.default,
+    paddingLeft: space['12'],
+  },
+  prMetric: {
+    ...typeStyles.labelMicro,
+    color: fg.secondary,
     paddingTop: space['4'],
-    paddingBottom: space['2'],
+    flexShrink: 1,
   },
-  prBadgeEmoji: {
-    fontSize: 12,
+  prValues: {
+    alignItems: 'flex-end',
+    gap: space['2'],
+    // Zonder shrink meet deze kolom op zijn intrinsieke breedte en loopt de vorige-waarde-
+    // regel buiten het blok; er is geen wrap die hem opvangt.
+    flexShrink: 1,
   },
-  prBadgeText: {
-    ...typeStyles.italicConnector,
-    color: neutral['600'],
+  prValue: {
+    ...typeStyles.kpiValue,
+    color: achievement.default,
+  },
+  prPrevious: {
+    // body.xs en niet labelMicro: dit is een volzin, geen label. labelMicro zet
+    // `textTransform: 'uppercase'` en maakte van '12,5 km' een '12,5 KM'.
+    ...body.xs,
+    color: fg.tertiary,
+    textAlign: 'right',
   },
 
   // Tab bar — positionering; de band-visual (bg.elevated, top/bottom-divider, full-bleed)

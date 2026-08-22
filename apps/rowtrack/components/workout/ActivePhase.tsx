@@ -19,8 +19,10 @@ import { MotivationalToast } from '@/components/workout';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatInt, formatDecimal, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
+import type { PrEntry } from '@/lib/personalRecords';
+import { prMetricLabel, formatPrValue, formatPrPrevious, prEntrySpoken } from '@/lib/prDisplay';
 import { t } from '@/i18n';
-import { bg, fg, accent, border, progressBar, status, buttonTokens, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
+import { bg, fg, accent, achievement, body, border, progressBar, buttonTokens, fontFamily, space, radii, componentRadius, fontSize, typeStyles, layout } from '@/constants';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
 import { styles } from './workout.styles';
 
@@ -40,8 +42,8 @@ type ActivePhaseProps = {
   paceZone: PaceZoneLevel | null;
   toastMsg: string | null;
   splits: SplitEntry[];
-  prFlags: { watts: boolean; split: boolean; distance: boolean };
-  hasPR: boolean;
+  /** De records die deze rit brak, met de waarde die ze vervingen. Leeg = geen record. */
+  prEntries: readonly PrEntry[];
   pulseAnim: Animated.Value;
   avgWatts: number;
   avgSpm: number;
@@ -73,7 +75,7 @@ export function ActivePhase({
   goal,
   toastMsg,
   splits,
-  hasPR,
+  prEntries,
   avgWatts,
   avgSpm,
   avgSplit,
@@ -584,11 +586,40 @@ export function ActivePhase({
               <Text style={summaryStyles.title}>{t.workout.summary.title}</Text>
               <Text style={summaryStyles.dateText}>{summaryDateLabel}</Text>
             </View>
-            {hasPR && (
+            {prEntries.length > 0 && (
               <View style={summaryStyles.prWrapper}>
                 <View style={summaryStyles.prBanner}>
-                  <Text style={summaryStyles.prEmoji}>🏅</Text>
-                  <Text style={summaryStyles.prText}>{t.workout.summary.prBanner}</Text>
+                  <View style={summaryStyles.prBannerTop}>
+                    <Text style={summaryStyles.prEmoji}>🏅</Text>
+                    <Text style={summaryStyles.prText}>
+                      {prEntries.length === 1
+                        ? t.pr.bannerTitleOne
+                        : t.pr.bannerTitleMany(prEntries.length)}
+                    </Text>
+                  </View>
+                  {/* Eén regel per record: "Vermogen · 143 W" met daaronder wat het verving.
+                      Eerder stond hier één generieke zin, waardoor je wél las dát je een
+                      record brak maar niet waarop. */}
+                  {prEntries.map((entry) => (
+                    <View
+                      key={entry.metric}
+                      accessible
+                      accessibilityLabel={prEntrySpoken(entry)}
+                      style={summaryStyles.prEntryRow}
+                    >
+                      <Text style={summaryStyles.prEntryMetric}>
+                        {prMetricLabel(entry.metric)}
+                      </Text>
+                      <View style={summaryStyles.prEntryValues}>
+                        <Text style={summaryStyles.prEntryValue}>
+                          {formatPrValue(entry.metric, entry.value)}
+                        </Text>
+                        <Text style={summaryStyles.prEntryPrevious}>
+                          {formatPrPrevious(entry)}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
                 </View>
               </View>
             )}
@@ -897,11 +928,23 @@ const summaryStyles = StyleSheet.create({
     paddingHorizontal: space['20'],
   },
   prBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    // Was een rauwe rgba-amber — een hardcoded waarde zonder token. Nu de raised-rol met
+    // een achievement-rand: dezelfde betekenis, dezelfde markering als het PR-blok op het
+    // detailscherm, en geen nieuwe kleur nodig.
+    backgroundColor: bg.raised,
+    // Een volledige rand en niet alleen links: `bg.raised` is ook het vlak van de KPI-band
+    // eronder, dus zonder eigen omtrek leest het vieringsmoment als een gewone sectie.
+    // TODO: geen borderWidth-token in constants/; een `achievement.surface`-rol zou hier
+    // beter passen dan een rand — bespreken vóór er een derde plek bij komt.
+    borderWidth: 2,
+    borderColor: achievement.muted,
     borderRadius: componentRadius.highlightRow,
     padding: space['20'],
+    gap: space['12'],
+  },
+  prBannerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: space['8'],
   },
   prEmoji: {
@@ -909,7 +952,36 @@ const summaryStyles = StyleSheet.create({
   },
   prText: {
     ...typeStyles.kpiUnit,
-    color: status.warning,
+    color: achievement.default,
+  },
+  prEntryRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: space['12'],
+  },
+  prEntryMetric: {
+    ...typeStyles.labelMicro,
+    color: fg.secondary,
+    paddingTop: space['4'],
+    flexShrink: 1,
+  },
+  prEntryValues: {
+    alignItems: 'flex-end',
+    gap: space['2'],
+    // Zie het PR-blok op het detailscherm: zonder shrink loopt de vorige-waarde-regel
+    // buiten de banner, en wrappen kan hij niet.
+    flexShrink: 1,
+  },
+  prEntryValue: {
+    ...typeStyles.kpiValue,
+    color: achievement.default,
+  },
+  prEntryPrevious: {
+    // Volzin, dus body.xs — labelMicro kapitaliseerde de eenheden ('12,5 KM').
+    ...body.xs,
+    color: fg.tertiary,
+    textAlign: 'right',
   },
   // KPI-metrics — volle-breedte bg.raised band (KPI Row-frame)
   kpiBand: {

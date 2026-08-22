@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-17_
+_Gegenereerd op 2026-08-22_
 
 ## Project
 - **App:** rowtrack
@@ -44,6 +44,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | KPI | `apps/rowtrack/components/KPI.tsx` | components | — | — | — |
 | MotivationalToast | `apps/rowtrack/components/MotivationalToast.tsx` | components | — | — | — |
 | PaceZone | `apps/rowtrack/components/PaceZone.tsx` | components | — | — | — |
+| PrBadge | `apps/rowtrack/components/PrBadge.tsx` | components | — | — | — |
 | SectionHeader | `apps/rowtrack/components/SectionHeader.tsx` | components | — | — | — |
 | Segmented | `apps/rowtrack/components/Segmented.tsx` | components | — | — | — |
 | Skeleton | `apps/rowtrack/components/Skeleton.tsx` | components | — | — | — |
@@ -58,15 +59,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+c54190d docs(rowtrack): spm_halved-toggle heroverwegen na de meting van 2026-08-16
 ee95e7a fix(rowtrack): elk gemiddelde deelt door zijn eigen teller, niet door tickCount
 aa0cb47 docs(rowtrack): record sim render-verify of #257-261 in HANDOFF
 4108515 docs: session retrospective — handoff checks and Apollo XL follow-up
 2810551 feat(rowtrack): accept any FTMS-advertising rower in device scan
-be05bdb docs(rowtrack): fix two checks that could not answer themselves
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
+   M apps/rowtrack/BACKLOG.md
+   M apps/rowtrack/app/(tabs)/history/[id].tsx
+   M apps/rowtrack/app/(tabs)/history/index.tsx
+   M apps/rowtrack/app/(tabs)/index.tsx
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+   M apps/rowtrack/app/dev-active.tsx
+   M apps/rowtrack/components/WorkoutCard.tsx
+   M apps/rowtrack/components/workout/ActivePhase.tsx
+   M apps/rowtrack/context-snapshot.md
+  M  apps/rowtrack/i18n/translations/nl.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

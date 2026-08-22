@@ -375,10 +375,24 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   `scanActive`-vlag dekt nu één richting af (wij slopen de HR-scan niet meer); de andere richting
   staat nog open: `HRBleService.startDeviceScan()` overschrijft de gedeelde subscription van een
   lopende roeier-scan. Pre-existing, ouder dan de fix van vandaag.
-- **Volgende zet:** Eén gedeelde scan-arbiter voor beide diensten in plaats van twee
-  `new BleManager()`-aanroepen — of, kleiner, de HR-scan weigeren zolang de roeier scant.
-- **Check:** `grep -n '^export function' apps/rowtrack/lib/ble/scan-lock.ts` — enkel `claimScan`/`ownsScan`/`releaseScan` (alle drie over stoppen) = nog geen arbiter die het stárten regelt, dus de HR-scan neemt een lopende roeier-scan nog steeds over.
-- **Status:** open
+- **Volgende zet:** ~~Eén gedeelde scan-arbiter voor beide diensten~~ — gebouwd op 2026-08-22
+  (`fix/gedeelde-ble-scan`). `scan-lock.ts` serialiseert nu het *starten*: `requestScan` zet een
+  tweede aanvraag in de wachtrij in plaats van te verdringen, en beide diensten starten hun scan
+  én hun timers binnen die callback. De `ownsScan`-bail in `decide()` is weg — dát was het
+  mechanisme waardoor de verliezer nooit meer een status publiceerde.
+- **Wat de aanleiding scherper maakte dan dit item wist:** het is niet alleen de verliezer die
+  stilvalt. Gemeten op 2026-08-22 (JS-console van de dev-client): HR-scan om 12:35:57.543, roeier
+  om 12:35:57.988, en dáárna 25 seconden lang geen enkele treffer — tot een verse scan er binnen
+  150 ms twee vond. MultiplatformBleAdapter disposet de oude scan-subscription pás ná het starten
+  van de nieuwe, en die dispose doet `centralManager.stopScan()`; de winnaar gaat dus mee onderuit.
+  Notificeren van de verdrongen dienst zou dat niet hebben opgelost, serialiseren wel.
+- **Nog te doen:** op **toestel** naspelen — twee taps binnen een seconde (hartslag, dan roeier) en
+  de omgekeerde volgorde. Statisch getoetst met `node --test lib/ble/scan-lock.test.ts` (9 tests,
+  beide kanten; met het oude verdringende gedrag vallen er 5 om, dus de suite meet echt).
+- **Check:** `grep -c 'requestScan' apps/rowtrack/lib/ble/scan-lock.ts` — 0 = de arbiter is weg of
+  teruggedraaid en de HR-scan kan een lopende roeier-scan weer overnemen; ≥1 = de serialisatie staat
+  er nog.
+- **Status:** open — code staat, toestel-verificatie ontbreekt
 
 ## 2026-07-16 — UX-audit P3-verzamellijst (F13–F19) · [next-step]
 - **Bevinding:** UX-audit 2026-07-16, §5 P3: "← OVERZICHT"-backlink botst met de tab "Overzicht" (F13); icon-only inactieve doelsegmenten (F14); BPM-rij is onzichtbaar tappable (F15); Android-back genegeerd op 3 modals (F16); geen-doel-variant toont afstand dubbel (F17); dode/ongebruikte UX-lagen — paceZone/pulseAnim/prFlags-props, KPI.tsx, SectionHeader.tsx, live SplitsList, 3× rgba-0.20-hardcode, confetti-kleuren (F18); kcal-asterisk zonder legende (F19).

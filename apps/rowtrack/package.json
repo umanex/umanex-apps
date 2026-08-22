@@ -7,7 +7,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "tokens:build": "style-dictionary build --config style-dictionary.config.mjs"
+    "tokens:build": "style-dictionary build --config style-dictionary.config.mjs",
+    "test": "node --test \"lib/**/*.test.ts\""
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",

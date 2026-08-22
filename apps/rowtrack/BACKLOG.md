@@ -100,3 +100,15 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** Verstaanbaar, dus geen blokkade; het vraagt een tweede formatter-as die alleen voor a11y bestaat.
 - **Eerste zet:** `prValueSpoken(metric, value)` naast `formatPrValue` in `apps/rowtrack/lib/prDisplay.ts`, gebruikt door `prAccessibilityLabel` en `prEntrySpoken`.
 - **Status:** open
+
+## 2026-08-22 — Een wachtende BLE-scan overleeft wegnavigeren en achtergrond · [fix]
+- **Wat:** `scan-lock.ts` zet een tweede scanaanvraag in de wachtrij. Verlaat de gebruiker het trainingsscherm of gaat de app naar de achtergrond, dan breekt niemand die aanvraag af: `useFocusEffect` in `apps/rowtrack/app/(tabs)/workout.tsx` geeft geen cleanup terug en er is nergens een `AppState`-listener. Tot 25 s later start de scan alsnog, draait 15 s, en zet daarna een foutmelding klaar die de gebruiker ziet zodra hij terugkomt.
+- **Waarom niet nu:** De trigger bouwen raakt de levenscyclus van beide diensten (focus-cleanup + AppState) en dat is een bredere wijziging dan de scan-serialisatie zelf. Het venster is bovendien begrensd (maxHoldMs), geen eeuwige hang.
+- **Eerste zet:** Cleanup-functie uit de `useFocusEffect` in `workout.tsx` die in de idle-fase `stopScan()` op beide diensten aanroept, plus een `AppState`-listener op 'background'. Let op de bestaande AppState-bedrading op `fix/hr-verbinding-na-app-wissel` — die branch raakt hetzelfde gebied.
+- **Status:** open
+
+## 2026-08-22 — De node:test-suites draaien niet in CI · [infra]
+- **Wat:** `apps/rowtrack` heeft nu een `test`-script (`node --test "lib/**/*.test.ts"`, 47 tests), maar `.github/workflows/ci.yml` draait alleen type-check, lint en build. De enige wachters op de rekenkundige en concurrency-invarianten (`personalRecords`, `scan-lock`, `hrLink`, `bestDistanceTime`, `calories`, `period`) hangen dus aan iemand die eraan denkt ze met de hand te draaien.
+- **Waarom niet nu:** `ci.yml` is gedeeld door vier apps; een stap toevoegen is een config-wijziging die Jeroens akkoord verdient, en er moet een keuze komen of andere apps hun eigen suite krijgen.
+- **Eerste zet:** Eén stap `pnpm --filter rowtrack test` naast de token-guards in `ci.yml`, en beslissen of de andere apps volgen.
+- **Status:** open

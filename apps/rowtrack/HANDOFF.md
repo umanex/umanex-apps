@@ -440,9 +440,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   150 ms twee vond. MultiplatformBleAdapter disposet de oude scan-subscription pás ná het starten
   van de nieuwe, en die dispose doet `centralManager.stopScan()`; de winnaar gaat dus mee onderuit.
   Notificeren van de verdrongen dienst zou dat niet hebben opgelost, serialiseren wel.
-- **Nog te doen:** op **toestel** naspelen — twee taps binnen een seconde (hartslag, dan roeier) en
-  de omgekeerde volgorde. Statisch getoetst met `node --test lib/ble/scan-lock.test.ts` (9 tests,
-  beide kanten; met het oude verdringende gedrag vallen er 5 om, dus de suite meet echt).
+- **Nog te doen:** op **toestel** naspelen. De lijst is met de merge van
+  `fix/hr-verbinding-na-app-wissel` (2026-08-22) langer geworden, want die bracht een tweede
+  verbindingspad mee:
+  1. Twee taps binnen een seconde — hartslag, dan roeier — en de omgekeerde volgorde.
+  2. Stop tikken terwijl een herstelpoging aan het verbinden is. De rij hoort op 'idle' te
+     blijven; vóór de fix kwam ze ná de samenvatting weer groen terug met een levende BPM.
+  3. Tijdens een lopende herstelpoging zelf op Verbinden tikken en een ánder toestel kiezen.
+     De oude lus mag daarna niet alsnog met het vorige toestel verbinden (generatie-token).
+  4. Verbinden tikken terwijl de roeier scant, en dan wachten: de wachtende scanaanvraag mag
+     ná een geslaagde directe verbinding geen 'geen hartslagmeter gevonden' meer opleveren.
+  Statisch getoetst met `npm run test` (51 tests, beide suites; met het oude verdringende
+  gedrag vallen er 5 om, dus de suite meet echt) en `tsc --noEmit`.
 - **Check:** `grep -c 'requestScan' apps/rowtrack/lib/ble/scan-lock.ts` — 0 = de arbiter is weg of
   teruggedraaid en de HR-scan kan een lopende roeier-scan weer overnemen; ≥1 = de serialisatie staat
   er nog.

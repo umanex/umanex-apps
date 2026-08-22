@@ -59,24 +59,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-3a61d1c Merge remote-tracking branch 'origin/main' into fix/hr-verbinding-na-app-wissel
-43714ad fix(rowtrack): stop dropping the HR strap when the app goes to background
-c54190d docs(rowtrack): spm_halved-toggle heroverwegen na de meting van 2026-08-16
-ee95e7a fix(rowtrack): elk gemiddelde deelt door zijn eigen teller, niet door tickCount
-39ddbf8 docs(rowtrack): capture the calorie discrepancy before it evaporates
+0b21d93 Merge branch 'main' into fix/hr-verbinding-na-app-wissel
+b5bf6d2 chore(rowtrack): make the test suites runnable, and say where they don't run
+23432f0 fix(rowtrack): let two BLE scans take turns instead of breaking each other
+a734274 docs(rowtrack): TC-EBC for PR detail, plus what it left on the shelf
+892d0fc feat(rowtrack): show the broken record in the summary and the archive
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/CLAUDE.md
   M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/(tabs)/history/[id].tsx
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/app/dev-active.tsx
-  A  apps/rowtrack/briefings/2026-08-22-feature-pr-metric-detail.tcebc.md
-  A  apps/rowtrack/components/PrBadge.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

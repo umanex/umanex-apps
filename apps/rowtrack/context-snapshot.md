@@ -59,23 +59,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+892d0fc feat(rowtrack): show the broken record in the summary and the archive
 db38418 feat(rowtrack): record which metric a personal record broke
 c54190d docs(rowtrack): spm_halved-toggle heroverwegen na de meting van 2026-08-16
 ee95e7a fix(rowtrack): elk gemiddelde deelt door zijn eigen teller, niet door tickCount
 aa0cb47 docs(rowtrack): record sim render-verify of #257-261 in HANDOFF
-4108515 docs: session retrospective — handoff checks and Apollo XL follow-up
 ```
 
 ## Uncommitted wijzigingen
-   M apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/app/(tabs)/history/[id].tsx
-  M  apps/rowtrack/app/(tabs)/history/index.tsx
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  M  apps/rowtrack/app/dev-active.tsx
-  A  apps/rowtrack/components/PrBadge.tsx
-  M  apps/rowtrack/components/WorkoutCard.tsx
-  M  apps/rowtrack/components/workout/ActivePhase.tsx
-  ?? apps/rowtrack/briefings/2026-08-22-feature-pr-metric-detail.tcebc.md
+  M  apps/rowtrack/BACKLOG.md
+  A  apps/rowtrack/briefings/2026-08-22-feature-pr-metric-detail.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

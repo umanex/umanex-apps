@@ -9,11 +9,17 @@ import { useWorkoutPhase } from '@/lib/workout-phase-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { savePendingWorkout, clearPendingWorkout, UNIQUE_VIOLATION } from '@/lib/pendingWorkout';
+import { markPrMetricsMissing } from '@/lib/prColumn';
+/** Postgres: kolom bestaat niet. Zie de fallback in saveWorkout. */
+const UNDEFINED_COLUMN = '42703';
+/** Minimum aantal BLE-ticks voordat een rit een record mág zijn. */
+const MIN_PR_TICKS = 10;
 import type { GoalType, WorkoutGoal } from '@/lib/workout-goals';
 import { userInputToTarget, targetToUserInput } from '@/lib/workout-goals';
 import { useWorkoutMetrics } from '@/lib/hooks/useWorkoutMetrics';
 import { useGoalProgress } from '@/lib/hooks/useGoalProgress';
 import { bestTimeForDistance } from '@/lib/bestDistanceTime';
+import { buildPrEntries, type PrEntry } from '@/lib/personalRecords';
 import { IdlePhase } from '@/components/workout/IdlePhase';
 import { ActivePhase } from '@/components/workout/ActivePhase';
 import { t } from '@/i18n';
@@ -49,10 +55,17 @@ export default function WorkoutScreen() {
   // --- Hooks ---
   const { state: metricsState, refs, resetAll, hasProfileWeight } = useWorkoutMetrics(phase, bleMetrics, hrBpm);
   const {
-    toastMsg, splits, goalReached, prFlags, pulseAnim,
-    avgWatts, avgSpm, avgSplit, isCountdown, paceZone, hasPR,
-    dismissToast, fetchPRs, resetGameState,
+    toastMsg, splits, goalReached, pulseAnim,
+    avgWatts, avgSpm, avgSplit, isCountdown, paceZone,
+    dismissToast, fetchPRs, resetGameState, prBaseline,
   } = useGoalProgress(phase, goal, metricsState, refs, user?.id);
+
+  /**
+   * De records die déze rit gebroken heeft, met de waarde die ze verving. Wordt één keer
+   * gevuld bij het opslaan — uit de eindwaarden, niet uit een lopend gemiddelde — en
+   * voedt zowel de samenvatting als `workouts.pr_metrics`.
+   */
+  const [prEntries, setPrEntries] = useState<PrEntry[]>([]);
 
   // Einde-van-rit guards: rit exact één keer opslaan, doel-einde exact één keer afhandelen.
   const savedRef = useRef(false);
@@ -94,6 +107,7 @@ export default function WorkoutScreen() {
 
     resetAll();
     resetGameState();
+    setPrEntries([]);
     fetchPRs();
     savedRef.current = false;
     goalEndedRef.current = false;
@@ -130,6 +144,29 @@ export default function WorkoutScreen() {
       ? samples.map((s) => (healthGranted && s.hr != null ? [s.t, s.d, s.hr] : [s.t, s.d]))
       : null;
 
+    const avgSplitFinal = refs.splitTickCount.current > 0
+      ? Math.round(refs.splitSum.current / refs.splitTickCount.current)
+      : null;
+    const distanceFinal = Math.round(metricsState.distanceMeters);
+
+    // Eén beoordeling, op de eindwaarden die de gebruiker ook in de samenvatting ziet.
+    // `prBaseline` is de stand van vóór deze rit (opgehaald bij de start), dus een record
+    // meet zich nooit tegen zichzelf.
+    //
+    // De tick-drempel komt van de vroegere live-check: een sprintje van een paar seconden
+    // heeft een hoog gemiddeld vermogen en zou anders een onverslaanbaar record neerzetten
+    // (de historiek bevat zulke ritten al — 34 m op 2026-07-16).
+    const entries = refs.tickCount.current < MIN_PR_TICKS ? [] : buildPrEntries(
+      {
+        avg_watts: avgW,
+        avg_split_seconds: avgSplitFinal,
+        distance_meters: distanceFinal,
+        best_2k_seconds: best2k,
+      },
+      prBaseline.current,
+    );
+    setPrEntries(entries);
+
     const row = {
       user_id: user.id,
       started_at: refs.startedAtRef.current?.toISOString() ?? new Date().toISOString(),
@@ -137,14 +174,12 @@ export default function WorkoutScreen() {
       // BLE-/max-waardes kunnen floats zijn (bv. max_spm 45.5) en Postgres weigert
       // die anders ("invalid input syntax for type integer").
       duration_seconds: Math.round(metricsState.seconds),
-      distance_meters: Math.round(metricsState.distanceMeters),
+      distance_meters: distanceFinal,
       avg_watts: avgW,
       avg_spm: refs.spmCount.current > 0
         ? Math.round(refs.spmSum.current / refs.spmCount.current)
         : null,
-      avg_split_seconds: refs.splitTickCount.current > 0
-        ? Math.round(refs.splitSum.current / refs.splitTickCount.current)
-        : null,
+      avg_split_seconds: avgSplitFinal,
       calories: Math.round(metricsState.calories),
       max_watts: refs.maxWattsRef.current > 0 ? Math.round(refs.maxWattsRef.current) : null,
       max_spm: refs.maxSpmRef.current > 0 ? Math.round(refs.maxSpmRef.current) : null,
@@ -160,13 +195,34 @@ export default function WorkoutScreen() {
       goal_target: goal?.target ?? null,
       goal_reached: goal ? goalReached : null,
       splits: splits.length > 0 ? splits : null,
-      is_pr: hasPR || null,
+      // `is_pr` blijft de goedkope filter; `pr_metrics` draagt de reden. Ze komen uit
+      // dezelfde lijst, dus ze kunnen niet uit elkaar lopen.
+      is_pr: entries.length > 0 || null,
+      pr_metrics: entries.length > 0 ? entries : null,
       samples: sampleTuples,
       best_2k_seconds: best2k,
       total_strokes: refs.totalStrokesRef.current > 0 ? refs.totalStrokesRef.current : null,
     };
 
-    const { error } = await supabase.from('workouts').insert(row);
+    let { error } = await supabase.from('workouts').insert(row);
+
+    // Overgangsmaatregel, bewust een patch: `pr_metrics` komt via een handmatige migratie
+    // (supabase/migrations/add_workout_pr_metrics.sql). Draait deze app-versie vóór die
+    // migratie, dan zou een ontbrekende kolom een échte rit kosten — en de reden van een
+    // record weegt niet op tegen de rit zelf. Weg zodra de migratie overal gedraaid is.
+    if (error?.code === UNDEFINED_COLUMN) {
+      markPrMetricsMissing();
+      const { pr_metrics: _pending, ...rowWithoutPrMetrics } = row;
+      ({ error } = await supabase.from('workouts').insert(rowWithoutPrMetrics));
+      // Alleen melden wanneer de tweede poging slaagde: bij een échte fout rapporteert de
+      // tak hieronder al, en twee meldingen over hetzelfde voorval lezen als twee fouten.
+      if (!error) {
+        reportError(new Error('workouts.pr_metrics ontbreekt — rit opgeslagen zonder PR-detail'), {
+          where: 'workout.save.prMetricsFallback',
+        });
+      }
+    }
+
     if (error && error.code !== UNIQUE_VIOLATION) {
       await savePendingWorkout(row);
       reportError(error, { where: 'workout.save' });
@@ -175,7 +231,7 @@ export default function WorkoutScreen() {
       // een andere rit die nog op een nieuwe poging wacht blijft staan.
       await clearPendingWorkout(row);
     }
-  }, [user, metricsState, goal, goalReached, splits, refs, hasPR, healthGranted]);
+  }, [user, metricsState, goal, goalReached, splits, refs, prBaseline, healthGranted]);
 
   // Bij het openen van dit scherm verbinden met de toestellen van vorige keer.
   // Alleen in de idle-fase: tijdens een rit staat er al een verbinding, en op de
@@ -295,8 +351,7 @@ export default function WorkoutScreen() {
       paceZone={paceZone}
       toastMsg={toastMsg}
       splits={splits}
-      prFlags={prFlags}
-      hasPR={hasPR}
+      prEntries={prEntries}
       pulseAnim={pulseAnim}
       avgWatts={avgWatts}
       avgSpm={avgSpm}

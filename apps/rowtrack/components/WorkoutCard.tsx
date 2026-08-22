@@ -2,6 +2,9 @@ import { memo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Dot } from './Dot';
+import { PrBadge } from './PrBadge';
+import { prRowLabel, prAccessibilityLabel } from '@/lib/prDisplay';
+import type { PrEntry } from '@/lib/personalRecords';
 import { t } from '@/i18n';
 import { formatInt } from '@/lib/formatters';
 import { bg, fg, accent, space, typeStyles } from '@/constants';
@@ -58,6 +61,12 @@ export type WorkoutCardProps = {
   onPress: (id: string) => void;
   /** Rij-index voor zebra-striping — oneven rijen (1, 3, …) krijgen de raised tile. */
   index: number;
+  /**
+   * De records die deze rit brak. Komt van buiten en niet uit `workout`: voor ritten van
+   * vóór `workouts.pr_metrics` wordt hij afgeleid uit de chronologie van de hele lijst,
+   * en dat is niets wat één rij over zichzelf kan weten.
+   */
+  prEntries?: readonly PrEntry[] | null;
 };
 
 // Full-bleed zebra-tile trainingsrij (Figma "Workout / Variant2"). Gedeeld door de home-
@@ -67,14 +76,33 @@ export const WorkoutCard = memo(function WorkoutCard({
   workout: w,
   onPress,
   index,
+  prEntries,
 }: WorkoutCardProps) {
   const dur = fmtDuration(w.duration_seconds);
   const dist = w.distance_meters != null ? fmtMetersVU(w.distance_meters) : null;
+  // `null` (of ontbrekend) betekent: geen record. Een lege array is wél een record,
+  // alleen zonder bekende metric — die krijgt de kale badge.
+  const prLabel = prEntries != null ? prRowLabel(prEntries) : null;
+  const prA11y = prEntries != null ? prAccessibilityLabel(prEntries) : null;
+  const dateLabel = fmtDate(w.started_at);
 
   return (
     <Pressable
       onPress={() => onPress(w.id)}
       accessibilityRole="button"
+      // Volledig label, niet alleen de datum: een Pressable staat standaard op
+      // `accessible`, dus een expliciet label vervángt de samengevoegde kindteksten. Alleen
+      // de datum zetten zou duur, calorieën en afstand uit élke rij laten verdwijnen —
+      // ook uit rijen zonder record.
+      accessibilityLabel={[
+        dateLabel,
+        dur != null ? `${dur.value} ${dur.unit}` : null,
+        w.calories != null ? `${w.calories} kcal` : null,
+        dist != null ? `${dist.value} ${dist.unit}` : null,
+        prA11y,
+      ]
+        .filter(Boolean)
+        .join('. ')}
       style={({ pressed }) => [
         styles.row,
         index % 2 === 1 && styles.rowAlt,
@@ -82,7 +110,12 @@ export const WorkoutCard = memo(function WorkoutCard({
       ]}
     >
       <View style={styles.left}>
-        <Text style={styles.date}>{fmtDate(w.started_at)}</Text>
+        <View style={styles.dateRow}>
+          <Text style={styles.date} numberOfLines={1}>
+            {dateLabel}
+          </Text>
+          {prEntries != null && <PrBadge label={prLabel} size="sm" />}
+        </View>
         <View style={styles.statsRow}>
           {dur != null && (
             <View style={styles.durGroup}>
@@ -134,10 +167,26 @@ const styles = StyleSheet.create({
   left: {
     flex: 1,
     gap: space['6'],
+    // Vangnet onder de flexShrink hierboven: liever zichtbaar afgekapt dan stil over de
+    // rechterkolom heen getekend.
+    overflow: 'hidden',
+  },
+  // De datumregel draagt nu ook de PR-badge. `alignItems: 'center'` houdt de badge op de
+  // optische middenlijn van de 11px-datum; de badge zelf heeft geen verticale padding,
+  // dus de rijhoogte blijft die van een rij zonder record.
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['8'],
   },
   date: {
     ...typeStyles.labelGoalPrefix,
     color: fg.tertiary,
+    // De datum krimpt, de badge niet: bij vergrote systeemtekst groeit de inhoud van deze
+    // regel harder dan de kolom, en zonder shrink schuift de badge over de afstand en de
+    // pijl heen (RN kapt niet af, `overflow` staat standaard op 'visible'). De datum is
+    // hier de meest redundante informatie — hij staat ook in het a11y-label.
+    flexShrink: 1,
   },
   statsRow: {
     flexDirection: 'row',

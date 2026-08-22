@@ -8,6 +8,7 @@ import type { WorkoutGoal } from '@/lib/workout-goals';
 import { formatDistanceDynamic, formatSplit } from '@/lib/formatters';
 import { t } from '@/i18n';
 import { getPaceZone } from '@/components/workout';
+import { EMPTY_BASELINE, extendBaseline, type PrBaseline } from '@/lib/personalRecords';
 import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
 import type { WorkoutMetricsState, AccumulatorRefs } from './useWorkoutMetrics';
 
@@ -28,13 +29,9 @@ function celebrationMessage(goal: WorkoutGoal): string {
   }
 }
 
-// --- PR types ---
-
-interface PersonalRecords {
-  bestAvgWatts: number | null;
-  bestAvgSplit: number | null;
-  bestDistance: number | null;
-}
+// De records waartegen deze rit zich meet, staan in `lib/personalRecords.ts` — die
+// module is puur en dus toetsbaar met `node --test`. Hier blijft alleen het ophalen en
+// het live vergelijken over.
 
 // --- Hook ---
 
@@ -53,9 +50,6 @@ export function useGoalProgress(
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [splits, setSplits] = useState<SplitEntry[]>([]);
   const [goalReached, setGoalReached] = useState(false);
-  const [prFlags, setPrFlags] = useState<{ watts: boolean; split: boolean; distance: boolean }>({
-    watts: false, split: false, distance: false,
-  });
 
   // Refs
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -63,9 +57,12 @@ export function useGoalProgress(
   const milestonesHit = useRef(new Set<string>());
   const lastSplitDistance = useRef(0);
   const splitStartSeconds = useRef(0);
-  const personalRecords = useRef<PersonalRecords>({
-    bestAvgWatts: null, bestAvgSplit: null, bestDistance: null,
-  });
+  /**
+   * De staande records van vóór deze rit. Een ref en geen state: hij stuurt geen render
+   * aan, en `saveWorkout` moet hem bij het stoppen kunnen uitlezen om de definitieve
+   * PR-lijst samen te stellen uit de eindwaarden.
+   */
+  const prBaseline = useRef<PrBaseline>(EMPTY_BASELINE);
 
   // --- Computed (useMemo) ---
 
@@ -110,33 +107,32 @@ export function useGoalProgress(
     return getPaceZone(goal.target, avgWatts, false);
   }, [goal, avgSplit, avgWatts, refs]);
 
-  const hasPR = useMemo(
-    () => prFlags.watts || prFlags.split || prFlags.distance,
-    [prFlags],
-  );
-
   // --- Fetch personal records ---
   const fetchPRs = useCallback(async () => {
     if (!userId) return;
+    // `started_at` komt mee zodat een gebroken record kan zeggen wélke rit het hield;
+    // `best_2k_seconds` omdat de 2000m sinds 2026-08-22 een vierde PR-metric is.
     const { data, error } = await supabase
       .from('workouts')
-      .select('avg_watts, avg_split_seconds, distance_meters')
+      .select('started_at, avg_watts, avg_split_seconds, distance_meters, best_2k_seconds')
       .eq('user_id', userId)
       .order('started_at', { ascending: false })
       .limit(100);
 
-    if (error) reportError(error, { where: 'useGoalProgress.fetchPRs' });
-    if (data && data.length > 0) {
-      let bestW: number | null = null;
-      let bestS: number | null = null;
-      let bestD: number | null = null;
-      for (const w of data) {
-        if (w.avg_watts != null && (bestW == null || w.avg_watts > bestW)) bestW = w.avg_watts;
-        if (w.avg_split_seconds != null && (bestS == null || w.avg_split_seconds < bestS)) bestS = w.avg_split_seconds;
-        if (w.distance_meters != null && (bestD == null || w.distance_meters > bestD)) bestD = w.distance_meters;
-      }
-      personalRecords.current = { bestAvgWatts: bestW, bestAvgSplit: bestS, bestDistance: bestD };
+    if (error) {
+      // Bij een leesfout de baseline leegmaken in plaats van die van de vórige rit laten
+      // staan: een lege baseline levert géén records op (elke metric mist zijn voorganger),
+      // en dat is de veilige kant. Een oude baseline zou records claimen tegen waarden van
+      // een andere sessie.
+      reportError(error, { where: 'useGoalProgress.fetchPRs' });
+      prBaseline.current = EMPTY_BASELINE;
+      return;
     }
+    // De query sorteert aflopend; oplopend opbouwen zodat bij een gedeeld record de
+    // vroegste rit als houder geldt ("je staat op 142 W sinds …"), niet de laatste.
+    prBaseline.current = [...(data ?? [])]
+      .reverse()
+      .reduce<PrBaseline>((acc, w) => extendBaseline(acc, w, w.started_at), EMPTY_BASELINE);
   }, [userId]);
 
   // --- Goal progress + milestones + countdown haptics ---
@@ -182,28 +178,11 @@ export function useGoalProgress(
     }
   }, [phase, distanceMeters, seconds]);
 
-  // --- PR checking ---
-  useEffect(() => {
-    if (phase !== 'active') return;
-    const tc = refs.tickCount.current;
-    if (tc < 10) return;
-
-    const pr = personalRecords.current;
-    const dist = Math.round(distanceMeters);
-
-    const newWatts = pr.bestAvgWatts != null && avgWatts > pr.bestAvgWatts;
-    const newSplit = pr.bestAvgSplit != null && avgSplit > 0 && avgSplit < pr.bestAvgSplit;
-    const newDistance = pr.bestDistance != null && dist > pr.bestDistance;
-
-    const hasChange =
-      newWatts !== prFlags.watts ||
-      newSplit !== prFlags.split ||
-      newDistance !== prFlags.distance;
-
-    if (hasChange) {
-      setPrFlags({ watts: newWatts, split: newSplit, distance: newDistance });
-    }
-  }, [phase, seconds, distanceMeters, avgWatts, avgSplit, refs, prFlags]);
+  // Géén live PR-check meer. Die vergeleek het lópende gemiddelde en kon dus van true
+  // naar false terugvallen; wat bij het stoppen toevallig de laatste stand was, belandde
+  // in `is_pr`. De rit wordt nu één keer beoordeeld op zijn eindwaarden, in `saveWorkout`
+  // — dezelfde getallen die de gebruiker in de samenvatting ziet, en de enige plek waar
+  // ook de exacte 2000m bekend is.
 
   // --- Countdown pulse animation ---
   useEffect(() => {
@@ -246,7 +225,6 @@ export function useGoalProgress(
     splitStartSeconds.current = 0;
     setSplits([]);
     setToastMsg(null);
-    setPrFlags({ watts: false, split: false, distance: false });
   }, []);
 
   // --- Reset goal reached (for mid-workout goal changes) ---
@@ -261,7 +239,6 @@ export function useGoalProgress(
     toastMsg,
     splits,
     goalReached,
-    prFlags,
     pulseAnim,
     // Computed
     avgWatts,
@@ -270,10 +247,10 @@ export function useGoalProgress(
     goalProgress,
     isCountdown,
     paceZone,
-    hasPR,
     // Actions
     dismissToast,
     fetchPRs,
+    prBaseline,
     resetGameState,
     resetGoalReached,
   };

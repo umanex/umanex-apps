@@ -12,7 +12,7 @@ Waarom dit bestaat: een reaction kan correct gevormd zijn (`ON_CLICK` · `NAVIGA
 | **Flow aandrijven** | `computer{action:"left_click"}` op een uit Figma berekend punt |
 | **State forceren** | startscherm kiezen via `node-id` in de proto-URL |
 | **Invariant draaien** | geen |
-| **Verse build** | n.v.t. — de player toont de laatst opgeslagen staat van het bestand |
+| **Verse build** | de player toont de laatst **opgeslagen** staat — een edit uit deze sessie zit er mogelijk nog niet in, terwijl stap 1 wél de runtime leest. Bevestig vóór stap 2 dat de wijziging opgeslagen is, of meld `[NIET TE VERIFIËREN — player loopt achter op de runtime]`. Een hotspot die je zelf net gefixt hebt en dood lijkt, krijgt eerst die save-controle: de bekend-werkende-hotspot-tegenproef onderscheidt "dood" niet van "nog niet opgeslagen". |
 
 ## Stap 1 — Geometrie ophalen (Bridge, read-only)
 

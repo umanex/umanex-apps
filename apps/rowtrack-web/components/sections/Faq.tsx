@@ -3,6 +3,7 @@ import { Section } from '@/components/layout/Section';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { FaqAccordion, type FaqItem } from '@/components/ui/FaqAccordion';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { Reveal } from '@/components/ui/Reveal';
 import { faqSchema } from '@/lib/schema';
 
 /**
@@ -20,8 +21,12 @@ export const Faq = async () => {
   return (
     <Section id="faq">
       <JsonLd schema={faqSchema(items)} />
-      <SectionHeading eyebrow={t('eyebrow')} title={t('title')} />
-      <FaqAccordion items={items} />
+      <Reveal>
+        <SectionHeading eyebrow={t('eyebrow')} title={t('title')} />
+      </Reveal>
+      <Reveal delay={120}>
+        <FaqAccordion items={items} />
+      </Reveal>
     </Section>
   );
 };

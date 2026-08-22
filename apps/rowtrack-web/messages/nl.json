@@ -4,7 +4,7 @@
     "description": "Verbind je Fluid Rower Apollo XL via Bluetooth en zie split, watt en slagfrequentie live. Elke training bewaard met splits-analyse."
   },
   "hero": {
-    "title": "Elke haal telt. Nu ook op je iPhone.",
+    "title": "Elke haal telt.\nNu ook op je iPhone.",
     "subtitle": "RowTrack verbindt draadloos met je Fluid Rower Apollo XL en toont je split, watt en slagfrequentie live — en bewaart elke training tot op de splits.",
     "cta": "Download in de App Store",
     "ctaNote": "Gratis te gebruiken. RowTrack Pro komt later.",
@@ -28,7 +28,8 @@
       { "label": "AFSTAND", "unit": "m", "note": "Meegeteld vanaf je eerste haal." },
       { "label": "TIJD", "unit": "min", "note": "Verstreken tijd, of wat er nog rest bij een doel." },
       { "label": "HARTSLAG", "unit": "bpm", "note": "Vraagt een losse bluetooth-hartslagband." },
-      { "label": "CALORIEËN", "unit": "kcal", "note": "Berekend uit je vermogen en je gewicht — een schatting." }
+      { "label": "CALORIEËN", "unit": "kcal", "note": "Berekend uit je vermogen en je gewicht — een schatting." },
+      { "label": "SLAGEN", "unit": "totaal", "note": "Elke haal geteld tijdens het roeien; het totaal staat in je samenvatting." }
     ],
     "footnote": "Hartslag komt van een aparte bluetooth-borstband, niet van de roeimachine. Calorieën worden berekend; vul je geen gewicht in, dan rekent de app met een standaardwaarde."
   },

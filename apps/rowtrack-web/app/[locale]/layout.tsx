@@ -78,14 +78,58 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${sans.variable} ${serif.variable}`}>
+    // suppressHydrationWarning: het inline script hieronder zet data-js op <html>
+    // vóór hydration — hetzelfde patroon (en dezelfde reden) als next-themes.
+    <html lang={locale} className={`${sans.variable} ${serif.variable}`} suppressHydrationWarning>
       <body>
+        {/* De data-js-gate voor de motion-laag in globals.css. Inline en synchroon,
+            vóór de rest van de body parset: de verborgen begintoestand van de
+            scroll-onthulling bestaat alleen wanneer dit attribuut er staat, dus
+            zonder JavaScript is elke sectie gewoon direct zichtbaar — en een flits
+            van verborgen content kan niet, want het attribuut staat er vóór paint.
+            De IntersectionObserver-check hoort bij de gate: een browser zonder
+            observer krijgt het no-JS-pad (alles zichtbaar) in plaats van een
+            begintoestand die nooit meer weggaat. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "if ('IntersectionObserver' in window) document.documentElement.setAttribute('data-js','')",
+          }}
+        />
         {/* Site-brede entiteit; de MobileApplication staat op de onepager zelf. */}
         <JsonLd schema={organisationSchema()} />
         <NextIntlClientProvider messages={messages}>
           {children}
           <Footer locale={locale} />
         </NextIntlClientProvider>
+        {/* De onthulling zelf: één gedeelde observer over alle .reveal-blokken.
+            Inline aan het einde van de body — draait zodra de DOM geparset is,
+            vóór en onafhankelijk van React-hydration. Boven de vouw vuurt hij
+            meteen, dus de hero hangt niet aan de bundel. De focusin-listener is
+            het toetsenbord-vangnet: een element dat door focus nét binnen de
+            onderste 10%-band scrollt (buiten de rootMargin) wordt toch onthuld. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function () {
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.setAttribute('data-revealed', '');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { rootMargin: '0px 0px -10% 0px' });
+  document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+  document.addEventListener('focusin', function (e) {
+    var el = e.target && e.target.closest ? e.target.closest('.reveal') : null;
+    if (el && !el.hasAttribute('data-revealed')) {
+      el.setAttribute('data-revealed', '');
+      io.unobserve(el);
+    }
+  });
+})();`,
+          }}
+        />
       </body>
     </html>
   );

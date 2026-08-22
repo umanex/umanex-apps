@@ -37,7 +37,9 @@ export default async function SupportPage({ params: { locale } }: Params) {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-24">
-      <h1 className="font-serif text-4xl text-fg-primary">{t('title')}</h1>
+      <h1 className="font-serif text-4xl leading-tight tracking-tight text-fg-primary md:text-5xl md:leading-tight">
+        {t('title')}
+      </h1>
       <p className="mt-6 text-lg text-fg-secondary">{t('intro')}</p>
 
       <section className="mt-12">

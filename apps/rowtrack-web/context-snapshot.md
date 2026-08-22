@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack-web
-_Gegenereerd op 2026-08-10_
+_Gegenereerd op 2026-08-11_
 
 ## Project
 - **App:** rowtrack-web
@@ -40,20 +40,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | FaqAccordion | `apps/rowtrack-web/components/ui/FaqAccordion.tsx` | ui | — | — | — |
 | MetricCard | `apps/rowtrack-web/components/ui/MetricCard.tsx` | ui | — | — | — |
 | PricingCard | `apps/rowtrack-web/components/ui/PricingCard.tsx` | ui | — | — | — |
+| Reveal | `apps/rowtrack-web/components/ui/Reveal.tsx` | ui | — | — | — |
 | ScreenshotFrame | `apps/rowtrack-web/components/ui/ScreenshotFrame.tsx` | ui | — | — | — |
 | SectionHeading | `apps/rowtrack-web/components/ui/SectionHeading.tsx` | ui | — | — | — |
 
 ## Recente commits (app + packages)
 ```
-cbe0193 feat(rowtrack-web): echte app-screenshots in de hero en de analyse-sectie
-2db75e2 feat(rowtrack-web): bouw de onepager S1-S11
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-35153a6 feat(rowtrack-web): publiceer de gebruiksvoorwaarden op /nl/voorwaarden
-6b6d215 feat(rowtrack-web): publiceer het privacybeleid op /nl/privacy
+48e2f4b feat(rowtrack-web): design iteration on Jeroen's feedback
+be61b93 fix(rowtrack-web): address all 15 code-review findings on the motion layer
+b55f640 docs(rowtrack-web): ux-audit report and acceptance evidence for redesign
+5c9b867 feat(rowtrack-web): premium redesign with scroll-motion layer
+cb5139a docs(rowtrack-web): add premium redesign TC-EBC briefing
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack-web/HANDOFF.md
+  M  apps/rowtrack-web/BACKLOG.md
+  M  apps/rowtrack-web/components/sections/Hero.tsx
+  M  apps/rowtrack-web/messages/nl.json
 
 ## Bestanden met TODO/FIXME
   (geen)

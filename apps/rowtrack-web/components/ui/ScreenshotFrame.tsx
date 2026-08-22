@@ -25,7 +25,10 @@ type Props = {
  */
 export const ScreenshotFrame = ({ name, alt, caption, priority = false }: Props) => (
   <figure className="mx-auto w-full max-w-[280px]">
-    <div className="rounded-card border border-border-strong bg-bg-raised p-3 shadow-button-outline">
+    {/* phone-depth vervangt de losse shadow-utility: hij bundelt het inset-toplicht
+        van het frame met een dropshadow en een subtiele accentglow (globals.css) —
+        twee box-shadow-bronnen zouden elkaar overschrijven. */}
+    <div className="phone-depth rounded-card border border-border-strong bg-bg-raised p-3">
       <Image
         src={`/screenshots/${name}.png`}
         alt={alt}

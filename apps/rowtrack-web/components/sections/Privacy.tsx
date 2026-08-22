@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Section } from '@/components/layout/Section';
 import { SectionHeading } from '@/components/ui/SectionHeading';
+import { Reveal } from '@/components/ui/Reveal';
 
 type Props = {
   locale: string;
@@ -20,27 +21,34 @@ export const Privacy = async ({ locale }: Props) => {
 
   return (
     <Section id="privacy">
-      <SectionHeading eyebrow={t('eyebrow')} title={t('title')} body={t('body')} />
+      <Reveal>
+        <SectionHeading eyebrow={t('eyebrow')} title={t('title')} body={t('body')} />
+      </Reveal>
 
-      <ul className="mt-10 max-w-2xl space-y-4">
-        {points.map((point) => (
-          <li key={point} className="flex gap-3 leading-relaxed text-fg-secondary">
-            <span aria-hidden="true" className="text-accent">
-              —
-            </span>
-            {point}
-          </li>
-        ))}
-      </ul>
+      <Reveal>
+        {/* Bewust géén stagger: de ul draagt vaste border-y-lijnen en de divide-y
+            zit op de kinderen — gestaggerde kinderen schuiven dan zichtbaar langs
+            het stilstaande kader. De lijst onthult als één blok. */}
+        <ul className="mt-10 max-w-2xl divide-y divide-border-subtle border-y border-border-subtle">
+          {points.map((point) => (
+            <li key={point} className="flex gap-3 py-4 leading-relaxed text-fg-secondary">
+              <span aria-hidden="true" className="text-accent">
+                —
+              </span>
+              {point}
+            </li>
+          ))}
+        </ul>
 
-      <p className="mt-8">
-        <a
-          href={`/${locale}/privacy`}
-          className="text-accent underline underline-offset-4 hover:text-accent-hover"
-        >
-          {t('link')}
-        </a>
-      </p>
+        <p className="mt-8">
+          <a
+            href={`/${locale}/privacy`}
+            className="text-accent underline underline-offset-4 hover:text-accent-hover"
+          >
+            {t('link')}
+          </a>
+        </p>
+      </Reveal>
     </Section>
   );
 };

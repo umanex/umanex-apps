@@ -4,7 +4,9 @@ Aanleiding: Nadella's "A frontier without an ecosystem is not stable" (15 juni 2
 
 Doel van deze herpositionering: van "Design Team Of One + AI" (vaag, visionair) naar een concreet aanbod met een compound-waarde-argument: *je bouwt voor een klant een learning loop die hun design- en domeinkennis encodeert en hun eigendom blijft*.
 
-Status: nog niet begonnen. Eerst sparren over de eval-laag (optie b) voor de copy definitief wordt — die kan het verhaal nog aanscherpen.
+Status: **grotendeels achterhaald op 2026-08-24.** Het bureau-plan *umanex 2027* nam de herpositionering over met een concreter frame (koper in plaats van hiring-beslisser, capaciteit in plaats van visie) en is gebouwd — zie `apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md`. Wat hieronder nog leeft: punt 3 (het compound-argument tastbaar maken met een mini-case) en punt 4 (de eigendomsvraag over de `.umanex-os/`-laag in een klant-repo). Punt 1 is beslist in de andere richting dan hier voorgesteld: DToO blijft níet als hook staan.
+
+Oorspronkelijke status: nog niet begonnen. Eerst sparren over de eval-laag (optie b) voor de copy definitief wordt — die kan het verhaal nog aanscherpen.
 
 ---
 

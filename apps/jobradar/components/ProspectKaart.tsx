@@ -75,7 +75,7 @@ export function ProspectKaart({
         </div>
       </header>
 
-      <section className="flex flex-col gap-2 rounded border border-border bg-muted/40 p-4">
+      <section className="flex flex-col gap-2 rounded-sm border border-border bg-muted/40 p-4">
         {verrijkt ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

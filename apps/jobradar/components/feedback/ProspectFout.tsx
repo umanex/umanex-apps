@@ -16,7 +16,7 @@ export function ProspectFout({ melding, onOpnieuw }: Props) {
     <div className="flex min-h-[24rem] flex-col items-center justify-center gap-3 px-6 text-center">
       <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden />
       <p className="text-sm font-medium">Het labelscherm kon de kandidaten niet laden.</p>
-      <p className="max-w-lg break-words rounded border border-border bg-muted px-3 py-2 text-2xs text-muted-foreground">
+      <p className="max-w-lg break-words rounded-sm border border-border bg-muted px-3 py-2 text-2xs text-muted-foreground">
         {melding}
       </p>
       {onOpnieuw && (

@@ -271,7 +271,7 @@ export function ProspectLabeler({ initieel }: Props) {
       </div>
 
       {fout !== null && (
-        <p className="rounded border border-destructive/40 bg-destructive/10 px-3 py-2 text-2xs text-destructive">
+        <p className="rounded-sm border border-destructive/40 bg-destructive/10 px-3 py-2 text-2xs text-destructive">
           {fout}
         </p>
       )}
@@ -321,10 +321,10 @@ export function ProspectLabeler({ initieel }: Props) {
               </Button>
             </div>
             <p className="text-2xs text-muted-foreground">
-              <kbd className="rounded border border-border px-1">1</kbd>–
-              <kbd className="rounded border border-border px-1">5</kbd> labelen ·{' '}
-              <kbd className="rounded border border-border px-1">spatie</kbd> overslaan ·{' '}
-              <kbd className="rounded border border-border px-1">←</kbd> terug
+              <kbd className="rounded-sm border border-border px-1">1</kbd>–
+              <kbd className="rounded-sm border border-border px-1">5</kbd> labelen ·{' '}
+              <kbd className="rounded-sm border border-border px-1">spatie</kbd> overslaan ·{' '}
+              <kbd className="rounded-sm border border-border px-1">←</kbd> terug
             </p>
           </div>
         </>

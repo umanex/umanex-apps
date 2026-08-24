@@ -27,15 +27,19 @@ export function ProspectVoortgang({ voortgang, wachtrijLengte }: Props) {
           {twijfel > 0 && <> · {twijfel.toLocaleString('nl-BE')} op twijfel</>}
         </span>
       </div>
+      {/* `rounded-sm` en niet `rounded-full`: de umanex-tokenset kent geen radius-rol voor een
+          pil-vorm, en Tailwinds eigen `rounded-full` is een hardgecodeerde 9999px buiten de
+          rollaag om. Wil je hier tóch een pil, dan hoort daar eerst een rol bij te komen — in
+          béíde mode-sets, want de build faalt op asymmetrie. */}
       <div
-        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+        className="h-1.5 w-full overflow-hidden rounded-sm bg-muted"
         role="progressbar"
         aria-valuenow={percentage}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label="Voortgang labelen"
       >
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percentage}%` }} />
+        <div className="h-full rounded-sm bg-primary transition-all" style={{ width: `${percentage}%` }} />
       </div>
     </div>
   )

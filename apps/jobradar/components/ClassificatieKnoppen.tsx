@@ -66,7 +66,7 @@ export function ClassificatieKnoppen({ actief, bezig, onKies }: Props) {
           >
             <span className="flex w-full items-center justify-between gap-2">
               <span className="text-sm font-semibold">{l.tekst}</span>
-              <kbd className="rounded border border-current px-1 text-2xs opacity-70">{i + 1}</kbd>
+              <kbd className="rounded-sm border border-current px-1 text-2xs opacity-70">{i + 1}</kbd>
             </span>
             <span className="w-full text-2xs font-normal leading-tight text-muted-foreground">
               {l.uitleg}

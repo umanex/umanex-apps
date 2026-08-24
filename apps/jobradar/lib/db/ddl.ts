@@ -48,10 +48,16 @@ export const SCHEMA_DDL = `
     opt_out INTEGER NOT NULL DEFAULT 0,
     dedupe_hash TEXT NOT NULL,
     lead_status TEXT NOT NULL DEFAULT 'new',
+    classificatie TEXT,
+    geclassificeerd_op TEXT,
+    werknemers INTEGER,
     first_seen_at TEXT NOT NULL,
     last_seen_at TEXT NOT NULL
   );
   CREATE UNIQUE INDEX IF NOT EXISTS companies_dedupe_hash_idx ON companies (dedupe_hash);
+  -- Draagt het labelscherm: "geef me het volgende bedrijf zonder oordeel" is de enige query
+  -- die per toetsaanslag draait, en zonder index scant die de hele tabel.
+  CREATE INDEX IF NOT EXISTS companies_classificatie_idx ON companies (classificatie);
   CREATE INDEX IF NOT EXISTS companies_source_external_idx ON companies (source, external_id);
 
   CREATE TABLE IF NOT EXISTS settings (
@@ -95,7 +101,13 @@ export function pasKolomMigratiesToe(sqlite: {
   if (!companyCols.includes('lead_status')) {
     sqlite.exec("ALTER TABLE companies ADD COLUMN lead_status TEXT NOT NULL DEFAULT 'new'")
   }
-  for (const kolom of ['vacature_aantal', 'design_vacatures', 'dev_vacatures']) {
+  for (const kolom of ['vacature_aantal', 'design_vacatures', 'dev_vacatures', 'werknemers']) {
     if (!companyCols.includes(kolom)) sqlite.exec(`ALTER TABLE companies ADD COLUMN ${kolom} INTEGER`)
   }
+  for (const kolom of ['classificatie', 'geclassificeerd_op']) {
+    if (!companyCols.includes(kolom)) sqlite.exec(`ALTER TABLE companies ADD COLUMN ${kolom} TEXT`)
+  }
+  // Losstaand van de kolom-toevoeging: een bestaande database heeft de kolom misschien al
+  // maar de index nog niet, en CREATE INDEX IF NOT EXISTS is goedkoop genoeg om altijd te draaien.
+  sqlite.exec('CREATE INDEX IF NOT EXISTS companies_classificatie_idx ON companies (classificatie)')
 }

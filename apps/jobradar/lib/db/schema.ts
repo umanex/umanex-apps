@@ -1,8 +1,22 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-export const SCHEMA_VERSION = 5
+export const SCHEMA_VERSION = 6
 
 export type ItemStatus = 'new' | 'saved' | 'dismissed' | 'contacted'
+
+/**
+ * De derde as, en met opzet géén waarde van `ItemStatus`.
+ *
+ * `lead_status` zegt waar een bedrijf in de pijplijn staat, `lead_score` hoe interessant het is,
+ * en dit zegt wát voor bedrijf het is. Dat zijn drie onafhankelijke dingen: een dienstverlener
+ * kan een hoge score hebben én gecontacteerd zijn. Ze in één kolom proppen is precies de
+ * faalklasse die in `LEARNINGS.md` vastligt — daar vielen de vacaturescore en de classificatie
+ * al eens samen.
+ *
+ * `null` betekent "nog niet beoordeeld" en is dus geen vijfde waarde: een bedrijf zonder oordeel
+ * is iets anders dan een bedrijf waarover getwijfeld is.
+ */
+export type Classificatie = 'product' | 'dienstverlener' | 'geen-prospect' | 'twijfel'
 
 export const jobs = sqliteTable(
   'jobs',
@@ -55,6 +69,19 @@ export const companies = sqliteTable(
     optOut: integer('opt_out', { mode: 'boolean' }).notNull().default(false),
     dedupeHash: text('dedupe_hash').notNull(),
     leadStatus: text('lead_status').notNull().default('new'),
+    /**
+     * Het handmatige oordeel product-versus-dienstverlener. Nullable: geen enkele bron levert
+     * dit, het ontstaat pas doordat iemand naar de website kijkt.
+     */
+    classificatie: text('classificatie').$type<Classificatie>(),
+    /** Wanneer het oordeel gezet is — draagt de hervatbare labelsessie. */
+    geclassificeerdOp: text('geclassificeerd_op'),
+    /**
+     * Personeelsbestand. Nullable met dezelfde reden als `vacatureAantal`: een bedrijf zonder
+     * jaarrekening in de bron is niet "0 werknemers" maar "niet geteld", en dat verschil bepaalt
+     * of het binnen de doelband van 20-150 valt of buiten het bereik van de meting.
+     */
+    werknemers: integer('werknemers'),
     firstSeenAt: text('first_seen_at').notNull(),
     lastSeenAt: text('last_seen_at').notNull(),
   },

@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-08-11_
+_Gegenereerd op 2026-08-24_
 
 ## Project
 - **App:** jobradar
@@ -36,20 +36,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+49072dc fix(jobradar): stop the card and its own button from counting different things
 f1ecf3e feat(jobradar): make a lead checkable, and give the list a search field
 4c6860b fix(jobradar): test the ceiling per sub-query, not against a growing threshold
 5e49969 docs(jobradar): UX-audit van het dashboard en de zoekinstellingen
 ef4acc0 feat(jobradar): allow exact phrases as search terms
-bc95d61 fix(jobradar): ask Adzuna politely, and try again when it says no
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/app/api/sync/route.ts
-  M  apps/jobradar/components/DashboardClient.tsx
-  M  apps/jobradar/components/FilterBar.tsx
-  M  apps/jobradar/components/LeadCard.tsx
-  M  apps/jobradar/lib/sync/upsert.ts
-  M  apps/jobradar/scripts/signal-scenarios.ts
+  A  apps/jobradar/briefings/2026-08-24-feature-prospect-labeling.tcebc.md
+  M  apps/jobradar/lib/db/ddl.ts
+  M  apps/jobradar/lib/db/schema.ts
+  M  apps/jobradar/scripts/scenarios.mjs
+  A  apps/jobradar/scripts/schema-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

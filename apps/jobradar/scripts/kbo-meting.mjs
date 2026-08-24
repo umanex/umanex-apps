@@ -79,6 +79,18 @@ const hoortBijDoelgroep = (code) => {
   return NACE_PREFIXEN.some((p) => kaal.startsWith(p))
 }
 
+/**
+ * activity.csv draagt rijen voor ONDERNEMINGEN én voor VESTIGINGSEENHEDEN door elkaar, en de
+ * kolom heet in beide gevallen EntityNumber. Ondernemingsnummers beginnen met 0 of 1,
+ * vestigingsnummers met 2. Zonder dit onderscheid tel je vestigingen als bedrijven mee.
+ *
+ * GEMETEN op extract 429 (22-07-2026): van de 659.520 rijen in NACE 62/582/63 versie 2025 waren
+ * er 485.031 vestigingen en 174.489 ondernemingen. De eerste versie van dit script telde ze
+ * samen en kwam op 266.178 "bedrijven" — tegenover 35.696 die Eurostat voor heel NACE J62 in
+ * België telt. Die factor 7 was het alarm dat deze filter opleverde.
+ */
+const isOndernemingsnummer = (nr) => nr.length >= 9 && (nr[0] === '0' || nr[0] === '1')
+
 async function meet(map) {
   const bestand = (naam) => {
     const p = join(map, naam)
@@ -107,8 +119,13 @@ async function meet(map) {
     const v = r.NaceVersion || '?'
     versies.set(v, (versies.get(v) ?? 0) + 1)
     if (!hoortBijDoelgroep(r.NaceCode)) return
+    // Alleen de HOOFDactiviteit. Een boekhoudkantoor met softwareontwikkeling als nevenactiviteit
+    // is geen softwarebedrijf. Gemeten: 197.473 van de 659.520 rijen zijn SECO.
+    if ((r.Classification || '').toUpperCase() !== 'MAIN') return
+    const nummer = normaliseerNummer(r.EntityNumber)
+    if (!isOndernemingsnummer(nummer)) return
     if (!kandidatenPerVersie.has(v)) kandidatenPerVersie.set(v, new Set())
-    kandidatenPerVersie.get(v).add(normaliseerNummer(r.EntityNumber))
+    kandidatenPerVersie.get(v).add(nummer)
   })
   rapport.naceVersies = [...versies.entries()].sort()
   rapport.kandidatenPerVersie = [...kandidatenPerVersie.entries()]
@@ -126,15 +143,19 @@ async function meet(map) {
   // contact.csv — de beslissende meting.
   let contactRijen = 0
   let webRijen = 0
+  let webRijenVestiging = 0
   const webNummers = new Set()
   await leesCsv(bestand('contact.csv'), (r) => {
     contactRijen++
     if ((r.ContactType || '').toUpperCase() !== 'WEB') return
     webRijen++
-    webNummers.add(normaliseerNummer(r.EntityNumber))
+    const nummer = normaliseerNummer(r.EntityNumber)
+    if (isOndernemingsnummer(nummer)) webNummers.add(nummer)
+    else webRijenVestiging++
   })
   rapport.contactRijen = contactRijen
   rapport.webRijen = webRijen
+  rapport.webRijenVestiging = webRijenVestiging
 
   let metWeb = 0
   for (const nr of kandidaten) if (webNummers.has(nr)) metWeb++
@@ -152,6 +173,8 @@ async function meet(map) {
  *  - 0222222222 NACE 6202  (2008) zonder WEB     -> kandidaat zonder site
  *  - 0333333333 NACE 4711  (2008) + WEB          -> geen kandidaat, telt niet mee
  *  - 0444444444 NACE 62010 (2003 én 2008)        -> dubbelrisico: mag één keer tellen
+ *  - 2555555555 vestigingseenheid, NACE 62010    -> GEEN bedrijf, mag niet tellen
+ *  - 0666666666 NACE 62010 maar SECO             -> nevenactiviteit, mag niet tellen
  * Verwacht: 3 kandidaten op versie 2008, 1 met web, dekking 33,3%.
  */
 function selftest() {
@@ -164,7 +187,13 @@ function selftest() {
       '"0222.222.222","001","2008","6202","MAIN"\n' +
       '"0333.333.333","001","2008","4711","MAIN"\n' +
       '"0444.444.444","001","2003","72220","MAIN"\n' +
-      '"0444.444.444","001","2008","62010","MAIN"\n'
+      '"0444.444.444","001","2008","62010","MAIN"\n' +
+      // Vestigingseenheid: nummer begint met 2. Juiste NACE, juiste versie, hoofdactiviteit —
+      // en tóch geen bedrijf. Zonder de entiteitsfilter telt deze mee.
+      '"2555.555.555","003","2008","62010","MAIN"\n' +
+      // Nevenactiviteit: juiste NACE en een echt ondernemingsnummer, maar het bedrijf doet
+      // iets anders als hoofdactiviteit. Zonder de MAIN-filter telt deze mee.
+      '"0666.666.666","001","2008","62010","SECO"\n'
   )
   // LET OP — bewust ANDERS geformatteerd dan activity.csv: hier staan de nummers zonder punten.
   // Dat is precies wat de normalisatie moet overbruggen. Met hetzelfde formaat aan beide kanten
@@ -175,11 +204,15 @@ function selftest() {
     'EntityNumber,EntityContact,ContactType,Value\n' +
       '"0111111111","ENT","WEB","https://een.test"\n' +
       '"0333333333","ENT","WEB","https://drie.test"\n' +
+      // Webadres op de vestigingseenheid uit activity.csv: mag de dekking niet opkrikken.
+      '"2555555555","EST","WEB","https://vijf.test"\n' +
+      // Webadres van het nevenactiviteit-bedrijf: mag evenmin meetellen.
+      '"0666666666","ENT","WEB","https://zes.test"\n' +
       '"0111111111","ENT","EMAIL","a@een.test"\n' +
-      '"0555555555","ENT","TEL","+32 50 00 00 00"\n'
+      '"0777777777","ENT","TEL","+32 50 00 00 00"\n'
   )
 
-  return { map, verwacht: { kandidaten: 3, kandidatenMetWeb: 1, webRijen: 2, contactRijen: 4, gekozenVersie: '2008' } }
+  return { map, verwacht: { kandidaten: 3, kandidatenMetWeb: 1, webRijen: 4, webRijenVestiging: 1, contactRijen: 6, gekozenVersie: '2008' } }
 }
 
 // ── Uitvoeren ────────────────────────────────────────────────────────────────
@@ -206,6 +239,7 @@ if (arg === '--selftest') {
     check('kandidaten (dubbele NACE-versie telt één keer)', r.kandidaten, verwacht.kandidaten)
     check('kandidaten met website', r.kandidatenMetWeb, verwacht.kandidatenMetWeb)
     check('WEB-rijen totaal (ook buiten de doelgroep)', r.webRijen, verwacht.webRijen)
+    check('WEB-rijen op een vestigingseenheid', r.webRijenVestiging, verwacht.webRijenVestiging)
     check('contactrijen totaal', r.contactRijen, verwacht.contactRijen)
     check('gekozen NACE-versie', r.gekozenVersie, verwacht.gekozenVersie)
     console.log(gezakt === 0 ? '\nTegenproef geslaagd — de teller meet wat hij zegt.' : `\n${gezakt} check(s) gezakt.`)
@@ -228,6 +262,7 @@ for (const [v, n] of r.kandidatenPerVersie) console.log(`  ${v.padEnd(6)} ${n.to
 console.log(`\n  gekozen versie: ${r.gekozenVersie}  ->  ${r.kandidaten.toLocaleString('nl-BE')} unieke ondernemingen`)
 
 console.log(`\ncontact.csv: ${r.contactRijen.toLocaleString('nl-BE')} rijen, waarvan ${r.webRijen.toLocaleString('nl-BE')} van type WEB`)
+console.log(`  daarvan ${r.webRijenVestiging.toLocaleString('nl-BE')} op een vestigingseenheid — die tellen niet mee in de join`)
 console.log(`\nDE BESLISSENDE MAAT — kandidaten met een webadres in KBO:`)
 console.log(`  ${r.kandidatenMetWeb.toLocaleString('nl-BE')} van ${r.kandidaten.toLocaleString('nl-BE')}  =  ${pct(r.dekking)}\n`)
 

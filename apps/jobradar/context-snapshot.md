@@ -36,18 +36,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+fe8980d feat(jobradar): read candidate leads from the KBO dump
 be3e3f2 feat(jobradar): read headcount from the NBB annual accounts
 6b073e6 fix(jobradar): count enterprises, not establishments, in the KBO measurement
 76a0a16 feat(jobradar): add step-zero measurement for the KBO dump
 c7e476d feat(jobradar): add classification axis to companies
-49072dc fix(jobradar): stop the card and its own button from counting different things
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/jobradar/lib/sources/kbo-csv.ts
-  A  apps/jobradar/lib/sources/kbo-dump.ts
-  A  apps/jobradar/scripts/kbo-dump-scenarios.ts
-  A  apps/jobradar/scripts/kbo-import.ts
+  A  apps/jobradar/lib/sources/ondernemingsnummer.ts
+  A  apps/jobradar/scripts/ondernemingsnummer-scenarios.ts
   M  apps/jobradar/scripts/scenarios.mjs
 
 ## Bestanden met TODO/FIXME

@@ -46,6 +46,8 @@ export function ProspectLabeler({ initieel }: Props) {
   const [overgeslagen, setOvergeslagen] = useState<Set<number>>(new Set())
   const [bezig, setBezig] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
+  const [verrijkt, setVerrijkt] = useState(false)
+  const [verrijkMelding, setVerrijkMelding] = useState<string | null>(null)
 
   const voortgang = useMemo(() => berekenVoortgang(prospects), [prospects])
   const wachtrij = useMemo(
@@ -88,6 +90,7 @@ export function ProspectLabeler({ initieel }: Props) {
           )
         )
         setHuidigeId(volgend?.id ?? null)
+        setVerrijkMelding(null)
       } catch (e) {
         setFout(e instanceof Error ? e.message : String(e))
       } finally {
@@ -132,6 +135,7 @@ export function ProspectLabeler({ initieel }: Props) {
     const volgend = volgende(wachtrij, huidige.id)
     setOvergeslagen((s) => new Set(s).add(huidige.id))
     setHuidigeId(volgend?.id ?? null)
+    setVerrijkMelding(null)
   }, [huidige, bezig, wachtrij])
 
   const zetSignaal = useCallback(
@@ -159,6 +163,55 @@ export function ProspectLabeler({ initieel }: Props) {
       setBezig(false)
     }
   }, [huidige, bezig, bewaar])
+
+  /** Redenen in mensentaal. Ze staan uit elkaar omdat ze een andere volgende zet vragen. */
+  const VERRIJK_MELDING: Record<string, string> = {
+    'geen-sleutel': 'Geen BRAVE_API_KEY ingesteld — zoek zelf, of zet de sleutel in .env.local.',
+    'geen-resultaten': 'De zoekmachine gaf geen enkel resultaat.',
+    'alles-gidsen': 'Alleen bedrijvengidsen gevonden, geen eigen site.',
+    'niet-bevestigd':
+      'Sites gevonden, maar geen enkele droeg het ondernemingsnummer. Niet vastgelegd — een onbevestigde URL is erger dan geen.',
+    fout: 'De zoekopdracht mislukte.',
+  }
+
+  const verrijk = useCallback(async () => {
+    if (!huidige || bezig || verrijkt) return
+    const id = huidige.id
+    setVerrijkt(true)
+    setVerrijkMelding(null)
+    setFout(null)
+    try {
+      const res = await fetch(`/api/prospects/${id}/verrijk`, { method: 'POST' })
+      const body = (await res.json().catch(() => ({}))) as {
+        url?: string | null
+        reden?: string
+        detail?: string
+      }
+      if (!res.ok) throw new Error(body.detail ?? `Verrijken mislukte (${res.status})`)
+      if (body.url) {
+        setProspects((vorig) => vorig.map((p) => (p.id === id ? { ...p, url: body.url ?? null } : p)))
+      } else {
+        setVerrijkMelding(VERRIJK_MELDING[body.reden ?? 'fout'] ?? `Niets gevonden (${body.reden}).`)
+      }
+    } catch (e) {
+      setFout(e instanceof Error ? e.message : String(e))
+    } finally {
+      setVerrijkt(false)
+    }
+  }, [huidige, bezig, verrijkt])
+
+  /**
+   * Zet het getoonde bedrijf vast zodra het in beeld komt.
+   *
+   * Zonder dit blijft `huidigeId` null en betekent "het huidige bedrijf" feitelijk "de eerste in
+   * de wachtrij" — en die wachtrij herordent zichzelf zodra er iets aan een bedrijf verandert,
+   * want bedrijven mét website staan vooraan. GEMETEN in de flow-harness: op "Verkeerd bedrijf"
+   * verdween de URL, zakte het bedrijf naar achteren en sprong het scherm naar een ánder bedrijf.
+   * Je keurt dan een URL af en beoordeelt vervolgens iemand anders, zonder dat iets dat verraadt.
+   */
+  useEffect(() => {
+    if (huidigeId === null && huidige !== null) setHuidigeId(huidige.id)
+  }, [huidigeId, huidige])
 
   // Toetsenbord. Genegeerd zodra de focus in een invoerveld staat, anders kan je niets typen.
   useEffect(() => {
@@ -246,10 +299,12 @@ export function ProspectLabeler({ initieel }: Props) {
           <ProspectKaart
             prospect={huidige}
             signalen={huidige.signals}
-            verrijkt={false}
+            verrijkt={verrijkt}
+            verrijkMelding={verrijkMelding}
             bezig={bezig}
             onSignaal={zetSignaal}
             onUrlAfkeuren={keurUrlAf}
+            onVerrijk={() => void verrijk()}
           />
 
           <ClassificatieKnoppen actief={huidige.classificatie} bezig={bezig} onKies={(c) => void label(c)} />

@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, ExternalLink, Search, Loader2, Unlink } from 'lucide-react'
+import { Building2, ExternalLink, Search, Loader2, Unlink, Sparkles } from 'lucide-react'
 import { Button } from '@umanex/ui/components/ui/button'
 import { Badge } from '@umanex/ui/components/ui/badge'
 import { Checkbox } from '@umanex/ui/components/ui/checkbox'
@@ -17,9 +17,12 @@ type Props = {
   prospect: Prospect
   signalen: string[]
   verrijkt: boolean
+  /** Melding van de laatste verrijkpoging die niets opleverde. */
+  verrijkMelding: string | null
   bezig: boolean
   onSignaal: (signaal: string, aan: boolean) => void
   onUrlAfkeuren: () => void
+  onVerrijk: () => void
 }
 
 /**
@@ -30,7 +33,16 @@ type Props = {
  * en een stil leeg kader leest als "dit bedrijf heeft geen site" terwijl hij er wel is. Een link
  * die opent in een tweede tabblad liegt niet.
  */
-export function ProspectKaart({ prospect, signalen, verrijkt, bezig, onSignaal, onUrlAfkeuren }: Props) {
+export function ProspectKaart({
+  prospect,
+  signalen,
+  verrijkt,
+  verrijkMelding,
+  bezig,
+  onSignaal,
+  onUrlAfkeuren,
+  onVerrijk,
+}: Props) {
   const zoekUrl = `https://duckduckgo.com/?q=${encodeURIComponent(zoekopdracht(prospect))}`
 
   return (
@@ -91,12 +103,24 @@ export function ProspectKaart({ prospect, signalen, verrijkt, bezig, onSignaal, 
                 geen randgeval maar de normale toestand, en hij hoort een actie te dragen in
                 plaats van een streepje. */}
             <p className="text-sm text-muted-foreground">Geen website bekend in de KBO.</p>
-            <Button asChild variant="outline" size="sm" className="self-start">
-              <a href={zoekUrl} target="_blank" rel="noopener noreferrer">
-                <Search className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                Zelf zoeken
-              </a>
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" size="sm" disabled={bezig} onClick={onVerrijk}>
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                Website zoeken
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <a href={zoekUrl} target="_blank" rel="noopener noreferrer">
+                  <Search className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                  Zelf zoeken
+                </a>
+              </Button>
+            </div>
+            {verrijkMelding !== null && (
+              // De reden staat er letterlijk. "Niets gevonden" en "alle treffers waren gidsen"
+              // vragen een andere volgende zet, en dat verschil verdwijnt zodra je ze samen
+              // achter één vriendelijke zin zet.
+              <p className="text-2xs text-muted-foreground">{verrijkMelding}</p>
+            )}
           </>
         )}
       </section>

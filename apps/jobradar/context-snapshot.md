@@ -43,24 +43,22 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0f1fade feat(jobradar): add the prospect labelling screen
 507916f docs(jobradar): close the open TC-EBC items for prospect labelling
 598d5aa feat(jobradar): verify a found website by its enterprise number
 fe8980d feat(jobradar): read candidate leads from the KBO dump
 be3e3f2 feat(jobradar): read headcount from the NBB annual accounts
-6b073e6 fix(jobradar): count enterprises, not establishments, in the KBO measurement
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/jobradar/app/api/prospects/[id]/route.ts
-  A  apps/jobradar/app/prospects/error.tsx
-  A  apps/jobradar/app/prospects/loading.tsx
-  A  apps/jobradar/app/prospects/page.tsx
-  A  apps/jobradar/components/ClassificatieKnoppen.tsx
-  A  apps/jobradar/components/ProspectKaart.tsx
-  A  apps/jobradar/components/ProspectLabeler.tsx
-  A  apps/jobradar/components/ProspectVoortgang.tsx
-  A  apps/jobradar/components/feedback/ProspectFout.tsx
-  A  apps/jobradar/components/feedback/ProspectLaden.tsx
+  M  apps/jobradar/CLAUDE.md
+  A  apps/jobradar/app/api/prospects/[id]/verrijk/route.ts
+  M  apps/jobradar/components/ProspectKaart.tsx
+  M  apps/jobradar/components/ProspectLabeler.tsx
+  A  apps/jobradar/lib/sources/brave.ts
+  A  apps/jobradar/scripts/brave-scenarios.ts
+  M  apps/jobradar/scripts/flow-harness.mjs
+  M  apps/jobradar/scripts/scenarios.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

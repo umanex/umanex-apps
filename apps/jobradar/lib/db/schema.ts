@@ -16,7 +16,27 @@ export type ItemStatus = 'new' | 'saved' | 'dismissed' | 'contacted'
  * `null` betekent "nog niet beoordeeld" en is dus geen vijfde waarde: een bedrijf zonder oordeel
  * is iets anders dan een bedrijf waarover getwijfeld is.
  */
-export type Classificatie = 'product' | 'dienstverlener' | 'geen-prospect' | 'twijfel'
+export type Classificatie =
+  | 'product'
+  | 'dienstverlener'
+  /**
+   * Doet allebei: een eigen softwareproduct én consultancy. Met opzet géén vorm van `twijfel`,
+   * want die twee dragen verschillende informatie — `twijfel` is "ik kon niet beslissen en moet
+   * hierop terugkomen", `beide` is "ik heb beslist". En een bedrijf dat allebei doet ís een
+   * prospect, want het heeft een eigen product. Samennemen maakt de tweede ronde onbruikbaar.
+   */
+  | 'beide'
+  | 'geen-prospect'
+  | 'twijfel'
+
+/** De volgorde waarin ze in de tool staan; de index is meteen de sneltoets. */
+export const CLASSIFICATIES: readonly Classificatie[] = [
+  'product',
+  'dienstverlener',
+  'beide',
+  'geen-prospect',
+  'twijfel',
+] as const
 
 export const jobs = sqliteTable(
   'jobs',

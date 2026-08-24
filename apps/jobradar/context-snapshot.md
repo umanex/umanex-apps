@@ -36,17 +36,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+598d5aa feat(jobradar): verify a found website by its enterprise number
 fe8980d feat(jobradar): read candidate leads from the KBO dump
 be3e3f2 feat(jobradar): read headcount from the NBB annual accounts
 6b073e6 fix(jobradar): count enterprises, not establishments, in the KBO measurement
 76a0a16 feat(jobradar): add step-zero measurement for the KBO dump
-c7e476d feat(jobradar): add classification axis to companies
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/jobradar/lib/sources/ondernemingsnummer.ts
-  A  apps/jobradar/scripts/ondernemingsnummer-scenarios.ts
-  M  apps/jobradar/scripts/scenarios.mjs
+  M  apps/jobradar/briefings/2026-08-24-feature-prospect-labeling.tcebc.md
+  M  apps/jobradar/lib/db/schema.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -50,10 +50,10 @@ CONSTRAINTS: Desktop-only, dit is een werkinstrument voor één gebruiker. Geen 
 
 1. ~~**Architectuur — nieuwe app of jobradar uitbreiden?**~~ **BESLIST 2026-08-24 op basis van code-inspectie: uitbreiden in `apps/jobradar`.** De `companies`-tabel draagt al `nace_code`, `url`, `signals`, `lead_status`, `rechtsgrond` en `opt_out`; `lib/sources/kbo.ts` is een werkende stub binnen de `LeadSource`-abstractie met een gedocumenteerd live-pad dat nooit gebouwd is. De 26 bestaande rijen komen allemaal uit `vacatures` en hebben `nace_code` en `url` leeg — de kolommen zijn er voor precies deze tak. Een zesde app zou een tweede database, een tweede UI-bedrading, een tweede flow-harness en een tweede verify-pad betekenen voor een model dat voor 80% al bestaat. De bredere "centrale hub voor de uitbouw van het bedrijf" (pipeline, retainers, plan-KPI's) past niet in jobradars scope en is een **aparte beslissing, uitgesteld tot er een tweede retainer loopt** — geen hub bouwen voor een bedrijf dat nog niet bestaat.
 2. **Bronlijst — de website-kolom is het echte gat.** KBO Open Data (maandelijkse volledige dump, gratis) levert ondernemingsnummer, benaming, adres en NACE-codes, maar **géén werknemersaantallen en géén websites**. Werknemersaantallen zitten in de NBB-jaarrekeningen. De website staat in geen van beide bronnen — en dat is precies het veld waar de hele tool op draait, want labelen gebeurt door naar de site te kijken. Nog te beslissen: URL afleiden via zoekopdracht bij de import, of manueel opzoeken ín de tool (wat de 45-secondeneis onder druk zet).
-3. **Component-typologie** — focuskaart één-voor-één (aanname, want snelheid is de ontwerpeis), of een dichte tabel met inline acties, of een split-view met lijst links en detail rechts?
-4. **States** — loading, empty en error staan default aan. Welke vallen af? Bij een lokale JSON-import is loading vermoedelijk verwaarloosbaar en error beperkt tot een kapot importbestand.
-5. **Interactie-modaliteit** — toetsenbord-eerst is de aanname omdat 545 records met de muis onwerkbaar traag is. Bevestigen of afwijzen.
-6. **Edge cases** — welke gelden: geen website, website onbereikbaar, bedrijf doet allebei (product én dienstverlening), dubbele inschrijving, bedrijf bestaat niet meer, halverwege stoppen en hervatten?
+3. ~~Component-typologie~~ **BESLIST 2026-08-24: focuskaart, één bedrijf per scherm, toetsenbord-eerst.** Snelheid is de ontwerpeis en overzicht weegt daar niet tegenop; de tabel- en split-view-varianten zijn verworpen omdat de site openen je telkens uit de flow haalt, respectievelijk omdat er te weinig ruimte voor de site overblijft.
+4. ~~States~~ **BESLIST 2026-08-24: alle vier aanwezig** — empty, error, loading én een aparte *bezig met verrijken*. Er valt niets af. Loading blijft ondanks een lokale SQLite, omdat de verrijkingsstap live over het netwerk gaat.
+5. ~~Interactie-modaliteit~~ **BESLIST 2026-08-24: toetsenbord-eerst, bevestigd.** Cijfertoetsen labelen, pijl links terug, spatie overslaan.
+6. ~~Edge cases~~ **BESLIST 2026-08-24: alle vier gedekt** — geen website bekend, product én dienstverlening tegelijk, verkeerd bedrijf gevonden, bedrijf bestaat niet meer.
 
 ## Aannames
 
@@ -73,20 +73,29 @@ De classificatie product-versus-dienstverlener is een **derde** as en krijgt dus
 |---|---|---|
 | Pijplijn | `lead_status` (bestaat) | new · saved · dismissed · contacted |
 | Aantrekkelijkheid | `lead_score` (bestaat) | 0–100 |
-| **Classificatie** | **`classificatie` (nieuw)** | product · dienstverlener · geen-prospect · twijfel · null |
+| **Classificatie** | **`classificatie` (nieuw)** | product · dienstverlener · **beide** · geen-prospect · twijfel · null |
 
 Nieuw nodig in het schema: `classificatie`, `werknemers` (integer, nullable — "nog niet geteld" is niet nul), `geclassificeerd_op` (voor de hervatbare sessie).
 
+**`beide` is een eigen waarde en geen vorm van `twijfel`** (beslist 2026-08-24). Ze dragen verschillende informatie: `twijfel` betekent "ik kon niet beslissen en moet hierop terugkomen", `beide` betekent "ik heb beslist: ze doen allebei". Een bedrijf dat allebei doet ís een prospect — het heeft een eigen product — terwijl een twijfelgeval nog beoordeeld moet worden. Ze in één waarde samennemen maakt de tweede ronde onbruikbaar.
+
 ## Acceptatie
 
-- [ ] Component-typologie is de gekozen vorm uit open vraag 3, en één bedrijf beslaat één scherm zonder scrollen op 1440×900
-- [ ] Loading, empty en error renderen elk aantoonbaar, of zijn expliciet uitgesloten met reden
+- [ ] Focuskaart: één bedrijf beslaat één scherm zonder scrollen op 1440×900
+- [ ] Loading rendert aantoonbaar
+- [ ] Empty rendert aantoonbaar (alles gelabeld, én filter zonder resultaat)
+- [ ] Error rendert aantoonbaar (database onbereikbaar)
+- [ ] "Bezig met verrijken" rendert aantoonbaar als aparte state naast loading
 - [ ] Elk label is met het toetsenbord te zetten zonder muis, en de focus springt zichtbaar mee
+- [ ] Vijf classificaties bereikbaar: product · dienstverlener · beide · geen-prospect · twijfel
+- [ ] `beide` en `twijfel` zijn apart opvraagbaar en `beide` telt als afgehandeld, `twijfel` niet
 - [ ] Een label slaat op zonder bevestigingsstap en overleeft een harde refresh
 - [ ] Sessie is hervatbaar: sluiten en heropenen landt op hetzelfde bedrijf
 - [ ] Terug-actie corrigeert het vorige label zonder de voortgangstelling te breken
-- [ ] Twijfel-stapel is apart opvraagbaar en telt niet mee als afgehandeld
-- [ ] Elke benoemde edge case uit open vraag 6 heeft zichtbaar gedrag, geen stille fout
+- [ ] EDGE — geen website bekend: zichtbare toestand met een zoekactie vanuit het scherm zelf
+- [ ] EDGE — product én dienstverlening: bereikbaar als `beide`, niet weggemoffeld in twijfel
+- [ ] EDGE — verkeerd bedrijf gevonden: URL af te keuren en opnieuw te zoeken zonder het label te zetten
+- [ ] EDGE — bedrijf bestaat niet meer: afhandelbaar zonder dat het als prospect blijft staan
 - [ ] Export levert de volledige gelabelde lijst plus de telling per categorie
 - [ ] `pnpm --filter @umanex/tokens guard` slaagt — geen rauwe paletklasse, geen hex, geen arbitrary waarde
 - [ ] Gemeten op tien echte bedrijven: mediane doorlooptijd onder 45 seconden per bedrijf

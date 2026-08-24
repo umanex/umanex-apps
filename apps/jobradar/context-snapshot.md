@@ -36,15 +36,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+6b073e6 fix(jobradar): count enterprises, not establishments, in the KBO measurement
 76a0a16 feat(jobradar): add step-zero measurement for the KBO dump
 c7e476d feat(jobradar): add classification axis to companies
 49072dc fix(jobradar): stop the card and its own button from counting different things
 f1ecf3e feat(jobradar): make a lead checkable, and give the list a search field
-4c6860b fix(jobradar): test the ceiling per sub-query, not against a growing threshold
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/scripts/kbo-meting.mjs
+  A  apps/jobradar/lib/sources/nbb-rubriek.ts
+  A  apps/jobradar/lib/sources/nbb.ts
+  M  apps/jobradar/lib/sources/types.ts
+  A  apps/jobradar/scripts/nbb-scenarios.ts
+  M  apps/jobradar/scripts/scenarios.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -26,6 +26,7 @@ const SUITES = [
   { naam: 'config', bestand: 'scripts/config-scenarios.ts' },
   { naam: 'schema', bestand: 'scripts/schema-scenarios.ts' },
   { naam: 'nbb', bestand: 'scripts/nbb-scenarios.ts' },
+  { naam: 'kbo-dump', bestand: 'scripts/kbo-dump-scenarios.ts' },
 ]
 
 /** Draait één suite en geeft exitcode + uitvoer terug. Gooit niet: de uitkomst ís het antwoord. */

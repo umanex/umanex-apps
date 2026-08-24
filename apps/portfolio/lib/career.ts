@@ -12,10 +12,10 @@ export type CareerEntry = {
 export const careerEntries: CareerEntry[] = [
   {
     period: '[Periode]',
-    role: 'Freelance UX/UI designer — Design Team Of One',
+    role: 'Freelance UX/UI designer — umanex',
     organisation: 'umanex',
     description:
-      'Eigen label voor klantwerk en eigen producten. Volledige product design proces, van onderzoek tot werkende code, versterkt met een AI-werkwijze.',
+      'Eigen label voor klantwerk en eigen producten. Het volledige product design proces, van onderzoek tot werkende code, met umanex-os als systeem eronder.',
     draft: true,
   },
   {

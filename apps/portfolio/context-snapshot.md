@@ -1,5 +1,5 @@
 # Context Snapshot — portfolio
-_Gegenereerd op 2026-08-08_
+_Gegenereerd op 2026-08-24_
 
 ## Project
 - **App:** portfolio
@@ -13,6 +13,7 @@ _Gegenereerd op 2026-08-08_
 
 ## Packages
 - **@umanex/config:** 0.0.1
+- **@umanex/rowtrack-tokens:** 0.0.1
 - **@umanex/tokens:** 0.0.1
 - **@umanex/ui:** 0.0.1
 
@@ -23,7 +24,9 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 |---|---|---|---|---|---|
 | CareerItem | `apps/portfolio/components/data-display/CareerItem.tsx` | data-display | — | — | — |
 | CaseCard | `apps/portfolio/components/data-display/CaseCard.tsx` | data-display | — | — | — |
+| NumberedStep | `apps/portfolio/components/data-display/NumberedStep.tsx` | data-display | — | — | — |
 | TestimonialCard | `apps/portfolio/components/data-display/TestimonialCard.tsx` | data-display | — | — | — |
+| TierCard | `apps/portfolio/components/data-display/TierCard.tsx` | data-display | — | — | — |
 | PlaceholderNote | `apps/portfolio/components/feedback/PlaceholderNote.tsx` | feedback | — | — | — |
 | Container | `apps/portfolio/components/layout/Container.tsx` | layout | — | — | — |
 | Footer | `apps/portfolio/components/layout/Footer.tsx` | layout | — | — | — |
@@ -35,21 +38,31 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | KeyMessages | `apps/portfolio/components/sections/KeyMessages.tsx` | sections | — | — | — |
 | Testimonials | `apps/portfolio/components/sections/Testimonials.tsx` | sections | — | — | — |
 | AccentBar | `apps/portfolio/components/ui/AccentBar.tsx` | ui | — | — | — |
+| CheckList | `apps/portfolio/components/ui/CheckList.tsx` | ui | — | — | — |
 | PhotoPlaceholder | `apps/portfolio/components/ui/PhotoPlaceholder.tsx` | ui | — | — | — |
 | Reveal | `apps/portfolio/components/ui/Reveal.tsx` | ui | — | — | — |
 | RichText | `apps/portfolio/components/ui/RichText.tsx` | ui | — | — | — |
 
 ## Recente commits (app + packages)
 ```
-13ed3ea fix: read the page after the network settles, not at domcontentloaded
-41c42cb feat(portfolio): add a flow harness and a measured verify path
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
-e59eaa1 chore(config): remove the dead flat-config eslint files
-5806065 refactor(config): share the token lint rules instead of copying them per app
+ea926a1 fix(portfolio): let the header nav fit a 375px screen
+9578c45 test(portfolio): measure narrow screens, dark mode and settled renders
+9a2bc2e chore: sync umanex-os layer with global umanex-os
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/portfolio/scripts/flow-harness.mjs
+  A  apps/portfolio/app/aanbod/page.tsx
+  A  apps/portfolio/app/scan/page.tsx
+  M  apps/portfolio/app/werkwijze/page.tsx
+  A  apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md
+  A  apps/portfolio/components/data-display/NumberedStep.tsx
+  A  apps/portfolio/components/data-display/TierCard.tsx
+  M  apps/portfolio/components/layout/Footer.tsx
+  M  apps/portfolio/components/sections/ContactSection.tsx
+  M  apps/portfolio/components/sections/Hero.tsx
+  A  apps/portfolio/components/ui/CheckList.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

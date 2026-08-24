@@ -10,4 +10,7 @@ export const site = {
   vat: 'BE 0802.456.056',
   // TODO: vervang door Calendly-link zodra beschikbaar (beslissing 2026-06-10: voorlopig zonder)
   contactHref: 'mailto:jeroen@umanex.be?subject=Kennismaking',
+  // Aparte ingang: de scan is de eerste trede van de ladder en verdient een eigen onderwerpregel,
+  // zodat een aanvraag herkenbaar is zonder de mail te openen.
+  scanHref: 'mailto:jeroen@umanex.be?subject=Scan%20aanvragen',
 } as const;

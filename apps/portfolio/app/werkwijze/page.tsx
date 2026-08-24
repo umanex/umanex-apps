@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight, FileText, Layers, Palette, Repeat } from 'lucide-react';
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
 import { RichText } from '@/components/ui/RichText';
 import { copy } from '@/lib/copy';
-import { site } from '@/lib/site';
 import { buttonVariants } from '@umanex/ui/components/ui/button';
 import { Card } from '@umanex/ui/components/ui/card';
 
@@ -72,13 +72,10 @@ export default function WerkwijzePage() {
         <Reveal>
           <section className="space-y-4">
             <h2 className="text-2xl font-bold tracking-tight">{contact.title}</h2>
-            <a
-              href={site.contactHref}
-              className={buttonVariants({ size: 'lg' })}
-            >
+            <Link href={contact.cta.href} className={buttonVariants({ size: 'lg' })}>
               {contact.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </a>
+            </Link>
           </section>
         </Reveal>
       </Container>

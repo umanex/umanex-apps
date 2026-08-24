@@ -45,24 +45,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9578c45 test(portfolio): measure narrow screens, dark mode and settled renders
 9a2bc2e chore: sync umanex-os layer with global umanex-os
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-e6d6a29 fix: judge a route on what renders, not on its status code
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/portfolio/CLAUDE.md
    M apps/portfolio/app/werkwijze/page.tsx
    M apps/portfolio/components/layout/Footer.tsx
-   M apps/portfolio/components/layout/Header.tsx
+  M  apps/portfolio/components/layout/Header.tsx
    M apps/portfolio/components/sections/ContactSection.tsx
    M apps/portfolio/components/sections/Hero.tsx
    M apps/portfolio/lib/career.ts
    M apps/portfolio/lib/copy.ts
    M apps/portfolio/lib/site.ts
-  M  apps/portfolio/scripts/flow-harness.mjs
+   M apps/portfolio/todos/2026-06-16-todo-portfolio-herpositionering.md
+  ?? apps/portfolio/app/aanbod/
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -136,6 +136,45 @@ function oudeDbMetRij(): InstanceType<typeof Database> {
   db.close()
 }
 
+// ── De ECHTE openingsvolgorde op een bestaande database ──────────────────────
+//
+// Dit blok bestaat omdat de vorige versie van deze suite hem miste. Ze riep
+// `pasKolomMigratiesToe` los aan op een handgebouwde oude tabel, en toetste daarmee de FUNCTIE
+// in plaats van de VOLGORDE. `lib/db/index.ts` draait eerst SCHEMA_DDL en dán de migraties — en
+// een CREATE INDEX op een nog-niet-bestaande kolom in SCHEMA_DDL liet elke bestaande database
+// omvallen bij het openen, dus vóór er iets gelezen kon worden. Groen in de suite, stuk in
+// productie: precies het gat dat een suite hoort te dichten.
+{
+  const db = oudeDbMetRij()
+  let gooide: string | null = null
+  try {
+    db.exec(SCHEMA_DDL)
+    pasKolomMigratiesToe(db)
+  } catch (e) {
+    gooide = e instanceof Error ? e.message : String(e)
+  }
+  check('SCHEMA_DDL + migraties op een bestaande database gooit niet', gooide === null, gooide ?? '')
+  check(
+    'en de kolommen staan er daarna',
+    NIEUWE_KOLOMMEN.every((k) => kolommen(db, 'companies').includes(k)),
+    kolommen(db, 'companies').join(', ')
+  )
+  check(
+    'en de index ook',
+    indexen(db, 'companies').includes('companies_classificatie_idx'),
+    indexen(db, 'companies').join(', ')
+  )
+  let tweede: string | null = null
+  try {
+    db.exec(SCHEMA_DDL)
+    pasKolomMigratiesToe(db)
+  } catch (e) {
+    tweede = e instanceof Error ? e.message : String(e)
+  }
+  check('en een tweede opening ook niet', tweede === null, tweede ?? '')
+  db.close()
+}
+
 // ── Het migratiepad: een bestaande database van vóór versie 6 ────────────────
 {
   const db = oudeDbMetRij()

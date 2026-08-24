@@ -43,7 +43,7 @@ const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3103)
 const BASE = `http://127.0.0.1:${PORT}`;
 
 /** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
-const ROUTES = ['/'];
+const ROUTES = ['/', '/prospects'];
 
 const fails = [];
 const notes = [];
@@ -181,6 +181,55 @@ async function main() {
     else notes.push(`klik op ${href} kwam uit op ${landed} (redirect of anchor)`);
   } else {
     notes.push('geen select en geen interne link op de eerste route — interactie niet uitgereden');
+  }
+
+  // ── Labelscherm: echt gedrag, geen render ──────────────────────────────────
+  //
+  // Een screenshot bewijst dat er iets staat. Dit bewijst dat een toetsaanslag een oordeel
+  // wegschrijft, dat de teller meebeweegt, en dat het een harde herlaadbeurt overleeft — de
+  // drie dingen waarop de acceptatielijst van de briefing staat.
+  console.log('→ Labelscherm aandrijven');
+  {
+    await page.goto(BASE + '/prospects', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+
+    const tellerTekst = async () => (await page.locator('text=/beoordeeld/').first().innerText()).trim();
+    const bedrijfsnaam = async () => (await page.locator('article h2').first().innerText()).trim();
+
+    const voorTeller = await tellerTekst();
+    const voorBedrijf = await bedrijfsnaam();
+
+    // Cijfertoets 1 = "product".
+    await page.keyboard.press('1');
+    await page.waitForFunction(
+      (oud) => {
+        const el = document.querySelector('article h2');
+        return el !== null && el.textContent?.trim() !== oud;
+      },
+      voorBedrijf,
+      { timeout: 5_000 }
+    ).catch(() => {});
+
+    const naBedrijf = await bedrijfsnaam();
+    const naTeller = await tellerTekst();
+
+    if (naBedrijf === voorBedrijf) fail(`toets "1" schoof niet door: bleef op "${voorBedrijf}"`);
+    else ok(`toets "1" labelde en schoof door: "${voorBedrijf}" → "${naBedrijf}"`);
+
+    if (naTeller === voorTeller) fail(`teller bewoog niet: bleef "${voorTeller}"`);
+    else ok(`teller bewoog: "${voorTeller}" → "${naTeller}"`);
+
+    // Harde herlaadbeurt: het oordeel moet uit de database komen, niet uit de sessie.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const naHerlaad = await tellerTekst();
+    if (naHerlaad !== naTeller) fail(`herlaadbeurt verloor het oordeel: "${naTeller}" → "${naHerlaad}"`);
+    else ok(`oordeel overleeft een harde herlaadbeurt: "${naHerlaad}"`);
+
+    // Hervatten landt op het eerste bedrijf uit de wachtrij, niet op een bewaarde index.
+    const naHervat = await bedrijfsnaam();
+    if (naHervat === voorBedrijf) fail(`hervatten landde op het al beoordeelde "${voorBedrijf}"`);
+    else ok(`hervatten landt op een onbeoordeeld bedrijf: "${naHervat}"`);
   }
 
   if (SELFTEST) {

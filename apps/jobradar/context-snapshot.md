@@ -22,11 +22,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 | Component | Pad | Categorie | Figma-node | Snapshot | Status |
 |---|---|---|---|---|---|
+| ClassificatieKnoppen | `apps/jobradar/components/ClassificatieKnoppen.tsx` | components | — | — | — |
 | CoverageBar | `apps/jobradar/components/CoverageBar.tsx` | components | — | — | — |
 | DashboardClient | `apps/jobradar/components/DashboardClient.tsx` | components | — | — | — |
+| ProspectFout | `apps/jobradar/components/feedback/ProspectFout.tsx` | feedback | — | — | — |
+| ProspectLaden | `apps/jobradar/components/feedback/ProspectLaden.tsx` | feedback | — | — | — |
+| ProspectLeeg | `apps/jobradar/components/feedback/ProspectLeeg.tsx` | feedback | — | — | — |
 | FilterBar | `apps/jobradar/components/FilterBar.tsx` | components | — | — | — |
 | JobCard | `apps/jobradar/components/JobCard.tsx` | components | — | — | — |
 | LeadCard | `apps/jobradar/components/LeadCard.tsx` | components | — | — | — |
+| ProspectKaart | `apps/jobradar/components/ProspectKaart.tsx` | components | — | — | — |
+| ProspectLabeler | `apps/jobradar/components/ProspectLabeler.tsx` | components | — | — | — |
+| ProspectVoortgang | `apps/jobradar/components/ProspectVoortgang.tsx` | components | — | — | — |
 | RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
 | ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
 | SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
@@ -36,16 +43,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+507916f docs(jobradar): close the open TC-EBC items for prospect labelling
 598d5aa feat(jobradar): verify a found website by its enterprise number
 fe8980d feat(jobradar): read candidate leads from the KBO dump
 be3e3f2 feat(jobradar): read headcount from the NBB annual accounts
 6b073e6 fix(jobradar): count enterprises, not establishments, in the KBO measurement
-76a0a16 feat(jobradar): add step-zero measurement for the KBO dump
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/briefings/2026-08-24-feature-prospect-labeling.tcebc.md
-  M  apps/jobradar/lib/db/schema.ts
+  A  apps/jobradar/app/api/prospects/[id]/route.ts
+  A  apps/jobradar/app/prospects/error.tsx
+  A  apps/jobradar/app/prospects/loading.tsx
+  A  apps/jobradar/app/prospects/page.tsx
+  A  apps/jobradar/components/ClassificatieKnoppen.tsx
+  A  apps/jobradar/components/ProspectKaart.tsx
+  A  apps/jobradar/components/ProspectLabeler.tsx
+  A  apps/jobradar/components/ProspectVoortgang.tsx
+  A  apps/jobradar/components/feedback/ProspectFout.tsx
+  A  apps/jobradar/components/feedback/ProspectLaden.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

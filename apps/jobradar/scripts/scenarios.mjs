@@ -28,6 +28,7 @@ const SUITES = [
   { naam: 'nbb', bestand: 'scripts/nbb-scenarios.ts' },
   { naam: 'kbo-dump', bestand: 'scripts/kbo-dump-scenarios.ts' },
   { naam: 'ondernemingsnummer', bestand: 'scripts/ondernemingsnummer-scenarios.ts' },
+  { naam: 'prospects', bestand: 'scripts/prospects-scenarios.ts' },
 ]
 
 /** Draait één suite en geeft exitcode + uitvoer terug. Gooit niet: de uitkomst ís het antwoord. */

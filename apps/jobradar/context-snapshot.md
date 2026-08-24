@@ -43,19 +43,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e306a16 style(jobradar): take every radius from the token layer
 c27301b feat(jobradar): find and verify missing websites through Brave
 0f1fade feat(jobradar): add the prospect labelling screen
 507916f docs(jobradar): close the open TC-EBC items for prospect labelling
 598d5aa feat(jobradar): verify a found website by its enterprise number
-fe8980d feat(jobradar): read candidate leads from the KBO dump
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/jobradar/app/globals.css
   M  apps/jobradar/components/ClassificatieKnoppen.tsx
-  M  apps/jobradar/components/ProspectKaart.tsx
-  M  apps/jobradar/components/ProspectLabeler.tsx
-  M  apps/jobradar/components/ProspectVoortgang.tsx
-  M  apps/jobradar/components/feedback/ProspectFout.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

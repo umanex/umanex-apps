@@ -8,6 +8,16 @@ import { CLASSIFICATIES, type Classificatie } from '@/lib/db/schema'
  *
  * `beide` staat bewust náást `product` en niet bij `twijfel`: het is een genomen beslissing, geen
  * uitgesteld oordeel, en een bedrijf dat allebei doet is evengoed een prospect.
+ *
+ * DE KLEUR CODEERT DE UITKOMST, NIET DE OPTIE. Drie groepen, drie rollen:
+ *   prospect (product, beide)          -> success
+ *   geen prospect (dienstverlener, ...) -> neutraal
+ *   uitgesteld (twijfel)                -> warning
+ *
+ * `beide` stond eerst op `primary`. Zolang jobradar zijn eigen blauw droeg las dat als neutraal-
+ * informatief; op de umanex-rollaag is primary róód, en dan leest een positieve uitkomst als
+ * alarm — naast het oranje van twijfel nog verwarrender. Dat de merkkleur wisselde maakte een
+ * fout zichtbaar die er altijd al zat: de kleur hing aan de knop in plaats van aan de betekenis.
  */
 const LABELS: Record<Classificatie, { tekst: string; uitleg: string; rol: string }> = {
   product: {
@@ -23,7 +33,9 @@ const LABELS: Record<Classificatie, { tekst: string; uitleg: string; rol: string
   beide: {
     tekst: 'Beide',
     uitleg: 'Eigen product én diensten',
-    rol: 'border-primary text-primary hover:bg-primary/10',
+    // Zelfde rol als product: allebei een prospect. Het onderscheid zit in het label en de
+    // sneltoets, niet in de kleur — kleur draagt hier de uitkomst.
+    rol: 'border-success text-success hover:bg-success/10',
   },
   'geen-prospect': {
     tekst: 'Geen prospect',

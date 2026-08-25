@@ -255,7 +255,17 @@ Wat in zo'n tweede tree botst, is niet veranderd: draaiende dev-servers en hun p
 
 **Je eigen sub-agents tellen mee.** Draait er een agent die jíj gestart hebt in je eigen tree, dan is die tree niet meer alleen van jou: hij schrijft scratch-bestanden en haalt een formatter over een bestand dat jouw acceptatielijst ongemoeid verklaarde. Gemeten: zeven `.tmp-*.mjs` en een geherformatteerde `DataTable.tsx` reisden mee in één `git add -A`, en twee van de agents hadden de botsing zélf al in hun eindrapport gemeld — het signaal lag er vóór de commit, ongelezen. Stage per pad zolang er agents lopen, en lees hun rapporten vóór je commit, niet erna.
 
-**Bij het mergen.** Gebruik `gh pr merge --delete-branch` niet zolang er een andere branch in dezelfde tree leeft: die vlag verplaatst HEAD naar een willekeurige andere lokale branch. Check eerst expliciet `main` uit, merge daarna, ruim de branch apart op.
+**Bij het mergen.** Gebruik `gh pr merge --delete-branch` niet zolang er een andere branch in dezelfde tree leeft: die vlag verplaatst HEAD naar een willekeurige andere lokale branch. Check eerst expliciet `main` uit, merge daarna, ruim de branch apart op — en *apart* betekent **pas nadat de server bevestigt dat de PR `MERGED` is**, nooit in dezelfde keten achter de merge aan. Gemeten op 2026-08-25: `gh pr merge 312` werd geweigerd (de checks van de laatste commit liepen nog), de opruimstappen stonden achter een `;` en draaiden gewoon door — lokale én remote branch weg, en het verwijderen van de remote branch sloot PR #312 automatisch; het werk stond alleen nog in de lokale objectstore. Twee dingen beschermen je daar níet tegen, allebei nagemeten in een wegwerp-repo: `| tail -1` achter `gh` geeft de exit-status van `tail` (`$?` = 0 terwijl `gh` 1 gaf), en `git branch -d` weigert niet, want die toetst tegen de **upstream** van de branch en niet tegen `main` — een gepushte, ongemergde branch verdwijnt met enkel `warning: … but not yet merged to HEAD`. De PR-state is de enige gate:
+
+```bash
+git checkout main
+out=$(gh pr merge <nr> --merge); rc=$?; echo "$out"        # status lezen vóór welke pipe ook
+state=$(gh pr view <nr> --json state -q .state)
+[ "$rc" -eq 0 ] && [ "$state" = MERGED ] || { echo "STOP — state=$state, niets opruimen"; exit 1; }
+git branch -d <branch> && git push origin --delete <branch>
+```
+
+Getoetst op béide kanten met een stub-`gh` (2026-08-25): geweigerde merge → beide branches blijven staan; geslaagde merge → beide opgeruimd. Ging het tóch mis: de branch is te herstellen zolang de commit in de objectstore staat (`git branch <naam> <sha>` + push), de PR heropen je met `gh pr reopen <nr>`.
 
 **Een merge is pas af als de tree die de gebruiker bekijkt erop staat.** Merge je vanuit een andere tree dan de hoofdtree — een agent-worktree, een tijdelijke worktree — naar `origin/main`, dan blijft de hoofdtree staan waar hij stond — inclusief de dev-server die daaruit serveert. "Gemerged" rapporteren terwijl zijn scherm de code van vóór je eerste ronde toont is een onwaar statusbericht, en het wordt erger per ronde. Gemeten: zes PR's gemerged vanuit `Luminus-fleet-manager` terwijl de hoofdtree 18 commits achterliep; de gebruiker moest twee screenshots naast elkaar leggen om het te zien. Sluit een merge daarom zo af:
 ```bash

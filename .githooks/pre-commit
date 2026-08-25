@@ -142,6 +142,32 @@ if [ -n "$zonder_check" ]; then
   echo "  Schrijf de check op: een commando, of een vraag met een eenduidig antwoord."
 fi
 
+# 2b. Acceptatie-signaal — draagt een nieuw vinkje in een briefing zijn bewijs?
+#     Waarschuwt, blokkeert niet. Zelfde plek en zelfde reden als het HANDOFF-blok
+#     hierboven: een briefing kan in de root én in een app staan.
+#
+#     De faalvorm: een acceptatie-item is een bewering over het ding, en `- [x]` werd
+#     gezet op de herinnering van de bouwstap. Gemeten op Soda+ (2026-08-25): zeventien
+#     van negentien items afgevinkt, vijf ervan sprak het bestand tegen — "CTA's op één
+#     hoogte" bij 288 px spreiding, "≤ 2 zinnen" bij drie. Een vinkje mét `bewijs:` in
+#     de regel kan nog steeds liegen, maar dwingt een meting af die iemand kan nalezen.
+#
+#     Alleen op toegevoegde `- [x]`-regels in `*.tcebc.md`. Aanwezigheid van het woord
+#     is machinaal te toetsen; of het bewijs iets meet, blijft mensenwerk.
+zonder_bewijs=""
+for f in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.tcebc\.md$' || true); do
+  n_zb=$(git diff --cached -U0 -- "$f" \
+    | awk '/^\+ *- \[[xX]\]/ && !/bewijs:/ { n++ } END { print n + 0 }')
+  [ "${n_zb:-0}" -gt 0 ] 2>/dev/null && zonder_bewijs="$zonder_bewijs $f ($n_zb)"
+done
+
+if [ -n "$zonder_bewijs" ]; then
+  echo "⚠ Acceptatie-item(s) afgevinkt zonder 'bewijs:' in:$zonder_bewijs"
+  echo "  Een vinkje zonder meting is een bewering, geen validatie — op Soda+ stond het"
+  echo "  vijf keer verkeerd op negentien. Zet het bewijs ín de regel:"
+  echo "    - [x] CTA's op één hoogte — bewijs: y=612 op 02–08 (figma_execute)"
+fi
+
 # `D` hoort erbij. Een commit die alleen verwijdert raakt de app net zo goed, en juist een
 # delete maakt de context-snapshot ongeldig: die blijft anders een bestand als `gekoppeld`
 # vermelden dat niet meer bestaat. Zonder de D sloeg zo'n commit alle vier de app-blokken

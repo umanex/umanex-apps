@@ -54,6 +54,17 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
 
+      # De Storybook van packages/ui draait zijn eigen Vite/PostCSS-keten en zit dus niet
+      # in de build hierboven. Een story of docs-blok dat niet meer compileert (verwijderde
+      # export, verplaatst component, kapotte MDX) zou anders pas opvallen bij de volgende
+      # `pnpm storybook` op iemands machine. Eigen stap, zodat de fout in het log bij zijn
+      # naam staat en niet ergens in de output van twintig andere builds.
+      - name: Build — Storybook (packages/ui)
+        run: pnpm turbo build-storybook
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
       # Node draait TypeScript zelf (type-stripping), dus dit kost geen testrunner en
       # geen dependency. De bestanden bestonden al maar werden door niets aangeroepen —
       # een test die alleen draait wanneer iemand eraan denkt, meet niets.

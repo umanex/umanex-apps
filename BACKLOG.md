@@ -54,7 +54,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** `build-storybook` van `@umanex/ui` als turbo-task opnemen en in `ci.yml` draaien, zodat een story of docs-blok dat niet meer compileert de PR rood maakt in plaats van pas bij de volgende `pnpm storybook`.
 - **Waarom niet nu:** `turbo.json` en `ci.yml` zijn config-bestanden die vooraf bevestigd horen te worden; de Storybook-opzet zelf (PR `chore/storybook-ui`) is gebouwd zonder die stap.
 - **Eerste zet:** `"build-storybook": { "dependsOn": ["^build"], "outputs": ["storybook-static/**"] }` in `turbo.json`, en `pnpm turbo build-storybook` naast de bestaande build-stap in CI. Optioneel: Chromatic of een statische deploy voor review.
-- **Status:** open
+- **Status:** gebouwd — 2026-08-25, PR `chore/storybook-ci`; tegenproef: een story met een niet-bestaande import laat `pnpm turbo build-storybook` falen (exit ≠ 0).
 
 ## 2026-08-25 — CLAUDE.md-sectie "Eén app, één worktree" spreekt de globale laag tegen · [docs]
 - **Wat:** De sectie *Parallel aan twee apps werken* in `CLAUDE.md` schrijft nog `git worktree add ../umanex-apps-<app>` voor, terwijl `.umanex-os/CLAUDE.md` (sinds 2026-08-25) de zusmap-conventie schrapt en app-werk in de hoofdtree op een feature branch zet. Sectie herschrijven of vervangen door een verwijzing naar de globale regel.

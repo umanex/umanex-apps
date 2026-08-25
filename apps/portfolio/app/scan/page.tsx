@@ -31,12 +31,16 @@ export default function ScanPage() {
             </p>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{hero.title}</h1>
             <p className="text-lg text-muted-foreground">{hero.subtitle}</p>
-            <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-3xl font-bold tracking-tight text-primary">
-                {hero.price}
-              </span>
-              <span className="text-sm text-muted-foreground">{hero.priceLabel}</span>
-            </p>
+            <div className="space-y-2">
+              <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="text-3xl font-bold tracking-tight text-primary">
+                  {hero.price}
+                </span>
+                <span className="text-sm text-muted-foreground">{hero.priceLabel}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">{hero.priceExample}</p>
+              <p className="max-w-xl text-sm text-muted-foreground">{hero.priceNote}</p>
+            </div>
           </header>
         </Reveal>
 

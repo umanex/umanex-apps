@@ -159,9 +159,11 @@ jobs:
       # scenario's raken: hij hangt aan dnd-kit én de store. De harness rijdt hem uit met
       # toetsenbord en muis tegen de build hierboven, en onderschept élk verzoek naar de
       # Supabase-origin — ook de wegschrijf-call, die geteld wordt in plaats van verstuurd.
-      # `flow:selftest` voegt een scenario toe dat hóórt te falen.
+      # `flow:ci` serveert de build van de stap hierboven (`--dist=.next`: alleen lezen,
+      # nooit bouwen) en voegt de tegenproeven toe die hóren te falen. Lokaal bouwt de
+      # harness zelf in `.next-harness`, zodat hij de `.next` van PM2 niet raakt.
       - name: Guard — flow (sleep tussen maandkolommen)
-        run: pnpm --filter cashflow flow:selftest
+        run: pnpm --filter cashflow flow:ci
         env:
           # Dezelfde placeholder als de build. De harness leest hem om te weten welke origin
           # hij moet dichtzetten — zonder die waarde weigert hij te starten, en dat hoort zo.

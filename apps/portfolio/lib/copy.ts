@@ -28,7 +28,7 @@ export const copy = {
     scan: {
       title: 'De scan',
       description:
-        'Twee dagen werk, vanaf €1.750, en één meetpunt dat je over twaalf maanden opnieuw kan meten. Volledig verrekend als er een opdracht op volgt.',
+        'Twee dagen werk, vanaf €1.750, en één meetpunt dat je over twaalf maanden opnieuw kan meten. De nulmeting van je componentlaag.',
     },
     cases: {
       title: 'Cases',
@@ -165,7 +165,7 @@ export const copy = {
         {
           title: 'De scan',
           meta: 'vanaf €1.750 · twee dagen',
-          body: 'Ik meet waar je componentlaag vandaag staat en leg één cijfer vast dat je over twaalf maanden opnieuw kan meten. Volgt er een opdracht op, dan gaat het scanbedrag integraal van de eerste maand af. Volgt er niets, dan houd je het rapport.',
+          body: 'Ik meet waar je componentlaag vandaag staat en leg één cijfer vast dat je over twaalf maanden opnieuw kan meten. Je betaalt hem los van wat erna komt, en je houdt het rapport — ook als er niets op volgt.',
           link: { label: 'Wat de scan precies oplevert', href: '/scan' },
         },
         {
@@ -240,7 +240,7 @@ export const copy = {
       priceLabel: 'voor het eerste product, plus €900 voor elk volgend',
       priceExample: 'Twee producten €2.650 · drie €3.550 · vier €4.450',
       priceNote:
-        'Volgt er een opdracht op de scan, dan gaat het volledige bedrag van de eerste maand af. Per saldo betaal je de scan dus alleen wanneer je besluit dat het hierbij blijft.',
+        'Je betaalt de scan los van wat erna komt, en er wordt niets van verrekend. Dat is bewust: een diagnose die je terugkrijgt zodra je iets afneemt is geen diagnose meer maar een verkoopgesprek met een factuur eraan.',
     },
     deliverablesTitle: 'Wat je krijgt, en wat niet',
     measures: {

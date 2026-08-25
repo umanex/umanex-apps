@@ -36,7 +36,7 @@ CONSTRAINTS: Nederlands, je-vorm, umanex-stem — direct, vakman, geen marketing
              zelfondermijning. Uitsluitend rollen uit de tokens-preset; geen hex, geen rauwe
              paletklasse, geen arbitrary size. Light én dark. Geen data-laag in deze app, dus
              geen loading/empty/error. Prijs: alleen de scan staat er, als staffel per product
-             (€1.750 + €900) en volledig verrekenbaar; capaciteit uitsluitend in dagen per maand.
+             (€1.750 + €900) en zonder verrekening; capaciteit uitsluitend in dagen per maand.
 ```
 
 ---
@@ -72,7 +72,8 @@ het aanbod en het argument eronder.
 
 - `[ASSUMPTION]` De scan vraagt ongeveer twee dagen werk — afgeleid uit de plan-lijn "drie
   betaalde scans, 5 eigen dagen". De prijs is sinds 2026-08-25 een staffel: €1.750 voor het eerste
-  product plus €900 per volgend, volledig verrekend met de eerste maand van een vervolgopdracht.
+  product plus €900 per volgend. Geen verrekening met een vervolgopdracht: de scan wordt los
+  betaald, en dat is wat hem een diagnose houdt in plaats van een verkoopgesprek.
 - `[ASSUMPTION]` Het meetpunt van de scan wordt gepresenteerd als een keuze uit twee (doorlooptijd
   van beslissing tot gepubliceerde geverifieerde UI, óf het aantal drifts tussen producten). Het
   plan noemt beide als voorbeeld en kiest er geen.
@@ -121,3 +122,4 @@ het zelfs 2 px kleiner. Opgelost door de nav onder `sm` te laten krimpen (`px-1.
 - 2026-08-24: de flow-harness kreeg er drie meetassen bij (smal scherm, dark mode, doorzichtigheid na het doorrollen), elk met een eigen tegenproef in `--selftest`. Zonder de eerste was de header-overflow onzichtbaar gebleven; zonder de derde was elke render-screenshot van deze app een grotendeels leeg beeld.
 - 2026-08-24: "Design Team Of One" verdwijnt van de koper-pagina's. Vervangt de richting uit `todos/2026-06-16-todo-portfolio-herpositionering.md`, die de tagline nog wilde behouden.
 - 2026-08-25: de scanprijs gaat van één vlak bedrag van €3.500 naar een staffel per product (€1.750 plus €900), volledig verrekenbaar met de eerste maand van een vervolgopdracht. Reden: de instapdrempel halveert terwijl de gemiddelde opbrengst gelijk blijft (drie producten = €3.550), en de scan meet juist de drift *tussen* producten — meer producten is dus meer werk en meer waarde. De verrekening haalt het bezwaar "wat als het nergens toe leidt" weg zonder een euro of een dag te kosten. Onderbouwing in het businessplan van 2026-08-25.
+- 2026-08-25: de verrekening van het scanbedrag met de eerste maand vervalt op verzoek van Jeroen. Argument dat ervoor in de plaats komt en dat sterker is: een diagnose die je terugkrijgt zodra je iets afneemt is geen diagnose meer maar een verkoopgesprek. De staffel per product blijft — die loste de drempel al op zonder de onafhankelijkheid van de meting aan te tasten.

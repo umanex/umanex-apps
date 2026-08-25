@@ -271,3 +271,27 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   tweede afwijkend merk in beeld, dus de zes overrides in `apps/jobradar/app/globals.css`
   blijven de hele oplossing. Blijft hier staan als spoor: kantelt dat ooit, dan is dit het
   vertrekpunt.
+
+## 2026-08-25 — De potverdeling in het businessplan is met de hand afgeleid, niet uit de app gelezen · [onzekerheid]
+- **Bevinding:** De splitsing €17.489 in provisiepotten tegenover €2.828 vrij — waarop de runway en de hele buffer-redenering in het businessplan staan — heb ik zelf berekend als `monthlyAmount × maanden − opgenomen` uit de JSONB, niet uit wat de app zélf toont. Dat is een tweede implementatie van precies de rekenkern die tussen juni en augustus veertien fix-commits nodig had (dubbele aftrek, subtotalen die niet sloten, doorrol tussen maanden).
+- **Check:** Open de app en lees de potstanden van augustus 2026 af; tel ze op. Komt het totaal op €17.489 ± €50, dan klopt mijn afleiding. Wijkt het af, dan verschuift de runway en elke bufferdatum in het businessplan mee.
+- **Volgende zet:** Eén keer aflezen en vergelijken. Dit is de #1 eerste zet van de volgende sessie, want het draagt de kop van het document.
+- **Status:** open
+
+## 2026-08-25 — De runway van 0,85 maand rekent privé sparen als onvermijdelijk · [aanname]
+- **Bevinding:** Ik nam vaste uitgaven plus het volledige maandbudget (€7.968) als wat doorloopt zodra de omzet stopt. Daar zit €500 privé sparen en €500 vrije uitgave in, en dat is precies wat je als eerste stopzet. Strikt genomen is de onvermijdelijke last €6.968 en de runway 0,97 maand in plaats van 0,85.
+- **Check:** `grep -c "0,85 maand" businessplan-artifact` — of eenvoudiger: staat er in deel 7 nog 0,85, dan is de correctie niet doorgevoerd. Het verschil is klein maar het is een kopcijfer, en te laag oogt hier alarmerender dan het is.
+- **Volgende zet:** Bepalen welke budgetposten je in een noodscenario écht stopzet, en het getal daarop herzien. Dat is dezelfde vraag als de vast/variabel-splitsing die al in het plan staat.
+- **Status:** open
+
+## 2026-08-25 — Het rekenmodel achter het businessplan bestaat alleen in de scratchpad · [debt]
+- **Bevinding:** Elk cijfer in het businessplan komt uit wegwerpscripts in de sessie-scratchpad — de scenariotabellen, de kasopbouw, de driejarenprojectie, het besparingsargument. Die map is sessie-lokaal en verdwijnt. Het artifact draagt de uitkomsten maar niet de afleiding, dus een volgende herrekening begint van nul en kan stil van deze afwijken.
+- **Check:** `ls scripts/plan-model.* 2>/dev/null || echo ontbreekt` in de repo-root — ontbreekt = het model is nog steeds nergens vastgelegd.
+- **Volgende zet:** Eén gecommit script dat de kostenbasis uit de cashflow-app leest en de kerncijfers van het plan opnieuw uitrekent. Dan wordt het artifact een momentopname van iets herhaalbaars in plaats van een eindpunt.
+- **Status:** open
+
+## 2026-08-25 — De bezoldigingsdrempel kan al voor inkomstenjaar 2026 bijten · [risico]
+- **Bevinding:** Het verlaagde tarief van 20% vraagt een bezoldiging van €51.000; die van 2024 was €46.258. De uitzondering "bezoldiging ≥ belastbaar resultaat" dekt dat, want het resultaat was €13.896 — maar alleen zolang het resultaat onder de bezoldiging blijft. Het businessplan plaatst de beslissing in Q4 2027; komt het resultaat van 2026 onverwacht boven €46.258 uit, dan lag de deadline al op 31 december 2026.
+- **Check:** Vraag de boekhouder het verwachte belastbaar resultaat 2026. Onder €46.258 = geen actie nodig dit jaar; erboven = de beslissing moet vóór 31 december vallen en niet volgend jaar.
+- **Volgende zet:** Eén mail naar de boekhouder met die ene vraag. Kost niets en sluit een deadline van vier maanden.
+- **Status:** open

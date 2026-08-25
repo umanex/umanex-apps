@@ -26,23 +26,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+36cdc5b feat(soda-plus): scaffold app voor designopdracht soda+
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
 62ab13d chore: prune four orphans, and declare the binary the render scripts need
-e59eaa1 chore(config): remove the dead flat-config eslint files
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/soda-plus/CLAUDE.md
-  A  apps/soda-plus/app/layout.tsx
-  A  apps/soda-plus/app/page.tsx
-  A  apps/soda-plus/next-env.d.ts
-  A  apps/soda-plus/next.config.mjs
-  A  apps/soda-plus/package.json
-  A  apps/soda-plus/postcss.config.mjs
-  A  apps/soda-plus/tailwind.config.ts
-  A  apps/soda-plus/tsconfig.json
+  A  apps/soda-plus/BACKLOG.md
+  A  apps/soda-plus/audits/2026-08-25-analyse-gedane-werk.md
+  A  apps/soda-plus/audits/2026-08-25-ux-audit-wireframes.md
+  A  apps/soda-plus/briefings/2026-08-25-flow-attituderapport-revisie.tcebc.md
+  ?? apps/soda-plus/briefings/2026-08-25-flow-uitwegen-en-05b.tcebc.md
+  ?? apps/soda-plus/video/
 
 ## Bestanden met TODO/FIXME
   (geen)

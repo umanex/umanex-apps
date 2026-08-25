@@ -73,8 +73,15 @@ async function settle(page) {
       await new Promise((r) => setTimeout(r, 90));
     }
     window.scrollTo(0, 0);
-    await new Promise((r) => setTimeout(r, 250));
   });
+  // Wachten op een vaste tijd is hier de verkeerde vorm: de Reveal-overgang duurt 0,5 s en start
+  // pas wanneer een blok in beeld komt, dus het laatste blok is later klaar dan het eerste.
+  // Gemeten: met 250 ms bleef er sporadisch één blok doorzichtig staan, en dat leverde een
+  // bevinding op die over de harness ging in plaats van over de pagina. Polsen tot het stil is.
+  for (let i = 0; i < 20; i++) {
+    if ((await fadedCount(page)) === 0) return;
+    await page.waitForTimeout(100);
+  }
 }
 
 /** Aantal blokken dat nog (deels) doorzichtig is. 0 = de render toont wat er staat. */

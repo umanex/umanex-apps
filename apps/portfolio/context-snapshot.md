@@ -45,16 +45,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+f1af19f feat(portfolio): drop the scan credit, keep the per-product ladder
 cbaf792 feat(portfolio): price the scan per product instead of flat
 1d4189d feat(portfolio): sell capacity instead of a portfolio
 ea926a1 fix(portfolio): let the header nav fit a 375px screen
 9578c45 test(portfolio): measure narrow screens, dark mode and settled renders
-9a2bc2e chore: sync umanex-os layer with global umanex-os
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md
+  M  apps/portfolio/app/aanbod/page.tsx
   M  apps/portfolio/lib/copy.ts
+  M  apps/portfolio/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

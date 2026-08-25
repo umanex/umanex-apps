@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: copy.meta.aanbod.description,
 };
 
-const { hero, fit, ladder, tiers, terms, anchor, contact } = copy.aanbod;
+const { hero, fit, cost, ladder, tiers, terms, anchor, contact } = copy.aanbod;
 
 export default function AanbodPage() {
   return (
@@ -52,6 +52,72 @@ export default function AanbodPage() {
               </Card>
             </Reveal>
           </div>
+        </section>
+
+        <section className="space-y-8">
+          <Reveal>
+            <div className="max-w-3xl space-y-3">
+              <AccentBar />
+              <h2 className="text-2xl font-bold tracking-tight">{cost.title}</h2>
+              <p className="text-lg text-muted-foreground">{cost.intro}</p>
+            </div>
+          </Reveal>
+          <Reveal>
+            <div className="max-w-3xl space-y-3">
+              {cost.facts.map((fact) => (
+                <p key={fact} className="text-muted-foreground">
+                  {fact}
+                </p>
+              ))}
+            </div>
+          </Reveal>
+          <Reveal>
+            <div className="max-w-3xl overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[30rem] text-sm">
+                <caption className="px-4 pb-1 pt-4 text-left text-sm text-muted-foreground">
+                  {cost.tableCaption}
+                </caption>
+                <thead>
+                  <tr>
+                    {cost.columns.map((col, i) => (
+                      <th
+                        key={col}
+                        scope="col"
+                        className={`border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground ${
+                          i === 0 ? 'text-left' : 'text-right'
+                        }`}
+                      >
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="tabular-nums">
+                  {cost.rows.map((row) => (
+                    <tr key={row.devs} className={row.highlight ? 'bg-accent/40' : undefined}>
+                      <td className="border-b border-border px-4 py-2 font-medium">{row.devs}</td>
+                      <td className="border-b border-border px-4 py-2 text-right text-muted-foreground">
+                        {row.cost}
+                      </td>
+                      <td className="border-b border-border px-4 py-2 text-right font-medium">
+                        {row.lost}
+                      </td>
+                      <td className="border-b border-border px-4 py-2 text-right text-muted-foreground">
+                        {row.month}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Reveal>
+          <Reveal>
+            <div className="max-w-3xl space-y-3">
+              <p className="text-muted-foreground">{cost.cutoff}</p>
+              <p className="text-sm text-muted-foreground">{cost.caveat}</p>
+              <p className="text-sm text-muted-foreground/80">{cost.source}</p>
+            </div>
+          </Reveal>
         </section>
 
         <section className="space-y-8">

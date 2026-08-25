@@ -157,6 +157,29 @@ export const copy = {
         'je een vaste prijs voor een vaste scope wil — dan past een afgebakend traject beter, en dat kan ook',
       ],
     },
+    cost: {
+      title: 'Wat het je vandaag kost',
+      intro:
+        'Reken het na op je eigen loonlijst, want beide getallen hieronder komen niet van mij.',
+      facts: [
+        'Een developer kost in België gemiddeld €40,50 per gewerkt uur, inclusief werkgeversbijdragen. Bij 220 werkdagen is dat €71.280 per jaar.',
+        'De enige langlopende meting die er is, zet het verlies aan technische schuld op 23% van de ontwikkeltijd: werk dat opnieuw gedaan wordt omdat wat er al staat niet meer klopt.',
+      ],
+      tableCaption: 'Wat 23% verlies kost, per teamgrootte',
+      columns: ['Developers', 'Loonkost per jaar', 'Verloren per jaar', 'Per maand'],
+      rows: [
+        { devs: '4', cost: '€285.120', lost: '€65.578', month: '€5.465', highlight: false },
+        { devs: '6', cost: '€427.680', lost: '€98.366', month: '€8.197', highlight: false },
+        { devs: '10', cost: '€712.800', lost: '€163.944', month: '€13.662', highlight: true },
+        { devs: '15', cost: '€1.069.200', lost: '€245.916', month: '€20.493', highlight: false },
+      ],
+      caveat:
+        'Eén voorbehoud dat erbij hoort: die 23% is gemeten op embedded software in C, niet op interfaces. Het is dus een goede maat voor tijd die weglekt naar wat er al staat, en geen directe meting van hoever jouw producten uit elkaar gegroeid zijn. Wat dát bij jou is, meet de scan.',
+      cutoff:
+        'Onder de zes developers klopt de som niet meer — dan kost dit aanbod je meer dan het verlies dat het wegneemt. Dat zeg ik liever nu dan na twee gesprekken.',
+      source:
+        'Loonkost: Statbel, Labour Cost Survey. Technische schuld: Besker, Martini en Bosch in het Journal of Systems and Software, 43 ontwikkelaars over zeven weken.',
+    },
     ladder: {
       title: 'Drie stappen, in deze volgorde',
       intro:

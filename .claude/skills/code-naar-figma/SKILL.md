@@ -232,10 +232,10 @@ Stap 7 bewijst *aanwezigheid* — alles gebonden, geen raw waarden. Stap 8 bewij
 
   ```javascript
   // Bestandsguard op identiteit. DOELKEY = de fileKey uit de URL van het doelbestand.
-  // figma.fileKey is permissie-gebonden en kan leeg zijn (het Bridge-manifest droeg op
-  // 2026-08-25 alleen `teamlibrary`); leeg = terugvallen op de naam én dat mélden, nooit
-  // stil. Het antwoord van figma_execute draagt zelf `fileContext.fileKey` — lees die
-  // terug om te zien of de key in deze opzet gevuld is.
+  // figma.fileKey is via de Desktop Bridge gevuld — gemeten 2026-08-25: een string, ook
+  // al noemt het plugin-manifest de fileKey-permissie niet. Reken er in een andere opzet
+  // niet blind op: leeg = terugvallen op de naam én dat mélden, nooit stil. Wil je het
+  // weten, geef `fileKey` mee in je return — het MCP-antwoord toont hem niet vanzelf.
   const zwak = !figma.fileKey   // true → geef `zwak` mee in het resultaat én meld het in je antwoord
   if (figma.fileKey ? figma.fileKey !== DOELKEY : figma.root.name !== DOELBESTAND)
     return { meting_ongeldig: 'verkeerd bestand: ' + (figma.fileKey || figma.root.name) }

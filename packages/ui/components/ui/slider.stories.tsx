@@ -5,7 +5,10 @@ import source from './slider.tsx?raw';
 const meta = {
   title: 'Componenten/Slider',
   component: Slider,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-443' },
+  },
   argTypes: {
     min: { control: 'number' },
     max: { control: 'number' },

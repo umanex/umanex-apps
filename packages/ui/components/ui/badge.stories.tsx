@@ -5,7 +5,10 @@ import source from './badge.tsx?raw';
 const meta = {
   title: 'Componenten/Badge',
   component: Badge,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-393' },
+  },
   argTypes: {
     variant: { control: 'select', options: ['default', 'secondary', 'destructive', 'outline', 'success', 'warning'] },
   },

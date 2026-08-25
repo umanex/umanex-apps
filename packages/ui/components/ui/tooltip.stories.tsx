@@ -6,7 +6,10 @@ import source from './tooltip.tsx?raw';
 const meta: Meta<typeof TooltipContent> = {
   title: 'Componenten/Tooltip',
   component: TooltipContent,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-479' },
+  },
   argTypes: { side: { control: 'radio', options: ['top', 'right', 'bottom', 'left'] } },
   args: { side: 'top' },
   decorators: [

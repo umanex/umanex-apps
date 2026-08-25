@@ -19,6 +19,9 @@
     "type-check": {
       "outputs": []
     },
+    "figma:check": {
+      "outputs": []
+    },
     "clean": {
       "cache": false
     }

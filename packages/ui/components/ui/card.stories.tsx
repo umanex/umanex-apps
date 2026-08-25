@@ -6,7 +6,10 @@ import source from './card.tsx?raw';
 const meta = {
   title: 'Componenten/Card',
   component: Card,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-432' },
+  },
 } satisfies Meta<typeof Card>;
 
 export default meta;

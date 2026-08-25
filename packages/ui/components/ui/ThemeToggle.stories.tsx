@@ -7,6 +7,7 @@ const meta = {
   component: ThemeToggle,
   parameters: {
     tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-476' },
     docs: {
       description: {
         component:

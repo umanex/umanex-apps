@@ -7,7 +7,10 @@ import source from './label.tsx?raw';
 const meta = {
   title: 'Componenten/Label',
   component: Label,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-416' },
+  },
   args: { children: 'Naam' },
 } satisfies Meta<typeof Label>;
 

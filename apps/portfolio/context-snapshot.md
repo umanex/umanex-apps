@@ -1,5 +1,5 @@
 # Context Snapshot — portfolio
-_Gegenereerd op 2026-08-24_
+_Gegenereerd op 2026-08-25_
 
 ## Project
 - **App:** portfolio
@@ -45,24 +45,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+1d4189d feat(portfolio): sell capacity instead of a portfolio
 ea926a1 fix(portfolio): let the header nav fit a 375px screen
 9578c45 test(portfolio): measure narrow screens, dark mode and settled renders
 9a2bc2e chore: sync umanex-os layer with global umanex-os
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/portfolio/app/aanbod/page.tsx
-  A  apps/portfolio/app/scan/page.tsx
-  M  apps/portfolio/app/werkwijze/page.tsx
-  A  apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md
-  A  apps/portfolio/components/data-display/NumberedStep.tsx
-  A  apps/portfolio/components/data-display/TierCard.tsx
-  M  apps/portfolio/components/layout/Footer.tsx
-  M  apps/portfolio/components/sections/ContactSection.tsx
-  M  apps/portfolio/components/sections/Hero.tsx
-  A  apps/portfolio/components/ui/CheckList.tsx
+  M  apps/portfolio/app/scan/page.tsx
+  M  apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md
+  M  apps/portfolio/lib/copy.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

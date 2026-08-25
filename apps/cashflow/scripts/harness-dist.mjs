@@ -12,7 +12,17 @@ export const LIVE = '.next';
 export const EIGEN = '.next-harness';
 
 export function kiesDist(args) {
-  const DIST = args.find((a) => a.startsWith('--dist='))?.slice(7) ?? EIGEN;
+  // Streng op de vorm: `--dist .next`, `--dist` zonder `=`, `--DIST=` of een tweede `--dist=`
+  // zouden anders stil terugvallen op de default — en die bouwt.
+  const opties = args.filter((a) => /^-{1,2}dist\b/i.test(a));
+  if (opties.length > 1) {
+    throw new Error(`--dist staat ${opties.length} keer (${opties.join(' ')}); één keer, met '=': --dist=${LIVE}`);
+  }
+  const optie = opties[0];
+  if (optie !== undefined && !optie.startsWith('--dist=')) {
+    throw new Error(`${JSON.stringify(optie)}: schrijf --dist=${LIVE} (met '=', kleine letters) — anders valt de harness stil terug op ${EIGEN} en bouwt hij.`);
+  }
+  const DIST = optie?.slice('--dist='.length) ?? EIGEN;
   if (DIST !== LIVE && DIST !== EIGEN) {
     throw new Error(
       `--dist=${JSON.stringify(DIST)} is niet toegestaan: alleen ${LIVE} (serveer een bestaande build, bouw niet) ` +

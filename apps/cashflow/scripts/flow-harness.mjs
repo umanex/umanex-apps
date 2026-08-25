@@ -1081,25 +1081,37 @@ async function main() {
   console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin} (ook in de build)`);
 
   const id = buildId();
-  const server = await startServer();
-
   const teDraaien = [...scenarios(), ...(SELFTEST ? tegenproeven() : [])];
   const resultaten = [];
+  const server = await startServer();
+
   // Alles ná de spawn staat in de try: de server is detached en overleeft een exit(1),
   // dus een throw hier (manifest-check, browser die niet start) zou hem als wees op :3100
-  // achterlaten en de volgende run laten weigeren.
+  // achterlaten en de volgende run laten weigeren. Ctrl+C bereikt hem om dezelfde reden
+  // niet (eigen procesgroep) en Node's default-handler slaat de finally over — dus een
+  // eigen signaalhandler, en Playwright's handlers uit zodat er maar één is.
   let browser;
+  const bijSignaal = (signaal) => {
+    stopServer(server);
+    const dicht = browser ? browser.close().catch(() => {}) : Promise.resolve();
+    dicht.then(() => process.exit(signaal === 'SIGTERM' ? 143 : 130));
+  };
+  process.once('SIGINT', bijSignaal);
+  process.once('SIGTERM', bijSignaal);
   try {
     await controleerGeserveerdeBuild(id);
     console.log(`Flow-harness — serveert ${DIST} (BUILD_ID ${id}) op ${BASE}`);
-    browser = await chromium.launch({ headless: !HEADED });
+    browser = await chromium.launch({ headless: !HEADED, handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false });
     for (const scenario of teDraaien) {
       const r = await draaiScenario(browser, state, scenario);
       resultaten.push({ ...r, moetFalen: scenario.moetFalen === true });
     }
   } finally {
-    if (browser) await browser.close();
+    process.off('SIGINT', bijSignaal);
+    process.off('SIGTERM', bijSignaal);
+    // Server eerst — die teardown mag niet achter een browser.close() hangen die kan gooien.
     stopServer(server);
+    if (browser) await browser.close().catch(() => {});
   }
 
   console.log('');

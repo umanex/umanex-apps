@@ -1,5 +1,19 @@
 {
   "extends": "@umanex/config/tsconfig/react-library.json",
-  "include": ["lib/**/*.ts", "lib/**/*.tsx", "components/**/*.ts", "components/**/*.tsx"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "docs/**/*.ts",
+    "docs/**/*.tsx",
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
+    "tailwind.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "storybook-static"
+  ]
 }

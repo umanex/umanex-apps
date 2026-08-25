@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./tokens.json": "./tokens.json",
     "./theme.css": "./build/theme.css",
     "./roles": {
       "types": "./build/roles.d.ts",

@@ -5,6 +5,7 @@ node_modules
 .next
 .turbo
 dist
+storybook-static
 apps/*/build
 
 # Environment

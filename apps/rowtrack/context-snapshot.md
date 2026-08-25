@@ -59,15 +59,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+30920a2 docs(rowtrack): note the second scan-lock flake of 2026-08-25
 e270ab1 feat(ui): add Storybook with token-driven docs
 fb979d7 docs: log the flaky scan-lock test, and close the CI item it sat under
 c46104f docs(rowtrack): count the test suites instead of remembering them
 aa8797f docs(rowtrack): the device checklist grew with the second connection path
-0b21d93 Merge branch 'main' into fix/hr-verbinding-na-app-wissel
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/lib/ble/scan-lock.test.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

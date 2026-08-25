@@ -37,13 +37,13 @@ figma_get_status
 
 - Actief → ga verder
 - Niet actief → stop. Vraag: "Wil je de Figma Desktop Bridge activeren, of overschakelen naar native MCP?" — wacht op antwoord, ga nooit stilzwijgend verder.
-- **Meerdere bestanden verbonden?** De actieve file kan stil terugwisselen (reconnects). Assert het doelbestand in élke `figma_execute` (`if (figma.root.name !== '<doel>') return {fout: …}`) — zeker vóór schrijfacties; een write in het verkeerde klantbestand is de duurste stille fout van deze skill (les 2026-08-18).
+- **Meerdere bestanden verbonden?** De actieve file kan stil terugwisselen (reconnects). Assert het doelbestand in élke `figma_execute` — zeker vóór schrijfacties; een write in het verkeerde klantbestand is de duurste stille fout van deze skill (les 2026-08-18). Toets op **identiteit, niet op naam**: `figma.fileKey` (de key uit de URL van het doelbestand, `figma.com/design/<fileKey>/…`), niet `figma.root.name`. Een naam is een bewering die iemand ooit typte — gemeten op 2026-08-25 aan béide kanten: de gebruiker hernoemde het bestand in Desktop en de naam-assert blokkeerde de export van het júiste bestand (vals alarm), en het spiegelbeeld is duurder — twee klantbestanden mogen dezelfde naam dragen, dan zwijgt de naam-assert terwijl de write in het verkeerde bestand landt. Het skelet staat in stap 6.
 
 ---
 
 ### Stap 2 — Bepaal doelbestand (en fase, indien van toepassing)
 
-Bepaal naar welk Figma-bestand de component gaat. De beschikbare bestanden en hun keys staan in de klant-CLAUDE.md.
+Bepaal naar welk Figma-bestand de component gaat. De beschikbare bestanden en hun keys staan in de klant-CLAUDE.md. Noteer de **fileKey** — dat is de `DOELKEY` van de bestandsguard (stap 1 en het skelet in stap 6), en de identiteit van het bestand; `DOELBESTAND` is enkel de naam, die dient als noodrem wanneer `figma.fileKey` leeg blijft.
 
 Sommige klanten onderscheiden **designs** van **wireframes** (zie klant-CLAUDE.md). Als dat zo is, vraag of leid af welk van de twee het doel is, want het gevolg verschilt:
 
@@ -231,7 +231,14 @@ Stap 7 bewijst *aanwezigheid* — alles gebonden, geen raw waarden. Stap 8 bewij
   Read-back-skelet:
 
   ```javascript
-  if (figma.root.name !== DOELBESTAND) return { meting_ongeldig: 'verkeerd bestand: ' + figma.root.name }
+  // Bestandsguard op identiteit. DOELKEY = de fileKey uit de URL van het doelbestand.
+  // figma.fileKey is permissie-gebonden en kan leeg zijn (het Bridge-manifest droeg op
+  // 2026-08-25 alleen `teamlibrary`); leeg = terugvallen op de naam én dat mélden, nooit
+  // stil. Het antwoord van figma_execute draagt zelf `fileContext.fileKey` — lees die
+  // terug om te zien of de key in deze opzet gevuld is.
+  const zwak = !figma.fileKey   // true → geef `zwak` mee in het resultaat én meld het in je antwoord
+  if (figma.fileKey ? figma.fileKey !== DOELKEY : figma.root.name !== DOELBESTAND)
+    return { meting_ongeldig: 'verkeerd bestand: ' + (figma.fileKey || figma.root.name) }
   const nm = async id => { try { const v = await figma.variables.getVariableByIdAsync(id); return v ? v.name : id } catch { return id } }
   const resolveBV = async bv => {
     const r = {}

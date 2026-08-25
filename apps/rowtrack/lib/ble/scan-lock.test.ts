@@ -90,15 +90,25 @@ test('de eigenaar die opnieuw aanvraagt, herstart zonder in de rij te gaan staan
   assert.ok(ownsScan(hr));
 });
 
-test('het vangnet geeft het slot vrij als een dienst vergeet los te laten', async () => {
+test('het vangnet geeft het slot vrij als een dienst vergeet los te laten', (t) => {
+  // Gemockte klok. Met echte timers hing deze test aan ms-drift, gemeten op 2026-08-25: de
+  // hr-guard wordt vóór de wachttimer gepland, en valt er een ms-grens tussen die twee
+  // setTimeout-aanroepen, dan verloopt de roeier-guard (hr-start + 20 + 20) één ms vóór de
+  // wacht (start + 40) en vuurt hij eerst — 1/30 zonder drift, 18/30 bij 1,5 ms, 29/30 bij
+  // 3 ms. Op een trage CI-runner faalde hij zo twee keer op één dag. Met tick() is er geen
+  // klok om tegen te racen, en kan de grens zélf getoetst worden.
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const volgorde: string[] = [];
   let onteigend = 0;
   requestScan(hr, () => volgorde.push('hr'), { maxHoldMs: 20, onPreempted: () => onteigend++ });
   requestScan(rower, () => volgorde.push('rower'), { maxHoldMs: 20 });
 
   assert.deepEqual(volgorde, ['hr'], 'nog binnen de tijd: de roeier wacht');
-  await new Promise((r) => setTimeout(r, 40));
+  t.mock.timers.tick(19);
+  assert.deepEqual(volgorde, ['hr'], 'één ms vóór de grens vuurt het vangnet nog niet');
+  assert.equal(onteigend, 0);
 
+  t.mock.timers.tick(1);
   // Zonder dit vangnet blokkeert één dienst die nooit loslaat de wachtrij voorgoed —
   // exact de faalklasse die deze module moest wegnemen.
   assert.deepEqual(volgorde, ['hr', 'rower']);
@@ -107,6 +117,14 @@ test('het vangnet geeft het slot vrij als een dienst vergeet los te laten', asyn
   // En hij hoort dat te wéten: stil onteigenen is precies het mechanisme dat deze module
   // moest wegnemen, en het zou hier via de noodrem terugkomen.
   assert.equal(onteigend, 1);
+
+  // De roeier krijgt zijn eigen vangnet, gerekend vanaf zíjn toekenning: pas 20 ms later
+  // is ook hij zijn slot kwijt en staat de arbiter leeg.
+  t.mock.timers.tick(19);
+  assert.ok(ownsScan(rower), 'de nieuwe eigenaar krijgt de volle maxHold');
+  t.mock.timers.tick(1);
+  assert.ok(!ownsScan(rower));
+  assert.ok(!ownsScan(hr));
 });
 
 test('een late release uit een vorige cyclus raakt de nieuwe toekenning niet', () => {

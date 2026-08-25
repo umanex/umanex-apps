@@ -21,6 +21,8 @@ Deze twee regels sturen elke stap hieronder. Bij twijfel onderweg vallen ze teru
 
 **2. Tokens-first — nul hardcoded waarden.** Elke kleur, spacing, radius en effect bindt aan een Figma variable of style. Een ontbrekende variable is een **gap** die je oplost (`figma_import_library_variable` of `figma_create_variable`) of rapporteert aan de gebruiker — nooit een excuus om een raw hex- of getalwaarde te hardcoden.
 
+**En een variabele is geen ontsnapping aan het token-probleem.** Bestaat er een `tokens.json` (pad in de klant-CLAUDE.md), dan moet élke Figma-variabele die je aanmaakt of bindt daar een tegenhanger in hebben. Een variabele aanmaken voor een waarde die nergens in de token-bron staat, verplaatst het hardcoded getal enkel van de node naar de variabele en maakt Figma een **tweede bron van waarheid** naast `tokens.json` — de gate meldt groen terwijl de drift een laag dieper zit. Gemeten op de umanex Component library (2026-08-25): collectie `Theme` mapt 43/43 op `packages/tokens/tokens.json`, collectie `Base` **1/21** — dertien `spacing-*`, vier `radius-*`, `border-1/2` en `icon-stroke` bestaan alleen in Figma, met de Tailwind-default als stille bron. CLAUDE.md is hier al duidelijk over (*Alleen token-mapping, geen hardcoded values*): heeft een benodigde waarde geen token, **vraag eerst** of er één bij moet. Bouw je op verzoek toch door zonder token, dan is dat een gap die je rapporteert én als item in de dichtstbijzijnde `BACKLOG.md` zet — nooit stilzwijgend.
+
 **Deze twee hangen samen.** Spacing-tokens (`paddingTop`, `itemSpacing`, …) kunnen *alleen* binden op een auto-layout frame. Een frame zonder auto layout breekt spacing-token-binding stil: de waarde wordt dan een raw getal in plaats van een binding. Auto layout is daarom geen losse stijlkeuze maar een **voorwaarde** voor principe 2. Geen auto layout → geen optimale token-mapping.
 
 Een geslaagde export (zie stap 7 en 8) voldoet aan beide: 100% van de token-waarden gebonden, auto layout op alle composietframes — én elke binding matcht het token dat de code bedoelde (de parity-gate, stap 8).
@@ -79,7 +81,8 @@ Controleer voor élk token dat in de component gebruikt wordt:
 - Bestaat de Figma variable al? → gebruik de ID
 - Ontbreekt de variable?
   - Is hij beschikbaar in een library? → `figma_import_library_variable` vóór execute
-  - Bestaat hij nergens? → maak hem aan (`figma_create_variable`) of meld de gap aan de gebruiker
+  - Bestaat hij nergens als Figma-variabele, maar **wél in de token-bron**? → maak hem aan (`figma_create_variable`) met het token-path als naam. Dit is de enige route waarop aanmaken zonder overleg mag.
+  - Staat de waarde **nergens in de token-bron**? → niet aanmaken op eigen gezag. Meld de gap en vraag of er een token bij moet. Zegt de gebruiker "bouw door", dan komt de variabele er mét een `BACKLOG.md`-item dat de ontbrekende as benoemt — anders is de as onvindbaar zodra de export klaar is (gemeten: de `Base`-collectie van de umanex Component library, 20 variabelen zonder token-bron).
 
 Doe dit volledig vóór de execute — een ontbrekende binding halverwege de execute breekt de token-integriteit (principe 2).
 
@@ -213,6 +216,7 @@ figma_get_component_for_development_deep
 - Typography is gekoppeld aan text styles
 - Effect styles zijn gebonden
 - Alle composietframes staan in auto layout (`layoutMode` ≠ `'NONE'`), behalve waar absolute positionering structureel noodzakelijk was
+- Elke variabele die deze export aanmaakte of bond, heeft een tegenhanger in de token-bron — bestaat er een `tokens.json`, dan is een variabele zonder token-pad een **gap, geen oplossing**. Toets op het pad, niet op de naam alleen: de Figma-naam plakt de tokengroep met een koppelteken (`finance-positive` ↔ `Semantic/light/finance/positive`), dus normaliseer vóór je vergelijkt — een naïeve bladnaam-match gaf 36/43 waar het er 43/43 waren.
 
 **Faalt een punt?** Dat is een gap. Los hem op (terug naar stap 5) of rapporteer hem expliciet aan de gebruiker met de reden waarom hij niet opgelost kon worden — sluit nooit af met een stille gap.
 

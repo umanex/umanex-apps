@@ -5,7 +5,10 @@ import source from './tabs.tsx?raw';
 const meta = {
   title: 'Componenten/Tabs',
   component: Tabs,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-459' },
+  },
 } satisfies Meta<typeof Tabs>;
 
 export default meta;

@@ -177,3 +177,16 @@ jobs:
       # draait zijn eigen tegenproef vooraf en heeft netwerk noch database nodig.
       - name: Guard — invarianten op de scorekern (jobradar)
         run: pnpm --filter jobradar scenarios
+
+      # Storybook en het Figma-bestand "Component library" moeten één op één blijven:
+      # elke component een eigen pagina, elke variant-as aan beide kanten hetzelfde,
+      # elke tokenrol een variable, elke deep-link naar een bestaande node. De guard
+      # leest de neergeslagen Figma-staat uit packages/ui/figma/manifest.json — CI heeft
+      # geen Figma-toegang, dus dat bestand is de meting, niet de bron. Wat hij dus NIET
+      # ziet: een wijziging in Figma zonder verse manifest (zie packages/ui/CLAUDE.md).
+      #
+      # De selftest draait ervóór: hij bouwt per as het defect dat de guard moet vangen
+      # en eist dat hij erop afgaat, plus een ongewijzigde kopie die groen moet blijven.
+      # Zonder die twee kanten weet je niet of de guard meet of alleen draait.
+      - name: Guard — Storybook ↔ Figma in sync (met tegenproef)
+        run: pnpm --filter @umanex/ui figma:check:selftest

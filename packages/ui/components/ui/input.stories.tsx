@@ -6,7 +6,10 @@ import source from './input.tsx?raw';
 const meta = {
   title: 'Componenten/Input',
   component: Input,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-413' },
+  },
   argTypes: {
     type: { control: 'select', options: ['text', 'email', 'password', 'number', 'search', 'file'] },
     disabled: { control: 'boolean' },

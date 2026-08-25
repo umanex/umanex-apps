@@ -26,16 +26,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+8ff0dba docs(soda-plus): brief the 05b round and add the video script
 1b269a7 docs(soda-plus): add briefing, analysis, UX audit and backlog for the attitude report
 36cdc5b feat(soda-plus): scaffold app voor designopdracht soda+
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/soda-plus/briefings/2026-08-25-flow-uitwegen-en-05b.tcebc.md
-  A  apps/soda-plus/video/2026-08-25-videoscript.md
+  A  apps/soda-plus/.eslintrc.js
+  M  apps/soda-plus/BACKLOG.md
 
 ## Bestanden met TODO/FIXME
   (geen)

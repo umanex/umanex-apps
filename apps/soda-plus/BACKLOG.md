@@ -111,3 +111,9 @@ Projectlaag van de backlog. Format, statussen en types: zie de kop van `BACKLOG.
 - **Waarom niet nu:** P3-18 — titulariszijde is bewust niet getekend (briefing beslissing 3); dit is copy.
 - **Eerste zet:** tekst 2:334 herschrijven.
 - **Status:** open
+
+## 2026-08-25 — soda-plus opnemen in de laag-discipline-guard · [infra]
+- **Wat:** `packages/tokens/scripts/guard.mjs` kent alleen cashflow, jobradar en portfolio als scope; `apps/soda-plus` valt buiten de guard op primitives, rauwe paletklassen en kale hex. De app gebruikt de gedeelde rollaag (`@umanex/config/tailwind/preset`), dus hij hoort in dezelfde lijst.
+- **Waarom niet nu:** raakt `packages/tokens` (cross-app scope, `chore(tokens):`) en hoort niet in de PR die de scaffold en de docs binnenbrengt; de ESLint-laag (`@umanex/config/eslint/tokens`) dekt intussen de editor.
+- **Eerste zet:** `apps/soda-plus` toevoegen aan de scope-lijst (regel ~37) en de app-lus (regel ~111) in `guard.mjs`; `pnpm --filter @umanex/tokens guard` moet groen blijven en op één ingeplante `bg-green-500` in `apps/soda-plus/app/page.tsx` rood worden (tegenproef).
+- **Status:** open

@@ -26,16 +26,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e270ab1 feat(ui): add Storybook with token-driven docs
+82f305d chore: sync umanex-os layer with global umanex-os
+a7b963c fix(soda-plus): add the ESLint config so next lint runs non-interactively
 8ff0dba docs(soda-plus): brief the 05b round and add the video script
 1b269a7 docs(soda-plus): add briefing, analysis, UX audit and backlog for the attitude report
-36cdc5b feat(soda-plus): scaffold app voor designopdracht soda+
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/soda-plus/.eslintrc.js
-  M  apps/soda-plus/BACKLOG.md
+  M  apps/soda-plus/CLAUDE.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -38,3 +38,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
     - **Status:** open
 
 <!-- De eerste entry maakt hieronder de juiste laag-header aan. -->
+
+# Project — cashflow
+
+## 2026-08-25 — flow-harness deelt `.next` met de PM2-app · [test]
+- **Wat:** `scripts/flow-harness.mjs` bouwt bewust niet (zijn eigen check: *"een build overschrijft de .next waar een draaiende server uit leest"*) en serveert `apps/cashflow/.next` op `:3100` — dezelfde map waar PM2 op `:3000` uit leest. Dat was sluitend zolang cashflow in een eigen zusmap-worktree met een eigen `.next` stond; sinds app-werk in de hoofdtree gebeurt (2026-08-25) toetst de harness op een feature branch alleen de laatst gebouwde staat, en een `next build` om de eigen wijziging te toetsen breekt de draaiende server (gemeten 2026-08-07). Gevolg: het verify-pad "flow-harness op `:3100`" uit de globale laag (`.umanex-os/CLAUDE.md` → Git workflow → Parallel werk) geldt hier alleen voor de gebouwde `main`; feature-werk valt terug op CI.
+- **Waarom niet nu:** De fix raakt `next.config.mjs` (config — vooraf bevestigen) en verandert het gedrag van `pnpm --filter cashflow flow`; buiten de scope van docs-PR #306.
+- **Eerste zet:** `distDir: process.env.NEXT_DIST_DIR ?? '.next'` in `next.config.mjs`; de harness bouwt zélf met `NEXT_DIST_DIR=.next-harness` en spawnt `next start` met dezelfde env; `.next-harness/` in `.gitignore`; de `BUILD_ID`-check en de chunk-scan van de harness verhuizen naar die map. Tegenproef: `pnpm --filter cashflow flow` op een feature branch terwijl PM2 draait — `:3000` serveert vóór en ná dezelfde `BUILD_ID`, en een bewust gebroken scenario op de branch wordt rood op `:3100`.
+- **Status:** open
+

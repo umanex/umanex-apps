@@ -1,0 +1,152 @@
+/**
+ * Tegenproef op figma-sync-check.mjs. Een guard die draait is nog geen guard die meet:
+ * deze test bouwt per as het defect dat de guard moet vangen, en eist dat hij er rood
+ * op gaat — mét de juiste as in het rapport. Draait ook de ongewijzigde kopie als
+ * zwijg-kant: zonder mutatie moet de guard groen zijn, anders slaat hij vals alarm.
+ */
+import { cpSync, mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
+
+const ui = join(dirname(fileURLToPath(import.meta.url)), '..');
+const guard = join(ui, 'scripts/figma-sync-check.mjs');
+
+/** Zet een wegwerp-kopie van de mappen die de guard leest. */
+function verseKopie() {
+  const tmp = mkdtempSync(join(tmpdir(), 'figma-sync-selftest-'));
+  mkdirSync(join(tmp, 'ui/components'), { recursive: true });
+  mkdirSync(join(tmp, 'tokens/build'), { recursive: true });
+  cpSync(join(ui, 'components/ui'), join(tmp, 'ui/components/ui'), { recursive: true });
+  cpSync(join(ui, 'figma'), join(tmp, 'ui/figma'), { recursive: true });
+  cpSync(join(ui, '../tokens/build/roles.mjs'), join(tmp, 'tokens/build/roles.mjs'));
+  return { tmp, uiRoot: join(tmp, 'ui') };
+}
+const draai = uiRoot => {
+  try {
+    return { code: 0, out: execFileSync('node', [guard, `--root=${uiRoot}`], { encoding: 'utf8' }) };
+  } catch (e) {
+    return { code: e.status ?? 1, out: (e.stdout ?? '') + (e.stderr ?? '') };
+  }
+};
+const lees = p => readFileSync(p, 'utf8');
+const schrijf = (p, s) => writeFileSync(p, s);
+
+const gevallen = [
+  {
+    naam: 'variant bijgekomen in de code',
+    as: '[variant]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'components/ui/badge.tsx');
+      schrijf(p, lees(p).replace(
+        "        outline: 'text-foreground',",
+        "        outline: 'text-foreground',\n        info: 'border-transparent bg-primary text-primary-foreground',"));
+    },
+  },
+  {
+    naam: 'component zonder Figma-pagina',
+    as: '[pagina]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      delete m.pages.Slider;
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
+    naam: 'tokenrol ontbreekt in Figma',
+    as: '[token]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      m.collections.Theme.variables = m.collections.Theme.variables.filter(v => v !== 'warning');
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
+    naam: 'radius-afgeleide volgt de preset niet meer',
+    as: '[schaal]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      m.collections.Base.variables['radius-md'] = 7;
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
+    naam: 'spacing wijkt af van n × 4px',
+    as: '[schaal]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      m.collections.Base.variables['spacing-4'] = 15;
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
+    naam: 'Base-variabele zonder bekende categorie (drift)',
+    as: '[schaal]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      m.collections.Base.variables['shadow-offset'] = 3;
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
+    naam: 'icon-stroke wijkt af van lucide',
+    as: '[schaal]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      m.collections.Base.variables['icon-stroke'] = 1.5;
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
+    naam: 'deep-link wijst naar de node van een ander component',
+    as: '[link]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'components/ui/card.stories.tsx');
+      schrijf(p, lees(p).replace('node-id=27-432', 'node-id=27-374'));
+    },
+  },
+  {
+    naam: 'deep-link ontbreekt',
+    as: '[link]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'components/ui/tooltip.stories.tsx');
+      schrijf(p, lees(p).replace(/\n\s*figma: \{ url: '[^']+' \},/, ''));
+    },
+  },
+];
+
+let stuk = 0;
+console.log('figma-sync-selftest — tegenproef per as\n');
+
+// Zwijg-kant: zonder mutatie moet de guard groen zijn.
+{
+  const { tmp, uiRoot } = verseKopie();
+  const r = draai(uiRoot);
+  rmSync(tmp, { recursive: true, force: true });
+  if (r.code === 0) console.log('  ok   zwijg-kant: ongewijzigde kopie is groen');
+  else { console.log('  FAIL zwijg-kant: guard slaat alarm zonder defect\n' + r.out); stuk++; }
+}
+
+// Afgaan-kant: elk defect moet rood worden, op de juiste as.
+for (const g of gevallen) {
+  const { tmp, uiRoot } = verseKopie();
+  g.muteer(uiRoot);
+  const r = draai(uiRoot);
+  rmSync(tmp, { recursive: true, force: true });
+  if (r.code === 0) { console.log(`  FAIL ${g.naam}: guard bleef groen mét het defect`); stuk++; continue; }
+  if (!r.out.includes('FAIL ' + g.as)) {
+    console.log(`  FAIL ${g.naam}: guard ging rood, maar niet op ${g.as}`);
+    stuk++; continue;
+  }
+  console.log(`  ok   ${g.naam} → rood op ${g.as}`);
+}
+
+if (stuk) { console.log(`\n${stuk} van ${gevallen.length + 1} tegenproeven faalde. De guard meet niet wat hij belooft.`); process.exit(1); }
+console.log(`\n${gevallen.length + 1} tegenproeven geslaagd (1 zwijg-kant, ${gevallen.length} afgaan-kant).`);

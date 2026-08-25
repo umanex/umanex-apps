@@ -41,6 +41,24 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Globaal
 
+## 2026-08-25 — Spacing-, border- en shadow-schaal hebben geen token-bron · [refactor]
+- **Wat:** De Figma-collection `Base` draagt `spacing-*` (13 stappen), `border-1/2`, `icon-stroke` en de effect styles `shadow/sm|md`. Geen daarvan komt uit `tokens.json`: hun bron is de Tailwind-default, respectievelijk lucide-react. `roles.mjs` zegt zelf "later spacing, en type". Zolang dat er niet is, is de Figma-kant de enige plek waar deze schaal expliciet staat — en dus een tweede bron naast de tokens.
+- **Waarom niet nu:** De Storybook→Figma-export moest de waarden ergens vandaan halen; ze rauw laten zou principe 2 van `code-naar-figma` schenden (nul hardcoded waarden). Een `Spacing`-set in `tokens.json` toevoegen is een gecoördineerde token-restructurering die via Tokens Studio en een Pull hoort te lopen — een eigen taak, niet een bijproduct van deze.
+- **Eerste zet:** Set `Spacing` (en later `Shadow`) in Tokens Studio aanmaken en pushen. `classifySet` in `packages/tokens/build.mjs` gooit sinds 2026-08-05 op een onbekende set, dus de build wijst zelf de weg (HANDOFF 2026-08-05, resolved). Daarna `packages/ui/scripts/figma-sync-check.mjs` de spacing-as tegen de tokens laten toetsen in plaats van tegen de `n × 4px`-rekenregel.
+- **Status:** open
+
+## 2026-08-25 — Sync-guard ziet een Figma-wijziging pas na een verse manifest · [test]
+- **Wat:** `figma:check` toetst de code tegen `packages/ui/figma/manifest.json` — een neergeslagen meting van het Figma-bestand, geen live verbinding. Wijzigt iemand iets ín Figma zonder de manifest te verversen, dan blijft CI groen terwijl de twee kanten uit elkaar lopen. De omgekeerde richting (code wijzigt, Figma niet) wordt wél gevangen.
+- **Waarom niet nu:** CI heeft geen Figma-toegang. De live-kant vereist een `FIGMA_ACCESS_TOKEN` als repo-secret plus een REST-pad (`figma_get_file_data` of de Figma REST API) — dat is een eigen infra-beslissing met een secret erbij, en die hoort Jeroen te nemen.
+- **Eerste zet:** Een `figma:manifest`-script dat de manifest via de REST API regenereert, plus een CI-stap die hem regenereert en `git diff --exit-code` doet — dezelfde vorm als de bestaande guard "gegenereerde tokens zijn in sync met tokens.json". Alternatief zonder secret: een pre-commit-waarschuwing wanneer `components/ui/*.stories.tsx` wijzigt zonder dat de manifest meebeweegt.
+- **Status:** open
+
+## 2026-08-25 — Hover- en focus-states staan niet in Figma · [ux]
+- **Wat:** De Figma-componenten dragen `disabled` als variant, maar geen hover of focus. In de code zijn dat `hover:bg-primary/90`-achtige alpha-mixen en `focus-visible:ring-*`-utilities.
+- **Waarom niet nu:** Die kleuren hebben geen token — `primary/90` is een Tailwind-alpha op een rol, geen eigen rol. Ze in Figma zetten betekent een handgemengde kleur, dus een hardcoded waarde, en dat ondergraaft precies de sync-claim die deze export maakt. Bewuste keuze, vastgelegd in de briefing.
+- **Eerste zet:** Beslissen of de interactie-states eigen rollen verdienen (`primary-hover`, `ring-offset`) in beide mode-sets. Zo ja, dan volgen de Figma-varianten vanzelf en kan de guard ze meenemen.
+- **Status:** open
+
 ## 2026-08-24 — umanex-profile voert nog "Design Team Of One" · [docs]
 - **Wat:** `.umanex-os/profiles/umanex.md` beschrijft de positionering als *"Design Team Of One"* en de AI-aanpak als *"evolutie van DToO"*. De portfoliosite laat die belofte sinds vandaag los: het bureau-plan stelt dat freelancers structureel zijn vanaf de eerste retainer, dus één-persoon-zijn is geen belofte meer maar een tegenspraak. Het profile bijwerken naar de koper-positionering (meer producten dan designers, capaciteit in dagen) sluit de drift.
 - **Waarom niet nu:** het profile is de klant-laag die élke sessie in élke app stuurt, ook buiten portfolio. De site herschrijven was gevraagd; het merkprofiel herschrijven niet. Stil meeveranderen zou een positioneringsbeslissing verstoppen in een portfolio-PR.

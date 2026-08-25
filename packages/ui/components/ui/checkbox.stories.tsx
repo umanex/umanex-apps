@@ -6,7 +6,10 @@ import source from './checkbox.tsx?raw';
 const meta = {
   title: 'Componenten/Checkbox',
   component: Checkbox,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-406' },
+  },
   argTypes: {
     checked: { control: 'boolean' },
     disabled: { control: 'boolean' },

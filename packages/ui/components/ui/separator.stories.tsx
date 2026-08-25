@@ -5,7 +5,10 @@ import source from './separator.tsx?raw';
 const meta = {
   title: 'Componenten/Separator',
   component: Separator,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-421' },
+  },
   argTypes: { orientation: { control: 'radio', options: ['horizontal', 'vertical'] } },
   args: { orientation: 'horizontal' },
 } satisfies Meta<typeof Separator>;

@@ -6,7 +6,10 @@ import source from './button.tsx?raw';
 const meta = {
   title: 'Componenten/Button',
   component: Button,
-  parameters: { tokens: { source } },
+  parameters: {
+    tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=27-374' },
+  },
   argTypes: {
     variant: { control: 'select', options: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link'] },
     size: { control: 'select', options: ['default', 'sm', 'lg', 'icon'] },

@@ -218,24 +218,25 @@ figma_get_component_for_development_deep
 - Alle composietframes staan in auto layout (`layoutMode` ≠ `'NONE'`), behalve waar absolute positionering structureel noodzakelijk was
 - Elke variabele die deze export aanmaakte of bond, heeft een tegenhanger in de token-bron — bestaat er een `tokens.json`, dan is een variabele zonder token-pad een **gap, geen oplossing**. Toets op het pad, niet op de naam alleen: de Figma-naam plakt de tokengroep met een koppelteken (`finance-positive` ↔ `Semantic/light/finance/positive`), dus normaliseer vóór je vergelijkt — een naïeve bladnaam-match gaf 36/43 waar het er 43/43 waren.
 
-**De token-dekkings-check — draai hem, herleid hem niet.** De normalisatie is de plek waar deze meting fout gaat: een naïeve bladnaam-match gaf 36/43 waar het er 43/43 waren, omdat de Figma-naam de tokengroep met een koppelteken plakt.
+**De token-dekkings-check — draai hem, herleid hem niet.** De normalisatie is de plek waar deze meting fout gaat: een naïeve bladnaam-match gaf 36/43 waar het er 43/43 waren, omdat de Figma-naam de tokengroep met een koppelteken plakt. Herschrijf hem daarom niet per sessie — er staat een getoetst script klaar.
+
+Stap 1, de dump (read-only, ná de bestandsguard):
 
 ```javascript
-// Figma-kant (read-only, na de bestandsguard)
 const cols = await figma.variables.getLocalVariableCollectionsAsync()
 const vars = await figma.variables.getLocalVariablesAsync()
-return vars.map(v => ({ naam: v.name, col: cols.find(c => c.id === v.variableCollectionId)?.name }))
+const uit = {}
+for (const v of vars) (uit[cols.find(c => c.id === v.variableCollectionId)?.name || '?'] ??= []).push(v.name)
+return uit                       // {"Theme":["primary",…],"Base":["radius",…]}
 ```
 
-```python
-# Token-kant: leaf-paden uit tokens.json, genormaliseerd naar de Figma-vorm
-def norm(pad):                      # 'Semantic/light/finance/positive' -> 'finance-positive'
-    s = pad.split('/')
-    if s[0] in ('Theme', 'Semantic'): s = s[2:]      # groep + mode weg
-    return '-'.join(s).lower()
+Stap 2, de vergelijking — schrijf de dump naar een bestand en draai:
+
+```bash
+node <repo>/templates/figma-token-coverage.mjs --tokens=<pad/tokens.json> --vars=<pad/figma-vars.json>
 ```
 
-Pass-conditie: elke variabele valt op een genormaliseerd token-pad. **En minstens één collectie moet in dezelfde run groen komen** — komt álles rood, dan meet je normalisatie iets anders dan token-dekking en is de uitkomst ongeldig, geen bevinding (CLAUDE.md, *Een lege meting vraagt een positieve controle*). `Primitives` en `Typography` horen níet als losse variabele te bestaan; die zitten als referentie áchter de Theme-laag.
+Exit 0 = alles gedekt · 1 = variabelen zonder token (de bevinding) · **2 = meting ongeldig**, en dat laatste is bewust een eigen type: geen enkele match, een lege dump of een lege token-bron is een instrumentfout, geen afwezigheidsbewijs. Matching gebeurt op de **staart** van het tokenpad, dus dezelfde check werkt op umanex (`Theme/light/x`), rowtrack (`Core|Theme|Component`) en Columba (`semantic/color/text/primary`, geen mode-laag) zonder configuratie. Een `⚠ dubbelzinnig` meldt dat een naam op twee échte lagen matcht (`chart-1` → `Primitives/Chart/1` én `Theme/light/chart-1`) — mode-varianten zwijgen. De tegenproef staat in `scripts/test-figma-token-coverage.sh` (9 cases, beide kanten per regel).
 
 **Faalt een punt?** Dat is een gap. Los hem op (terug naar stap 5) of rapporteer hem expliciet aan de gebruiker met de reden waarom hij niet opgelost kon worden — sluit nooit af met een stille gap.
 

@@ -49,15 +49,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ac48be5 Merge remote-tracking branch 'origin/main' into feature/cashflow-harness-distdir
+3c61b21 feat(ui): export Storybook components to Figma with a sync guard
+c9a290d fix(cashflow): exit 130/143 when the harness is interrupted after the browser started
 f41a428 fix(cashflow): stop the harness server on SIGINT/SIGTERM, reject malformed --dist
 f759073 fix(cashflow): allowlist the harness distDir, prove the served build
-81b8e88 feat(cashflow): let the flow-harness build in its own distDir
-eb807c3 docs: drop the last sibling-tree references, close the backlog item
-e270ab1 feat(ui): add Storybook with token-driven docs
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/scripts/flow-harness.mjs
+  M  apps/cashflow/BACKLOG.md
 
 ## Bestanden met TODO/FIXME
   (geen)

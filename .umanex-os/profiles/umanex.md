@@ -10,37 +10,30 @@ Belangrijk verschil met klant-profiles: hier ben *jij* het merk. Het profile bes
 
 ## Wie en wat
 
-**umanex** is Jeroens label voor zowel klantwerk als eigen producten en diensten. Eén aanspreekpunt — Jeroen — maar het werk wordt geleverd door Jeroen plus freelancers plus een agent-stack. Geen loonlijst: freelancers op afroep, tot er drie lopende opdrachten zijn.
+**umanex** is Jeroens freelance label voor zowel klantwerk als eigen producten en diensten. Eén persoon, niet een team.
 
-Positionering: **een designteam voor softwarebedrijven met meer producten dan designers.** Je verkoopt capaciteit in dagen per maand, niet losse dagen en niet projecten. Het koopsignaal is het aantal softwarepakketten tegenover het aantal designers, niet de omvang van het bedrijf.
+Positionering: **"Design Team Of One"** — helpt complexe B2B software teams sneller gebruiksvriendelijke functionaliteiten lanceren. Focus op UX voor B2B omgevingen.
 
-**De schaarste waar dat op rust:** bouwen is goedkoop geworden, oordelen en verifiëren niet. umanex-os is de machine voor precies die schaarste — en het komt in de repo van de klant te staan, niet in Jeroens hoofd. Dat eigendom is het verkoopargument tegenover "afhankelijk worden van iemand anders zijn systeem".
-
-Vastgelegd in het bureau-plan *umanex 2027* (24 augustus 2026, artifact `0d79a364-bbcd-4880-8829-1d254d92bb78`), doorgerekend op de eigen cashflow-cijfers en op marktonderzoek. De uitwerking naar publieke copy staat in `apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md`.
-
-**Historiek.** Tot 2026-08-24 luidde de positionering **"Design Team Of One"**, later "Design Team Of One + AI". Die is vervallen, niet verzacht: het model maakt freelancers structureel vanaf de eerste lopende opdracht, dus één-persoon-zijn beloven spreekt het model tegen. Kom je die term nog tegen in oudere audits, briefings of op de Framer-site — dat is historiek, geen huidige lijn.
+**Toekomst:** AI-gedreven aanpak. Het umanex-os project (waarvan dit profile deel uitmaakt) is de praktische uitwerking daarvan. Een evolutie van "Design Team Of One" naar "Design Team Of One + AI".
 
 ### Soorten output
 
-Vijf categorieën, die bepalen hoe je over een vraag redeneert:
+Vier categorieën, die bepalen hoe je over een vraag redeneert:
 
-- **Bureauwerk** — designcapaciteit bij productbedrijven, onder umanex-merk. De groeilijn: scan → afgebakend traject → capaciteit per maand
-- **Portfolio** — eigen showcase op umanex.be. Sinds 2026-08-24 de voordeur van het bureau, niet langer een persoonlijk portfolio voor hiring-beslissers
+- **Portfolio** — eigen showcase op umanex.be
 - **Eigen producten** — apps, tools en websites die je verkoopt of weggeeft
-- **Klantwerk via een tussenpartij** — niet onder umanex-merk gepubliceerd, wel onder de hood gebouwd door umanex. Dit is de vloer waar het bureau bovenop groeit, niet de groei zelf
+- **Klantwerk** — niet onder umanex-merk gepubliceerd, maar onder de hood gebouwd door umanex
 - **Consultancy** — strategisch werk, AI-aanpakken, design system rollouts
 
 Alle eigen web- en mobile-apps leven in de `umanex-apps` monorepo, onder `apps/{app}/`.
 
 ### Doelgroep
 
-**De koper staat voorop.** Eén profiel draagt het bureau; de rest is nevenpubliek.
+Drie groepen, met dezelfde umanex-stem maar nuance per context:
 
-- **Productbedrijven met meer software dan designers** — 20 tot 100 mensen, meer dan één softwarepakket in productie, eigen repo, meerdere developers, hoogstens één of twee designers. Beslisser: CTO, oprichter of head of product, tekenbevoegd zonder aanbesteding. Dit is de doelgroep waar copy, aanbod en site op geschreven zijn
-- **Designers en dev teams in business software** — voor consultancy en klantwerk via een tussenpartij
+- **Designers en dev teams in business software** — voor consultancy en klantwerk
+- **Freelancers en kleine bedrijven** — die hun eigen tools willen bouwen
 - **Jezelf** — tools die je dagelijks gebruikt en deelt
-
-**Uitdrukkelijk niet de doelgroep: "KMO" in de Vlaamse betekenis.** Dat woord is formeel betekenisloos en selecteert in het spraakgebruik precies de groep zonder repo en zonder budget. Onder 50 werknemers ontbreken zowel de developers als het geld — het *totale* IT-budget van een bedrijf met €1 mln omzet ligt in de orde van een enkel traject. Ook uit: freelancers en kleine bedrijven die hun eigen tools willen bouwen. Die stonden hier tot 2026-08-24 als doelgroep en zijn bewust geschrapt.
 
 ---
 
@@ -72,7 +65,6 @@ Niet vertalen wat in het vakgebied actief Engels gebruikt wordt.
 **Vakwoorden die actief gebruikt worden:**
 - Design: design system, tokens, components, edge cases
 - Positionering: B2B software, complex UX, business software teams
-- Aanbod: capaciteit, dagen per maand, componentlaag, drift, nulmeting, scan
 - Toekomst: workflow, AI-aanpak, agent, prompt
 - Product/startup: lean, ship, iterate
 
@@ -84,21 +76,11 @@ Niet vertalen wat in het vakgebied actief Engels gebruikt wordt.
 
 Het juiste midden: **direct, met vakkennis, zonder marketing-fluff of ondermijning**.
 
-### Drie naamregels rond het aanbod
-
-Geen stijlvoorkeur maar bevindingen uit het marktonderzoek in het bureau-plan. Ze gelden overal waar het aanbod ter sprake komt — site, LinkedIn, mail, offerte, gesprek.
-
-1. **Nooit "design abonnement" of "design retainer" in het Nederlands.** Die categorie zit in België op €249–1.295 per maand. Wie het woord gebruikt, verdedigt daarna een factor zes. Zeg: capaciteit, dagen, of een design-system-programma.
-2. **Nooit "goedkoper dan een aanwerving".** Dat argument is aan tafel falsifieerbaar — een oprichter kent zijn loonlijst en rekent het in dertig seconden na, en de uitkomst valt de verkeerde kant op. Het anker is het projectbudget: een design system als project ligt in België rond €60.000, vooraf getekend en in één scope.
-3. **Nooit onbeperkte inzet suggereren.** Het aantal dagen staat in het contract, dagen vervallen per maand met maximaal één maand doorrol. Onbeperkte-verzoeken-modellen bestaan alleen onder €1.500 per maand; erboven durft niemand de blootstelling aan.
-
-Deze regels zijn afdwingbaar gemaakt in de portfolio-copy: `apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md` heeft ze als toetsbare acceptatie-items, gemeten op de gerenderde pagina.
-
 ### Concrete voorbeelden
 
 **Portfolio of LinkedIn intro:**
 
-> "Meer producten dan designers? Ik lever de capaciteit om dat om te keren — één gedeelde componentlaag over al je interfaces, ingekocht in dagen per maand, met een systeem eronder dat bewaakt dat wat eruit komt klopt."
+> "Ik help complexe B2B teams sneller gebruiksvriendelijke functionaliteiten lanceren. Design Team Of One — voor B2B software die echt werkt."
 
 **Eerste reactie op een prospect-aanvraag:**
 
@@ -188,12 +170,10 @@ Vercel deployments doe **ik zelf manueel** — niet automatisch laten triggeren 
 
 ## Spanningen om bewust van te zijn
 
-Vier dingen die in elke umanex-beslissing kunnen meespelen:
+Drie dingen die in elke umanex-beslissing kunnen meespelen:
 
-1. **De koper en de vakgenoot zijn verschillende lezers** — een CTO die capaciteit koopt en een designer die je werkwijze leest, hebben niet dezelfde vraag. De umanex-stem (direct, vakman, je-vorm) is constant, maar de *diepte* en het *vakjargon* mag schalen. Bij twijfel wint de koper: dat is waar het aanbod op geschreven is
+1. **Diverse doelgroepen onder één merk** — designers, freelancers en jezelf zijn verschillende lezers. De umanex-stem (direct, vakman, je-vorm) is constant, maar de *diepte* en het *vakjargon* mag schalen. Voor designers mag je dieper gaan dan voor een freelancer-eindgebruiker
 
-2. **Je verkoopt input, je verhaal gaat over uitkomst** — het aanbod is in dagen geprijsd met een programma eromheen, terwijl het argument eronder over oordeel en verificatie gaat. Dat is bewust en tijdelijk: uitkomsten verkopen vraagt risico dragen op iets dat je niet volledig controleert, en dat kan pas met een buffer. Geloof de these over *wat* je bouwt en hoe je je positioneert; nog niet over hoe je betaald wordt. De scan is de brug — die levert het meetpunt dat outcome-pricing later mogelijk maakt
+2. **Klant- versus eigen werk** — klantwerk wordt onder de hood gemaakt door umanex maar niet onder umanex-merk gepubliceerd. Eigen werk wel. Tone, depth en stijl kunnen verschillen — bij twijfel: vraag voor wie de output bedoeld is
 
-3. **Klant- versus eigen werk** — klantwerk wordt onder de hood gemaakt door umanex maar niet onder umanex-merk gepubliceerd. Eigen werk wel. Tone, depth en stijl kunnen verschillen — bij twijfel: vraag voor wie de output bedoeld is
-
-4. **umanex-DNA versus project-DNA** — RowTrack heeft eigen tokens en eigen styling-keuzes. Niet alles wat onder umanex-paraplu valt deelt automatisch dezelfde visuele DNA. Wanneer een briefing voor een umanex project is, vraag eerst of het project umanex-DNA volgt of project-eigen DNA heeft.
+3. **umanex-DNA versus project-DNA** — RowTrack heeft eigen tokens en eigen styling-keuzes. Niet alles wat onder umanex-paraplu valt deelt automatisch dezelfde visuele DNA. Wanneer een briefing voor een umanex project is, vraag eerst of het project umanex-DNA volgt of project-eigen DNA heeft.

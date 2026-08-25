@@ -1,5 +1,5 @@
 #!/bin/bash
-# .githooks/commit-msg — houdt app-werk binnen zijn eigen app én binnen zijn eigen tree.
+# .githooks/commit-msg — houdt app-werk binnen zijn eigen app.
 #
 # De fout die dit vangt: twee taken tegelijk in één working tree. `git add -A` veegt de
 # in-flight wijzigingen van app B mee in de commit van app A. De commit slaagt, CI blijft
@@ -15,20 +15,15 @@
 # Zero-config: de app-lijst komt uit `apps/*` op schijf, niet uit een lijst die je moet
 # bijhouden. Een nieuwe app doet automatisch mee, een verwijderde valt vanzelf weg.
 #
-# De tweede regel, ook in één zin: raakt een commit een app die zijn eigen worktree heeft,
-# dan hoort hij in díe worktree gemaakt te worden. GEMETEN in umanex-apps: de rowtrack-
-# worktree bestond sinds 2026-08-08, en er zijn daarna vijf rowtrack-branches in de
-# hóófdtree ontstaan — elk afgetakt van waar HEAD toevallig stond. Niets in de keten zei
-# ooit iets, want beide bestaande guards toetsen wélke app je raakt, nooit wáár je zit.
+# Tot 2026-08-25 zat hier een tweede guard (tree-guard): raakte een commit een app met een
+# eigen zusmap-worktree `../<repo>-<app>`, dan moest hij dáár gemaakt worden. Die conventie
+# is geschrapt — app-werk gebeurt in de hoofdtree (CLAUDE.md → Git workflow → Parallel werk)
+# — en een guard die naar een afgeschafte map wijst, blokkeert precies het gewenste gedrag
+# zolang zo'n map nog ergens staat. scripts/test-guards.sh houdt daar een negatieve controle
+# op: een zusmap-worktree mag een commit in de hoofdtree niet meer tegenhouden.
 #
-# Die as wordt op INHOUD gemeten, niet op de branchnaam: de gestagede paden zeggen welke
-# app dit is, een naam als `fix/hr-verbinding-na-app-wissel` zegt dat niet. Daarom staat
-# de guard hier en niet in een post-checkout — op het moment van vertakken bestaat er nog
-# geen inhoud om aan te meten, en dan blijft alleen raden over.
-#
-# Escape: `Cross-app: <reden>` voor de scope-regel, `Main-tree: <reden>` voor de tree-regel.
-# Expliciet en greppable. `--no-verify` is de slechtere weg — dat slaat álle hooks over,
-# ook de snapshot-sync.
+# Escape: `Cross-app: <reden>`. Expliciet en greppable. `--no-verify` is de slechtere weg —
+# dat slaat álle hooks over, ook de snapshot-sync.
 #
 # Canonieke bron: umanex-os/templates/githooks-commit-msg. Gesynct naar
 # <klant-repo>/.githooks/commit-msg en geactiveerd via core.hooksPath=.githooks
@@ -60,69 +55,7 @@ if [ -e "$(git rev-parse --git-path MERGE_HEAD)" ]; then
   exit 0
 fi
 
-# ── 1. Tree-guard: app-werk hoort in de worktree van die app ─────────────────────────
-#
-# Welke worktree bij welke app hoort volgt uit de conventie uit CLAUDE.md
-# (`git worktree add ../<repo>-<app>`): strip de basename van de hoofdtree plus een
-# koppelteken van de basename van een linked worktree, en wat overblijft is de app-slug.
-# Gemeten over de drie klant-repo's klopt dat op alle zes de worktrees (umanex-apps-
-# rowtrack → rowtrack, Luminus-fleet-manager → fleet-manager, ...). De extra eis dat
-# `apps/<slug>` ook echt bestaat houdt een toevallig gelijkende mapnaam erbuiten.
-#
-# Bestaat er géén worktree voor deze app, dan zegt de guard niets: de regel is "werk in de
-# worktree die er is", niet "maak overal worktrees". En zit je al in de juiste tree, dan
-# is er per definitie niets aan de hand — dat is de zwijg-kant.
-staged_all="$(git diff --cached --name-only --diff-filter=ACMRD)"
-staged_apps="$(printf '%s\n' "$staged_all" | sed -n 's#^apps/\([^/]*\)/.*#\1#p' | sort -u)"
-
-wt_app=""; wt_dir=""
-if [ -n "$staged_apps" ]; then
-  cur_top="$(git rev-parse --show-toplevel 2>/dev/null)"
-  # De eerste regel van `worktree list --porcelain` is altijd de hoofdtree.
-  main_top="$(git worktree list --porcelain 2>/dev/null | sed -n '1s#^worktree ##p')"
-  main_base="$(basename "${main_top:-.}")"
-  while IFS= read -r wt_path; do
-    [ -n "$wt_path" ] || continue
-    [ "$wt_path" = "$main_top" ] && continue
-    wt_base="$(basename "$wt_path")"
-    case "$wt_base" in
-      "$main_base"-*) slug="${wt_base#"$main_base"-}" ;;
-      *) continue ;;
-    esac
-    [ -d "apps/$slug" ] || continue
-    printf '%s\n' "$staged_apps" | grep -qx "$slug" || continue
-    [ "$wt_path" = "$cur_top" ] && continue
-    wt_app="$slug"; wt_dir="$wt_path"; break
-  done << EOF
-$(git worktree list --porcelain 2>/dev/null | sed -n 's#^worktree ##p')
-EOF
-fi
-
-if [ -n "$wt_app" ]; then
-  if grep -qiE '^Main-tree:[[:space:]]*[^[:space:]]' "$MSG_FILE"; then
-    echo "ℹ Main-tree trailer gevonden — tree-guard overgeslagen voor apps/$wt_app"
-  else
-    echo ""
-    echo "✗ Commit gestopt — apps/$wt_app heeft een eigen worktree, en dit is hem niet."
-    echo ""
-    echo "  Je zit in:     $cur_top"
-    echo "  Hoort in:      $wt_dir"
-    echo ""
-    printf '%s\n' "$staged_all" | grep "^apps/$wt_app/" | sed 's/^/      /'
-    echo ""
-    echo "  Een branch lost dit niet op: er is één set bestanden op schijf, gedeeld door"
-    echo "  élke branch. Verhuizen kost twee commando's — de stash is repo-breed:"
-    echo ""
-    echo "    git stash push -- apps/$wt_app"
-    echo "    cd $wt_dir && git stash pop"
-    echo ""
-    echo "  Bewust hier? Zet een 'Main-tree: <reden>' trailer in de body."
-    echo ""
-    exit 1
-  fi
-fi
-
-# ── 2. Scope-guard: een app-scoped commit mag geen ándere app raken ──────────────────
+# ── Scope-guard: een app-scoped commit mag geen ándere app raken ──────────────────────
 # Scope uit een Conventional-Commit subject: type(scope): ... of type(scope)!: ...
 scope="$(printf '%s' "$subject" | sed -n 's#^[a-z][a-z]*(\([^)]\{1,\}\))!\{0,1\}:.*#\1#p')"
 
@@ -132,7 +65,8 @@ scope="$(printf '%s' "$subject" | sed -n 's#^[a-z][a-z]*(\([^)]\{1,\}\))!\{0,1\}
 
 # Welke apps raakt deze commit werkelijk? Inclusief deletes (D): een verwijderd bestand in
 # een andere app is net zo goed vervuiling.
-staged="$staged_all"
+staged_all="$(git diff --cached --name-only --diff-filter=ACMRD)"
+staged_apps="$(printf '%s\n' "$staged_all" | sed -n 's#^apps/\([^/]*\)/.*#\1#p' | sort -u)"
 foreign="$(printf '%s\n' "$staged_apps" | grep -vx "$scope" || true)"
 
 [ -n "$foreign" ] || exit 0
@@ -143,8 +77,6 @@ if grep -qiE '^Cross-app:[[:space:]]*[^[:space:]]' "$MSG_FILE"; then
   exit 0
 fi
 
-repo_name="$(basename "$(pwd)")"
-
 echo ""
 echo "✗ Commit gestopt — scope '($scope)' raakt een andere app."
 echo ""
@@ -152,7 +84,7 @@ echo "  Deze commit zegt '($scope)' maar wijzigt ook:"
 for app in $foreign; do
   echo ""
   echo "    apps/$app/"
-  printf '%s\n' "$staged" | grep "^apps/$app/" | sed 's/^/      /'
+  printf '%s\n' "$staged_all" | grep "^apps/$app/" | sed 's/^/      /'
 done
 echo ""
 echo "  Twee taken in één working tree lopen door elkaar. Kies:"
@@ -160,8 +92,8 @@ echo ""
 echo "    Splits de commit    git restore --staged apps/<andere-app>"
 echo "                        commit opnieuw, daarna de andere app apart"
 echo ""
-echo "    Werk parallel       git worktree add ../$repo_name-<app> -b <type>/<naam>"
-echo "                        eigen tree, eigen branch — ze kunnen elkaar niet raken"
+echo "    Parkeer de rest     git stash push -u -- apps/<andere-app>"
+echo "                        -u neemt ongetrackte bestanden mee; pop pas als deze commit staat"
 echo ""
 echo "    Écht cross-app      zet 'Cross-app: <reden>' in de commit body"
 echo ""

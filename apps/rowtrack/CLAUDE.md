@@ -77,10 +77,11 @@ het af te leiden. Staat er "geen", dan is dat een gat dat gebouwd moet worden �
 een blanco scherm en een gefaalde assert — terwijl er niets mis is met de app. Wie ze niet kent,
 rapporteert een vals negatief.
 
-1. **Een verse worktree heeft geen `.env`.** Dat bestand is gitignored, dus het reist niet mee met
-   `git worktree add`. Zonder `EXPO_PUBLIC_SUPABASE_URL` en `..._ANON_KEY` crasht de app bij het
+1. **Een verse tree (agent-worktree, `.claude/worktrees/<taak>`) heeft geen `.env`.** Dat bestand is
+   gitignored, dus het reist niet mee met `git worktree add`. Zonder `EXPO_PUBLIC_SUPABASE_URL` en `..._ANON_KEY` crasht de app bij het
    opstarten op *"Missing Supabase env vars"* en toont de hiërarchie enkel de statusbalk. Fix:
-   `cp ../umanex-apps/apps/rowtrack/.env apps/rowtrack/.env` en Metro herstarten.
+   `cp "$(git worktree list --porcelain | sed -n '1s#^worktree ##p')/apps/rowtrack/.env" apps/rowtrack/.env`
+   (de eerste regel van `worktree list --porcelain` is altijd de hoofdtree) en Metro herstarten.
 2. **Het dev-menu van de development build verbergt de app.** Bij de eerste start ná installatie
    verschijnt een onboarding-sheet, en het dev-menu zelf legt zich als aparte laag over de app.
    Maestro ziet dan géén app-inhoud, ook al staat het scherm er visueel achter. `smoke.yaml` klikt

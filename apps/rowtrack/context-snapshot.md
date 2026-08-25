@@ -59,15 +59,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+1e1b64f Merge remote-tracking branch 'origin/main' into docs/parallel-werk-hoofdtree
 e270ab1 feat(ui): add Storybook with token-driven docs
+a838d47 docs: app work lives in the main tree, drop the sibling-worktree section
 fb979d7 docs: log the flaky scan-lock test, and close the CI item it sat under
 c46104f docs(rowtrack): count the test suites instead of remembering them
-aa8797f docs(rowtrack): the device checklist grew with the second connection path
-0b21d93 Merge branch 'main' into fix/hr-verbinding-na-app-wissel
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/context-snapshot.md
 
 ## Bestanden met TODO/FIXME
   (geen)

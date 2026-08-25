@@ -48,6 +48,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { beoordeel, beschrijfFout, meetInPagina, STIL_CSS } from './contrast.mjs';
+import { kiesDist } from './harness-dist.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = resolve(HERE, '..');
@@ -60,14 +61,19 @@ const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3100)
 const BASE = `http://127.0.0.1:${PORT}`;
 
 // ── Build-map ────────────────────────────────────────────────────────────────
-// `.next` is de live map: daar leest een draaiende `next start` (PM2 op :3000) uit, en
-// `next build` maakt hem eerst leeg. In die map bouwt de harness dus nooit — `--dist=.next`
-// betekent per definitie "serveer wat er staat". Elke andere map bouwt hij zelf, tenzij
-// `--no-build` de vorige build wil hergebruiken.
-const DIST = args.find((a) => a.startsWith('--dist='))?.slice(7) ?? '.next-harness';
+// Twee namen, letterlijk, gekozen in `harness-dist.mjs`: `.next` is de live map (PM2 op
+// :3000 leest eruit) en wordt alleen geserveerd; `.next-harness` is de eigen map en wordt
+// gebouwd, tenzij `--no-build` de vorige build hergebruikt. Vrije invoer is een wisser —
+// `next build` maakt de doelmap eerst leeg — dus een allowlist, geen normalisatie.
+let gekozen;
+try {
+  gekozen = kiesDist(args);
+} catch (err) {
+  console.error(err.message);
+  process.exit(2);
+}
+const { DIST, LIVE_MAP, BOUWEN } = gekozen;
 const DIST_PAD = resolve(APP, DIST);
-const LIVE_MAP = DIST_PAD === resolve(APP, '.next');
-const BOUWEN = !LIVE_MAP && !args.includes('--no-build');
 
 // ── Fixture ──────────────────────────────────────────────────────────────────
 // Eén post in de eerste kolom, met een bedrag dat nergens anders voorkomt zodat de
@@ -301,6 +307,22 @@ async function bouw() {
 
 function buildId() {
   return readFileSync(resolve(DIST_PAD, 'BUILD_ID'), 'utf8').trim();
+}
+
+/**
+ * "Serveert <map>" mag niet van de schijf komen: Next koppelt de geserveerde map nergens
+ * aan wat er net gebouwd is, dus een `next start` zonder NEXT_DIST_DIR zou stil `.next`
+ * serveren terwijl de log `.next-harness` claimt. Vraag de server dus om het manifest van
+ * díe BUILD_ID; een andere build op die poort geeft 404.
+ */
+async function controleerGeserveerdeBuild(id) {
+  const res = await fetch(`${BASE}/_next/static/${id}/_buildManifest.js`, { redirect: 'manual' });
+  if (res.status !== 200) {
+    throw new Error(
+      `${BASE} serveert niet ${DIST} (BUILD_ID ${id}): het manifest gaf ${res.status}. ` +
+        'Een andere build op die poort, of NEXT_DIST_DIR kwam niet bij `next start` aan.',
+    );
+  }
 }
 
 /** Vóór de origin-check: die leest de chunks en zou een ontbrekende build als "bouw opnieuw" melden. */
@@ -1058,19 +1080,25 @@ async function main() {
 
   console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin} (ook in de build)`);
 
+  const id = buildId();
   const server = await startServer();
-  console.log(`Flow-harness — serveert ${DIST} (BUILD_ID ${buildId()}) op ${BASE}`);
-  const browser = await chromium.launch({ headless: !HEADED });
 
   const teDraaien = [...scenarios(), ...(SELFTEST ? tegenproeven() : [])];
   const resultaten = [];
+  // Alles ná de spawn staat in de try: de server is detached en overleeft een exit(1),
+  // dus een throw hier (manifest-check, browser die niet start) zou hem als wees op :3100
+  // achterlaten en de volgende run laten weigeren.
+  let browser;
   try {
+    await controleerGeserveerdeBuild(id);
+    console.log(`Flow-harness — serveert ${DIST} (BUILD_ID ${id}) op ${BASE}`);
+    browser = await chromium.launch({ headless: !HEADED });
     for (const scenario of teDraaien) {
       const r = await draaiScenario(browser, state, scenario);
       resultaten.push({ ...r, moetFalen: scenario.moetFalen === true });
     }
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
     stopServer(server);
   }
 

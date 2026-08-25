@@ -49,19 +49,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+81b8e88 feat(cashflow): let the flow-harness build in its own distDir
 eb807c3 docs: drop the last sibling-tree references, close the backlog item
 e270ab1 feat(ui): add Storybook with token-driven docs
 3cdbb55 docs: capture the session's open questions and give an old item a check
 9a2bc2e chore: sync umanex-os layer with global umanex-os
-e4f55bc docs(cashflow): zet de beginsaldo-briefing op gevalideerd
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/BACKLOG.md
   M  apps/cashflow/CLAUDE.md
   M  apps/cashflow/next.config.mjs
-  M  apps/cashflow/package.json
   M  apps/cashflow/scripts/flow-harness.mjs
+  A  apps/cashflow/scripts/harness-dist.mjs
   M  apps/cashflow/tsconfig.json
 
 ## Bestanden met TODO/FIXME

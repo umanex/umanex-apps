@@ -15,6 +15,14 @@
  * De invoer wordt NIET live uit de app gelezen: dat vraagt credentials die een script in de repo
  * niet hoort te dragen. Elke waarde staat hieronder met zijn herkomst en met hoe je hem opnieuw
  * meet. Verandert de app, dan werk je dit blok bij en zie je meteen wat er verschuift.
+ *
+ * Op 2026-08-25 zijn de potstanden in de app zelf afgelezen in plaats van afgeleid, en dat
+ * corrigeerde vijf potten, een ontbrekende budgetpot en — het zwaarst — de vorm. De pot "Buffer"
+ * is een restpost zonder maandbedrag: hij neemt op wat er na alle andere posten overblijft en
+ * vult een tekort weer aan uit wat erin zit. Er bestaat dus geen ongealloceerde rest naast de
+ * buffer, en wat vrij is IS de buffer: EUR 3.131,39 in plaats van de EUR 6.003,70 die de oude
+ * afleiding gaf. Invariant 3 leidt dat getal opnieuw af uit het saldo en valt om zodra een van
+ * de claims verschuift.
  */
 
 const SELFTEST = process.argv.includes('--selftest');
@@ -32,27 +40,34 @@ const BUDGET = {                   // reservations, type maandelijks_budget — 
   Kredietkaart: 300, Parking: 106.40,
 };
 const PROVISIE = {                 // reservations, type spaardoel — rolt wel door
-  BTW: 3000, Buffer: 1250, 'Afbetaling renting Peugeot': 1090,
+  // "Buffer" staat hier bewust NIET in: die pot heeft geen maandbedrag, hij neemt het restant op.
+  BTW: 3000, 'Afbetaling renting Peugeot': 1090,
   'Sociale bijdrage': 852.39, Vennootschapsbelasting: 625, Boekhouder: 550,
   Autoverzekeringen: 305, 'Afbetaling renting Alpine': 302, 'Onderhoud wagens': 290,
   Verzekeringen: 230, Verkeersbelasting: 45,
 };
-// Binnen PROVISIE zijn deze twee géén aankomende kost: btw is doorstroom, Buffer is de reserve zelf.
-const GEEN_KOST = ['BTW', 'Buffer'];
+// Binnen PROVISIE is dit géén aankomende kost: btw is doorstroom, geen uitgave.
+const GEEN_KOST = ['BTW'];
 // Deze twee vallen weg als de Peugeot-renting eindigt (januari 2027).
 const PEUGEOT = ['Peugeot 508', 'Afbetaling renting Peugeot'];
 // Deze twee zet je als eerste stop in een noodscenario — ze zijn geen verplichting.
 const DISCRETIONAIR = ['Privé sparen', 'Vrije uitgave'];
 
 const SALDO_AUG = 19_531.42;       // balanceOverrides, maand 2026-08 — waargenomen, niet afgeleid
-// Potstand per spaardoel op 31-08-2026: opgebouwd (maandbedrag x maanden sinds startMonth)
-// min wat er al uit betaald is (reservationPayments.fromReservation). Onafhankelijk van het saldo.
-const POT = {
-  BTW: 4_426.05, Buffer: 3_961.40, 'Afbetaling renting Peugeot': 4_360.00,
-  'Sociale bijdrage': 0.39, Vennootschapsbelasting: 2_500.00, Boekhouder: 0,
-  Autoverzekeringen: 915.00, 'Afbetaling renting Alpine': 604.00,
-  'Onderhoud wagens': 593.66, Verzekeringen: 173.62, Verkeersbelasting: -45.00,
+
+// Potstanden op 31-08-2026, afgelezen in de app (maandkaart augustus + paneel Spaarpotten).
+// Tot 2026-08-25 stonden hier afgeleide waarden; die zaten er op vijf potten naast — btw 4.426,05
+// (werkelijk 3.000), Peugeot 4.360 (5.450), onderhoud wagens 593,66 (290), verzekeringen 173,62
+// (86,65) en verkeersbelasting -45 (0) — en de budgetpot ontbrak volledig.
+const POT = {                      // provisiepotten, samen EUR 12.845,65
+  'Afbetaling renting Peugeot': 5_450.00, BTW: 3_000.00, Vennootschapsbelasting: 2_500.00,
+  Autoverzekeringen: 915.00, 'Afbetaling renting Alpine': 604.00, 'Onderhoud wagens': 290.00,
+  Verzekeringen: 86.65, 'Sociale bijdrage': 0, Boekhouder: 0, Verkeersbelasting: 0,
 };
+const POT_BUDGET = 66.77;          // Parking — de enige budgetpot met een stand in augustus
+const VAST_NOG_TE_BETALEN = 3_487.61;  // augustus: Loon + Tuinkantoor; de rest is al afgeschreven
+const NIET_RECURRENT_AUG = 0;      // augustus heeft geen eenmalige uitgaven
+const BUFFER_AUG = 3_131.39;       // wat de app toont — invariant 3 leidt hem opnieuw af
 const BALLON_PEUGEOT_CHECK = 9_810.68;
 const BALLON_PEUGEOT = BALLON_PEUGEOT_CHECK;   // EUR 8.108 + 21% btw, januari 2027
 
@@ -88,9 +103,9 @@ const directeLast = vast + budget - discretionair;
 const volledigeLast = directeLast + provisieEchteKost;
 
 const pottenTotaal = som(POT);
-const bufferpot = POT.Buffer;
-const ongealloceerd = SALDO_AUG - pottenTotaal;
-const werkelijkVrij = ongealloceerd + bufferpot;
+// De buffer is een restpost, geen pot naast de andere: wat er na alle claims overblijft ís hij.
+// Daarom geen "ongealloceerd" meer — dat was een artefact van de oude afleiding.
+const werkelijkVrij = BUFFER_AUG;
 const runwayDirect = werkelijkVrij / directeLast;
 const runwayVolledig = werkelijkVrij / volledigeLast;
 
@@ -122,8 +137,10 @@ const rond = (a, b, marge = 0.01) => Math.abs(a - b) <= marge;
 
 // Perturbatie voor --selftest: één invoerwaarde die de invarianten hóórt te laten afgaan.
 const saldo = SALDO_AUG;
-const ongealloceerdT = saldo - pottenTotaal;
-const pottenT = SELFTEST ? pottenTotaal + 5000 : pottenTotaal;
+const pottenT = SELFTEST ? pottenTotaal + 500 : pottenTotaal;
+// De buffer opnieuw afgeleid uit het saldo. Dit is de meting, niet de aflezing: klopt hij niet
+// met BUFFER_AUG, dan is een van de claims verschoven zonder dat dit blok is bijgewerkt.
+const bufferAfgeleid = saldo - VAST_NOG_TE_BETALEN - NIET_RECURRENT_AUG - POT_BUDGET - pottenT;
 
 eis('1. kostenblokken sluiten op het app-totaal',
     rond(vast + budget + provisie, appTotaal),
@@ -132,29 +149,30 @@ eis('1. kostenblokken sluiten op het app-totaal',
 eis('2. provisies splitsen zonder rest',
     rond(provisieEchteKost + som(PROVISIE, (k) => GEEN_KOST.includes(k)), provisie));
 
-// Deze twee zijn onafhankelijk: de potten komen uit hun eigen opbouw, het saldo is waargenomen.
-// Een eerdere versie toetste `potten + ongealloceerd == saldo`, en dat is een tautologie —
-// ongealloceerd is per definitie het verschil, dus de som klopt altijd. Hij mat niets.
-eis('3. het banksaldo dekt de potten',
-    saldo >= pottenT,
-    `saldo ${saldo.toFixed(2)} tegen potten ${pottenT.toFixed(2)} — een tekort betekent dat een pot niet gedekt is`);
+// Geen tautologie: BUFFER_AUG is afgelezen in de app en bufferAfgeleid rolt hem opnieuw uit
+// vier andere afgelezen waarden. Schuift er één, dan valt deze om — dat is precies zijn taak.
+eis('3. de buffer volgt uit het saldo min alle claims',
+    rond(bufferAfgeleid, BUFFER_AUG, 0.01),
+    `${saldo.toFixed(2)} − ${VAST_NOG_TE_BETALEN.toFixed(2)} − ${NIET_RECURRENT_AUG.toFixed(2)} − ${POT_BUDGET.toFixed(2)} − ${pottenT.toFixed(2)} = ${bufferAfgeleid.toFixed(2)}, app zegt ${BUFFER_AUG.toFixed(2)}`);
 
-eis('4. ongealloceerd is niet negatief',
-    ongealloceerdT >= 0,
-    'een negatieve rest betekent dat de potten niet gedekt zijn door het saldo');
+eis('4. geen enkele potstand is negatief',
+    Object.values(POT).every((v) => v >= 0) && POT_BUDGET >= 0,
+    'een negatieve pot betekent dat er meer uit betaald is dan erin zat — dat hoort een cash-post te zijn, geen potstand');
 
 eis('5. Luminus-jaartotaal past bij het dagtarief en de werkweken',
     factureerbareDagen > 4.5 * WERKWEKEN && factureerbareDagen < 5.2 * WERKWEKEN,
     `${factureerbareDagen.toFixed(1)} dagen bij ${WERKWEKEN} werkweken`);
 
-eis('6. de bufferpot zit in de potten',
-    bufferpot <= pottenTotaal);
+// Onafhankelijk van invariant 3: die kijkt naar augustus, deze naar januari.
+eis('6. de Peugeot-pot dekt de slotafbetaling in januari',
+    POT['Afbetaling renting Peugeot'] + 5 * PROVISIE['Afbetaling renting Peugeot'] >= BALLON_PEUGEOT,
+    `${POT['Afbetaling renting Peugeot'].toFixed(2)} + 5 x ${PROVISIE['Afbetaling renting Peugeot']} = ${(POT['Afbetaling renting Peugeot'] + 5 * PROVISIE['Afbetaling renting Peugeot']).toFixed(2)} tegen ${BALLON_PEUGEOT}`);
 
 eis('8. de directe last is kleiner dan de volledige',
     directeLast < volledigeLast,
     'anders is de provisie-uitsplitsing omgevallen');
 
-eis('7. de Peugeot-provisie dekt de slotafbetaling',
+eis('7. het maandbedrag van de Peugeot-provisie is op de slotafbetaling gedimensioneerd',
     rond(PROVISIE['Afbetaling renting Peugeot'] * 9, BALLON_PEUGEOT, 1),
     `9 x ${PROVISIE['Afbetaling renting Peugeot']} = ${(PROVISIE['Afbetaling renting Peugeot'] * 9).toFixed(2)} tegen ${BALLON_PEUGEOT}`);
 
@@ -172,10 +190,10 @@ if (!SELFTEST) {
 
   log('\nWAT ER VRIJ IS');
   log(`  banksaldo augustus 2026          ${eur(saldo)}`);
-  log(`  waarvan in provisiepotten        ${eur(pottenTotaal)}`);
-  log(`  ongealloceerd                    ${eur(ongealloceerd)}`);
-  log(`  plus de bufferpot                ${eur(bufferpot)}`);
-  log(`  werkelijk vrij                   ${eur(werkelijkVrij)}`);
+  log(`  vaste uitgaven nog te betalen    ${eur(VAST_NOG_TE_BETALEN)}`);
+  log(`  budgetpot (Parking)              ${eur(POT_BUDGET)}`);
+  log(`  provisiepotten                   ${eur(pottenTotaal)}`);
+  log(`  werkelijk vrij = de bufferpot    ${eur(werkelijkVrij)}   wat er na alle claims overblijft`);
   log(`  runway op de directe last        ${runwayDirect.toFixed(2)} maand`);
   log(`  runway inclusief provisies       ${runwayVolledig.toFixed(2)} maand`);
 
@@ -203,12 +221,13 @@ if (!SELFTEST) {
 // ── UITKOMST ───────────────────────────────────────────────────────────────────
 log('');
 if (SELFTEST) {
-  // De perturbatie verhoogt de potten met EUR 5.000 zonder het saldo aan te raken, dus de
-  // dekking valt weg en invariant 3 hoort af te gaan. Blijft hij stil, dan toetst hij niets.
+  // De perturbatie verhoogt de potten met EUR 500 zonder het saldo of de buffer aan te raken,
+  // dus de identiteit klopt niet meer en invariant 3 hoort af te gaan. Blijft hij stil, dan
+  // toetst hij niets — en dan is elk getal dat eraan hangt onbewaakt.
   const raak = fouten.some((f) => f.startsWith('3.'));
   console.log(raak
-    ? `✓ zelftest: invariant 3 gaat af op een opgewekt dekkingstekort\n  ${fouten.find((f) => f.startsWith('3.'))}`
-    : '✗ zelftest: invariant 3 bleef stil terwijl de potten €5.000 boven het saldo lagen — hij meet niets');
+    ? `✓ zelftest: invariant 3 gaat af op een opgewekte afwijking van EUR 500\n  ${fouten.find((f) => f.startsWith('3.'))}`
+    : '✗ zelftest: invariant 3 bleef stil terwijl een potstand €500 verschoof — hij meet niets');
   process.exit(raak ? 0 : 1);
 }
 if (fouten.length) {

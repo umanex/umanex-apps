@@ -123,4 +123,10 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** `apps/rowtrack` heeft nu een `test`-script (`node --test "lib/**/*.test.ts"`, 47 tests), maar `.github/workflows/ci.yml` draait alleen type-check, lint en build. De enige wachters op de rekenkundige en concurrency-invarianten (`personalRecords`, `scan-lock`, `hrLink`, `bestDistanceTime`, `calories`, `period`) hangen dus aan iemand die eraan denkt ze met de hand te draaien.
 - **Waarom niet nu:** `ci.yml` is gedeeld door vier apps; een stap toevoegen is een config-wijziging die Jeroens akkoord verdient, en er moet een keuze komen of andere apps hun eigen suite krijgen.
 - **Eerste zet:** Eén stap `pnpm --filter rowtrack test` naast de token-guards in `ci.yml`, en beslissen of de andere apps volgen.
+- **Status:** gebouwd — `ci.yml` draagt sinds dan de stap "Guard — invarianten (node:test)", waargenomen op 2026-08-25 in run 32819117593.
+
+## 2026-08-25 — `scan-lock` faalt sporadisch in CI · [test]
+- **Wat:** `apps/rowtrack/lib/ble/scan-lock.test.ts:93` ("het vangnet geeft het slot vrij als een dienst vergeet los te laten") faalde op `assert.ok(ownsScan(rower))` in run 32819117593, terwijl exact dezelfde commit in de parallelle run 32819121407 slaagde en beide runs erna opnieuw groen waren. 50 van 51 tests passeerden. De test leunt op een tijdgebonden vangnet, dus een trage runner is de waarschijnlijke oorzaak.
+- **Waarom niet nu:** gevonden tijdens een portfolio-copywijziging; `fix(rowtrack):` hoort niet in een `feat(portfolio):`-PR, en de hook blokkeert dat terecht.
+- **Eerste zet:** de test op een injecteerbare klok zetten in plaats van op echte tijd, zodat het vangnet deterministisch afgaat. Een wachter die één op de vier keer vals alarm slaat, leert je hem te negeren — en dat is schadelijker dan geen wachter.
 - **Status:** open

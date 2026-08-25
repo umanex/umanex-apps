@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-22_
+_Gegenereerd op 2026-08-25_
 
 ## Project
 - **App:** rowtrack
@@ -59,15 +59,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+c46104f docs(rowtrack): count the test suites instead of remembering them
 aa8797f docs(rowtrack): the device checklist grew with the second connection path
 0b21d93 Merge branch 'main' into fix/hr-verbinding-na-app-wissel
 b5bf6d2 chore(rowtrack): make the test suites runnable, and say where they don't run
 23432f0 fix(rowtrack): let two BLE scans take turns instead of breaking each other
-a734274 docs(rowtrack): TC-EBC for PR detail, plus what it left on the shelf
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/CLAUDE.md
+  M  apps/rowtrack/BACKLOG.md
 
 ## Bestanden met TODO/FIXME
   (geen)

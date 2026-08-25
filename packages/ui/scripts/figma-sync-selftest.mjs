@@ -21,6 +21,7 @@ function verseKopie() {
   cpSync(join(ui, 'components/ui'), join(tmp, 'ui/components/ui'), { recursive: true });
   cpSync(join(ui, 'figma'), join(tmp, 'ui/figma'), { recursive: true });
   cpSync(join(ui, '../tokens/build/roles.mjs'), join(tmp, 'tokens/build/roles.mjs'));
+  cpSync(join(ui, '../tokens/tokens.json'), join(tmp, 'tokens/tokens.json'));
   return { tmp, uiRoot: join(tmp, 'ui') };
 }
 const draai = uiRoot => {
@@ -105,6 +106,39 @@ const gevallen = [
     },
   },
   {
+    // Afgaan-kant van de dekkings-as: een variabele die nergens in tokens.json staat en
+    // ook niet als bekende schuld genoteerd is. Precies het defect uit de learning.
+    naam: 'nieuwe variabele zonder token in de bron',
+    as: '[dekking]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      m.collections.Base.variables['spacing-7'] = 28;
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
+    // De tweede kant van BEKENDE_GATEN: zodra de schuld ingelost is moet de lijst
+    // krimpen. Zonder deze case veroudert hij stil en dekt hij op den duur precies af
+    // wat de as moet vangen.
+    naam: 'bekend gat heeft nu wél een token',
+    as: '[dekking]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, '../tokens/tokens.json');
+      const t = JSON.parse(lees(p));
+      t.Base = { 'icon-stroke': { $value: '2', $type: 'number' } };
+      schrijf(p, JSON.stringify(t, null, 2));
+    },
+  },
+  {
+    // Lege bron: "niets gevonden" en "instrument kapot" zien er allebei leeg uit. De as
+    // moet hier één instrumentmelding geven, niet twintig losse bevindingen.
+    naam: 'lege token-bron leest als instrumentfout',
+    as: '[dekking]',
+    bevat: 'instrumentfout, geen bevinding',
+    muteer: uiRoot => schrijf(join(uiRoot, '../tokens/tokens.json'), '{"$metadata":{}}'),
+  },
+  {
     naam: 'deep-link wijst naar de node van een ander component',
     as: '[link]',
     muteer: uiRoot => {
@@ -143,6 +177,12 @@ for (const g of gevallen) {
   if (r.code === 0) { console.log(`  FAIL ${g.naam}: guard bleef groen mét het defect`); stuk++; continue; }
   if (!r.out.includes('FAIL ' + g.as)) {
     console.log(`  FAIL ${g.naam}: guard ging rood, maar niet op ${g.as}`);
+    stuk++; continue;
+  }
+  // Sommige gevallen delen een as maar mogen niet hetzelfde zéggen: een kapot
+  // instrument moet als instrumentfout lezen, niet als twintig bevindingen.
+  if (g.bevat && !r.out.includes(g.bevat)) {
+    console.log(`  FAIL ${g.naam}: rood op ${g.as}, maar de melding mist "${g.bevat}"`);
     stuk++; continue;
   }
   console.log(`  ok   ${g.naam} → rood op ${g.as}`);

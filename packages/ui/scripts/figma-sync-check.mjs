@@ -10,7 +10,10 @@
  * verversen. De manifest is een neergeslagen meting, geen live verbinding — CI heeft
  * geen Figma-toegang. Het verversen staat in packages/ui/CLAUDE.md (## Verify-pad).
  */
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+// Gesynct vanuit umanex-os (templates/figma-token-coverage.mjs). Onderhoud hem daar:
+// een kopie die hier meegroeit is een tweede waarheid.
+import { tokenPaden, bouwIndex, dek } from '../../../scripts/figma-token-coverage.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -214,6 +217,54 @@ const spacingFout = Object.entries(B)
   .filter(([n, v]) => v !== Number(n.slice('spacing-'.length).replace('_', '.')) * 4);
 if (spacingFout.length) fail('schaal', `spacing wijkt af van de Tailwind-schaal (n × 4px): ${spacingFout.map(([n, v]) => `${n}=${v}`).join(', ')}`);
 else ok('schaal', `${Object.keys(B).filter(n => n.startsWith('spacing-')).length} spacing-stappen volgen n × 4px`);
+
+// ---- 5b. Token-dekking: elke variabele hangt aan een pad in tokens.json ----
+// Een variabele aanmaken voor een waarde die nergens in de token-bron staat, verplaatst
+// het hardcoded getal van de node naar de variabele: de bindingscheck wordt groen terwijl
+// de waarde nog altijd uit niets komt, en Figma wordt een tweede bron van waarheid
+// (LEARNINGS umanex-os, 2026-08-25 — collectie Base mat 1/21).
+//
+// De twintig namen hieronder zijn bekende schuld, geen uitzondering: de maat-schaal heeft
+// nog geen token-bron (BACKLOG 2026-08-25, "Spacing-, border- en shadow-schaal hebben geen
+// token-bron"). De lijst werkt twee kanten op — een níeuw gat faalt, en een naam die géén
+// gat meer is faalt óók. Zonder die tweede kant veroudert de lijst stil en dekt hij op den
+// duur precies datgene af wat de as moet vangen.
+const BEKENDE_GATEN = new Set([
+  'radius-lg', 'radius-md', 'radius-sm', 'radius-full',
+  'spacing-0_5', 'spacing-1', 'spacing-1_5', 'spacing-2', 'spacing-2_5', 'spacing-3',
+  'spacing-4', 'spacing-5', 'spacing-6', 'spacing-8', 'spacing-9', 'spacing-10', 'spacing-11',
+  'border-1', 'border-2', 'icon-stroke',
+]);
+const tokensPad = join(root, '../tokens/tokens.json');
+if (!existsSync(tokensPad)) {
+  fail('dekking', `token-bron niet gevonden op ${tokensPad}`);
+} else {
+  const paden = tokenPaden(JSON.parse(readFileSync(tokensPad, 'utf8')));
+  // De twee collecties dragen een andere vorm: Theme is een lijst namen, Base een
+  // naam→waarde-object. Object.keys() op de lijst gaf indices (0, 6, 7, …) die tegen
+  // Primitives/Chart/1 aan matchten — een meting over de verkeerde grootheid.
+  const namenVan = c => Array.isArray(c.variables) ? c.variables : Object.keys(c.variables ?? {});
+  const vars = Object.entries(manifest.collections)
+    .flatMap(([col, c]) => namenVan(c).map(naam => ({ naam, col })));
+  if (vars.some(v => /^\d+$/.test(String(v.naam)))) {
+    fail('dekking', 'variabelenamen lezen als indices — manifest-vorm veranderd, meting ongeldig');
+  }
+  const per = dek(vars, bouwIndex(paden));
+  const gaten = [...per.values()].flatMap(c => c.gaten);
+  // "niets gevonden" en "instrument kapot" mogen niet hetzelfde type dragen: mapt er
+  // niets, dan is dat een bron- of normalisatiefout, geen twintig bevindingen.
+  if (!paden.length || ![...per.values()].some(c => c.gedekt)) {
+    fail('dekking', `geen enkele van ${vars.length} variabelen mapt op ${paden.length} tokenpaden — instrumentfout, geen bevinding`);
+  } else {
+    const nieuwGat = gaten.filter(n => !BEKENDE_GATEN.has(n));
+    const verouderd = [...BEKENDE_GATEN].filter(n => !gaten.includes(n));
+    if (nieuwGat.length) fail('dekking', `variabele zonder token in de bron: ${nieuwGat.join(', ')}`);
+    if (verouderd.length) fail('dekking', `heeft nu wél een token — haal uit BEKENDE_GATEN: ${verouderd.join(', ')}`);
+    if (!nieuwGat.length && !verouderd.length) {
+      ok('dekking', `${vars.length - gaten.length}/${vars.length} variabelen gedekt door tokens.json; ${gaten.length} bekende gaten (maat-schaal, zie BACKLOG)`);
+    }
+  }
+}
 
 // ---- 5. Deep-links wijzen naar een bestaande node ----
 const alleNodeIds = new Set();

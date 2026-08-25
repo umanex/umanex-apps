@@ -63,6 +63,7 @@ Beantwoord de volgende vragen zelf, op basis van wat er déze sessie echt gebeur
 **Scope-drops die niet geland zijn**
 - Wat heb ik deze sessie benoemd als buiten scope, geparkeerd, "niet gebouwd", "voor later" of P3 — en staat dat effectief in een `BACKLOG.md`? Loop je eigen antwoorden na, niet je geheugen.
 - Elke drop die er niet staat, schrijf je nu alsnog weg (of je motiveert waarom hij geen item verdient). Dit is een vangnet: de regel zegt dat het bij de mélding gebeurt, en dat het hier nog nodig is, is zelf een signaal.
+- Grep vóór het schrijven de andere twee lussen op het onderwerp — `HANDOFF.md`, `LEARNINGS.md`, root én app — **inclusief de `resolved` HANDOFF-entries**: die toont de hook niet meer. Op rowtrack schreef een sessie zo een BACKLOG-item ("de node:test-suites draaien niet in CI") dat een twaalf dagen eerder gesloten HANDOFF-item mét tegenproef tegensprak. Een treffer die het tegendeel beweert is een tegenspraak die je eerst verklaart, geen item.
 
 **Faalklassen uit de historie** (niet uit deze sessie)
 - Welke soort fix herhaalt zich in de recente historie van wat ik aanraakte? Draai `git log --since="90 days ago" --oneline -- <pad>` en lees de `fix(...)`-onderwerpen als één lijst: staan er meerdere die hetzelfde soort ding rechtzetten, dan is dat één faalklasse die per instantie gepatcht wordt.

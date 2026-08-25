@@ -57,6 +57,8 @@ const require_ = createRequire(import.meta.url);
 const args = process.argv.slice(2);
 const SELFTEST = args.includes('--selftest');
 const HEADED = args.includes('--headed');
+// Gezet door de signaalhandler in main(): een onderbroken run eindigt met 130/143, niet met 1.
+let onderbroken = null;
 const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3100);
 const BASE = `http://127.0.0.1:${PORT}`;
 
@@ -1092,6 +1094,7 @@ async function main() {
   // eigen signaalhandler, en Playwright's handlers uit zodat er maar één is.
   let browser;
   const bijSignaal = (signaal) => {
+    onderbroken = signaal;
     stopServer(server);
     const dicht = browser ? browser.close().catch(() => {}) : Promise.resolve();
     dicht.then(() => process.exit(signaal === 'SIGTERM' ? 143 : 130));
@@ -1137,6 +1140,8 @@ async function main() {
 }
 
 main().catch((err) => {
+  // De server-stop laat een lopend scenario gooien; dan is dit de weg naar buiten, niet de handler.
+  if (onderbroken) process.exit(onderbroken === 'SIGTERM' ? 143 : 130);
   console.error(err.message ?? err);
   process.exit(1);
 });

@@ -49,18 +49,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+f41a428 fix(cashflow): stop the harness server on SIGINT/SIGTERM, reject malformed --dist
 f759073 fix(cashflow): allowlist the harness distDir, prove the served build
 81b8e88 feat(cashflow): let the flow-harness build in its own distDir
 eb807c3 docs: drop the last sibling-tree references, close the backlog item
 e270ab1 feat(ui): add Storybook with token-driven docs
-3cdbb55 docs: capture the session's open questions and give an old item a check
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/CLAUDE.md
-  M  apps/cashflow/HANDOFF.md
   M  apps/cashflow/scripts/flow-harness.mjs
-  M  apps/cashflow/scripts/harness-dist.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

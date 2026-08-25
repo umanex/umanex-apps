@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-08-10_
+_Gegenereerd op 2026-08-25_
 
 ## Project
 - **App:** cashflow
@@ -49,15 +49,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9a2bc2e chore: sync umanex-os layer with global umanex-os
+e4f55bc docs(cashflow): zet de beginsaldo-briefing op gevalideerd
 bab65e5 feat(cashflow): beginsaldo wordt de eerste regel van de inkomsten
 6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
 3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-a28ec78 docs(cashflow): record the review round in the harness plan
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-08-10-feature-beginsaldo-in-inkomsten.tcebc.md
+  M  apps/cashflow/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

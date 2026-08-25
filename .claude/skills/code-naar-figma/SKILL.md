@@ -218,6 +218,25 @@ figma_get_component_for_development_deep
 - Alle composietframes staan in auto layout (`layoutMode` ≠ `'NONE'`), behalve waar absolute positionering structureel noodzakelijk was
 - Elke variabele die deze export aanmaakte of bond, heeft een tegenhanger in de token-bron — bestaat er een `tokens.json`, dan is een variabele zonder token-pad een **gap, geen oplossing**. Toets op het pad, niet op de naam alleen: de Figma-naam plakt de tokengroep met een koppelteken (`finance-positive` ↔ `Semantic/light/finance/positive`), dus normaliseer vóór je vergelijkt — een naïeve bladnaam-match gaf 36/43 waar het er 43/43 waren.
 
+**De token-dekkings-check — draai hem, herleid hem niet.** De normalisatie is de plek waar deze meting fout gaat: een naïeve bladnaam-match gaf 36/43 waar het er 43/43 waren, omdat de Figma-naam de tokengroep met een koppelteken plakt.
+
+```javascript
+// Figma-kant (read-only, na de bestandsguard)
+const cols = await figma.variables.getLocalVariableCollectionsAsync()
+const vars = await figma.variables.getLocalVariablesAsync()
+return vars.map(v => ({ naam: v.name, col: cols.find(c => c.id === v.variableCollectionId)?.name }))
+```
+
+```python
+# Token-kant: leaf-paden uit tokens.json, genormaliseerd naar de Figma-vorm
+def norm(pad):                      # 'Semantic/light/finance/positive' -> 'finance-positive'
+    s = pad.split('/')
+    if s[0] in ('Theme', 'Semantic'): s = s[2:]      # groep + mode weg
+    return '-'.join(s).lower()
+```
+
+Pass-conditie: elke variabele valt op een genormaliseerd token-pad. **En minstens één collectie moet in dezelfde run groen komen** — komt álles rood, dan meet je normalisatie iets anders dan token-dekking en is de uitkomst ongeldig, geen bevinding (CLAUDE.md, *Een lege meting vraagt een positieve controle*). `Primitives` en `Typography` horen níet als losse variabele te bestaan; die zitten als referentie áchter de Theme-laag.
+
 **Faalt een punt?** Dat is een gap. Los hem op (terug naar stap 5) of rapporteer hem expliciet aan de gebruiker met de reden waarom hij niet opgelost kon worden — sluit nooit af met een stille gap.
 
 ---

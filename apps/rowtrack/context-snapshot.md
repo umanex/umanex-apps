@@ -59,15 +59,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+fb979d7 docs: log the flaky scan-lock test, and close the CI item it sat under
 c46104f docs(rowtrack): count the test suites instead of remembering them
 aa8797f docs(rowtrack): the device checklist grew with the second connection path
 0b21d93 Merge branch 'main' into fix/hr-verbinding-na-app-wissel
 b5bf6d2 chore(rowtrack): make the test suites runnable, and say where they don't run
-23432f0 fix(rowtrack): let two BLE scans take turns instead of breaking each other
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/CLAUDE.md
 
 ## Bestanden met TODO/FIXME
   (geen)

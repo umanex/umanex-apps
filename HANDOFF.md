@@ -32,6 +32,24 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Klant — umanex
 
+## 2026-08-25 — "100% in sync" is structureel bewezen, niet visueel · [onzekerheid]
+- **Bevinding:** De Storybook→Figma-export is op vijf assen getoetst (pagina per component, variant-assen, kleurrollen, afgeleide schalen, deep-links) plus 86 mode-waarden tegen `theme.css`. Wat níet getoetst is: of een component in Figma er hetzelfde *uitziet* als in de browser. Beide kanten putten uit dezelfde bron, maar de twee renders zijn nooit naast elkaar gelegd. Een Button met 2px verkeerde padding in Figma zou door elke groene check komen. De claim in de PR is dus enger dan "100% in sync" suggereert — dat is bewust, maar het staat nergens in de guard-output zelf.
+- **Check:** `pnpm --filter @umanex/ui figma:check | grep -i "pixel\|render\|screenshot"` — leeg = er is nog geen visuele as; een treffer = er is er een bijgekomen.
+- **Volgende zet:** Beslissen of dit gat gedicht moet worden. Kandidaat: `figma_capture_screenshot` van een component-node naast een Playwright-screenshot van dezelfde story, vergeleken op afmetingen in plaats van pixels (byte-exacte PNG-hashes zijn in Chromium geen identiteitstoets — zie umanex-os LEARNINGS 2026-08-25). Of expliciet verwerpen en de scope in `packages/ui/CLAUDE.md` benoemen.
+- **Status:** open
+
+## 2026-08-25 — Figma node-ids zijn de zwakste schakel van de deep-links · [risico]
+- **Bevinding:** De elf `parameters.figma.url` in de stories wijzen op node-ids (`27:374` enz.). Die ids overleven hernoemen, verplaatsen en herlayouten — dat is deze sessie gemeten — maar niet delete-en-opnieuw-aanmaken. Wie een component in Figma herbouwt in plaats van bijwerkt, breekt elf links tegelijk, en de guard zwijgt tot iemand de manifest ververst (dat gat staat apart in `BACKLOG.md`). De builder in `code-naar-figma` doet zélf `for (const c of [...page.children]) c.remove()` vóór hij bouwt — dus een herbouw ís het normale pad, niet de uitzondering.
+- **Check:** `node -e "const m=require('./packages/ui/figma/manifest.json'); console.log(m.pages.Button.primary.id)"` vergelijken met wat `figma_execute` teruggeeft voor de node met naam `Button` op pagina `Button` — gelijk = de ids leven nog.
+- **Volgende zet:** Bij de eerstvolgende Figma-herbouw eerst de manifest verversen en `figma:check` draaien vóór de commit; overwegen om de link op **pagina**-id te laten wijzen in plaats van node-id (stabieler, minder precies) of de node-id-check in `pre-commit` te hangen.
+- **Status:** open
+
+## 2026-08-25 — De variant-modellering is een oordeel dat de guard nu als waarheid vastlegt · [aanname]
+- **Bevinding:** Welke props een visuele Figma-variant verdienen is niet uit de code af te leiden — `cva` levert er een deel van, `argTypes` een deel, en de rest is een keuze. `Input.type` en `Tooltip.side` zijn uitgesloten, `ThemeToggle.mode` is Figma-only (interne state). Die drie staan mét reden in `figma-sync-check.mjs`, dus ze zijn telbaar — maar ze zijn wél mijn oordeel, niet dat van Jeroen, en de guard dwingt ze vanaf nu af.
+- **Check:** `grep -A3 "NIET_VISUEEL\|FIGMA_ONLY" packages/ui/scripts/figma-sync-check.mjs` — de lijst is kort en leesbaar; klopt elke regel nog met wat je van het component verwacht?
+- **Volgende zet:** Bij de eerstvolgende component-wijziging de drie uitsluitingen doorlopen en bevestigen of bijstellen. Ze staan bewust in de guard en niet in een config-bestand, zodat ze bij het lezen van de guard vanzelf langskomen.
+- **Status:** open
+
 ## 2026-08-10 — De laag-discipline-guard ziet kale hex in CSS niet · [debt]
 - **Bevinding:** De regel `hardcoded-color` in `packages/tokens/scripts/guard.mjs` matcht alleen Tailwinds arbitrary-syntax (`bg-[#fff]`), niet een gewone `color: #ff0000` in een `.css`-bestand of een `fill="#..."` in een SVG — terwijl de docstring van diezelfde guard juist zegt dat hij bestaat omdat ESLint die twee niet ziet. Ontdekt doordat een tegenproef níet afging waar ik hem verwachtte.
 - **Volgende zet:** Het gat is klein en gemeten: kale hex komt in álle guard-scopes samen **één keer** voor, in `apps/cashflow/scripts/render-charts.tsx:149` (inline `<style>` in een preview-script). Een zevende regel toevoegen kost dus één baseline-entry of één refactor. Niet zelf gedaan: het verbreedt een guard die vier apps raakt.

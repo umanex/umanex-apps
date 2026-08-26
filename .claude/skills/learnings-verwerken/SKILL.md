@@ -40,8 +40,27 @@ Bepaal per entry hóe de fout structureel voorkomen wordt. Dit stuurt zowel de v
 | **A — Instructie** | gedragsfout die met een regel te voorkomen is, en die regel **ontbreekt** (of staat te zwak) in de juiste CLAUDE.md-laag | CLAUDE.md-regel (= promotie) |
 | **B — Code/tooling** | de fout is het best structureel onmogelijk te maken in een script/config/guard | code-guard (geen CLAUDE.md) |
 | **C — Regel genegeerd** | de regel **staat al** in CLAUDE.md maar werd niet nageleefd | versterking van de bestaande regel — niet dupliceren |
+| **D — Samenvoegen** | de regel ontbreekt, maar er staat wél een regel van **dezelfde klasse** | die bestaande regel uitbreiden met deze vorm — geen nieuwe rail |
 
 Route C is de subtiele: promoveren zou de regel kopiëren die er al staat — zinloos. Hier scherp je de bestaande regel aan (prominenter, explicieter, of een harde checklist/rail), of erken je dat instructie alleen niet volstaat en stel je een hook of code-guard voor. Dupliceer nooit een regel die al bestaat.
+
+**Route D is de tegendruk van deze skill.** A, B en C voegen alle drie toe; niets voegt ooit samen, en dat is meetbaar misgegaan. GEMETEN op 2026-08-26: `CLAUDE.md` groeide van 27 207 chars (na de trim van #67, 2026-08-10) naar 57 665 in zestien dagen — **+30 458**, waarvan 82% uit `docs()`-promote-commits, en alle groei in vier secties terwijl de vijf secties die niemand promootte exact **0** groeiden. In *Discipline in de Beoordeel-stap* stonden daardoor twaalf rails waar er twee klassen zijn: vijf regels zeiden alle vijf dat een instrument pas iets bewijst als het kan afwijken op het defect dat je zoekt (guard · lege uitkomst · groene uitkomst · vervangen instrument · de tegenproef zelf), en twee dat je een object aan zijn inhoud identificeert en niet aan zijn label. Elke promotie had correct getoetst of díe regel al bestond (de C-check) en nooit of er een **buurregel van dezelfde klasse** stond.
+
+Een regel die verdunt tussen elf buren wordt niet nageleefd, hoe juist hij ook is — dat weegt zwaarder dan het token-budget, want de kost van de laag zelf is klein (52 302 chars ≈ 1,5% van een 1M-context). De vraag bij Route D is dus niet "past dit erbij" maar **"leest een volgende sessie hier één ding of twee?"**
+
+Toets vóór je in stap 4 een nieuwe regel schrijft, in deze volgorde:
+
+1. Staat deze regel er al? → Route C.
+2. Staat er een regel van dezelfde **klasse** — zelfde grondfout, andere verschijningsvorm? → **Route D**: voeg jouw vorm toe aan die regel, met zijn gemeten geval, in plaats van een rail ernaast. Het gemeten bewijs blijft altijd staan; alleen de kop en de inleidende zin verdwijnen.
+3. Geen van beide? → Route A.
+
+Herkenningsteken voor stap 2: je nieuwe kop zou beginnen met dezelfde werkwoordsvorm of hetzelfde object als een bestaande (*"Een lege meting vraagt…"* naast *"Een groene check vraagt…"*), of je schrijft in je eigen inleiding een zin als "de vorige regel vangt X, deze vangt Y" — dat is geen afbakening maar de bekentenis dat het één regel is.
+
+**Verwijzen naar de buurregel is niet hetzelfde als ermee samenvallen.** Toets dit voor je samenvoegt, want anders gaat D af op elke regel die netjes naar zijn buur verwijst. Gemeten op 2026-08-26 bij de tegenproef op deze route: *Nooit een destructief pad tegen productiedata* opent met "Dit begrenst de vorige regel" en moet júíst apart blijven — hij zet een **tegengestelde kracht** naast *Verifieer op het doelwit van de gebruiker* (doe het echt · maar niet op data die iemand gebruikt). Twee vormen van één klasse voeg je samen; een regel die zijn buur inperkt, weerspreekt of er een uitzondering op is, blijft staan — anders verdwijnt de spanning die hem betekenis geeft. Het onderscheid zit in het werkwoord: *"vangt ook"* → samenvoegen, *"begrenst"* / *"behalve"* / *"tenzij"* → apart houden.
+
+**Verwacht geen grote besparing van D.** Gemeten bij de consolidatie van 2026-08-26: vier instrument-regels 3 620 → 3 325 chars (−295), het anker-paar 2 720 → 2 587 (−133). Het bewijs blijft immers staan, en dat is het meeste van de tekst. De winst is leesbaarheid — tien rails in plaats van twaalf — niet omvang. Wie omvang wil, verhuist een blok naar een skill (zie hieronder); dat leverde dezelfde dag −5 320 op.
+
+**Wanneer een sectie te vol is voor D alleen.** Passeert een sectie de tien rails, dan is de volgende promotie het moment om te vragen of een blok naar een skill kan in plaats van erbij — met de toets uit de resolved HANDOFF van 2026-08-10: niet *"staat dit ook in een skill"* maar **"laadt die skill in de situatie waar de regel bijt?"**. Een rail die in élke sessie bijt (het merge-protocol, de discipline-regels) blijft inline, ook als hij lang is; een blok dat alleen bij een zeldzame, herkenbare beslissing bijt (de worktree-procedure) hoort in een skill met een trigger-beschrijving die op die beslissing aanslaat.
 
 Bij twijfel A vs C: lees éérst de doel-CLAUDE.md of de regel er al staat.
 
@@ -69,6 +88,7 @@ Treedt de fout bij verify niet meer op → de fix bestaat al; sla deze stap over
 Treedt hij nog op → hard hem nu, volgens de route:
 
 - **Route A** — schrijf de regel in de juiste CLAUDE.md-laag (routing in stap 5), in de juiste **bestaande** sectie (een git-regel onder *Git workflow*, niet willekeurig onderaan).
+- **Route D** — voeg je vorm toe aan de bestaande regel van dezelfde klasse: neem zijn kop over, hang jouw variant eronder met zijn gemeten geval, en schrap je eigen inleidende afbakening. Gooi geen bewijs weg — dat is precies de *waarom* die maakt dat een regel nageleefd wordt in plaats van wegberedeneerd. Staan er na het samenvoegen twee koppen die hetzelfde zeggen, dan was het één regel.
 - **Route C** — scherp de bestaande regel aan op zijn huidige plek; voeg geen duplicaat toe. Leg je voorgestelde versterking expliciet naast de bestaande regel-tekst: herhaalt ze enkel wat er al staat, dan is het een verkapt duplicaat — schrappen. Alleen écht nieuwe handhaving (bv. een deterministische hook in `settings.json`) is een legitieme versterking; die landt dan in `settings.json`, niet als herhaalde regel in CLAUDE.md.
 - **Route B** — implementeer/repareer de guard in code. Valt dat buiten een instructie-wijziging, meld het als aparte code-taak.
 

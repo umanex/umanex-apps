@@ -158,6 +158,74 @@ const CONFIG: NbbConfig = { sleutel: 'geheim', omgeving: 'uat' }
   check('onbekende vorm -> null', kiesRecentsteReferentie({ iets: 'anders' }) === null)
 }
 
+// ── De vorm die de NBB zélf documenteert ─────────────────────────────────────
+//
+// De bovenstaande vormen zijn bedacht, en die blijven staan als vangnet. Deze niet: het is de
+// `Reference`-component uit de API-definitie van `nbb-cbso-consultation-service-uat2-authentic`,
+// anoniem opgehaald bij de UAT-portal op 2026-08-26. Alle tien verplichte velden staan erin,
+// met de opgegeven types — `DepositDate` als `format: date`, `ExerciseDates` als Period-object.
+// Zonder deze fixture toetst de suite alleen of de parser de gok van de auteur aankan.
+
+{
+  const echteVorm = [
+    {
+      ReferenceNumber: 'REF-2024',
+      DepositDate: '2024-08-14',
+      ExerciseDates: { StartDate: '2023-01-01', EndDate: '2023-12-31' },
+      ModelType: 'VKT-kap',
+      DepositType: 'Initial',
+      Language: 'NL',
+      Currency: 'EUR',
+      EnterpriseNumber: '0203201340',
+      EnterpriseName: 'VOORBEELD NV',
+      Address: { Street: 'Straat', Number: '1', Box: '', PostalCode: '9000', City: 'Gent', CountryCode: 'BE' },
+      LegalForm: 'NV',
+      LegalSituation: 'AC',
+      FullFillLegalValidation: true,
+      ActivityCode: '62010',
+      GeneralAssemblyDate: '2024-06-01',
+      AccountingDataURL: 'https://ws.uat2.cbso.nbb.be/authentic/deposit/REF-2024/accountingData',
+      DataVersion: 'Authentic',
+    },
+    {
+      ReferenceNumber: 'REF-2025',
+      DepositDate: '2025-07-22',
+      ExerciseDates: { StartDate: '2024-01-01', EndDate: '2024-12-31' },
+      ModelType: 'VKT-kap',
+      DepositType: 'Initial',
+      Language: 'NL',
+      Currency: 'EUR',
+      EnterpriseNumber: '0203201340',
+      EnterpriseName: 'VOORBEELD NV',
+      LegalForm: 'NV',
+      LegalSituation: 'AC',
+      FullFillLegalValidation: true,
+      ActivityCode: '62010',
+      GeneralAssemblyDate: '2025-06-02',
+      AccountingDataURL: 'https://ws.uat2.cbso.nbb.be/authentic/deposit/REF-2025/accountingData',
+      DataVersion: 'Authentic',
+    },
+  ]
+  check(
+    'gedocumenteerde Reference-vorm: kiest de recentste neerlegging',
+    kiesRecentsteReferentie(echteVorm) === 'REF-2025',
+    String(kiesRecentsteReferentie(echteVorm))
+  )
+  // De volgorde in de respons is niet gegarandeerd, dus de keuze mag niet aan de invoervolgorde
+  // hangen. Omgekeerd aanbieden hoort hetzelfde antwoord te geven.
+  check(
+    'en die keuze hangt niet aan de invoervolgorde',
+    kiesRecentsteReferentie([...echteVorm].reverse()) === 'REF-2025',
+    String(kiesRecentsteReferentie([...echteVorm].reverse()))
+  )
+  // Eén neerlegging is het gewone geval voor een jong bedrijf.
+  check(
+    'één neerlegging levert die ene',
+    kiesRecentsteReferentie([echteVorm[0]!]) === 'REF-2024',
+    String(kiesRecentsteReferentie([echteVorm[0]!]))
+  )
+}
+
 // ── Het volledige pad, met een nagebootste server ────────────────────────────
 
 function nepServer(routes: Record<string, { status?: number; body?: unknown }>): {

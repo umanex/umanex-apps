@@ -3,10 +3,13 @@
  *
  * WAAROM DIT VORMONAFHANKELIJK IS, EN NIET EEN VELDPAD
  *
- * De NBB publiceert een OpenAPI-specificatie die alléén AccountingData dekt; voor het
- * Reference-object bestaat geen publiek schema. De veldnamen die in omloop zijn komen uit een
- * demo-PPTX van december 2021, gemaakt vóór de livegang op 4 april 2022 — inclusief de
- * opvallende spelling `EntrepriseNumber`. Een parser die daarop een pad hardcodeert, geeft
+ * De NBB publiceert wél een OpenAPI-specificatie, maar die beschrijft het antwoord van
+ * `accountingData` als `type: string, format: binary` — de structuur ván die jsonxbrl-inhoud
+ * staat er niet in. GEMETEN op 2026-08-26 tegen de UAT-portal: van de 18 schema's in de
+ * definitie beschrijft er geen enkele het rubriekmodel. (Voor het *Reference*-object ligt dat
+ * anders — dat schema is er wél; zie `nbb.ts`.) De veldnamen die voor de rubrieken in omloop
+ * zijn komen uit een demo-PPTX van december 2021, gemaakt vóór de livegang op 4 april 2022 —
+ * inclusief de opvallende spelling `EntrepriseNumber`. Een parser die daarop een pad hardcodeert, geeft
  * stil `undefined` zodra één sleutel anders heet, en `undefined` ziet er identiek uit als
  * "dit bedrijf heeft geen personeel". Dat is precies de fout die je niet merkt: je filter op
  * 20-150 werknemers gooit dan de helft van je doelgroep weg zonder één foutmelding.

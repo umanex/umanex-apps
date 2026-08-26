@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-08-24_
+_Gegenereerd op 2026-08-26_
 
 ## Project
 - **App:** jobradar
@@ -43,16 +43,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-e306a16 style(jobradar): take every radius from the token layer
-c27301b feat(jobradar): find and verify missing websites through Brave
-0f1fade feat(jobradar): add the prospect labelling screen
-507916f docs(jobradar): close the open TC-EBC items for prospect labelling
-598d5aa feat(jobradar): verify a found website by its enterprise number
+0a2219c Merge branch 'main' into feature/prospect-classificatie
+a15b915 feat(ui): check every Figma variable against the token source
+3c61b21 feat(ui): export Storybook components to Figma with a sync guard
+e270ab1 feat(ui): add Storybook with token-driven docs
+3ab31ab style(jobradar): drop the app-specific brand colour for the umanex layer
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/app/globals.css
-  M  apps/jobradar/components/ClassificatieKnoppen.tsx
+  M  apps/jobradar/.env.example
+  M  apps/jobradar/CLAUDE.md
+  M  apps/jobradar/lib/sources/nbb-rubriek.ts
+  M  apps/jobradar/lib/sources/nbb.ts
+  A  apps/jobradar/scripts/nbb-probe.ts
+  M  apps/jobradar/scripts/nbb-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

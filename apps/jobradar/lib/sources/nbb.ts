@@ -9,16 +9,40 @@
  * Data Extracts en Authentic Archive Data. Improved Data (de door de NBB uit PDF's ge-OCR'de
  * neerleggingen) kost 3.300 euro per jaar en zit hier bewust niet in.
  *
- * NIET GEVERIFIEERD, en dat is met opzet zichtbaar gemaakt in de code: de veldnamen van het
- * Reference-object hebben geen publiek schema. Deze module leest daarom niets op veldnaam —
- * het personeelscijfer komt uit `nbb-rubriek.ts`, die op rubrieknummer zoekt. Wat hier wél
- * hardgecodeerd staat zijn de endpoint-paden en de headers, en die komen uit de technische
- * gids. Loopt daar iets mis, dan zegt de foutmelding welke URL het was.
+ * WAT GEMETEN IS EN WAT NIET (2026-08-26, anoniem tegen de UAT-portal).
+ *
+ * De twee endpoint-paden en de drie headers staan in de API-definitie precies zoals ze hier
+ * hardgecodeerd zijn: `GET /legalEntity/{legalEntityId}/references` en
+ * `GET /deposit/{referenceNumber}/accountingData`, met `X-Request-Id` als verplichte header.
+ *
+ * Het **Reference-object hééft een publiek schema** — dit bestand beweerde eerder van niet, en
+ * dat was nooit tegen de dienst zelf getoetst. De referentielijst is een array van objecten met
+ * `ReferenceNumber`, `DepositDate` (ISO-datum), `ExerciseDates{StartDate,EndDate}`,
+ * `EnterpriseNumber`, `AccountingDataURL` en nog een tiental velden. `kiesRecentsteReferentie`
+ * blijft vormonafhankelijk als vangnet, maar wordt in `scripts/nbb-scenarios.ts` nu getoetst
+ * tegen díe gedocumenteerde vorm en niet alleen tegen bedachte vormen.
+ *
+ * Voor **accountingData geldt het omgekeerde**: de spec beschrijft het antwoord als
+ * `type: string, format: binary` en zegt niets over de jsonxbrl-structuur. Daar is de
+ * rubriekzoeker op nummer dus wél de juiste keuze — zie `nbb-rubriek.ts`.
+ *
+ * Wat nog ongemeten is: een échte respons. Dat vraagt een subscription key, ook op de UAT.
+ * Draai `scripts/nbb-probe.ts` zodra je er een hebt.
  */
 import type { SourceResult } from './types'
 import { leesPersoneel } from './nbb-rubriek'
 
-/** Productie en de testomgeving. De UAT vraagt geen contract en accepteert elk client-nummer. */
+/**
+ * Productie en de testomgeving.
+ *
+ * De UAT vraagt **geen contract en geen CLIENT_ID** — "it is not necessary to complete the order
+ * form", en het gebruik is gratis. Maar hij vraagt wél een subscription key: registreer op
+ * https://developer.uat2.cbso.nbb.be/ en abonneer op *Authentic Data Query*. Zonder die key
+ * antwoordt de gateway 401 `Access denied due to missing subscription key`, en met een verzonnen
+ * key 401 `invalid subscription key` — allebei gemeten op 2026-08-26. Dit bestand beweerde eerder
+ * dat de UAT elk client-nummer accepteert; dat verwart het CLIENT_ID van de productie-aanvraag
+ * met de API-sleutel, en het klopt voor geen van beide omgevingen.
+ */
 const BASIS = {
   productie: 'https://ws.cbso.nbb.be',
   uat: 'https://ws.uat2.cbso.nbb.be',

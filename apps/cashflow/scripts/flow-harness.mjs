@@ -5,6 +5,8 @@
  *   pnpm --filter cashflow flow             # alle scenario's
  *   pnpm --filter cashflow flow --selftest  # + de tegenproeven, die hóren te falen
  *   pnpm --filter cashflow flow --headed    # meekijken terwijl het gebeurt
+ *   pnpm --filter cashflow flow --no-build  # hergebruik de vorige harness-build
+ *   pnpm --filter cashflow flow --dist=.next # serveer een bestaande build, bouw niet (CI)
  *
  * Waarom dit bestaat: het slepen van een post tussen maanden viel tot 2026-08-07 buiten
  * élk vangnet. De scenario-scripts raken alleen de rekenkern, `@umanex/tokens contrast`
@@ -31,8 +33,12 @@
  * lek en de run faalt. Er gaat dus geen enkele byte naar `cashflow_state` van de echte
  * gebruiker, ook niet wanneer het slepen slaagt en de app wíl wegschrijven.
  *
- * Eigen server op een eigen poort (3100): de PM2-app op 3000 serveert een andere build uit
- * een andere map. Die mag deze harness niet herstarten en niet overschrijven.
+ * Eigen build in een eigen map (`.next-harness`, via NEXT_DIST_DIR in next.config.mjs) en
+ * een eigen server op een eigen poort (3100). De PM2-app op 3000 serveert `.next` uit
+ * dezelfde tree — sinds app-werk in de hoofdtree gebeurt is dat de tree waarin je bouwt.
+ * Die build mag deze harness niet overschrijven en die server niet herstarten. Daarom
+ * bouwt hij nooit in `.next`; hij kan er hooguit een bestaande build uit serveren
+ * (`--dist=.next`, wat CI doet met de build van de stap ervoor).
  */
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -42,6 +48,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { beoordeel, beschrijfFout, meetInPagina, STIL_CSS } from './contrast.mjs';
+import { kiesDist } from './harness-dist.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = resolve(HERE, '..');
@@ -50,8 +57,25 @@ const require_ = createRequire(import.meta.url);
 const args = process.argv.slice(2);
 const SELFTEST = args.includes('--selftest');
 const HEADED = args.includes('--headed');
+// Gezet door de signaalhandler in main(): een onderbroken run eindigt met 130/143, niet met 1.
+let onderbroken = null;
 const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3100);
 const BASE = `http://127.0.0.1:${PORT}`;
+
+// ── Build-map ────────────────────────────────────────────────────────────────
+// Twee namen, letterlijk, gekozen in `harness-dist.mjs`: `.next` is de live map (PM2 op
+// :3000 leest eruit) en wordt alleen geserveerd; `.next-harness` is de eigen map en wordt
+// gebouwd, tenzij `--no-build` de vorige build hergebruikt. Vrije invoer is een wisser —
+// `next build` maakt de doelmap eerst leeg — dus een allowlist, geen normalisatie.
+let gekozen;
+try {
+  gekozen = kiesDist(args);
+} catch (err) {
+  console.error(err.message);
+  process.exit(2);
+}
+const { DIST, LIVE_MAP, BOUWEN } = gekozen;
+const DIST_PAD = resolve(APP, DIST);
 
 // ── Fixture ──────────────────────────────────────────────────────────────────
 // Eén post in de eerste kolom, met een bedrag dat nergens anders voorkomt zodat de
@@ -167,7 +191,7 @@ function originsInBuild() {
     }
   };
 
-  loop(resolve(APP, '.next/static/chunks'));
+  loop(resolve(DIST_PAD, 'static/chunks'));
   return gevonden;
 }
 
@@ -177,7 +201,7 @@ function controleerBuildOrigin(origin) {
 
   if (inBuild.size === 0) {
     throw new Error(
-      'Geen enkele supabase-origin gevonden in .next/static/chunks.\n' +
+      `Geen enkele supabase-origin gevonden in ${DIST}/static/chunks.\n` +
         'De harness kan dan niet vaststellen dat hij de origin afsluit waar de app naartoe gaat, ' +
         'en dat is zijn hele veiligheidsgarantie. Bouw opnieuw, of pas deze check aan als de ' +
         'bundel-indeling veranderd is.',
@@ -189,8 +213,9 @@ function controleerBuildOrigin(origin) {
     throw new Error(
       `De build praat met ${vreemd.join(', ')}, de harness sluit ${origin} af.\n` +
         'Die verzoeken zouden langs de onderschepping heen gaan — naar een echte server, met ' +
-        'echte data. Bouw met dezelfde NEXT_PUBLIC_SUPABASE_URL als waarmee je de harness draait:\n' +
-        `  NEXT_PUBLIC_SUPABASE_URL=${origin} pnpm --filter cashflow build`,
+        'echte data. Een build die de harness zelf maakt erft zijn omgeving, dus dit betekent dat ' +
+        `${DIST} een hergebruikte build is (--no-build of --dist=.next) uit een andere omgeving. ` +
+        `Bouw hem met NEXT_PUBLIC_SUPABASE_URL=${origin}, of laat de harness zelf bouwen.`,
     );
   }
 }
@@ -259,13 +284,61 @@ async function poortBezet() {
   }
 }
 
-async function startServer() {
-  if (!existsSync(resolve(APP, '.next/BUILD_ID'))) {
+/**
+ * Bouwt de app in DIST. De uitvoer wordt opgevangen en alleen bij een fout getoond; bij
+ * succes één regel met de duur. Geen eigen procesgroep: `next build` eindigt vanzelf.
+ */
+async function bouw() {
+  const bin = require_.resolve('next/dist/bin/next');
+  const start = Date.now();
+  console.log(`Flow-harness — bouwt in ${DIST} …`);
+  const proc = spawn(process.execPath, [bin, 'build'], {
+    cwd: APP,
+    env: { ...process.env, NEXT_DIST_DIR: DIST },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let logs = '';
+  proc.stdout.on('data', (d) => (logs += d));
+  proc.stderr.on('data', (d) => (logs += d));
+  const code = await new Promise((r) => proc.on('close', r));
+  if (code !== 0) {
+    throw new Error(`next build viel om (exit ${code}):\n${logs.split('\n').slice(-40).join('\n')}`);
+  }
+  console.log(`Flow-harness — build klaar in ${Math.round((Date.now() - start) / 1000)}s`);
+}
+
+function buildId() {
+  return readFileSync(resolve(DIST_PAD, 'BUILD_ID'), 'utf8').trim();
+}
+
+/**
+ * "Serveert <map>" mag niet van de schijf komen: Next koppelt de geserveerde map nergens
+ * aan wat er net gebouwd is, dus een `next start` zonder NEXT_DIST_DIR zou stil `.next`
+ * serveren terwijl de log `.next-harness` claimt. Vraag de server dus om het manifest van
+ * díe BUILD_ID; een andere build op die poort geeft 404.
+ */
+async function controleerGeserveerdeBuild(id) {
+  const res = await fetch(`${BASE}/_next/static/${id}/_buildManifest.js`, { redirect: 'manual' });
+  if (res.status !== 200) {
     throw new Error(
-      'Geen build in apps/cashflow/.next. Draai eerst `pnpm --filter cashflow build`.\n' +
-        'De harness bouwt bewust niet zelf: een build overschrijft de .next waar een draaiende server uit leest.',
+      `${BASE} serveert niet ${DIST} (BUILD_ID ${id}): het manifest gaf ${res.status}. ` +
+        'Een andere build op die poort, of NEXT_DIST_DIR kwam niet bij `next start` aan.',
     );
   }
+}
+
+/** Vóór de origin-check: die leest de chunks en zou een ontbrekende build als "bouw opnieuw" melden. */
+function controleerBuildAanwezig() {
+  if (existsSync(resolve(DIST_PAD, 'BUILD_ID'))) return;
+  throw new Error(
+    `Geen build in apps/cashflow/${DIST}.` +
+      (LIVE_MAP
+        ? ' `--dist=.next` serveert alleen wat er staat en bouwt daar nooit in — dat is de map waar een draaiende server uit leest. Laat de flag weg zodat de harness in .next-harness bouwt, of bouw eerst zelf (`pnpm --filter cashflow build`) waar geen server draait.'
+        : ' Laat `--no-build` weg zodat de harness hem zelf maakt.'),
+  );
+}
+
+async function startServer() {
 
   // Zonder deze check test de harness wat er tóevallig op de poort staat. `next start`
   // valt dan om met EADDRINUSE terwijl de eerste fetch slaagt tegen de vréémde server —
@@ -282,6 +355,9 @@ async function startServer() {
   // alleen het bovenste proces liet hier een luisterende server achter.
   const proc = spawn(process.execPath, [bin, 'start', '--port', String(PORT)], {
     cwd: APP,
+    // Dezelfde variabele als bij de build: `next start` leest next.config.mjs opnieuw en
+    // moet op dezelfde distDir uitkomen, anders serveert hij `.next` van iemand anders.
+    env: { ...process.env, NEXT_DIST_DIR: DIST },
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true,
   });
@@ -997,25 +1073,48 @@ async function main() {
     paginafouten: [],
   };
 
+  if (BOUWEN) await bouw();
+  controleerBuildAanwezig();
+
   // Vóór de server, vóór de browser: klopt de origin die we afsluiten met de origin in de
   // build? Zo niet, dan is elke uitspraak over lekken daarna waardeloos.
   controleerBuildOrigin(state.origin);
 
   console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin} (ook in de build)`);
 
-  const server = await startServer();
-  const browser = await chromium.launch({ headless: !HEADED });
-
+  const id = buildId();
   const teDraaien = [...scenarios(), ...(SELFTEST ? tegenproeven() : [])];
   const resultaten = [];
+  const server = await startServer();
+
+  // Alles ná de spawn staat in de try: de server is detached en overleeft een exit(1),
+  // dus een throw hier (manifest-check, browser die niet start) zou hem als wees op :3100
+  // achterlaten en de volgende run laten weigeren. Ctrl+C bereikt hem om dezelfde reden
+  // niet (eigen procesgroep) en Node's default-handler slaat de finally over — dus een
+  // eigen signaalhandler, en Playwright's handlers uit zodat er maar één is.
+  let browser;
+  const bijSignaal = (signaal) => {
+    onderbroken = signaal;
+    stopServer(server);
+    const dicht = browser ? browser.close().catch(() => {}) : Promise.resolve();
+    dicht.then(() => process.exit(signaal === 'SIGTERM' ? 143 : 130));
+  };
+  process.once('SIGINT', bijSignaal);
+  process.once('SIGTERM', bijSignaal);
   try {
+    await controleerGeserveerdeBuild(id);
+    console.log(`Flow-harness — serveert ${DIST} (BUILD_ID ${id}) op ${BASE}`);
+    browser = await chromium.launch({ headless: !HEADED, handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false });
     for (const scenario of teDraaien) {
       const r = await draaiScenario(browser, state, scenario);
       resultaten.push({ ...r, moetFalen: scenario.moetFalen === true });
     }
   } finally {
-    await browser.close();
+    process.off('SIGINT', bijSignaal);
+    process.off('SIGTERM', bijSignaal);
+    // Server eerst — die teardown mag niet achter een browser.close() hangen die kan gooien.
     stopServer(server);
+    if (browser) await browser.close().catch(() => {});
   }
 
   console.log('');
@@ -1041,6 +1140,8 @@ async function main() {
 }
 
 main().catch((err) => {
+  // De server-stop laat een lopend scenario gooien; dan is dit de weg naar buiten, niet de handler.
+  if (onderbroken) process.exit(onderbroken === 'SIGTERM' ? 143 : 130);
   console.error(err.message ?? err);
   process.exit(1);
 });

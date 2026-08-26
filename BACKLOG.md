@@ -38,3 +38,45 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
     - **Status:** open
 
 <!-- De eerste entry maakt hieronder de juiste laag-header aan. -->
+
+# Globaal
+
+## 2026-08-25 — Spacing-, border- en shadow-schaal hebben geen token-bron · [refactor]
+- **Wat:** De Figma-collection `Base` draagt `spacing-*` (13 stappen), `border-1/2`, `icon-stroke` en de effect styles `shadow/sm|md`. Geen daarvan komt uit `tokens.json`: hun bron is de Tailwind-default, respectievelijk lucide-react. `roles.mjs` zegt zelf "later spacing, en type". Zolang dat er niet is, is de Figma-kant de enige plek waar deze schaal expliciet staat — en dus een tweede bron naast de tokens.
+- **Waarom niet nu:** De Storybook→Figma-export moest de waarden ergens vandaan halen; ze rauw laten zou principe 2 van `code-naar-figma` schenden (nul hardcoded waarden). Een `Spacing`-set in `tokens.json` toevoegen is een gecoördineerde token-restructurering die via Tokens Studio en een Pull hoort te lopen — een eigen taak, niet een bijproduct van deze.
+- **Deels gedaan (2026-08-25):** de *meting* staat er, de token-bron nog niet. `figma-sync-check.mjs` heeft sinds vandaag een as `[dekking]` die elke Figma-variabele tegen `packages/tokens/tokens.json` toetst (vergelijker: `scripts/figma-token-coverage.mjs`, gesynct vanuit umanex-os). De twintig namen uit dit item staan daar als `BEKENDE_GATEN` — expliciet en greppable, in plaats van ongemeten. Die lijst werkt twee kanten op: een nieuw gat faalt, en een naam die géén gat meer is faalt óók, dus zodra de `Spacing`-set bestaat dwingt CI het opruimen van de lijst af. Draait in CI via `pnpm --filter @umanex/ui figma:check:selftest`; tegenproef in `figma-sync-selftest.mjs` (13 cases).
+- **Eerste zet:** Set `Spacing` (en later `Shadow`) in Tokens Studio aanmaken en pushen. `classifySet` in `packages/tokens/build.mjs` gooit sinds 2026-08-05 op een onbekende set, dus de build wijst zelf de weg (HANDOFF 2026-08-05, resolved). Daarna `packages/ui/scripts/figma-sync-check.mjs` de spacing-as tegen de tokens laten toetsen in plaats van tegen de `n × 4px`-rekenregel.
+- **Status:** open
+
+## 2026-08-25 — Sync-guard ziet een Figma-wijziging pas na een verse manifest · [test]
+- **Wat:** `figma:check` toetst de code tegen `packages/ui/figma/manifest.json` — een neergeslagen meting van het Figma-bestand, geen live verbinding. Wijzigt iemand iets ín Figma zonder de manifest te verversen, dan blijft CI groen terwijl de twee kanten uit elkaar lopen. De omgekeerde richting (code wijzigt, Figma niet) wordt wél gevangen.
+- **Waarom niet nu:** CI heeft geen Figma-toegang. De live-kant vereist een `FIGMA_ACCESS_TOKEN` als repo-secret plus een REST-pad (`figma_get_file_data` of de Figma REST API) — dat is een eigen infra-beslissing met een secret erbij, en die hoort Jeroen te nemen.
+- **Eerste zet:** Een `figma:manifest`-script dat de manifest via de REST API regenereert, plus een CI-stap die hem regenereert en `git diff --exit-code` doet — dezelfde vorm als de bestaande guard "gegenereerde tokens zijn in sync met tokens.json". Alternatief zonder secret: een pre-commit-waarschuwing wanneer `components/ui/*.stories.tsx` wijzigt zonder dat de manifest meebeweegt.
+- **Status:** open
+
+## 2026-08-25 — Hover- en focus-states staan niet in Figma · [ux]
+- **Wat:** De Figma-componenten dragen `disabled` als variant, maar geen hover of focus. In de code zijn dat `hover:bg-primary/90`-achtige alpha-mixen en `focus-visible:ring-*`-utilities.
+- **Waarom niet nu:** Die kleuren hebben geen token — `primary/90` is een Tailwind-alpha op een rol, geen eigen rol. Ze in Figma zetten betekent een handgemengde kleur, dus een hardcoded waarde, en dat ondergraaft precies de sync-claim die deze export maakt. Bewuste keuze, vastgelegd in de briefing.
+- **Eerste zet:** Beslissen of de interactie-states eigen rollen verdienen (`primary-hover`, `ring-offset`) in beide mode-sets. Zo ja, dan volgen de Figma-varianten vanzelf en kan de guard ze meenemen.
+- **Status:** open
+
+## 2026-08-24 — umanex-profile voert nog "Design Team Of One" · [docs]
+- **Wat:** `.umanex-os/profiles/umanex.md` beschrijft de positionering als *"Design Team Of One"* en de AI-aanpak als *"evolutie van DToO"*. De portfoliosite laat die belofte sinds vandaag los: het bureau-plan stelt dat freelancers structureel zijn vanaf de eerste retainer, dus één-persoon-zijn is geen belofte meer maar een tegenspraak. Het profile bijwerken naar de koper-positionering (meer producten dan designers, capaciteit in dagen) sluit de drift.
+- **Waarom niet nu:** het profile is de klant-laag die élke sessie in élke app stuurt, ook buiten portfolio. De site herschrijven was gevraagd; het merkprofiel herschrijven niet. Stil meeveranderen zou een positioneringsbeslissing verstoppen in een portfolio-PR.
+- **Eerste zet:** in `profiles/umanex.md` de sectie *Positionering* en *Toekomst* naast `apps/portfolio/lib/copy.ts` leggen en beslissen of DToO helemaal weg moet of blijft staan als historiek. `apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md` heeft de argumentatie.
+- **Beslist:** DToO gaat weg als positionering en blijft als één historiek-alinea staan — oudere audits en briefings dragen de term nog, en zonder die noot kan een volgende sessie een vervallen lijn niet van een huidige onderscheiden. De doelgroep is meteen mee vernauwd en de drie naamregels uit het marktonderzoek staan nu in het profiel in plaats van alleen in de portfolio-briefing.
+- **Status:** gebouwd — PR #302
+
+# Klant — umanex
+
+## 2026-08-25 — Storybook-build in CI en turbo · [infra]
+- **Wat:** `build-storybook` van `@umanex/ui` als turbo-task opnemen en in `ci.yml` draaien, zodat een story of docs-blok dat niet meer compileert de PR rood maakt in plaats van pas bij de volgende `pnpm storybook`.
+- **Waarom niet nu:** `turbo.json` en `ci.yml` zijn config-bestanden die vooraf bevestigd horen te worden; de Storybook-opzet zelf (PR `chore/storybook-ui`) is gebouwd zonder die stap.
+- **Eerste zet:** `"build-storybook": { "dependsOn": ["^build"], "outputs": ["storybook-static/**"] }` in `turbo.json`, en `pnpm turbo build-storybook` naast de bestaande build-stap in CI. Optioneel: Chromatic of een statische deploy voor review.
+- **Status:** gebouwd — 2026-08-25, PR `chore/storybook-ci`; tegenproef: een story met een niet-bestaande import laat `pnpm turbo build-storybook` falen (exit ≠ 0).
+
+## 2026-08-25 — CLAUDE.md-sectie "Eén app, één worktree" spreekt de globale laag tegen · [docs]
+- **Wat:** De sectie *Parallel aan twee apps werken* in `CLAUDE.md` schrijft nog `git worktree add ../umanex-apps-<app>` voor, terwijl `.umanex-os/CLAUDE.md` (sinds 2026-08-25) de zusmap-conventie schrapt en app-werk in de hoofdtree op een feature branch zet. Sectie herschrijven of vervangen door een verwijzing naar de globale regel.
+- **Waarom niet nu:** Buiten de scope van de Storybook-taak; het is een repo-conventie die Jeroen zelf hoort te bekrachtigen.
+- **Eerste zet:** `grep -n "worktree" CLAUDE.md` en de sectie vervangen door: hoofdtree, feature branch vanaf `origin/main`, stage per pad; de poort-tabel (cashflow :3000, PM2) blijft relevant.
+- **Status:** gebouwd — 2026-08-25, PR #306 (`docs/parallel-werk-hoofdtree`); de PR bestond al vóór deze entry geschreven werd. Tegenproef: `grep -n 'umanex-apps-' CLAUDE.md apps/*/CLAUDE.md` levert alleen nog de regel op die de zusmap expliciet afschaft (`.umanex-os/` en dit bestand vallen buiten het meetbereik — die dragen de string als voorbeeld). Onderweg gemeten: de cashflow flow-harness deelt `.next` met PM2, zie `apps/cashflow/BACKLOG.md`.

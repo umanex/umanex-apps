@@ -38,17 +38,66 @@ const APP = resolve(HERE, '..');
 const args = process.argv.slice(2);
 const SELFTEST = args.includes('--selftest');
 const HEADED = args.includes('--headed');
+const DARK = args.includes('--dark');
 const SHOT = args.find((a) => a.startsWith('--shot='))?.slice(7) ?? null;
 const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3101);
 const BASE = `http://127.0.0.1:${PORT}`;
 
 /** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
-const ROUTES = ['/', '/werkwijze', '/cases', '/carriere'];
+const ROUTES = ['/', '/aanbod', '/scan', '/werkwijze', '/cases', '/carriere'];
+
+/** Aantal scenario's dat `--selftest` bewust laat falen. Alle moeten afgaan. */
+const SELFTEST_CASES = 3;
+
+/** Smal scherm waarop elke route moet passen. */
+const NARROW = 375;
+/** Eén pixel speling: sub-pixel afronding van de layout-engine is geen bevinding. */
+const NARROW_SLACK = 1;
 
 const fails = [];
 const notes = [];
 function fail(msg) { fails.push(msg); console.log(`  ✗ ${msg}`); }
 function ok(msg) { console.log(`  ✓ ${msg}`); }
+
+/**
+ * Rolt de pagina één keer helemaal door en weer terug. Zonder dit levert `fullPage` een
+ * grotendeels leeg beeld op: de Reveal-componenten animeren met `whileInView`, dus alles onder
+ * de vouw staat nog op opacity 0 wanneer de screenshot genomen wordt. Dat ziet er identiek uit
+ * aan een pagina die niets rendert — een lege meting die zich voordoet als bewijs.
+ */
+async function settle(page) {
+  await page.evaluate(async () => {
+    const step = Math.round(window.innerHeight * 0.8);
+    for (let y = 0; y < document.documentElement.scrollHeight; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 90));
+    }
+    window.scrollTo(0, 0);
+  });
+  // Wachten op een vaste tijd is hier de verkeerde vorm: de Reveal-overgang duurt 0,5 s en start
+  // pas wanneer een blok in beeld komt, dus het laatste blok is later klaar dan het eerste.
+  // Gemeten: met 250 ms bleef er sporadisch één blok doorzichtig staan, en dat leverde een
+  // bevinding op die over de harness ging in plaats van over de pagina. Polsen tot het stil is.
+  for (let i = 0; i < 20; i++) {
+    if ((await fadedCount(page)) === 0) return;
+    await page.waitForTimeout(100);
+  }
+}
+
+/** Aantal blokken dat nog (deels) doorzichtig is. 0 = de render toont wat er staat. */
+function fadedCount(page) {
+  return page.evaluate(
+    () =>
+      [...document.querySelectorAll('[style*="opacity"]')].filter(
+        (el) => Number(getComputedStyle(el).opacity) < 0.9,
+      ).length,
+  );
+}
+
+/** Hoeveel breder het document is dan het venster. 0 of minder = past. */
+function overflow(page) {
+  return page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+}
 
 function portFree(port) {
   return new Promise((res) => {
@@ -105,6 +154,11 @@ async function main() {
   const browser = await chromium.launch({ headless: !HEADED });
   const ctx = await browser.newContext();
 
+  // Dark is geen aparte build maar een class die vóór first paint gezet wordt op basis van
+  // localStorage (zie app/layout.tsx). De init-script draait vóór elk document, dus dit meet
+  // hetzelfde pad als een bezoeker die ooit op de toggle klikte — niet een geforceerde class.
+  if (DARK) await ctx.addInitScript(() => localStorage.setItem('theme', 'dark'));
+
   // Alles buiten de eigen origin wordt afgebroken en geteld.
   const leaks = new Set();
   await ctx.route('**/*', (route) => {
@@ -119,7 +173,7 @@ async function main() {
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
   page.on('pageerror', (e) => consoleErrors.push(String(e)));
 
-  console.log('→ Routes');
+  console.log(`→ Routes (${DARK ? 'dark' : 'light'})`);
   for (const route of ROUTES) {
     const res = await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
     const status = res?.status() ?? 0;
@@ -140,11 +194,22 @@ async function main() {
     const where = landed === route ? `${route}` : `${route} → ${landed}`;
     if (text.length < 20) fail(`${where} rendert vrijwel niets (${text.length} tekens)`);
     else ok(`${where} → ${status}, ${text.length} tekens tekst`);
+    // Een dark-run die stilzwijgend light rendert levert zes screenshots op die er correct
+    // uitzien en niets bewijzen. Toets dus de toestand, niet de vlag.
+    const isDark = await page.evaluate(() => document.documentElement.classList.contains('dark'));
+    if (isDark !== DARK) fail(`${route}: thema is ${isDark ? 'dark' : 'light'}, verwacht ${DARK ? 'dark' : 'light'}`);
+
     if (SHOT) {
-      const name = route === '/' ? 'index' : route.replace(/\//g, '-').replace(/^-/, '');
+      const base = route === '/' ? 'index' : route.replace(/\//g, '-').replace(/^-/, '');
+      const name = DARK ? `${base}-dark` : base;
       const file = resolve(process.cwd(), `${SHOT}/${name}.png`);
+      await settle(page);
       await page.screenshot({ path: file, fullPage: true });
-      ok(`render vastgelegd: ${file}`);
+      // Een render die grotendeels doorzichtig is, is geen bewijs. Meet het daarom in plaats van
+      // het aan te nemen: elk Reveal-blok hoort na `settle` op volle dekking te staan.
+      const faded = await fadedCount(page);
+      if (faded) fail(`${route}: ${faded} blok(ken) staan nog doorzichtig op de render`);
+      else ok(`render vastgelegd: ${file}`);
     }
   }
 
@@ -183,12 +248,50 @@ async function main() {
     notes.push('geen select en geen interne link op de eerste route — interactie niet uitgereden');
   }
 
+  // Smal scherm. Een sectie die breder is dan het venster duwt de hele pagina horizontaal weg;
+  // dat is onzichtbaar op een 1280px-context en precies waar een nieuwe pagina met een brede
+  // tabel, kaartenrij of lange ononderbroken tekst het breekt. Gemeten aan het document, niet
+  // aan een los element: de vraag is of de gebruiker moet scrollen, niet welk kind te breed is.
+  console.log('→ Smal scherm (375 px)');
+  await page.setViewportSize({ width: NARROW, height: 812 });
+  for (const route of ROUTES) {
+    await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const over = await overflow(page);
+    if (over > NARROW_SLACK) fail(`${route} scrollt horizontaal op ${NARROW} px (${over} px te breed)`);
+    else ok(`${route} past op ${NARROW} px`);
+  }
+
   if (SELFTEST) {
-    console.log('→ Zelftest (dit scenario hóórt te falen)');
+    console.log('→ Zelftest (deze scenario\'s hóóren te falen)');
     await page.goto(BASE + '/deze-route-bestaat-niet-' + Date.now(), { waitUntil: 'domcontentloaded' })
       .catch(() => {});
     const res = await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
     if (res?.status() === 200) fail('ZELFTEST: bewust gefaalde assertie — de harness kan falen');
+
+    // Tegenproef voor de smal-scherm-check hierboven. Een check die alleen ooit groen was,
+    // bewijst niet dat hij meet: hij kan even goed naar een grootheid kijken die per
+    // constructie klopt. Hier wordt het defect kunstmatig opgewekt en moet hij afgaan.
+    await page.setViewportSize({ width: NARROW, height: 812 });
+    await page.evaluate(() => {
+      const d = document.createElement('div');
+      d.style.width = '2000px';
+      d.style.height = '1px';
+      document.body.appendChild(d);
+    });
+    const forced = await overflow(page);
+    if (forced > NARROW_SLACK) fail(`ZELFTEST: overflow-check gaat af op een opgewekt defect (${forced} px)`);
+    else console.log('  ! overflow-check bleef groen mét een 2000px-element — hij meet niets');
+
+    // Tegenproef voor de doorzichtigheids-check. Zonder `settle` staat alles onder de vouw nog
+    // op opacity 0; vindt de teller daar niets, dan kijkt hij naar de verkeerde grootheid en is
+    // een groene render-check waardeloos.
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const unsettled = await fadedCount(page);
+    if (unsettled > 0) fail(`ZELFTEST: doorzichtigheids-check ziet ${unsettled} blok(ken) vóór het doorrollen`);
+    else console.log('  ! doorzichtigheids-check zag niets op een ongescrolde pagina — hij meet niets');
   }
 
   if (consoleErrors.length) {
@@ -204,8 +307,15 @@ async function main() {
   console.log('');
   for (const n of notes) console.log(`  • ${n}`);
   if (SELFTEST) {
-    const expected = fails.some((f) => f.startsWith('ZELFTEST'));
-    console.log(expected ? '✓ zelftest: de harness faalt wanneer hij hoort te falen' : '✗ zelftest faalde NIET — de harness meet niets');
+    // Beide tegenproeven moeten afgaan. Met `some` zou één geslaagde controle de andere
+    // maskeren, en dan is de zelftest zelf de check die per constructie klopt.
+    const fired = fails.filter((f) => f.startsWith('ZELFTEST')).length;
+    const expected = fired === SELFTEST_CASES;
+    console.log(
+      expected
+        ? `✓ zelftest: ${fired}/${SELFTEST_CASES} tegenproeven gingen af — de harness faalt wanneer hij hoort te falen`
+        : `✗ zelftest: ${fired}/${SELFTEST_CASES} tegenproeven gingen af — er is een check die niets meet`,
+    );
     process.exit(expected ? 0 : 1);
   }
   console.log(fails.length ? `✗ ${fails.length} bevinding(en)` : '✓ alle checks geslaagd');

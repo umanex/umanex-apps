@@ -60,7 +60,7 @@ Itereer BOUW → BEOORDEEL zolang er P0/P1 openstaan.
 
 EXIT (status `gevalideerd`) geldt pas wanneer **alle drie** waar zijn:
 
-1. elk acceptatie-item afgevinkt `- [x]`;
+1. elk acceptatie-item afgevinkt `- [x]`, mét het bewijs ín de regel (`— bewijs: <meting + instrument>`) — een vinkje zonder bewijs telt als open;
 2. geen P0/P1 in `code-review`, `verify` of (bij backend-werk) `security-audit`;
 3. Open vragen leeg.
 

@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-22_
+_Gegenereerd op 2026-08-25_
 
 ## Project
 - **App:** rowtrack
@@ -59,15 +59,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-aa8797f docs(rowtrack): the device checklist grew with the second connection path
-0b21d93 Merge branch 'main' into fix/hr-verbinding-na-app-wissel
-b5bf6d2 chore(rowtrack): make the test suites runnable, and say where they don't run
-23432f0 fix(rowtrack): let two BLE scans take turns instead of breaking each other
-a734274 docs(rowtrack): TC-EBC for PR detail, plus what it left on the shelf
+1e1b64f Merge remote-tracking branch 'origin/main' into docs/parallel-werk-hoofdtree
+e270ab1 feat(ui): add Storybook with token-driven docs
+a838d47 docs: app work lives in the main tree, drop the sibling-worktree section
+fb979d7 docs: log the flaky scan-lock test, and close the CI item it sat under
+c46104f docs(rowtrack): count the test suites instead of remembering them
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/CLAUDE.md
+  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/context-snapshot.md
 
 ## Bestanden met TODO/FIXME
   (geen)

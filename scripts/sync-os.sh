@@ -400,6 +400,7 @@ echo "→ Installeer context-snapshot systeem..."
 GEN_SNAPSHOT="$UMANEX_OS_PATH/templates/gen-snapshot.sh"
 GITHOOK="$UMANEX_OS_PATH/templates/githooks-pre-commit"
 CONTEXT_TEMPLATE="$UMANEX_OS_PATH/templates/context.json.template"
+TOKEN_COVERAGE="$UMANEX_OS_PATH/templates/figma-token-coverage.mjs"
 
 if [ "$SELF_MODE" -eq 1 ]; then
   # In de bron is een kópie van de hook een tweede waarheid die wegdrijft van het
@@ -425,6 +426,17 @@ else
     echo "  ✓ scripts/gen-snapshot.sh"
   else
     echo "  ⚠ templates/gen-snapshot.sh niet gevonden — overgeslagen"
+  fi
+
+  # Token-dekkingscheck: toetst of elke Figma-variabele een tegenhanger heeft in
+  # tokens.json. Config-vrij over de klant-tokenvormen heen, dus één kopie volstaat.
+  if [ -f "$TOKEN_COVERAGE" ]; then
+    mkdir -p scripts
+    cp "$TOKEN_COVERAGE" scripts/figma-token-coverage.mjs
+    chmod +x scripts/figma-token-coverage.mjs
+    echo "  ✓ scripts/figma-token-coverage.mjs"
+  else
+    echo "  ⚠ templates/figma-token-coverage.mjs niet gevonden — overgeslagen"
   fi
 
   if [ -f "$GITHOOK" ]; then

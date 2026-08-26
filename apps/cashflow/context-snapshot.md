@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-08-10_
+_Gegenereerd op 2026-08-25_
 
 ## Project
 - **App:** cashflow
@@ -49,15 +49,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-bab65e5 feat(cashflow): beginsaldo wordt de eerste regel van de inkomsten
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-a28ec78 docs(cashflow): record the review round in the harness plan
+ac48be5 Merge remote-tracking branch 'origin/main' into feature/cashflow-harness-distdir
+3c61b21 feat(ui): export Storybook components to Figma with a sync guard
+c9a290d fix(cashflow): exit 130/143 when the harness is interrupted after the browser started
+f41a428 fix(cashflow): stop the harness server on SIGINT/SIGTERM, reject malformed --dist
+f759073 fix(cashflow): allowlist the harness distDir, prove the served build
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-08-10-feature-beginsaldo-in-inkomsten.tcebc.md
+  M  apps/cashflow/BACKLOG.md
 
 ## Bestanden met TODO/FIXME
   (geen)

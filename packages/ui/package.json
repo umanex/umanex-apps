@@ -4,7 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "figma:check": "node scripts/figma-sync-check.mjs",
+    "figma:check:selftest": "node scripts/figma-sync-selftest.mjs && node scripts/figma-sync-check.mjs"
   },
   "exports": {
     "./lib/utils": "./lib/utils.ts",
@@ -38,9 +42,21 @@
     "tailwind-merge": "^2.6.1"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^10.5.10",
+    "@storybook/addon-docs": "^10.5.10",
+    "@storybook/addon-themes": "^10.5.10",
+    "@storybook/react-vite": "^10.5.10",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@umanex/config": "workspace:*",
-    "typescript": "^5"
+    "@umanex/tokens": "workspace:*",
+    "autoprefixer": "^10",
+    "postcss": "^8",
+    "react": "^18",
+    "react-dom": "^18",
+    "storybook": "^10.5.10",
+    "tailwindcss": "^3",
+    "typescript": "^5",
+    "vite": "^8"
   }
 }

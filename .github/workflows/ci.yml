@@ -54,6 +54,17 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
 
+      # De Storybook van packages/ui draait zijn eigen Vite/PostCSS-keten en zit dus niet
+      # in de build hierboven. Een story of docs-blok dat niet meer compileert (verwijderde
+      # export, verplaatst component, kapotte MDX) zou anders pas opvallen bij de volgende
+      # `pnpm storybook` op iemands machine. Eigen stap, zodat de fout in het log bij zijn
+      # naam staat en niet ergens in de output van twintig andere builds.
+      - name: Build — Storybook (packages/ui)
+        run: pnpm turbo build-storybook
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
       # Node draait TypeScript zelf (type-stripping), dus dit kost geen testrunner en
       # geen dependency. De bestanden bestonden al maar werden door niets aangeroepen —
       # een test die alleen draait wanneer iemand eraan denkt, meet niets.
@@ -148,9 +159,11 @@ jobs:
       # scenario's raken: hij hangt aan dnd-kit én de store. De harness rijdt hem uit met
       # toetsenbord en muis tegen de build hierboven, en onderschept élk verzoek naar de
       # Supabase-origin — ook de wegschrijf-call, die geteld wordt in plaats van verstuurd.
-      # `flow:selftest` voegt een scenario toe dat hóórt te falen.
+      # `flow:ci` serveert de build van de stap hierboven (`--dist=.next`: alleen lezen,
+      # nooit bouwen) en voegt de tegenproeven toe die hóren te falen. Lokaal bouwt de
+      # harness zelf in `.next-harness`, zodat hij de `.next` van PM2 niet raakt.
       - name: Guard — flow (sleep tussen maandkolommen)
-        run: pnpm --filter cashflow flow:selftest
+        run: pnpm --filter cashflow flow:ci
         env:
           # Dezelfde placeholder als de build. De harness leest hem om te weten welke origin
           # hij moet dichtzetten — zonder die waarde weigert hij te starten, en dat hoort zo.
@@ -164,3 +177,16 @@ jobs:
       # draait zijn eigen tegenproef vooraf en heeft netwerk noch database nodig.
       - name: Guard — invarianten op de scorekern (jobradar)
         run: pnpm --filter jobradar scenarios
+
+      # Storybook en het Figma-bestand "Component library" moeten één op één blijven:
+      # elke component een eigen pagina, elke variant-as aan beide kanten hetzelfde,
+      # elke tokenrol een variable, elke deep-link naar een bestaande node. De guard
+      # leest de neergeslagen Figma-staat uit packages/ui/figma/manifest.json — CI heeft
+      # geen Figma-toegang, dus dat bestand is de meting, niet de bron. Wat hij dus NIET
+      # ziet: een wijziging in Figma zonder verse manifest (zie packages/ui/CLAUDE.md).
+      #
+      # De selftest draait ervóór: hij bouwt per as het defect dat de guard moet vangen
+      # en eist dat hij erop afgaat, plus een ongewijzigde kopie die groen moet blijven.
+      # Zonder die twee kanten weet je niet of de guard meet of alleen draait.
+      - name: Guard — Storybook ↔ Figma in sync (met tegenproef)
+        run: pnpm --filter @umanex/ui figma:check:selftest

@@ -1,0 +1,105 @@
+{
+  "$comment": "Neergeslagen Figma-staat van het Component library-bestand. NIET met de hand bewerken: ververs via het figma_execute-commando in packages/ui/CLAUDE.md (## Verify-pad). scripts/figma-sync-check.mjs toetst dit bestand tegen de code.",
+  "fileKey": "ko2OuasYxyY2YRD69MYhWX",
+  "fileName": "Component library",
+  "gegenereerd": "2026-08-25",
+  "collections": {
+    "Theme": {
+      "modes": ["Light", "Dark"],
+      "variables": [
+        "background", "foreground", "card", "card-foreground", "popover", "popover-foreground",
+        "primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground",
+        "accent", "accent-foreground", "destructive", "destructive-foreground", "success", "success-foreground",
+        "warning", "warning-foreground", "border", "input", "ring",
+        "chart-1", "chart-2", "chart-3", "chart-4", "chart-5",
+        "sidebar", "sidebar-foreground", "sidebar-primary", "sidebar-primary-foreground",
+        "sidebar-accent", "sidebar-accent-foreground", "sidebar-border", "sidebar-ring",
+        "finance-positive", "finance-negative", "finance-negative-surface",
+        "finance-deferred", "finance-deferred-strong", "finance-total",
+        "overlay-scrim"
+      ]
+    },
+    "Base": {
+      "modes": ["Value"],
+      "variables": {
+        "radius": 8, "radius-lg": 8, "radius-md": 6, "radius-sm": 4, "radius-full": 9999,
+        "spacing-0_5": 2, "spacing-1": 4, "spacing-1_5": 6, "spacing-2": 8, "spacing-2_5": 10,
+        "spacing-3": 12, "spacing-4": 16, "spacing-5": 20, "spacing-6": 24, "spacing-8": 32,
+        "spacing-9": 36, "spacing-10": 40, "spacing-11": 44,
+        "border-1": 1, "border-2": 2,
+        "icon-stroke": 2
+      }
+    }
+  },
+  "textStyles": [
+    { "name": "sans/sm-normal",    "family": "Fira Sans", "style": "Regular",  "fontSize": 14, "lineHeight": 20, "letterSpacing": 0 },
+    { "name": "sans/sm-medium",    "family": "Fira Sans", "style": "Medium",   "fontSize": 14, "lineHeight": 20, "letterSpacing": 0 },
+    { "name": "sans/xs-semibold",  "family": "Fira Sans", "style": "SemiBold", "fontSize": 12, "lineHeight": 16, "letterSpacing": 0 },
+    { "name": "sans/2xl-semibold", "family": "Fira Sans", "style": "SemiBold", "fontSize": 24, "lineHeight": 32, "letterSpacing": -2.5 },
+    { "name": "sans/base-normal",  "family": "Fira Sans", "style": "Regular",  "fontSize": 16, "lineHeight": 24, "letterSpacing": 0 }
+  ],
+  "effectStyles": ["shadow/sm", "shadow/md"],
+  "pages": {
+    "Overzicht": { "pageId": "0:1", "primary": null },
+    "Badge": {
+      "pageId": "27:48",
+      "primary": { "name": "Badge", "id": "27:393", "type": "COMPONENT_SET",
+        "variantProperties": { "variant": ["default", "secondary", "destructive", "outline", "success", "warning"] } }
+    },
+    "Button": {
+      "pageId": "27:49",
+      "primary": { "name": "Button", "id": "27:374", "type": "COMPONENT_SET",
+        "variantProperties": {
+          "variant": ["default", "secondary", "outline", "ghost", "destructive", "link"],
+          "size": ["default", "sm", "lg", "icon"],
+          "disabled": ["false", "true"] } }
+    },
+    "Card": {
+      "pageId": "27:50",
+      "primary": { "name": "Card", "id": "27:432", "type": "COMPONENT", "variantProperties": null,
+        "subNodes": ["CardHeader", "CardContent", "CardFooter"] }
+    },
+    "Checkbox": {
+      "pageId": "27:51",
+      "primary": { "name": "Checkbox", "id": "27:406", "type": "COMPONENT_SET",
+        "variantProperties": { "checked": ["false", "true"], "disabled": ["false", "true"] } }
+    },
+    "Input": {
+      "pageId": "27:52",
+      "primary": { "name": "Input", "id": "27:413", "type": "COMPONENT_SET",
+        "variantProperties": { "disabled": ["false", "true"] } }
+    },
+    "Label": {
+      "pageId": "27:53",
+      "primary": { "name": "Label", "id": "27:416", "type": "COMPONENT", "variantProperties": null }
+    },
+    "Separator": {
+      "pageId": "27:54",
+      "primary": { "name": "Separator", "id": "27:421", "type": "COMPONENT_SET",
+        "variantProperties": { "orientation": ["horizontal", "vertical"] } }
+    },
+    "Slider": {
+      "pageId": "27:55",
+      "primary": { "name": "Slider", "id": "27:443", "type": "COMPONENT_SET",
+        "variantProperties": { "disabled": ["false", "true"] } }
+    },
+    "Tabs": {
+      "pageId": "27:56",
+      "primary": { "name": "Tabs", "id": "27:459", "type": "COMPONENT", "variantProperties": null,
+        "subNodes": ["TabsList", "TabsContent"] },
+      "extra": [
+        { "name": "TabsTrigger", "id": "27:450", "type": "COMPONENT_SET",
+          "variantProperties": { "state": ["inactive", "active"] } }
+      ]
+    },
+    "ThemeToggle": {
+      "pageId": "27:57",
+      "primary": { "name": "ThemeToggle", "id": "27:476", "type": "COMPONENT_SET",
+        "variantProperties": { "mode": ["light", "dark"] } }
+    },
+    "Tooltip": {
+      "pageId": "27:58",
+      "primary": { "name": "TooltipContent", "id": "27:479", "type": "COMPONENT", "variantProperties": null }
+    }
+  }
+}

@@ -21,6 +21,8 @@ Deze twee regels sturen elke stap hieronder. Bij twijfel onderweg vallen ze teru
 
 **2. Tokens-first — nul hardcoded waarden.** Elke kleur, spacing, radius en effect bindt aan een Figma variable of style. Een ontbrekende variable is een **gap** die je oplost (`figma_import_library_variable` of `figma_create_variable`) of rapporteert aan de gebruiker — nooit een excuus om een raw hex- of getalwaarde te hardcoden.
 
+**En een variabele is geen ontsnapping aan het token-probleem.** Bestaat er een `tokens.json` (pad in de klant-CLAUDE.md), dan moet élke Figma-variabele die je aanmaakt of bindt daar een tegenhanger in hebben. Een variabele aanmaken voor een waarde die nergens in de token-bron staat, verplaatst het hardcoded getal enkel van de node naar de variabele en maakt Figma een **tweede bron van waarheid** naast `tokens.json` — de gate meldt groen terwijl de drift een laag dieper zit. Gemeten op de umanex Component library (2026-08-25): collectie `Theme` mapt 43/43 op `packages/tokens/tokens.json`, collectie `Base` **1/21** — dertien `spacing-*`, vier `radius-*`, `border-1/2` en `icon-stroke` bestaan alleen in Figma, met de Tailwind-default als stille bron. CLAUDE.md is hier al duidelijk over (*Alleen token-mapping, geen hardcoded values*): heeft een benodigde waarde geen token, **vraag eerst** of er één bij moet. Bouw je op verzoek toch door zonder token, dan is dat een gap die je rapporteert én als item in de dichtstbijzijnde `BACKLOG.md` zet — nooit stilzwijgend.
+
 **Deze twee hangen samen.** Spacing-tokens (`paddingTop`, `itemSpacing`, …) kunnen *alleen* binden op een auto-layout frame. Een frame zonder auto layout breekt spacing-token-binding stil: de waarde wordt dan een raw getal in plaats van een binding. Auto layout is daarom geen losse stijlkeuze maar een **voorwaarde** voor principe 2. Geen auto layout → geen optimale token-mapping.
 
 Een geslaagde export (zie stap 7 en 8) voldoet aan beide: 100% van de token-waarden gebonden, auto layout op alle composietframes — én elke binding matcht het token dat de code bedoelde (de parity-gate, stap 8).
@@ -37,13 +39,13 @@ figma_get_status
 
 - Actief → ga verder
 - Niet actief → stop. Vraag: "Wil je de Figma Desktop Bridge activeren, of overschakelen naar native MCP?" — wacht op antwoord, ga nooit stilzwijgend verder.
-- **Meerdere bestanden verbonden?** De actieve file kan stil terugwisselen (reconnects). Assert het doelbestand in élke `figma_execute` (`if (figma.root.name !== '<doel>') return {fout: …}`) — zeker vóór schrijfacties; een write in het verkeerde klantbestand is de duurste stille fout van deze skill (les 2026-08-18).
+- **Meerdere bestanden verbonden?** De actieve file kan stil terugwisselen (reconnects). Assert het doelbestand in élke `figma_execute` — zeker vóór schrijfacties; een write in het verkeerde klantbestand is de duurste stille fout van deze skill (les 2026-08-18). Toets op **identiteit, niet op naam**: `figma.fileKey` (de key uit de URL van het doelbestand, `figma.com/design/<fileKey>/…`), niet `figma.root.name`. Een naam is een bewering die iemand ooit typte — gemeten op 2026-08-25 aan béide kanten: de gebruiker hernoemde het bestand in Desktop en de naam-assert blokkeerde de export van het júiste bestand (vals alarm), en het spiegelbeeld is duurder — twee klantbestanden mogen dezelfde naam dragen, dan zwijgt de naam-assert terwijl de write in het verkeerde bestand landt. Het skelet staat in stap 6.
 
 ---
 
 ### Stap 2 — Bepaal doelbestand (en fase, indien van toepassing)
 
-Bepaal naar welk Figma-bestand de component gaat. De beschikbare bestanden en hun keys staan in de klant-CLAUDE.md.
+Bepaal naar welk Figma-bestand de component gaat. De beschikbare bestanden en hun keys staan in de klant-CLAUDE.md. Noteer de **fileKey** — dat is de `DOELKEY` van de bestandsguard (stap 1 en het skelet in stap 6), en de identiteit van het bestand; `DOELBESTAND` is enkel de naam, die dient als noodrem wanneer `figma.fileKey` leeg blijft.
 
 Sommige klanten onderscheiden **designs** van **wireframes** (zie klant-CLAUDE.md). Als dat zo is, vraag of leid af welk van de twee het doel is, want het gevolg verschilt:
 
@@ -79,7 +81,8 @@ Controleer voor élk token dat in de component gebruikt wordt:
 - Bestaat de Figma variable al? → gebruik de ID
 - Ontbreekt de variable?
   - Is hij beschikbaar in een library? → `figma_import_library_variable` vóór execute
-  - Bestaat hij nergens? → maak hem aan (`figma_create_variable`) of meld de gap aan de gebruiker
+  - Bestaat hij nergens als Figma-variabele, maar **wél in de token-bron**? → maak hem aan (`figma_create_variable`) met het token-path als naam. Dit is de enige route waarop aanmaken zonder overleg mag.
+  - Staat de waarde **nergens in de token-bron**? → niet aanmaken op eigen gezag. Meld de gap en vraag of er een token bij moet. Zegt de gebruiker "bouw door", dan komt de variabele er mét een `BACKLOG.md`-item dat de ontbrekende as benoemt — anders is de as onvindbaar zodra de export klaar is (gemeten: de `Base`-collectie van de umanex Component library, 20 variabelen zonder token-bron).
 
 Doe dit volledig vóór de execute — een ontbrekende binding halverwege de execute breekt de token-integriteit (principe 2).
 
@@ -213,6 +216,27 @@ figma_get_component_for_development_deep
 - Typography is gekoppeld aan text styles
 - Effect styles zijn gebonden
 - Alle composietframes staan in auto layout (`layoutMode` ≠ `'NONE'`), behalve waar absolute positionering structureel noodzakelijk was
+- Elke variabele die deze export aanmaakte of bond, heeft een tegenhanger in de token-bron — bestaat er een `tokens.json`, dan is een variabele zonder token-pad een **gap, geen oplossing**. Toets op het pad, niet op de naam alleen: de Figma-naam plakt de tokengroep met een koppelteken (`finance-positive` ↔ `Semantic/light/finance/positive`), dus normaliseer vóór je vergelijkt — een naïeve bladnaam-match gaf 36/43 waar het er 43/43 waren.
+
+**De token-dekkings-check — draai hem, herleid hem niet.** De normalisatie is de plek waar deze meting fout gaat: een naïeve bladnaam-match gaf 36/43 waar het er 43/43 waren, omdat de Figma-naam de tokengroep met een koppelteken plakt. Herschrijf hem daarom niet per sessie — er staat een getoetst script klaar.
+
+Stap 1, de dump (read-only, ná de bestandsguard):
+
+```javascript
+const cols = await figma.variables.getLocalVariableCollectionsAsync()
+const vars = await figma.variables.getLocalVariablesAsync()
+const uit = {}
+for (const v of vars) (uit[cols.find(c => c.id === v.variableCollectionId)?.name || '?'] ??= []).push(v.name)
+return uit                       // {"Theme":["primary",…],"Base":["radius",…]}
+```
+
+Stap 2, de vergelijking — schrijf de dump naar een bestand en draai:
+
+```bash
+node <repo>/templates/figma-token-coverage.mjs --tokens=<pad/tokens.json> --vars=<pad/figma-vars.json>
+```
+
+Exit 0 = alles gedekt · 1 = variabelen zonder token (de bevinding) · **2 = meting ongeldig**, en dat laatste is bewust een eigen type: geen enkele match, een lege dump of een lege token-bron is een instrumentfout, geen afwezigheidsbewijs. Matching gebeurt op de **staart** van het tokenpad, dus dezelfde check werkt op umanex (`Theme/light/x`), rowtrack (`Core|Theme|Component`) en Columba (`semantic/color/text/primary`, geen mode-laag) zonder configuratie. Een `⚠ dubbelzinnig` meldt dat een naam op twee échte lagen matcht (`chart-1` → `Primitives/Chart/1` én `Theme/light/chart-1`) — mode-varianten zwijgen. De tegenproef staat in `scripts/test-figma-token-coverage.sh` (9 cases, beide kanten per regel).
 
 **Faalt een punt?** Dat is een gap. Los hem op (terug naar stap 5) of rapporteer hem expliciet aan de gebruiker met de reden waarom hij niet opgelost kon worden — sluit nooit af met een stille gap.
 
@@ -231,7 +255,14 @@ Stap 7 bewijst *aanwezigheid* — alles gebonden, geen raw waarden. Stap 8 bewij
   Read-back-skelet:
 
   ```javascript
-  if (figma.root.name !== DOELBESTAND) return { meting_ongeldig: 'verkeerd bestand: ' + figma.root.name }
+  // Bestandsguard op identiteit. DOELKEY = de fileKey uit de URL van het doelbestand.
+  // figma.fileKey is via de Desktop Bridge gevuld — gemeten 2026-08-25: een string, ook
+  // al noemt het plugin-manifest de fileKey-permissie niet. Reken er in een andere opzet
+  // niet blind op: leeg = terugvallen op de naam én dat mélden, nooit stil. Wil je het
+  // weten, geef `fileKey` mee in je return — het MCP-antwoord toont hem niet vanzelf.
+  const zwak = !figma.fileKey   // true → geef `zwak` mee in het resultaat én meld het in je antwoord
+  if (figma.fileKey ? figma.fileKey !== DOELKEY : figma.root.name !== DOELBESTAND)
+    return { meting_ongeldig: 'verkeerd bestand: ' + (figma.fileKey || figma.root.name) }
   const nm = async id => { try { const v = await figma.variables.getVariableByIdAsync(id); return v ? v.name : id } catch { return id } }
   const resolveBV = async bv => {
     const r = {}

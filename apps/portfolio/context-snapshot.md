@@ -1,5 +1,5 @@
 # Context Snapshot — portfolio
-_Gegenereerd op 2026-08-08_
+_Gegenereerd op 2026-08-25_
 
 ## Project
 - **App:** portfolio
@@ -13,6 +13,7 @@ _Gegenereerd op 2026-08-08_
 
 ## Packages
 - **@umanex/config:** 0.0.1
+- **@umanex/rowtrack-tokens:** 0.0.1
 - **@umanex/tokens:** 0.0.1
 - **@umanex/ui:** 0.0.1
 
@@ -23,7 +24,9 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 |---|---|---|---|---|---|
 | CareerItem | `apps/portfolio/components/data-display/CareerItem.tsx` | data-display | — | — | — |
 | CaseCard | `apps/portfolio/components/data-display/CaseCard.tsx` | data-display | — | — | — |
+| NumberedStep | `apps/portfolio/components/data-display/NumberedStep.tsx` | data-display | — | — | — |
 | TestimonialCard | `apps/portfolio/components/data-display/TestimonialCard.tsx` | data-display | — | — | — |
+| TierCard | `apps/portfolio/components/data-display/TierCard.tsx` | data-display | — | — | — |
 | PlaceholderNote | `apps/portfolio/components/feedback/PlaceholderNote.tsx` | feedback | — | — | — |
 | Container | `apps/portfolio/components/layout/Container.tsx` | layout | — | — | — |
 | Footer | `apps/portfolio/components/layout/Footer.tsx` | layout | — | — | — |
@@ -35,20 +38,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | KeyMessages | `apps/portfolio/components/sections/KeyMessages.tsx` | sections | — | — | — |
 | Testimonials | `apps/portfolio/components/sections/Testimonials.tsx` | sections | — | — | — |
 | AccentBar | `apps/portfolio/components/ui/AccentBar.tsx` | ui | — | — | — |
+| CheckList | `apps/portfolio/components/ui/CheckList.tsx` | ui | — | — | — |
 | PhotoPlaceholder | `apps/portfolio/components/ui/PhotoPlaceholder.tsx` | ui | — | — | — |
 | Reveal | `apps/portfolio/components/ui/Reveal.tsx` | ui | — | — | — |
 | RichText | `apps/portfolio/components/ui/RichText.tsx` | ui | — | — | — |
 
 ## Recente commits (app + packages)
 ```
-13ed3ea fix: read the page after the network settles, not at domcontentloaded
-41c42cb feat(portfolio): add a flow harness and a measured verify path
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
-e59eaa1 chore(config): remove the dead flat-config eslint files
-5806065 refactor(config): share the token lint rules instead of copying them per app
+f1af19f feat(portfolio): drop the scan credit, keep the per-product ladder
+cbaf792 feat(portfolio): price the scan per product instead of flat
+1d4189d feat(portfolio): sell capacity instead of a portfolio
+ea926a1 fix(portfolio): let the header nav fit a 375px screen
+9578c45 test(portfolio): measure narrow screens, dark mode and settled renders
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/portfolio/app/aanbod/page.tsx
+  M  apps/portfolio/lib/copy.ts
   M  apps/portfolio/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME

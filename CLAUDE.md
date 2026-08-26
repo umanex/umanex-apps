@@ -46,41 +46,40 @@ en een lopende merge worden met rust gelaten.
 
 ## Parallel aan twee apps werken
 
-**Eén app, één worktree.** Niet één per taak — dan moet je beslissen op het moment dat je haast
-hebt, en precies dan sla je het over. De map staat er gewoon; per taak vertak je erbinnen.
+**App-werk gebeurt in de hoofdtree**, in `apps/<app>`, op een feature branch. Geen zusmappen
+`../umanex-apps-<app>` meer — die conventie ("één app, één worktree") is op 2026-08-25
+geschrapt; het werkprincipe staat in `.umanex-os/CLAUDE.md` → Git workflow → Parallel werk.
+Tref je nog zo'n zusmap aan (`git worktree list`): niet zelf verwijderen, eerst kijken wat erin
+zit — een ongepushte commit of een ongetrackt bestand daar bestaat nergens anders.
 
-Een branch volstaat niet: er is één set bestanden op schijf, gedeeld door élke branch.
-Niet-gecommitte en ongetrackte bestanden reizen mee bij iedere `checkout`. Dat is hoe rowtrack- en
-cashflow-werk op 2026-08-07 door elkaar liepen ondanks nette branches.
+Een branch scheidt de bestanden op schijf niet: ongetrackt en ongecommit werk reist mee bij
+elke `checkout`. Dat is hoe rowtrack- en cashflow-werk op 2026-08-07 door elkaar liepen ondanks
+nette branches. Daarom, in de hoofdtree:
 
-```bash
-git worktree add ../umanex-apps-<app> -b <type>/<korte-beschrijving>
-cd ../umanex-apps-<app> && pnpm install   # per worktree; pnpm linkt hard, dus vooral tijd
-# ... werk, commit, PR; de volgende taak vertakt in dezelfde map ...
-```
+- **Eén taak tegelijk in deze repo.** Toont `git status --short` onvastgelegd werk, óf staat HEAD
+  op een feature branch die niet van jou is (`git rev-parse --abbrev-ref HEAD` — een schone tree
+  bewijst niets, de PR staat gewoon open): meld het en laat Jeroen kiezen; begin er niet stil
+  naast, maak geen eigen tree. Is de tree vrij: `git fetch -q origin && git checkout -b
+  <type>/<naam> origin/main`, nooit vanaf de HEAD die je aantreft.
+- **Stage per pad, nooit `git add -A`.** `git stash push -u -- apps/<app>` parkeert de andere
+  taak (mét `-u`, anders blijven haar ongetrackte bestanden staan); pop hem pas als je commit staat.
+- **De hooks zijn het vangnet, niet de regel:** `.githooks/commit-msg` blokkeert een app-scope
+  die een andere app raakt, `.githooks/pre-commit` meldt onvastgelegd werk in andere apps. Een
+  `chore:` mét `git add -A` passeert allebei.
 
-De verdeling in deze repo:
-
-| Waar | Wat |
-|---|---|
-| **Hoofd-tree** | rowtrack + gedeelde lagen (`packages/`, tokens, CI). rowtrack blijft hier omdat een tweede worktree een tweede native build betekent — zie de tabel hieronder. |
-| `../umanex-apps-cashflow` | cashflow |
-| `../umanex-apps-<app>` | portfolio, vyvey, jobradar — aanmaken zodra er actief aan gewerkt wordt |
-
-Werk nooit in een tree waar iemand anders in zit, ook niet om "even een branch aan te maken": een
-branch vanaf andermans HEAD erft diens werk als vertrekpunt.
-
-Wat gedeeld blijft en dus botst:
+Een tweede tree alleen voor een schrijvende sub-agent (`isolation: "worktree"` →
+`.claude/worktrees/agent-<id>/`, gitignored) of op expliciete vraag van Jeroen — dan óók onder
+`.claude/worktrees/`, en weg na de merge. Wat in zo'n tree botst:
 
 | | |
 |---|---|
-| Dev-poorten | cashflow `:3000` · portfolio `:3001` · vyvey `:3002` · jobradar `:3003` — hardcoded in de `dev`-scripts. Dezelfde app niet vanuit twee worktrees draaien. |
-| cashflow PM2 | De productie-build op `:3000` hangt aan `ecosystem.config.js` met absolute paden (gitignored) — die blijft aan de hoofd-tree. |
-| rowtrack | Expo dev-client: een tweede worktree betekent een tweede native build. Houd rowtrack in de hoofd-tree. |
+| Dev-poorten | cashflow `:3000` · portfolio `:3001` · vyvey `:3002` · jobradar `:3003` — hardcoded in de `dev`-scripts. Dezelfde app niet vanuit twee trees draaien. |
+| cashflow PM2 | De productie-build op `:3000` hangt aan `ecosystem.config.js` met absolute paden (gitignored) en draait uit de hoofdtree — dezelfde tree waarin je nu cashflow-feature-branches uitcheckt. Geen `next build` of `pm2:rebuild` daar op een feature branch (het eerste breekt de draaiende server, het tweede deployt ongemergde code); verifieer feature-werk via de flow-harness (`pnpm --filter cashflow flow` bouwt zelf in `.next-harness` en serveert op `:3100`, raakt `.next` niet) of via CI, herbouw pas op `main` na de merge. |
+| rowtrack | Expo dev-client: een tweede tree betekent een tweede native build. |
 | `.githooks` | Rijdt automatisch mee — `core.hooksPath` staat in de gedeelde git-config. Niets extra te doen. |
 
 Wat juist **niet** meereist: gitignorede bestanden. `apps/cashflow/.env.local` staat niet in
-git, dus in een verse worktree valt `next build` om op de ontbrekende `NEXT_PUBLIC_SUPABASE_*`
+git, dus in een verse tree valt `next build` om op de ontbrekende `NEXT_PUBLIC_SUPABASE_*`
 — en wel pas bij het prerenderen, ná een geslaagde compile, dus de CSS staat er dan al en een
 render-script lijkt gewoon te werken. Kopieer het bestand mee, of bouw met dezelfde
 placeholders als CI (`ci.yml`, stap "Type-check, lint, build"). Geldt voor elk `.env.local`.

@@ -12,7 +12,8 @@
  * ZONDER SLEUTEL werkt dit niet, ook niet op de UAT. Gemeten op 2026-08-26: de UAT-gateway
  * antwoordt 401 `missing subscription key` zonder header en 401 `invalid subscription key` met
  * een verzonnen waarde. Een UAT-sleutel is gratis en vraagt geen contract — registreer op
- * https://developer.uat2.cbso.nbb.be/ en abonneer op het product *Authentic Data Query*.
+ * https://developer.uat2.cbso.nbb.be/ en abonneer op *NBB CBSO Web Services - Authentic Data*.
+ * Let op de naam: de NBB-website noemt dat product "Authentic Data Query", de portal niet.
  *
  * Het standaardnummer is 0203201340: dat is het voorbeeld dat de NBB zelf in de API-definitie
  * bij `legalEntityId` zet, dus als één nummer in de testomgeving bestaat, is het dat.
@@ -26,7 +27,7 @@ const config = leesConfig()
 if (!config) {
   console.error('Geen NBB_CBSO_KEY gezet.\n')
   console.error('  UAT (gratis, geen contract): registreer op https://developer.uat2.cbso.nbb.be/,')
-  console.error('  abonneer op "Authentic Data Query", en gebruik de primary key:\n')
+  console.error('  abonneer op "NBB CBSO Web Services - Authentic Data", en gebruik de primary key:\n')
   console.error(`    NBB_CBSO_KEY=<key> node --import ./scripts/ts-resolve.mjs scripts/nbb-probe.ts ${nummer}\n`)
   console.error('  Productie: zet daarnaast NBB_CBSO_OMGEVING=productie.')
   process.exit(2)

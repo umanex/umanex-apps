@@ -28,6 +28,21 @@
  *
  * Wat nog ongemeten is: een échte respons. Dat vraagt een subscription key, ook op de UAT.
  * Draai `scripts/nbb-probe.ts` zodra je er een hebt.
+ *
+ * TWEE ROUTES NAAR HETZELFDE CIJFER, en de keuze is nog niet gemaakt — bewust hier genoteerd
+ * zodat hij niet stilzwijgend valt op het moment dat de filter gebouwd wordt.
+ *
+ *   a) *per onderneming* — wat deze module doet. Twee verzoeken per bedrijf, dus voor de 15.725
+ *      KBO-kandidaten in het slechtste geval 31.450 calls. Gericht, hervatbaar, en je haalt
+ *      alleen op wat je nodig hebt. Vraagt wel een cache: dit twee keer draaien is zonde.
+ *   b) *per dag* — het Extracts-product heeft `GET /batch/{date}/references` en
+ *      `GET /batch/{date}/accountingData`, dus de neerleggingen van één dag in één verzoek.
+ *      Een jaar aan werkdagen is ~250 calls in plaats van tienduizenden, maar je haalt heel
+ *      België binnen en filtert zelf, en je moet ver genoeg terug om elk bedrijf te raken.
+ *
+ * Welke goedkoper is hangt af van de quota en de payloadgrootte, en geen van beide is bekend
+ * zonder key. Meet dat vóór je kiest; route (a) is de default omdat hij eenvoudiger is, niet
+ * omdat hij bewezen beter is.
  */
 import type { SourceResult } from './types'
 import { leesPersoneel } from './nbb-rubriek'
@@ -37,7 +52,8 @@ import { leesPersoneel } from './nbb-rubriek'
  *
  * De UAT vraagt **geen contract en geen CLIENT_ID** — "it is not necessary to complete the order
  * form", en het gebruik is gratis. Maar hij vraagt wél een subscription key: registreer op
- * https://developer.uat2.cbso.nbb.be/ en abonneer op *Authentic Data Query*. Zonder die key
+ * https://developer.uat2.cbso.nbb.be/ en abonneer op *NBB CBSO Web Services - Authentic Data*
+ * — zo heet het product in de portal; de NBB-website noemt het "Authentic Data Query". Zonder die key
  * antwoordt de gateway 401 `Access denied due to missing subscription key`, en met een verzonnen
  * key 401 `invalid subscription key` — allebei gemeten op 2026-08-26. Dit bestand beweerde eerder
  * dat de UAT elk client-nummer accepteert; dat verwart het CLIENT_ID van de productie-aanvraag

@@ -13,9 +13,9 @@ Klant-specifieke gegevens — token-bron, doelbestand-keys en een eventueel onde
 
 ---
 
-## Twee principes — niet-onderhandelbaar
+## Drie principes — niet-onderhandelbaar
 
-Deze twee regels sturen elke stap hieronder. Bij twijfel onderweg vallen ze terug op deze principes.
+Deze drie regels sturen elke stap hieronder. Bij twijfel onderweg vallen ze terug op deze principes.
 
 **1. Auto layout by default.** Elk frame en elke compositie wordt in auto layout gebouwd (`layoutMode` = `'HORIZONTAL'` of `'VERTICAL'`). Absolute positionering (vaste `x`/`y` op children) gebruik je *uitsluitend* waar auto layout structureel niet kan — en dat is zeldzaam. De default is altijd auto layout, niet de uitzondering.
 
@@ -23,9 +23,11 @@ Deze twee regels sturen elke stap hieronder. Bij twijfel onderweg vallen ze teru
 
 **En een variabele is geen ontsnapping aan het token-probleem.** Bestaat er een `tokens.json` (pad in de klant-CLAUDE.md), dan moet élke Figma-variabele die je aanmaakt of bindt daar een tegenhanger in hebben. Een variabele aanmaken voor een waarde die nergens in de token-bron staat, verplaatst het hardcoded getal enkel van de node naar de variabele en maakt Figma een **tweede bron van waarheid** naast `tokens.json` — de gate meldt groen terwijl de drift een laag dieper zit. Gemeten op de umanex Component library (2026-08-25): collectie `Theme` mapt 43/43 op `packages/tokens/tokens.json`, collectie `Base` **1/21** — dertien `spacing-*`, vier `radius-*`, `border-1/2` en `icon-stroke` bestaan alleen in Figma, met de Tailwind-default als stille bron. CLAUDE.md is hier al duidelijk over (*Alleen token-mapping, geen hardcoded values*): heeft een benodigde waarde geen token, **vraag eerst** of er één bij moet. Bouw je op verzoek toch door zonder token, dan is dat een gap die je rapporteert én als item in de dichtstbijzijnde `BACKLOG.md` zet — nooit stilzwijgend.
 
-**Deze twee hangen samen.** Spacing-tokens (`paddingTop`, `itemSpacing`, …) kunnen *alleen* binden op een auto-layout frame. Een frame zonder auto layout breekt spacing-token-binding stil: de waarde wordt dan een raw getal in plaats van een binding. Auto layout is daarom geen losse stijlkeuze maar een **voorwaarde** voor principe 2. Geen auto layout → geen optimale token-mapping.
+**3. Transcriptie, geen benadering.** Elke afmeting, spacing-stap en structuurkeuze komt **uit de component-code**, niet uit een eigen layoutoordeel. Principe 2 verbiedt de *rauwe* waarde; dit principe verbiedt de *verzonnen* waarde — een frame dat netjes aan `spacing/4` bindt is 100% token-conform én alsnog fout als de code `spacing/8` zegt. Gemeten op Columba verkeersanalyse (2026-08-26): sidebar op 240px waar `Sidebar.tsx` `w-[304px]` zegt · sidebar-padding gebonden aan `spacing/4` waar de code `spacing/8` bindt · rijen onderling `spacing/4` waar `PvLijst` de `<ul>` op `spacing/1` zet · zelfgetekende ellipsen van 8px als statusmerk waar de code `ColumbaIcon` van 20px (`spacing/5`) rendert · paneel-padding vrij gekozen waar `SidePanel` 32/24 hardcodeert. **Geen enkele gate ving dit**, en dat is structureel: stap 7 toetst of er een binding *is*, en stap 8 toetst de write tegen de **bedoeld**-set — maar "bedoeld" kwam uit mijn eigen keuze in plaats van uit de code, dus de diff was per constructie groen. Lees daarom de maten uit de bron **vóór** je bouwt (`grep -nE '(padding|gap|borderRadius|fontSize|width):' <bronbestanden>`, plus de Tailwind-klassen: `grep -n 'w-\[' …`), noteer ze per scherm, en gebruik díe lijst als de bedoeld-kant van stap 8. Wijk je bewust af, meld het — een stille benadering is een tweede bron van waarheid, precies zoals een variabele zonder token.
 
-Een geslaagde export (zie stap 7 en 8) voldoet aan beide: 100% van de token-waarden gebonden, auto layout op alle composietframes — én elke binding matcht het token dat de code bedoelde (de parity-gate, stap 8).
+**Principes 1 en 2 hangen samen.** Spacing-tokens (`paddingTop`, `itemSpacing`, …) kunnen *alleen* binden op een auto-layout frame. Een frame zonder auto layout breekt spacing-token-binding stil: de waarde wordt dan een raw getal in plaats van een binding. Auto layout is daarom geen losse stijlkeuze maar een **voorwaarde** voor principe 2. Geen auto layout → geen optimale token-mapping.
+
+Een geslaagde export (zie stap 7 en 8) voldoet aan alle drie: 100% van de token-waarden gebonden, auto layout op alle composietframes, en elke maat en structuur teruggelezen uit de code — én elke binding matcht het token dat de code bedoelde (de parity-gate, stap 8).
 
 ---
 
@@ -97,6 +99,8 @@ Dit is de code→Figma-tegenhanger van de duplicaat-preventie in `figma-naar-cod
 Waarom een handgemaakt frame fout is:
 - Het matcht de design-system-component niet — je mist de tokens, states/variants en sub-elementen (bv. het pijl-icoon van een `Primary` button).
 - Een verse `figma.createFrame()` is 100×100 met **FIXED** sizing; enkel `layoutMode` zetten hugt de counter-as niet → de "knop" blijft 100px hoog (met een radius-token een vette ovaal).
+
+**Concludeer "geen library verbonden" nooit uit de variabelen-query.** `getAvailableLibraryVariableCollectionsAsync()` somt **variabele**-collecties op en toont component-libraries per definitie niet — een lege uitkomst daar zegt niets over de iconen- of componentenbibliotheek. Gemeten op 2026-08-26: op grond van die query meldde ik "geen Columba.Icons-library verbonden", waarna een scan op bestaande instances in hetzelfde bestand prompt de sets `Actions` (met `Icon=Check`, `Icon=Edit`, `Icon=Locked`, `Icon=Hide`), `UI`, `Arrows`, `Button/Default` en `Logo` vond — precies wat deze stap voorschrijft te instantiëren. Gebruik `figma_search_components` én een scan op reeds geplaatste instances (`findAll` op `type === 'INSTANCE'` → `getMainComponentAsync()`) vóór je besluit dat er niets is.
 
 Alleen wanneer er géén passende bestaande component is, bouw je een nieuw frame — dan gelden de auto-layout-regels van stap 5 onverkort.
 
@@ -197,7 +201,13 @@ Gebruik `figma_get_variables` opnieuw (andere scope of collection) vóór je de 
 figma_capture_screenshot
 ```
 
-Controleer: uitlijning, spacing, proporties, visuele balans. Max 3 iteraties (execute → screenshot → fix). Bij structurele issues: ga terug naar stap 5.
+**Captureer per scherm, met de `nodeId` van dat ene scherm.** Eén capture van een hele sectie telt **niet** als visuele check: de plugin cápt de effectieve schaal automatisch zodat de langste zijde onder de 1568px blijft (het AI-vision-plafond), en doet dat stilzwijgend — gemeten op 2026-08-26 tot **0,22×**, waar tekst een grijze streep is en geen enkele afwijking zichtbaar kán zijn.
+
+Let op: **`scale` verhogen lost dit niet op.** Die cap staat ná je scale-parameter, dus een brede sectie wordt teruggeschaald wat je ook meegeeft. De enige remedie is het **meetbereik verkleinen**: geef de `nodeId` van het losse scherm mee. Een scherm van 1440×900 past onder het plafond en komt dus onverkleind binnen; is één frame op zichzelf al te groot, capture het dan in stukken. Nooit een overzichts-thumbnail als bewijs.
+
+Dit dubbelt stap 7 niet, het dekt wat stap 7 per definitie niet kan: **een structurele gate meet of properties bestaan en waaraan ze hangen, nooit wat er op het scherm staat.** Dezelfde export die dit opleverde gaf 672 nodes, nul ongebonden fills/strokes/fontSizes en nul frames zonder auto-layout — groen op elke as — terwijl de onverkleinde capture per scherm meteen drie dingen toonde die geen gate raakt: de actiebalk van het paneel viel buiten de 900px terwijl `SidePanel` hem als `footer` búiten het scrollgebied zet (dus altijd zichtbaar hoort te zijn) · elke `ZebraRij` zónder waarde kreeg een labelbreedte van 124px terwijl de code `width: value != null ? "124px" : undefined` zegt, waardoor "Geen geregistreerd" over twee regels brak · op het 880px-scherm kneep de PV-lijst tot ~250px en brak elk PV-nummer over twee regels.
+
+Controleer: uitlijning, spacing, proporties, visuele balans — en of elk element dat de code altijd zichtbaar houdt, ook werkelijk binnen het frame valt. Max 3 iteraties (execute → screenshot → fix). Bij structurele issues: ga terug naar stap 5.
 
 **Niet `figma_take_screenshot`** — die leest via REST de laatst *opgeslagen* cloud-staat en toont dus het beeld van vóór je `figma_execute` uit stap 5, zonder foutmelding. Zie *Valideer je eigen edits op de runtime, niet op de cloud* in CLAUDE.md.
 

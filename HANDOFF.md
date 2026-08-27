@@ -182,6 +182,17 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
   beoordeling, geen defect.
 - **Volgende zet:** De pill in jobradar naast de kaart beoordelen en beslissen: bruin houden, of
   een eigen rol voor een pil-achtergrond met donkere tekst erop (dan haalt helder amber wél AA).
+- **Volgende zet (2026-08-27):** het besluit is gevallen — een **eigen rol**, geen bruin. De rol is
+  gebouwd en gemeten, maar bewust **niet gemerged**: `Semantic/light|dark → score/mid` (+
+  `-foreground`), Warning.500 met Neutral.900 respectievelijk Neutral.950 erop. Gemeten op een
+  lokale build met de rol erin: `bg #F59F0B` met `tekst #101828` = **8.32:1** in light en `#0C111D`
+  = **8.84:1** in dark. In dark verandert er feitelijk niets — `--warning` was daar al Warning.500.
+  Wat het tegenhoudt: `pnpm --filter @umanex/ui figma:check` eist een Figma-variabele per tokenrol
+  en draait in CI (`figma:check:selftest`), dus de rol vraagt éérst `score-mid` en
+  `score-mid-foreground` in de collectie `Theme` van **Component library**
+  (`ko2OuasYxyY2YRD69MYhWX`), met Light/Dark-modes, plus een verse `figma/manifest.json`. Dat kan
+  alleen met de Desktop Bridge op dát bestand. Volgorde dus: variabelen in Figma → manifest
+  verversen → tokens.json + ScoreBadge in één PR.
 - **Check:** `grep -n "'warning'" apps/jobradar/components/ScoreBadge.tsx` — treffer = de pill hangt nog aan de generieke warning-rol (het bruin uit de contrastfix); leeg = er is een eigen rol gekozen en het besluit is gevallen.
 - **Status:** open
 

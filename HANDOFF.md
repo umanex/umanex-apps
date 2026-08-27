@@ -25,11 +25,19 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
     ## YYYY-MM-DD — {korte titel} · [{type}]
     - **Bevinding:** {1-2 zinnen}
+    - **Check:** {hoe je in één handeling vaststelt of dit nog openstaat}
     - **Volgende zet:** {concreet actiepunt of "-"}
     - **Status:** open
 
-<!-- De sessie-reflectie skill voegt hieronder de juiste laag-header toe bij de eerste entry. -->
+## Schrijf de check, niet de staat
 
+`Bevinding` is per definitie een waarneming van toen: "de guard matcht alleen Tailwind-syntax", "CLAUDE.md is 32 123 chars". Zulke zinnen worden onwaar zodra de code eronder verandert, en niets in de lus merkt dat — de SessionStart-hook blijft het item elke ochtend tonen als openstaand werk, ook nadat het opgelost is. Op 2026-08-10 stond tien van de zesendertig rowtrack-entries zo verkeerd open; één ervan lokte vijf dagen na zijn oplossing alsnog een productvraag uit die al beantwoord was.
+
+Daarom hoort er bij elke nieuwe entry een **`Check`**: hoe je in één handeling vaststelt of dit item nog leeft. Een commando is het beste (`grep -q 'periodType' apps/rowtrack/lib/period.ts`), een vraag met een eenduidig antwoord mag ook ("draaien `history/index.tsx` en `usePeriodGoal` door dezelfde `lib/period.ts`?"). Kun je er geen formuleren, dan is het item te vaag om over drie weken nog te beoordelen — herformuleer het tot je er wel een hebt.
+
+De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij stap 1 vóór een item open blijft staan. Een check die door niets aangeroepen wordt, meet niets.
+
+<!-- De sessie-reflectie skill voegt hieronder de juiste laag-header toe bij de eerste entry. -->
 # Klant — umanex
 
 ## 2026-08-25 — "100% in sync" is structureel bewezen, niet visueel · [onzekerheid]

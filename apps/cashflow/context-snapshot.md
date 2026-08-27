@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-08-25_
+_Gegenereerd op 2026-08-27_
 
 ## Project
 - **App:** cashflow
@@ -49,15 +49,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a15b915 feat(ui): check every Figma variable against the token source
+99ad3b2 docs(cashflow): record three findings the #314 merge did not resolve
 ac48be5 Merge remote-tracking branch 'origin/main' into feature/cashflow-harness-distdir
 3c61b21 feat(ui): export Storybook components to Figma with a sync guard
 c9a290d fix(cashflow): exit 130/143 when the harness is interrupted after the browser started
-f41a428 fix(cashflow): stop the harness server on SIGINT/SIGTERM, reject malformed --dist
-f759073 fix(cashflow): allowlist the harness distDir, prove the served build
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/BACKLOG.md
+  M  apps/cashflow/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

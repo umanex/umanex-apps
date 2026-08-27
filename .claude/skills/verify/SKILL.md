@@ -125,6 +125,34 @@ Herkenningsteken voor beide: een bewering die in dezelfde adem ontstaat én word
 
 ---
 
+## Rail-mapping — welke `CLAUDE.md`-kern hoort bij welke rail hier
+
+`CLAUDE.md` draagt de kern-bewering, deze skill het gemeten geval. De koppen lopen niet
+één-op-één: vier van de twaalf matchen letterlijk, de rest zegt hetzelfde onder een andere
+kop. Die vertaling staat hieronder, en niet in een script — `scripts/test-discipline-blok.sh --fix`
+leest deze tabel, zodat er één bron is die ook leesbaar is voor wie de skill opent. Een
+verouderde regel valt hier op; een verouderde `case` in een script niet.
+
+| `CLAUDE.md`-rail (fragment) | rail hier |
+|---|---|
+| Beoordeel-stap schrijft | 1 |
+| doelwit van de gebruiker | 2 |
+| destructief pad | 5 |
+| instrument dat draait | 6 |
+| lus over een variabele | 6 |
+| tegenproef draagt het defect | 8 |
+| naam is een bewering | 9 |
+| grep-treffer | 9 |
+| meetbereik bevat | 10 |
+| verwachtingswaarde | 7 |
+| zekerheid moet dekken | 11 |
+| afhankelijke berekeningen | — |
+
+Het fragment is een substring van de rail-kop in `CLAUDE.md`; een streepje betekent dat deze
+skill er nog geen rail voor heeft en er dus een bij moet vóór het bewijs hierheen kan.
+
+---
+
 ## Het verify-pad — een contract per app
 
 Deze skill kan niet elke run het terrein opnieuw ontdekken: welke simulator, welke build, draait de dev-server, waar leeft dat scherm. Dat is verspilde tijd én een bron van valse conclusies — een build van een maand oud ziet er in een screenshot precies zo uit als een verse.

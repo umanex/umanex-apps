@@ -71,6 +71,50 @@ CLIENT_ROOT="$( cd "$SCRIPT_DIR/.." 2>/dev/null && pwd )" \
 [ -d "$CLIENT_ROOT/.git" ] || [ -f "$CLIENT_ROOT/.git" ] \
   || die "'$CLIENT_ROOT' is geen git-repo — sync-os.sh hoort in <repo>/scripts/ te staan"
 
+# ── --refresh-headers ─────────────────────────────────────────────────────────
+# Vervangt in élke HANDOFF.md van deze repo het blok BÓVEN de eerste laag-header
+# door de canonieke kop uit de template, en laat de entries ongemoeid. Bestaat om
+# één reden: seeding overschrijft nooit, dus een HANDOFF.md die vóór 2026-08-10 is
+# aangemaakt legt nog het oude entry-formaat uit — zonder `Check`-veld en zonder de
+# sectie *Schrijf de check, niet de staat*. De regel bereikt die repo's wél via de
+# skill en de globale laag, maar de kop spreekt hem tegen, en dat is de vorm waarin
+# een verouderde uitleg schade doet: hij oogt gezaghebbend.
+#
+# Aparte modus, geen stap in de gewone sync: dit herschrijft bestanden die de sync
+# juist met rust hoort te laten, en dat hoort een expliciete keuze te zijn.
+refresh_handoff_headers() {
+  TPL="$UMANEX_OS_PATH/templates/HANDOFF.template.md"
+  [ -f "$TPL" ] || die "template ontbreekt: $TPL"
+  KOP="$(awk '/^# Globaal|^# Klant|^# Project/{exit} {print}' "$TPL")"
+  [ -n "$KOP" ] || die "kon geen kop uit de template lezen"
+  n=0; ongemoeid=0
+  echo "→ HANDOFF-koppen verversen in $CLIENT_ROOT"
+  while IFS= read -r f; do
+    # Geen laag-header = een vers geseed of leeg bestand; daar valt niets te scheiden
+    # tussen kop en entries, dus afblijven in plaats van gokken.
+    if ! grep -qE '^# (Globaal|Klant|Project)' "$f"; then
+      echo "  • $(basename "$(dirname "$f")")/HANDOFF.md — geen laag-header, ongemoeid"
+      ongemoeid=$((ongemoeid + 1)); continue
+    fi
+    REST="$(awk '/^# Globaal|^# Klant|^# Project/{f=1} f' "$f")"
+    OUD="$(cat "$f")"
+    printf '%s\n%s\n' "$KOP" "$REST" > "$f.tmp" && mv "$f.tmp" "$f"
+    if [ "$OUD" = "$(cat "$f")" ]; then
+      echo "  • ${f#$CLIENT_ROOT/} — al canoniek"
+    else
+      echo "  ✓ ${f#$CLIENT_ROOT/}"; n=$((n + 1))
+    fi
+  done <<EOF
+$(find "$CLIENT_ROOT" -name HANDOFF.md -not -path '*/node_modules/*' -not -path '*/.claude/worktrees/*' | sort)
+EOF
+  echo "  → $n bijgewerkt, $ongemoeid ongemoeid gelaten"
+}
+
+if [ "${1:-}" = "--refresh-headers" ]; then
+  refresh_handoff_headers
+  exit 0
+fi
+
 # Zelf-modus: draait dit script in umanex-os zelf?
 #
 # Tot 2026-08-08 kon dat niet. Alles wat umanex-os uitrolt bereikte een klant-repo via

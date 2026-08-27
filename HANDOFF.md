@@ -314,7 +314,8 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 - **Bevinding:** Elk cijfer in het businessplan komt uit wegwerpscripts in de sessie-scratchpad — de scenariotabellen, de kasopbouw, de driejarenprojectie, het besparingsargument. Die map is sessie-lokaal en verdwijnt. Het artifact draagt de uitkomsten maar niet de afleiding, dus een volgende herrekening begint van nul en kan stil van deze afwijken.
 - **Check:** `ls scripts/plan-model.* 2>/dev/null || echo ontbreekt` in de repo-root — ontbreekt = het model is nog steeds nergens vastgelegd.
 - **Volgende zet:** Eén gecommit script dat de kostenbasis uit de cashflow-app leest en de kerncijfers van het plan opnieuw uitrekent. Dan wordt het artifact een momentopname van iets herhaalbaars in plaats van een eindpunt.
-- **Status:** open
+- **Opgelost 2026-08-27:** `scripts/plan-model.mjs` bestaat (238 regels, gecommit 2026-08-25 — dezelfde dag als dit item, dus het werk is gedaan zonder het item te sluiten). Niet alleen op bestaan getoetst maar gedraaid: het model rekent de kostenbasis uit (`vast €6.261 + budget €1.706 + provisies €7.289 = €15.257`), en `--selftest` bewijst dat invariant 3 afgaat op een opgewekte afwijking van €500. Dat laatste is het punt — het item vroeg om een herhaalbaar model, niet om een script dat toevallig een getal drukt.
+- **Status:** resolved
 
 ## 2026-08-25 — De bezoldigingsdrempel kan al voor inkomstenjaar 2026 bijten · [risico]
 - **Bevinding:** Het verlaagde tarief van 20% vraagt een bezoldiging van €51.000; die van 2024 was €46.258. De uitzondering "bezoldiging ≥ belastbaar resultaat" dekt dat, want het resultaat was €13.896 — maar alleen zolang het resultaat onder de bezoldiging blijft. Het businessplan plaatst de beslissing in Q4 2027; komt het resultaat van 2026 onverwacht boven €46.258 uit, dan lag de deadline al op 31 december 2026.

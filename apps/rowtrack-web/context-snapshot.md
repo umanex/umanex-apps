@@ -45,11 +45,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+529d255 docs(handoff): bring the HANDOFF headers up to the current format
 a15b915 feat(ui): check every Figma variable against the token source
 3c61b21 feat(ui): export Storybook components to Figma with a sync guard
 e270ab1 feat(ui): add Storybook with token-driven docs
 9a2bc2e chore: sync umanex-os layer with global umanex-os
-0172129 chore: sync umanex-os layer with global umanex-os
 ```
 
 ## Uncommitted wijzigingen

@@ -3,6 +3,8 @@
 import { ExternalLink, Building2 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@umanex/ui/components/ui/card'
 import { Badge } from '@umanex/ui/components/ui/badge'
+import { cn } from '@umanex/ui/lib/utils'
+import { focusRing } from '@umanex/ui/lib/focus'
 import {
   Tooltip,
   TooltipContent,
@@ -86,7 +88,7 @@ export function LeadCard({ company, isNew, onStatusChange, onToonVacatures }: Le
           <button
             type="button"
             onClick={() => onToonVacatures(company.companyName)}
-            className="rounded text-foreground underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+            className={cn('rounded-sm text-foreground underline-offset-2 hover:underline', focusRing)}
           >
             toon deze vacatures
           </button>
@@ -107,7 +109,10 @@ export function LeadCard({ company, isNew, onStatusChange, onToonVacatures }: Le
               href={company.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-foreground transition-colors"
+              className={cn(
+                'flex items-center gap-1 rounded-sm transition-colors hover:text-foreground',
+                focusRing
+              )}
             >
               Website <ExternalLink className="h-3 w-3" />
             </a>

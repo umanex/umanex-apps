@@ -3,6 +3,8 @@
 import { ExternalLink } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@umanex/ui/components/ui/card'
 import { Badge } from '@umanex/ui/components/ui/badge'
+import { cn } from '@umanex/ui/lib/utils'
+import { focusRing } from '@umanex/ui/lib/focus'
 import {
   Tooltip,
   TooltipContent,
@@ -70,7 +72,10 @@ export function JobCard({ job, isNew, onStatusChange }: JobCardProps) {
             href={job.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 hover:text-foreground transition-colors"
+            className={cn(
+              'flex items-center gap-1 rounded-sm transition-colors hover:text-foreground',
+              focusRing
+            )}
           >
             Bekijk <ExternalLink className="h-3 w-3" />
           </a>

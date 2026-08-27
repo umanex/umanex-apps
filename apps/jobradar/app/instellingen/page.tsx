@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { cn } from '@umanex/ui/lib/utils'
+import { focusRing } from '@umanex/ui/lib/focus'
 import { getDb } from '@/lib/db'
 import { leesZoekopdracht } from '@/lib/sync/settings-store'
 import { standaardZoekopdracht, isStandaard } from '@/lib/settings'
@@ -16,7 +18,10 @@ export default async function InstellingenPage() {
         <div className="space-y-2">
           <Link
             href="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className={cn(
+              'inline-flex items-center gap-1 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground',
+              focusRing
+            )}
           >
             <ArrowLeft className="h-4 w-4" />
             Terug naar het dashboard

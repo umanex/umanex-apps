@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-08-11_
+_Gegenereerd op 2026-08-27_
 
 ## Project
 - **App:** jobradar
@@ -36,20 +36,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-f1ecf3e feat(jobradar): make a lead checkable, and give the list a search field
-4c6860b fix(jobradar): test the ceiling per sub-query, not against a growing threshold
-5e49969 docs(jobradar): UX-audit van het dashboard en de zoekinstellingen
-ef4acc0 feat(jobradar): allow exact phrases as search terms
-bc95d61 fix(jobradar): ask Adzuna politely, and try again when it says no
+5b9aa03 refactor(ui): extract the shared focus ring into a constant
+a15b915 feat(ui): check every Figma variable against the token source
+3c61b21 feat(ui): export Storybook components to Figma with a sync guard
+e270ab1 feat(ui): add Storybook with token-driven docs
+49072dc fix(jobradar): stop the card and its own button from counting different things
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/app/api/sync/route.ts
+  M  apps/jobradar/BACKLOG.md
+  M  apps/jobradar/CLAUDE.md
+  M  apps/jobradar/app/error.tsx
+  M  apps/jobradar/app/instellingen/page.tsx
+  M  apps/jobradar/app/not-found.tsx
+  M  apps/jobradar/components/CoverageBar.tsx
   M  apps/jobradar/components/DashboardClient.tsx
   M  apps/jobradar/components/FilterBar.tsx
+  M  apps/jobradar/components/JobCard.tsx
   M  apps/jobradar/components/LeadCard.tsx
-  M  apps/jobradar/lib/sync/upsert.ts
-  M  apps/jobradar/scripts/signal-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

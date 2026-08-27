@@ -26,9 +26,10 @@ moet worden — geen vergetelheid.
 | Capability | Commando / status |
 |---|---|
 | **Render vastleggen** | `pnpm --filter jobradar flow --shot=.flow-shots` — legt per route een full-page PNG vast op de verse build. Gemeten: `index.png`, 27 KB. `.flow-shots/` is gitignored: het is bewijs van één run, geen artefact om te bewaren. |
-| **Flow aandrijven** | `pnpm --filter jobradar flow` — Playwright op een verse build. Laadt elke route, drijft één echte interactie aan (het **status**-filter: `"" → "new"` — de harness pakt `select:visible` en het regio-filter bestaat uit checkboxes), en telt console-fouten. `--headed` om mee te kijken. |
+| **Flow aandrijven** | `pnpm --filter jobradar flow` — Playwright op een verse build. Laadt elke route (`/` en `/instellingen`), drijft één echte interactie aan (het **status**-filter: `"" → "new"` — de harness pakt `select:visible` en het regio-filter bestaat uit checkboxes), en telt console-fouten. De interactie doet vooraf een expliciete `goto` naar `/`: zonder die regel verhuist hij mee naar de láátste route en valt hij stil terug op een linkklik. `--headed` om mee te kijken. |
+| **Toegankelijkheid meten** | Zit ín de harness, per route. **Kopstructuur:** leest alle `h1`–`h6` in documentvolgorde en faalt op een overgeslagen niveau (gemeten 2026-08-27: `/` heeft 336 koppen, h1 → h2 → h3). **Toetsenbord:** loopt de echte tab-volgorde af (max 80 stops) en toetst per stop **differentieel** of de computed `outline`/`box-shadow` bij focus verandert — dus niet of er een klasse staat, maar of er iets te zien is. De volgorde zelf komt als `note` in de uitvoer, plus een melding bij een positieve `tabindex`. Dit is het gat dat de ux-audit van 2026-08-11 niet kon meten: zijn browserautomatisering kreeg geen `Tab` in de pagina. |
 | **State forceren** | **Gedeeltelijk.** De harness meet wat er in `.data/jobradar.db` van díe tree staat: in een verse worktree is dat de lege staat (*"Geen vacatures gevonden"*), in een tree waar ooit gesynchroniseerd is de gevulde. Loading en error zijn **niet** op te wekken — er is geen fixture-laag en geen mock-route. Wie die states wil toetsen, bouwt eerst een onderschepte route zoals `apps/cashflow/scripts/flow-harness.mjs` die heeft. |
-| **Invariant draaien** | `pnpm --filter jobradar scenarios` — 634 invarianten over vier suites: de scorekern en signaal-afleiding (`signal-scenarios.ts`), de sync-upserts tegen een `:memory:`-database met het echte schema (`upsert-scenarios.ts`), de Adzuna-ophaallaag met een gestubde `fetch` (`adzuna-scenarios.ts`), en de configuratielaag zelf (`config-scenarios.ts` — de gehardende faalklasse uit `LEARNINGS.md`: geen rolwoorden in de vaardighedenlijst, elk keyword vindt zichzelf, de omschrijving beslist nooit de rol, en de twee assen staan vastgepind). Elke suite draait zijn tegenproef ervóór — `SCENARIO_SELFTEST=1` injecteert één check die móét falen, en die run hoort niet-nul te eindigen. Geen netwerk, geen database op schijf, geen transpiler: Node 24 stript de types zelf en `scripts/ts-resolve.mjs` lost de extensieloze relatieve imports op. |
+| **Invariant draaien** | `pnpm --filter jobradar scenarios` — 693 invarianten over vier suites (gemeten 2026-08-27; de tabel zei 634, dat was een oudere telling): de scorekern en signaal-afleiding (`signal-scenarios.ts`), de sync-upserts tegen een `:memory:`-database met het echte schema (`upsert-scenarios.ts`), de Adzuna-ophaallaag met een gestubde `fetch` (`adzuna-scenarios.ts`), en de configuratielaag zelf (`config-scenarios.ts` — de gehardende faalklasse uit `LEARNINGS.md`: geen rolwoorden in de vaardighedenlijst, elk keyword vindt zichzelf, de omschrijving beslist nooit de rol, en de twee assen staan vastgepind). Elke suite draait zijn tegenproef ervóór — `SCENARIO_SELFTEST=1` injecteert één check die móét falen, en die run hoort niet-nul te eindigen. Geen netwerk, geen database op schijf, geen transpiler: Node 24 stript de types zelf en `scripts/ts-resolve.mjs` lost de extensieloze relatieve imports op. |
 | **Sync tegen de echte bron** | Kan, maar **nooit tegen `.data/jobradar.db`** — dat is de database die je zelf gebruikt. Bouw, start op een vrije poort met een wegwerp-pad, en synchroniseer daartegen: `JOBRADAR_DB_PATH=/tmp/wegwerp.db node_modules/.bin/next start --port 3113`, dan `curl -X POST 127.0.0.1:3113/api/sync`.<br><br>**Twee keer draaien is géén idempotentie-bewijs.** Adzuna geeft niet elke aanroep dezelfde set: op 2026-08-10 gaf run 1 een `HTTP 429` op pagina 3 van WVL, waarna run 2 de ontbrekende 136 vacatures alsnog toevoegde. `jobsAdded > 0` op de tweede run kan dus de bron zijn, niet je code — lees eerst de waarschuwingen in `sourceStatuses`. Wat je op live data wél hard kunt toetsen is dat er geen duplicaten ontstaan (`COUNT(*) == COUNT(DISTINCT source, external_id) == COUNT(DISTINCT dedupe_hash)`). Idempotentie zelf wordt deterministisch bewezen in `upsert-scenarios.ts`. |
 | **Verse build** | Zit ín de harness: die draait altijd eerst `next build` en start `next start` op **3103**, en weigert te draaien als daar al iets luistert. Je test dus per definitie de huidige code, nooit een oude bundel. Een dev-server op 3003 wordt met rust gelaten. |
 
@@ -38,8 +39,26 @@ als lek — één lek en de run faalt. Dat is de bedoeling (zo kan hij per const
 raken), maar het betekent ook dat een blinde klik op die knop een *valse* bevinding zou opleveren.
 De harness bedient daarom `select`-elementen en interne links, nooit willekeurige knoppen.
 
-**De harness kan falen, en dat is getoetst.** `pnpm --filter jobradar flow --selftest` voegt een
-scenario toe dat hóórt te falen. Let op de omkering: die run eindigt op **exit 0** wanneer de
-bewuste assertie inderdaad faalde — de zelftest slaagt dán. Blijft hij groen zónder die melding,
-dan meet de harness niets en is exit 1 het juiste antwoord. Zonder die kant weet je niet of groen
+**De harness kan falen, en dat is getoetst.** `pnpm --filter jobradar flow --selftest` spuit per as
+een defect in dat hóórt te worden gevangen: een onbereikbare route, een `h5` na de kaart-`h3`'s, en
+een knop met `outline`/`box-shadow` op `none !important`. Let op de omkering: die run eindigt op
+**exit 0** wanneer álle drie de assen inderdaad faalden — de zelftest slaagt dán. Blijft er één
+groen, dan meet díe as niets en is exit 1 het juiste antwoord. Zonder die kant weet je niet of groen
 "alles goed" betekent of "ik kijk nergens naar".
+
+Dat is geen theorie: de eerste versie van de toetsenbord-zelftest hing de kapotte knop achteráán de
+body en bleef stil groen — het dashboard heeft honderden tab-stops, dus de knop viel buiten het
+bereik van de pass. Hij staat nu vooraan (`prepend`) en is daarmee op elke pagina de eerste stop.
+
+## Meten in dark mode
+
+De `Badge` draagt `transition-colors` (150 ms). Wie direct na een mode-wissel
+(`documentElement.classList.add('dark')`) `getComputedStyle` leest, krijgt de **oude** kleur terug —
+de transitie loopt nog. Gemeten op 2026-08-27: de score-pil rapporteerde in dark een light-kleur,
+terwijl de scheiding in de dekkingsindicator (zonder transition) wél meteen omsloeg. Die twee
+signalen die elkaar tegenspraken waren het alarm, niet de bevinding — er was geen CSS-fout, alleen
+een meting die te vroeg kwam. Wacht ~400 ms na de wissel, of meet met `transition: none`.
+
+Dark mode heeft in jobradar overigens **geen schakelaar in de UI** — `.dark` bestaat in
+`app/globals.css` en in de rollaag, maar niets zet de class. Een dark-meting is dus altijd een
+geforceerde meting.

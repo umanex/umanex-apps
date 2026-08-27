@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-25_
+_Gegenereerd op 2026-08-27_
 
 ## Project
 - **App:** rowtrack
@@ -59,16 +59,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-1e1b64f Merge remote-tracking branch 'origin/main' into docs/parallel-werk-hoofdtree
-e270ab1 feat(ui): add Storybook with token-driven docs
-a838d47 docs: app work lives in the main tree, drop the sibling-worktree section
-fb979d7 docs: log the flaky scan-lock test, and close the CI item it sat under
-c46104f docs(rowtrack): count the test suites instead of remembering them
+a15b915 feat(ui): check every Figma variable against the token source
+3c61b21 feat(ui): export Storybook components to Figma with a sync guard
+0d3b472 Merge origin/main into fix/scan-lock-deterministic-test
+a79c883 fix(rowtrack): make the scan-lock safety-net test deterministic
+d85eb79 Merge remote-tracking branch 'origin/main' into docs/parallel-werk-hoofdtree
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/context-snapshot.md
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

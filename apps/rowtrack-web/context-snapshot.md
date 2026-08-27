@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack-web
-_Gegenereerd op 2026-08-10_
+_Gegenereerd op 2026-08-27_
 
 ## Project
 - **App:** rowtrack-web
@@ -45,15 +45,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-cbe0193 feat(rowtrack-web): echte app-screenshots in de hero en de analyse-sectie
-2db75e2 feat(rowtrack-web): bouw de onepager S1-S11
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-35153a6 feat(rowtrack-web): publiceer de gebruiksvoorwaarden op /nl/voorwaarden
-6b6d215 feat(rowtrack-web): publiceer het privacybeleid op /nl/privacy
+a15b915 feat(ui): check every Figma variable against the token source
+3c61b21 feat(ui): export Storybook components to Figma with a sync guard
+e270ab1 feat(ui): add Storybook with token-driven docs
+9a2bc2e chore: sync umanex-os layer with global umanex-os
+0172129 chore: sync umanex-os layer with global umanex-os
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack-web/HANDOFF.md
+  M  apps/rowtrack-web/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

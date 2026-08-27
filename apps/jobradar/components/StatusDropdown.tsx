@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { cn } from '@umanex/ui/lib/utils'
+import { focusRing } from '@umanex/ui/lib/focus'
 import type { ItemStatus } from '@/lib/db/schema'
 
 const STATUS_OPTIONS: { value: ItemStatus; label: string; className: string }[] = [
@@ -46,7 +48,11 @@ export function StatusDropdown({ itemId, status, type, onStatusChange }: Props) 
       value={status}
       onChange={handleChange}
       disabled={pending}
-      className={`cursor-pointer border-none bg-transparent text-xs outline-none disabled:opacity-50 ${current.className}`}
+      className={cn(
+        'cursor-pointer rounded-sm border-none bg-transparent text-xs disabled:opacity-50',
+        focusRing,
+        current.className
+      )}
     >
       {STATUS_OPTIONS.map(({ value, label }) => (
         <option key={value} value={value}>

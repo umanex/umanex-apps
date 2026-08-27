@@ -4,6 +4,8 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
+import { cn } from '@umanex/ui/lib/utils'
+import { focusRing } from '@umanex/ui/lib/focus'
 import { FilterBar } from './FilterBar'
 import { SyncButton } from './SyncButton'
 import { CoverageBar } from './CoverageBar'
@@ -108,7 +110,10 @@ export function DashboardClient({
           <div className="flex items-center gap-4">
             <Link
               href="/instellingen"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className={cn(
+                'rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground',
+                focusRing
+              )}
             >
               Instellingen
             </Link>
@@ -155,6 +160,10 @@ export function DashboardClient({
           </TabsList>
 
           <TabsContent value="jobs">
+            {/* Het tabblad draagt het label al zichtbaar en Radix hangt het paneel er via
+                aria-labelledby aan; wat ontbrak was het NIVEAU. Zonder deze h2 sprong de
+                koppen-outline van h1 naar 327 kaart-h3's (ux-audit 2026-08-11, P3). */}
+            <h2 className="sr-only">Vacatures</h2>
             {filteredJobs.length === 0 ? (
               <EmptyState
                 message={
@@ -185,6 +194,7 @@ export function DashboardClient({
           </TabsContent>
 
           <TabsContent value="leads">
+            <h2 className="sr-only">Leads</h2>
             {filteredCompanies.length === 0 ? (
               <EmptyState
                 message={

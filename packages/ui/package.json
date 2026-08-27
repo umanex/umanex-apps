@@ -12,6 +12,7 @@
   },
   "exports": {
     "./lib/utils": "./lib/utils.ts",
+    "./lib/focus": "./lib/focus.ts",
     "./globals.css": "./globals.css",
     "./components/ui/button": "./components/ui/button.tsx",
     "./components/ui/input": "./components/ui/input.tsx",

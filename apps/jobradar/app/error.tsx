@@ -1,5 +1,7 @@
 'use client'
 
+import { Button } from '@umanex/ui/components/ui/button'
+
 export default function Error({
   error,
   reset,
@@ -11,12 +13,10 @@ export default function Error({
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
       <h1 className="text-2xl font-bold">Er ging iets mis</h1>
       <p className="text-sm text-muted-foreground">{error.message}</p>
-      <button
-        onClick={reset}
-        className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
-      >
-        Opnieuw proberen
-      </button>
+      {/* Was een met de hand nagebouwde Button: zelfde kleuren, maar zonder de
+          focus-ring. De component nemen lost beide op in plaats van er één klasse
+          bij te plakken. */}
+      <Button onClick={reset}>Opnieuw proberen</Button>
     </main>
   )
 }

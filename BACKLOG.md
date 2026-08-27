@@ -67,6 +67,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Beslist:** DToO gaat weg als positionering en blijft als één historiek-alinea staan — oudere audits en briefings dragen de term nog, en zonder die noot kan een volgende sessie een vervallen lijn niet van een huidige onderscheiden. De doelgroep is meteen mee vernauwd en de drie naamregels uit het marktonderzoek staan nu in het profiel in plaats van alleen in de portfolio-briefing.
 - **Status:** gebouwd — PR #302
 
+## 2026-08-27 — badge.tsx draagt focus-klassen op een element dat geen focus kan krijgen · [refactor]
+- **Wat:** `packages/ui/components/ui/badge.tsx` heeft `focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2` in zijn cva-basis, maar rendert een `div` zonder `tabIndex`. Die klassen kunnen per constructie nooit afgaan. Bovendien is het `focus:` en niet `focus-visible:` — een derde vorm naast de `focusRing`-constante die de rest van de laag nu gebruikt.
+- **Waarom niet nu:** nul zichtbaar effect, dus het is opruimwerk en geen fix. Het meeliften op een PR die over jobradar-toegankelijkheid gaat zou een wijziging aan een gedeeld component verstoppen in een app-PR.
+- **Eerste zet:** beslissen of de Badge ooit focusbaar wordt (een filter-chip zou het willen). Zo nee: klassen weg. Zo ja: `focusRing` uit `@umanex/ui/lib/focus` gebruiken, net als `Button`.
+- **Status:** open
+
+## 2026-08-27 — De flow-harness van jobradar draait in geen enkele CI-stap · [test]
+- **Wat:** `pnpm --filter jobradar flow` meet sinds vandaag ook de kopstructuur en de toetsenbord-/focus-volgorde, met een tegenproef per as. CI draait er niets van: `.github/workflows/ci.yml` roept wél `pnpm --filter cashflow flow:ci` en `pnpm --filter jobradar scenarios` aan, maar geen jobradar-flow. Een regressie in de koppen of in een focus-ring komt dus pas boven wanneer iemand de harness met de hand draait.
+- **Waarom niet nu:** een CI-stap toevoegen is een infra-beslissing (extra buildtijd, en de harness bouwt zelf) die niet gevraagd is bij deze taak. De harness bouwen was de opdracht; hem in de pijplijn hangen is de volgende.
+- **Eerste zet:** de vorm van cashflow kopiëren — die heeft een `flow:ci` die de build van de type-check-stap hergebruikt (`--dist=.next`) in plaats van opnieuw te bouwen. jobradar heeft die variant nog niet; zonder haar kost de stap een tweede volledige `next build`.
+- **Status:** open
+
 # Klant — umanex
 
 ## 2026-08-25 — Storybook-build in CI en turbo · [infra]

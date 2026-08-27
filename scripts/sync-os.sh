@@ -90,13 +90,21 @@ refresh_handoff_headers() {
   n=0; ongemoeid=0
   echo "→ HANDOFF-koppen verversen in $CLIENT_ROOT"
   while IFS= read -r f; do
-    # Geen laag-header = een vers geseed of leeg bestand; daar valt niets te scheiden
-    # tussen kop en entries, dus afblijven in plaats van gokken.
-    if ! grep -qE '^# (Globaal|Klant|Project)' "$f"; then
-      echo "  • $(basename "$(dirname "$f")")/HANDOFF.md — geen laag-header, ongemoeid"
+    # De kop eindigt bij de eerste laag-header OF bij de eerste entry. Die tweede
+    # grens is niet theoretisch: `columba/HANDOFF.md` draagt twee entries zonder ooit
+    # een laag-header gekregen te hebben (gemeten 2026-08-27), en een eerste versie van
+    # deze functie sloeg hem daardoor over — precies het bestand dat het item bedoelde.
+    # Zonder beide grenzen valt zo'n bestand tussen wal en schip.
+    if grep -qE '^# (Globaal|Klant|Project)' "$f"; then
+      REST="$(awk '/^# Globaal|^# Klant|^# Project/{f=1} f' "$f")"
+    elif grep -qE '^## [0-9]{4}-[0-9]{2}-[0-9]{2}' "$f"; then
+      REST="$(awk '/^## [0-9]{4}-[0-9]{2}-[0-9]{2}/{f=1} f' "$f")"
+    else
+      # Echt niets te scheiden: een vers geseed of leeg bestand. Afblijven in plaats
+      # van gokken — er is geen entry die verloren kan gaan, maar ook niets te winnen.
+      echo "  • ${f#$CLIENT_ROOT/} — geen entries, ongemoeid"
       ongemoeid=$((ongemoeid + 1)); continue
     fi
-    REST="$(awk '/^# Globaal|^# Klant|^# Project/{f=1} f' "$f")"
     OUD="$(cat "$f")"
     printf '%s\n%s\n' "$KOP" "$REST" > "$f.tmp" && mv "$f.tmp" "$f"
     if [ "$OUD" = "$(cat "$f")" ]; then

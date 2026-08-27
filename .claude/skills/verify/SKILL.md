@@ -44,7 +44,7 @@ Meerdere assen tegelijk is normaal: een feature-flow met een berekening heeft er
 
 ---
 
-## Acht rails — de discipline van de Beoordeel-stap
+## Elf rails — de discipline van de Beoordeel-stap
 
 Deze staan als werkprincipe in `CLAUDE.md`; hier zijn ze operationeel.
 
@@ -86,6 +86,8 @@ Een niet-getrouw instrument levert een vals-negatief dat er identiek uitziet als
 
 *En de omgeving van je instrument.* In een achtergrond-tabblad staat `document.visibilityState` op `hidden` en vuurt `requestAnimationFrame` niet meer: een wachtlus op frames hangt tot de tool-timeout, en animaties maken hun exit nooit af. Wat je dan meet is de tab-staat, niet de app. Gebruik timers in plaats van frames, of breng het doelwit naar de voorgrond.
 
+*Een vervangen instrument valideer je eerst op wat níet veranderde.* Herschrijf of vervang je een meetinstrument — een dump-filter, een vergelijker, een parser — dan zegt zijn uitkomst over het gewijzigde deel pas iets als hij het óngewijzigde deel exact reproduceert. Gemeten op fleet-manager: een nieuw dump-filter gooide twee strings weg, en die lege uitkomst zag er identiek uit aan een schone dump; alleen 19 onveranderde schermen ernaast leggen (aantal teksten + tekenlengte) haalde het boven. Dat het instrument zélf kapot kan zijn hoort bij die toets: de vergelijker gaf twee verschillende hashes voor identieke invoer.
+
 **7. De verwachting is de reden om te meten, nooit het bewijs.** Een vuistregel uit de literatuur, een typische waarde, een aggregaat dat logisch oogt — dat is de hypothese die de meting motiveert, niet de meting zelf. Bestaat de meetbare as (een log, een opname, een teller, het Verify-pad van de app), dan sluit alleen díe de vraag; kun je niet meten, dan lever je een hypothese mét het meetpad erbij, geen conclusie met een tabel eronder.
 
 *Herkenningsteken:* wijkt het getal af met precies een ronde factor (×2, ×½, ×60), dan is dat vrijwel zeker een tel- of eenheidsfout — die ga je meten, niet verklaren, en de kant waarop hij valt beslis je nooit uit plausibiliteit. Gemeten op rowtrack (2026-08-16): "20-24 spm is je echte slagfrequentie" klonk sluitend met twee vuistregels als steun; een FTMS-opname en een handtelling dezelfde avond wezen het tegendeel uit, en de echte oorzaak (een noemer die rustpackets meetelde) produceerde exact het klachtgetal 24.
@@ -99,6 +101,23 @@ Koppel de tegenproef aan het defect zelf, niet aan een buurdefect — drie vorme
 Gemeten op LQB (2026-08-18): "reaction bestaat · trigger `ON_CLICK` · actie `NAVIGATE` · bestemming geldig" stond 4 van 4 groen op een link waar klikken niets deed. Die vier asserties staan wóórd voor woord even groen op de kapotte als op de herstelde staat — de reaction hing op het `link`-FRAME (`604:43106`, `fills:0`, `strokes:0`) in plaats van op de TEXT-node eronder (`604:43108`, `fills:1`), waar hij na het herstel wél staat. Wat de twee onderscheidt, werd nooit geasserteerd. Het ijkpunt lag in het bestand zelf: op dezelfde pagina hebben 217 van de 219 eigen NAVIGATE-hotspots een trefvlak, en alle acht de structureel identieke tekstlinks dragen hun reaction op de TEXT-node. In dezelfde sessie faalde een overloop-check op de tweede manier: `CONTENT`-hoogte ís de som van de kinderen, dus "0px speling" stond voor alle 27 frames vast vóór de meting begon.
 
 *De moeilijk meetbare as krijgt geen lagere lat.* Kun je het gedrag niet opwekken, dan is dat rail 3 (`[NIET TE VERIFIËREN — reden]`), niet een goedkopere check die er verifiërend uitziet. Signaal: één taak, twee oppervlakken, ongelijke latten — de code-kant getoetst door te klikken, het design-bestand door een property te lezen.
+
+
+**9. Anker op het object, niet op de vorm die je toevallig terugkrijgt.** Een laagnaam, een label, een kolomtitel, een tag — allemaal beschrijvingen die iemand ooit typte en die sindsdien niet meegroeiden. Identificeer waar je mee werkt aan zijn **inhoud**: de titel op de kaart, de velden in het formulier, de rij in de tabel.
+
+Gemeten op LQB: één frame droeg de naam `unit:04-contact` en zijn kind `screen:d1-account-manager-handoff`, terwijl de kaart erin "Add your company details" heet met de velden `Company name` en `Street` — alleen de inhoud zei wat het scherm ís. Op fleet-manager las `strokeBottomWeight: 2` zonder één stroke-paint als "er staat een onderlijn" terwijl er niets getekend werd, en een tekstnode met `visible: true` onder een ouder op `opacity: 0` als "hij rendert": een render-*eigenschap* is invoer voor de render, niet de render.
+
+*De broer met dezelfde vorm.* `querySelector('aside')` faalt niet bij twee `<aside>`'s — hij geeft de eerste. Gemeten op Columba: `Sidebar.tsx` en `SidePanel.tsx` zijn allebei een `<aside>`, dus "paneelbreedte 304px" was de sidebar, óók vóór er een paneel bestond; de toggle 372 ↔ 880 las daardoor als "verandert niet". Tel eerst: `querySelectorAll(<selector>).length` hoort **1** te zijn vóór je er een eigenschap van afleest.
+
+*De grep-treffer.* Een `grep -n` geeft je één regel, niet de entry — en de `Status` staat daarbuiten. Gemeten over `HANDOFF.md`, `BACKLOG.md` en `LEARNINGS.md` (79 entries): de statusregel staat gemiddeld +4,4 tot +4,9 onder zijn kop en in de staart tot +11, dus een kale grep toont hem bij géén enkele entry. Een groter venster is geen fix maar een nieuwe proxy — anker op de entry.
+
+**10. Het meetbereik bevat vaak de meting zelf.** Bij een telling of een exit-status heeft "de verkeerde grootheid" een eigen, herkenbare vorm. Een `grep -c` op een bestand dat zijn eigen format-voorbeeld draagt telt dat voorbeeld mee; een CI-log bevat het script dat hij logt, dus een grep op een `echo`-tekst vindt de broncode terug; `$?` na een pipe geeft de status van de láátste pijpcomponent en niet die van je script.
+
+Gemeten op één sessie: vier keer, en drie keer met een getal dat plausibel oogde — "3 open entries" klopte precies met de drie die net bijgewerkt waren, terwijl het echte antwoord 0 was. Dezelfde vorm bij een **scope**: `git status --porcelain` rapporteert een nieuwe map als één regel, dus een `.tsx$`-filter erover gooit élk bestand erin weg — 18 bestanden waar er 23 waren, en het enige foute token zat in de vijf die wegvielen.
+
+**11. Je zekerheid moet dekken wat je werkelijk deed.** Een melding draagt impliciet dat er een tool-call onder zit. Twee vormen waarin dat misging, allebei op 2026-08-26. Een **verklaring die je niet toetste**: na drie gefaalde `figma_execute`-calls noemde ik het `·`-teken als oorzaak en meldde dat als vaststaand; de controle-test gaf vijf keer groen, en de echte oorzaak was dat Figma tekstnodes naar hun inhoud vernoemt. Een **handeling die je niet uitvoerde**: "Ik heb hem toegevoegd aan de LEARNINGS-entry" zonder één call die dat deed.
+
+Herkenningsteken voor beide: een bewering die in dezelfde adem ontstaat én wordt afgevinkt, zonder call ertussen. In een `AskUserQuestion`-optie schaadt het het meest, want daar wordt een ongemeten getal de grond waarop de gebruiker beslist: geschat −3 500 chars, gemeten −428, een factor 8. Kantelt een aanname onder een optie nádat de gebruiker koos, dan volstaat de opbrengst corrigeren niet — bied de keuze opnieuw aan.
 
 ---
 

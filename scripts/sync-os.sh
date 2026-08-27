@@ -17,6 +17,7 @@
 # - .claude/agents/<naam>.md       (subagent-definities met tool-beperking, zelfde regime)
 # - ~/.claude/hooks/tcebc-reminder.sh + settings.json  (TC-EBC UserPromptSubmit hook, user-level)
 # - ~/.claude/hooks/session-start-handoff.sh + settings.json  (SessionStart handoff-hook, user-level)
+# - ~/.claude/hooks/askquestion-estimate-guard.sh + settings.json  (PreToolUse schatting-guard, user-level)
 # - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
 # - HANDOFF.md                     (sessie-handoff in root + elke app, geseed als afwezig — nooit overschreven)
 # - BACKLOG.md                     (gemeld-niet-gebouwd in root + elke app, geseed als afwezig — nooit overschreven)
@@ -571,6 +572,42 @@ else
         # eventuele symlink heen in plaats van hem te vervangen.
         cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
         echo "  ✓ SessionStart-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
+      else
+        rm -f "$_tmp"
+        echo "  ⚠ kon settings.json niet bewerken — controleer of het geldige JSON is"
+      fi
+    fi
+  fi
+fi
+
+# AskUserQuestion-guard: PreToolUse, user-level, zelfde patroon als de twee hooks hierboven.
+# Waarschuwt bij een ongemarkeerd getal in een optie-tekst — de faalklasse uit LEARNINGS
+# 2026-08-26. Anders dan die twee draagt deze entry een `matcher`, want PreToolUse vuurt op
+# élke tool en we willen alleen AskUserQuestion.
+echo ""
+echo "→ Installeer AskUserQuestion-guard (PreToolUse, user-level)..."
+ASKQ_SRC="$UMANEX_OS_PATH/templates/askquestion-estimate-guard.sh"
+ASKQ_CMD="$USER_HOOKS/askquestion-estimate-guard.sh"
+if [ ! -f "$ASKQ_SRC" ]; then
+  echo "  ⚠ templates/askquestion-estimate-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$ASKQ_SRC" "$ASKQ_CMD"
+  chmod +x "$ASKQ_CMD"
+  echo "  ✓ ~/.claude/hooks/askquestion-estimate-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast. Voeg de PreToolUse-hook handmatig toe (zie docs/architecture.md)."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$ASKQ_CMD" '.hooks.PreToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$ASKQ_CMD" '.hooks.PreToolUse += [{"matcher":"AskUserQuestion","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Schatting-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        # Zie de toelichting bij de UserPromptSubmit-hook hierboven: schrijf dóór een
+        # eventuele symlink heen in plaats van hem te vervangen.
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PreToolUse-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
       else
         rm -f "$_tmp"
         echo "  ⚠ kon settings.json niet bewerken — controleer of het geldige JSON is"

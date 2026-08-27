@@ -64,7 +64,15 @@ Harde rail: **max 3 iteraties**. Convergeert het niet → gecontroleerde stop: `
 
 *Een instrument dat draait is nog geen instrument dat meet.* Vóór je een uitkomst vertrouwt, toon je dat hij hád kunnen afwijken. Een **guard** toets je op béide kanten (één geval waarin hij zwijgt, één waarin hij afgaat); een **lege** uitkomst vraagt een positieve controle, want "niet gevonden" en "instrument kapot" zien er identiek uit; een **groene** uitkomst vraagt een negatieve controle, want een gevulde, wáre uitkomst kan over de verkeerde grootheid gaan; en een **vervangen** instrument zegt pas iets over het gewijzigde deel als het het óngewijzigde exact reproduceert. Kun je het gedrag niet opwekken, dan is het antwoord `[NIET TE VERIFIËREN — reden]`, nooit een goedkopere proxy.
 
-*De tegenproef draagt het defect zelf, en beweegt met het object mee.* Dat een check rood kán worden is niet genoeg — hij moet rood worden op precies het defect waarvoor de code bestaat. Drie vormen: **neem de fix weg** en eis dat de suite omvalt; **laat het instrument het object eerst terugvinden** vóór je er een eigenschap van meet; **verander het object** en eis dat de check meebeweegt. Een tegenproef die niet met de fix of het object meebeweegt, meet iets anders.
+*Een lus over een variabele draait in zsh één keer.* De tool-shell is zsh, en die splitst een ongequote variabele niet op whitespace: `for f in $VAR` itereert over één lange string in plaats van over de regels. Er faalt niets, dus `set -e` en `pipefail` zwijgen — de uitkomst is stil leeg of onvolledig, en de vorm die de fout maakt is precies de vorm die in bash correct is. Gebruik:
+
+```bash
+printf '%s\n' "$VAR" | while IFS= read -r f; do … ; done
+```
+
+of geef de lijst aan `xargs`. Committed scripts met `#!/bin/bash` zijn wél correct; dit geldt alleen inline. Bij een lege uitkomst uit zo'n lus is de eerste vraag niet "is er niets" maar "heeft de lus gedraaid".
+
+*De tegenproef draagt het defect zelf, en beweegt met het object mee.* Dat een check rood kán worden is niet genoeg — hij moet rood worden op precies het defect waarvoor de code bestaat. Drie vormen: **neem de fix weg** en eis dat de suite omvalt; **laat het instrument het object eerst terugvinden** vóór je er een eigenschap van meet; **verander het object** en eis dat de check meebeweegt. Een tegenproef die niet met de fix of het object meebeweegt, meet iets anders. Geven **beide kanten** dezelfde uitkomst, dan is dat geen dubbele bevestiging maar de melding dat je opstelling het defect niet kán opwekken — de enige geldige conclusie is dan dat de test ongeschikt is.
 
 *Een naam is een bewering over het ding, niet het ding.* Identificeer waar je mee werkt aan zijn **inhoud**, niet aan zijn label, tag of type — en tel eerst: `querySelectorAll(<selector>).length` hoort **1** te zijn vóór je er een eigenschap van afleest. Spreken twee onafhankelijke signalen elkaar tegen, dan is die tegenspraak het **alarm**: verklaar hem, of meld beide. Trek een onbevestigde gevolgtrekking nooit door naar zusters "voor de consistentie".
 

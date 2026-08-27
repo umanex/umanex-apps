@@ -30,6 +30,15 @@ export type RawLead = {
    * hoeveel vacatures er achter zitten en hoort daar dan ook niets over te beweren.
    */
   tellingen?: { totaal: number; design: number; dev: number }
+  /**
+   * Gemiddeld personeelsbestand in voltijdse equivalenten, uit rubriek 9087 van de
+   * jaarrekening. Optioneel én nullable, en dat verschil draagt betekenis: `undefined` is
+   * "deze bron zegt er niets over" (Adzuna weet dit niet), `null` is "opgevraagd bij de NBB
+   * en niet gevonden". Alleen het eerste is onschuldig — het tweede betekent dat de filter op
+   * 20-150 werknemers dit bedrijf niet kan beoordelen en het dus niet stilzwijgend mag
+   * wegfilteren.
+   */
+  werknemers?: number | null
 }
 
 /**

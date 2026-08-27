@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-08-11_
+_Gegenereerd op 2026-08-26_
 
 ## Project
 - **App:** jobradar
@@ -22,11 +22,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 | Component | Pad | Categorie | Figma-node | Snapshot | Status |
 |---|---|---|---|---|---|
+| ClassificatieKnoppen | `apps/jobradar/components/ClassificatieKnoppen.tsx` | components | — | — | — |
 | CoverageBar | `apps/jobradar/components/CoverageBar.tsx` | components | — | — | — |
 | DashboardClient | `apps/jobradar/components/DashboardClient.tsx` | components | — | — | — |
+| ProspectFout | `apps/jobradar/components/feedback/ProspectFout.tsx` | feedback | — | — | — |
+| ProspectLaden | `apps/jobradar/components/feedback/ProspectLaden.tsx` | feedback | — | — | — |
+| ProspectLeeg | `apps/jobradar/components/feedback/ProspectLeeg.tsx` | feedback | — | — | — |
 | FilterBar | `apps/jobradar/components/FilterBar.tsx` | components | — | — | — |
 | JobCard | `apps/jobradar/components/JobCard.tsx` | components | — | — | — |
 | LeadCard | `apps/jobradar/components/LeadCard.tsx` | components | — | — | — |
+| ProspectKaart | `apps/jobradar/components/ProspectKaart.tsx` | components | — | — | — |
+| ProspectLabeler | `apps/jobradar/components/ProspectLabeler.tsx` | components | — | — | — |
+| ProspectVoortgang | `apps/jobradar/components/ProspectVoortgang.tsx` | components | — | — | — |
 | RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
 | ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
 | SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
@@ -36,20 +43,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-f1ecf3e feat(jobradar): make a lead checkable, and give the list a search field
-4c6860b fix(jobradar): test the ceiling per sub-query, not against a growing threshold
-5e49969 docs(jobradar): UX-audit van het dashboard en de zoekinstellingen
-ef4acc0 feat(jobradar): allow exact phrases as search terms
-bc95d61 fix(jobradar): ask Adzuna politely, and try again when it says no
+7e0b18b docs(jobradar): name the NBB product as the portal names it, and note the second route
+366ff1f docs(jobradar): park the two calls the NBB measurement made visible
+49eb47d feat(jobradar): probe the NBB path for real, and correct what was never measured
+0a2219c Merge branch 'main' into feature/prospect-classificatie
+a15b915 feat(ui): check every Figma variable against the token source
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/app/api/sync/route.ts
-  M  apps/jobradar/components/DashboardClient.tsx
-  M  apps/jobradar/components/FilterBar.tsx
-  M  apps/jobradar/components/LeadCard.tsx
-  M  apps/jobradar/lib/sync/upsert.ts
-  M  apps/jobradar/scripts/signal-scenarios.ts
+  M  apps/jobradar/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

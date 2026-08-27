@@ -36,3 +36,19 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
 - [ ] `test`: Toetsenbordvolgorde en focusvolgorde ongemeten — Tab bereikte de pagina niet via
       de automatisering. Vraagt een handmatige doorloop of een andere harness.
       (ux-audit 2026-08-11, limiet)
+
+## Prospect-tak
+
+- [ ] `refactor`: `haalPersoneel` bouwt de accountingData-URL zelf, terwijl elke Reference een
+      `AccountingDataURL` meedraagt (staat in de API-definitie, gemeten 2026-08-26). De
+      meegeleverde URL volgen is robuuster tegen een padwijziging aan NBB-kant. Niet gedaan
+      omdat er nog geen echte respons is om tegen te toetsen — doen samen met de eerste
+      geslaagde `scripts/nbb-probe.ts`-run.
+      (nbb-probe 2026-08-26)
+- [ ] `feature`: NACE-code als voorsortering in de labelwachtrij. 62200 ("computerconsultancy en
+      beheer van computerfaciliteiten") is 8.544 van de 15.725 kandidaten en is per definitie de
+      dienstverlener-kant; 62100, 58210/58290, 63910 en 63100 zijn de product-kant. Als *filter*
+      niet doen — de code is zelfgerapporteerd, dus een producthuis dat 62200 aankruiste zou stil
+      wegvallen. Als *sortering* zet het de waarschijnlijke prospects vooraan, naast de bestaande
+      "met website eerst".
+      (kbo-uitsplitsing 2026-08-26)

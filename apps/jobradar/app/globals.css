@@ -5,33 +5,16 @@
 /* De :root / .dark rollaag komt uit @umanex/tokens/theme.css, geïmporteerd in
    app/layout.tsx vóór dit bestand.
 
-   jobradar is de enige app met een eigen merkkleur: blauw waar umanex rood is.
-   Onderstaand blok is de VOLLEDIGE afwijking en staat bewust ongelaagd, zodat het
-   van de ongelaagde theme.css wint zonder specificiteitstrucs.
+   Hier staat GEEN merkkleur-override meer. jobradar had er een — blauw waar umanex
+   rood is, zes rollen ongelaagd overschreven — en die is op 2026-08-24 bewust
+   verwijderd: jobradar hoort dezelfde umanex-rollaag te dragen als de rest.
 
-   Waarom deze zes en niet alleen --primary: --accent is in de umanex-rollaag
-   merk-getint ({Primary.50} / {Primary.700}), en packages/ui/components/ui/button.tsx
-   zet hover:bg-accent op zowel de outline- als de ghost-variant — zonder override
-   krijgt een blauw gebrande app rode hover-states. --secondary is in jobradar een
-   donkere chip (ScoreBadge) in plaats van een licht vlak. */
-
-:root {
-  --primary: 221 83% 53%;
-  --ring: 221 83% 53%;
-  --secondary: 218 12% 27%;
-  --secondary-foreground: 0 0% 100%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222 47% 11%;
-}
-
-.dark {
-  --primary: 221 83% 60%;
-  --ring: 221 83% 60%;
-  --secondary: 217 19% 27%;
-  --secondary-foreground: 210 40% 98%;
-  --accent: 217 19% 17%;
-  --accent-foreground: 210 40% 98%;
-}
+   Dat raakte twee dingen die het waard zijn te onthouden. `--accent` is in de
+   umanex-rollaag merk-getint, en packages/ui/components/ui/button.tsx zet
+   hover:bg-accent op de outline- én ghost-variant, dus de hover-states volgen nu de
+   umanex-kleur. En `--secondary` was in jobradar een donkere chip (ScoreBadge bij een
+   score onder 31) in plaats van een licht vlak; die badge oogt nu lichter. Dat is
+   gewenst gedrag, geen regressie — één rollaag betekent dat elke app hem volgt. */
 
 @layer base {
   * {

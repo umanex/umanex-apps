@@ -43,7 +43,7 @@ const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3103)
 const BASE = `http://127.0.0.1:${PORT}`;
 
 /** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
-const ROUTES = ['/'];
+const ROUTES = ['/', '/prospects'];
 
 const fails = [];
 const notes = [];
@@ -181,6 +181,130 @@ async function main() {
     else notes.push(`klik op ${href} kwam uit op ${landed} (redirect of anchor)`);
   } else {
     notes.push('geen select en geen interne link op de eerste route — interactie niet uitgereden');
+  }
+
+  // ── Labelscherm: echt gedrag, geen render ──────────────────────────────────
+  //
+  // Een screenshot bewijst dat er iets staat. Dit bewijst dat een toetsaanslag een oordeel
+  // wegschrijft, dat de teller meebeweegt, en dat het een harde herlaadbeurt overleeft — de
+  // drie dingen waarop de acceptatielijst van de briefing staat.
+  console.log('→ Labelscherm aandrijven');
+  {
+    await page.goto(BASE + '/prospects', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+
+    const tellerTekst = async () => (await page.locator('text=/beoordeeld/').first().innerText()).trim();
+    const bedrijfsnaam = async () => (await page.locator('article h2').first().innerText()).trim();
+
+    const voorTeller = await tellerTekst();
+    const voorBedrijf = await bedrijfsnaam();
+
+    // Cijfertoets 1 = "product".
+    await page.keyboard.press('1');
+    await page.waitForFunction(
+      (oud) => {
+        const el = document.querySelector('article h2');
+        return el !== null && el.textContent?.trim() !== oud;
+      },
+      voorBedrijf,
+      { timeout: 5_000 }
+    ).catch(() => {});
+
+    const naBedrijf = await bedrijfsnaam();
+    const naTeller = await tellerTekst();
+
+    if (naBedrijf === voorBedrijf) fail(`toets "1" schoof niet door: bleef op "${voorBedrijf}"`);
+    else ok(`toets "1" labelde en schoof door: "${voorBedrijf}" → "${naBedrijf}"`);
+
+    if (naTeller === voorTeller) fail(`teller bewoog niet: bleef "${voorTeller}"`);
+    else ok(`teller bewoog: "${voorTeller}" → "${naTeller}"`);
+
+    // Harde herlaadbeurt: het oordeel moet uit de database komen, niet uit de sessie.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const naHerlaad = await tellerTekst();
+    if (naHerlaad !== naTeller) fail(`herlaadbeurt verloor het oordeel: "${naTeller}" → "${naHerlaad}"`);
+    else ok(`oordeel overleeft een harde herlaadbeurt: "${naHerlaad}"`);
+
+    // Hervatten landt op het eerste bedrijf uit de wachtrij, niet op een bewaarde index.
+    const naHervat = await bedrijfsnaam();
+    if (naHervat === voorBedrijf) fail(`hervatten landde op het al beoordeelde "${voorBedrijf}"`);
+    else ok(`hervatten landt op een onbeoordeeld bedrijf: "${naHervat}"`);
+  }
+
+  // ── Randen van het labelscherm ─────────────────────────────────────────────
+  //
+  // De acceptatielijst van de briefing noemt vier states en vier edge cases. Wat hier NIET
+  // aangedreven wordt, staat onderaan als expliciet gat — niet als stilzwijgend "waarschijnlijk
+  // in orde".
+  console.log('→ Randen: states en edge cases');
+  {
+    await page.goto(BASE + '/prospects', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+
+    const tellerTekst = async () => (await page.locator('text=/beoordeeld/').first().innerText()).trim();
+
+    // EDGE — verkeerd bedrijf: de URL moet verdwijnen en het bedrijf in de wachtrij blijven.
+    const afkeur = page.getByRole('button', { name: /verkeerd bedrijf/i });
+    if (await afkeur.count()) {
+      const naamVoor = (await page.locator('article h2').first().innerText()).trim();
+      await afkeur.click();
+      await page.waitForSelector('text=Geen website bekend', { timeout: 5_000 }).catch(() => {});
+      const naamNa = (await page.locator('article h2').first().innerText()).trim();
+      const zonderSite = await page.locator('text=Geen website bekend').count();
+      if (zonderSite > 0 && naamNa === naamVoor) ok(`EDGE verkeerd bedrijf: URL weg, "${naamNa}" blijft in de wachtrij`);
+      else fail(`EDGE verkeerd bedrijf: url-afkeuren werkte niet (site weg: ${zonderSite > 0}, zelfde bedrijf: ${naamNa === naamVoor})`);
+    } else {
+      fail('EDGE verkeerd bedrijf: knop niet gevonden');
+    }
+
+    // EDGE — geen website + STATE verrijken: zoekknop moet er staan en een reden opleveren.
+    const zoekknop = page.getByRole('button', { name: /website zoeken/i });
+    if (await zoekknop.count()) {
+      ok('EDGE geen website: "Website zoeken" en "Zelf zoeken" staan er');
+      await zoekknop.click();
+
+      // TWEE aparte dingen, en ze zaten eerst in één check die daardoor de verkeerde grootheid
+      // mat: de spinner-tekst bevat óók het woord "ondernemingsnummer", dus een brede locator
+      // ging groen op de spinner en bewees niets over de reden erna.
+      const spinner = page.locator('text=Website opzoeken en het ondernemingsnummer').first();
+      const spinnerKwam = await spinner.waitFor({ timeout: 8_000 }).then(() => true).catch(() => false);
+      if (spinnerKwam) ok('STATE verrijken: de bezig-toestand rendert');
+      else notes.push('STATE verrijken: spinner niet betrapt (mogelijk te snel klaar)');
+
+      // Zonder BRAVE_API_KEY komt er een leesbare reden terug in plaats van stilte.
+      const melding = page.locator('text=/BRAVE_API_KEY|zoekmachine gaf|bedrijvengidsen|droeg het ondernemingsnummer|zoekopdracht mislukte/i').first();
+      const kwam = await melding.waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+      if (kwam) ok(`EDGE geen website: reden getoond — "${(await melding.innerText()).trim().slice(0, 60)}…"`);
+      else fail('EDGE geen website: geen reden getoond na een mislukte zoekopdracht');
+    } else {
+      fail('EDGE geen website: geen zoekknop gevonden');
+    }
+
+    // Terug-actie: label iets en neem het terug; de teller moet terugvallen.
+    await page.goto(BASE + '/prospects', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const voorLabel = await tellerTekst();
+    await page.keyboard.press('1');
+    await page.waitForFunction((oud) => !document.body.innerText.includes(oud), voorLabel, { timeout: 5_000 }).catch(() => {});
+    const naLabel = await tellerTekst();
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForFunction((oud) => !document.body.innerText.includes(oud), naLabel, { timeout: 5_000 }).catch(() => {});
+    const naTerug = await tellerTekst();
+    if (naTerug === voorLabel) ok(`terug-actie neemt het oordeel terug: "${naLabel}" → "${naTerug}"`);
+    else fail(`terug-actie herstelde de teller niet: "${voorLabel}" → "${naLabel}" → "${naTerug}"`);
+
+    // STATE empty — twijfelstapel zonder inhoud.
+    const twijfelknop = page.getByRole('button', { name: /twijfelstapel/i });
+    if (await twijfelknop.count()) {
+      await twijfelknop.click();
+      const leeg = page.locator('text=/levert geen bedrijven op|Alles beoordeeld/i').first();
+      const kwam = await leeg.waitFor({ timeout: 5_000 }).then(() => true).catch(() => false);
+      if (kwam) ok(`STATE empty: "${(await leeg.innerText()).trim()}"`);
+      else fail('STATE empty: lege twijfelstapel toonde geen lege toestand');
+    } else {
+      fail('STATE empty: twijfelstapel-knop niet gevonden');
+    }
   }
 
   if (SELFTEST) {

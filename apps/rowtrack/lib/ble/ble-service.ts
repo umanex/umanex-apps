@@ -82,6 +82,8 @@ export class RowerBleService {
   private device: Device | null = null;
   private monitorSub: Subscription | null = null;
   private stateSub: Subscription | null = null;
+  /** Zie `hr-service.ts`: `onDisconnected` lekt zonder expliciete `remove()`. */
+  private disconnectSub: Subscription | null = null;
   private scanTimeout: ReturnType<typeof setTimeout> | null = null;
   private fallbackTimeout: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
@@ -393,6 +395,13 @@ export class RowerBleService {
   }
 
   destroy(): void {
+    // Zonder deze regel verdwijnt een teardown uit de log zodra `cleanup()` het
+    // disconnect-abonnement netjes opruimt: de oude, gelekte handlers logden hem
+    // per ongeluk. Eén expliciete regel op de plek van de oorzaak is beter dan N
+    // dubbelzinnige regels op de plek van het gevolg — de teardown van de
+    // BleProvider (ble-context.tsx) was daardoor niet van een toestel-drop te
+    // onderscheiden.
+    log(' destroy() — dienst afgebroken (provider-teardown of unmount)');
     this.intentionalDisconnect = true;
     this.cleanup();
     this.device = null;
@@ -479,7 +488,8 @@ export class RowerBleService {
       this.startMonitoring(connected);
 
       // Listen for unexpected disconnect
-      connected.onDisconnected((err) => {
+      this.disconnectSub?.remove();
+      this.disconnectSub = connected.onDisconnected((err) => {
         log(' disconnected, intentional:', this.intentionalDisconnect, 'error:', err?.message);
         if (this.device !== connected) return; // verouderde callback van een oud toestel
         if (!this.intentionalDisconnect) {
@@ -734,6 +744,8 @@ export class RowerBleService {
     this.monitorSub = null;
     this.stateSub?.remove();
     this.stateSub = null;
+    this.disconnectSub?.remove();
+    this.disconnectSub = null;
     this.isConnecting = false;
   }
 

@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-27_
+_Gegenereerd op 2026-08-28_
 
 ## Project
 - **App:** rowtrack
@@ -59,15 +59,21 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+5b9aa03 refactor(ui): extract the shared focus ring into a constant
+529d255 docs(handoff): bring the HANDOFF headers up to the current format
 a15b915 feat(ui): check every Figma variable against the token source
 3c61b21 feat(ui): export Storybook components to Figma with a sync guard
 0d3b472 Merge origin/main into fix/scan-lock-deterministic-test
-a79c883 fix(rowtrack): make the scan-lock safety-net test deterministic
-d85eb79 Merge remote-tracking branch 'origin/main' into docs/parallel-werk-hoofdtree
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/HANDOFF.md
+   M apps/rowtrack/BACKLOG.md
+   M apps/rowtrack/HANDOFF.md
+   M apps/rowtrack/app/(tabs)/index.tsx
+  M  apps/rowtrack/lib/ble/ble-service.ts
+  M  apps/rowtrack/lib/ble/hr-service.ts
+  ?? apps/rowtrack/lib/authClockSkew.test.ts
+  ?? apps/rowtrack/lib/authClockSkew.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -21,6 +21,7 @@ import { Subtitle } from '@/components/Subtitle';
 import { usePeriodGoal, type PeriodGoalProgress } from '@/lib/hooks/usePeriodGoal';
 import { usePrHistory } from '@/lib/hooks/usePrHistory';
 import { selectWithPrMetrics } from '@/lib/prColumn';
+import { retryOnClockSkew } from '@/lib/authClockSkew';
 import { formatDecimal, formatInt } from '@/lib/formatters';
 import { t } from '@/i18n';
 import {
@@ -115,24 +116,34 @@ export default function HomeScreen() {
     // of een auth-event dat een nieuw user-object oplevert).
     await drainPendingWorkout(user.id);
 
+    // `retryOnClockSkew`: beide queries delen één token, en dat token kan bij het
+    // openen van de app net te vers zijn voor PostgREST — zie `authClockSkew.ts`.
     const [profileRes, workoutsRes] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('id', user.id)
-        .single(),
+      retryOnClockSkew<{ display_name: string | null }>(
+        () =>
+          supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', user.id)
+            .single(),
+        (e) => reportError(e, { where: 'home.fetchProfile', transient: true }),
+      ),
       // Zie history/index.tsx: zonder deze terugval zet een niet-gemigreerde
       // `pr_metrics`-kolom het hele home-scherm op een ErrorState.
-      selectWithPrMetrics<HomeWorkout[]>((prColumn) => {
-        // Zie history/index.tsx: `string`, niet template-literal — anders parseert
-        // postgrest-js de dynamische kolomstaart als typefout.
-        const columns: string = `id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, is_pr${prColumn}`;
-        return supabase
-          .from('workouts')
-          .select(columns)
-          .order('started_at', { ascending: false })
-          .limit(3);
-      }),
+      retryOnClockSkew<HomeWorkout[]>(
+        () =>
+          selectWithPrMetrics<HomeWorkout[]>((prColumn) => {
+            // Zie history/index.tsx: `string`, niet template-literal — anders parseert
+            // postgrest-js de dynamische kolomstaart als typefout.
+            const columns: string = `id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, is_pr${prColumn}`;
+            return supabase
+              .from('workouts')
+              .select(columns)
+              .order('started_at', { ascending: false })
+              .limit(3);
+          }),
+        (e) => reportError(e, { where: 'home.fetchWorkouts', transient: true }),
+      ),
     ]);
 
     if (profileRes.error) reportError(profileRes.error, { where: 'home.fetchProfile' });

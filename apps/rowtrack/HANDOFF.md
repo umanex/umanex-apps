@@ -88,6 +88,14 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
   kruispunt naar 238 W. Ruwe data voor die analyse: de twee gedecodeerde opnames met het `kcal`-veld
   per pakket (de scratchpad van sessie 4632c7f0 is vluchtig — opnieuw opnemen kan via de opnameketen
   die in de referentiepagina staat beschreven).
+- **Derde meting, live op de wire (2026-08-28).** Uit de Metro-log van een HR-debugsessie, dus
+  zonder aparte opname: de Apollo XL stuurt het energieveld gewoon mee in elk type-B-pakket
+  (`68 01 …`, flags `0x0168`, bit 8 gezet). Twee punten, rechtstreeks uit de bytes gelezen:
+  `90 02` = **656 kcal/h bij 103 W** (C2-curve voorspelt 654,5 — Δ 1,5) en `26 03` = **806 kcal/h
+  bij 147 W** (voorspeld 806,0 — Δ 0,03). De per-minuut-byte klopt in beide gevallen met
+  `floor(perHour/60)` (10 resp. 13), en de totaalteller stond op 0 aan het begin van de sessie —
+  wat de eerdere bevinding "cumulatief sinds erg-reset" bevestigt. De C2-curve is daarmee op drie
+  onafhankelijke sessies bevestigd; de vraag is niet meer óf de erg een bruikbaar getal stuurt.
 - **Check:** `grep -n "offset += 5" apps/rowtrack/lib/ble/ftms-parser.ts` — treffer = het
   energieveld wordt nog steeds overgeslagen en de vraag staat nog open; geen treffer = de parser
   leest het en er is een besluit gevallen. Aanvullend `grep -rn "erg_calories" apps/rowtrack` —

@@ -41,6 +41,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-08-28 — Dubbele `destroy()` op één gedeelde BleManager · [fix]
+- **Wat:** `lib/ble/ble-context.tsx:146-148` roept in de effect-cleanup eerst `service.destroy()` en dan `hrService.destroy()` aan. Beide diensten delen één `BleManager` — de constructor van ble-plx geeft de bestaande instance terug (`BleManager.js:78-81`, geverifieerd in de geïnstalleerde 3.5.1-bron), en `BleManager.destroy()` zet `sharedInstance` op null (`:162-164`). De tweede aanroep vernietigt dus een al vernietigde client, en de eerste sloopt de manager onder de HR-dienst vandaan terwijl die nog operaties in de lucht kan hebben.
+- **Waarom niet nu:** gevonden tijdens de HR-diagnose van 2026-08-28; die opdracht was instrumentatie plus het listener-lek. Dit raakt de levenscyclus van beide diensten en verdient een eigen ronde met een toestel ernaast — de faalmodus is vandaag niet waargenomen, alleen uit de bron afgeleid.
+- **Eerste zet:** één eigenaar voor de gedeelde manager aanwijzen (de context, niet de diensten), zodat `destroy()` op een dienst alleen zijn eigen abonnementen opruimt. Toets daarna dat een provider-teardown gevolgd door een remount opnieuw kan verbinden — dat is de tak die vandaag per toeval goed gaat omdat `sharedInstance` genulld wordt.
+- **Status:** open
+
+## 2026-08-28 — Mislukte hartslagpoging is tijdens een rit niet van een dode knop te onderscheiden · [ux]
+- **Wat:** `app/(tabs)/workout.tsx:355-373` geeft `hrError` niet door aan `ActivePhase`. In de idle-fase toont `IdlePhase.tsx:286` de foutzin onder de rij; midden in een training ziet de roeier alleen een BPM-tegel op "—" en een spinner, ongeacht of de band niet gevonden werd, geen data stuurde, of de knop niets deed.
+- **Waarom niet nu:** de opdracht van 2026-08-28 was de meetbaarheid van het HR-pad, niet de weergave. Het is bovendien een ontwerpvraag — een foutzin midden in een inspanning concurreert met de metrics, dus het is geen kwestie van de prop doorgeven en klaar.
+- **Eerste zet:** beslissen wat de active-fase toont bij `hrError`: de rij rood met "Opnieuw", een korte toast, of niets tot de rit voorbij is. Pas daarna de prop doorgeven.
+- **Status:** open
+
 ## 2026-08-17 — `spm_halved`-toggle heroverwegen nu de aanleiding een andere oorzaak blijkt te hebben · [fix]
 - **Wat:** De per-profiel 'SPM halveren'-instelling (`profiles.spm_halved`, `correctSpm`, `useSpmHalved`, migratie, profielscherm, 5 weergavepunten) is gebouwd omdat de slagfrequentie te hoog oogde. De meting van 2026-08-16 wees uit dat de Apollo XL enkelvoudig telt; de doc-comment van `correctSpm` codificeert de aanname nog steeds als feit ("trainers die de slagfrequentie dubbel tellen"). Beslissen: verwijderen, of laten staan met een eerlijke omschrijving voor ergs die het wél doen.
 - **Waarom niet nu:** Gebruikersgerichte beslissing met een datamigratie eraan vast (bestaande profielen met de toggle aan), en de vandaag gefixte noemer-bug verklaarde de lage *gemiddelden* — of de live-tegel óók afwijkt hangt af van de FTMS-parser (`/2`) en de bit 0/bit 1-substitutie, en dat vraagt een meting op het toestel.

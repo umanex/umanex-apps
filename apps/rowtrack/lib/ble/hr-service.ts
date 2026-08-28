@@ -76,6 +76,14 @@ export class HRBleService {
   private manager: BleManager | null = null;
   private device: Device | null = null;
   private monitorSub: Subscription | null = null;
+  /**
+   * `onDisconnected` geeft een abonnement terug dat je zelf moet opruimen — het hangt
+   * aan de gedeelde event-emitter van ble-plx en filtert alleen op toestel-id, niet op
+   * wie het registreerde. Gooi je de handle weg, dan lekt er één per connect-poging en
+   * vuurt élke oude handler mee bij de volgende disconnect. Gemeten 2026-08-28: één rit
+   * met zeven pogingen gaf zeven identieke "disconnected"-regels bij de laatste.
+   */
+  private disconnectSub: Subscription | null = null;
   private scanTimeout: ReturnType<typeof setTimeout> | null = null;
   /** Wat we tot nu toe over deze verbinding kunnen hárd maken — zie `hrLink.ts`. */
   private link: HrLinkState = initialHrLink;
@@ -229,7 +237,18 @@ export class HRBleService {
             this.scanTimeout = setTimeout(decide, SCAN_EXTEND_MS);
           }, SCAN_COLLECT_MS);
 
-          log('scan started (filter: service 0x180D, collecting for 5s)');
+          // Afgeleid van de constanten, niet met de hand geschreven: dit bericht zei
+          // "collecting for 5s" terwijl het venster bij een lege eerste ronde
+          // 5 + 10 = 15 s is. Een instrument dat zijn eigen meetbereik 3× te klein
+          // rapporteert stuurt elke diagnose die erop leunt de verkeerde kant op
+          // (gemeten 2026-08-28: precies dat gebeurde).
+          log(
+            'scan started (filter: service 0x180D, venster',
+            SCAN_COLLECT_MS,
+            '+',
+            SCAN_EXTEND_MS,
+            'ms)',
+          );
           manager
             .startDeviceScan([HR_SERVICE_UUID], null, (err, dev) => {
               // De arbiter serialiseert de scans, dus dit hoort niet meer te kunnen — maar
@@ -435,6 +454,12 @@ export class HRBleService {
           // fysiologische grens en die hoort hier. Wat een bruikbare meting betékent
           // voor de status, bepaalt zij wél.
           const usable = bpm >= 30 && bpm <= 220;
+          // De enige regel die "de band zwijgt" onderscheidt van "de band stuurt 0".
+          // Het succespad logde niets, en een onbruikbare meting verzet de deadline
+          // bewust niet (`hrLink.ts`), dus beide eindigden op exact dezelfde
+          // "geen hartslagdata binnen 12000 ms". Gemeten 2026-08-28 op een
+          // Forerunner 55: uit die log was niet af te lezen welke van de twee het was.
+          log('meting:', char.value, '→', bpm, 'bpm', usable ? '(bruikbaar)' : '(genegeerd)');
           this.dispatch({ type: 'measurement', usable }, deviceName);
           if (usable) {
             // Pas hier is de link bewezen, dus pas hier is het herstelbudget weer
@@ -447,7 +472,8 @@ export class HRBleService {
         'hr-measurement',
       );
 
-      device.onDisconnected(() => {
+      this.disconnectSub?.remove();
+      this.disconnectSub = device.onDisconnected(() => {
         log('disconnected, intentional:', this.intentionalDisconnect);
         if (this.device !== device) return;
         if (!this.intentionalDisconnect) {
@@ -522,6 +548,8 @@ export class HRBleService {
   }
 
   destroy(): void {
+    // Zie `ble-service.ts`: dezelfde reden, dezelfde plek.
+    log('destroy() — dienst afgebroken (provider-teardown of unmount)');
     this.stop();
     this.appStateSub?.remove();
     this.appStateSub = null;
@@ -629,6 +657,8 @@ export class HRBleService {
     this.clearDataDeadline();
     this.monitorSub?.remove();
     this.monitorSub = null;
+    this.disconnectSub?.remove();
+    this.disconnectSub = null;
   }
 
   private clearDataDeadline(): void {

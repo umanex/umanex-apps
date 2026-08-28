@@ -59,19 +59,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+7d0f1df fix(rowtrack): retry a clock-skewed token once instead of failing the home fetch
 928f7e7 fix(rowtrack): make the heart-rate path measurable and stop the disconnect-listener leak
 5b9aa03 refactor(ui): extract the shared focus ring into a constant
 529d255 docs(handoff): bring the HANDOFF headers up to the current format
 a15b915 feat(ui): check every Figma variable against the token source
-3c61b21 feat(ui): export Storybook components to Figma with a sync guard
 ```
 
 ## Uncommitted wijzigingen
-   M apps/rowtrack/BACKLOG.md
-   M apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  A  apps/rowtrack/lib/authClockSkew.test.ts
-  A  apps/rowtrack/lib/authClockSkew.ts
+  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

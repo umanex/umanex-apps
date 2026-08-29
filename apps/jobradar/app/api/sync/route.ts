@@ -3,7 +3,6 @@ import { eq } from 'drizzle-orm'
 import { getDb } from '@/lib/db'
 import * as schema from '@/lib/db/schema'
 import { adzunaSource } from '@/lib/sources/adzuna'
-import { kboSource } from '@/lib/sources/kbo'
 import { deriveLeadsFromJobs } from '@/lib/signals'
 import { upsertJob, upsertLead, verouderdeLeadsOpruimen } from '@/lib/sync/upsert'
 import { leesZoekopdracht } from '@/lib/sync/settings-store'
@@ -11,7 +10,6 @@ import { ALL_REGIONS, regionForPostcode, type RegionCode } from '@/lib/regions'
 import type { RawJob } from '@/lib/sources/types'
 
 const JOB_SOURCES = [adzunaSource] as const
-const LEAD_SOURCES = [kboSource] as const
 
 type SourceStatus = {
   ok: boolean
@@ -82,35 +80,6 @@ export async function POST() {
       stats.sourceStatuses[source.name] = {
         ok: true,
         count: normalized.length,
-        ...(warnings.length ? { warnings } : {}),
-      }
-    }
-
-    // ── Leads uit externe bronnen ────────────────────────────────────────────
-    const leadSourceResults = await Promise.allSettled(
-      LEAD_SOURCES.map((s) => s.fetch({ regions: ALL_REGIONS, zoek }))
-    )
-
-    for (let i = 0; i < leadSourceResults.length; i++) {
-      const source = LEAD_SOURCES[i]
-      const result = leadSourceResults[i]
-      if (!source || !result) continue
-
-      if (result.status === 'rejected') {
-        stats.sourceStatuses[source.name] = { ok: false, error: String(result.reason) }
-        continue
-      }
-
-      const { items, warnings } = result.value
-      for (const lead of items) {
-        const { added } = await upsertLead(db, lead, { afgeleid: false })
-        if (added) stats.leadsAdded++
-        else stats.leadsUpdated++
-      }
-
-      stats.sourceStatuses[source.name] = {
-        ok: true,
-        count: items.length,
         ...(warnings.length ? { warnings } : {}),
       }
     }

@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-08-27_
+_Gegenereerd op 2026-08-29_
 
 ## Project
 - **App:** jobradar
@@ -36,24 +36,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+eaf9c0f fix(jobradar): one focus form, an h2 per tab panel, a legible separator
 5b9aa03 refactor(ui): extract the shared focus ring into a constant
 a15b915 feat(ui): check every Figma variable against the token source
 3c61b21 feat(ui): export Storybook components to Figma with a sync guard
 e270ab1 feat(ui): add Storybook with token-driven docs
-49072dc fix(jobradar): stop the card and its own button from counting different things
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/BACKLOG.md
-  M  apps/jobradar/CLAUDE.md
-  M  apps/jobradar/app/error.tsx
-  M  apps/jobradar/app/instellingen/page.tsx
-  M  apps/jobradar/app/not-found.tsx
-  M  apps/jobradar/components/CoverageBar.tsx
-  M  apps/jobradar/components/DashboardClient.tsx
-  M  apps/jobradar/components/FilterBar.tsx
-  M  apps/jobradar/components/JobCard.tsx
-  M  apps/jobradar/components/LeadCard.tsx
+  M  apps/jobradar/.env.example
 
 ## Bestanden met TODO/FIXME
   (geen)

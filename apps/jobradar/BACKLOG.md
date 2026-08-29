@@ -15,11 +15,13 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       2008 weggooit kan een oudere referentie niet meer terugvertalen. Beslissing nodig, geen
       opruimactie. Exacte winst vraagt een `VACUUM` om te meten.
       (gemeten bij de eerste bootstrap, 2026-08-29)
-- [ ] `feature`: De KBO-bron hangt nog niet aan `LEAD_SOURCES`. `lib/sources/kbo.ts` levert nog
-      steeds nul leads mét zijn waarschuwing. Wacht bewust op de scoringsas — zie de TC-EBC die
-      daarvoor geschreven wordt; zonder die as landen er 13.993 ondernemingen zonder score naast
-      de 27 die er wél een hebben.
-      (afgesproken bij de ingest, 2026-08-29)
+- [ ] `refactor`: `lib/sources/kbo.ts` is dode code geworden. De KBO-data komt sinds het
+      prospects-tabblad binnen via `/api/prospects` en `lib/kbo/universum.ts`, niet via
+      `LEAD_SOURCES` — en dat blijft zo, want een prospect is geen lead. De stub staat nog in
+      `LEAD_SOURCES` en levert bij elke sync nul rijen mét een waarschuwing die nergens meer
+      over gaat. Weghalen, of hem een echte rol geven (bijvoorbeeld: een prospect promoveren
+      zodra er een vacature van dat ondernemingsnummer binnenkomt).
+      (gemeten bij de bouw van het tabblad, 2026-08-29)
 
 ## Verworpen
 

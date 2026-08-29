@@ -17,6 +17,13 @@
 import { existsSync, readdirSync, createReadStream } from 'node:fs'
 import { join } from 'node:path'
 import { csvRijen, csvObjecten, kboDatum, kboNummer } from '../lib/kbo/csv'
+import {
+  bouwProspectSql,
+  leeftijdInJaren,
+  NACE_LABEL,
+  PROSPECT_NACE,
+  PAGINA_GROOTTE,
+} from '../lib/kbo/universum'
 
 let geslaagd = 0
 let gezakt = 0
@@ -171,6 +178,76 @@ const gelijk = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(
       check(`${naam}: minstens één datarij gelezen`, rijenGeteld > 0 || naam.includes('_delete'), `${rijenGeteld}`)
     }
   }
+}
+
+// ── 6. De prospect-selectie ──────────────────────────────────────────────────
+// De scherpste check is de eerste: het aantal `?` in de SQL moet gelijk zijn aan het aantal
+// parameters. Parameters zijn positioneel, en de SELECT-lijst staat vóór de WHERE — een
+// vergeten of dubbel meegegeven waarde schuift stil álles op, en de query blijft geldig.
+{
+  const basis = { regions: ['WVL', 'OVL', 'BRU'] as const, alleenWerkgevers: true, pagina: 1 }
+  const varianten = [
+    { naam: 'volledig', f: { ...basis, regions: [...basis.regions] } },
+    { naam: 'zonder werkgeverszeef', f: { ...basis, regions: [...basis.regions], alleenWerkgevers: false } },
+    { naam: 'met zoekterm', f: { ...basis, regions: [...basis.regions], zoek: 'studio' } },
+    { naam: 'één regio', f: { ...basis, regions: ['WVL' as const] } },
+    { naam: 'geen regio', f: { ...basis, regions: [] } },
+    { naam: 'pagina 5', f: { ...basis, regions: [...basis.regions], pagina: 5 } },
+  ]
+
+  for (const { naam, f } of varianten) {
+    for (const tellen of [false, true]) {
+      const q = bouwProspectSql(f, { tellen })
+      const vraagtekens = (q.sql.match(/\?/g) ?? []).length
+      check(
+        `${naam}${tellen ? ' (telling)' : ''}: ${vraagtekens} placeholders, ${q.params.length} parameters`,
+        vraagtekens === q.params.length,
+        `${vraagtekens} vs ${q.params.length}`
+      )
+    }
+  }
+
+  // Een lege regiokeuze mag NIET "alles" betekenen. Dat is de klassieke omkering: een filter
+  // dat bij nul selecties de hele set teruggeeft.
+  const leeg = bouwProspectSql({ ...basis, regions: [] })
+  check('geen regio gekozen levert een onmogelijke voorwaarde', / 0\b/.test(leeg.sql), leeg.sql.slice(0, 120))
+
+  const telling = bouwProspectSql({ ...basis, regions: ['WVL'] }, { tellen: true })
+  check('telling heeft geen LIMIT', !/LIMIT/.test(telling.sql))
+  check('telling telt rijen', /COUNT\(\*\)/.test(telling.sql))
+
+  const lijst = bouwProspectSql({ ...basis, regions: ['WVL'] })
+  check('lijst heeft LIMIT en OFFSET', /LIMIT \? OFFSET \?/.test(lijst.sql))
+  check(
+    `paginagrootte ${PAGINA_GROOTTE} staat in de parameters`,
+    lijst.params.includes(PAGINA_GROOTTE)
+  )
+  const pagina3 = bouwProspectSql({ ...basis, regions: ['WVL'], pagina: 3 })
+  check('pagina 3 slaat 2 pagina\'s over', pagina3.params.includes(2 * PAGINA_GROOTTE))
+  const pagina0 = bouwProspectSql({ ...basis, regions: ['WVL'], pagina: 0 })
+  check('pagina 0 wordt pagina 1, geen negatieve offset', pagina0.params.includes(0))
+
+  const metZoek = bouwProspectSql({ ...basis, regions: ['WVL'], zoek: '  studio  ' })
+  check('zoekterm wordt getrimd en met jokers omsloten', metZoek.params.includes('%studio%'))
+  const zonderZoek = bouwProspectSql({ ...basis, regions: ['WVL'], zoek: '   ' })
+  check('een zoekterm van alleen spaties telt niet mee', !zonderZoek.sql.includes('LIKE'))
+
+  const metRsz = bouwProspectSql({ ...basis, regions: ['WVL'], alleenWerkgevers: true })
+  const zonderRsz = bouwProspectSql({ ...basis, regions: ['WVL'], alleenWerkgevers: false })
+  check('de werkgeverszeef voegt een voorwaarde toe', metRsz.params.length === zonderRsz.params.length + 1)
+
+  for (const code of PROSPECT_NACE) {
+    check(`NACE ${code} heeft een label voor de kaart`, typeof NACE_LABEL[code] === 'string')
+  }
+  check(
+    'er staan geen labels voor codes buiten de selectie',
+    Object.keys(NACE_LABEL).every((c) => (PROSPECT_NACE as readonly string[]).includes(c))
+  )
+
+  check('leeftijd: 2020-01-01 op 2026-01-01 is 6 jaar', leeftijdInJaren('2020-01-01', '2026-01-01') === 6)
+  check('leeftijd: vandaag opgericht is 0 jaar', leeftijdInJaren('2026-08-29', '2026-08-29') === 0)
+  check('leeftijd zonder datum is null', leeftijdInJaren(null, '2026-08-29') === null)
+  check('leeftijd met onzin is null', leeftijdInJaren('ooit', '2026-08-29') === null)
 }
 
 // ── Zelftest ─────────────────────────────────────────────────────────────────

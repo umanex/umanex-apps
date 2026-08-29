@@ -54,6 +54,15 @@ export const SCHEMA_DDL = `
   CREATE UNIQUE INDEX IF NOT EXISTS companies_dedupe_hash_idx ON companies (dedupe_hash);
   CREATE INDEX IF NOT EXISTS companies_source_external_idx ON companies (source, external_id);
 
+  -- Statussen van KBO-prospects. Bewust hier en niet in kbo.db: die spiegel is
+  -- wegwerpbaar en wordt bij elke --full overschreven, dus alles wat jij erover beslist
+  -- zou dan mee verdwijnen. De sleutel is het ondernemingsnummer zonder punten.
+  CREATE TABLE IF NOT EXISTS prospect_status (
+    enterprise_number TEXT PRIMARY KEY,
+    status TEXT NOT NULL DEFAULT 'new',
+    updated_at TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,

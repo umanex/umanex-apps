@@ -127,7 +127,13 @@ async function kopstructuur(page) {
  */
 async function toetsenbord(page, maxStops = 80) {
   await page.evaluate(() => {
+    // `blur()` alleen is niet genoeg: het vertrekpunt voor sequentiële focus blijft dan op
+    // het laatst gefocuste element staan, en de walk begint dáár in plaats van bovenaan het
+    // document. Na een klik op een tabblad zag de pass daardoor alleen wat ná die knop komt.
+    // Focus expliciet op body verzet het vertrekpunt wél.
     document.activeElement instanceof HTMLElement && document.activeElement.blur();
+    document.body.setAttribute('tabindex', '-1');
+    document.body.focus();
     for (const el of document.querySelectorAll('[data-tabstop]')) el.removeAttribute('data-tabstop');
   });
 
@@ -293,6 +299,53 @@ async function main() {
     else notes.push(`klik op ${href} kwam uit op ${landed} (redirect of anchor)`);
   } else {
     notes.push('geen select en geen interne link op de eerste route — interactie niet uitgereden');
+  }
+
+  // ── Prospects-tabblad ──────────────────────────────────────────────────────
+  // Dit tabblad haalt zijn eigen pagina op en rendert dus pas na een klik. Zonder deze stap
+  // meten de kopstructuur- en toetsenbord-passes hierboven een paneel dat nooit gemount is.
+  // Een tab-trigger aanklikken is veilig: hij navigeert niet en raakt geen externe bron.
+  console.log('→ Prospects-tabblad');
+  {
+    const trigger = page.locator('[role="tab"]', { hasText: 'Prospects' }).first();
+    if (!(await trigger.count())) {
+      notes.push('geen Prospects-tabblad gevonden — overgeslagen');
+    } else {
+      const antwoord = page.waitForResponse((r) => r.url().includes('/api/prospects'), { timeout: 20_000 })
+        .catch(() => null);
+      await trigger.click();
+      const res = await antwoord;
+      if (!res) {
+        fail('prospects: geen antwoord van /api/prospects binnen 20s');
+      } else if (res.status() >= 400) {
+        fail(`prospects: /api/prospects → HTTP ${res.status()}`);
+      } else {
+        const body = await res.json().catch(() => null);
+        ok(`prospects: HTTP ${res.status()}, ${body?.totaal ?? '?'} in totaal, spiegel ${body?.staat?.soort ?? '?'}`);
+        await page.waitForTimeout(600);
+
+        // De harde grens uit de briefing: hoogstens één pagina in de DOM.
+        const kaarten = await page.locator('[role="tabpanel"]:visible h3').count();
+        if (body?.staat?.soort === 'ontbreekt') {
+          notes.push('prospects: geen KBO-spiegel op deze machine — kaartentelling niet zinvol');
+          const melding = await page.locator('[role="tabpanel"]:visible', { hasText: 'kbo:sync' }).count();
+          if (melding) ok('prospects: lege staat legt uit wat er moet gebeuren');
+          else fail('prospects: geen spiegel én geen uitleg — dat is een stille nul');
+        } else if (kaarten > 60) {
+          fail(`prospects: ${kaarten} kaarten in de DOM, hoogstens 60 verwacht`);
+        } else {
+          ok(`prospects: ${kaarten} kaarten in de DOM (grens 60)`);
+        }
+
+        const koppen = await kopstructuur(page);
+        if (koppen.problemen.length) for (const p of koppen.problemen) fail(`prospects kopstructuur: ${p}`);
+        else ok(`prospects kopstructuur: ${koppen.aantal} koppen, niveaus ${koppen.niveaus.map((n) => 'h' + n).join(' → ')}`);
+
+        const tb = await toetsenbord(page);
+        if (tb.problemen.length) for (const p of tb.problemen) fail(`prospects toetsenbord: ${p}`);
+        else ok(`prospects toetsenbord: ${tb.stops} stops, elk met zichtbare focus`);
+      }
+    }
   }
 
   if (SELFTEST) {

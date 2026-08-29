@@ -37,24 +37,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4936599 feat(jobradar): link leads to prospects on the enterprise number
 c2b353c feat(jobradar): add a Prospects tab fed by the KBO mirror
 3b118d4 docs(jobradar): log the KBO mirror's disk footprint and the open wiring
 09c733a feat(jobradar): mirror the KBO open data drop into a local SQLite
 470043c chore(jobradar): document the KBO SFTP variables, drop the key that did nothing
-eaf9c0f fix(jobradar): one focus form, an h2 per tab panel, a legible separator
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/jobradar/.env.example
+  M  apps/jobradar/BACKLOG.md
   M  apps/jobradar/CLAUDE.md
-  M  apps/jobradar/app/page.tsx
-  A  apps/jobradar/briefings/2026-08-29-feature-kbo-koppeling.tcebc.md
+  M  apps/jobradar/app/api/sync/route.ts
+  M  apps/jobradar/briefings/2026-08-29-feature-kbo-prospects.tcebc.md
   M  apps/jobradar/components/DashboardClient.tsx
-  M  apps/jobradar/components/LeadCard.tsx
-  M  apps/jobradar/components/ProspectCard.tsx
-  A  apps/jobradar/lib/kbo/koppeling.ts
   M  apps/jobradar/lib/kbo/spiegel.ts
-  M  apps/jobradar/scripts/kbo-scenarios.ts
-  M  apps/jobradar/scripts/kbo-sync.mjs
+  M  apps/jobradar/lib/kbo/universum.ts
+  D  apps/jobradar/lib/sources/fixtures/kbo-companies.ts
+  D  apps/jobradar/lib/sources/kbo.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -123,3 +123,8 @@ RSZ-zeef aan, waar het tabblad op opent: **2.903**.
 - 2026-08-29: gebouwd en gevalideerd. `StatusDropdown` kreeg onderweg een `endpoint`-prop in
   plaats van `itemId` + `type`: de padopbouw zat in het component en brak bij de derde soort,
   want een prospect heeft geen numerieke id maar een ondernemingsnummer.
+- 2026-08-29 (later): `lib/sources/kbo.ts` is verwijderd. De ELEMENTS-regel hierboven noemt hem
+  nog als lezer van de spiegel; dat is hij nooit geworden — `lib/kbo/spiegel.ts` doet dat, en
+  de stub bleef als dode code achter tot deze opruiming. De regel blijft staan als vastlegging
+  van wat er gepland was, niet van wat er staat.
+

@@ -16,6 +16,7 @@ import { Button } from '@umanex/ui/components/ui/button'
 import { Checkbox } from '@umanex/ui/components/ui/checkbox'
 import { Label } from '@umanex/ui/components/ui/label'
 import type { SpiegelStaat, KboVermoeden } from '@/lib/kbo/spiegel'
+import { VEROUDERD_NA_DAGEN } from '@/lib/kbo/universum'
 import type { Job, Company, ItemStatus } from '@/lib/db/schema'
 import { normaliseerBedrijf } from '@/lib/matching'
 import type { RegionCode } from '@/lib/regions'
@@ -317,7 +318,7 @@ export function DashboardClient({
                 <code className="rounded bg-background px-1 py-0.5">.data/kbo.db</code>.
               </p>
             )}
-            {spiegel?.soort === 'ok' && spiegel.ouderdomDagen !== null && spiegel.ouderdomDagen > 7 && (
+            {spiegel?.soort === 'ok' && spiegel.ouderdomDagen !== null && spiegel.ouderdomDagen > VEROUDERD_NA_DAGEN && (
               <p className="mt-3 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
                 De spiegel is van {spiegel.snapshot} — {spiegel.ouderdomDagen} dagen oud. Draai{' '}
                 <code className="rounded bg-background px-1 py-0.5">pnpm --filter jobradar kbo:sync</code>{' '}

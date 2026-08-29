@@ -56,6 +56,16 @@ export const NEDERLANDS = '2'
 
 export const PAGINA_GROOTTE = 60
 
+/**
+ * Vanaf hier noemen we de spiegel verouderd; de bron levert elke dag een nieuwe extract.
+ *
+ * Staat hier en niet in `spiegel.ts`: dat bestand begint met `import 'server-only'`, dus een
+ * client component kan er niets uit halen. De drempel stond daardoor als kale 7 in de UI
+ * naast een constante die niemand las — twee plekken die uit elkaar kunnen lopen zonder dat
+ * iets protesteert.
+ */
+export const VEROUDERD_NA_DAGEN = 7
+
 export type ProspectFilter = {
   regions: RegionCode[]
   zoek?: string

@@ -19,9 +19,6 @@ import type { RegionCode } from '../regions'
 
 const PAD = () => process.env.KBO_DB_PATH ?? join(process.cwd(), '.data', 'kbo.db')
 
-/** Vanaf hier noemen we de spiegel verouderd. De bron levert elke dag een nieuwe extract. */
-export const VEROUDERD_NA_DAGEN = 7
-
 export type SpiegelStaat =
   | { soort: 'ontbreekt'; pad: string }
   | { soort: 'ok'; snapshot: string | null; extract: string | null; ouderdomDagen: number | null }
@@ -138,10 +135,4 @@ export function koppelBedrijven(
   }
 
   return uit
-}
-
-/** Alleen de staat, zonder query — voor een scherm dat wil melden dat de spiegel ontbreekt. */
-export function leesStaat(vandaag: string): SpiegelStaat {
-  const db = open()
-  return db ? staatVan(db, vandaag) : { soort: 'ontbreekt', pad: PAD() }
 }

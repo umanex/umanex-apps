@@ -15,13 +15,14 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       2008 weggooit kan een oudere referentie niet meer terugvertalen. Beslissing nodig, geen
       opruimactie. Exacte winst vraagt een `VACUUM` om te meten.
       (gemeten bij de eerste bootstrap, 2026-08-29)
-- [ ] `refactor`: `lib/sources/kbo.ts` is dode code geworden. De KBO-data komt sinds het
-      prospects-tabblad binnen via `/api/prospects` en `lib/kbo/universum.ts`, niet via
-      `LEAD_SOURCES` — en dat blijft zo, want een prospect is geen lead. De stub staat nog in
-      `LEAD_SOURCES` en levert bij elke sync nul rijen mét een waarschuwing die nergens meer
-      over gaat. Weghalen, of hem een echte rol geven (bijvoorbeeld: een prospect promoveren
-      zodra er een vacature van dat ondernemingsnummer binnenkomt).
-      (gemeten bij de bouw van het tabblad, 2026-08-29)
+- [ ] `refactor`: De **bron-richting** van `upsertLead` heeft geen productie-aanroeper meer.
+      Met de externe leadbron weg passeert elke aanroep `{ afgeleid: true }`; de andere tak
+      (`mergeBronSignalen` in `lib/signals.ts`) is daarmee onbereikbaar in productie. Niet
+      meeverwijderd omdat `scripts/upsert-scenarios.ts` die richting als primitief gebruikt om
+      leads met exacte signalen klaar te zetten — negen aanroepen, ook in scenario's die over
+      dedupe en opruimen gaan. Weghalen betekent die suite herschrijven, en dat is een eigen
+      taak met eigen risico, geen bijproduct van een opruiming.
+      (gemeten bij het verwijderen van de KBO-leadbron, 2026-08-29)
 
 ## Verworpen
 
@@ -47,6 +48,10 @@ afweging van nul.
   (ux-audit 2026-08-11, limiet)
 
 ## Gebouwd
+
+- `refactor`: `lib/sources/kbo.ts` en zijn fixtures waren dode code sinds het
+  prospects-tabblad. **Verwijderd 2026-08-29** samen met `LEAD_SOURCES`, de `LeadSource`-
+  interface en de externe-leadlus in de sync-route.
 
 De vijf UX-items en de twee verificatie-items uit de ux-audit van 2026-08-11 zijn op
 2026-08-27 afgehandeld: drie gebouwd, drie verworpen, één gebouwd als harness-uitbreiding.

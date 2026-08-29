@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "flow": "node scripts/flow-harness.mjs",
-    "scenarios": "node scripts/scenarios.mjs"
+    "scenarios": "node scripts/scenarios.mjs",
+    "kbo:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/kbo-sync.mjs"
   },
   "dependencies": {
     "@umanex/tokens": "workspace:*",
@@ -37,6 +38,7 @@
     "eslint-config-next": "^14",
     "playwright": "^1.62.1",
     "postcss": "^8",
+    "ssh2-sftp-client": "^12.1.1",
     "tailwindcss": "^3",
     "typescript": "^5"
   }

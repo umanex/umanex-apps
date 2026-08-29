@@ -36,15 +36,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+470043c chore(jobradar): document the KBO SFTP variables, drop the key that did nothing
 eaf9c0f fix(jobradar): one focus form, an h2 per tab panel, a legible separator
 5b9aa03 refactor(ui): extract the shared focus ring into a constant
 a15b915 feat(ui): check every Figma variable against the token source
 3c61b21 feat(ui): export Storybook components to Figma with a sync guard
-e270ab1 feat(ui): add Storybook with token-driven docs
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/.env.example
+  M  apps/jobradar/CLAUDE.md
+  A  apps/jobradar/lib/kbo/csv.ts
+  M  apps/jobradar/package.json
+  A  apps/jobradar/scripts/kbo-scenarios.ts
+  A  apps/jobradar/scripts/kbo-sync.mjs
+  M  apps/jobradar/scripts/scenarios.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -7,9 +7,19 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
 
 ## Open
 
-_Leeg._ De vijf UX-items en de twee verificatie-items uit de ux-audit van 2026-08-11 zijn op
-2026-08-27 afgehandeld: drie gebouwd, drie verworpen, één gebouwd als harness-uitbreiding.
-Zie `briefings/…` aan de root: `2026-08-27-feature-jobradar-a11y-afronding.tcebc.md`.
+- [ ] `infra`: De KBO-spiegel is **3,6 GB** (`.data/kbo.db`, extract 466) en de schijf stond
+      bij het aanmaken op 99% vol (15 GiB vrij). `activity` is met 34.498.093 rijen veruit de
+      grootste tabel, en daarvan zijn er 17.384.045 van NACE-versie 2003 (2.233.543) en 2008
+      (15.150.502) — versies die de universum-query niet gebruikt. Snoeien halveert die tabel
+      ruwweg. **Geen automatische winst:** de 2008→2025-hercodering is niet één-op-één, dus wie
+      2008 weggooit kan een oudere referentie niet meer terugvertalen. Beslissing nodig, geen
+      opruimactie. Exacte winst vraagt een `VACUUM` om te meten.
+      (gemeten bij de eerste bootstrap, 2026-08-29)
+- [ ] `feature`: De KBO-bron hangt nog niet aan `LEAD_SOURCES`. `lib/sources/kbo.ts` levert nog
+      steeds nul leads mét zijn waarschuwing. Wacht bewust op de scoringsas — zie de TC-EBC die
+      daarvoor geschreven wordt; zonder die as landen er 13.993 ondernemingen zonder score naast
+      de 27 die er wél een hebben.
+      (afgesproken bij de ingest, 2026-08-29)
 
 ## Verworpen
 
@@ -35,6 +45,10 @@ afweging van nul.
   (ux-audit 2026-08-11, limiet)
 
 ## Gebouwd
+
+De vijf UX-items en de twee verificatie-items uit de ux-audit van 2026-08-11 zijn op
+2026-08-27 afgehandeld: drie gebouwd, drie verworpen, één gebouwd als harness-uitbreiding.
+Briefing: `briefings/2026-08-27-feature-jobradar-a11y-afronding.tcebc.md` aan de root.
 
 - `ux`: Contrast van de `|`-scheiding in `CoverageBar.tsx` — `text-border` mat 1.24:1.
   **Gebouwd 2026-08-27:** `text-muted-foreground`, gemeten 4.97:1 in light en 7.32:1 in dark op

@@ -34,6 +34,7 @@ import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:f
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { csvObjecten, kboDatum, kboNummer } from '../lib/kbo/csv'
+import { bouwNaamIndex } from '../lib/kbo/koppeling'
 import { REGIONS } from '../lib/regions'
 
 const HIER = dirname(fileURLToPath(import.meta.url))
@@ -117,6 +118,15 @@ const INDEXEN = [
   'CREATE INDEX IF NOT EXISTS idx_enterprise_status ON enterprise (Status)',
   'CREATE INDEX IF NOT EXISTS idx_establishment_ent ON establishment (EnterpriseNumber)',
 ]
+
+/** Bestaat de naamindex nog niet, of staat hij leeg? Beide betekenen: opbouwen. */
+function naamIndexLeeg(db) {
+  try {
+    return db.prepare('SELECT COUNT(*) AS n FROM naam_index').get().n === 0
+  } catch {
+    return true // tabel bestaat niet
+  }
+}
 
 // ── Database ────────────────────────────────────────────────────────────────
 function openDb() {
@@ -340,6 +350,14 @@ async function main() {
       const eerste = nodig[0]
       if (!nodig.length) {
         ok(`al bij: extract ${lokaalNummer} (snapshot ${lokaalSnapshot})`)
+        // Eén uitzondering op "niets te doen": een spiegel die van vóór de naamindex dateert
+        // heeft hem niet, en dan koppelt de app stil niets. Een afwezige index is werk, ook
+        // als de data zelf bij is.
+        if (naamIndexLeeg(db)) {
+          proces('  ▸ naamindex ontbreekt nog — alsnog opbouwen')
+          const n = bouwNaamIndex(db)
+          ok(`naamindex: ${n.toLocaleString('nl-BE')} benamingen van actieve ondernemingen`)
+        }
         return 0
       }
       // Gat-controle: de eerste update moet exact op onze staat aansluiten.
@@ -427,8 +445,17 @@ async function main() {
 
     proces('  ▸ indexen')
     for (const sql of INDEXEN) db.exec(sql)
-    db.exec('ANALYZE')
     ok('indexen bij')
+
+    // De naamindex maakt de koppeling van bedrijfsnaam naar ondernemingsnummer mogelijk.
+    // Hij wordt élke run opnieuw opgebouwd, ook na een kleine update: bijhouden welke
+    // benamingen veranderd zijn kost meer dan de tien seconden die het herbouwen duurt, en
+    // een half bijgewerkte index koppelt stil naar een oude naam.
+    proces('  ▸ naamindex')
+    const naamRijen = bouwNaamIndex(db)
+    ok(`naamindex: ${naamRijen.toLocaleString('nl-BE')} benamingen van actieve ondernemingen`)
+
+    db.exec('ANALYZE')
 
     if (OPRUIMEN) {
       let weg = 0

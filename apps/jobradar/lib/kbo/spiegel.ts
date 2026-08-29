@@ -3,7 +3,9 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import Database from 'better-sqlite3'
 import { kboDatum } from './csv'
-import { bouwProspectSql, PAGINA_GROOTTE, type ProspectFilter, type ProspectRij } from './universum'
+import { bouwProspectSql, NACE_LABEL, PAGINA_GROOTTE, type ProspectFilter, type ProspectRij } from './universum'
+import { zoekOnderneming } from './koppeling'
+import type { RegionCode } from '../regions'
 
 /**
  * Leestoegang tot de KBO-spiegel.
@@ -75,6 +77,67 @@ export function haalProspects(filter: ProspectFilter, vandaag: string): Prospect
     pagina: Math.max(1, Math.trunc(filter.pagina || 1)),
     paginas: Math.max(1, Math.ceil(totaal / PAGINA_GROOTTE)),
   }
+}
+
+export type KboVermoeden = {
+  nummer: string
+  kboNaam: string | null
+  gemeente: string | null
+  labels: string[]
+  viaRegio: boolean
+}
+
+/**
+ * Zoekt bij elk bedrijf het ondernemingsnummer, plus genoeg context om de gok na te kijken.
+ *
+ * Het is nadrukkelijk een vermóéden. Gemeten over de 27 echte leads: 12 gekoppeld, 0
+ * dubbelzinnig, 15 niet gevonden — en één van die twaalf ("Smile Group") wees naar een
+ * tandartspraktijk. De naam was uniek in KBO; uniek is niet juist. Daarom geeft deze functie
+ * niet alleen het nummer terug maar ook de officiële naam, de gemeente en de hoofdactiviteit:
+ * met die drie herken je een misser in één oogopslag.
+ *
+ * Bij het renderen aanroepen kost niets — 0,1 ms per opzoeking — en wat niet opgeslagen wordt,
+ * kan niet verouderen ten opzichte van de spiegel.
+ */
+export function koppelBedrijven(
+  bedrijven: { naam: string; regio?: RegionCode }[]
+): Map<string, KboVermoeden> {
+  const db = open()
+  const uit = new Map<string, KboVermoeden>()
+  if (!db) return uit
+
+  const naamVan = db.prepare(
+    `SELECT Denomination AS d FROM denomination
+      WHERE EntityNumber = ? AND TypeOfDenomination = '001'
+      ORDER BY (Language = '2') DESC LIMIT 1`
+  )
+  const adresVan = db.prepare(
+    `SELECT Zipcode AS z, MunicipalityNL AS m FROM address WHERE EntityNumber = ? LIMIT 1`
+  )
+  const naceVan = db.prepare(
+    `SELECT DISTINCT NaceCode AS c FROM activity
+      WHERE EntityNumber = ? AND NaceVersion = '2025' AND Classification = 'MAIN'`
+  )
+
+  for (const bedrijf of bedrijven) {
+    if (uit.has(bedrijf.naam)) continue
+    const gevonden = zoekOnderneming(db, bedrijf.naam, bedrijf.regio)
+    if (gevonden.soort !== 'gevonden') continue
+
+    const adres = adresVan.get(gevonden.nummer) as { z?: string; m?: string } | undefined
+    const codes = (naceVan.all(gevonden.nummer) as { c: string }[]).map((r) => r.c)
+    uit.set(bedrijf.naam, {
+      nummer: gevonden.nummer,
+      kboNaam: ((naamVan.get(gevonden.nummer) as { d?: string } | undefined)?.d ?? null),
+      gemeente: adres?.m ?? null,
+      // Alleen de codes uit onze selectie krijgen een label; de rest toont zijn cijfers, want
+      // juist een code buiten de selectie (86230 — tandartsen) verraadt een foute koppeling.
+      labels: codes.map((c) => NACE_LABEL[c] ?? c),
+      viaRegio: gevonden.viaRegio,
+    })
+  }
+
+  return uit
 }
 
 /** Alleen de staat, zonder query — voor een scherm dat wil melden dat de spiegel ontbreekt. */

@@ -15,7 +15,7 @@ import { ProspectCard, type Prospect } from './ProspectCard'
 import { Button } from '@umanex/ui/components/ui/button'
 import { Checkbox } from '@umanex/ui/components/ui/checkbox'
 import { Label } from '@umanex/ui/components/ui/label'
-import type { SpiegelStaat } from '@/lib/kbo/spiegel'
+import type { SpiegelStaat, KboVermoeden } from '@/lib/kbo/spiegel'
 import type { Job, Company, ItemStatus } from '@/lib/db/schema'
 import { normaliseerBedrijf } from '@/lib/matching'
 import type { RegionCode } from '@/lib/regions'
@@ -26,6 +26,8 @@ type DashboardClientProps = {
   companies: Company[]
   previousSyncAt: string
   dekking: Dekking
+  /** Bedrijfsnaam → wat KBO er vermoedelijk over zegt. Leeg zonder spiegel. */
+  vermoedens: Record<string, KboVermoeden>
 }
 
 const ALL_REGIONS: RegionCode[] = ['WVL', 'OVL', 'BRU']
@@ -35,6 +37,7 @@ export function DashboardClient({
   companies: initialCompanies,
   previousSyncAt,
   dekking,
+  vermoedens,
 }: DashboardClientProps) {
   const [jobs, setJobs] = useState(initialJobs)
   const [companies, setCompanies] = useState(initialCompanies)
@@ -61,6 +64,11 @@ export function DashboardClient({
   // Standaard aan: zonder deze zeef heeft vier vijfde van de lijst geen personeel.
   const [alleenWerkgevers, setAlleenWerkgevers] = useState(true)
   const vandaag = new Date().toISOString().slice(0, 10)
+
+  // De ondernemingsnummers die al als lead bestaan. Hiermee kan een prospectkaart tonen dat
+  // er vacatures van dat bedrijf binnenkwamen — de brug tussen de twee tabbladen, gelegd op
+  // het nummer in plaats van op een naam die op twee plekken anders geschreven staat.
+  const leadNummers = new Set(Object.values(vermoedens).map((v) => v.nummer))
 
   // Gewone substring, geen regex — een zoekterm met een haakje erin is een zoekterm, geen patroon.
   const term = zoek.trim().toLowerCase()
@@ -287,6 +295,7 @@ export function DashboardClient({
                   <LeadCard
                     key={company.id}
                     company={company}
+                    vermoeden={vermoedens[company.companyName] ?? null}
                     isNew={company.firstSeenAt >= previousSyncAt}
                     onStatusChange={(status) => handleLeadStatusChange(company.id, status)}
                 onToonVacatures={toonVacaturesVan}
@@ -353,6 +362,7 @@ export function DashboardClient({
                   <ProspectCard
                     key={p.nummer}
                     prospect={p}
+                    heeftVacatures={leadNummers.has(p.nummer)}
                     vandaag={vandaag}
                     onStatusChange={(status) => handleProspectStatusChange(p.nummer, status)}
                   />

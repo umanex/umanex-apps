@@ -17,6 +17,14 @@
 import { existsSync, readdirSync, createReadStream } from 'node:fs'
 import { join } from 'node:path'
 import { csvRijen, csvObjecten, kboDatum, kboNummer } from '../lib/kbo/csv'
+import Database from 'better-sqlite3'
+import {
+  bouwNaamIndex,
+  koppelSleutel,
+  zoekOnderneming,
+  MIN_SLEUTELLENGTE,
+  NAAM_INDEX_DDL,
+} from '../lib/kbo/koppeling'
 import {
   bouwProspectSql,
   leeftijdInJaren,
@@ -248,6 +256,103 @@ const gelijk = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(
   check('leeftijd: vandaag opgericht is 0 jaar', leeftijdInJaren('2026-08-29', '2026-08-29') === 0)
   check('leeftijd zonder datum is null', leeftijdInJaren(null, '2026-08-29') === null)
   check('leeftijd met onzin is null', leeftijdInJaren('ooit', '2026-08-29') === null)
+}
+
+// ── 7. De koppeling naam → ondernemingsnummer ────────────────────────────────
+// De regel die deze suite bewaakt is één zin: liever geen koppeling dan een verkeerde. Een
+// versoepeling — "pak de eerste kandidaat" — is een wijziging van twee tekens die niets
+// stukmaakt wat een typecheck ziet, en die een lead aan de verkeerde onderneming plakt.
+{
+  check('sleutel: rechtsvorm valt weg', koppelSleutel('Acme BV') === 'acme')
+  check('sleutel: hoofdletters en leestekens', koppelSleutel('ACME, N.V.') === 'acme')
+  check('sleutel: meervoudige spaties worden er één', koppelSleutel('Acme   Group') === 'acme group')
+  check('sleutel: punten verdwijnen', koppelSleutel('Collective.work') === 'collectivework')
+  check('sleutel: N.V. telt als rechtsvorm', koppelSleutel('Acme N.V.') === 'acme')
+
+  const db = new Database(':memory:')
+  db.exec(`
+    CREATE TABLE enterprise (EnterpriseNumber TEXT PRIMARY KEY, Status TEXT, StartDate TEXT);
+    CREATE TABLE denomination (EntityNumber TEXT, Language TEXT, TypeOfDenomination TEXT, Denomination TEXT);
+    CREATE TABLE address (EntityNumber TEXT, TypeOfAddress TEXT, Zipcode TEXT, MunicipalityNL TEXT);
+    ${NAAM_INDEX_DDL}
+  `)
+  const onderneming = db.prepare('INSERT INTO enterprise VALUES (?,?,?)')
+  const benaming = db.prepare("INSERT INTO denomination VALUES (?,'2','001',?)")
+  const adres = db.prepare("INSERT INTO address VALUES (?,'REGO',?,?)")
+
+  onderneming.run('0000000001', 'AC', '2010-01-01')
+  benaming.run('0000000001', 'Uniek Bedrijf BV')
+  adres.run('0000000001', '8000', 'Brugge')
+
+  // Twee ondernemingen met exact dezelfde genormaliseerde naam, in verschillende regio's.
+  onderneming.run('0000000002', 'AC', '2011-01-01')
+  benaming.run('0000000002', 'Dubbel NV')
+  adres.run('0000000002', '9000', 'Gent')
+  onderneming.run('0000000003', 'AC', '2012-01-01')
+  benaming.run('0000000003', 'Dubbel BV')
+  adres.run('0000000003', '1000', 'Brussel')
+
+  // Twee met dezelfde naam ín dezelfde regio: ook regio breekt dit gelijkspel niet.
+  onderneming.run('0000000004', 'AC', '2013-01-01')
+  benaming.run('0000000004', 'Tweeling BV')
+  adres.run('0000000004', '8000', 'Brugge')
+  onderneming.run('0000000005', 'AC', '2014-01-01')
+  benaming.run('0000000005', 'Tweeling NV')
+  adres.run('0000000005', '8500', 'Kortrijk')
+
+  // Stopgezet: mag nooit gekoppeld worden.
+  onderneming.run('0000000006', 'ST', '2000-01-01')
+  benaming.run('0000000006', 'Gestopt Bedrijf BV')
+  adres.run('0000000006', '9000', 'Gent')
+
+  // Te korte sleutel.
+  onderneming.run('0000000007', 'AC', '2015-01-01')
+  benaming.run('0000000007', 'AB BV')
+  adres.run('0000000007', '9000', 'Gent')
+
+  const gebouwd = bouwNaamIndex(db)
+  // Zes actieve ondernemingen, waarvan er één een te korte naam heeft: vijf in de index.
+  check('index bevat de koppelbare actieve ondernemingen', gebouwd === 5, `${gebouwd}`)
+  const inIndex = (nr: string) =>
+    (db.prepare('SELECT COUNT(*) AS n FROM naam_index WHERE EntityNumber = ?').get(nr) as { n: number }).n
+  check('stopgezette onderneming staat niet in de index', inIndex('0000000006') === 0)
+  check('te korte naam staat niet in de index', inIndex('0000000007') === 0)
+
+  const uniek = zoekOnderneming(db, 'Uniek Bedrijf')
+  check('unieke naam koppelt', uniek.soort === 'gevonden' && uniek.nummer === '0000000001')
+  check('unieke naam koppelt zonder regio nodig te hebben', uniek.soort === 'gevonden' && !uniek.viaRegio)
+
+  const zonderRegio = zoekOnderneming(db, 'Dubbel')
+  check('twee kandidaten zonder regio: GEEN keuze', zonderRegio.soort === 'meerdere', zonderRegio.soort)
+  check(
+    'en beide kandidaten worden gemeld',
+    zonderRegio.soort === 'meerdere' && zonderRegio.kandidaten.length === 2
+  )
+
+  const metRegio = zoekOnderneming(db, 'Dubbel', 'OVL')
+  check('regio breekt het gelijkspel', metRegio.soort === 'gevonden' && metRegio.nummer === '0000000002')
+  check('en dat wordt als zodanig gemeld', metRegio.soort === 'gevonden' && metRegio.viaRegio)
+
+  const zelfdeRegio = zoekOnderneming(db, 'Tweeling', 'WVL')
+  check('twee kandidaten in dezelfde regio: nog steeds GEEN keuze', zelfdeRegio.soort === 'meerdere', zelfdeRegio.soort)
+
+  const gestopt = zoekOnderneming(db, 'Gestopt Bedrijf')
+  check('een stopgezette onderneming koppelt niet', gestopt.soort === 'geen')
+
+  const kort = zoekOnderneming(db, 'AB')
+  check('een te korte naam koppelt niet', kort.soort === 'geen' && kort.reden === 'te-kort')
+  check(`minimumlengte is ${MIN_SLEUTELLENGTE}`, MIN_SLEUTELLENGTE >= 4)
+
+  const onbekend = zoekOnderneming(db, 'Bestaat Niet In Deze Index')
+  check('onbekende naam koppelt niet', onbekend.soort === 'geen' && onbekend.reden === 'niet-gevonden')
+
+  // Herbouwen is idempotent: twee keer draaien mag de index niet verdubbelen.
+  const opnieuw = bouwNaamIndex(db)
+  check('herbouwen levert hetzelfde aantal', opnieuw === gebouwd, `${opnieuw} vs ${gebouwd}`)
+  const totaal = (db.prepare('SELECT COUNT(*) AS n FROM naam_index').get() as { n: number }).n
+  check('en verdubbelt de tabel niet', totaal === gebouwd, `${totaal}`)
+
+  db.close()
 }
 
 // ── Zelftest ─────────────────────────────────────────────────────────────────

@@ -37,24 +37,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+c2b353c feat(jobradar): add a Prospects tab fed by the KBO mirror
 3b118d4 docs(jobradar): log the KBO mirror's disk footprint and the open wiring
 09c733a feat(jobradar): mirror the KBO open data drop into a local SQLite
 470043c chore(jobradar): document the KBO SFTP variables, drop the key that did nothing
 eaf9c0f fix(jobradar): one focus form, an h2 per tab panel, a legible separator
-5b9aa03 refactor(ui): extract the shared focus ring into a constant
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/BACKLOG.md
   M  apps/jobradar/CLAUDE.md
-  A  apps/jobradar/app/api/prospects/[nr]/route.ts
-  A  apps/jobradar/app/api/prospects/route.ts
-  A  apps/jobradar/briefings/2026-08-29-feature-kbo-prospects.tcebc.md
+  M  apps/jobradar/app/page.tsx
+  A  apps/jobradar/briefings/2026-08-29-feature-kbo-koppeling.tcebc.md
   M  apps/jobradar/components/DashboardClient.tsx
-  M  apps/jobradar/components/JobCard.tsx
   M  apps/jobradar/components/LeadCard.tsx
-  A  apps/jobradar/components/ProspectCard.tsx
-  M  apps/jobradar/components/StatusDropdown.tsx
+  M  apps/jobradar/components/ProspectCard.tsx
+  A  apps/jobradar/lib/kbo/koppeling.ts
+  M  apps/jobradar/lib/kbo/spiegel.ts
+  M  apps/jobradar/scripts/kbo-scenarios.ts
+  M  apps/jobradar/scripts/kbo-sync.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

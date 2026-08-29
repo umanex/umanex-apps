@@ -24,6 +24,8 @@ export type Prospect = {
 
 type ProspectCardProps = {
   prospect: Prospect
+  /** Er kwamen vacatures van dit ondernemingsnummer binnen: dit is óók een lead. */
+  heeftVacatures: boolean
   vandaag: string
   onStatusChange: (status: ItemStatus) => void
 }
@@ -39,7 +41,7 @@ function metPunten(nummer: string): string {
  * 6% die er een heeft. Bewust geen scorepil: een getal suggereert een rangschikking die de
  * data niet draagt.
  */
-export function ProspectCard({ prospect, vandaag, onStatusChange }: ProspectCardProps) {
+export function ProspectCard({ prospect, heeftVacatures, vandaag, onStatusChange }: ProspectCardProps) {
   const codes = (prospect.codes ?? '').split(',').filter(Boolean)
   const jaren = leeftijdInJaren(prospect.opgericht, vandaag)
   const jaartal = prospect.opgericht?.slice(0, 4) ?? null
@@ -52,6 +54,11 @@ export function ProspectCard({ prospect, vandaag, onStatusChange }: ProspectCard
             <div className="flex flex-wrap items-center gap-2">
               <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
               <h3 className="truncate text-sm font-semibold">{prospect.naam}</h3>
+              {heeftVacatures && (
+                <Badge variant="default" className="shrink-0 text-2xs">
+                  heeft vacatures
+                </Badge>
+              )}
             </div>
             {prospect.handelsnaam && prospect.handelsnaam !== prospect.naam && (
               <p className="mt-0.5 truncate text-sm text-muted-foreground">{prospect.handelsnaam}</p>

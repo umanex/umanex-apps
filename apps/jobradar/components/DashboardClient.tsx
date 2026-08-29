@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
@@ -11,6 +11,11 @@ import { SyncButton } from './SyncButton'
 import { CoverageBar } from './CoverageBar'
 import { JobCard } from './JobCard'
 import { LeadCard } from './LeadCard'
+import { ProspectCard, type Prospect } from './ProspectCard'
+import { Button } from '@umanex/ui/components/ui/button'
+import { Checkbox } from '@umanex/ui/components/ui/checkbox'
+import { Label } from '@umanex/ui/components/ui/label'
+import type { SpiegelStaat } from '@/lib/kbo/spiegel'
 import type { Job, Company, ItemStatus } from '@/lib/db/schema'
 import { normaliseerBedrijf } from '@/lib/matching'
 import type { RegionCode } from '@/lib/regions'
@@ -42,6 +47,20 @@ export function DashboardClient({
   // Onthouden of de huidige zoekterm van een doorklik komt: dan verdient een lege lijst
   // een andere uitleg dan een gewone mistreffer.
   const [viaLead, setViaLead] = useState(false)
+
+  // ── Prospects ──────────────────────────────────────────────────────────────
+  // Eigen staat, want deze lijst komt niet van de server-render mee: 14.613 rijen gaan niet
+  // als prop naar de client. Het tabblad haalt zijn eigen pagina op zodra het actief wordt.
+  const [prospects, setProspects] = useState<Prospect[]>([])
+  const [prospectTotaal, setProspectTotaal] = useState(0)
+  const [prospectPaginas, setProspectPaginas] = useState(1)
+  const [prospectPagina, setProspectPagina] = useState(1)
+  const [prospectBezig, setProspectBezig] = useState(false)
+  const [prospectFout, setProspectFout] = useState<string | null>(null)
+  const [spiegel, setSpiegel] = useState<SpiegelStaat | null>(null)
+  // Standaard aan: zonder deze zeef heeft vier vijfde van de lijst geen personeel.
+  const [alleenWerkgevers, setAlleenWerkgevers] = useState(true)
+  const vandaag = new Date().toISOString().slice(0, 10)
 
   // Gewone substring, geen regex — een zoekterm met een haakje erin is een zoekterm, geen patroon.
   const term = zoek.trim().toLowerCase()
@@ -93,6 +112,59 @@ export function DashboardClient({
       raakt(c.companyName)
     )
     .sort((a, b) => b.leadScore - a.leadScore)
+
+  const haalProspects = useCallback(
+    async (signal: AbortSignal) => {
+      setProspectBezig(true)
+      setProspectFout(null)
+      try {
+        const p = new URLSearchParams()
+        for (const r of regions) p.append('regio', r)
+        if (zoek.trim()) p.set('zoek', zoek.trim())
+        if (!alleenWerkgevers) p.set('werkgevers', '0')
+        p.set('pagina', String(prospectPagina))
+        const res = await fetch(`/api/prospects?${p}`, { signal })
+        const data = await res.json().catch(() => null)
+        if (!res.ok || !data?.ok) {
+          setProspectFout(data?.error ?? `Mislukt (HTTP ${res.status})`)
+          return
+        }
+        setProspects(data.prospects)
+        setProspectTotaal(data.totaal)
+        setProspectPaginas(data.paginas)
+        setSpiegel(data.staat)
+      } catch (e) {
+        // Een afgebroken verzoek is geen fout: dat is een filter die sneller wisselde dan
+        // de server antwoordde. Zonder deze tak flikkert er een foutmelding bij elk woord.
+        if ((e as Error).name !== 'AbortError') setProspectFout('Geen antwoord van de server.')
+      } finally {
+        setProspectBezig(false)
+      }
+    },
+    [regions, zoek, alleenWerkgevers, prospectPagina]
+  )
+
+  useEffect(() => {
+    if (tab !== 'prospects') return
+    const ctrl = new AbortController()
+    // Kleine vertraging: dit tabblad vraagt de server, en typen in het zoekveld zou anders
+    // per letter een query over 14.613 rijen starten.
+    const t = setTimeout(() => void haalProspects(ctrl.signal), 250)
+    return () => {
+      clearTimeout(t)
+      ctrl.abort()
+    }
+  }, [tab, haalProspects])
+
+  // Een filterwijziging hoort je op pagina 1 te zetten; anders sta je op pagina 7 van een
+  // lijst die er nog maar drie heeft en lijkt het resultaat leeg.
+  useEffect(() => {
+    setProspectPagina(1)
+  }, [regions, zoek, alleenWerkgevers])
+
+  const handleProspectStatusChange = (nummer: string, status: ItemStatus) => {
+    setProspects((prev) => prev.map((p) => (p.nummer === nummer ? { ...p, status } : p)))
+  }
 
   const handleJobStatusChange = (id: number, status: ItemStatus) => {
     setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, jobStatus: status } : j)))
@@ -157,6 +229,12 @@ export function DashboardClient({
                 {filteredCompanies.length}
               </span>
             </TabsTrigger>
+            <TabsTrigger value="prospects">
+              Prospects
+              <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+                {prospectTotaal}
+              </span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="jobs">
@@ -214,6 +292,95 @@ export function DashboardClient({
                 onToonVacatures={toonVacaturesVan}
                   />
                 ))}
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="prospects">
+            <h2 className="sr-only">Prospects</h2>
+
+            {/* Twee meldingen die BOVEN de lijst horen, niet in plaats ervan: een ontbrekende
+                of verouderde spiegel zegt iets over de data, niet over het resultaat. */}
+            {spiegel?.soort === 'ontbreekt' && (
+              <p className="mt-3 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
+                Er staat nog geen KBO-spiegel op deze machine. Draai{' '}
+                <code className="rounded bg-background px-1 py-0.5">pnpm --filter jobradar kbo:sync --full</code>{' '}
+                — dat haalt de volledige extract op (~298 MB) en vult{' '}
+                <code className="rounded bg-background px-1 py-0.5">.data/kbo.db</code>.
+              </p>
+            )}
+            {spiegel?.soort === 'ok' && spiegel.ouderdomDagen !== null && spiegel.ouderdomDagen > 7 && (
+              <p className="mt-3 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
+                De spiegel is van {spiegel.snapshot} — {spiegel.ouderdomDagen} dagen oud. Draai{' '}
+                <code className="rounded bg-background px-1 py-0.5">pnpm --filter jobradar kbo:sync</code>{' '}
+                voor de dagelijkse updates. FOD Economie bewaart er 32 dagen; daarna is een verse{' '}
+                <code className="rounded bg-background px-1 py-0.5">--full</code> nodig.
+              </p>
+            )}
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <Checkbox
+                  id="alleen-werkgevers"
+                  checked={alleenWerkgevers}
+                  onCheckedChange={(v) => setAlleenWerkgevers(v === true)}
+                />
+                <Label htmlFor="alleen-werkgevers" className="cursor-pointer text-sm">
+                  Alleen met personeel
+                </Label>
+              </div>
+              <p className="text-sm tabular-nums text-muted-foreground">
+                {prospectBezig ? 'Bezig…' : `${prospectTotaal} prospect${prospectTotaal === 1 ? '' : 's'}`}
+              </p>
+            </div>
+
+            {prospectFout ? (
+              <p role="alert" className="mt-8 text-center text-sm text-destructive">
+                {prospectFout}
+              </p>
+            ) : prospects.length === 0 && !prospectBezig ? (
+              <EmptyState
+                message={
+                  spiegel?.soort === 'ontbreekt'
+                    ? 'Zonder spiegel valt er niets te tonen.'
+                    : alleenWerkgevers
+                      ? 'Geen prospects binnen je huidige filters. Zet "Alleen met personeel" uit om ook eenmanszaken te zien.'
+                      : 'Geen prospects binnen je huidige filters — pas regio of zoekterm aan.'
+                }
+              />
+            ) : (
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {prospects.map((p) => (
+                  <ProspectCard
+                    key={p.nummer}
+                    prospect={p}
+                    vandaag={vandaag}
+                    onStatusChange={(status) => handleProspectStatusChange(p.nummer, status)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {prospectPaginas > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={prospectPagina <= 1 || prospectBezig}
+                  onClick={() => setProspectPagina((p) => Math.max(1, p - 1))}
+                >
+                  Vorige
+                </Button>
+                <span className="text-sm tabular-nums text-muted-foreground">
+                  pagina {prospectPagina} van {prospectPaginas}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={prospectPagina >= prospectPaginas || prospectBezig}
+                  onClick={() => setProspectPagina((p) => Math.min(prospectPaginas, p + 1))}
+                >
+                  Volgende
+                </Button>
               </div>
             )}
           </TabsContent>

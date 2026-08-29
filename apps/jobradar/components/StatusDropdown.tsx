@@ -16,13 +16,18 @@ const STATUS_OPTIONS: { value: ItemStatus; label: string; className: string }[] 
 ]
 
 type Props = {
-  itemId: number
+  /**
+   * Het PATCH-pad van dít item. Was eerst `itemId` + `type`, met de padopbouw in dit
+   * component — dat werkte voor twee soorten en brak bij de derde: een prospect heeft geen
+   * numerieke id maar een ondernemingsnummer. De aanroeper weet zijn eigen pad; dit
+   * component hoort dat niet te raden.
+   */
+  endpoint: string
   status: ItemStatus
-  type: 'job' | 'lead'
   onStatusChange: (status: ItemStatus) => void
 }
 
-export function StatusDropdown({ itemId, status, type, onStatusChange }: Props) {
+export function StatusDropdown({ endpoint, status, onStatusChange }: Props) {
   const [pending, setPending] = useState(false)
 
   const current = STATUS_OPTIONS.find((o) => o.value === status) ?? STATUS_OPTIONS[0]!
@@ -31,7 +36,6 @@ export function StatusDropdown({ itemId, status, type, onStatusChange }: Props) 
     const newStatus = e.target.value as ItemStatus
     setPending(true)
     try {
-      const endpoint = type === 'job' ? `/api/jobs/${itemId}` : `/api/leads/${itemId}`
       const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

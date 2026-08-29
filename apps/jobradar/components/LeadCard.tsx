@@ -120,9 +120,8 @@ export function LeadCard({ company, isNew, onStatusChange, onToonVacatures }: Le
         </div>
         <div className="mt-2 border-t pt-2">
           <StatusDropdown
-            itemId={company.id}
+            endpoint={`/api/leads/${company.id}`}
             status={company.leadStatus as ItemStatus}
-            type="lead"
             onStatusChange={onStatusChange}
           />
         </div>

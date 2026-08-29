@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-export const SCHEMA_VERSION = 5
+export const SCHEMA_VERSION = 6
 
 export type ItemStatus = 'new' | 'saved' | 'dismissed' | 'contacted'
 
@@ -69,6 +69,13 @@ export const companies = sqliteTable(
  * Bewust key/value en geen kolom per instelling: er is er vandaag één (de zoekopdracht) en
  * een tabel met één kolom die telkens moet migreren is duurder dan een rij erbij.
  */
+export const prospectStatus = sqliteTable('prospect_status', {
+  /** Ondernemingsnummer zonder punten, zoals de KBO-spiegel het bewaart. */
+  enterpriseNumber: text('enterprise_number').primaryKey(),
+  status: text('status').notNull().default('new'),
+  updatedAt: text('updated_at').notNull(),
+})
+
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
@@ -92,3 +99,4 @@ export const syncRuns = sqliteTable('sync_runs', {
 export type Job = typeof jobs.$inferSelect
 export type Company = typeof companies.$inferSelect
 export type SyncRun = typeof syncRuns.$inferSelect
+export type ProspectStatus = typeof prospectStatus.$inferSelect

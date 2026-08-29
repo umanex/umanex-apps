@@ -82,9 +82,8 @@ export function JobCard({ job, isNew, onStatusChange }: JobCardProps) {
         </div>
         <div className="mt-2 border-t pt-2">
           <StatusDropdown
-            itemId={job.id}
+            endpoint={`/api/jobs/${job.id}`}
             status={job.jobStatus as ItemStatus}
-            type="job"
             onStatusChange={onStatusChange}
           />
         </div>

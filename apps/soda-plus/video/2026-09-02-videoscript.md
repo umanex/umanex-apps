@@ -8,8 +8,8 @@ Doel: 3 tot 5 minuten, één take, spreektaal. Structuur volgt de mail van Simon
 welke problemen en kansen → waarom die keuzes → hoe verder met meer tijd. Beeld: Figma in
 Present-mode voor de flow (startpunt "Leerlingflow"), uitgezoomd board voor scope, cover voor het slot.
 
-**Lengte — gemeten, niet geschat: 728 woorden spreektekst.** Dat is 5:24 bij 135 woorden per minuut
-en 4:51 bij 150, het tempo dat je in een opname makkelijk haalt. Wil je marge, dan zijn dit de
+**Lengte — gemeten, niet geschat: 743 woorden spreektekst.** Dat is 5:30 bij 135 woorden per minuut
+en 4:57 bij 150, het tempo dat je in een opname makkelijk haalt. Wil je marge, dan zijn dit de
 snijlijnen, in volgorde van minste schade:
 
 | Weg | Bespaart | Kost je |
@@ -35,7 +35,7 @@ want schattingen liepen hier drie keer mis. Pauzes zijn gemarkeerd met —.
 > Kijk naar de eerste twee kolommen: stiptheid en orde staan drie periodes op rij op B, attitude gaat van A naar B, en de feedback ernaast zegt elke keer ongeveer hetzelfde. Er is niets verlegd. — Dat vak eronder is leeg, maar dit is een voorbeelddocument; daar trek ik geen conclusie uit. Ik vroeg me iets anders af: wat verandert er als een leerling het perfect invult? Dan nóg zie ik drie problemen. Eén: er staat "niet gemotiveerd in de les" — een oordeel over wie je bent, en daarop schrijf je een voornemen, geen plan. Twee: het vraagt schrijven in het Nederlands, in een klas waar Nederlands het werkpunt is. Drie: er komt niets op terug — de feedback van periode twee verwijst nergens naar periode één.
 
 ## 0:55 – 2:00 · De flow
-**Beeld:** Present-mode, 01 → 08. Eén zin per scherm, klik terwijl je spreekt.
+**Beeld:** Present-mode, 01 → 08 → 00. Eén zin per scherm, klik terwijl je spreekt. Op 00 even stilstaan: dat scherm draagt het bewijs uit je opening.
 
 > **01** — De periode opent niet met je score, maar met je afspraak van vorige keer. Gelukt? "Niet gelukt" mag — dan maken we ze kleiner.
 >
@@ -49,7 +49,9 @@ want schattingen liepen hier drie keer mis. Pauzes zijn gemarkeerd met —.
 >
 > **06** — Het plan bouw je uit stukken: als dit gebeurt, dan doe ik dat, en die helpt me.
 >
-> **08** — Het eindigt op een datum: het gesprek, en de check over twee weken.
+> **08** — Gedeeld. Het eindigt op twee datums: het gesprek, en de check over twee weken.
+>
+> **00** — En dan zijn rapport. Dezelfde twee werkpunten als op papier — maar er hangt nu een plan aan, en die twee datums.
 
 ## 2:00 – 2:50 · De drie doelstellingen, met wat ik verwierp
 **Beeld:** blijf op 04 (doelstelling 1), 03 + 06 (doelstelling 2), 01 (doelstelling 3).
@@ -58,7 +60,7 @@ want schattingen liepen hier drie keer mis. Pauzes zijn gemarkeerd met —.
 >
 > **Doelstelling twee**, bij een verwachte B een oplossing. Die had ik eerst letterlijk gebouwd: het plan vóór de score. Maar blijkt het een A, dan was die stap nepwerk. Vandaar 03 en 06.
 >
-> **Doelstelling drie**, écht nadenken. Geen beloning, maar een terugkeer: elke afspraak krijgt een datum, en de volgende periode opent ermee.
+> **Doelstelling drie**, écht nadenken. Geen beloning maar een terugkeer — dat is wat je net op 00 zag.
 
 ## 2:50 – 3:35 · Hoe dit gemaakt is
 **Beeld:** board uitgezoomd — sectie 1 en 2 zichtbaar. Sectie 3 niet openen.
@@ -72,14 +74,14 @@ want schattingen liepen hier drie keer mis. Pauzes zijn gemarkeerd met —.
 ## 3:35 – 4:10 · Wat dag één al werkt
 **Beeld:** cover, de twee onderste blokken.
 
-> Op de cover staat wat dag één werkt zónder koppeling: de hele leerlingflow. En wat er wél een koppeling voor vraagt: de tellingen per les, de stiptheid, de klassenraad. Drie dingen, als hypothese.
+> Op de cover staat wat dag één werkt zónder koppeling: de hele leerlingflow. En wat er wél een koppeling voor vraagt: tellingen per les, stiptheid, de klassenraad. Drie dingen, als hypothese.
 >
 > Ik heb het ook getekend: 05c is scherm 05 zonder koppeling, met alleen de zin uit de klassenraad. Werkt de flow dan nog? Ja. Waar de school al observaties heeft, wordt hij scherper.
 
 ## 4:10 – 4:45 · Met meer tijd, en drie vragen
 **Beeld:** cover, rechterkolom.
 
-> Met meer tijd zou ik vijf leerlingen laten doorklikken, op gsm en op chromebook. Ik tel dertien schermen — of dat er te veel zijn weet ik niet; dat staat als aanname op de cover. En twee klassen buiten OKAN bekijken.
+> Met meer tijd zou ik vijf leerlingen laten doorklikken, op gsm en op chromebook. Ik tel veertien schermen — of dat er te veel zijn weet ik niet; dat staat op de cover. En twee klassen buiten OKAN bekijken.
 >
 > Drie vragen bepalen hoe dit verder gaat: leeft dit in Smartschool of in jullie platform? Is OKAN typerend, of één school van de 58? En wie ziet de zelfinschatting? — Twintig minuten samen kijken lijkt me de snelste manier. Bedankt.
 
@@ -125,7 +127,7 @@ Dat tweede antwoord is geen ontwijking maar het punt zelf: je verkoopt verantwoo
 - Eén take. Verspreek je je: herbegin de zin, knip niet. Een haperende zin die van jou is, is beter dan een gladde die het niet is.
 - Figma Present-mode op "Leerlingflow"; zet de opname vooraf op 02 klaar zodat de eerste klik meteen beeld geeft.
 - Toon `Voorbeeld SODA-rapport.pdf` bij het probleem — hun eigen document, niet jouw slide. Eén pagina, dus de drie scorekolommen en de drie feedbackblokken staan samen in beeld.
-- Sectie 3 blijft dicht. Sectie 2 (00, 04b, 08b en 05c) mag in beeld bij het uitzoomen.
+- Sectie 3 blijft dicht. Sectie 2 (04b, 08b en 05c) mag in beeld bij het uitzoomen; 00 hoort nu bij de flow in Sectie 1 en klik je gewoon aan na 08.
 - De aanpak-beat spreek je bij voorkeur in beeld, niet over een screenshot. Het is het enige stuk dat over jou gaat.
 - Unlisted link (YouTube/Vimeo/Loom) die zonder account opent. Test in een privévenster.
 

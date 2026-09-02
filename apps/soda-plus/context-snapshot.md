@@ -26,15 +26,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+53a880f fix(soda-plus): drop the stepper graphic, keep the count as text
 76850bd feat(soda-plus): make 00 part of the flow, it carries the evidence
 bdcae70 fix(soda-plus): stop using the empty box as evidence
 e007052 fix(soda-plus): read the actual report, revert the wrong correction
 37e7ea1 fix(soda-plus): the empty box is a blank specimen, not evidence
-4d52dfa docs(soda-plus): lean the video script harder on the hour
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/soda-plus/briefings/2026-09-02-component-domeinteller.tcebc.md
+  M  apps/soda-plus/BACKLOG.md
+  M  apps/soda-plus/briefings/2026-09-02-component-domeinteller.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

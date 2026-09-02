@@ -8,7 +8,7 @@ Projectlaag van de backlog. Format, statussen en types: zie de kop van `BACKLOG.
 - **Wat:** 02 toont 2/4, 03 toont 3/4 voor hetzelfde domein (Orde), 04 verbergt de streepjes met 4/4 erin (2:161). Streepjes = domeinen maken (03 erft 2/4), labelen ("Orde · 2 van 4") en de 02-regel "Vier korte vragen, dan je rapport" herschrijven naar "Vier domeinen, elk drie korte vragen".
 - **Waarom niet nu:** P3-1 uit `audits/2026-08-25-ux-audit-wireframes.md` — hinder, geen blokkade; één fill en één copy-regel.
 - **Eerste zet:** fills 2:121–2:124 gelijkzetten aan 2:41–2:44; tekst 2:51 aanpassen.
-- **Gebouwd 2026-09-02:** 03 toont nu dezelfde 2/4 als 02 (fill 2:123 terug naar #d6d6d6), beide schermen dragen het label "domein 2 van 4", en 2:51 zegt "Vier domeinen, elk drie korte vragen". Wat openblijft: 04 verbergt de streepjes nog met 4/4 erin (2:161).
+- **Opgelost 2026-09-02:** de voortgangsstreepjes bestaan niet meer. Eerst de grafiek weg en de telling als tekst behouden, daarna heeft Jeroen ook dat label geschrapt — geen enkel scherm draagt nog een voortgangsindicator. Het verborgen frame op 04 (2:161, met een verouderde 4/4) is mee verwijderd. De telling leeft nu in de body-copy van 02 en in de caption-titel. Zie `briefings/2026-09-02-component-domeinteller.tcebc.md`.
 - **Status:** gebouwd
 
 ## 2026-08-25 — Touch-targets en geselecteerde staat · [ux]

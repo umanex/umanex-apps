@@ -7,13 +7,16 @@ opdracht duidelijk wordt — verzonnen projectcontext is schadelijker dan geen.
 
 ## Wat vaststaat
 
-- **De opdracht-PDF bevat een *voorbeeld*rapport, geen ingevulde rapportkopie.** Het kader
-  "Oplossing voor de B-scores volgens de leerling" is daar leeg omdat de leerling het nog moet
-  invullen — niet omdat het in de praktijk leeg blijft. Dat laatste is een **hypothese** en mag
-  nergens als vaststelling staan. Bevestigd door Jeroen op 2026-09-02; de audit van 2026-08-25
-  las het verkeerd en droeg die lezing door naar de cover, caption/01 en het videoscript. Het
-  document zit niet in de repo, dus elke bewering erover die je in een projectdocument aantreft
-  is tweedehands — behandel ze zo. Zie `LEARNINGS.md` in umanex-os, entry 2026-09-02.
+- **De bron is `Voorbeeld SODA-rapport.pdf` — één pagina, KTA Brugge, klas OKANOR.** Het is géén
+  blanco sjabloon: DW1, DW2 en DW3 dragen scores (S=B · O=B · D=A · A=A/B/B) én klassenraadfeedback,
+  in twee verschillende notatiestijlen. Het vak "Oplossing voor de B-scores volgens de leerling" is
+  in alle drie leeg. **DW4 is de periode die nog moet volgen** en staat daarom aan béide kanten leeg
+  — dat is het controlegeval dat de leegte in DW1–DW3 betekenis geeft, en het is geen tekortkoming.
+  De demo-data op het board komt hiervandaan: scherm 00 toont P1 en P2 = DW1 en DW2, en de citaten
+  op 05 en 10 staan letterlijk in DW2 en DW3. Wat het rapport níet zegt: of dit typisch is, en wat
+  er op de achterkant staat (het sterretje verwijst ernaar) — allebei vragen voor SODAplus.
+  Het document zelf zit niet in de repo; vraag het op vóór je er iets over beweert.
+  Zie `LEARNINGS.md` in umanex-os, entry 2026-09-02.
 - De app heet `soda-plus` op schijf en in git (`feat(soda-plus): ...`); `soda+` is de merknaam.
 - Werk in de hoofdtree, `apps/soda-plus`, op een feature branch vanaf `origin/main`; de vroegere eigen zusmap-worktree is op 2026-08-25 geschrapt (`.umanex-os/CLAUDE.md` → Git workflow → Parallel werk).
 - Stack conform monorepo-default: Next.js 14 + Tailwind 3, rollaag via `@umanex/config/tailwind/preset`,

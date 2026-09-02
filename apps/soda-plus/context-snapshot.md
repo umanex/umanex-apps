@@ -26,15 +26,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+bdcae70 fix(soda-plus): stop using the empty box as evidence
 e007052 fix(soda-plus): read the actual report, revert the wrong correction
 37e7ea1 fix(soda-plus): the empty box is a blank specimen, not evidence
 4d52dfa docs(soda-plus): lean the video script harder on the hour
 c4d540e docs(soda-plus): rewrite the video script around the approach
-5067b10 feat(soda-plus): work the feedback round into the wireframe board
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/soda-plus/CLAUDE.md
+  M  apps/soda-plus/briefings/2026-09-02-flow-feedbackronde-kliklast-budget-dichtheid.tcebc.md
   M  apps/soda-plus/video/2026-09-02-videoscript.md
 
 ## Bestanden met TODO/FIXME

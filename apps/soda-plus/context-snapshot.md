@@ -26,17 +26,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+c4d540e docs(soda-plus): rewrite the video script around the approach
 5067b10 feat(soda-plus): work the feedback round into the wireframe board
 5b9aa03 refactor(ui): extract the shared focus ring into a constant
 a15b915 feat(ui): check every Figma variable against the token source
 3c61b21 feat(ui): export Storybook components to Figma with a sync guard
-eb807c3 docs: drop the last sibling-tree references, close the backlog item
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/soda-plus/BACKLOG.md
-  M  apps/soda-plus/video/2026-08-25-videoscript.md
-  A  apps/soda-plus/video/2026-09-02-videoscript.md
+  M  apps/soda-plus/video/2026-09-02-videoscript.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -5,7 +5,7 @@
 | **Datum** | 2026-09-02 |
 | **Type** | component |
 | **Project** | soda-plus — praktijkopdracht sollicitatie SODAplus |
-| **Status** | gebouwd — 2026-09-02 via de plugin-bridge; 7 van 7 acceptatie-items gemeten |
+| **Status** | gebouwd — 2026-09-02; daarna door Jeroen verder teruggebracht (label óók weg). Acceptatie hieronder beschrijft de **eindstaat**, hermeten om 18:09 |
 | **Figma** | `Soda+` · `XwEUhY92XX32sQkEIdbEFN` · pagina "Wireframes" · node 2:40 |
 | **Amendeert** | `briefings/2026-08-25-flow-attituderapport-revisie.tcebc.md` — beslissing "Voortgang alleen op 02/03" |
 | **Aanleiding** | Jeroen, 2026-09-02: "Op sommige schermen is er een stepper. Dit moet je ofwel verwijderen ofwel consistent gebruiken." |
@@ -59,11 +59,11 @@ Geen — de opdracht bood twee uitkomsten ("verwijderen of consistent gebruiken"
 - [x] 0 nodes met de naam `s0`/`s1`/`s2`/`s3` op de hele pagina (vertrekpunt: 12) — bewijs: 12 → 0 (`findAll` op /^s[0-3]$/)
 - [x] Geen enkel frame heet nog `stappen`; 2:40 en 2:120 heten `domein-teller` — bewijs: 0 frames met die naam; 2:40 en 2:120 heten `domein-teller`
 - [x] Het verborgen frame 2:161 bestaat niet meer — bewijs: `getNodeByIdAsync(2:161)` geeft null
-- [x] Op 02 en 03 staat de tekst "domein 2 van 4"; geen ander scherm draagt een voortgangsindicator — bewijs: beide tellers dragen exact die tekst; geen ander scherm heeft een indicator. Let op: een naïeve scan op /van 4|STAP/i geeft een valse treffer op de cover, want "kies-één-stap" bevat "stap" — de telling is op framenaam gedaan, niet op tekst
-- [x] De teller-frames zijn nog 24 px hoog en geen scherm is van hoogte veranderd; geen uitloop, geen overlap — bewijs: beide 24 px; 02, 03 en 04 alle drie nog 812 px hoog; 0 uitloop, 0 overlap, 0 frames buiten hun sectie, 18 reacties intact
-- [x] Het label staat op x=20 (was x=87), gelijk met de kop en de body eronder — bewijs: x=20, y=5 in beide frames (was x=87)
+- [x] Geen enkel scherm draagt nog een voortgangsindicator, ook niet als tekst — bewijs: 0 nodes met /domein \d van 4/ op de hele pagina (hermeten 18:09). De telling leeft in de body-copy van 02 ("Vier domeinen, elk drie korte vragen") en in de caption-titel ("02 · Vier keer, één scherm per domein"); 03 noemt het domein in zijn overline "JE DENKT: WERKPUNT BIJ ORDE"
+- [x] Geen scherm is van hoogte veranderd; geen uitloop, geen overlap — bewijs: 02 en 03 nog 812 px na het volledig verwijderen van de teller-frames (2:40 en 2:120 bestaan niet meer); 0 uitloop, 0 overlap, 0 frames buiten hun sectie, 0 tekst breder dan zijn ouder, 18 reacties intact
 - [x] Verse runtime-capture van 02, 03 en 04 bekeken — bewijs: `figma_capture_screenshot` van 02 en 03 — label links uitgelijnd met de kop, geen gat. 04 niet gecaptured en dat hoeft niet: de verwijderde node was `visible: false`, en een onzichtbare node in een auto-layout neemt geen ruimte in; de onveranderde hoogte van 812 px bevestigt dat
 
 ## Beslissingsgeschiedenis
 
 - 2026-09-02: Streepjes weg, tekst blijft. Reden: het label geeft precies wat de streepjes suggereren, en twee schermen op rij met dezelfde stand lezen als een kapotte balk. Alternatief (streepjes houden en op 03 een andere stand tonen) verworpen: dat is onwaar — de leerling zit op 03 nog in domein 2. Alternatief (teller over de hele flow) verworpen: zie Aannames.
+- 2026-09-02, 18:09: **Jeroen heeft ook het label verwijderd.** Mijn ronde haalde de grafiek weg en hield "domein 2 van 4" als tekst; hij heeft daarna 2:40 en 2:120 in hun geheel geschrapt. Hermeten: beide frames en beide labels bestaan niet meer, 02 en 03 gaan rechtstreeks van topbar naar body, hoogtes onveranderd op 812 px, board verder schoon. Dat is de tweede uitkomst die zijn opdracht toeliet ("ofwel verwijderen") en consequenter dan de mijne: een teller die op één plek in de flow staat is nog steeds een uitzondering. De informatie is niet verloren — 02 draagt "Vier domeinen, elk drie korte vragen" in de body en de caption heet "Vier keer, één scherm per domein". De drie acceptatie-items hierboven zijn herschreven naar deze eindstaat; het bewijs van de tussenstap staat in deze regel, zodat er geen vinkje blijft staan dat het bestand tegenspreekt.

@@ -26,7 +26,7 @@ SODAplus-realiteit (sodaplus.be, 25 aug): 58 scholen, 15.414 leerlingen, 1.337 b
 
 ## 1 · Eindoordeel
 
-> **Correctie 2026-09-02:** de zin hieronder klopt niet. De opdracht-PDF is een *voorbeeld*rapport; dat kader is leeg omdat de leerling het nog moet invullen, niet omdat het leeg bleef. Het is dus geen bewijsstuk. De rest van de analyse staat los van deze lezing — de drie oorzaken gaan over de vorm van het formulier. Niet herschreven, wel gemarkeerd.
+> **Noot 2026-09-02:** de zin hieronder is nagemeten aan de bron (`Voorbeeld SODA-rapport.pdf`) en klopt. DW1–DW3 dragen scores én klassenraadfeedback terwijl het leerlingvak in alle drie leeg is; DW4 moet nog volgen en staat daarom aan béide kanten leeg. Eerder op deze dag stond hier een "correctie" die het tegendeel beweerde — die was zelf ongeverifieerd, geschreven vóór iemand het document had geopend, en is ingetrokken. Beide richtingen staan hier omdat de weg ernaartoe de les is; zie umanex-os `LEARNINGS.md`, 2026-09-02.
 
 Inhoudelijk is dit vermoedelijk het sterkste dossier van de vijf: de probleemlezing vertrekt van Simons eigen bewijsstuk (het oplossingskader is bij DW1, DW2 én DW3 leeg) en geeft daar drie mechanistische oorzaken voor, elk met een eigen scherm. De drie doelstellingen worden gedragen door mechanismen die andere kandidaten waarschijnlijk niet hebben (terugkeerlus, openen op overeenstemming, observatie gescheiden van interpretatie, als-dan-slots).
 

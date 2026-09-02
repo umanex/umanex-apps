@@ -26,11 +26,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+37e7ea1 fix(soda-plus): the empty box is a blank specimen, not evidence
 4d52dfa docs(soda-plus): lean the video script harder on the hour
 c4d540e docs(soda-plus): rewrite the video script around the approach
 5067b10 feat(soda-plus): work the feedback round into the wireframe board
 5b9aa03 refactor(ui): extract the shared focus ring into a constant
-a15b915 feat(ui): check every Figma variable against the token source
 ```
 
 ## Uncommitted wijzigingen

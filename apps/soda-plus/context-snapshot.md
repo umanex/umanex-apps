@@ -1,5 +1,5 @@
 # Context Snapshot — soda-plus
-_Gegenereerd op 2026-08-25_
+_Gegenereerd op 2026-09-02_
 
 ## Project
 - **App:** soda-plus
@@ -26,15 +26,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+5b9aa03 refactor(ui): extract the shared focus ring into a constant
+a15b915 feat(ui): check every Figma variable against the token source
+3c61b21 feat(ui): export Storybook components to Figma with a sync guard
+eb807c3 docs: drop the last sibling-tree references, close the backlog item
 e270ab1 feat(ui): add Storybook with token-driven docs
-82f305d chore: sync umanex-os layer with global umanex-os
-a7b963c fix(soda-plus): add the ESLint config so next lint runs non-interactively
-8ff0dba docs(soda-plus): brief the 05b round and add the video script
-1b269a7 docs(soda-plus): add briefing, analysis, UX audit and backlog for the attitude report
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/soda-plus/BACKLOG.md
   M  apps/soda-plus/CLAUDE.md
+  A  apps/soda-plus/briefings/2026-09-02-flow-feedbackronde-kliklast-budget-dichtheid.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

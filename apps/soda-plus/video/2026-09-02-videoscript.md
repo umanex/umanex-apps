@@ -30,9 +30,9 @@ want schattingen liepen hier drie keer mis. Pauzes zijn gemarkeerd met —.
 > Dag Simon, dag team. Dit is mijn voorstel voor het digitale attituderapport, en waarom ik het zo gemaakt heb.
 
 ## 0:20 – 0:55 · Het probleem
-**Beeld:** het voorbeeldrapport — eerst de drie ingevulde periodes met hun B's en de klassenraadfeedback, dan het lege vak eronder, dan DW4: de periode die nog moet volgen, en die dus aan béide kanten leeg staat. Dat contrast is je bewijs; toon het, zeg het niet alleen.
+**Beeld:** het voorbeeldrapport, met de cursor langs de S- en O-kolom naar beneden: B, B, B. Dan langs de drie feedbackblokken, die telkens hetzelfde zeggen. Het lege vak eronder mag in beeld, maar wijs het niet aan — het is geen bewijs.
 
-> Kijk naar dit voorbeeldrapport. De school vulde het drie periodes in: dezelfde B's bij stiptheid en orde, elke keer feedback van de klassenraad. Het vak eronder — "Oplossing volgens de leerling" — bleef alle drie de keren leeg. En niet omdat de periode nog moest komen: DW4 moet nog volgen, en dáár is óók de schoolkant leeg. — Of dat typisch is weet ik niet; dat is mijn eerste vraag. In de vorm zie ik drie redenen. Eén: de feedback zegt "niet gemotiveerd in de les" — een oordeel over wie je bent, en daar maak je geen plan tegen. Twee: het kader vraagt schrijven waar kiezen zou volstaan, zeker bij een leerling die Nederlands nog leert. Drie: niemand komt erop terug; je ziet drie keer dezelfde twee B's.
+> Kijk naar de eerste twee kolommen: stiptheid en orde staan drie periodes op rij op B, attitude gaat van A naar B, en de feedback ernaast zegt elke keer ongeveer hetzelfde. Er is niets verlegd. — Dat vak eronder is leeg, maar dit is een voorbeelddocument; daar trek ik geen conclusie uit. Ik vroeg me iets anders af: wat verandert er als een leerling het perfect invult? Dan nóg zie ik drie problemen. Eén: er staat "niet gemotiveerd in de les" — een oordeel over wie je bent, en daarop schrijf je een voornemen, geen plan. Twee: het vraagt schrijven in het Nederlands, in een klas waar Nederlands het werkpunt is. Drie: er komt niets op terug — de feedback van periode twee verwijst nergens naar periode één.
 
 ## 0:55 – 2:00 · De flow
 **Beeld:** Present-mode, 01 → 08. Eén zin per scherm, klik terwijl je spreekt.
@@ -89,7 +89,7 @@ want schattingen liepen hier drie keer mis. Pauzes zijn gemarkeerd met —.
 
 Kan je er één niet in eigen woorden brengen, dan gaat dat stuk uit de video — niet omdat het fout is, maar omdat je het in het gesprek erna niet kan verdedigen.
 
-1. Waarom dat vak in DW1–DW3 leeg is terwijl er in DW4 iets anders aan de hand is — en waarom je drie redenen over de vórm gaan, niet over deze ene leerling.
+1. Waarom een **perfect ingevuld** vak het probleem niet oplost — de drie redenen gaan over de vorm, niet over deze leerling.
 2. Waarom drie gedragingen met een frequentie beter zijn dan "ben je ordelijk, A of B".
 3. Waarom de onthulling opent op overeenstemming en niet op het verschil in het rood.
 4. Waarom het plan ná de onthulling staat en niet ervoor.
@@ -111,7 +111,7 @@ Dat tweede antwoord is geen ontwijking maar het punt zelf: je verkoopt verantwoo
 
 ## Wat je niet zegt
 
-- **Wel: "in DW1, DW2 en DW3 bleef dat vak leeg terwijl de school wél invulde." Niet: "leerlingen vullen dat nooit in."** Het eerste staat in hun document en is te tonen; het tweede is één rapport van één klas. Het onderscheid dat je erbij moet kunnen laten zien is DW4: die periode moet nog volgen, dus dáár is óók de schoolkant leeg. Dat is hoe "nog niet aan toe" eruitziet — en DW1–DW3 zien er niet zo uit. Zeg er niets negatiefs over; DW4 is je controlegeval, geen tekortkoming. Zonder dat contrast is je observatie met één zin te weerleggen. En let op de achterkant: het rapport verwijst met een sterretje naar instructies die wij niet hebben — vraag ernaar in plaats van te gokken wat er staat.
+- **Niets over dat lege vak als bewijs.** Het is een voorbeelddocument — daaruit kan je niet afleiden dat leerlingen het niet invullen, en die claim doen tegenover de man die het formulier ontwierp is de duurste fout van de eerste dertig seconden. Wat je wél kan tonen staat in de scorekolommen: drie periodes dezelfde twee B's, attitude van A naar B, en drie keer bijna dezelfde feedbackzin. Je argument gaat over de vorm en wordt **sterker** als dat vak wél was ingevuld — zeg dat ook zo. En let op de achterkant: het rapport verwijst met een sterretje naar instructies die wij niet hebben; vraag ernaar in plaats van te gokken.
 
 - **Wel: "in dat uur stond een flow van begin tot eind." Niet: "dit board is een uur werk."** Het eerste is waar en te tonen — de eerste sessie liep 19:18 tot 19:48 en leverde de volledige set. Het tweede breekt bij één doorvraag: er zitten sinds dat uur een revisieronde, een UX-audit en twee bijstelrondes in. Daarom staat "drie rondes verder" ín de beat en niet in de kleine lettertjes. Zie `audits/2026-08-25-analyse-gedane-werk.md` §6.
 - **Niet "AI heeft het gemaakt" en ook niet "AI heeft geholpen met wat details".** Het eerste geeft je werk weg, het tweede is niet waar en klinkt zo. De verdeling die je uitspreekt — beslissingen van jou, uitvoering versneld — is de enige die je bij doorvragen kan tonen.
@@ -124,7 +124,7 @@ Dat tweede antwoord is geen ontwijking maar het punt zelf: je verkoopt verantwoo
 
 - Eén take. Verspreek je je: herbegin de zin, knip niet. Een haperende zin die van jou is, is beter dan een gladde die het niet is.
 - Figma Present-mode op "Leerlingflow"; zet de opname vooraf op 02 klaar zodat de eerste klik meteen beeld geeft.
-- Toon `Voorbeeld SODA-rapport.pdf` bij het probleem — hun eigen document, niet jouw slide. Eén pagina, dus de drie ingevulde periodes, het lege vak en DW4 staan allemaal in beeld.
+- Toon `Voorbeeld SODA-rapport.pdf` bij het probleem — hun eigen document, niet jouw slide. Eén pagina, dus de drie scorekolommen en de drie feedbackblokken staan samen in beeld.
 - Sectie 3 blijft dicht. Sectie 2 (00, 04b, 08b en 05c) mag in beeld bij het uitzoomen.
 - De aanpak-beat spreek je bij voorkeur in beeld, niet over een screenshot. Het is het enige stuk dat over jou gaat.
 - Unlisted link (YouTube/Vimeo/Loom) die zonder account opent. Test in een privévenster.

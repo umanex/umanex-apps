@@ -7,16 +7,17 @@ opdracht duidelijk wordt — verzonnen projectcontext is schadelijker dan geen.
 
 ## Wat vaststaat
 
-- **De bron is `Voorbeeld SODA-rapport.pdf` — één pagina, KTA Brugge, klas OKANOR.** Het is géén
-  blanco sjabloon: DW1, DW2 en DW3 dragen scores (S=B · O=B · D=A · A=A/B/B) én klassenraadfeedback,
-  in twee verschillende notatiestijlen. Het vak "Oplossing voor de B-scores volgens de leerling" is
-  in alle drie leeg. **DW4 is de periode die nog moet volgen** en staat daarom aan béide kanten leeg
-  — dat is het controlegeval dat de leegte in DW1–DW3 betekenis geeft, en het is geen tekortkoming.
-  De demo-data op het board komt hiervandaan: scherm 00 toont P1 en P2 = DW1 en DW2, en de citaten
-  op 05 en 10 staan letterlijk in DW2 en DW3. Wat het rapport níet zegt: of dit typisch is, en wat
-  er op de achterkant staat (het sterretje verwijst ernaar) — allebei vragen voor SODAplus.
-  Het document zelf zit niet in de repo; vraag het op vóór je er iets over beweert.
-  Zie `LEARNINGS.md` in umanex-os, entry 2026-09-02.
+- **De bron is `Voorbeeld SODA-rapport.pdf` — één pagina, KTA Brugge, klas OKANOR.** DW1–DW3 dragen
+  scores (S=B · O=B · D=A · A=A/B/B) én klassenraadfeedback; DW4 is de periode die nog moet volgen en
+  is aan beide kanten leeg. Het vak "Oplossing voor de B-scores volgens de leerling" is overal leeg.
+  **Lees dat niet als een structurele fout** — het is een voorbeelddocument, en Jeroen heeft dat op
+  2026-09-02 tweemaal bevestigd; board en script trekken er geen conclusie uit. Wat wél in het
+  document staat en het argument draagt: drie periodes dezelfde twee B's, attitude van A naar B, en
+  drie feedbackblokken die bijna hetzelfde zeggen zonder ooit naar het vorige te verwijzen. Het
+  argument wordt sterker, niet zwakker, als dat vak wél was ingevuld. De demo-data komt hiervandaan
+  (scherm 00 = DW1 en DW2; de citaten op 05 en 10 staan in DW2 en DW3). De achterkant, waar het
+  sterretje naar verwijst, hebben we niet. Zie `LEARNINGS.md` in umanex-os, entry 2026-09-02 — over
+  dit document is twee keer geschreven zonder het te openen.
 - De app heet `soda-plus` op schijf en in git (`feat(soda-plus): ...`); `soda+` is de merknaam.
 - Werk in de hoofdtree, `apps/soda-plus`, op een feature branch vanaf `origin/main`; de vroegere eigen zusmap-worktree is op 2026-08-25 geschrapt (`.umanex-os/CLAUDE.md` → Git workflow → Parallel werk).
 - Stack conform monorepo-default: Next.js 14 + Tailwind 3, rollaag via `@umanex/config/tailwind/preset`,

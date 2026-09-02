@@ -8,12 +8,14 @@ Projectlaag van de backlog. Format, statussen en types: zie de kop van `BACKLOG.
 - **Wat:** 02 toont 2/4, 03 toont 3/4 voor hetzelfde domein (Orde), 04 verbergt de streepjes met 4/4 erin (2:161). Streepjes = domeinen maken (03 erft 2/4), labelen ("Orde · 2 van 4") en de 02-regel "Vier korte vragen, dan je rapport" herschrijven naar "Vier domeinen, elk drie korte vragen".
 - **Waarom niet nu:** P3-1 uit `audits/2026-08-25-ux-audit-wireframes.md` — hinder, geen blokkade; één fill en één copy-regel.
 - **Eerste zet:** fills 2:121–2:124 gelijkzetten aan 2:41–2:44; tekst 2:51 aanpassen.
-- **Status:** open
+- **Gebouwd 2026-09-02:** 03 toont nu dezelfde 2/4 als 02 (fill 2:123 terug naar #d6d6d6), beide schermen dragen het label "domein 2 van 4", en 2:51 zegt "Vier domeinen, elk drie korte vragen". Wat openblijft: 04 verbergt de streepjes nog met 4/4 erin (2:161).
+- **Status:** gebouwd
 
 ## 2026-08-25 — Touch-targets en geselecteerde staat · [ux]
 - **Wat:** chips 35–37 px hoog (02, 06, 09), de 14 datumvakjes op 05 zijn 17×17 met tik-hint, "‹ Terug" is een tekstnode 52×20 zonder hit-frame; geselecteerde chips/knoppen zijn 2 px kleiner en 1 px verschoven (strokeAlign is al INSIDE — de frames zijn gewoon kleiner getekend). Chips naar 44 px, vakjes 20×20 met hit-area of één "Toon de data"-knop, één box voor beide staten.
 - **Waarom niet nu:** P3-2 — de opdracht vraagt geen afwerking; alleen de vakjesstrip is expliciet interactief en dus geen afwerking.
 - **Eerste zet:** pills op 02 (2:55/2:57 e.a.) naar h=44; strip 2:249 herontwerpen.
+- **Deels gebouwd 2026-09-02:** de twaalf pills op 02 staan op 107×44 en geselecteerd/niet-geselecteerd zijn nu identiek in maat. Nog open: de chips op 06 en 09 (35–37 px), de 14 datumvakjes op 05 (17×17 — hun contrast is wél gefixt, de maat niet) en "‹ Terug" zonder hit-frame.
 - **Status:** open
 
 ## 2026-08-25 — Hold-to-reveal op 04: klik, toetsenbord, copy, Present-mode · [ux]
@@ -44,6 +46,7 @@ Projectlaag van de backlog. Format, statussen en types: zie de kop van `BACKLOG.
 - **Wat:** alleen "Geen antwoord in het Nederlands" heeft een vakjesstrip (2:249); "Opdracht niet gestart 3/14" (2:265) niet, terwijl de hint voor beide geldt; lege vakjes `#d6d6d6` op `#f4f4f4` = 1,32:1; "Wat klopt hiervan?" (2:272) staat onder telling én lezing zonder dat de leerling "de telling klopt, de lezing niet" kan zeggen — terwijl dat de these van het scherm is.
 - **Waarom niet nu:** P3-7 — detail op een scherm dat inhoudelijk klopt.
 - **Eerste zet:** één strip per observatie of één gedeelde kalenderstrip; vraag herformuleren ("Kloppen die lessen?") of extra knop bij de lezing.
+- **Deels gebouwd 2026-09-02:** de lege vakjes gingen van #d6d6d6 (1,32:1) naar een #6b6b6b-rand, en de hint staat nu direct onder de strip in plaats van onder "Opdracht niet gestart". Nog open: de tweede observatie heeft nog steeds geen strip, en "Wat klopt hiervan?" laat "de telling klopt, de lezing niet" nog niet zeggen.
 - **Status:** open
 
 ## 2026-08-25 — Woordenboek-restjes: je/jouw, "Attitude", "afspraak" · [ux]
@@ -56,6 +59,7 @@ Projectlaag van de backlog. Format, statussen en types: zie de kop van `BACKLOG.
 - **Wat:** 02/03/05/06 tonen alleen de ingevulde staat; CTA's zonder disabled-variant; nergens staat dat "Verder" wacht op de drie vragen en de gok ("weet ik niet" telt). Doelstelling 1 hangt aan die gate. Eén regel per caption of op de cover; optioneel één frame 02-leeg.
 - **Waarom niet nu:** P3-9 — `[GEEN DATA]` over het beoogde gedrag; wireframe-stadium.
 - **Eerste zet:** cover-regel "Verder is uitgeschakeld tot alle vragen beantwoord zijn".
+- **Deels gebouwd 2026-09-02:** op 02 staat de poort nu als regel op het scherm ("Je gok kan pas als de drie vragen beantwoord zijn — en brengt je meteen verder"). Nog open: 03, 05 en 06 tonen alleen de ingevulde staat, en er is nergens een disabled-variant getekend.
 - **Status:** open
 
 ## 2026-08-25 — Seintje-kanaal en de twee check-momenten · [ux]
@@ -116,4 +120,16 @@ Projectlaag van de backlog. Format, statussen en types: zie de kop van `BACKLOG.
 - **Wat:** `packages/tokens/scripts/guard.mjs` kent alleen cashflow, jobradar en portfolio als scope; `apps/soda-plus` valt buiten de guard op primitives, rauwe paletklassen en kale hex. De app gebruikt de gedeelde rollaag (`@umanex/config/tailwind/preset`), dus hij hoort in dezelfde lijst.
 - **Waarom niet nu:** raakt `packages/tokens` (cross-app scope, `chore(tokens):`) en hoort niet in de PR die de scaffold en de docs binnenbrengt; de ESLint-laag (`@umanex/config/eslint/tokens`) dekt intussen de editor.
 - **Eerste zet:** `apps/soda-plus` toevoegen aan de scope-lijst (regel ~37) en de app-lus (regel ~111) in `guard.mjs`; `pnpm --filter @umanex/tokens guard` moet groen blijven en op één ingeplante `bg-green-500` in `apps/soda-plus/app/page.tsx` rood worden (tegenproef).
+- **Status:** open
+
+## 2026-09-02 — CTA's staan op zeven hoogtes; geen sticky CTA-zone · [ux]
+- **Wat:** F3 uit `audits/2026-08-25-ux-audit-wireframes.md` — gemeten CTA-top varieert van y=458 (08) tot y=746 (05), spreiding 288 px, en op 05 valt de knop in de 34 px-zone onderaan. Audit §7.4 stelt één sticky zone y=727–778 op alle schermen voor. Dit item stond in de 05b-briefing als "blijft in de backlog" maar is daar nooit geland — deze entry sluit dat gat.
+- **Waarom niet nu:** de kleur-, maat- en F9-ronde van vandaag raakte alleen tekst en één knopstijl; CTA's op één hoogte pinnen verschuift op zeven schermen de compositie, en 05 heeft na de feedbackronde nog 4 px speling onderaan. Dat is een eigen ronde, geen bijvangst.
+- **Eerste zet:** per scherm de body op `primaryAxisAlignItems: SPACE_BETWEEN` zetten met een vaste CTA-zone onderaan; beginnen bij 08 (y=458, de grootste afwijker) en 05 (y=746) en meten of de content ertussen past.
+- **Status:** open
+
+## 2026-09-02 — Videoscript loopt achter op het board na de feedbackronde · [docs]
+- **Wat:** `video/2026-08-25-videoscript.md` noemt Sectie 2 als "00, 04b en 08b" (05c ontbreekt), zegt niets over de auto-advance op 02, en de omvang-beat op 2:45 draagt het nu/later-onderscheid nog niet dat wél op de cover staat. Het script staat bovendien op 686 woorden tegen een doel van ±4 minuten — er moet dus vervangen worden, niet toegevoegd.
+- **Waarom niet nu:** de opdracht van vandaag was "verwerk je voorstellen in de wireframes in Figma". Gesproken tekst is Jeroens tekst; die herschrijf ik niet ongevraagd, en de acceptatie-regel over de scriptlengte in de 05b-briefing zegt hetzelfde.
+- **Eerste zet:** één zin in de flow-beat over 02 ("de gok is meteen de knop verder"), de sectie-2-opsomming aanvullen met 05c, en de omvang-beat vervangen door de twee cover-blokken in eigen woorden.
 - **Status:** open

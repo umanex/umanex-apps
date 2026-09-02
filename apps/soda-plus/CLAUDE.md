@@ -21,6 +21,22 @@ opdracht duidelijk wordt — verzonnen projectcontext is schadelijker dan geen.
 
 ## Verify-pad
 
-Nog geen. `pnpm --filter soda-plus type-check` en `build` draaien; er is nog geen flow-harness
+**Code:** geen. `pnpm --filter soda-plus type-check` en `build` draaien; er is nog geen flow-harness
 (`scripts/flow-harness.mjs`) zoals bij portfolio en jobradar. Dat is een gat, geen vergetelheid —
-bouw hem wanneer er schermen zijn om vast te leggen.
+bouw hem wanneer er schermen in code staan. Vandaag leeft de deliverable in Figma, niet in `app/`.
+
+**Board (Figma `XwEUhY92XX32sQkEIdbEFN`, pagina "Wireframes"):** de meetbare as loopt via de
+Desktop Bridge, nooit via REST — een REST-render is na een edit per definitie stale.
+
+| Capability | Commando |
+|---|---|
+| Bridge leeft | `figma_get_status` met `probe: true` (verwacht `probeResult.success`) |
+| Render vastleggen | `figma_capture_screenshot` met `nodeId` — runtime-klasse, dus vers |
+| Contrast | `figma_execute`: tel zichtbare TEXT-nodes per fill-hex. `#9e9e9e` = 2,68:1 op wit en mag niet voorkomen; `#6b6b6b` = 5,33:1 op wit en 4,85:1 op `#f4f4f4` |
+| Tekstgrootte | `figma_execute`: tel `fontSize < 12`. Let op `textAutoResize === 'NONE'` — zo'n vaste box knipt stil af zónder uitloop te tonen |
+| Uitloop | tekstbreedte tegen **`parent.width - paddingLeft - paddingRight`**, niet tegen de framebreedte. Twee afknottingen op 2026-09-02 stonden groen omdat ik tegen 375 px mat in plaats van tegen de cel (96) en de kaart (305) |
+| Overlap | frames paginabreed paarsgewijs, én tekstnodes onderling binnen 40 px op y |
+| Prototype | `figma.currentPage.findAll(n => n.reactions.length)` + `flowStartingPoints`; NAVIGATE naar het eigen frame wordt geweigerd |
+| Sectie-integriteit | elk frame binnen zijn sectie, secties onderling niet overlappend op y |
+
+De acceptatielijst van de lopende briefing is de bron; vink af met de meting in de regel.

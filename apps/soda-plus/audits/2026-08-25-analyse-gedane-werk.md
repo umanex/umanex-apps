@@ -26,6 +26,8 @@ SODAplus-realiteit (sodaplus.be, 25 aug): 58 scholen, 15.414 leerlingen, 1.337 b
 
 ## 1 · Eindoordeel
 
+> **Correctie 2026-09-02:** de zin hieronder klopt niet. De opdracht-PDF is een *voorbeeld*rapport; dat kader is leeg omdat de leerling het nog moet invullen, niet omdat het leeg bleef. Het is dus geen bewijsstuk. De rest van de analyse staat los van deze lezing — de drie oorzaken gaan over de vorm van het formulier. Niet herschreven, wel gemarkeerd.
+
 Inhoudelijk is dit vermoedelijk het sterkste dossier van de vijf: de probleemlezing vertrekt van Simons eigen bewijsstuk (het oplossingskader is bij DW1, DW2 én DW3 leeg) en geeft daar drie mechanistische oorzaken voor, elk met een eigen scherm. De drie doelstellingen worden gedragen door mechanismen die andere kandidaten waarschijnlijk niet hebben (terugkeerlus, openen op overeenstemming, observatie gescheiden van interpretatie, als-dan-slots).
 
 Als inzending, vandaag, is het niet indienbaar en zelfs riskant: zonder video spreken de captions, en die spreken precies verkeerd — stellig, lang, over klassenraden en over wat het rapport "echt" meet, tegen de man die het rapport ontwierp en met 58 scholen werkt. Elf schermen met schoolzijde en randgevallen lezen als veel meer dan het uur dat hij tweemaal als grens stelde. De leerlingflow zelf breekt tussen 04 en 07. En het hele ontwerp staat op één OKAN-klas terwijl SODAplus een klas Bouw in Genk net zo goed bedient.

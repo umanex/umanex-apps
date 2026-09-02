@@ -8,8 +8,8 @@ Doel: 3 tot 5 minuten, één take, spreektaal. Structuur volgt de mail van Simon
 welke problemen en kansen → waarom die keuzes → hoe verder met meer tijd. Beeld: Figma in
 Present-mode voor de flow (startpunt "Leerlingflow"), uitgezoomd board voor scope, cover voor het slot.
 
-**Lengte — gemeten, niet geschat: 683 woorden spreektekst.** Dat is 5:04 bij 135 woorden per minuut
-en 4:33 bij 150, het tempo dat je in een opname makkelijk haalt. Wil je marge, dan zijn dit de
+**Lengte — gemeten, niet geschat: 705 woorden spreektekst.** Dat is 5:13 bij 135 woorden per minuut
+en 4:42 bij 150, het tempo dat je in een opname makkelijk haalt. Wil je marge, dan zijn dit de
 snijlijnen, in volgorde van minste schade:
 
 | Weg | Bespaart | Kost je |
@@ -30,9 +30,9 @@ want schattingen liepen hier drie keer mis. Pauzes zijn gemarkeerd met —.
 > Dag Simon, dag team. Dit is mijn voorstel voor het digitale attituderapport, en waarom ik het zo gemaakt heb. Ik begin bij het papieren rapport.
 
 ## 0:20 – 0:55 · Het probleem
-**Beeld:** het oude rapport, ingezoomd op de drie lege kaders.
+**Beeld:** het voorbeeldrapport uit de opdracht — de feedbackregel, en het kader eronder waar de leerling moet schrijven. Niet inzoomen op de leegte; inzoomen op de vraag die het kader stelt.
 
-> Dit kader — "Oplossing voor de B-scores volgens de leerling" — staat drie periodes op rij leeg. Ik lees daar drie oorzaken in. — Eén: de feedback zegt "niet gemotiveerd". Dat is een oordeel over wie je bent, en daar maak je geen plan tegen. Twee: het kader vraagt schrijven, terwijl kiezen zou volstaan — zeker bij een leerling die Nederlands nog leert. Drie: niemand komt er de volgende periode op terug. — Die drie bepalen het ontwerp.
+> Dit is een voorbeeldrapport — het kader "Oplossing voor de B-scores volgens de leerling" moet de leerling zelf nog invullen. Mijn vraag is of dat in de praktijk ook gebeurt, en als ik naar de vorm kijk vermoed ik van niet. Drie redenen. — Eén: de feedback erboven zegt "niet gemotiveerd". Dat is een oordeel over wie je bent, en daar maak je geen plan tegen. Twee: het kader vraagt schrijven, terwijl kiezen zou volstaan — zeker bij een leerling die Nederlands nog leert. Drie: niemand komt er de volgende periode op terug. — Die drie bepalen het ontwerp.
 
 ## 0:55 – 2:00 · De flow
 **Beeld:** Present-mode, 01 → 08. Eén zin per scherm, klik terwijl je spreekt.
@@ -89,7 +89,7 @@ want schattingen liepen hier drie keer mis. Pauzes zijn gemarkeerd met —.
 
 Kan je er één niet in eigen woorden brengen, dan gaat dat stuk uit de video — niet omdat het fout is, maar omdat je het in het gesprek erna niet kan verdedigen.
 
-1. Waarom het kader leeg blijft — de drie oorzaken.
+1. Waarom je vermóedt dat dat kader leeg blijft — de drie redenen, en waarom het een vermoeden is en geen vaststelling.
 2. Waarom drie gedragingen met een frequentie beter zijn dan "ben je ordelijk, A of B".
 3. Waarom de onthulling opent op overeenstemming en niet op het verschil in het rood.
 4. Waarom het plan ná de onthulling staat en niet ervoor.
@@ -111,6 +111,8 @@ Dat tweede antwoord is geen ontwijking maar het punt zelf: je verkoopt verantwoo
 
 ## Wat je niet zegt
 
+- **Niet "dat kader staat drie periodes op rij leeg".** Het is een voorbeeldrapport: dat kader is leeg omdat de leerling het nog moet invullen, niet omdat hij het heeft laten staan. Die zin als bewijs presenteren tegenover de man die het formulier ontwierp, is de duurste fout die je in de eerste dertig seconden kan maken. De drie redenen gaan over de **vorm** en hebben de leegte niet nodig — houd het bij "ik vermoed, klopt dat?".
+
 - **Wel: "in dat uur stond een flow van begin tot eind." Niet: "dit board is een uur werk."** Het eerste is waar en te tonen — de eerste sessie liep 19:18 tot 19:48 en leverde de volledige set. Het tweede breekt bij één doorvraag: er zitten sinds dat uur een revisieronde, een UX-audit en twee bijstelrondes in. Daarom staat "drie rondes verder" ín de beat en niet in de kleine lettertjes. Zie `audits/2026-08-25-analyse-gedane-werk.md` §6.
 - **Niet "AI heeft het gemaakt" en ook niet "AI heeft geholpen met wat details".** Het eerste geeft je werk weg, het tweede is niet waar en klinkt zo. De verdeling die je uitspreekt — beslissingen van jou, uitvoering versneld — is de enige die je bij doorvragen kan tonen.
 - Geen cijfers zonder bron: geen "een klassenraad doet twintig leerlingen in anderhalf uur", geen effectgroottes, geen percentages.
@@ -122,7 +124,7 @@ Dat tweede antwoord is geen ontwijking maar het punt zelf: je verkoopt verantwoo
 
 - Eén take. Verspreek je je: herbegin de zin, knip niet. Een haperende zin die van jou is, is beter dan een gladde die het niet is.
 - Figma Present-mode op "Leerlingflow"; zet de opname vooraf op 02 klaar zodat de eerste klik meteen beeld geeft.
-- Toon het oude rapport uit de opdracht-PDF (pagina 2) bij het probleem — hun eigen bewijsstuk, niet jouw slide.
+- Toon het voorbeeldrapport uit de opdracht-PDF (pagina 2) bij het probleem — hun eigen document, niet jouw slide.
 - Sectie 3 blijft dicht. Sectie 2 (00, 04b, 08b en 05c) mag in beeld bij het uitzoomen.
 - De aanpak-beat spreek je bij voorkeur in beeld, niet over een screenshot. Het is het enige stuk dat over jou gaat.
 - Unlisted link (YouTube/Vimeo/Loom) die zonder account opent. Test in een privévenster.

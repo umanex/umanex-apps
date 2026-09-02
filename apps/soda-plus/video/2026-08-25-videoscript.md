@@ -1,4 +1,9 @@
-# Videoscript — praktijkopdracht SODAplus
+# Videoscript — praktijkopdracht SODAplus (v1, vervangen)
+
+> **Vervangen op 2026-09-02 door `video/2026-09-02-videoscript.md`.** Die versie draagt het board
+> ná de feedbackronde (05c, auto-advance op 02, het nu/later-blok op de cover) en heeft een eigen
+> beat over de werkwijze. Dit bestand blijft staan als spoor; neem er geen tekst uit over zonder
+> te checken of het board hem nog waarmaakt.
 
 Doel: ±4 minuten, één take, spreektaal. Structuur volgt de mail van Simon letterlijk: wat je maakte → welke problemen en kansen → waarom die keuzes → hoe verder met meer tijd. Beeld: Figma in Present-mode voor de flow (startpunt "Leerlingflow"), uitgezoomd board voor scope, cover voor het slot. Camera klein in de hoek of niet — de schermen zijn het beeld.
 

@@ -132,4 +132,5 @@ Projectlaag van de backlog. Format, statussen en types: zie de kop van `BACKLOG.
 - **Wat:** `video/2026-08-25-videoscript.md` noemt Sectie 2 als "00, 04b en 08b" (05c ontbreekt), zegt niets over de auto-advance op 02, en de omvang-beat op 2:45 draagt het nu/later-onderscheid nog niet dat wél op de cover staat. Het script staat bovendien op 686 woorden tegen een doel van ±4 minuten — er moet dus vervangen worden, niet toegevoegd.
 - **Waarom niet nu:** de opdracht van vandaag was "verwerk je voorstellen in de wireframes in Figma". Gesproken tekst is Jeroens tekst; die herschrijf ik niet ongevraagd, en de acceptatie-regel over de scriptlengte in de 05b-briefing zegt hetzelfde.
 - **Eerste zet:** één zin in de flow-beat over 02 ("de gok is meteen de knop verder"), de sectie-2-opsomming aanvullen met 05c, en de omvang-beat vervangen door de twee cover-blokken in eigen woorden.
-- **Status:** open
+- **Gebouwd 2026-09-02:** `video/2026-09-02-videoscript.md` — 688 woorden gemeten (5:06 bij 135 wpm, 4:35 bij 150), met 05c en de auto-advance erin en een eigen beat over de werkwijze. v1 staat gemarkeerd als vervangen. Wat openblijft: de opname zelf, en de keuze of de aanpak-beat erin blijft (zin 6 van de zeven-zinnen-toets).
+- **Status:** gebouwd

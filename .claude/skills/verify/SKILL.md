@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Toetst of gebouwd werk zich werkelijk gedraagt zoals het acceptatie-contract zegt, door het uit te vóéren op het doelwit van de gebruiker — niet door de code te lezen. Kiest de meetbare as bij het taaktype (design-snapshot, invariant, flow-doorloop, request/response, before-after-reproductie), levert P0–P3 bevindingen met runtime-bewijs, en vinkt de acceptatie-items van de briefing af. Gebruik deze skill in de Beoordeel-stap van de triade, of wanneer de gebruiker zegt "verifieer dit", "klopt het gedrag", "werkt het echt", "check of dit doet wat de briefing zegt", "vink de acceptatie af". **Roep hem ook aan zodra je zélf gaat meten, ook zonder dat de gebruiker erom vraagt** — bij een positieve of negatieve controle, een tegenproef, de vraag of een check rood kan worden, een lege of verdachte uitkomst, een telling waarvan het meetbereik onzeker is, of vóór je een getal aan de gebruiker rapporteert. Dat is de meerderheid van de gevallen: de discipline komt op midden in het werk, niet uit de prompt. De elf rails hier dragen het gemeten bewijs waar `CLAUDE.md` alleen de kern van draagt. NIET voor diff-correctheid (`code-review`), design-kwaliteit (`ux-audit`) of backend-hardening (`security-audit`).
+description: Toetst of gebouwd werk zich werkelijk gedraagt zoals het acceptatie-contract zegt, door het uit te vóéren op het doelwit van de gebruiker — niet door de code te lezen. Kiest de meetbare as bij het taaktype (design-snapshot, invariant, flow-doorloop, request/response, before-after-reproductie), levert P0–P3 bevindingen met runtime-bewijs, en vinkt de acceptatie-items van de briefing af. Gebruik deze skill in de Beoordeel-stap van de triade, of wanneer de gebruiker zegt "verifieer dit", "klopt het gedrag", "werkt het echt", "check of dit doet wat de briefing zegt", "vink de acceptatie af". **Roep hem ook aan zodra je zélf gaat meten, ook zonder dat de gebruiker erom vraagt** — bij een positieve of negatieve controle, een tegenproef, de vraag of een check rood kan worden, een lege of verdachte uitkomst, een telling waarvan het meetbereik onzeker is, of vóór je een getal aan de gebruiker rapporteert. Dat is de meerderheid van de gevallen: de discipline komt op midden in het werk, niet uit de prompt. De twaalf rails hier dragen het gemeten bewijs waar `CLAUDE.md` alleen de kern van draagt. NIET voor diff-correctheid (`code-review`), design-kwaliteit (`ux-audit`) of backend-hardening (`security-audit`).
 ---
 
 ## Werkwijze
@@ -44,7 +44,7 @@ Meerdere assen tegelijk is normaal: een feature-flow met een berekening heeft er
 
 ---
 
-## Elf rails — de discipline van de Beoordeel-stap
+## Twaalf rails — de discipline van de Beoordeel-stap
 
 Deze staan als werkprincipe in `CLAUDE.md`; hier zijn ze operationeel.
 
@@ -61,6 +61,8 @@ Kan dat niet, dan is een surrogaat toegestaan **mits je twee dingen meldt**: dat
 **3. Geen verzonnen bewijs.** Kun je een item niet uitvoeren, markeer het `[NIET TE VERIFIËREN — reden]` en zeg hoe het wél zou kunnen. Een verificatie met valse zekerheid is schadelijker dan een eerlijke leemte, want ze sluit de vraag af.
 
 **4. Toets een bewering over een bibliotheek aan de geïnstalleerde bron.** Die staat in `node_modules`. Hoe stelliger de bewering, hoe kleiner de kans dat ze nagekeken is — en een typecheck die slaagt zegt niets over een verkeerd begrepen contract.
+
+*In meetgereedschap is de schade groter dan in een fix.* Een verkeerd contract in een fix faalt zichtbaar; in een instrument levert het een gevulde, geloofwaardige, verkeerde uitkomst. Gemeten op fleet-manager (2026-09-01): `page.addStyleTag({ id: 'geen-vink', content: … })` — Playwright kent alleen `content`, `path` en `url` (nagemeten in `types/types.d.ts` van de geïnstalleerde 1.62.1). De onbekende optie wordt stil genegeerd, dus de tag kreeg nooit een id, `getElementById` gaf `null`, en de injectie `span > svg { visibility: hidden }` bleef permanent op de pagina staan. Elke volgende meting las daarop "geen verschil", waarna het instrument twee bevindingen meldde die geen van beide bestonden — een select-all die 0 van 5 rijen aanvinkte, en een `/orders` zonder tabel — en die werden als codefout gediagnosticeerd vóór het instrument verdacht werd. Twee versterkers: in een `.mjs` keurt geen typecheck een onbekende property af, en de negatieve controle stond vóór de vervuiling en bleef groen. *Herkenningsteken:* een check die eerst groen was en na een tussenliggende meting rood wordt zónder dat de code veranderde, is een uitspraak over het instrument, niet over de code.
 
 **5. Nooit een destructief pad tegen productiedata.** Rail 2 stuurt je naar het echte doelwit; deze rail begrenst dat. Verwijderen, wissen, overschrijven of een migratie draaien op data die de gebruiker echt gebruikt is geen verificatie — het is schade met een rapport eraan vast. Dat het goed afliep bewijst niets over de beslissing: die was al fout toen je hem nam, want de uitkomst was toen onbekend.
 
@@ -85,6 +87,10 @@ Een niet-getrouw instrument levert een vals-negatief dat er identiek uitziet als
 *Je observatiepunt is óók een instrument.* Kijk naar wat de bibliotheek zelf vertelt — bij dnd-kit de `[aria-live]`-narratie ("Picked up…", "was moved over droppable area…") — niet naar een afgeleid symptoom. Een observer die op de DragOverlay lette meldde nul terwijl de sleep aantoonbaar was opgepakt: bij een burst commit React die overlay nooit. Twee instrumenten, twee tegengestelde antwoorden, en het zichtbaarste was het foute.
 
 *En de omgeving van je instrument.* In een achtergrond-tabblad staat `document.visibilityState` op `hidden` en vuurt `requestAnimationFrame` niet meer: een wachtlus op frames hangt tot de tool-timeout, en animaties maken hun exit nooit af. Wat je dan meet is de tab-staat, niet de app. Gebruik timers in plaats van frames, of breng het doelwit naar de voorgrond.
+
+*Een afwijzing heeft dezelfde vorm als een lege uitkomst.* "Niet gevonden", "geweigerd" en "instrument kapot" zien er identiek uit, dus een negatieve uitkomst vraagt evengoed een positieve controle: toon dat je opstelling de positieve uitkomst ooit kón produceren. Gemeten op 2026-08-29: `sftp -b` tegen de SFTP-drop van FOD Economie gaf `Permission denied (publickey,keyboard-interactive)` zonder ooit een wachtwoordprompt, en dat werd gerapporteerd als eigenschap van de server — met het advies een sleutelpaar via de helpdesk te laten installeren, dagen wachttijd voor een probleem dat niet bestond. `-b` zet `BatchMode=yes` door naar ssh en onderdrukt élke interactieve prompt; zonder `-b` logden exact dezelfde gegevens meteen in. De meting ging dus over het gereedschap, niet over de server. Het alarm lag er al: de foutmelding noemde `keyboard-interactive` zélf als toegestane methode, en dat is per definitie een methode die prompt — twee signalen die elkaar tegenspraken, als één gelezen. Nagemeten op 2026-09-03 met een host-key-prompt: mét `-b` `Host key verification failed` zonder prompt, zonder `-b` verschijnt `The authenticity of host … can't be established`. Let op de eerste opzet daarvan, die zélf rail 8 opleverde: met `</dev/null` gaven **béide** kanten dezelfde uitkomst, want zonder tty prompt ssh sowieso niet — pas op een pty (`script -q /dev/null`) bewoog de meting.
+
+*Meerdere beoordelaars op één afgeleide bron zijn één meting.* Gemeten op Partner Fleet Portal (2026-08-27): een dump gefilterd op `node.visible` — de eigen vlag van de node, die niets zegt over een ouder die een component-variant heeft weggeklapt — droeg 22 `kWh`-tekstnodes waarvan er **nul** gerenderd worden. Alle drie de audit-assen meldden daarop onafhankelijk dezelfde P1 ("22 kWh-suffixen op velden die niets met energie te maken hebben"), en de scheidsrechter zette hem bovenaan als quick win met het hoogste rendement. Drie eensluidende beoordelaars zijn daar géén bevestiging: ze lazen alle drie dezelfde kapotte bron, dus hun overeenstemming meet de dump en niet het bestand. De hermeting met `absoluteRenderBounds` plus een ouder-keten-check en een positieve controle wierp de bevinding om vóór publicatie. De bron moet een tegenproef dragen vóórdat je er meerdere beoordelaars op zet.
 
 *Een vervangen instrument valideer je eerst op wat níet veranderde.* Herschrijf of vervang je een meetinstrument — een dump-filter, een vergelijker, een parser — dan zegt zijn uitkomst over het gewijzigde deel pas iets als hij het óngewijzigde deel exact reproduceert. Gemeten op fleet-manager: een nieuw dump-filter gooide twee strings weg, en die lege uitkomst zag er identiek uit aan een schone dump; alleen 19 onveranderde schermen ernaast leggen (aantal teksten + tekenlengte) haalde het boven. Dat het instrument zélf kapot kan zijn hoort bij die toets: de vergelijker gaf twee verschillende hashes voor identieke invoer.
 
@@ -123,12 +129,18 @@ Gemeten op één sessie: vier keer, en drie keer met een getal dat plausibel oog
 
 Herkenningsteken voor beide: een bewering die in dezelfde adem ontstaat én wordt afgevinkt, zonder call ertussen. In een `AskUserQuestion`-optie schaadt het het meest, want daar wordt een ongemeten getal de grond waarop de gebruiker beslist: geschat −3 500 chars, gemeten −428, een factor 8. Kantelt een aanname onder een optie nádat de gebruiker koos, dan volstaat de opbrengst corrigeren niet — bied de keuze opnieuw aan.
 
+*Een betwiste bewering over een artefact dat je nooit opende.* Arbitreren tussen twee tweedehandse lezingen is geen verificatie maar een muntworp met argumentatie eromheen. Gemeten op Soda+ (2026-09-02): een zin uit de audit van een eerdere sessie ("het oplossingskader is bij DW1, DW2 én DW3 leeg") droeg een cover, een caption en de opening van een videoscript. Op één zin pushback van de gebruiker werden alle drie in de **tegenovergestelde** richting herschreven, plus een correctie-marker in de audit en een LEARNINGS-entry — precies de plekken waar latere sessies hun feiten halen, dus een ongeverifieerde correctie daar vermenigvuldigt de fout in plaats van hem te stoppen. In die ronde stond letterlijk de zin "het document zit niet in de repo, ik heb het nooit gezien", behandeld als caveat in plaats van als stopteken; het bestand lag in `~/Downloads` en één `Read` besliste de vraag. Twee dingen maakten het erger dan een leesfout: er hing niets van de premisse af (de drie oorzaken in het ontwerp gaan over de vórm van het formulier), dus geen enkele check werd rood — en het rapport droeg zijn eigen controlegeval, onvindbaar in elke discussie die het niet opent: DW1–DW3 zijn aan de schóólkant ingevuld terwijl het leerlingvak leeg is, en DW4 moet nog volgen en staat aan béide kanten leeg. Nagespeeld op 2026-09-03 met dezelfde structuur — bron vindbaar met één `find`, niet aangereikt — en de fout **reproduceerde volledig**: drie artefacten geblokkeerd en de bron-audit "gecorrigeerd", zonder één call die de bron opende. *Herkenningsteken:* "ik heb het nooit gezien" hoort een vráág te worden, geen voetnoot.
+
+**12. Bij afhankelijke berekeningen is de invariant de meetbare as.** Volgt een waarde uit een andere, dan valideert scherm-per-scherm niets: elke fix is lokaal correct terwijl dezelfde afgeleide waarde elders anders berekend blijft, en je kan alle schermen afvinken zonder één keer de fout te raken.
+
+PLAN levert daarom minstens één **invariant** over het hele model, en BEOORDEEL rékent die uit over een echte dataset — `eindsaldo maand N == beginsaldo maand N+1` over de volledige reeks — in plaats van een scherm af te lezen dat het juiste getal toont. Deze rail staat als enige niet als eigen regel in het discipline-blok van `CLAUDE.md`: zijn kern hangt daar aan de PLAN-zin, omdat hij bijt vóór er iets te verifiëren valt.
+
 ---
 
 ## Rail-mapping — welke `CLAUDE.md`-kern hoort bij welke rail hier
 
 `CLAUDE.md` draagt de kern-bewering, deze skill het gemeten geval. De koppen lopen niet
-één-op-één: vier van de twaalf matchen letterlijk, de rest zegt hetzelfde onder een andere
+één-op-één: vier van de elf matchen letterlijk, de rest zegt hetzelfde onder een andere
 kop. Die vertaling staat hieronder, en niet in een script — `scripts/test-discipline-blok.sh --fix`
 leest deze tabel, zodat er één bron is die ook leesbaar is voor wie de skill opent. Een
 verouderde regel valt hier op; een verouderde `case` in een script niet.
@@ -146,7 +158,6 @@ verouderde regel valt hier op; een verouderde `case` in een script niet.
 | meetbereik bevat | 10 |
 | verwachtingswaarde | 7 |
 | zekerheid moet dekken | 11 |
-| afhankelijke berekeningen | — |
 
 Het fragment is een substring van de rail-kop in `CLAUDE.md`; een streepje betekent dat deze
 skill er nog geen rail voor heeft en er dus een bij moet vóór het bewijs hierheen kan.

@@ -136,6 +136,22 @@ maak alleen wat er nog niet was. Gemeten in rowtrack (2026-09-09), vóór en ná
 set-key gelijk, variant-keys gelijk, status `CURRENT → CHANGED` in plaats van vervangen, en
 gebouwd zónder de force-vlag. Over 45 componenten hielden 194 nodes hun key.
 
+**En dit geldt voor élke gegenereerde node met identiteit, niet alleen voor componenten.**
+Een scherm, een compositie, een frame waar iemand een prototype-verbinding of een commentaar aan
+hangt: alles wat aan de NODE hangt in plaats van aan zijn inhoud gaat verloren bij een
+vervanging. GEMETEN 2026-09-10 (rowtrack): de hergebruik-tak stond achter `if (!DOEL)` — alleen
+library-componenten — en twee herbouwde schermen kregen nieuwe node-ids (`466:11547 ->
+470:4841`) terwijl de 22 onaangeraakte frames de hunne hielden. Ná de uitbreiding hielden alle 24
+hun id en was de teruggelezen geometrie **byte-identiek** aan die van de vervang-ronde. Bijwerken
+levert hetzelfde op, mét identiteit; er is dus geen afweging, alleen een gemiste tak.
+
+*De sleutel verschilt per soort, en de hergebruik-tak ook.* Een variant vind je terug op zijn
+variantnaam, een scherm op een eigen merker (pluginData) omdat het een gewone frame op een
+gedeelde pagina is. En wat je bij hergebruik moet herstellen verschilt: een component-variant
+krijgt `fills = []` en zijn kale naam, een scherm juist wél zijn eigen achtergrond, `clipsContent`
+en een naam mét prefix. Die twee takken door elkaar halen leegde de schermachtergrond en
+hernoemde "ActivePhase / Playground" naar "Playground".
+
 **En een publicatiepoort moet dat weten.** De regel *"een herbouw breekt elke instance"* geldt
 alleen waar de node écht vervangen wordt. Weigert je poort óók wanneer hij hem bijwerkt, dan
 dwing je elke ronde een force af en went iedereen aan de ontsnapping. De handwerk-bewaking is
@@ -183,11 +199,20 @@ kent, dus de transcriptie moet **vertalen of melden** — nooit de waarde laten 
 
 | Bron | Figma | Wat je doet |
 |---|---|---|
-| `margin` per kind | auto-layout kent alleen `gap` en `padding` | vouw hem in de gap of de padding van de ouder; zet een spacer-node waar alleen een middenkind hem draagt; **meld** wat overblijft (negatief, kruis-as) |
+| `margin` per kind | auto-layout kent alleen `gap` en `padding` | vouw hem in de gap of de padding van de ouder; zet een spacer-node waar alleen een middenkind hem draagt — **met hoogte `marge − gap`**, zie hieronder; **meld** wat overblijft (negatief, kruis-as, en elke naad waar de spacer niet past) |
 | rand per zijde (`0/0/1/0`) | één `strokeWeight` | zet `strokeTopWeight` c.s. **ná** `strokeWeight` — die laatste zet de vier terug |
 | randkleur per zijde | `strokes` is één verfarray | niet uit te drukken: zet de eerste en **meld** het |
 | `scrollTop` | geen scrollpositie | laat de auto-layout van die container vallen: de kinderen dragen de rolling al in hun gemeten offset, dus absolute plaatsing plus `clipsContent` is de hele vertaling — en dat kost geen extra wrapper die je parity-vergelijking als syntheseregel moet kennen |
 | `<input placeholder>` | een tekstnode of niets | lees `value`-of-`placeholder`, met de placeholderkleur, en **pin** de doos: een placeholder die hugt is smaller dan het veld eromheen |
+
+**Een spacer kost een extra gap, en dat is bijna niet te zien.** Auto-layout zet een gap aan
+BEIDE zijden van een ingevoegde node: waar de bron `gap + marge` ruimte maakt, maakt het doel
+`gap + spacer + gap`. GEMETEN 2026-09-10 (rowtrack, gap 16 en marge 8): 24 px tussen twee
+elementen in de browser, 40 in Figma. Twee zulke naden maakten een gecentreerd blok 40 px hoger
+en schoven het ±20 px uit elkaar — met de geometrie-parity op NUL, want die vergelijkt hoogtes
+en gaps en niet de posities van stromende kinderen. De hoogte is dus `marge − gap`; is die niet
+positief, dan is de naad met een spacer per constructie **niet uit te drukken** — invoegen zou
+ruimte TOEVOEGEN in plaats van een tekort aanvullen — en dan is melden het juiste antwoord.
 
 **Meet de verdeling vóór je de vertaling ontwerpt.** Deze vijf zijn allemaal ontworpen ná een
 telling over de hele bron, en die telling veranderde in twee gevallen het ontwerp. De randen
@@ -201,6 +226,44 @@ groot — en de plek waar hij te klein is, vind je alleen door te tellen.
 opruimregel ervóór: een `isDoorvoer`-toets die alleen `borderTopWidth` las, vouwde een node met
 enkel `border-bottom` weg als betekenisloze wrapper — mét zijn rand, vóórdat de spec hem ooit
 zag. Wie alleen naar het schrijfeinde kijkt, ziet zulke verliezen niet.
+
+**1f. Publiceren maakt een library nog niet beschikbaar bij de consument.** Een consumerend
+bestand krijgt de nieuwe versie niet vanzelf, en de plugin-runtime maakt het erger: die cachet
+zijn imports vanaf het moment dat hij verbindt. GEMETEN 2026-09-10 (rowtrack), ná een publicatie
+die in de library bevestigd was — alle 45 componenten op `CURRENT`, teruggelezen via de runtime:
+`importComponentByKeyAsync` gaf in het consumerende bestand `HeroPanel` met drie van zijn vijf
+properties, `ActiveHeader` en `GoalPill` met nul. Géén fout, géén waarschuwing. De bouw liep
+gewoon door, maakte zes frames en meldde 36× "slot bestaat niet"; die teksten tonen daarna stil
+de library-data.
+
+De remedie is de plugin **sluiten en opnieuw starten** in dát bestand — een UI-herlaad helpt
+niet, want de plugin-code loopt door — en er is geen API om het af te dwingen. Dus: **toets het
+geïmporteerde contract vóór de eerste write.** Leg de `componentPropertyDefinitions` die
+binnenkomen naast wat je spec verwacht en weiger te bouwen bij een gat, met de lijst erbij. Die
+poort noemde in rowtrack exact de tien componenten en 23 properties die een onafhankelijke diff
+ook aanwees. Volgorde: library publiceren → runtime in het doelbestand vernieuwen → bouwen.
+
+*En let op je voorverwarming.* Markeert die wat ze al geïmporteerd heeft, dan overleeft die
+markering een publicatie én een herstart, en meldt ze `0 gedaan, 0 resterend` — succes dat op
+niets slaat. Gemeten: 8 ms en nul imports vlak ná een publicatie, tegen 3 623 ms en 315 imports
+zodra de markering gewist was. Geef zo'n stap een vlag om vers te beginnen, en laat hem hardop
+zeggen wanneer hij nul deed terwijl er markeringen stonden.
+
+**1g. Plaats gegenereerde nodes uit de SPEC, nooit uit de geschiedenis van de pagina.** Een
+generator die een nieuwe node "rechts van alles wat er al staat" zet, lost het stapelen binnen
+één ronde op en is cumulatief over ronden heen. GEMETEN 2026-09-10 (rowtrack): 24 schermframes
+stonden op x = 170 600 tot 182 526, terwijl elke andere pagina in dat bestand tussen −3 287 en
+7 533 lag — ongeveer 357 geplaatste frames, vijftien ronden. Zo ver van de oorsprong begeeft
+Figma's canvas-precisie het: de gebruiker zag alle frames bij het laden van de pagina en ze
+verdwenen zodra hij zoomde of scrolde, terwijl het lagenpaneel ze bleef tonen.
+
+**Geen enkele as ziet dit**, en dat is het punt: parity vergelijkt maten en structuur BÍNNEN een
+node, een beeldvergelijking legt een node-export naast een render, en een sync-guard leest een
+manifest. Geen van drieën heeft een mening over wáár de node staat — voor het ontwerp is dat ook
+irrelevant, tot de renderer ermee stopt. Leid de plaats daarom af uit de index in je spec
+(`i × (breedte + marge)`, y = 0), pas hem óók toe bij hergebruik zodat een afgedreven node
+vanzelf terugkomt, en doe hetzelfde met de laagvolgorde — die dreef in dezelfde meting mee, want
+een apart herbouwde node wordt achteraan de pagina gehangen.
 
 **2. Tokens-first — nul hardcoded waarden.** Elke kleur, spacing, radius en effect bindt aan een Figma variable of style. Een ontbrekende variable is een **gap** die je oplost (`figma_import_library_variable` of `figma_create_variable`) of rapporteert aan de gebruiker — nooit een excuus om een raw hex- of getalwaarde te hardcoden.
 
@@ -647,6 +710,20 @@ principe 3 beschrijft: "bedoeld" kwam uit een eigen keuze, dus de diff was per c
 ### Stap 8 — Parity-gate: correctheid tegen bedoeld
 
 Stap 7 bewijst *aanwezigheid* — alles gebonden, geen raw waarden. Stap 8 bewijst *correctheid*: bindt elke property aan het token dat de **code bedoelde**? Een token dat bestaat maar de verkeerde betekenis draagt (verkeerde laag, naburig spacing-token) compileert, oogt juist, en breekt stil bij de volgende theme- of token-wijziging. Dat is precies wat deze gate vangt. Objectieve diff, geen smaak-oordeel — UX-kwaliteit hoort in `ux-audit`, niet hier.
+
+**En een geometrie-diff is niet de laatste as — een beeld-diff wel.** Een parity die maten,
+spacing en structuur vergelijkt, is per constructie blind voor twee dingen: de POSITIE van
+stromende kinderen (die volgt uit de layout-engine en wordt niet apart vergeleken) en de SOM van
+kleine fouten. GEMETEN 2026-09-10 (rowtrack): een ronde die geometrie-parity op **nul verschillen
+over 3 521 nodes** had, maakte drie schermen zichtbaar slechter — een spacer die een extra gap
+kostte en een inline label dat over zijn buur viel. Beide zaten in nodes waarvan élke gemeten
+waarde klopte. Alleen een beeldvergelijking tegen een basislijn van vóór de ronde liet het zien:
+14 frames beter, 9 gelijk, 1 slechter, som 74,36 → 56,18.
+
+De les is uitdrukkelijk **niet** "voeg posities toe aan de parity-as" — dat pint hem vast op één
+layout-engine en maakt hem broos. Het is dat een klasse pas af is wanneer hij op de beeld-as
+gemeten is, tegen een basislijn van vóór de wijziging, en dat een geometrie-parity op nul een
+noodzakelijke maar geen voldoende voorwaarde is.
 
 **De twee kanten van de diff:**
 - **Bedoeld** — de `token path → variable ID` lookup uit stap 4: wat de component-code per property voorschreef. **Let op bij een hex-source:** gebruikt de component rauwe hex i.p.v. token-referenties, dan is "bedoeld" geen code-feit maar de *bevestigde* reverse-lookup uit stap 4 (na voorstel + bevestiging). De gate verifieert dan dat de write dat bevestigde mapping volgt en flagt collisions — maar certificeert de laag-keuze niet autonoom, want de source droeg geen semantische intentie.

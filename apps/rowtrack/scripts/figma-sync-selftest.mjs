@@ -106,6 +106,16 @@ function commitVolgorde(m, eerst, daarna) {
  * `zwijgt: true` = controle-mutatie, de guard hoort NIET af te gaan.
  */
 const MUTATIES = [
+  { as: 'vertaalrest', wat: 'zet een extra onvertaalbare marge in de spec', doe: m => {
+      const x = lees(m, 'figma/build-spec.min.json');
+      const eerste = Object.values(x.componenten)[0].varianten[0].boom;
+      eerste.margeRest = [...(eerste.margeRest ?? []), ['zelftest', [0, 0, 0, -99]]];
+      schrijf(m, 'figma/build-spec.min.json', x); } },
+  { as: 'namen', wat: 'laat een machinale property-naam binnenkomen', doe: m => {
+      const x = lees(m, 'figma/manifest.json');
+      const p = Object.values(x.pages).find(p2 => p2.primary?.eigenschappen);
+      p.primary.eigenschappen['zelftest_abc#1:1'] = { type: 'TEXT', refs: 1 };
+      schrijf(m, 'figma/manifest.json', x); } },
   { as: 'dekking', wat: 'verwijder een stories-bestand', doe: m => rmSync(join(m, 'components/Chip.stories.tsx')) },
   { as: 'pagina', wat: 'haal een pagina uit de manifest', doe: m => {
       const x = lees(m, 'figma/manifest.json'); delete x.pages.Chip; schrijf(m, 'figma/manifest.json', x); } },
@@ -163,6 +173,15 @@ const MUTATIES = [
   { as: 'publicatie', wat: 'commit de bouwspec ná de Figma-momentopname', doe: m => {
       schema3(m, { publiceer: 2, bouwhash: true });
       commitVolgorde(m, 'figma/manifest.json', 'figma/build-spec.min.json'); } },
+  { as: 'controle-vertaalrest', zwijgt: true, wat: 'verander iets in de spec dat géén marge is', doe: m => {
+      const x = lees(m, 'figma/build-spec.min.json');
+      Object.values(x.componenten)[0].varianten[0].boom.zelftestVeld = 1;
+      schrijf(m, 'figma/build-spec.min.json', x); } },
+  { as: 'controle-namen', zwijgt: true, wat: 'een gewone property-naam (geen letter-achtervoegsel) mét node', doe: m => {
+      const x = lees(m, 'figma/manifest.json');
+      const p = Object.values(x.pages).find(p2 => p2.primary?.eigenschappen);
+      p.primary.eigenschappen['zelftestVeld#1:2'] = { type: 'TEXT', refs: 1 };
+      schrijf(m, 'figma/manifest.json', x); } },
   { as: 'controle-publicatie', zwijgt: true, wat: 'commit de bouwspec vóór de Figma-momentopname', doe: m => {
       schema3(m, { publiceer: 2, bouwhash: true });
       commitVolgorde(m, 'figma/build-spec.min.json', 'figma/manifest.json'); } },

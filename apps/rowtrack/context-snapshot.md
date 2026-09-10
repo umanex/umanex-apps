@@ -73,15 +73,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+3379d82 feat(rowtrack): the consumption gate, as the exemplar — two axes and a decomposed image
 458c22f feat(rowtrack): update screen frames in place instead of replacing them
 fcd4592 fix(rowtrack): place screen frames by spec index, not by page history
 e2d38ec fix(rowtrack): release the build lock on the gate's early return
 3693634 docs(rowtrack): close the round in the briefing and the handoff
-45ee3be test(rowtrack): screens rebuilt, parity at zero over 3521 nodes, image axis 74.36 -> 56.18
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/rowtrack/CLAUDE.md
   M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/context-snapshot.md
 
 ## Bestanden met TODO/FIXME
   (geen)

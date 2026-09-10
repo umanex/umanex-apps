@@ -88,8 +88,8 @@ const browser = await chromium.launch();
  *  · 40 — GROF: een andere kleur, een ontbrekend element, verschoven layout.
  * De blokkenkaart (20x20) maakt van een percentage een plaats.
  */
-async function vergelijk(page, aPng, bPng, maskers) {
-  return page.evaluate(async ([a, b, mask]) => {
+async function vergelijk(page, aPng, bPng, maskers, teksten = []) {
+  return page.evaluate(async ([a, b, mask, tekst]) => {
     const laad = (u) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = u; });
     const [ia, ib] = await Promise.all([laad(a), laad(b)]);
     const W = Math.min(ia.width, ib.width), H = Math.min(ia.height, ib.height);
@@ -102,14 +102,25 @@ async function vergelijk(page, aPng, bPng, maskers) {
     // een glyph die in Figma niet bestaat.
     for (const m of mask) { for (const c of [ca, cb]) { c.fillStyle = '#000'; c.fillRect(m.x, m.y, m.w, m.h); } }
     const da = ca.getImageData(0, 0, W, H).data, db = cb.getImageData(0, 0, W, H).data;
-    let zicht = 0, grof = 0;
+    let zicht = 0, grof = 0, grofTekst = 0;
+    /**
+     * HET AGGREGAAT ONTLEED. Eén `grof`-percentage per frame telt heterogene oorzaken op —
+     * Figma's tekstengine die dezelfde tekst breder meet dan Chromium, een kleurverschil,
+     * een echt layoutdefect — en die som heeft geen vloer: hij daalde van 74,36 naar 56,18
+     * over 24 frames (2026-09-10) zonder dat iemand kon zeggen wat er in die 56,18 zat. Een
+     * aggregaat zonder zijn grootste bijdrager is een richting, geen meting. Daarom hier per
+     * grof pixel: valt hij in een tekstgebied van de browser-render, of daarbuiten? `tekst`
+     * is de engine-ruis waar de bouw niets aan kan doen; `overig` is wat een klasse verdient.
+     * De iconen zijn al gemaskeerd en tellen in geen van beide mee.
+     */
+    const inTekst = (px, py) => { for (const t of tekst) if (px >= t.x && px < t.x + t.w && py >= t.y && py < t.y + t.h) return true; return false; };
     const blok = 20, cols = Math.ceil(W / blok), rows = Math.ceil(H / blok);
     const kaart = Array.from({ length: rows }, () => new Array(cols).fill(0));
     const cd = ctx(W, H); const diff = cd.createImageData(W, H);
     for (let i = 0; i < da.length; i += 4) {
       const d = Math.max(Math.abs(da[i] - db[i]), Math.abs(da[i + 1] - db[i + 1]), Math.abs(da[i + 2] - db[i + 2]));
       if (d > 8) { const px = (i / 4) % W, py = Math.floor((i / 4) / W); zicht++; kaart[Math.floor(py / blok)][Math.floor(px / blok)]++; }
-      if (d > 40) grof++;
+      if (d > 40) { grof++; if (inTekst((i / 4) % W, Math.floor((i / 4) / W))) grofTekst++; }
       const v = d > 40 ? 255 : d > 8 ? 120 : 0;
       diff.data[i] = v; diff.data[i + 1] = v > 200 ? 0 : v; diff.data[i + 2] = 0; diff.data[i + 3] = 255;
     }
@@ -121,8 +132,9 @@ async function vergelijk(page, aPng, bPng, maskers) {
     kaart.forEach((rij, y) => rij.forEach((n, x) => { if (n > blok * blok * 0.25) heet.push(`${x * blok},${y * blok}`); }));
     const tot = W * H;
     return { W, H, zicht: +(zicht / tot * 100).toFixed(2), grof: +(grof / tot * 100).toFixed(2),
+      tekst: +(grofTekst / tot * 100).toFixed(2), overig: +((grof - grofTekst) / tot * 100).toFixed(2),
       heet: heet.length, blokken: cols * rows, plaatsen: heet.slice(0, 6), png: drie.canvas.toDataURL('image/png') };
-  }, [aPng, bPng, maskers]);
+  }, [aPng, bPng, maskers, teksten]);
 }
 
 const dataUri = (p) => 'data:image/png;base64,' + readFileSync(p).toString('base64');
@@ -138,14 +150,20 @@ async function browserBeeld(page, storyId, breedte, hoogte) {
   const png = await el.screenshot();
   // De iconen komen uit de DOM, niet uit de spec: de spec draagt alleen relatieve posities
   // voor absolute kinderen, dus absolute rects zijn daar niet uit te rekenen.
-  const iconen = await page.evaluate(() => {
+  const { iconen, teksten } = await page.evaluate(() => {
     const w = document.getElementById('storybook-root').children[0].getBoundingClientRect();
-    return [...document.querySelectorAll('*')]
-      .filter((e) => e.children.length === 0 && getComputedStyle(e).fontFamily.toLowerCase().includes('ionicons'))
-      .map((e) => { const r = e.getBoundingClientRect();
-        return { x: Math.floor(r.x - w.x) - 2, y: Math.floor(r.y - w.y) - 2, w: Math.ceil(r.width) + 4, h: Math.ceil(r.height) + 4 }; });
+    const rect = (e, marge) => { const r = e.getBoundingClientRect();
+      return { x: Math.floor(r.x - w.x) - marge, y: Math.floor(r.y - w.y) - marge, w: Math.ceil(r.width) + 2 * marge, h: Math.ceil(r.height) + 2 * marge }; };
+    const bladeren = [...document.querySelectorAll('*')].filter((e) => e.children.length === 0);
+    const isIcoon = (e) => getComputedStyle(e).fontFamily.toLowerCase().includes('ionicons');
+    return {
+      iconen: bladeren.filter(isIcoon).map((e) => rect(e, 2)),
+      // De TEKSTGEBIEDEN, om het verschil te ontleden: een tekstnode met inhoud, geen icoon.
+      // Een `<input>` telt mee — zijn placeholder is tekst die de engine anders meet.
+      teksten: bladeren.filter((e) => !isIcoon(e) && (e.textContent.trim() || e.tagName === 'INPUT' || e.tagName === 'TEXTAREA')).map((e) => rect(e, 1)),
+    };
   });
-  return { png: 'data:image/png;base64,' + png.toString('base64'), iconen };
+  return { png: 'data:image/png;base64,' + png.toString('base64'), iconen, teksten };
 }
 
 const page = await browser.newPage({ viewport: { width: 430, height: 932 }, deviceScaleFactor: SCHAAL });
@@ -162,7 +180,7 @@ for (const bestand of readdirSync(BEELDEN).filter((f) => f.endsWith('.figma.png'
   }), dataUri(fig));
   const b = await browserBeeld(page, story.id, maat.w / SCHAAL, maat.h / SCHAAL);
   if (!b) { rijen.push({ bestand, fout: 'story rendert niets' }); continue; }
-  const r = await vergelijk(leegPage, b.png, dataUri(fig), b.iconen);
+  const r = await vergelijk(leegPage, b.png, dataUri(fig), b.iconen, b.teksten);
   const { png, ...rest } = r;
   rijen.push({ bestand, story: story.id, ...rest, iconenGemaskeerd: b.iconen.length });
   if (SCHRIJF) { mkdirSync(DIFFDIR, { recursive: true });
@@ -200,7 +218,7 @@ for (const r of rijen.sort((a, b) => (b.grof ?? 0) - (a.grof ?? 0))) {
   if (r.fout) { console.log(`  ??  ${r.bestand.padEnd(breed)}  ${r.fout}`); continue; }
   const vlag = DREMPEL !== null && r.grof > DREMPEL ? 'FAIL' : ' ok ';
   console.log(`  ${vlag} ${r.bestand.padEnd(breed)}  grof ${String(r.grof).padStart(5)}%  zichtbaar ${String(r.zicht).padStart(5)}%`
-    + `  ${String(r.heet).padStart(3)}/${r.blokken} blokken  ${r.iconenGemaskeerd} icoon(en) gemaskeerd`
+    + `  waarvan tekst ${String(r.tekst).padStart(5)}%  overig ${String(r.overig).padStart(5)}%  ${String(r.heet).padStart(3)}/${r.blokken} blokken  ${r.iconenGemaskeerd} icoon(en) gemaskeerd`
     + (r.plaatsen.length ? `  @ ${r.plaatsen.slice(0, 3).join(' ')}` : ''));
 }
 const ergst = Math.max(0, ...rijen.filter((r) => !r.fout).map((r) => r.grof));

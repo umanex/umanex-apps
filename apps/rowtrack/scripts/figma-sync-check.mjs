@@ -174,7 +174,8 @@ const BEKENDE_INSTABIELE_POSITIES = 2;
 /** De dertien assen, in volgorde. Enige bron voor de slotregel — een hardgecodeerde
  *  opsomming raakt los van wat er werkelijk gedraaid heeft. */
 const ASSEN = ['dekking', 'pagina', 'variant', 'varianten', 'token', 'tokenwaarde', 'typografie',
-               'link', 'hardcoded', 'binding', 'publicatie', 'laagnaam', 'instancevulling', 'eigenschappen'];
+               'link', 'hardcoded', 'binding', 'publicatie', 'laagnaam', 'instancevulling', 'eigenschappen',
+               'vertaalrest', 'namen'];
 // Verdeling op 2026-09-08: 18 typografie-combinaties zonder Theme/type-token · 8 icoonmaten
 // (Ionicons als glyph, geen Figma-font) · 5 achtergrondkleuren · 3 paddings (3, 50, 100) ·
 // 3 radii (2, 12, 24) · 3 emoji/systeemfont (bedoeld — een emoji hoort de systeem-emojifont
@@ -718,6 +719,59 @@ else {
   }
   if (fout.length) for (const f of fout) fail('eigenschappen', f);
   else ok('eigenschappen', `${props} tekst-properties over ${sets} componenten: elke property heeft minstens één node, en geen stam komt dubbel voor`);
+}
+
+// ── [vertaalrest] — wat de vertaling naar Figma NIET kon, met een ratel erop ──────────────
+// De pruner meldt per node wat van een marge geen Figma-equivalent heeft (negatief, kruis-as,
+// of een naad waar een spacer ruimte zou TOEVOEGEN). Die meldingen werden geschreven en door
+// niemand gelezen: 31 op 2026-09-10, en het label "Figma kan dit niet" is precies de plek waar
+// een echte layoutfout zich verstopt — het gebeurde diezelfde dag twee keer met andere labels.
+// Een meldingenlijst zonder ratel is stilte met een teller. Tweezijdig, zoals [binding]: een
+// vermelding erbij is een nieuwe onvertaalbaarheid die iemand moet zien, een vermelding eraf is
+// winst die de constante moet volgen — anders groeit de speling waar het volgende gat in past.
+const BEKENDE_VERTAALREST = 31;
+{
+  const specPad = join(APP, 'figma/build-spec.min.json');
+  if (!existsSync(specPad)) sla('vertaalrest', 'geen figma/build-spec.min.json');
+  else {
+    const min = JSON.parse(readFileSync(specPad, 'utf8'));
+    const rest = [];
+    const loop = (n, plek) => {
+      for (const [kind, m] of n.margeRest ?? []) rest.push(`${plek} ${n.naam ?? '?'} > ${kind}: ${JSON.stringify(m)}`);
+      (n.k ?? []).forEach(k => loop(k, plek));
+    };
+    for (const [c, d] of Object.entries(min.componenten ?? {})) for (const v of d.varianten) { loop(v.boom, `${c}[${v.naam}]`); (v.overlays ?? []).forEach(o => loop(o, `${c}[${v.naam}]`)); }
+    for (const [c, d] of Object.entries(min.schermen ?? {})) for (const f of d.frames) { loop(f.boom, `${c}/${f.naam}`); (f.overlays ?? []).forEach(o => loop(o, `${c}/${f.naam}`)); }
+    const n = rest.length;
+    if (n > BEKENDE_VERTAALREST)
+      fail('vertaalrest', `${n} onvertaalbare marges, ${BEKENDE_VERTAALREST} bekend — ${n - BEKENDE_VERTAALREST} nieuw(e); lees ze: ${rest.slice(-3).join(' · ')}`);
+    else if (n < BEKENDE_VERTAALREST)
+      fail('vertaalrest', `${n} onvertaalbare marges tegen ${BEKENDE_VERTAALREST} bekend — winst; zet BEKENDE_VERTAALREST op ${n}`);
+    else ok('vertaalrest', `${n} marges die Figma niet kan uitdrukken, gelijk aan de bekende stand — eerste drie: ${rest.slice(0, 3).join(' · ')}`);
+  }
+}
+
+// ── [namen] — gegenereerde namen in een gedeeld oppervlak ────────────────────────────────
+// `markeerAfgeleideSlots` geeft een afgeleid slot de laagnaam, en bij een botsing het boompad
+// als letters erachter: `subtitleText_bbc`, `value_abca`. Die namen staan als component
+// property in de GEPUBLICEERDE library, dus ze zijn wat een ontwerper in het properties-paneel
+// ziet — en niemand heeft ze gekozen. Een machinale naam is geen fout, maar hij hoort niet stil
+// binnen te komen: elke nieuwe wordt hier rood tot iemand hem accepteert (constante omhoog) of
+// een echte naam geeft in de componentcode (constante omlaag).
+const BEKENDE_MACHINENAMEN = 5;
+if (!manifest) sla('namen', 'geen manifest');
+else {
+  const machinaal = [];
+  for (const [naam, p] of Object.entries(manifest.pages)) {
+    for (const [k, d] of Object.entries(p.primary?.eigenschappen ?? {}))
+      if (d.type !== 'VARIANT' && /_[a-z]{2,}$/.test(k.split('#')[0])) machinaal.push(`${naam}.${k.split('#')[0]}`);
+  }
+  const n = machinaal.length;
+  if (n > BEKENDE_MACHINENAMEN)
+    fail('namen', `${n} machinale property-namen, ${BEKENDE_MACHINENAMEN} bekend — nieuw: ${machinaal.join(', ')}. Geef het veld een naam in de componentcode, of accepteer hem (constante omhoog)`);
+  else if (n < BEKENDE_MACHINENAMEN)
+    fail('namen', `${n} machinale property-namen tegen ${BEKENDE_MACHINENAMEN} bekend — winst; zet BEKENDE_MACHINENAMEN op ${n}`);
+  else ok('namen', `${n} machinale property-namen (${machinaal.join(', ')}), gelijk aan de geaccepteerde stand`);
 }
 
 // ---- Rapport ----------------------------------------------------------------

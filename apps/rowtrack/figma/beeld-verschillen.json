@@ -9,17 +9,19 @@
    "story": "componenten-activephase--doel-bereikt",
    "W": 430,
    "H": 932,
-   "zicht": 9.14,
-   "grof": 6.04,
-   "heet": 129,
+   "zicht": 9.24,
+   "grof": 6.09,
+   "tekst": 2.4,
+   "overig": 3.69,
+   "heet": 127,
    "blokken": 1034,
    "plaatsen": [
-    "0,0",
-    "40,20",
-    "80,20",
+    "60,0",
+    "420,0",
     "100,40",
     "120,40",
-    "140,40"
+    "20,100",
+    "80,140"
    ],
    "iconenGemaskeerd": 2
   },
@@ -30,6 +32,8 @@
    "H": 932,
    "zicht": 5.55,
    "grof": 4.77,
+   "tekst": 2.72,
+   "overig": 2.05,
    "heet": 104,
    "blokken": 1034,
    "plaatsen": [
@@ -49,6 +53,8 @@
    "H": 932,
    "zicht": 5.45,
    "grof": 4.51,
+   "tekst": 2.67,
+   "overig": 1.84,
    "heet": 106,
    "blokken": 1034,
    "plaatsen": [
@@ -68,6 +74,8 @@
    "H": 932,
    "zicht": 9.62,
    "grof": 3.54,
+   "tekst": 3.1,
+   "overig": 0.45,
    "heet": 148,
    "blokken": 1034,
    "plaatsen": [
@@ -87,6 +95,8 @@
    "H": 932,
    "zicht": 9.49,
    "grof": 3.32,
+   "tekst": 2.89,
+   "overig": 0.43,
    "heet": 141,
    "blokken": 1034,
    "plaatsen": [
@@ -106,6 +116,8 @@
    "H": 932,
    "zicht": 4.73,
    "grof": 3.1,
+   "tekst": 2.07,
+   "overig": 1.03,
    "heet": 53,
    "blokken": 1034,
    "plaatsen": [
@@ -125,6 +137,8 @@
    "H": 932,
    "zicht": 4.35,
    "grof": 2.76,
+   "tekst": 2.71,
+   "overig": 0.05,
    "heet": 53,
    "blokken": 1034,
    "plaatsen": [
@@ -144,6 +158,8 @@
    "H": 430,
    "zicht": 4.41,
    "grof": 2.66,
+   "tekst": 2.64,
+   "overig": 0.03,
    "heet": 48,
    "blokken": 1034,
    "plaatsen": [
@@ -163,6 +179,8 @@
    "H": 932,
    "zicht": 3.58,
    "grof": 2.63,
+   "tekst": 2.6,
+   "overig": 0.03,
    "heet": 40,
    "blokken": 1034,
    "plaatsen": [
@@ -182,6 +200,8 @@
    "H": 932,
    "zicht": 3.49,
    "grof": 2.54,
+   "tekst": 2.51,
+   "overig": 0.03,
    "heet": 39,
    "blokken": 1034,
    "plaatsen": [
@@ -201,6 +221,8 @@
    "H": 932,
    "zicht": 3.41,
    "grof": 2.46,
+   "tekst": 2.39,
+   "overig": 0.07,
    "heet": 42,
    "blokken": 1034,
    "plaatsen": [
@@ -220,6 +242,8 @@
    "H": 932,
    "zicht": 4.1,
    "grof": 2.07,
+   "tekst": 1.3,
+   "overig": 0.77,
    "heet": 37,
    "blokken": 1034,
    "plaatsen": [
@@ -239,6 +263,8 @@
    "H": 932,
    "zicht": 4.06,
    "grof": 1.96,
+   "tekst": 1.09,
+   "overig": 0.87,
    "heet": 33,
    "blokken": 1034,
    "plaatsen": [
@@ -258,6 +284,8 @@
    "H": 932,
    "zicht": 3.96,
    "grof": 1.89,
+   "tekst": 1.03,
+   "overig": 0.87,
    "heet": 34,
    "blokken": 1034,
    "plaatsen": [
@@ -277,6 +305,8 @@
    "H": 932,
    "zicht": 3.36,
    "grof": 1.79,
+   "tekst": 1.6,
+   "overig": 0.2,
    "heet": 48,
    "blokken": 1034,
    "plaatsen": [
@@ -296,6 +326,8 @@
    "H": 932,
    "zicht": 3.36,
    "grof": 1.79,
+   "tekst": 1.6,
+   "overig": 0.2,
    "heet": 48,
    "blokken": 1034,
    "plaatsen": [
@@ -315,6 +347,8 @@
    "H": 932,
    "zicht": 3.31,
    "grof": 1.76,
+   "tekst": 1.56,
+   "overig": 0.2,
    "heet": 48,
    "blokken": 1034,
    "plaatsen": [
@@ -334,6 +368,8 @@
    "H": 932,
    "zicht": 2.69,
    "grof": 1.66,
+   "tekst": 1.33,
+   "overig": 0.33,
    "heet": 25,
    "blokken": 1034,
    "plaatsen": [
@@ -353,6 +389,8 @@
    "H": 932,
    "zicht": 3.65,
    "grof": 1.63,
+   "tekst": 1.1,
+   "overig": 0.54,
    "heet": 36,
    "blokken": 1034,
    "plaatsen": [
@@ -372,6 +410,8 @@
    "H": 932,
    "zicht": 2.57,
    "grof": 1.58,
+   "tekst": 1.56,
+   "overig": 0.02,
    "heet": 35,
    "blokken": 1034,
    "plaatsen": [
@@ -391,6 +431,8 @@
    "H": 932,
    "zicht": 2.24,
    "grof": 1.32,
+   "tekst": 1.32,
+   "overig": 0,
    "heet": 21,
    "blokken": 1034,
    "plaatsen": [
@@ -410,6 +452,8 @@
    "H": 932,
    "zicht": 0.46,
    "grof": 0.36,
+   "tekst": 0.36,
+   "overig": 0,
    "heet": 6,
    "blokken": 1034,
    "plaatsen": [
@@ -429,6 +473,8 @@
    "H": 932,
    "zicht": 0.05,
    "grof": 0.02,
+   "tekst": 0,
+   "overig": 0.02,
    "heet": 0,
    "blokken": 1034,
    "plaatsen": [],
@@ -441,6 +487,8 @@
    "H": 932,
    "zicht": 0.05,
    "grof": 0.02,
+   "tekst": 0,
+   "overig": 0.02,
    "heet": 0,
    "blokken": 1034,
    "plaatsen": [],

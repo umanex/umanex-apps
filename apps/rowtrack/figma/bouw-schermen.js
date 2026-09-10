@@ -95,6 +95,49 @@ try {
   }
 
   /**
+   * DE LIBRARY-VERSIE VAN DÍT BESTAND, VOORDAT ER IETS GEBOUWD WORDT.
+   *
+   * Een consumerend bestand houdt een eigen spiegel van de library, en die loopt achter tot
+   * Figma de update binnenhaalt. `importComponentByKeyAsync` geeft die spiegel terug, niet de
+   * laatst gepubliceerde versie — zonder fout, zonder waarschuwing. Gemeten 2026-09-10, ná een
+   * bevestigde publicatie (alle 45 op CURRENT in de library): `HeroPanel` importeerde met drie
+   * van zijn vijf properties, `ActiveHeader` en `GoalPill` met nul. De schermbouw liep gewoon
+   * door en meldde per voorkomen `slot "..." bestaat niet` — 36 meldingen over zes frames,
+   * waarna die teksten stil de library-data tonen. Dat is precies de klasse die deze ronde
+   * sloot, teruggekomen langs een andere weg.
+   *
+   * Er is geen plugin-API om de spiegel te verversen (`figma.teamLibrary` draagt er niets voor,
+   * gemeten). Dus: toetsen en weigeren, niet bouwen en melden. De gebruiker haalt de update
+   * binnen in het Assets-paneel van dit bestand.
+   */
+  const achterstallig = [];
+  for (const [naam, inst] of Object.entries(instanties)) {
+    const verwacht = new Set(Object.keys(inst.varianten
+      ? Object.values(inst.varianten).reduce((a, v) => ({ ...a, ...v.slotPaden }), {})
+      : (inst.slotPaden ?? {})));
+    if (!verwacht.size) continue;
+    let comp;
+    try { comp = inst.varianten ? await figma.importComponentSetByKeyAsync(inst.key) : await figma.importComponentByKeyAsync(inst.key); }
+    catch (e) { achterstallig.push(`${naam}: niet te importeren (${e.message})`); continue; }
+    const aanwezig = Object.keys(comp.componentPropertyDefinitions ?? {}).map(k => k.split('#')[0]);
+    const mist = [...verwacht].filter(v => !aanwezig.includes(v));
+    if (mist.length) achterstallig.push(`${naam}: mist ${mist.join(', ')} (heeft ${aanwezig.join(', ') || 'geen properties'})`);
+  }
+  if (achterstallig.length) {
+    // DE MARKER MOET WEG BIJ ELKE UITGANG. Deze poort keerde in zijn eerste vorm terug
+    // zónder `bouwbezig` te legen, en de volgende aanroep kreeg daarna `er loopt nog een
+    // batch: LoginScreen` terwijl er niets liep (gemeten 2026-09-10, meteen). Een vroege
+    // return uit een blok dat een slot neemt, moet dat slot ook teruggeven.
+    figma.root.setPluginData('bouwbezig', '');
+    return {
+      fout: 'de geïmporteerde componenten missen properties die de spec verwacht — de plugin-runtime cachet '
+        + 'imports vanaf het moment dat hij verbindt, dus na een publicatie moet de Desktop Bridge-plugin in '
+        + 'DIT bestand opnieuw gestart worden; bouwen zou instances opleveren die stil de library-data tonen',
+      achterstallig,
+    };
+  }
+
+  /**
    * EEN TIJDBUDGET, WANT DE WACHTLIMIET IS DODELIJK MIDDEN IN EEN IMPORT.
    *
    * Gemeten 2026-09-09, twee keer: een schermbouw die de 30 s van `figma_execute` overschreed
@@ -112,6 +155,53 @@ try {
   const F = Object.getPrototypeOf(async function () {}).constructor;
   const gebouwd = [], meldingen = [], geweigerd = [], resterend = [];
   let vervangen = 0, aantalMeldingen = 0;
+  /**
+   * DE PLAATSING IS EEN FUNCTIE VAN DE SPEC, NIET VAN DE GESCHIEDENIS.
+   *
+   * De builder plaatste een nieuw frame rechts van álles wat al op de pagina stond. Dat is
+   * cumulatief: elke herbouw die een frame opnieuw aanmaakt duwde het blok 24 x 478 px verder.
+   * Gemeten 2026-09-10 stonden de 24 frames op x = 170 600 — vijftien ronden ver — en zo ver
+   * van de oorsprong begeeft Figma's canvas-precisie het: alles zichtbaar bij het laden, weg
+   * zodra je zoomt of scrolt, lagenpaneel intact.
+   *
+   * Hier ligt de volgorde van álle schermen vast, dus hier hoort de x thuis. Elk frame krijgt
+   * zijn plek uit zijn index in de spec — ook een frame dat hergebruikt wordt, want anders
+   * blijft een oud frame op zijn afgedreven plek staan. Idempotent over aanroepen én ronden.
+   */
+  const BREEDTE = 48;
+  const plek = new Map();
+  const volgorde = new Map();
+  let px2 = 0, idx2 = 0;
+  for (const [n, dd] of Object.entries(min.schermen))
+    for (const fr of dd.frames) {
+      plek.set(`${n}/${fr.naam}`, px2); volgorde.set(`${n}/${fr.naam}`, idx2++);
+      px2 += Math.ceil(fr.boom.w) + BREEDTE;
+    }
+  const zetPlek = (naam, frameNaam) => {
+    const sleutel = `${naam}/${frameNaam}`;
+    const x = plek.get(sleutel);
+    if (x === undefined) return null;
+    const p2 = figma.root.children.find(q => q.name === 'Screens v2');
+    const f2 = p2?.children.find(c => c.getPluginData('scherm') === naam && c.getPluginData('frame') === frameNaam);
+    if (!f2) return null;
+    const oud2 = Math.round(f2.x);
+    let bewogen = null;
+    if (Math.abs(f2.x - x) > 0.5 || Math.abs(f2.y) > 0.5) { f2.x = x; f2.y = 0; bewogen = { van: oud2, naar: x }; }
+    /**
+     * DE LAAGVOLGORDE HOORT ER OOK BIJ. Een frame dat apart herbouwd wordt, wordt achteraan de
+     * pagina gehangen; de x klopt dan wel maar het lagenpaneel raakt uit de pas met de spec.
+     * Gemeten: na een losse herbouw van Login en Register stonden die twee onderaan, en de
+     * schermgeometrie verschilde alleen in de VOLGORDE van zijn sleutels — inhoudelijk
+     * byte-identiek. Cosmetisch, maar het is dezelfde drift als de x: laat de pagina de spec
+     * volgen in plaats van de bouwgeschiedenis.
+     */
+    const doelIdx = volgorde.get(sleutel);
+    if (doelIdx !== undefined && doelIdx < p2.children.length && p2.children[doelIdx] !== f2) {
+      try { p2.insertChild(doelIdx, f2); } catch (e) { /* index buiten bereik tijdens een deelbouw */ }
+    }
+    return bewogen;
+  };
+  const verplaatst = [];
   for (const naam of SCHERMEN) {
     const d = kies(min.schermen[naam]);
     for (const f of d.frames) {
@@ -126,11 +216,13 @@ try {
       geweigerd.push(...(r.geweigerd ?? [])); vervangen += r.vervangen ?? 0; aantalMeldingen += r.aantalMeldingen ?? 0;
       meldingen.push(...(r.meldingen ?? []));
       gebouwd.push(...(r.gebouwd ?? []).map(g => ({ component: g.component, frame: f.naam, type: g.type, nodes: g.nodes })));
+      const v = zetPlek(naam, f.naam);
+      if (v) verplaatst.push(`${naam}/${f.naam}: x ${v.van} -> ${v.naar}`);
     }
   }
   figma.root.setPluginData('bouwvoortgang', '');
   uitkomst = {
-    schermen: SCHERMEN, fout: null, ms: Date.now() - t0, resterend,
+    schermen: SCHERMEN, fout: null, ms: Date.now() - t0, resterend, verplaatst,
     bibliotheek: { totaal: Object.keys(keys.componenten).length, bruikbaar: Object.keys(instanties).length },
     geweigerd, vervangen, aantalMeldingen,
     meldingen: meldingen.slice(0, 12),

@@ -133,6 +133,11 @@ const MELDING_SOORTEN = [
   ['tekst-zonder-text-style',      /: tekst zonder text style/],
   ['tekstkleur-ongebonden',        /: tekstkleur ongebonden$/],
   ['flex-mapping-onbekend',        /kent deze mapping niet$/],
+  ['rand-per-zijde-geweigerd',     /: rand per zijde .* geweigerd/],
+  ['randbreedte-niet-te-binden',   /: randbreedte niet te binden/],
+  ['inline-baseline-geweigerd',    /: inline BASELINE geweigerd/],
+  ['inline-rij-niet-te-zetten',    /: inline rij niet te zetten/],
+  ['randkleur-per-zijde',          /: randkleuren verschillen per zijde/],
   ['flex-niet-gemapt',             /wordt niet gemapt/],
   ['achtergrond-ongebonden',       /: achtergrond ongebonden$/],
   ['gradient-niet-ontleed',        /: gradient niet ontleed/],
@@ -142,6 +147,7 @@ const MELDING_SOORTEN = [
   ['component-property-mislukt',   /: component property ".*" mislukt/],
   ['tekst-uitlijning-geweigerd',   /: tekst-uitlijning .* geweigerd/],
   ['eigenschap-zonder-node-verwijderd', /: eigenschap ".*" zonder node verwijderd/],
+  ['marge-zonder-equivalent',      /: marge .* op kind ".*" heeft geen Figma-equivalent/],
 ];
 function soortVan(m) {
   const s = String(m);
@@ -447,6 +453,15 @@ function zetRek(f, kinderen, naamPad) {
 }
 
 async function maak(n, naamPad, wortelComp) {
+  // MARGES ZONDER FIGMA-EQUIVALENT. `vouwMarges()` in scripts/figma-build-prune.mjs vertaalt een
+  // hoofdas-marge naar padding (eerste of laatste kind), itemSpacing (alle gaten gelijk) of een
+  // spacer-node (middenkind). Wat overblijft heeft in auto-layout geen vorm: een NEGATIEVE marge
+  // — de breakout van de Home-lijst — en een marge op de KRUIS-as. De pruner klemt die op 0, dus
+  // zonder deze regel verdwijnt de uitbraak precies zoals de hele klasse tot vandaag verdween:
+  // zonder één melding. Dit staat vóór de instance-tak, zodat ook een ouder die zelf een
+  // instance wordt zijn gat meldt.
+  for (const [kind, m] of n.margeRest ?? [])
+    meldingen.push(`${naamPad}: marge ${JSON.stringify(m)} op kind "${kind}" heeft geen Figma-equivalent (negatief of kruis-as)`);
   // Een gedeclareerde grens die de library kent wordt een INSTANCE, en dan stopt de afdaling:
   // wat eronder zit hoort bij dat component en komt met de instance mee.
   if (INST && n.component && n.component !== wortelComp && INST[n.component]) {
@@ -529,7 +544,16 @@ async function maak(n, naamPad, wortelComp) {
     // breed met een run van ~40, en als hug werd dat "WATT208" — de waarde plakte tegen
     // het label. Vaste breedte is daar de transcriptie; de uitlijning erin doet het werk.
     const enkeleRegel = n.t.lh ?? n.t.px * 1.35;
-    if (n.h > enkeleRegel * 1.5 || n.t.blok) {
+    if (n.t.veld) {
+      // EEN INVOERVELD IS EEN DOOS MET EEN REGEL ERIN. De browser meet 46 hoog (12 + 21,6 + 12);
+      // een tekstnode draagt die padding niet. Dus vaste maat plus verticale uitlijning, en in
+      // die volgorde — `NONE` en niet `HEIGHT`, want alleen bij een vaste maat is
+      // `textAlignVertical` gedefinieerd. Dit gaat niet over de 46 maar over de 12 px die de
+      // regel anders te hoog staat, en dat is iets wat `parity` per constructie niet ziet.
+      t.textAutoResize = 'NONE';
+      t.resize(Math.max(1, n.w), Math.max(1, n.h));
+      t.textAlignVertical = 'CENTER';
+    } else if (n.h > enkeleRegel * 1.5 || n.t.blok) {
       t.textAutoResize = 'HEIGHT';
       t.resize(Math.max(1, n.w), Math.max(1, n.h));
     } else {
@@ -546,7 +570,11 @@ async function maak(n, naamPad, wortelComp) {
 
   const f = figma.createFrame();
   f.name = n.naam || 'wrapper';        // het besluit komt uit scripts/laagnamen.mjs
-  f.clipsContent = false;
+  // KNIPPEN volgt de browser. Tot 2026-09-09 stond dit hard op `false`, dus wat in de browser
+  // onder de rand verdween liep in Figma door — de `overloop`-teller van
+  // `walker-blindvlekken` stond daarom op 15 zonder dat één as er rood van werd. Een gerolde
+  // container knipt altijd: hij toont per definitie minder dan hij bevat.
+  f.clipsContent = !!n.knipt || !!n.gerold;
   if (n.k && n.rij !== undefined) {
     f.layoutMode = n.rij ? 'HORIZONTAL' : 'VERTICAL';
     f.primaryAxisSizingMode = 'FIXED';
@@ -618,10 +646,19 @@ async function maak(n, naamPad, wortelComp) {
   // rand van 1, gradient 151,05x42 op dx=dy=1 — precies twee keer de randbreedte kleiner.
   // Een check op `w >= ouder.w - 1` mist die dus, en dan belandt de vulling als los kind
   // in de rij in plaats van als achtergrond.
-  const rand = n.border ?? 0;
+  // TOLERANTIE PER ZIJDE. `n.border` is sinds 2026-09-09 het MAXIMUM van vier zijden, en die
+  // waarde is hier geen randbreedte maar de inzet van de content-box — dus voor een node met
+  // `0/0/1/0` zou hij de doos aan alle vier de kanten 1 px ruimer maken dan hij is. Gemeten op
+  // de spec van die dag: 0 van de 77 asymmetrische nodes heeft een absoluut vullingskind, dus
+  // de drie definities (boven-only, maximum, per zijde) geven alle drie 64 opgevouwen kinderen.
+  // Dat is GEEN bewijs dat ze het eens zijn — het is de mededeling dat het geval hier niet
+  // voorkomt. Daarom staat de meetkundig juiste regel er, niet de regel die vandaag toevallig
+  // hetzelfde antwoord geeft.
+  const [rBoven, rRechts, rOnder, rLinks] = n.borderZijden
+    ?? [n.border ?? 0, n.border ?? 0, n.border ?? 0, n.border ?? 0];
   const bedekt = k => k.abs && !k.k && !k.t && (k.grad || k.bg)
-    && Math.abs(k.dx ?? 0) <= rand + 0.5 && Math.abs(k.dy ?? 0) <= rand + 0.5
-    && k.w >= n.w - 2 * rand - 0.5 && k.h >= n.h - 2 * rand - 0.5;
+    && Math.abs(k.dx ?? 0) <= rLinks + 0.5 && Math.abs(k.dy ?? 0) <= rBoven + 0.5
+    && k.w >= n.w - rLinks - rRechts - 0.5 && k.h >= n.h - rBoven - rOnder - 0.5;
   const achtergrondKinderen = (n.k ?? []).filter(bedekt);
   const echteKinderen = (n.k ?? []).filter(k => !bedekt(k));
   for (const a of achtergrondKinderen) {
@@ -637,9 +674,41 @@ async function maak(n, naamPad, wortelComp) {
     const p = { type: 'SOLID', color: rgb(n.borderKleur), opacity: n.borderKleur.a };
     f.strokes = n.borderKleurVar && V.get(n.borderKleurVar)
       ? [figma.variables.setBoundVariableForPaint(p, 'color', V.get(n.borderKleurVar))] : [p];
-    f.strokeWeight = n.border; f.strokeAlign = 'INSIDE';
-    if (n.borderVar && V.get(n.borderVar)) f.setBoundVariable('strokeWeight', V.get(n.borderVar));
+    f.strokeAlign = 'INSIDE';
+    /**
+     * RANDEN PER ZIJDE. `strokeWeight` is één getal voor de hele node; een scheidingslijn
+     * (`0/0/1/0`) en een lijn boven en onder (`1/0/1/0`) vragen de vier losse velden.
+     * Volgorde is niet vrij: `strokeWeight` schrijven ZET DE VIER TERUG, dus de losse velden
+     * gaan er altijd achteraan. Wat de losse velden bindbaar maakt is `strokeAlign = INSIDE`
+     * — die staat hierboven, vóór de toewijzing, met opzet.
+     */
+    const zijVelden = ['strokeTopWeight', 'strokeRightWeight', 'strokeBottomWeight', 'strokeLeftWeight'];
+    f.strokeWeight = n.border;
+    let perZijde = false;
+    if (n.borderZijden) {
+      try {
+        n.borderZijden.forEach((w, i) => { f[zijVelden[i]] = w; });
+        perZijde = true;
+      } catch (e) {
+        // Een halve toewijzing is erger dan geen: `strokeWeight` terug, zodat de node de
+        // toestand heeft die de melding beschrijft.
+        f.strokeWeight = n.border;
+        meldingen.push(`${naamPad}: rand per zijde ${JSON.stringify(n.borderZijden)} geweigerd (${e.message}) — volle doos gezet`);
+      }
+    }
+    if (n.borderVar && V.get(n.borderVar)) {
+      // Binden ná het zetten, en per gezette zijde: één binding op `strokeWeight` zou de
+      // vier losse breedtes opnieuw gelijktrekken.
+      try {
+        if (perZijde) n.borderZijden.forEach((w, i) => { if (w > 0) f.setBoundVariable(zijVelden[i], V.get(n.borderVar)); });
+        else f.setBoundVariable('strokeWeight', V.get(n.borderVar));
+      } catch (e) { meldingen.push(`${naamPad}: randbreedte niet te binden (${e.message})`); }
+    }
     if (!n.borderKleurVar) meldingen.push(`${naamPad}: randkleur ongebonden`);
+    // Figma's `strokes` is één verfarray voor de hele node. Gemeten 2026-09-09: 0 van 333
+    // nodes met meer dan één kleur op hun gezette zijden — de melding is de wachtpost die
+    // voorkomt dat de eerste kleur er stil voor doorgaat als dat verandert.
+    if (n.randKleurRest) meldingen.push(`${naamPad}: randkleuren verschillen per zijde — Figma kent maar één strokes-array, de eerste kleur is gezet`);
   }
   if (n.radius) {
     const [tl, tr, br, bl] = n.radius;
@@ -664,7 +733,46 @@ async function maak(n, naamPad, wortelComp) {
     aangehangen.push({ kind, k, pad: `${naamPad}>${k.naam ?? i}` });
   }
   zetRek(f, aangehangen, naamPad);
-  if (n.t) f.appendChild(await maak({ ...n, k: null, naam: 'label' }, `${naamPad}>label`, wortelComp));
+  /**
+   * EIGEN TEKST NAAST KINDEREN — EEN RIJ, GEEN STAPEL OP ELKAAR.
+   *
+   * "Nog geen account? *Registreer*" is één `<Text>` met een genest `<Text>`. Figma kent geen
+   * inline-stroom, dus de run wordt een eigen tekstnode náást het kind. Tot 2026-09-10 hing hij
+   * er los achteraan in een frame zónder auto-layout: beide landden op x = 0 en schoven over
+   * elkaar heen. Gemeten op LoginScreen: `linkText` een frame van 208x18 met twee kinderen op
+   * dezelfde plek — en `parity` zag het niet, want de hoogte klopte en `kinderparen()` snijdt
+   * dit label er per regel af.
+   *
+   * Dus: een HORIZONTALE rij die zijn inhoud hugt, met de run op de plek waar de DOM hem heeft
+   * (`t.voor`, gemeten in de walker). BASELINE is de uitlijning die inline-tekst nabootst; valt
+   * hij niet te zetten, dan is CENTER de terugval en dat wordt gemeld.
+   */
+  if (n.t && n.k) {
+    try {
+      f.layoutMode = 'HORIZONTAL';
+      f.primaryAxisSizingMode = 'AUTO';
+      f.counterAxisSizingMode = 'AUTO';
+      f.itemSpacing = 0;
+      try { f.counterAxisAlignItems = 'BASELINE'; }
+      catch (e) { f.counterAxisAlignItems = 'CENTER'; meldingen.push(`${naamPad}: inline BASELINE geweigerd (${e.message}) — CENTER gezet`); }
+    } catch (e) {
+      meldingen.push(`${naamPad}: inline rij niet te zetten (${e.message}) — eigen tekst en kind overlappen`);
+    }
+  }
+  if (n.t) {
+    const label = await maak({ ...n, k: null, naam: 'label' }, `${naamPad}>label`, wortelComp);
+    if (n.k && n.t.voor) f.insertChild(0, label);
+    else f.appendChild(label);
+    // In een inline rij hugt élk deel per definitie: `zetRek` draaide hierboven nog op een
+    // frame zonder auto-layout en kan een kind op FILL hebben gezet, wat het onder HORIZONTAL
+    // alsnog zou uitrekken. Hier is dat nooit de bedoeling — de run en het kind staan naast
+    // elkaar zo breed als hun glyphs.
+    if (n.k && f.layoutMode === 'HORIZONTAL') {
+      for (const kind of f.children) {
+        try { kind.layoutGrow = 0; kind.layoutAlign = 'INHERIT'; } catch (e) { /* niet elk type accepteert dit */ }
+      }
+    }
+  }
   return f;
 }
 
@@ -827,9 +935,26 @@ if (DOEL) {
 // overleeft dat venster niet — gemeten 2026-09-09: fire-and-forget bleef hangen op de eerste
 // `importComponentByKeyAsync`, dezelfde aanroep awaited duurde 39 ms). Zonder deze offset
 // stapelt elke aanroep zijn frame op x=0.
-let doelX = doelPagina
-  ? doelPagina.children.reduce((m, c) => Math.max(m, c.x + c.width + 48), 0)
-  : 0;
+/**
+ * DE PLAATSING MAG NIET MEEGROEIEN MET DE GESCHIEDENIS VAN DE PAGINA.
+ *
+ * Hier stond `reduce((m, c) => Math.max(m, c.x + c.width + 48), 0)` — nieuwe frames rechts van
+ * álles wat er al staat. Dat lost het stapelen binnen één bouw op, maar het is cumulatief: elke
+ * herbouw die een frame opnieuw aanmaakt in plaats van hergebruikt, duwt het blok 24 x 478 px
+ * verder naar rechts. Gemeten 2026-09-10 op *Screens v2*: de 24 frames stonden op
+ * x = 170 600 tot 182 526, terwijl elke andere pagina in dat bestand rond de oorsprong ligt
+ * (-3 287 tot 7 533). Dat is ongeveer 357 geplaatste frames, ofwel vijftien bouwronden.
+ *
+ * Zo ver van de oorsprong begeeft Figma's canvas-precisie het: de gebruiker zag alle schermen
+ * bij het laden van de pagina en ze verdwenen zodra hij zoomde of scrolde, terwijl het
+ * lagenpaneel ze bleef tonen. Geen enkele as zag dit — `parity` en `beeld` meten binnen een
+ * frame, nooit wáár dat frame staat.
+ *
+ * De offset hoort dus relatief te zijn aan de frames die deze bouw zelf plaatst, met de
+ * oorsprong als vertrekpunt. `bouw-schermen.js` zet de definitieve x per frame op zijn index,
+ * zodat de plaatsing idempotent is over aanroepen én over ronden heen.
+ */
+let doelX = 0;
 
 /**
  * NA HET BOUWEN: is elke instance getrouw?
@@ -915,10 +1040,11 @@ function diepVerschil(fig, spec, pad) {
 
 /** Dezelfde opvouwregel als `maak` gebruikt (builder.js, achtergrondkinderen). */
 function bedektIn(n) {
-  const rand = n.border ?? 0;
+  const [rBoven, rRechts, rOnder, rLinks] = n.borderZijden
+    ?? [n.border ?? 0, n.border ?? 0, n.border ?? 0, n.border ?? 0];
   return (k) => k.abs && !k.k && !k.t && (k.grad || k.bg)
-    && Math.abs(k.dx ?? 0) <= rand + 0.5 && Math.abs(k.dy ?? 0) <= rand + 0.5
-    && k.w >= n.w - 2 * rand - 0.5 && k.h >= n.h - 2 * rand - 0.5;
+    && Math.abs(k.dx ?? 0) <= rLinks + 0.5 && Math.abs(k.dy ?? 0) <= rBoven + 0.5
+    && k.w >= n.w - rLinks - rRechts - 0.5 && k.h >= n.h - rBoven - rOnder - 0.5;
 }
 
 const uit = [];
@@ -936,20 +1062,30 @@ for (const [comp, d] of Object.entries(SPEC)) {
   // Hergebruik-detectie MOET vóór de poort: zijn set en varianten terug te vinden, dan
   // vervangt deze bouw geen enkele gepubliceerde node en heeft de poort niets te weigeren.
   const namenNu = (d.frames ?? d.varianten ?? []).map(v => v.naam);
+  // In scherm-modus staan er meerdere schermen én meerdere frames op één pagina, en wordt er
+  // PER FRAME gebouwd. Alleen de frames weghalen die deze aanroep opnieuw maakt — niet de buren
+  // en niet de frames van een vorige aanroep van hetzelfde scherm.
+  //
+  // Staat hier en niet lager, omdat `kanHergebruiken` hem nodig heeft en die vóór de poort
+  // draait. Dezelfde vorm als de `meldingen`-fout van 2026-09-09: een `const` gebruiken vóór
+  // zijn declaratie geeft geen waarschuwing bij het schrijven, alleen een lege bouw bij het
+  // draaien (`teBouwen is not initialized`, gemeten).
+  const teBouwen = new Set(namenNu);
   const bestaandeSet = DOEL ? null : (page.children.find(c => c.type === 'COMPONENT_SET')
     ?? (page.children.filter(c => c.type === 'COMPONENT').length === 1 ? page.children.find(c => c.type === 'COMPONENT') : null));
   const bestaandeNamen = bestaandeSet
     ? (bestaandeSet.type === 'COMPONENT_SET' ? bestaandeSet.children.map(v => v.name) : [bestaandeSet.name]) : [];
-  const kanHergebruiken = !!bestaandeSet && namenNu.every(n => bestaandeNamen.includes(n))
-    && bestaandeNamen.every(n => namenNu.includes(n));
+  const kanHergebruiken = DOEL
+    // In scherm-modus is hergebruik mogelijk zodra elk te bouwen frame al als node bestaat.
+    // Er is geen set en geen variantnaam-verzameling om tegen te vergelijken: elk frame staat
+    // op zichzelf, dus de vraag is per frame en niet per pagina.
+    ? [...teBouwen].every(fr => page.children.some(k => k.getPluginData('scherm') === comp && k.getPluginData('frame') === fr))
+    : (!!bestaandeSet && namenNu.every(n => bestaandeNamen.includes(n))
+       && bestaandeNamen.every(n => namenNu.includes(n)));
   const bezwaren = await poort(page, comp, SPEC.__force === true, kanHergebruiken);
   if (bezwaren) { geweigerd.push(...bezwaren); continue; }
   // In scherm-modus staan er meerdere schermen op één pagina: alleen de eigen frames weg,
   // niet de buren. Buiten die modus is de pagina van dit component alleen.
-  // In scherm-modus staan er meerdere schermen én meerdere frames op één pagina, en wordt er
-  // PER FRAME gebouwd. Alleen de frames weghalen die deze aanroep opnieuw maakt — niet de buren
-  // en niet de frames van een vorige aanroep van hetzelfde scherm.
-  const teBouwen = new Set((d.frames ?? d.varianten ?? []).map(v => v.naam));
 
   /**
    * BEHOUD DE COMPONENT-NODE, VERVANG ZIJN INHOUD.
@@ -972,6 +1108,28 @@ for (const [comp, d] of Object.entries(SPEC)) {
    */
   let hergebruikSet = null;
   const hergebruikVariant = new Map();
+  /**
+   * OOK EEN SCHERM WORDT BIJGEWERKT, NIET VERVANGEN.
+   *
+   * Deze tak stond tot 2026-09-10 achter `if (!DOEL)`: alleen library-componenten werden
+   * hergebruikt, een schermframe werd elke ronde verwijderd en opnieuw gemaakt. Gemeten:
+   * twee herbouwde schermen kregen nieuwe node-ids (`466:11547 -> 470:4841`) terwijl de 22
+   * onaangeraakte frames de hunne hielden. Dat kost bij elke ronde alles wat aan de NODE hangt
+   * en niet aan zijn inhoud — prototype-verbindingen, commentaren, een selectie in iemands
+   * scherm — en het was ook de motor achter de frame-drift van eigenaardigheid 13: een
+   * hergebruikt frame houdt zijn plek, een nieuw frame kreeg er telkens een verderop.
+   *
+   * De sleutel is hier de `frame`-pluginData in plaats van de variantnaam, want een scherm is
+   * een gewone FRAME op een gedeelde pagina. De handwerk-poort verandert niet: `bouwhash` wordt
+   * hierboven op elk kind getoetst, ongeacht of het een component of een scherm is.
+   */
+  if (DOEL) {
+    for (const kind of page.children) {
+      if (kind.getPluginData('scherm') !== comp) continue;
+      const fr = kind.getPluginData('frame');
+      if (teBouwen.has(fr)) hergebruikVariant.set(fr, kind);
+    }
+  }
   if (!DOEL) {
     hergebruikSet = page.children.find(c => c.type === 'COMPONENT_SET')
       ?? (page.children.filter(c => c.type === 'COMPONENT').length === 1
@@ -1010,9 +1168,15 @@ for (const [comp, d] of Object.entries(SPEC)) {
     let c;
     if (bestaand) {
       c = bestaand;
-      c.name = v.naam;
+      // Een hergebruikt SCHERM krijgt precies wat `frameWrapper` een nieuw scherm geeft: de
+      // naam mét component-prefix, zijn eigen achtergrond en clipsContent. De component-tak
+      // eronder doet het omgekeerde (`fills = []`, kale variantnaam) — die twee door elkaar
+      // halen leegde de schermachtergrond en hernoemde "ActivePhase / Playground" naar
+      // "Playground".
+      c.name = DOEL ? `${comp} / ${v.naam}` : v.naam;
       c.resize(Math.max(0.01, br), Math.max(0.01, ho));
-      c.fills = [];
+      c.fills = DOEL ? [bgPaint()] : [];
+      if (DOEL) c.clipsContent = true;
       c.layoutMode = 'NONE';   // schoon vertrekpunt; de auto-layout wordt hieronder gezet
     } else {
       c = DOEL ? frameWrapper(`${comp} / ${v.naam}`, br, ho) : wrapper(v.naam, br, ho);

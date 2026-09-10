@@ -38,6 +38,40 @@ mode meer. Een contrastcijfer voor cashflow gaat dus altijd over light.
 
 ---
 
+## Design-systeem-bron
+
+Welke laag deze app zijn vorm van krijgt. Gemeten, niet afgeleid: `scripts/design-system-guard.mjs`
+toetst elke regel hieronder tegen wat er op schijf staat. "geen" is overal een geldig antwoord,
+mits het er staat.
+
+- **Preset:** `@umanex/config/tailwind/preset`
+- **Componentbron:** `@umanex/ui`
+- **Storybook:** `pnpm --filter @umanex/ui storybook` (:6006)
+
+De modals (`ReservationPaymentModal`, `RepeatMonthModal`) draaien op `Button`, `Input` en `Label`
+uit `@umanex/ui`. Een nieuwe primitive hoort in `packages/ui` met een story ernaast, niet hier.
+
+**De rest van de app niet, en dat is gemeten.** Van de 96 hand-gerolde primitives in deze app
+zijn er 2 een schone swap, 58 te dicht voor elke bestaande maat, en 36 helemaal geen knop of
+veld (drag-handles, glyph-affordances, een klikbare rij). De app-body werkt op `h-7`/`h-8` met
+`text-dense`, `rounded-sm` en `focus:ring-1`; `Input` kent alleen `h-10` en `Button` alleen
+`h-9`/`h-10`/`h-11`. Een swap daar kost vier tot zes overschrijvende klassen per call-site en
+levert een primitive op die tegen zijn eigen defaults vecht — slechtere code dan wat er staat.
+
+De echte oplossing is een **compacte maat in `packages/ui`**, niet meer overrides hier. Dat is
+een design-system-wijziging (bevestiging van Jeroen) én een Figma-herbouw, want
+`pnpm --filter @umanex/ui figma:check` faalt hard op een variant-as die code en Figma niet delen.
+Staat als open item in de root-`BACKLOG.md`.
+
+Wat de migratie van de modals zichtbaar veranderde, alle drie beslissingen van de rollaag en niet
+van deze app: de veldlabels werden 6px korter per regel (`Label` draagt `leading-none`, de
+call-sites hadden de `text-sm`-regelhoogte van 20px), de focus-ring werd `focus-visible` mét
+2px offset in plaats van `focus` zonder, en de Annuleren-knop hovert nu naar `bg-accent` — de
+bleke merktint — in plaats van naar `bg-muted`. Dat laatste is precies de inconsistentie die
+deze app tegenover jobradar had.
+
+---
+
 ## Verify-pad
 
 Wat de `verify`-skill hier kan uitvoeren. Vastgesteld 2026-08-07 door alle vijf te draaien, niet door
@@ -45,11 +79,11 @@ ze af te leiden. Staat er "geen", dan is dat een gat dat gebouwd moet worden —
 
 | Capability | Commando / status |
 |---|---|
-| **Render vastleggen** | Twee drivers, één meting (`scripts/contrast.mjs`). Statisch: `pnpm --filter cashflow verify:visual` rendert de rollaag en de charts naar `.screens-preview.html` / `.charts-preview.html` — geen server, geen sessie — en sweept ze op contrast (297 tekstelementen). Draaiend: `pnpm --filter cashflow flow` sweept het échte scherm mét `MonthCard` en beide modals open (325 tekstelementen). Statisch hermeten 2026-08-10 (de saldoregel verhuisde naar de inkomstensectie en kreeg er fixtures bij: 284 → 297); draaiend ongewijzigd, want de harnasfixture heeft geen bufferpot en houdt dus in alle drie de kolommen een saldoregel. Beide alleen light — zie "Geen dark mode". Meekijken: `flow --headed`, of de draaiende app op `http://localhost:3000`. |
-| **Flow aandrijven** | `pnpm --filter cashflow flow` — Playwright rijdt tien scenario's uit tegen de gebouwde app: de sleep tussen twee maandkolommen (toetsenbord én muis), de contrast-sweep op scherm + modals, het openen en met Escape sluiten van beide modals, de a11y-staat van de twee sidepanels (dicht = `inert` en uit de a11y-tree, open = bereikbaar), de twee saldoregel-scenario's (staat hij bínnen de inkomstensectie en is alleen de ankerkolom bewerkbaar · verdwijnt hij uit een latere maand zodra het saldo nul is) en de drie states hieronder. Start zijn eigen `next start` op **3100** en weigert te draaien als daar al iets luistert. `--selftest` voegt negen tegenproeven toe die hóren te falen, `--headed` laat meekijken, `--port=` wijkt uit. Vereist een build in `apps/cashflow/.next`; hij bouwt bewust niet zelf. Die build moet met **dezelfde** `NEXT_PUBLIC_SUPABASE_URL` gemaakt zijn als waarmee je hem draait: de harness leest de origins uit `.next/static/chunks` en weigert te starten bij een mismatch — vóór de server, vóór de browser. Draait sinds 2026-08-08 in `ci.yml` als `flow:selftest`. Moet je juist de échte data zien, dan is er het handmatige recept onderaan — daar geldt de schrijf-discipline wél. |
-| **State forceren** | Het `gedrag`-argument van de route-handler in `scripts/flow-harness.mjs`: `vertragingMs` (skeleton met `aria-busy`), `leeg` (geldig document zonder posten → de lege staat per sectie), `documentStatus: 500` (het foutscherm met "Opnieuw proberen"). Alle drie hebben een eigen scenario. De fixture zelf: één post met een uniek bedrag in de eerste van drie kolommen, plus één spaarpot — zonder pot bestaat de betaalmodal niet. **Geen testaccount:** er is één Supabase-gebruiker en dat is Jeroens echte data. `scripts/seed-supabase.mjs` is géén verify-pad — dat is een one-off migratie die naar productie schrijft. |
-| **Invariant draaien** | `pnpm --filter cashflow scenarios` (≈4s) draait beide suites — buffer 546/546 en anker 48/48 — plus een tegenproef per suite: die draait hem eerst met `SCENARIO_SELFTEST=1`, wat één check injecteert die móet falen. Een suite die dan tóch groen is, laat de hele stap vallen. Geen `&&`-keten: een rode buffer-suite verbergt de anker-suite niet meer. Staat sinds 2026-08-08 in `ci.yml`; los te starten met `scenarios:buffer` / `scenarios:anchor`. `calc-baseline.ts` blijft handwerk: hij dumpt een digest vóór en ná een refactor en een lege diff bewijst dat geen enkel getal verschoof — dat heeft geen pass/fail en hoort dus niet in een pipeline. Alle drie pure berekening, geen netwerk. |
-| **Verse build** | Twee doelwitten, houd ze uit elkaar. De PM2-app op **:3000** draait uit de hoofd-tree en serveert `.next`, niet je source: toets met `find app components lib store -newer .next/BUILD_ID` — leeg betekent actueel. Na een wijziging `pnpm --filter cashflow pm2:rebuild`, daarna hard refresh. De flow-harness bouwt en serveert in zijn éígen worktree op 3100 en raakt :3000 niet aan. |
+| **Render vastleggen** | Twee drivers, één meting (`scripts/contrast.mjs`). Statisch: `pnpm --filter cashflow verify:visual` rendert de rollaag en de charts naar `.screens-preview.html` / `.charts-preview.html` — geen server, geen sessie — en sweept ze op contrast (302 tekstelementen). Draaiend: `pnpm --filter cashflow flow` sweept het échte scherm mét `MonthCard` en beide modals open (325 tekstelementen). Statisch hermeten 2026-09-06 (de footer verloor zijn regel "Niet gedekt" en `RunwayCard` kreeg zijn negatieve stand als vijfde fixture: 297 → 302); draaiend ongewijzigd op 325, want de contrast-scenario's draaien op de fixture zónder bufferpot. Beide alleen light — zie "Geen dark mode". Meekijken: `flow --headed`, of de draaiende app op `http://localhost:3000`. |
+| **Flow aandrijven** | `pnpm --filter cashflow flow` — Playwright rijdt twaalf scenario's uit tegen een build die de harness zelf maakt in `.next-harness` (zie *Verse build*): de sleep tussen twee maandkolommen (toetsenbord én muis), de contrast-sweep op scherm + modals, het openen en met Escape sluiten van beide modals, de a11y-staat van de twee sidepanels (dicht = `inert` en uit de a11y-tree, open = bereikbaar), de twee saldoregel-scenario's (staat hij bínnen de inkomstensectie en is alleen de ankerkolom bewerkbaar · verdwijnt hij uit een latere maand zodra het saldo nul is), de maandfooter met een bufferpot die het tekort niet meer draagt (`gedrag: { buffer: true }` — kolom 2 hoort een negatieve stand te tonen naast de volle maandstroom en kolom 0, een half verstreken maand, géén bedrag — met "Buffer" direct achter "Deze maand") en zijn tegenhanger op de standaardfixture (geen bufferpot → de hint "Geen buffer" in alle drie de kolommen en nergens een bedrag) en de drie states hieronder. Start zijn eigen `next start` op **3100** en weigert te draaien als daar al iets luistert. `--selftest` voegt elf tegenproeven toe die hóren te falen (script `flow:selftest`: bouwt óók zelf), `--headed` laat meekijken, `--port=` wijkt uit; Ctrl+C ruimt de server op. Bouwt zelf in `.next-harness` en erft daarbij zijn eigen `NEXT_PUBLIC_SUPABASE_URL`; `--no-build` hergebruikt de vorige harness-build, `--dist=.next` serveert een bestaande build zonder te bouwen — elke andere naam weigert hij, want `next build` maakt de doelmap eerst leeg. Een hergebruikte build moet met **dezelfde** `NEXT_PUBLIC_SUPABASE_URL` gemaakt zijn: de harness leest de origins uit `<distDir>/static/chunks` en weigert te starten bij een mismatch — vóór de server, vóór de browser — en toetst ná de start dat `:3100` echt díe BUILD_ID serveert. Draait sinds 2026-08-08 in `ci.yml`, sinds 2026-08-25 als `flow:ci` (`--selftest --dist=.next`, de build van de stap ervoor). Moet je juist de échte data zien, dan is er het handmatige recept onderaan — daar geldt de schrijf-discipline wél. |
+| **State forceren** | Het `gedrag`-argument van de route-handler in `scripts/flow-harness.mjs`: `vertragingMs` (skeleton met `aria-busy`), `leeg` (geldig document zonder posten → de lege staat per sectie), `documentStatus: 500` (het foutscherm met "Opnieuw proberen") en sinds 2026-09-06 `buffer` (een bufferpot plus een kost die de pot ver overstijgt, zodat de maandfooter zijn drie standen toont: opbouw, stilstand, negatief). Alle vier hebben een eigen scenario. De fixture zelf: één post met een uniek bedrag in de eerste van drie kolommen, plus één spaarpot — zonder pot bestaat de betaalmodal niet. De `buffer`-variant vervangt die spaarpot door één bufferpot; de andere scenario's raakt dat niet. **Geen testaccount:** er is één Supabase-gebruiker en dat is Jeroens echte data. `scripts/seed-supabase.mjs` is géén verify-pad — dat is een one-off migratie die naar productie schrijft. |
+| **Invariant draaien** | `pnpm --filter cashflow scenarios` (≈4s) draait beide suites — buffer 831/831 en anker 48/48 — plus een tegenproef per suite: die draait hem eerst met `SCENARIO_SELFTEST=1`, wat één check injecteert die móet falen. Een suite die dan tóch groen is, laat de hele stap vallen. Geen `&&`-keten: een rode buffer-suite verbergt de anker-suite niet meer. Staat sinds 2026-08-08 in `ci.yml`; los te starten met `scenarios:buffer` / `scenarios:anchor`. `calc-baseline.ts` blijft handwerk: hij dumpt een digest vóór en ná een refactor en een lege diff bewijst dat geen enkel getal verschoof — dat heeft geen pass/fail en hoort dus niet in een pipeline. Alle drie pure berekening, geen netwerk. |
+| **Verse build** | Twee doelwitten, houd ze uit elkaar. De PM2-app op **:3000** draait uit de hoofd-tree en serveert `.next`, niet je source: toets met `find app components lib store -newer .next/BUILD_ID` — leeg betekent actueel. Na een wijziging `pnpm --filter cashflow pm2:rebuild`, daarna hard refresh. De flow-harness (`pnpm --filter cashflow flow`) bouwt zélf, in `.next-harness` (`NEXT_DIST_DIR`, zie `next.config.mjs`), en serveert die build op `:3100` — hij bouwt nooit in `.next` en raakt `:3000` dus niet. Dat is het verify-pad voor feature-werk in de hoofdtree; hij logt welke `BUILD_ID` hij serveert. `--no-build` hergebruikt de vorige harness-build, `--dist=.next` serveert een bestaande build zonder te bouwen (wat CI doet via `flow:ci`). |
 
 **`pm2 status` is geen bewijs dat de app draait.** Op 2026-08-07 stond cashflow op `online` terwijl er
 niets op poort 3000 luisterde: PM2's opgeslagen procesdefinitie wees nog naar de root-binary
@@ -62,7 +96,7 @@ Herstellen is de definitie herladen, niet herstarten:
 
 **Destructieve paden — de harness kan er niet bij.** Drie lagen, want een veiligheidsgarantie die
 op één check rust, rust op te weinig. (1) Vóór de start vergelijkt hij de origins in
-`.next/static/chunks` met de origin die hij afsluit en weigert bij een mismatch — anders zou de app
+`<distDir>/static/chunks` met de origin die hij afsluit en weigert bij een mismatch — anders zou de app
 langs de onderschepping heen naar een échte server gaan en zou "0 lekken" een lege bewering zijn.
 (2) Élk verzoek naar die origin wordt onderschept: wat de harness kent (login, document, snapshots,
 de wegschrijf-call) beantwoordt hij uit de fixture, al het overige breekt hij af en telt hij als lek,

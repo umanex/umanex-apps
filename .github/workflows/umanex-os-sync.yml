@@ -17,6 +17,7 @@ name: Sync umanex-os layer
 #   - .claude/agents/.umanex-managed                            agents-manifest, zelfde regime
 #   - scripts/sync-os.sh                                        canoniek sync-script
 #   - scripts/gen-snapshot.sh, .githooks/pre-commit             snapshot-systeem (bestanden)
+#   - scripts/figma-token-coverage.mjs                          token-dekkingscheck (bestand)
 #   - .githooks/commit-msg                                      commit-scope guard (bestand)
 #   - context.json                                              snapshot-input, seed-if-absent
 #   - LEARNINGS.md in root + elke apps/*                        capture-staging, seed-if-absent
@@ -184,6 +185,7 @@ jobs:
           install_file profile.md          ".umanex-os/profiles/${PROFILE_NAME}.md"
           install_file sync-os.sh          "scripts/sync-os.sh"          x
           install_file gen-snapshot.sh     "scripts/gen-snapshot.sh"     x
+          install_file figma-token-coverage.mjs "scripts/figma-token-coverage.mjs" x
           install_file githooks-pre-commit ".githooks/pre-commit"        x
           install_file githooks-commit-msg ".githooks/commit-msg"        x
 

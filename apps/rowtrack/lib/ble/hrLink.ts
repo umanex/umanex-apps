@@ -13,6 +13,11 @@ import type { HRStatus, HrBleErrorCode } from './types';
  * bestaat. Een test tegen een namaak-BLE-stack toetst de namaak, niet de regel. Als
  * pure overgangsfunctie is hij wél te toetsen — de dienst houdt de timers, deze
  * module houdt de beslissing.
+ *
+ * De keerzijde staat er sinds 2026-08-20 naast: stilte telt alleen als bewijs
+ * wanneer we konden luisteren. Ging de app naar de achtergrond, dan zwijgt élke
+ * band, en een deadline die daar doorheen loopt meet de app in plaats van het
+ * toestel. Zie `suspended`/`resumed`.
  */
 
 export type HrLinkPhase =
@@ -42,7 +47,18 @@ export type HrLinkEvent =
   /** De deadline verliep: er kwam te lang niets bruikbaars. */
   | { type: 'silence' }
   /** Wij lieten het toestel los (stop, nieuwe scan, opruimen). */
-  | { type: 'released' };
+  | { type: 'released' }
+  /**
+   * De app verdween naar de achtergrond. iOS schorst haar dan op — RowTrack vraagt
+   * geen `bluetooth-central` background mode (`app.json`) — dus er kómt niets binnen,
+   * hoe gezond de band ook is. Stilte bewijst vanaf hier niets meer.
+   */
+  | { type: 'suspended' }
+  /**
+   * De app staat weer vooraan. De band krijgt een vol venster om zich opnieuw te
+   * bewijzen, in plaats van meteen af te gaan op stilte die niet van hem kwam.
+   */
+  | { type: 'resumed' };
 
 export type HrLinkEffect = {
   /** Status om te publiceren, als er iets te melden valt. */
@@ -50,6 +66,12 @@ export type HrLinkEffect = {
   error?: HrBleErrorCode;
   /** Deadline (opnieuw) zetten. */
   rearmDeadline?: boolean;
+  /**
+   * Deadline stilzetten zonder hem te vervangen. Alleen voor tijd die niet van de
+   * band komt — zie `suspended`. Een deadline die blijft staan terwijl de app
+   * bevroren is, vuurt bij terugkeer meteen af over een band die gewoon meet.
+   */
+  clearDeadline?: boolean;
   /** Het toestel loslaten. */
   release?: boolean;
 };
@@ -100,5 +122,18 @@ export function stepHrLink(
     case 'released':
       // De aanroeper regelt de status zelf (stop → 'idle', nieuwe scan → 'scanning').
       return { state: { phase: 'idle', silent: false }, effect: {} };
+
+    case 'suspended':
+      // De fase blijft staan: de verbinding is niet veranderd, alleen ons vermogen
+      // om hem te horen. Enkel de klok gaat uit.
+      if (state.phase === 'idle') return { state, effect: {} };
+      return { state, effect: { clearDeadline: true } };
+
+    case 'resumed':
+      // Een vol venster, niet het restant van vóór de achtergrond. Meet de band nog,
+      // dan is de eerste meting binnen een seconde binnen; meet hij niet meer, dan
+      // valt hij alsnog af — even snel als anders, maar op zijn eigen stilte.
+      if (state.phase === 'idle') return { state, effect: {} };
+      return { state, effect: { rearmDeadline: true } };
   }
 }

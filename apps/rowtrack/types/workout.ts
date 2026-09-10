@@ -12,6 +12,9 @@ export type WorkoutBase = {
 export type WorkoutSummary = WorkoutBase & {
   avg_split_seconds: number | null;
   calories: number | null;
+  is_pr: boolean | null;
+  /** jsonb-kolom; de vorm wordt bewaakt door parsePrEntries, niet door dit type. */
+  pr_metrics: unknown;
 };
 
 export type WorkoutDetail = WorkoutSummary & {
@@ -26,7 +29,6 @@ export type WorkoutDetail = WorkoutSummary & {
   goal_target: number | null;
   goal_reached: boolean | null;
   splits: SplitEntry[] | null;
-  is_pr: boolean | null;
   best_2k_seconds: number | null;
   total_strokes: number | null;
   /** Compacte [t,d]- of [t,d,hr]-tuples uit de DB; via samplesFromTuples → Sample[]. */

@@ -5,6 +5,8 @@
  *   pnpm --filter cashflow flow             # alle scenario's
  *   pnpm --filter cashflow flow --selftest  # + de tegenproeven, die hóren te falen
  *   pnpm --filter cashflow flow --headed    # meekijken terwijl het gebeurt
+ *   pnpm --filter cashflow flow --no-build  # hergebruik de vorige harness-build
+ *   pnpm --filter cashflow flow --dist=.next # serveer een bestaande build, bouw niet (CI)
  *
  * Waarom dit bestaat: het slepen van een post tussen maanden viel tot 2026-08-07 buiten
  * élk vangnet. De scenario-scripts raken alleen de rekenkern, `@umanex/tokens contrast`
@@ -31,8 +33,12 @@
  * lek en de run faalt. Er gaat dus geen enkele byte naar `cashflow_state` van de echte
  * gebruiker, ook niet wanneer het slepen slaagt en de app wíl wegschrijven.
  *
- * Eigen server op een eigen poort (3100): de PM2-app op 3000 serveert een andere build uit
- * een andere map. Die mag deze harness niet herstarten en niet overschrijven.
+ * Eigen build in een eigen map (`.next-harness`, via NEXT_DIST_DIR in next.config.mjs) en
+ * een eigen server op een eigen poort (3100). De PM2-app op 3000 serveert `.next` uit
+ * dezelfde tree — sinds app-werk in de hoofdtree gebeurt is dat de tree waarin je bouwt.
+ * Die build mag deze harness niet overschrijven en die server niet herstarten. Daarom
+ * bouwt hij nooit in `.next`; hij kan er hooguit een bestaande build uit serveren
+ * (`--dist=.next`, wat CI doet met de build van de stap ervoor).
  */
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -42,6 +48,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { beoordeel, beschrijfFout, meetInPagina, STIL_CSS } from './contrast.mjs';
+import { kiesDist } from './harness-dist.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = resolve(HERE, '..');
@@ -50,8 +57,25 @@ const require_ = createRequire(import.meta.url);
 const args = process.argv.slice(2);
 const SELFTEST = args.includes('--selftest');
 const HEADED = args.includes('--headed');
+// Gezet door de signaalhandler in main(): een onderbroken run eindigt met 130/143, niet met 1.
+let onderbroken = null;
 const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3100);
 const BASE = `http://127.0.0.1:${PORT}`;
+
+// ── Build-map ────────────────────────────────────────────────────────────────
+// Twee namen, letterlijk, gekozen in `harness-dist.mjs`: `.next` is de live map (PM2 op
+// :3000 leest eruit) en wordt alleen geserveerd; `.next-harness` is de eigen map en wordt
+// gebouwd, tenzij `--no-build` de vorige build hergebruikt. Vrije invoer is een wisser —
+// `next build` maakt de doelmap eerst leeg — dus een allowlist, geen normalisatie.
+let gekozen;
+try {
+  gekozen = kiesDist(args);
+} catch (err) {
+  console.error(err.message);
+  process.exit(2);
+}
+const { DIST, LIVE_MAP, BOUWEN } = gekozen;
+const DIST_PAD = resolve(APP, DIST);
 
 // ── Fixture ──────────────────────────────────────────────────────────────────
 // Eén post in de eerste kolom, met een bedrag dat nergens anders voorkomt zodat de
@@ -77,7 +101,36 @@ const DOEL = monthKey(1);
  * mislukte fetch, en het hoort ook iets anders te tonen: lege staten per sectie in
  * plaats van een foutscherm.
  */
-function fixtureData({ leeg = false } = {}) {
+function fixtureData({ leeg = false, buffer = false } = {}) {
+  // De buffer-variant zet één bufferpot en één kost die de pot ver overstijgt, zodat de
+  // maandfooter alle drie zijn standen laat zien: opbouw, stilstand, en een stand die
+  // negatief staat. Zonder die derde stand kan geen enkele check onderscheiden of de
+  // footer de positie of de potstand toont — die vallen samen zolang de pot volstaat.
+  if (buffer) {
+    return {
+      referenceBalance: 1000,
+      referenceMonth: BRON,
+      historyStartMonth: BRON,
+      balanceOverrides: [],
+      expenseItems: [
+        { id: 'harness-1', monthKey: BRON, label: LABEL, amount: AMOUNT, paid: false },
+        { id: 'harness-tekort', monthKey: monthKey(2), label: 'Harnastekort', amount: 1600, paid: false },
+      ],
+      // Inkomen in de middelste kolom, zodat één van de drie footers een overschot toont:
+      // anders staat er nooit een `+` op het scherm en blijft die tak van de regex blind.
+      incomeItems: [{ id: 'harness-in', monthKey: DOEL, label: 'Harnasinkomen', amount: 500 }],
+      recurringItems: [],
+      recurringSettlements: [],
+      reservationSettlements: [],
+      reservations: [
+        { id: 'harness-buffer', label: 'Reserve', monthlyAmount: 0, startMonth: BRON, type: 'spaardoel', coversDeficit: true },
+      ],
+      reservationPayments: [],
+      recurringDefers: [],
+      reservationDefers: [],
+      reopenedMonths: [],
+    };
+  }
   return {
     referenceBalance: leeg ? 0 : 5000,
     referenceMonth: BRON,
@@ -167,7 +220,7 @@ function originsInBuild() {
     }
   };
 
-  loop(resolve(APP, '.next/static/chunks'));
+  loop(resolve(DIST_PAD, 'static/chunks'));
   return gevonden;
 }
 
@@ -177,7 +230,7 @@ function controleerBuildOrigin(origin) {
 
   if (inBuild.size === 0) {
     throw new Error(
-      'Geen enkele supabase-origin gevonden in .next/static/chunks.\n' +
+      `Geen enkele supabase-origin gevonden in ${DIST}/static/chunks.\n` +
         'De harness kan dan niet vaststellen dat hij de origin afsluit waar de app naartoe gaat, ' +
         'en dat is zijn hele veiligheidsgarantie. Bouw opnieuw, of pas deze check aan als de ' +
         'bundel-indeling veranderd is.',
@@ -189,8 +242,9 @@ function controleerBuildOrigin(origin) {
     throw new Error(
       `De build praat met ${vreemd.join(', ')}, de harness sluit ${origin} af.\n` +
         'Die verzoeken zouden langs de onderschepping heen gaan — naar een echte server, met ' +
-        'echte data. Bouw met dezelfde NEXT_PUBLIC_SUPABASE_URL als waarmee je de harness draait:\n' +
-        `  NEXT_PUBLIC_SUPABASE_URL=${origin} pnpm --filter cashflow build`,
+        'echte data. Een build die de harness zelf maakt erft zijn omgeving, dus dit betekent dat ' +
+        `${DIST} een hergebruikte build is (--no-build of --dist=.next) uit een andere omgeving. ` +
+        `Bouw hem met NEXT_PUBLIC_SUPABASE_URL=${origin}, of laat de harness zelf bouwen.`,
     );
   }
 }
@@ -205,7 +259,7 @@ function controleerBuildOrigin(origin) {
  * drie andere schermen (skeleton, lege staat, foutscherm) zag nooit een guard.
  */
 function maakRouteHandler(state, gedrag = {}) {
-  const { leeg = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
+  const { leeg = false, buffer = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
 
   return async (route) => {
     const req = route.request();
@@ -227,7 +281,7 @@ function maakRouteHandler(state, gedrag = {}) {
         if (documentStatus !== 200) {
           return json({ message: 'harness: opzettelijke serverfout' }, documentStatus);
         }
-        return json({ data: fixtureData({ leeg }), revision: state.revision }, 200);
+        return json({ data: fixtureData({ leeg, buffer }), revision: state.revision }, 200);
       }
       // Elke schrijfpoging wordt geteld en beantwoord alsof ze lukte: de app moet
       // verder kunnen, en het bewijs dat er niets weglekte is juist dat we hier staan.
@@ -259,13 +313,61 @@ async function poortBezet() {
   }
 }
 
-async function startServer() {
-  if (!existsSync(resolve(APP, '.next/BUILD_ID'))) {
+/**
+ * Bouwt de app in DIST. De uitvoer wordt opgevangen en alleen bij een fout getoond; bij
+ * succes één regel met de duur. Geen eigen procesgroep: `next build` eindigt vanzelf.
+ */
+async function bouw() {
+  const bin = require_.resolve('next/dist/bin/next');
+  const start = Date.now();
+  console.log(`Flow-harness — bouwt in ${DIST} …`);
+  const proc = spawn(process.execPath, [bin, 'build'], {
+    cwd: APP,
+    env: { ...process.env, NEXT_DIST_DIR: DIST },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let logs = '';
+  proc.stdout.on('data', (d) => (logs += d));
+  proc.stderr.on('data', (d) => (logs += d));
+  const code = await new Promise((r) => proc.on('close', r));
+  if (code !== 0) {
+    throw new Error(`next build viel om (exit ${code}):\n${logs.split('\n').slice(-40).join('\n')}`);
+  }
+  console.log(`Flow-harness — build klaar in ${Math.round((Date.now() - start) / 1000)}s`);
+}
+
+function buildId() {
+  return readFileSync(resolve(DIST_PAD, 'BUILD_ID'), 'utf8').trim();
+}
+
+/**
+ * "Serveert <map>" mag niet van de schijf komen: Next koppelt de geserveerde map nergens
+ * aan wat er net gebouwd is, dus een `next start` zonder NEXT_DIST_DIR zou stil `.next`
+ * serveren terwijl de log `.next-harness` claimt. Vraag de server dus om het manifest van
+ * díe BUILD_ID; een andere build op die poort geeft 404.
+ */
+async function controleerGeserveerdeBuild(id) {
+  const res = await fetch(`${BASE}/_next/static/${id}/_buildManifest.js`, { redirect: 'manual' });
+  if (res.status !== 200) {
     throw new Error(
-      'Geen build in apps/cashflow/.next. Draai eerst `pnpm --filter cashflow build`.\n' +
-        'De harness bouwt bewust niet zelf: een build overschrijft de .next waar een draaiende server uit leest.',
+      `${BASE} serveert niet ${DIST} (BUILD_ID ${id}): het manifest gaf ${res.status}. ` +
+        'Een andere build op die poort, of NEXT_DIST_DIR kwam niet bij `next start` aan.',
     );
   }
+}
+
+/** Vóór de origin-check: die leest de chunks en zou een ontbrekende build als "bouw opnieuw" melden. */
+function controleerBuildAanwezig() {
+  if (existsSync(resolve(DIST_PAD, 'BUILD_ID'))) return;
+  throw new Error(
+    `Geen build in apps/cashflow/${DIST}.` +
+      (LIVE_MAP
+        ? ' `--dist=.next` serveert alleen wat er staat en bouwt daar nooit in — dat is de map waar een draaiende server uit leest. Laat de flag weg zodat de harness in .next-harness bouwt, of bouw eerst zelf (`pnpm --filter cashflow build`) waar geen server draait.'
+        : ' Laat `--no-build` weg zodat de harness hem zelf maakt.'),
+  );
+}
+
+async function startServer() {
 
   // Zonder deze check test de harness wat er tóevallig op de poort staat. `next start`
   // valt dan om met EADDRINUSE terwijl de eerste fetch slaagt tegen de vréémde server —
@@ -282,6 +384,9 @@ async function startServer() {
   // alleen het bovenste proces liet hier een luisterende server achter.
   const proc = spawn(process.execPath, [bin, 'start', '--port', String(PORT)], {
     cwd: APP,
+    // Dezelfde variabele als bij de build: `next start` leest next.config.mjs opnieuw en
+    // moet op dezelfde distDir uitkomen, anders serveert hij `.next` van iemand anders.
+    env: { ...process.env, NEXT_DIST_DIR: DIST },
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true,
   });
@@ -399,11 +504,14 @@ function greep(page, label) {
 const SALDO = /Beginsaldo|Vorig saldo/;
 
 /**
- * Bedrag uit een rijtekst als getal. nl-BE schrijft `€ -11.443,15`: punt is duizendtal,
- * komma is decimaal, en het minteken staat ná het euroteken.
+ * Bedrag uit een rijtekst als getal. Punt is duizendtal, komma is decimaal. Het teken
+ * staat vóór het euroteken en is een echt minteken (U+2212), niet het ASCII-koppelteken
+ * dat `Intl` zelf ná het symbool zou zetten — zie `formatAmount` in lib/cashflow/recurring.ts.
+ * Zonder die normalisatie valt het teken weg in de klassefilter hieronder en leest een
+ * tekort als een tegoed.
  */
 function bedragUit(tekst) {
-  const cijfers = tekst.replace(/[^\d.,-]/g, '').replace(/\./g, '').replace(',', '.');
+  const cijfers = tekst.replace(/[−–]/g, '-').replace(/[^\d.,-]/g, '').replace(/\./g, '').replace(',', '.');
   const n = parseFloat(cijfers);
   return Number.isNaN(n) ? null : n;
 }
@@ -445,6 +553,45 @@ async function saldoPerKolom(page) {
         tekst.indexOf('Inkomsten') < treffer.index && treffer.index < tekst.indexOf('Vaste uitgaves'),
       rijtekst,
     });
+  }
+
+  return uit;
+}
+
+// ── De maandfooter ───────────────────────────────────────────────────────────
+
+/**
+ * De twee regels van de footer, in documentvolgorde en pal na elkaar. Dat "pal na elkaar"
+ * is de tweede assertie in deze ene regex: stond er nog een derde regel tussen — "Niet
+ * gedekt", die tot 2026-09-06 het tekort droeg — dan matcht hij niet meer.
+ */
+// `formatSigned` schrijft een opbouw als `+€ 862,58`, dus het teken moet in de klasse:
+// zonder de `+` matcht een overschotmaand niet en meldt het scenario "geen footer" — een
+// instrument dat omvalt in plaats van meet. Het em-streepje hoort er ook in: sinds
+// 2026-09-06 toont een half verstreken maand (anker of afgesloten) geen maandbedrag.
+const FOOTER = /Deze maand ([+−]?€ [\d.,]+|—) Buffer ([+−]?€ [\d.,]+)/;
+
+async function footerPerKolom(page) {
+  const kolommen = page.locator(KOLOM);
+  const aantal = await kolommen.count();
+  const uit = [];
+
+  for (let i = 0; i < aantal; i++) {
+    const tekst = (await kolommen.nth(i).innerText()).replace(/\s+/g, ' ');
+    const treffer = tekst.match(FOOTER);
+    uit.push(
+      treffer
+        ? {
+            kolom: i,
+            aanwezig: true,
+            // `null` is "geen bedrag getoond" en is iets anders dan 0 — die twee uit
+            // elkaar houden is de hele assertie in de ankerkolom.
+            beweging: treffer[1] === '—' ? null : bedragUit(treffer[1]),
+            stand: bedragUit(treffer[2]),
+            rijtekst: treffer[0],
+          }
+        : { kolom: i, aanwezig: false, rijtekst: tekst.slice(-140) },
+    );
   }
 
   return uit;
@@ -820,6 +967,88 @@ function scenarios() {
       },
     },
     {
+      // De maandfooter met een bufferpot die het tekort niet meer draagt. Tot 2026-09-06
+      // stond daar "Buffer € 0,00" naast een aparte regel "Niet gedekt": de pot was leeg,
+      // dus de prominentste regel van de kolom meldde nul op het moment dat je er het
+      // slechtst voor stond. En "Deze maand" toonde de potbeweging — die per constructie
+      // exact de potstand van de maand ervoor is zodra het tekort de pot overstijgt,
+      // waardoor het scherm eruitzag alsof het die stand doorschoof.
+      naam: 'buffer — negatieve stand in de footer',
+      gedrag: { buffer: true },
+      actie: async (page) => {
+        const rijen = await footerPerKolom(page);
+        if (rijen.length !== 3) throw new Error(`${rijen.length} kolommen in plaats van 3`);
+
+        const ontbreekt = rijen.filter((r) => !r.aanwezig);
+        if (ontbreekt.length) {
+          throw new Error(
+            `kolom ${ontbreekt.map((r) => r.kolom).join(', ')} toont geen footer met "Deze maand" direct gevolgd door "Buffer" — staart: ${ontbreekt[0].rijtekst}`,
+          );
+        }
+
+        // Anker: half verstreken maand, dus géén maandbedrag — wel de stand. De pot
+        // vangt op wat er van het banksaldo van 1000 overblijft na een kost van 137,42.
+        // Tweede maand: 500 inkomen, dus opbouw — die kolom draagt het `+`-teken.
+        // Derde maand: een kost van 1600 tegen een pot van 1362,58 — het tekort overstijgt
+        // de pot, dus dáár moet de stand negatief zijn in plaats van nul.
+        const verwacht = [
+          { beweging: null, stand: 862.58 },
+          { beweging: 500, stand: 1362.58 },
+          { beweging: -1600, stand: -237.42 },
+        ];
+        for (const [i, v] of verwacht.entries()) {
+          if (v.beweging === null) {
+            if (rijen[i].beweging !== null) {
+              throw new Error(`kolom ${i} toont een maandbedrag (${rijen[i].beweging}) in een half verstreken maand — "${rijen[i].rijtekst}"`);
+            }
+          } else if (rijen[i].beweging === null || Math.abs(rijen[i].beweging - v.beweging) >= 0.005) {
+            throw new Error(`kolom ${i} beweegt ${rijen[i].beweging} in plaats van ${v.beweging} — "${rijen[i].rijtekst}"`);
+          }
+          if (Math.abs(rijen[i].stand - v.stand) >= 0.005) {
+            throw new Error(`kolom ${i} staat op ${rijen[i].stand} in plaats van ${v.stand} — "${rijen[i].rijtekst}"`);
+          }
+        }
+
+        // De invariant over het venster, op het scherm gelezen in plaats van in de kern:
+        // wat een maand beweegt, brengt je van de vorige stand naar deze.
+        const verschil = rijen[2].stand - rijen[1].stand;
+        if (Math.abs(verschil - rijen[2].beweging) >= 0.005) {
+          throw new Error(`standverschil ${verschil} ≠ beweging ${rijen[2].beweging} in kolom 2`);
+        }
+
+        return {
+          ok: true,
+          bewijs: `kolom 0 toont "${rijen[0].rijtekst}" (geen maandbedrag in een half verstreken maand) en kolom 2 "${rijen[2].rijtekst}" — stand negatief, beweging is het volle tekort, geen regel "Niet gedekt" ertussen`,
+        };
+      },
+    },
+    {
+      // De tegenhanger van het scenario hierboven, op de standaardfixture: zonder pot met
+      // `coversDeficit` hoort de footer de hint te tonen en géén bedragen. Twee signalen
+      // uit dezelfde DOM, in tegengestelde richting — zou de footer tóch zijn twee regels
+      // renderen, dan valt de tweede assertie.
+      naam: 'buffer — hint zonder bufferpot',
+      actie: async (page) => {
+        const kolommen = page.locator(KOLOM);
+        const aantal = await kolommen.count();
+        if (aantal !== 3) throw new Error(`${aantal} kolommen in plaats van 3`);
+
+        const rijen = await footerPerKolom(page);
+        const metBedrag = rijen.filter((r) => r.aanwezig);
+        if (metBedrag.length) {
+          throw new Error(`kolom ${metBedrag.map((r) => r.kolom).join(', ')} toont bufferbedragen zonder bufferpot`);
+        }
+
+        for (let i = 0; i < aantal; i++) {
+          const tekst = (await kolommen.nth(i).innerText()).replace(/\s+/g, ' ');
+          if (!tekst.includes('Geen buffer')) {
+            throw new Error(`kolom ${i} toont de hint "Geen buffer" niet — staart: ${tekst.slice(-140)}`);
+          }
+        }
+        return { ok: true, bewijs: 'drie kolommen tonen de hint "Geen buffer" en geen enkel bufferbedrag' };
+      },
+    },
+    {
       // Een trage fetch hoort een skeleton te geven, geen leeg scherm en geen nullen.
       naam: 'state — laden',
       gedrag: { vertragingMs: 2_500 },
@@ -896,6 +1125,39 @@ function tegenproeven() {
         const m = await sweep(page, 'prognose + injectie');
         if (m.fouten.length) return { ok: false, bewijs: `${m.fouten.length} fout(en) gevonden, zoals het hoort` };
         return { ok: true, bewijs: 'de geïnjecteerde te lichte tekst glipte door de sweep' };
+      },
+    },
+    {
+      // De footer-assertie is pas een meting als ze het oude gedrag afkeurt. Slaagt deze,
+      // dan toont kolom 2 nog altijd de potstand (€ 0,00) in plaats van de positie, en
+      // zegt "buffer — negatieve stand in de footer" niets.
+      naam: 'tegenproef — lege pot geldt als een gezonde stand',
+      moetFalen: true,
+      gedrag: { buffer: true },
+      actie: async (page) => {
+        const rijen = await footerPerKolom(page);
+        const derde = rijen[2];
+        if (!derde?.aanwezig) return { ok: false, bewijs: 'kolom 2 heeft geen leesbare footer' };
+        if (Math.abs(derde.stand) >= 0.005 || Math.abs(derde.beweging + 1362.58) >= 0.005) {
+          return { ok: false, bewijs: `kolom 2 toont "${derde.rijtekst}" — positie, niet de potstand` };
+        }
+        return { ok: true, bewijs: 'kolom 2 meldde € 0,00 met de potbeweging ernaast' };
+      },
+    },
+    {
+      // Spiegelbeeld van de ankerassertie hierboven: slaagt deze, dan toont de ankerkolom
+      // tóch een maandbedrag en zegt "geen maandbedrag in een half verstreken maand" niets.
+      naam: 'tegenproef — ankerkolom toont tóch een bedrag',
+      moetFalen: true,
+      gedrag: { buffer: true },
+      actie: async (page) => {
+        const rijen = await footerPerKolom(page);
+        const eerste = rijen[0];
+        if (!eerste?.aanwezig) return { ok: false, bewijs: 'kolom 0 heeft geen leesbare footer' };
+        if (eerste.beweging === null) {
+          return { ok: false, bewijs: `kolom 0 toont "${eerste.rijtekst}" — geen bedrag, zoals het hoort` };
+        }
+        return { ok: true, bewijs: `kolom 0 toont een maandbedrag: ${eerste.beweging}` };
       },
     },
     {
@@ -997,25 +1259,48 @@ async function main() {
     paginafouten: [],
   };
 
+  if (BOUWEN) await bouw();
+  controleerBuildAanwezig();
+
   // Vóór de server, vóór de browser: klopt de origin die we afsluiten met de origin in de
   // build? Zo niet, dan is elke uitspraak over lekken daarna waardeloos.
   controleerBuildOrigin(state.origin);
 
   console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin} (ook in de build)`);
 
-  const server = await startServer();
-  const browser = await chromium.launch({ headless: !HEADED });
-
+  const id = buildId();
   const teDraaien = [...scenarios(), ...(SELFTEST ? tegenproeven() : [])];
   const resultaten = [];
+  const server = await startServer();
+
+  // Alles ná de spawn staat in de try: de server is detached en overleeft een exit(1),
+  // dus een throw hier (manifest-check, browser die niet start) zou hem als wees op :3100
+  // achterlaten en de volgende run laten weigeren. Ctrl+C bereikt hem om dezelfde reden
+  // niet (eigen procesgroep) en Node's default-handler slaat de finally over — dus een
+  // eigen signaalhandler, en Playwright's handlers uit zodat er maar één is.
+  let browser;
+  const bijSignaal = (signaal) => {
+    onderbroken = signaal;
+    stopServer(server);
+    const dicht = browser ? browser.close().catch(() => {}) : Promise.resolve();
+    dicht.then(() => process.exit(signaal === 'SIGTERM' ? 143 : 130));
+  };
+  process.once('SIGINT', bijSignaal);
+  process.once('SIGTERM', bijSignaal);
   try {
+    await controleerGeserveerdeBuild(id);
+    console.log(`Flow-harness — serveert ${DIST} (BUILD_ID ${id}) op ${BASE}`);
+    browser = await chromium.launch({ headless: !HEADED, handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false });
     for (const scenario of teDraaien) {
       const r = await draaiScenario(browser, state, scenario);
       resultaten.push({ ...r, moetFalen: scenario.moetFalen === true });
     }
   } finally {
-    await browser.close();
+    process.off('SIGINT', bijSignaal);
+    process.off('SIGTERM', bijSignaal);
+    // Server eerst — die teardown mag niet achter een browser.close() hangen die kan gooien.
     stopServer(server);
+    if (browser) await browser.close().catch(() => {});
   }
 
   console.log('');
@@ -1041,6 +1326,8 @@ async function main() {
 }
 
 main().catch((err) => {
+  // De server-stop laat een lopend scenario gooien; dan is dit de weg naar buiten, niet de handler.
+  if (onderbroken) process.exit(onderbroken === 'SIGTERM' ? 143 : 130);
   console.error(err.message ?? err);
   process.exit(1);
 });

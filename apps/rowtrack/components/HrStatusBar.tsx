@@ -2,6 +2,7 @@ import type { HRStatus } from '@/lib/ble/types';
 import { accent, status } from '@/constants';
 import { t } from '@/i18n';
 import { DeviceRow } from './DeviceRow';
+import { variantData } from '@/lib/variantData';
 
 type HrStatusBarProps = {
   hrStatus: HRStatus;
@@ -20,6 +21,8 @@ export function HrStatusBar({ hrStatus, hrDeviceName, onConnect, onDisconnect }:
   if (hrStatus === 'waiting') {
     return (
       <DeviceRow
+        testID="HrStatusBar"
+        dataSet={variantData({ hrStatus })}
         icon="heart"
         iconColor={status.warning}
         label={hrDeviceName || t.devices.heartRateMonitor}
@@ -33,6 +36,8 @@ export function HrStatusBar({ hrStatus, hrDeviceName, onConnect, onDisconnect }:
   if (isConnected) {
     return (
       <DeviceRow
+        testID="HrStatusBar"
+        dataSet={variantData({ hrStatus })}
         icon="heart"
         iconColor={status.success}
         label={hrDeviceName || t.devices.hrConnected}
@@ -45,6 +50,8 @@ export function HrStatusBar({ hrStatus, hrDeviceName, onConnect, onDisconnect }:
   if (isScanning) {
     return (
       <DeviceRow
+        testID="HrStatusBar"
+        dataSet={variantData({ hrStatus })}
         icon="heart"
         iconColor={accent.default}
         label={t.devices.heartRateMonitor}
@@ -58,6 +65,8 @@ export function HrStatusBar({ hrStatus, hrDeviceName, onConnect, onDisconnect }:
 
   return (
     <DeviceRow
+      testID="HrStatusBar"
+        dataSet={variantData({ hrStatus })}
       icon="heart"
       iconColor={accent.default}
       label={t.devices.heartRateMonitor}

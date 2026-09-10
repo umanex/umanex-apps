@@ -54,6 +54,17 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
 
+      # De Storybook van packages/ui draait zijn eigen Vite/PostCSS-keten en zit dus niet
+      # in de build hierboven. Een story of docs-blok dat niet meer compileert (verwijderde
+      # export, verplaatst component, kapotte MDX) zou anders pas opvallen bij de volgende
+      # `pnpm storybook` op iemands machine. Eigen stap, zodat de fout in het log bij zijn
+      # naam staat en niet ergens in de output van twintig andere builds.
+      - name: Build — Storybook (packages/ui)
+        run: pnpm turbo build-storybook
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
       # Node draait TypeScript zelf (type-stripping), dus dit kost geen testrunner en
       # geen dependency. De bestanden bestonden al maar werden door niets aangeroepen —
       # een test die alleen draait wanneer iemand eraan denkt, meet niets.
@@ -110,6 +121,33 @@ jobs:
       # marge-meting bewijst dat zijn tikfout-drempel nog niet aan een echte
       # Tailwind-klasse raakt. Zakt die marge naar nul, dan gaat CI stuk vóór de
       # guard vals alarm begint te slaan.
+      # Elke app declareert in zijn CLAUDE.md welke preset, welke componentbron en welke
+      # Storybook hij gebruikt; deze guard toetst die declaratie tegen wat er op schijf staat.
+      # De as die ertoe doet is [adoptie]: een workspace-dependency die geen enkel app-bestand
+      # importeert leest als adoptie zonder het te zijn. Zo droeg cashflow @umanex/ui maanden
+      # in package.json terwijl de enige importeur een render-script was.
+      #
+      # De tegenproef draait ernaast, want een guard die draait is nog geen guard die meet:
+      # de eerste versie stond groen op precies die app, omdat next.config.mjs de package in
+      # transpilePackages noemt en het meetbereik de app-root meenam.
+      # PR-verwijzingen in de markdown: bestaan ze, en zeggen ze uit welke repo ze komen?
+      # Een kaal #N in de gesynchroniseerde laag (.umanex-os/, .claude/skills/) reist mee
+      # naar elke klant-repo en wijst daar naar een andere PR. Het bestáán kan de
+      # pre-commit hook niet toetsen — die heeft geen netwerk en kan een echt nummer niet
+      # van een plausibel nummer onderscheiden. Vandaar deze stap, met zijn zelftest.
+      #
+      # Wat hij NIET vangt: een nummer dat bestaat maar het verkeerde is. Daar helpt alleen
+      # de volgorde — eerst de call, dan het nummer opschrijven. Zie .umanex-os/CLAUDE.md.
+      - name: Guard — PR-verwijzingen gekwalificeerd en bestaand (met zelftest)
+        run: |
+          node scripts/refs-check.mjs --selftest
+          node scripts/refs-check.mjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Guard — design-systeem-bron per app (met tegenproef)
+        run: pnpm ds:guard:selftest
+
       - name: Guard — tegenproef op de rol-utility-guard
         run: |
           pnpm --filter @umanex/rowtrack-tokens guard:selftest
@@ -129,11 +167,36 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: Playwright Chromium
-        run: pnpm --filter cashflow exec playwright install --with-deps chromium
+        # De runner-image draagt een apt-bron voor Google Chrome die af en toe een "Hash Sum
+        # mismatch" geeft (gemeten 2026-09-09: drie reruns op rij rood, terwijl dezelfde stap
+        # een half uur eerder groen was). `--with-deps` draait apt-get update en valt daar
+        # dan op om, terwijl Playwright zijn eigen Chromium downloadt en dl.google.com hier
+        # niets bijdraagt. Dus: die bron weg vóór apt loopt — op inhoud, niet op bestandsnaam:
+        # `google-chrome*.list` bestond niet op de runner (gemeten, 4b66544) en apt haalde
+        # dl.google.com gewoon op; het bestand heet daar anders (deb822 `.sources`).
+        run: |
+          sudo grep -rl 'dl.google.com' /etc/apt/sources.list.d/ 2>/dev/null | xargs -r sudo rm -f
+          if sudo grep -rl 'dl.google.com' /etc/apt/ >/dev/null 2>&1; then echo "let op: dl.google.com staat nog in /etc/apt"; sudo grep -rl 'dl.google.com' /etc/apt/; fi
+          pnpm --filter cashflow exec playwright install --with-deps chromium
 
       # `verify:visual` rendert de harness uit de build hierboven en sweept hem daarna.
       # De sweep draait zijn eigen zelftest mee — een guard die niet kán falen meldt
       # "0 fouten" even overtuigend als een die werkt.
+      # De sync-guard toetst namen, variant-assen, tokenwaarden en typografie-herkomst —
+      # geen enkele van die assen raakt een MAAT. Deze stap meet de gerenderde doosmaten van
+      # elke story tegen een gecommitteerde basislijn. Vereist de Storybook-build hierboven
+      # en de Chromium uit de stap ervoor.
+      - name: Guard — gerenderde maten van packages/ui tegen de basislijn
+        run: pnpm --filter @umanex/ui geometry
+
+      # De maat-as tussen Figma en de browser, per variant-node. De join zijn de 68
+      # variant-nodes uit de schema-2-manifest; zonder die nodes bestond de koppeling niet.
+      # Vergelijkt hoogte, horizontale padding, gap, radius, randbreedte, opacity en de
+      # aanwezigheid van vulling/rand/effect. Breedte en verticale padding blijven er
+      # bewust buiten — beide zijn niet vergelijkbaar tussen Figma en een browser.
+      - name: Guard — Figma ↔ browser per variant (geometrie-parity)
+        run: pnpm --filter @umanex/ui parity
+
       - name: Guard — contrast van de gerenderde DOM (WCAG AA)
         run: pnpm --filter cashflow verify:visual
 
@@ -148,9 +211,11 @@ jobs:
       # scenario's raken: hij hangt aan dnd-kit én de store. De harness rijdt hem uit met
       # toetsenbord en muis tegen de build hierboven, en onderschept élk verzoek naar de
       # Supabase-origin — ook de wegschrijf-call, die geteld wordt in plaats van verstuurd.
-      # `flow:selftest` voegt een scenario toe dat hóórt te falen.
+      # `flow:ci` serveert de build van de stap hierboven (`--dist=.next`: alleen lezen,
+      # nooit bouwen) en voegt de tegenproeven toe die hóren te falen. Lokaal bouwt de
+      # harness zelf in `.next-harness`, zodat hij de `.next` van PM2 niet raakt.
       - name: Guard — flow (sleep tussen maandkolommen)
-        run: pnpm --filter cashflow flow:selftest
+        run: pnpm --filter cashflow flow:ci
         env:
           # Dezelfde placeholder als de build. De harness leest hem om te weten welke origin
           # hij moet dichtzetten — zonder die waarde weigert hij te starten, en dat hoort zo.
@@ -164,3 +229,55 @@ jobs:
       # draait zijn eigen tegenproef vooraf en heeft netwerk noch database nodig.
       - name: Guard — invarianten op de scorekern (jobradar)
         run: pnpm --filter jobradar scenarios
+
+      # Storybook en het Figma-bestand "Component library" moeten één op één blijven:
+      # elke component een eigen pagina, elke variant-as aan beide kanten hetzelfde,
+      # elke tokenrol een variable, elke deep-link naar een bestaande node. De guard
+      # leest de neergeslagen Figma-staat uit packages/ui/figma/manifest.json — CI heeft
+      # geen Figma-toegang, dus dat bestand is de meting, niet de bron. Wat hij dus NIET
+      # ziet: een wijziging in Figma zonder verse manifest (zie packages/ui/CLAUDE.md).
+      #
+      # De selftest draait ervóór: hij bouwt per as het defect dat de guard moet vangen
+      # en eist dat hij erop afgaat, plus een ongewijzigde kopie die groen moet blijven.
+      # Zonder die twee kanten weet je niet of de guard meet of alleen draait.
+      - name: Guard — Storybook ↔ Figma in sync (met tegenproef)
+        run: pnpm --filter @umanex/ui figma:check:selftest
+
+      # --- rowtrack --------------------------------------------------------------------
+      #
+      # Deze zeven lezen UITSLUITEND gecommitte artefacten: figma/build-spec.min.json,
+      # geometry.figma.json, geometry.schermen.json, manifest.json en laagnamen.json. Geen
+      # Figma-toegang, geen browser, geen Storybook-build — samen onder de tien seconden
+      # (gemeten 2026-09-09, zes ervan onder één seconde).
+      #
+      # Waarom ze hier pas komen: de hele meetketen — 13 guard-assen, recursieve parity over
+      # 3 516 nodes, vijf tegenproeven — is deze week gebouwd en draaide tot vandaag alleen
+      # wanneer iemand eraan dacht. Een guard die niemand aanroept, meet niets.
+      #
+      # Wat de selftest hier NIET kan: zijn producent-mutatie leunt op figma/build-spec.json
+      # en dat bestand is gitignored (11 MB, herbouwbaar). Hij meldt die dan als
+      # OVERGESLAGEN mét reden — nagemeten 2026-09-09 door het bestand weg te halen: exit 0,
+      # 42 van 44 mutaties, en de twee producent-mutaties expliciet overgeslagen in plaats
+      # van stil groen. Dat verschil is het punt: overgeslagen is geen ok.
+      - name: Guard — rowtrack Figma ↔ code (met tegenproef)
+        run: |
+          pnpm --filter rowtrack figma:check
+          pnpm --filter rowtrack figma:check:selftest
+
+      # Parity vergelijkt de gemeten browser-geometrie met de laatst gelezen Figma-staat, op
+      # boompad, per node. De selftest ernaast toetst de MACHINERIE: hij synthetiseert een
+      # Figma-kant uit de spec en eist rood op een wortel, een binnennode, een schermframe,
+      # een extra wrapper en een verdwenen node — plus groen zonder mutatie.
+      - name: Guard — rowtrack Figma ↔ browser (geometrie-parity, met tegenproef)
+        run: |
+          pnpm --filter rowtrack parity
+          pnpm --filter rowtrack parity:selftest
+
+      # Drie tegenproeven zonder eigen guard-stap: de builder-poort (weigert een gepubliceerde
+      # of met de hand gewijzigde pagina te legen), de laagnaam-ladder (elk feit verslaat de
+      # gok eronder) en spec-diff (de per-snede-poort die de gerenderde DOM tegen HEAD legt).
+      - name: Guard — rowtrack tegenproeven (poort, laagnamen, spec-diff)
+        run: |
+          pnpm --filter rowtrack figma:poort:selftest
+          pnpm --filter rowtrack laagnamen:selftest
+          pnpm --filter rowtrack spec-diff:selftest

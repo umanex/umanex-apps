@@ -101,8 +101,7 @@ export default function DevActivePreview() {
         paceZone={null}
         toastMsg={toastMsg}
         splits={[]}
-        prFlags={{ watts: false, split: false, distance: false }}
-        hasPR={false}
+        prEntries={[]}
         pulseAnim={pulse}
         avgWatts={142}
         avgSpm={38}

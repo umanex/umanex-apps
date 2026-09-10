@@ -1,0 +1,39 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Tokens/Overzicht" />
+
+# Design tokens
+
+De bron is `packages/tokens/tokens.json` (W3C DTCG-formaat), gesynct met Tokens Studio in Figma.
+`packages/tokens/build.mjs` genereert daaruit `theme.css` (de rollaag, één blok per mode),
+`roles.mjs` (de rolnamen) en `typography.mjs` (de schaal). De gedeelde Tailwind-preset in
+`packages/config/tailwind/preset.ts` maakt van elke rol een utility.
+
+## Drie lagen
+
+| Laag | Set | Wat |
+|---|---|---|
+| Primitives | `Primitives` | rauwe ramps, de enige plek met een literal hex — nooit rechtstreeks gebruiken |
+| Rollaag | `Theme/light`, `Theme/dark`, `Theme/base` | de shadcn-rollen, per mode; `radius` is mode-blind |
+| Domeinrollen | `Semantic/light`, `Semantic/dark` | `finance.*`, `overlay.*` |
+
+Bovendien `Typography/Scale`: families, sizes, leading, weight en tracking.
+
+## De consumptieregel
+
+App-code en `@umanex/ui` raken uitsluitend de **rollaag** aan, via een Tailwind-utility uit de preset:
+`bg-primary`, `text-muted-foreground`, `border-input`, `rounded-md`, `text-sm`.
+Geen primitive, geen rauwe paletklasse, geen hardcoded hex, geen arbitrary font-size of radius.
+De utility-set is per constructie gelijk aan de tokenset: een kleur die geen rol is, heeft geen utility.
+`pnpm --filter @umanex/tokens guard` dwingt dit af, ook in CI.
+
+## Hoe Storybook de tokens toont
+
+- **Kleurrollen**, **Typografie** en **Radius** lezen de gegenereerde build en `tokens.json` rechtstreeks. Niets is overgeschreven.
+- Elke component-pagina heeft een sectie **Tokens**: de rollen die dat component raakt, afgeleid uit de class-strings in zijn eigen bron. Wijzig je een `className`, dan beweegt de tabel mee.
+- De toolbar-knop *Theme* wisselt de `.dark`-class op `html` — dezelfde class die de `ThemeToggle` in de apps zet.
+
+## Bijwerken
+
+Een tokenwijziging gaat via de Tokens Studio-plugin (push naar `tokens.json`), daarna
+`pnpm --filter @umanex/tokens build`. Storybook pikt de nieuwe build op bij de volgende start.

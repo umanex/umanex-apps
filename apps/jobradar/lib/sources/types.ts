@@ -65,7 +65,3 @@ export interface JobSource {
   fetch(params: FetchParams): Promise<SourceResult<RawJob>>
 }
 
-export interface LeadSource {
-  name: string
-  fetch(params: FetchParams): Promise<SourceResult<RawLead>>
-}

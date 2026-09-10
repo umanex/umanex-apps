@@ -1,0 +1,1125 @@
+#!/usr/bin/env node
+/**
+ * Leidt per component en per variant-combinatie een Figma-bouwspec af uit de GERENDERDE DOM.
+ *
+ * WAAROM UIT DE RENDER EN NIET UIT DE TSX. De code is de bron, maar de render is wat de code
+ * OPLEVERT — inclusief alles wat StyleSheet.create, react-native-web en de tokenbuild ermee
+ * doen. Een spec uit de render nateken-en maakt de parity-as per constructie waar in plaats
+ * van hoopvol. Het risico dat de `code-naar-figma`-skill benoemt (principe 3: transcriptie,
+ * geen benadering) gaat over VERZONNEN waarden; hier wordt niets verzonnen — elke waarde
+ * komt uit een meting van het component zelf.
+ *
+ * EN ELKE WAARDE BINDT. Iedere gemeten kleur, maat, radius, spacing en regelhoogte wordt
+ * opgezocht in de drie variabelen-collecties (exacte waarde-match, Component vóór Theme vóór
+ * Core zodat de meest specifieke rol wint). Wat géén tokenmatch heeft komt in `ongebonden`
+ * te staan en wordt gerapporteerd — nooit stil als rauw getal weggeschreven.
+ *
+ * Uitvoer: figma/build-spec.json
+ */
+import { createServer } from 'node:http';
+import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { benoem } from './laagnamen.mjs';
+import { SCHERMEN as SCHERMEN_BRON } from './schermen.mjs';
+import { DREMPEL } from './laagnamen.mjs';
+
+
+import { join, dirname, extname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
+
+// --root=<map> laat beide passen op een KOPIE van de repo draaien. Nodig voor de
+// producent-tegenproef: die muteert een kopie van de spec, draait de echte naamgevingspas
+// erover en eist dat de guard omvalt — met het echte script, niet met een nabouw ervan.
+const rootFlag = process.argv.find(a => a.startsWith('--root='));
+const kapFlag = process.argv.find(a => a.startsWith('--kap='));
+const APP = rootFlag ? rootFlag.slice('--root='.length) : join(dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * `--hernoem` draait ALLEEN de naamgevingspas opnieuw, op de bestaande figma/build-spec.json.
+ *
+ * De kandidaten per node staan al in die spec, dus een naamiteratie hoeft de 118 varianten
+ * niet opnieuw in Chromium te renderen. Dat scheelt twee minuten per ronde en, belangrijker,
+ * het houdt de meting constant: je verandert de naamregel en niets anders.
+ */
+if (process.argv.includes('--hernoem')) {
+  const specPad = join(APP, 'figma/build-spec.json');
+  const spec = JSON.parse(readFileSync(specPad, 'utf8'));
+  // Een spec van vóór de componentgrens draagt geen `component` per node. De ladder zou hem
+  // dan lezen als "geen enkel component declareert een grens" en netjes terugvallen op de
+  // heuristiek — een gevulde, geloofwaardige, verkeerde uitkomst. Weigeren dus.
+  if (spec.walkerVersie !== 2) {
+    console.error(`figma/build-spec.json draagt walkerVersie ${spec.walkerVersie ?? 1}, deze pas eist 2 `
+      + '(mét `component` en `laag` per node). Draai `figma:spec` opnieuw.');
+    process.exit(2);
+  }
+  let n = 0;
+  spec.naamStats = [];
+  for (const [comp, d] of Object.entries(spec.componenten)) { spec.naamStats.push(...benoemAlles(comp, d.varianten)); n++; }
+  for (const [comp, d] of Object.entries(spec.schermen)) { spec.naamStats.push(...benoemAlles(comp, d.frames)); n++; }
+  writeFileSync(specPad, JSON.stringify(spec, null, 1));
+  console.log(`hernoemd: ${n} componenten in figma/build-spec.json — draai nu figma-build-prune.mjs`);
+  process.exit(0);
+}
+
+const STATIC = join(APP, 'storybook-static');
+const assen = JSON.parse(readFileSync(join(APP, 'figma/story-axes.json'), 'utf8'));
+const payload = JSON.parse(readFileSync(join(APP, 'figma/tokens-payload.json'), 'utf8'));
+
+// Componenten die als SCHERM gemodelleerd worden: representatieve frames in plaats van een
+// component set. Besluit Jeroen 2026-09-07 — hun assen zijn statusenums die in beeld niet
+// orthogonaal zijn (bij bleStatus='error' ziet hrStatus er in de meeste combinaties identiek
+// uit), en de productregel zou 320 respectievelijk 160 nodes eisen voor twee schermen.
+// De schermenlijst staat in scripts/schermen.mjs — één bron voor build-spec, sync-check en
+// figma-links. Hier alleen de frame-namen eruit.
+const SCHERMEN = Object.fromEntries(Object.entries(SCHERMEN_BRON).map(([k, v]) => [k, v.frames]));
+
+/**
+ * Assen die de code kent maar die GEEN visuele variant zijn. Elke uitsluiting is een
+ * oordeel dat de guard daarna als waarheid vastlegt, dus ze staan hier met hun reden en
+ * niet in een configbestand — bij het lezen van het script komen ze vanzelf langs.
+ *
+ * `visible` is een MOUNT-schakelaar: bij false rendert het component niets. Gemeten
+ * 2026-09-07 op DeviceSelectionModal (visible=false gaf 0 nodes, twee keer). Een
+ * variant-node voor de false-kant zou een leeg frame in Figma zijn — een vorm die er
+ * identiek uitziet als een mislukte build.
+ */
+const NIET_VISUEEL = {
+  'BottomSheet.visible': 'mount-schakelaar — bij false rendert het component niets',
+  'GoalSheet.visible': 'mount-schakelaar — bij false rendert het component niets',
+  'HealthConsentScreen.visible': 'mount-schakelaar — bij false rendert het component niets',
+  'DeviceSelectionModal.visible': 'mount-schakelaar — bij false rendert het component niets',
+};
+
+// ---------------------------------------------------------------------------
+// Waarde -> variabele. Exacte match; specifiek vóór algemeen.
+// ---------------------------------------------------------------------------
+/**
+ * Waarde -> variabele, BEPERKT PER EIGENSCHAPSSOORT.
+ *
+ * Een kale waarde-match is fout, en de Chip liet zien hoe fout: `padding: 0` matchte op
+ * `Core/letterSpacing/normal` (ook 0) en `padding: 8` op `Component/button/primary/radius`
+ * (ook 8). Semantisch onzin, en in Figma niet te zien — de binding staat er, dus de gate
+ * meldt groen. Gemeten 2026-09-07.
+ *
+ * Daarom eerst een KANDIDATENPOOL per soort, en pas daarbinnen de waarde-match. De volgorde
+ * binnen de pool volgt hoe de code consumeert: een Component-token waarvan het eerste
+ * padsegment dít component is wint (Button gebruikt buttonTokens.*), anders de Theme-rol
+ * (de laag waar app-code hoort te zitten), anders Core, en pas als laatste een willekeurig
+ * Component-token — dat laatste wordt als zwakke match gemeld.
+ */
+const alleVars = [];
+{
+  const perSet = {};
+  for (const [set, c] of Object.entries(payload.collecties)) perSet[set] = new Map(c.variabelen.map(v => [v.naam, v]));
+  const los = (set, naam, d = 0) => {
+    if (d > 12) return null;
+    const v = perSet[set]?.get(naam);
+    if (!v) return null;
+    return v.alias ? los(v.alias.set, v.alias.naam, d + 1) : v;
+  };
+  for (const set of ['Core', 'Theme', 'Component']) {
+    for (const v of payload.collecties[set].variabelen) {
+      const w = los(set, v.naam);
+      if (!w) continue;
+      alleVars.push({ ref: `${set}:${v.naam}`, set, naam: v.naam, type: w.type, waarde: w.waarde });
+    }
+  }
+}
+
+/** Welke tokenpaden mogen voor welke eigenschap in aanmerking komen. */
+const POOL = {
+  spacing: v => /^spacing\//.test(v.naam) || /\/(padding|paddingX|paddingY|paddingTop|paddingBottom|paddingLeft|paddingRight|gap|itemGap|marginBottom|unitOffsetLeft)$/i.test(v.naam),
+  radius:  v => /^borderRadius\//.test(v.naam) || /^radius\//.test(v.naam) || /\/radius$/i.test(v.naam),
+  breedte: v => /^borderWidth\//.test(v.naam) || /^stroke\//.test(v.naam) || /Width$/i.test(v.naam),
+  maat:    v => /^sizing\//.test(v.naam) || /^size\//.test(v.naam) || /\/(height|markerSize|trackHeight|fillHeight|indicatorHeight)$/i.test(v.naam),
+};
+
+const normComp = s2 => String(s2).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/** Kies de beste variabele voor een waarde binnen een pool. */
+function kies(pool, test, comp, zwakMelden) {
+  const kandidaten = alleVars.filter(v => POOL[pool](v) && test(v));
+  if (!kandidaten.length) return null;
+  const c = normComp(comp);
+  const eigen = kandidaten.find(v => v.set === 'Component' && normComp(v.naam.split('/')[0]) === c);
+  if (eigen) return eigen.ref;
+  const theme = kandidaten.find(v => v.set === 'Theme');
+  if (theme) return theme.ref;
+  const core = kandidaten.find(v => v.set === 'Core');
+  if (core) return core.ref;
+  if (zwakMelden) zwakMelden(kandidaten[0].ref);
+  return kandidaten[0].ref;
+}
+
+/** 'linear-gradient(90deg, rgb(a), rgba(b))' -> { hoek, stops[] }. Geen hoek = 180 (naar onder). */
+function ontleedGradient(css) {
+  const m = String(css).match(/linear-gradient\(([^]*)\)\s*$/);
+  if (!m) return null;
+  // Splits op komma's die NIET binnen rgb()/rgba() staan.
+  const delen = [];
+  let diepte = 0, huidig = '';
+  for (const ch of m[1]) {
+    if (ch === '(') diepte++;
+    if (ch === ')') diepte--;
+    if (ch === ',' && diepte === 0) { delen.push(huidig.trim()); huidig = ''; continue; }
+    huidig += ch;
+  }
+  if (huidig.trim()) delen.push(huidig.trim());
+  let hoek = 180;
+  if (/^-?[\d.]+deg$/.test(delen[0])) hoek = parseFloat(delen.shift());
+  else if (/^to\s/.test(delen[0])) { const r = delen.shift(); hoek = /right/.test(r) ? 90 : /left/.test(r) ? 270 : /top/.test(r) ? 0 : 180; }
+  const stops = delen.map(d => {
+    const c = d.match(/rgba?\(([^)]+)\)/);
+    if (!c) return null;
+    const v = c[1].split(',').map(x => parseFloat(x.trim()));
+    return { r: v[0], g: v[1], b: v[2], a: v[3] ?? 1 };
+  }).filter(Boolean);
+  return stops.length >= 2 ? { hoek, stops } : null;
+}
+
+const gelijkKleur = (a, b) => a && b && Math.abs(a.r * 255 - b.r) < 0.6 && Math.abs(a.g * 255 - b.g) < 0.6
+  && Math.abs(a.b * 255 - b.b) < 0.6 && Math.abs((a.a ?? 1) - b.a) < 0.01;
+
+/** Kleur: geen pool-beperking (elke COLOR mag), wel dezelfde voorkeursvolgorde. */
+function kiesKleur(k, comp) {
+  const kandidaten = alleVars.filter(v => v.type === 'COLOR' && gelijkKleur(v.waarde, k));
+  if (!kandidaten.length) return null;
+  const c = normComp(comp);
+  return (kandidaten.find(v => v.set === 'Component' && normComp(v.naam.split('/')[0]) === c)
+       ?? kandidaten.find(v => v.set === 'Theme')
+       ?? kandidaten.find(v => v.set === 'Core')
+       ?? kandidaten[0]).ref;
+}
+const kiesGetal = (pool, n, comp) => kies(pool, v => v.type === 'FLOAT' && v.waarde === n, comp);
+
+// ---------------------------------------------------------------------------
+// Statische server + browser
+// ---------------------------------------------------------------------------
+const MIME = { '.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css',
+  '.json':'application/json','.svg':'image/svg+xml','.woff2':'font/woff2','.woff':'font/woff',
+  '.ttf':'font/ttf','.png':'image/png','.map':'application/json' };
+const server = createServer((q, r) => {
+  let p = join(STATIC, decodeURIComponent(q.url.split('?')[0]));
+  if (existsSync(p) && statSync(p).isDirectory()) p = join(p, 'index.html');
+  if (!existsSync(p)) { r.writeHead(404); return r.end('404'); }
+  r.writeHead(200, { 'Content-Type': MIME[extname(p)] ?? 'application/octet-stream' });
+  r.end(readFileSync(p));
+});
+await new Promise(r => server.listen(0, r));
+const poort = server.address().port;
+const browser = await chromium.launch();
+// iPhone 14 Pro Max, logische punten. Een SCHERM-story mag hiervan afwijken via
+// `parameters.toestel` — zie .storybook/toestel.ts en `meet()` hieronder.
+const VIEWPORT = { width: 430, height: 932 };
+const page = await browser.newPage({ viewport: { ...VIEWPORT } });
+let huidigViewport = { ...VIEWPORT };
+/** Zet het viewport en meld of het echt veranderde. */
+async function zetViewport(width, height) {
+  if (huidigViewport.width === width && huidigViewport.height === height) return false;
+  await page.setViewportSize({ width, height });
+  huidigViewport = { width, height };
+  return true;
+}
+
+/** Alle combinaties van de assen, als lijst van {naam, args}. */
+function combinaties(assenObj) {
+  const namen = Object.keys(assenObj);
+  if (!namen.length) return [{ naam: 'default', args: {} }];
+  let uit = [{}];
+  for (const n of namen) {
+    const nieuw = [];
+    for (const basis of uit) for (const w of assenObj[n]) nieuw.push({ ...basis, [n]: w });
+    uit = nieuw;
+  }
+  return uit.map(args => ({
+    naam: namen.map(n => `${n}=${args[n]}`).join(', '),
+    args,
+  }));
+}
+
+/** Storybook-args in de URL: booleans als !true/!false. */
+/**
+ * Namen toekennen aan een component: eerst de hoofdbomen, dan de overlays als eigen groep.
+ *
+ * Een overlay (een <Modal>-portal) is een APARTE boom naast de schermboom, geen kind ervan.
+ * Ze samen in één `benoem()` gooien zou `stabiliseer()` een schermboom tegen een modalboom
+ * laten vergelijken; apart houden laat hem de modal van variant A tegen die van variant B
+ * leggen, wat wél dezelfde vorm is.
+ */
+function benoemAlles(comp, items) {
+  const stats = [benoem(comp, items.map(x => x.boom))];
+  const alleOverlays = items.flatMap(x => x.overlays ?? []);
+  if (alleOverlays.length) stats.push(benoem(comp, alleOverlays));
+  return stats;
+}
+
+const argsQuery = args => Object.entries(args)
+  .map(([k, v]) => `${k}:${typeof v === 'boolean' ? '!' + v : v}`).join(';');
+
+// De DOM-walker draait in de pagina. Hij levert een boom met rauwe waarden; het mappen naar
+// variabelen gebeurt in Node, zodat de tokenkennis op één plek staat.
+const WALKER = () => {
+  /**
+   * De sleutelkaart is een MEETINSTRUMENT, geen bron die leeg mag zijn. Een lege kaart en
+   * "dit component heeft geen StyleSheet-sleutels" zien er identiek uit; het verschil is
+   * alleen te zien door hier hard te falen. `.storybook/rnw-style-keys.ts` vult hem.
+   */
+  const kaart = window.__RNW_KEYS__;
+  if (!kaart) return { fout: 'geen window.__RNW_KEYS__ — .storybook/rnw-style-keys.ts niet geladen' };
+  if (kaart.uit) return { fout: 'sleutelkaart uitgeschakeld (?rnwKeysUit=1)' };
+  if (!kaart.actief) return { fout: 'StyleSheet.create niet gewrapt — de aftap hing er niet in' };
+  if (kaart.fouten.length && !kaart.bronnen.length)
+    return { fout: `sleutelkaart leeg met fouten: ${kaart.fouten.slice(0, 2).join(' | ')}` };
+  // Nul bronnen zónder fouten is GELDIG: `Icon` doet geen enkele StyleSheet.create-aanroep.
+  // Elke node valt dan terug op de ladder, en dat is de juiste uitkomst — geen meetfout.
+
+  // Alleen app-code doet mee. De wrapper wist de herkomst na elke lezing, dus een aanroep
+  // uit react-native-web zelf komt hier per constructie niet in.
+  const sleutelIndex = [];
+  for (const b of kaart.bronnen)
+    for (const s of b.sleutels)
+      sleutelIndex.push({ bronId: b.id, bron: b.bron, naam: s.naam, volgorde: s.volgorde,
+                          klassen: new Set(s.klassen) });
+
+  // Wat de DOM ECHT droeg. Twee helften die niet hetzelfde meten: `testID="Button"` staat in
+  // de code, en dít is de meting dat hij ook door react-native-web heen kwam en op een element
+  // landde. Een prop die een derde-partij component stil weggooit (LinearGradient, Ionicons)
+  // is anders niet te onderscheiden van een prop die er wél is.
+  const gezienTestid = new Set(), gezienLaag = new Set(), gezienBron = new Set();
+  // Nodes met een componentgrens die de dieptekap heeft weggegooid. Zonder deze telling
+  // verdwijnt een grens stil, en leest "44 componenten zonder testID" als een code-probleem
+  // terwijl het een meet-probleem is.
+  let weggelatenComponenten = 0;
+  // ... en ALLES wat hij wegkapt. De teller hierboven telt enkel `[data-testid]`, en dat is
+  // precies de blinde vlek die op 2026-09-09 een KPI-waarde liet verdwijnen: HistoryScreen
+  // toont "2:35:00" in de DOM (117x41, gemeten in Chromium) terwijl de spec daar een LEEG
+  // `valueRow` had. Geen enkele as kon dat zien — parity vergelijkt spec met Figma, en het
+  // ontbrak aan beide kanten. Een grens is niet het enige wat een kap kan kosten.
+  let weggelatenNodes = 0, weggelatenTekst = 0;
+  // DE DIEPTEKAP. Stond tot 2026-09-09 op 8 en kostte toen 3 018 nodes waarvan 2 018 met
+  // tekst — stil, want de teller ernaast telde alleen weggegooide `[data-testid]`-grenzen en
+  // die stond op 0. Het zichtbare gevolg: de vier samenvattings-KPI's van HistoryScreen
+  // hadden in de spec een LEEG `valueRow`, terwijl de browser er "2:35:00" toont (117x41,
+  // gemeten met getBoundingClientRect). Gemeten met `--kap=N` over alle 257 stories:
+  // 8 -> 3 018 weggekapt (2 018 met tekst), 9 -> 1 998, 10 -> 0, 12 -> 0. De diepste echte
+  // boom is dus 10 lagen; 12 laat marge en raakt geen enkele node, dus een diepere component
+  // valt straks niet stil weg maar verschijnt gewoon.
+  const KAP = Number(new URLSearchParams(location.search).get('kap')) || 12;
+
+  const root = document.querySelector('#storybook-root');
+  const decorator = root?.firstElementChild;
+  if (!decorator) return { fout: 'geen decorator' };
+  let kinderen = [...decorator.children];
+
+  // Een <Modal> portaleert in react-native-web BUITEN #storybook-root, naar document.body.
+  // Anker op INHOUD, niet op afmeting: de portal-wortel heeft hoogte 0 omdat de modal erin
+  // absoluut gepositioneerd is. Een filter op `height > 0` sneed hem precies weg (gemeten
+  // 2026-09-07 — eerste poging vond nul portals terwijl er één stond). Storybook's eigen
+  // wrappers dragen een id of een sb-class; de portal geen van beide.
+  const portalen = [...document.body.children].filter(el =>
+    el.tagName !== 'SCRIPT' && el.tagName !== 'SVG' && el.tagName !== 'svg' &&
+    !el.id && !/\bsb-/.test(String(el.className || '')) &&
+    !el.contains(root) && (el.textContent || '').trim().length > 0);
+
+  // Een <Modal>-sheet laat soms WEL een kind in de decorator achter, maar een leeg kind van
+  // 0x0: BottomSheet, GoalSheet en HealthConsentScreen deden dat (gemeten 2026-09-07).
+  if (kinderen.length === 1) {
+    const r0 = kinderen[0].getBoundingClientRect();
+    if (r0.width < 2 && r0.height < 2 && kinderen[0].children.length === 0) kinderen = [];
+  }
+
+  // WAT ER TOT 2026-09-08 MISGING: de portal werd alléén geraadpleegd als de decorator leeg
+  // was. Een SCHERM met een modal erover heeft allebei — en dan viel de modal weg. Gemeten
+  // op de gecommitte spec: de ActivePhase-frames Playground, Doel Bereikt en Samenvatting
+  // hadden alle drie 45 nodes met exact dezelfde teksthash, want de summary-Modal en de
+  // toast bestonden voor de walker niet. Vier componenten uit de refactor (SummaryTitle,
+  // PrBanner, SummaryKpiBand, StatsTable) hadden daardoor nul schermmeting.
+  //
+  // Nu: de decorator-inhoud is de BOOM, de portalen zijn OVERLAYS die er absoluut overheen
+  // liggen — precies wat de DOM doet, en wat je in Figma wil zien.
+  let overlays = [];
+  if (kinderen.length === 0) {
+    if (portalen.length === 1) kinderen = [portalen[0]];
+    else if (portalen.length > 1) return { fout: `${portalen.length} portal-wortels buiten #storybook-root` };
+  } else {
+    overlays = portalen;
+  }
+  if (kinderen.length !== 1) return { fout: `verwacht 1 kind onder de decorator, kreeg ${kinderen.length}` };
+
+  const px = v => { const n = parseFloat(v); return Number.isNaN(n) ? 0 : n; };
+  const rgba = v => {
+    const m = String(v).match(/rgba?\(([^)]+)\)/);
+    if (!m) return null;
+    const d = m[1].split(',').map(x => parseFloat(x.trim()));
+    return { r: d[0], g: d[1], b: d[2], a: d[3] ?? 1 };
+  };
+  /**
+   * EEN INVOERVELD DRAAGT ZIJN TEKST IN EEN ATTRIBUUT, NIET IN EEN TEKSTKNOOP.
+   *
+   * `lees()` verzamelt tekst met `nodeType === 3`, en een `<input>` heeft per constructie geen
+   * tekstkinderen: waarde en placeholder zijn IDL-properties. Gemeten 2026-09-09: 14
+   * `<input>`-nodes, alle veertien met `tekst: null` — 2 in de FormField-varianten, 6 in de
+   * auth-schermen (waarvan 4 met placeholder) en 6 switches. In Figma is dat een lege doos.
+   *
+   * De TYPES zijn een WITTE lijst, geen zwarte: de zes switches zijn `type="checkbox"` en
+   * horen frames te blijven. RNW leidt het type af uit keyboardType/secureTextEntry; bij
+   * number-pad blijft het leeg en is `el.type` per IDL 'text'.
+   */
+  const VELD_TYPES = new Set(['text', 'email', 'password', 'search', 'tel', 'url', 'number']);
+  const isVeld = (el) => el.tagName === 'TEXTAREA'
+    || (el.tagName === 'INPUT' && VELD_TYPES.has(el.type));
+  const hex = v => {
+    const m = String(v).trim().match(/^#([0-9a-f]{6})([0-9a-f]{2})?$/i);
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255, a: m[2] ? parseInt(m[2], 16) / 255 : 1 };
+  };
+  /**
+   * DE PLACEHOLDER-KLEUR — uit de custom property, NIET uit `getComputedStyle(el, '::placeholder')`.
+   *
+   * react-native-web zet `placeholderTextColor` als `--placeholderTextColor` op het element en
+   * compileert `::placeholder { color: var(--placeholderTextColor) }` — beide dragen dezelfde
+   * waarde. Waarom dan niet de pseudo? Blink geeft bij een pseudo die hij in
+   * `getComputedStyle` niet kent de stijl van het ELEMENT terug. Dat is hier fg.primary: een
+   * geldige kleur met een geldig token, dus een gevulde, geloofwaardige, verkeerde uitkomst in
+   * plaats van een lege. De custom property kan dat niet — hij staat er of hij staat er niet.
+   */
+  const placeholderKleur = (el, cs) => {
+    const eigen = cs.getPropertyValue('--placeholderTextColor');
+    return rgba(eigen) ?? hex(eigen) ?? rgba(getComputedStyle(el, '::placeholder').color) ?? rgba(cs.color);
+  };
+  /**
+   * Een DOORVOER-WRAPPER draagt geen ontwerpinformatie: precies één elementkind, geen eigen
+   * tekst, en geen eigen verf (achtergrond, verloop, rand, schaduw, radius, opacity). In RN
+   * levert elke <View> er een, en een portal-constructie stapelt er drie tot vier op elkaar.
+   *
+   * Zulke wrappers mogen GEEN diepte kosten. Gemeten 2026-09-08: met een vast budget van 6
+   * aten ze het hele budget op vóór de inhoud begon, en stonden BottomSheet, GoalSheet,
+   * HealthConsentScreen, MotivationalToast en DeviceSelectionModal met NUL tekstnodes in de
+   * spec — in Figma dus een leeg frame. De boom zag er intact uit; alleen de inhoud ontbrak.
+   */
+  function isDoorvoer(el, cs) {
+    if (el.children.length !== 1) return false;
+    if ([...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return false;
+    const bg = rgba(cs.backgroundColor);
+    if (bg && bg.a > 0) return false;
+    if (cs.backgroundImage !== 'none') return false;
+    // ELKE zijde, niet alleen boven: een node met enkel `border-bottom` is een
+    // scheidingslijn, geen doorvoer-wrapper. Met de oude toets viel hij weg en nam hij
+    // zijn rand mee — de stille helft van dezelfde blinde vlek.
+    if (px(cs.borderTopWidth) > 0 || px(cs.borderRightWidth) > 0
+        || px(cs.borderBottomWidth) > 0 || px(cs.borderLeftWidth) > 0) return false;
+    if (cs.boxShadow !== 'none') return false;
+    if (px(cs.borderTopLeftRadius) > 0) return false;
+    if (parseFloat(cs.opacity) < 1) return false;
+    return true;
+  }
+
+  /**
+   * Herkent DOM die react-native-web ZELF schrijft — aan de signatuur uit zijn eigen bron,
+   * niet aan maten of namen.
+   *
+   * WAAROM. 307 nodes in de spec dragen geen enkele StyleSheet-sleutel, en het grootste deel
+   * daarvan is DOM die de app nergens schrijft: de twee cirkels van een `<ActivityIndicator>`,
+   * de vijf hostlagen van een `<Modal>`, de twee wrappers van een `<ScrollView>`. Die kunnen
+   * per constructie nooit een code-naam krijgen, en tellen tot vandaag wél mee in de noemer
+   * van "hoeveel laagnamen komen uit de code" — een percentage dat daardoor structureel te
+   * laag staat en nooit op 100 kán komen.
+   *
+   * ERGER DAN ONEERLIJK TELLEN: ze WINNEN vandaag app-sleutels. Atomaire klassen zijn globaal
+   * gedeeld over elke `StyleSheet.create` in de preview-iframe, dus de spinner in Button won
+   * `base` en de modal-hostlagen wonnen `scrim` en `root` — namen uit bestanden die die nodes
+   * niet schrijven. Daarom vuurt deze herkenning in `laagnamen.mjs` VÓÓR de sleutelmatching.
+   *
+   * ELKE REGEL IS TEGEN DE GEÏNSTALLEERDE BRON GELEZEN (react-native-web 0.21.2):
+   *  · exports/ActivityIndicator/index.js:50-62 — View role=progressbar aria-valuemax=1,
+   *    met één View-kind (maat + rotatie-animatie) dat een <svg> met twee <circle> draagt.
+   *  · exports/Modal/index.js:86-93 — ModalPortal > ModalAnimation > ModalFocusTrap >
+   *    ModalContent. ModalFocusTrap.js:123-125 zet een FocusBracket vóór en ná de trap-View;
+   *    FocusBracket is `role: 'none'` + `tabIndex: 0` (regel 26-30), en createDOMProps:610
+   *    herschrijft `none` naar `presentation`. ModalContent.js:41-47 is de View met
+   *    `aria-modal: true` en dáárin één View met `styles.container`.
+   *    Let op: `modalContainer` is het KIND van de aria-modal-node, niet zijn ouder.
+   *  · exports/ScrollView/index.js:568-599 — de scroll-host draagt de app-`style`, met precies
+   *    één contentContainer-View die `contentContainerStyle` draagt. Allebei GEDEELD: RN kent
+   *    geen `overflow: auto`, dus de host is per constructie RNW, maar de stijl is van de app.
+   *
+   * Gemeten in de ongesnoeide spec van 2026-09-08 (7 844 nodes): 34x progressbar, 18x
+   * presentation (= 9 modals x 2 brackets), 9x dialog, 19x `overflow: hidden auto`.
+   */
+  function rnwRol(el, cs) {
+    const rol = el.getAttribute('role');
+    const ouder = el.parentElement;
+    const isSpinner = (n) => n && n.getAttribute('role') === 'progressbar' && n.hasAttribute('aria-valuemax');
+    const isBracket = (n) => n && n.getAttribute('role') === 'presentation' && n.getAttribute('tabindex') === '0' && n.children.length === 0;
+
+    if (isSpinner(el)) return { rol: 'spinner' };
+    if (isSpinner(ouder)) return { rol: 'spinnerBox' };
+    if (el.tagName.toLowerCase() === 'svg' && isSpinner(ouder?.parentElement)) return { rol: 'spinnerSvg' };
+    if (el.tagName.toLowerCase() === 'circle') return { rol: 'spinnerArc' };
+
+    if (isBracket(el)) return { rol: 'focusBracket' };
+    if (el.getAttribute('aria-modal') === 'true') return { rol: 'modalContent' };
+    if (ouder?.getAttribute('aria-modal') === 'true') return { rol: 'modalContainer' };
+    if (el.querySelector(':scope > [aria-modal="true"]')) return { rol: 'modalTrap' };
+    if ([...el.children].some(isBracket)) return { rol: 'modalAnimation' };
+
+    const rolt = (n) => n && /auto|scroll/.test(getComputedStyle(n).overflowY + ' ' + getComputedStyle(n).overflowX);
+    if (/auto|scroll/.test(cs.overflowY + ' ' + cs.overflowX)) return { rol: 'scrollView', gedeeld: true };
+    if (rolt(ouder) && ouder.children.length === 1) return { rol: 'scrollContent', gedeeld: true };
+    return null;
+  }
+
+  function lees(el, diepte, ouderRect) {
+    const cs = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    // DE SCHEIDER TUSSEN TWEE INLINE-RUNS IS ZELF EEN TEKSTNODE.
+    //
+    // `{t.auth.login.noAccount}{' '}<Text>` rendert DRIE childNodes: "Nog geen account?", " "
+    // en de <span>. `n.textContent.trim()` gooide die middelste weg, dus de spec droeg
+    // "Nog geen account?" ZONDER spatie — terwijl de gemeten geometrie hem wél bevat: doos
+    // 208,08 = run 208,08, kind "Registreer" 70,03 op dx=138,05, en 208,08 − 70,03 = 138,05.
+    // Zonder scheider plakt de builder er "Nog geen account?Registreer" van (gemeten
+    // 2026-09-09 op Login, Register en Forgot — de enige drie nodes met eigen tekst én kinderen).
+    //
+    // Een spatie-node telt alleen mee als hij ergens TUSSEN staat én een ELEMENT naast zich
+    // heeft: dat is de inline-stroom en niets anders. `{a}{' '}{b}` zonder elementkind blijft
+    // dus onaangeroerd, en een element zonder échte eigen tekst krijgt er geen tekst bij.
+    const tekstKinderen = [...el.childNodes].filter(n => n.nodeType === 3);
+    const scheider = n => n.previousSibling && n.nextSibling
+      && (n.previousSibling.nodeType === 1 || n.nextSibling.nodeType === 1);
+    const eigenTekst = tekstKinderen.some(n => n.textContent.trim())
+      ? tekstKinderen.filter(n => n.textContent.trim() || scheider(n)).map(n => n.textContent).join('')
+      : '';
+    /**
+     * STAAT DE EIGEN RUN VÓÓR HET EERSTE ELEMENTKIND?
+     *
+     * Figma kent geen inline-stroom, dus de builder maakt van zo'n node een rij met de run als
+     * eigen tekstnode ernaast. Dan moet de VOLGORDE kloppen: "Nog geen account? *Registreer*"
+     * is iets anders dan "*Registreer* Nog geen account?". Meet het in plaats van het aan te
+     * nemen — alle drie de gevallen in deze codebase hebben de run vooraan, maar dat is een
+     * meting van vandaag, geen eigenschap van de constructie.
+     */
+    const eersteElement = [...el.childNodes].findIndex(n => n.nodeType === 1);
+    const eersteTekst = [...el.childNodes].findIndex(n => n.nodeType === 3 && (n.textContent.trim() || scheider(n)));
+    const tekstVoorop = eersteTekst >= 0 && (eersteElement < 0 || eersteTekst < eersteElement);
+    const o = {
+      tag: el.tagName.toLowerCase(),
+      w: Math.round(r.width * 100) / 100, h: Math.round(r.height * 100) / 100,
+      display: cs.display,
+      richting: cs.flexDirection, gap: px(cs.gap) || px(cs.columnGap) || 0,
+      justify: cs.justifyContent, align: cs.alignItems,
+      // `align-content` en `flex-wrap` horen bij dezelfde familie als `align-items` en
+      // `align-self`, en werden tot 2026-09-09 helemaal niet gemeten. Figma kent ze wél:
+      // `layoutWrap: 'WRAP'` en `counterAxisAlignContent`. Een container die in de browser
+      // afbreekt en in Figma niet, is een layoutverschil dat geen enkele as opmerkt zolang
+      // de gemeten maten per node toevallig kloppen.
+      alignContent: cs.alignContent, wrap: cs.flexWrap,
+      // DE SIZING-INTENTIE, per as, uit de OUDER-richting gelezen.
+      //
+      // Waarom dit er niet was en waarom het moest: de builder zette elke auto-layout op
+      // `primaryAxisSizingMode = counterAxisSizingMode = 'FIXED'`, dus élke node stond star op
+      // zijn gemeten maat. Gevolg, gemeten 2026-09-09 op LoginScreen: een `FormField`-instance
+      // van 390 breed met een inhoud van 224, want een instance kan zijn kinderen niet
+      // strekken als niets in de library FILL is. `resize()` op zo'n kind doet niets — geen
+      // fout, geen effect (nagemeten), en `layoutMode` op een instance-wortel evenmin. De maat
+      // moet dus uit de library komen, en dat vraagt de intentie in plaats van het getal.
+      //
+      // FILL = de node rekt mee met zijn ouder. Drie bronnen, alle drie uit de DOM:
+      // `flex-grow > 0` op de hoofdas, `align-self`/`align-items: stretch` op de kruis-as, en
+      // een expliciete `width: 100%`. HUG en FIXED worden hier NIET geraden — dat doet de
+      // builder op de gemeten boom, waar hij ouder én kinderen tegelijk ziet.
+      rekt: (() => {
+        const o = el.parentElement;
+        if (!o) return null;
+        const oc = getComputedStyle(o);
+        const rij = (oc.flexDirection || '').startsWith('row');
+        const groei = parseFloat(cs.flexGrow) > 0;
+        const zelf = cs.alignSelf && cs.alignSelf !== 'auto' ? cs.alignSelf : oc.alignItems;
+        const strek = zelf === 'stretch';
+        // `width: 100%` overleeft in de computed style als een px-waarde, dus lees de
+        // opgegeven stijl. RNW schrijft hem als inline style of atomaire klasse; beide komen
+        // hier terug als de *gebruikte* waarde, dus dit is een aanvulling, geen hoofdbron.
+        const h = rij ? groei : strek;
+        const v = rij ? strek : groei;
+        return (h ? 'H' : '') + (v ? 'V' : '') || null;
+      })(),
+      // De EIGEN uitlijning op de kruis-as, als die van de ouder afwijkt. Figma kent geen
+      // per-kind `align-self` als zodanig, maar wél `layoutAlign` ('MIN' | 'CENTER' | 'MAX' |
+      // 'STRETCH'), en dat is precies deze as. Zonder deze mapping landt een rechts
+      // uitgelijnd element links: gemeten 2026-09-09 op LoginScreen, waar "Wachtwoord
+      // vergeten?" in Figma links stond én daardoor over twee regels brak, terwijl de browser
+      // hem rechts tegen de rand zet.
+      zelf: (() => {
+        const o = el.parentElement;
+        if (!o) return null;
+        const oc = getComputedStyle(o);
+        if (!(oc.display || '').includes('flex')) return null;
+        const eigen = cs.alignSelf && cs.alignSelf !== 'auto' ? cs.alignSelf : null;
+        if (!eigen || eigen === oc.alignItems) return null;
+        return { 'flex-start': 'MIN', center: 'CENTER', 'flex-end': 'MAX', stretch: 'STRETCH' }[eigen] ?? null;
+      })(),
+      padding: [px(cs.paddingTop), px(cs.paddingRight), px(cs.paddingBottom), px(cs.paddingLeft)],
+      // DE MARGE, in dezelfde volgorde als de padding hierboven. Tot 2026-09-09 las de walker
+      // hem NIET, en dat is de vorm van een stil gat: Figma's auto-layout kent geen per-kind
+      // marge, dus wat hier niet gemeten wordt kan de builder niet bouwen en kan `parity` —
+      // die op dezelfde meting rust — niet missen. Gemeten in de DOM van storybook-static
+      // (`scripts/walker-blindvlekken.mjs`, as `marge`, buiten deze walker om): 57 van 13 237
+      // nodes over 38 stories, twaalf unieke waarden, waaronder `[28,0,0,0]` op 14
+      // `Segmented`-nodes en de breakout `[0,-20,0,-20]` van de Home-lijst. Zonder Figma erbij
+      // te halen op WorkoutDetailScreen/Playground: vier kinderen van 84+54+682+84 = 904 in
+      // een frame van 932.
+      marge: [px(cs.marginTop), px(cs.marginRight), px(cs.marginBottom), px(cs.marginLeft)],
+      radius: [px(cs.borderTopLeftRadius), px(cs.borderTopRightRadius),
+               px(cs.borderBottomRightRadius), px(cs.borderBottomLeftRadius)],
+      bg: rgba(cs.backgroundColor),
+      backgroundImage: cs.backgroundImage !== 'none' ? cs.backgroundImage.slice(0, 260) : null,
+      /**
+       * VIER ZIJDEN, niet één. Tot 2026-09-09 las deze walker alleen `borderTopWidth`, en dat
+       * is in beide richtingen fout: een scheidingslijn (`0/0/1/0`) kwam als NUL binnen en
+       * verdween, en een lijn boven en onder (`1/0/1/0`) werd in Figma een volledige doos.
+       * Gemeten over alle 257 stories: 333 nodes met rand, waarvan 138 asymmetrisch in maar
+       * twee vormen — 99x `0/0/1/0` en 39x `1/0/1/0`. `borderWidth` blijft staan als de
+       * REPRESENTATIEVE breedte (de grootste zijde) omdat de tokenbinding en de rand-vlag
+       * eraan hangen; `borderWidths` draagt de vorm.
+       *
+       * De KLEUR blijft er één. Figma's `strokes` is één verfarray voor de hele node, dus een
+       * kleur per zijde is er niet uit te drukken. Diezelfde meting telde 0 van 333 nodes met
+       * meer dan één kleur op hun gezette zijden — maar dat is een meting van vandaag, geen
+       * eigenschap, dus het verschil wordt hier vastgesteld en verderop gemeld in plaats van
+       * stil de eerste kleur te nemen.
+       */
+      borderWidths: [px(cs.borderTopWidth), px(cs.borderRightWidth),
+                     px(cs.borderBottomWidth), px(cs.borderLeftWidth)],
+      borderWidth: Math.max(px(cs.borderTopWidth), px(cs.borderRightWidth),
+                            px(cs.borderBottomWidth), px(cs.borderLeftWidth)),
+      borderColor: (() => {
+        const w = [px(cs.borderTopWidth), px(cs.borderRightWidth),
+                   px(cs.borderBottomWidth), px(cs.borderLeftWidth)];
+        const k = [cs.borderTopColor, cs.borderRightColor, cs.borderBottomColor, cs.borderLeftColor];
+        const i = w.findIndex(x => x > 0);
+        return i < 0 ? null : rgba(k[i]);
+      })(),
+      borderKleurenVerschillen: (() => {
+        const w = [px(cs.borderTopWidth), px(cs.borderRightWidth),
+                   px(cs.borderBottomWidth), px(cs.borderLeftWidth)];
+        const k = [cs.borderTopColor, cs.borderRightColor, cs.borderBottomColor, cs.borderLeftColor];
+        return new Set(k.filter((_, i) => w[i] > 0)).size > 1;
+      })(),
+      opacity: parseFloat(cs.opacity),
+      boxShadow: cs.boxShadow !== 'none' ? cs.boxShadow : null,
+      overflow: cs.overflow,
+      /**
+       * DE SCROLLPOSITIE. Een WheelPicker staat op zijn geselecteerde waarde, een lijst is
+       * half doorgerold — en `getBoundingClientRect` van de KINDEREN draagt dat al: een
+       * weggerold kind meet een kleinere `top`. Figma's auto-layout gooit die meting weg en
+       * stapelt vanaf boven, dus zonder dit veld toont het design system altijd item 1.
+       * `scrollLeft` reist mee omdat dezelfde redenering horizontaal geldt.
+       */
+      scrollTop: Math.round((el.scrollTop || 0) * 100) / 100,
+      scrollLeft: Math.round((el.scrollLeft || 0) * 100) / 100,
+      positie: cs.position,
+      // Offset t.o.v. de ouder. Nodig voor een absoluut gepositioneerd kind: dat valt
+      // buiten de auto-layout-stroom en moet in Figma op zijn eigen plek gezet worden.
+      dx: ouderRect ? Math.round((r.left - ouderRect.left) * 100) / 100 : 0,
+      dy: ouderRect ? Math.round((r.top - ouderRect.top) * 100) / 100 : 0,
+    };
+    // Een VELD krijgt ALTIJD een tekst-object, ook als het leeg is. Reden, gemeten 2026-09-09:
+    // de schermen bouwen FormField als library-instance (6 instances, 0 terugval) en alleen
+    // een slot-waarde steekt die grens over. Zonder de lege string blijft het slot van
+    // login-Wachtwoord en register-Bevestig-wachtwoord ongezet, en tonen die twee velden in
+    // Figma de placeholder van de LIBRARY.
+    const veld = isVeld(el);
+    if (eigenTekst || veld) {
+      o.tekst = {
+        inhoud: veld ? (el.value || el.placeholder || '') : eigenTekst,
+        veld: veld || undefined,
+        voorop: (!veld && eigenTekst && el.children.length > 0) ? tekstVoorop : undefined,
+        family: cs.fontFamily.replace(/["']/g, '').split(',')[0].trim(),
+        size: px(cs.fontSize),
+        lineHeight: cs.lineHeight === 'normal' ? null : px(cs.lineHeight),
+        letterSpacing: cs.letterSpacing === 'normal' ? 0 : px(cs.letterSpacing),
+        // Een LEEG veld toont zijn placeholder, en die heeft een EIGEN kleur: `cs.color` is de
+        // kleur van de waarde (fg.primary), niet die van de placeholder (fg.tertiary). Allebei
+        // bestaande rollen — dus zonder deze splitsing bindt de tekst netjes aan
+        // Theme:fg/primary en is er nergens iets aan te zien.
+        kleur: veld && !el.value ? placeholderKleur(el, cs) : rgba(cs.color),
+        align: cs.textAlign,
+        transform: cs.textTransform,
+        // DE BREEDTE VAN DE RUN, naast de breedte van de DOOS. `getBoundingClientRect` op
+        // het element geeft de doos, en die is bij een blok-tekst zo breed als zijn ouder —
+        // ongeacht hoeveel glyphs erin staan. Een Range over de inhoud geeft de regel(s)
+        // zelf. Het verschil is de enige meting die "hugt deze tekst" kan beantwoorden:
+        // `align-self: stretch` kan dat niet, want dat is de RNW-default van élk View-kind.
+        // Gemeten 2026-09-09: 124 van 625 tekstnodes in de schermen kregen daardoor FILL,
+        // en "1 sep 2026" (doos 159 = run 159) brak in Figma in twee regels over OVERZICHT.
+        // Een veld heeft geen tekstknopen, dus een Range eroverheen meet 0. Dat is hier de
+        // JUISTE waarde en geen ongeluk: de doos ÍS de intentie — een veld vult zijn rij en de
+        // tekst staat erin. `isBlok` (pruner) wordt daarmee per constructie waar en de `H` uit
+        // `rekt` blijft staan. Expliciet, want een 0 die uit een lege meting rolt is niet te
+        // onderscheiden van een 0 die iemand bedoeld heeft.
+        inhoudBreedte: veld ? 0 : (() => {
+          const r = document.createRange(); r.selectNodeContents(el);
+          return Math.round(r.getBoundingClientRect().width * 100) / 100;
+        })(),
+      };
+    }
+    // Welke StyleSheet-sleutels verklaren de klassen van deze node? De klassen zijn atomair
+    // en `styleq` gooit overschreven klassen wég, dus een basisstijl is nooit volledig
+    // aanwezig zodra een modifier hem raakt (PrBadge: `badgeSm` overschrijft 4 van `badge`'s
+    // 8 properties). Daarom OVERLAP en geen subset. De drempel wordt in Node gelegd, uit de
+    // verdeling in figma/laagnamen.json — hier wordt alleen gemeten.
+    const klassen = String(el.getAttribute('class') || '').split(/\s+/).filter(Boolean);
+    const rk = new Set(klassen.filter(c => c.startsWith('r-')));
+    o.rol = el.getAttribute('role') || null;
+    // De componentgrens als FEIT. react-native-web schrijft `testID` als `data-testid`
+    // (modules/createDOMProps/index.js:831-832, gelezen) en `dataSet` als `data-*` met een
+    // gehypheneerde sleutel (:756-766), dus `dataSet={{ laag: 'x' }}` wordt `data-laag`.
+    const tid = el.getAttribute('data-testid');
+    if (tid) { o.component = tid; gezienTestid.add(tid); }
+    const laag = el.getAttribute('data-laag');
+    if (laag) { o.laag = laag; gezienLaag.add(laag); }
+    // `data-bron`: welke code deze node rendert, los van welke grens hij draagt. Zie de
+    // toelichting bij de `testID`-prop van DeviceRow.
+    const bron = el.getAttribute('data-bron');
+    if (bron) { o.bron = bron; gezienBron.add(bron); }
+    // `data-variant`: welke variant-as-waarden dit component draagt. Nodig om bij de
+    // schermen-export de JUISTE library-variant te instantiëren; uit de gemeten geometrie is
+    // dat niet af te leiden (zie lib/variantData.ts).
+    const variant = el.getAttribute('data-variant');
+    if (variant) o.variant = variant;
+    const rnw = rnwRol(el, cs);
+    if (rnw) { o.rnw = rnw.rol; if (rnw.gedeeld) o.rnwGedeeld = true; }
+    o.kandidaten = [];
+    for (const k of sleutelIndex) {
+      const eigen = [];
+      for (const c of k.klassen) if (rk.has(c)) eigen.push(c);
+      if (eigen.length)
+        o.kandidaten.push({ b: k.bronId, bron: k.bron, s: k.naam, v: k.volgorde, n: k.klassen.size, eigen });
+    }
+
+    if (el.tagName.toLowerCase() === 'svg' || el.querySelector?.(':scope > svg')) o.bevatSvg = true;
+    const doorvoer = isDoorvoer(el, cs);
+    if (doorvoer) o.doorvoer = true;
+    if (diepte < KAP) {
+      const kids = [...el.children].filter(k => {
+        const c2 = getComputedStyle(k);
+        return c2.display !== 'none' && c2.visibility !== 'hidden';
+      });
+      // Een doorvoer-wrapper kost geen diepte: het budget is bedoeld voor ontwerplagen,
+      // niet voor de <View>-stapel die RN eromheen zet.
+      if (kids.length) o.kinderen = kids.map(k => lees(k, doorvoer ? diepte : diepte + 1, r));
+    } else {
+      weggelatenComponenten += el.querySelectorAll('[data-testid]').length;
+      const gekapt = [...el.querySelectorAll('*')].filter(k => {
+        const c2 = getComputedStyle(k);
+        return c2.display !== 'none' && c2.visibility !== 'hidden';
+      });
+      weggelatenNodes += gekapt.length;
+      weggelatenTekst += gekapt.filter(k => k.children.length === 0 && k.textContent.trim()).length;
+    }
+    // Een absoluut gepositioneerd kind valt buiten de box van zijn ouder, dus een overlay-
+    // wortel meet 0 breed of 0 hoog terwijl er wél iets staat. Gemeten 2026-09-07: tien
+    // variant-nodes kwamen zo op 0x0 in Figma (BottomSheet, GoalSheet, HealthConsentScreen,
+    // MotivationalToast, DeviceSelectionModal, alle vier de WheelPickers). Herstel de box
+    // uit de vereniging van de kinderen — en markeer dat, want een herstelde maat is een
+    // afleiding en geen meting.
+    if (o.w < 2 || o.h < 2) {
+      // Vereniging van ALLE afstammelingen, niet alleen de directe kinderen: bij WheelPicker
+      // zit de zichtbare inhoud twee niveaus diep, en een unie over de directe kinderen
+      // maakte de box juist kleiner (0x250 -> 2x60, gemeten). En alleen toepassen als het
+      // resultaat GROTER is — een herstel dat krimpt is geen herstel.
+      const boxen = [...el.querySelectorAll('*')].map(k => k.getBoundingClientRect())
+        .filter(b => b.width > 0 && b.height > 0);
+      if (boxen.length) {
+        const l = Math.min(...boxen.map(b => b.left)), r2 = Math.max(...boxen.map(b => b.right));
+        const t = Math.min(...boxen.map(b => b.top)), bo = Math.max(...boxen.map(b => b.bottom));
+        // PER AS, en geklemd op het viewport. Twee redenen, allebei gemeten 2026-09-07:
+        //  · WheelPicker is 0 breed maar wél 250 hoog; beide assen vervangen maakte hem
+        //    97x4191 — de volledige scrollhoogte in plaats van het zichtbare venster.
+        //  · Een sheet met een scrollgebied gaf 430x25100 om dezelfde reden (GoalSheet).
+        // Een component is nooit groter dan het scherm waarop hij staat, dus het viewport
+        // is de bovengrens. Alleen de as die 0 was wordt vervangen.
+        const nw = Math.min(Math.round((r2 - l) * 100) / 100, window.innerWidth);
+        const nh = Math.min(Math.round((bo - t) * 100) / 100, window.innerHeight);
+        const was = [o.w, o.h];
+        if (o.w < 2 && nw >= 2) o.w = nw;
+        if (o.h < 2 && nh >= 2) o.h = nh;
+        if (o.w !== was[0] || o.h !== was[1]) o.herstelde = { was };
+      }
+    }
+    return o;
+  }
+  // De overlays krijgen `abs` mee: ze liggen in de DOM over het viewport, en de builder legt
+  // ze zo als absoluut gepositioneerd kind naast de schermboom in plaats van eronder in de
+  // auto-layout-stroom.
+  const boom = lees(kinderen[0], 0, null);
+  const overlayBomen = overlays.map(el => {
+    const o = lees(el, 0, null);
+    o.positie = 'absolute'; o.dx = 0; o.dy = 0;
+    return o;
+  });
+  const gezien = { testid: [...gezienTestid], laag: [...gezienLaag], bron: [...gezienBron] };
+  return overlayBomen.length
+    ? { boom, overlays: overlayBomen, gezien, weggelatenComponenten, weggelatenNodes, weggelatenTekst }
+    : { boom, gezien, weggelatenComponenten, weggelatenNodes, weggelatenTekst };
+};
+
+// ---------------------------------------------------------------------------
+// Doorloop
+// ---------------------------------------------------------------------------
+// walkerVersie: welk contract de spec draagt. 2 = mét `component`/`laag` uit de DOM. Een
+// consument die daarop rekent (`--hernoem`, de laagnaam-pas) moet een oudere spec WEIGEREN in
+// plaats van hem stil zonder grenzen te lezen — dat leest als "geen enkel component heeft een
+// testID" terwijl de code ze wel draagt.
+const spec = { walkerVersie: 2, componenten: {}, schermen: {}, ongebonden: [], fouten: [],
+               gezien: { testid: [], laag: [] }, weggelatenComponenten: 0, grenzen: {} };
+const gezienTestid = new Set(), gezienLaag = new Set(), gezienBron = new Set();
+
+/**
+ * Waar staat de grens van dit component in zijn eigen boom, en wat staat eráboven?
+ *
+ * WAAROM DIT EEN CHECK IS. Een `testID` één niveau te diep is op geen enkele andere as
+ * zichtbaar: de spec is gevuld, de namen zien er plausibel uit, en de grens klopt gewoon niet.
+ *
+ * DE REGEL: boven een grens mag geen node staan die een StyleSheet-sleutel uit het EIGEN
+ * bestand van dat component draagt. Zo'n node is per definitie door het component zelf
+ * gerenderd, dus dan begint de grens te laat.
+ *
+ * De eerste versie van deze check gebruikte `isDoorvoer` (één kind, geen eigen verf) en was
+ * daarmee STUK: getoetst op 2026-09-08 door `testID="Subtitle"` van de wortel-View naar de
+ * label-Text te verplaatsen, bleef hij groen. De rij-container van Subtitle heeft in de
+ * default-variant precies één kind en geen achtergrond, dus `isDoorvoer` gaf true — terwijl
+ * die node `flexDirection: row` en `justifyContent: space-between` draagt, en dus wel degelijk
+ * ontwerp. `isDoorvoer` kijkt bewust niet naar layout; dat is goed voor het diepte-budget
+ * waarvoor hij bestaat en te zwak voor een grens.
+ *
+ * Wat de drie gevallen wél scheidt, gemeten op dezelfde spec:
+ *  · Subtitle (FOUT):  de ouder draagt `Subtitle.tsx.container` op 3/3 — eigen bestand, volle dekking.
+ *  · GoalCardSkeleton (goed): de ouder draagt `GoalCardSkeleton.stories.tsx.vullend` — het STORY-
+ *    bestand, niet het component; dezelfde uitsluiting die `componentVan()` al maakt.
+ *  · de vijf Modals (goed): de RNW-hostketen. Die pikt door de globaal gedeelde atomaire klassen
+ *    wél sleutels op (`BottomSheet.tsx.scrim 4/6`), maar `rnwRol` herkent ze aan hun eigen bron
+ *    en die herkenning gaat vóór.
+ *
+ * De drempel is dezelfde als die van de naamgeving (`DREMPEL` in laagnamen.mjs): dat is precies
+ * de dekking waarbij de naamgevingspas de node naar die sleutel zou vernoemen — dus waarbij ze
+ * hem als eigendom van dat bestand behandelt.
+ */
+function grensVan(boom, comp) {
+  const boven = [];
+  const raak = (function loop(n) {
+    if (n.component === comp) return true;
+    for (const k of n.kinderen ?? []) {
+      if (loop(k)) { boven.unshift(n); return true; }
+    }
+    return false;
+  })(boom);
+  return raak ? { diepte: boven.length, boven } : null;
+}
+
+/**
+ * Een absoluut gepositioneerd kind erft een ontbrekende maat van zijn ouder.
+ *
+ * WAAROM. `position: absolute` met `left:0; right:0` krijgt zijn breedte van de ouder. Was
+ * die ouder op meetmoment zelf 0 breed (de overlay-wortels), dan meet het kind óók 0 — en
+ * de wortel-herstelstap die daarna draait raakt het kind niet. Gemeten 2026-09-07: de acht
+ * fade-verlopen in WheelPicker kwamen zo op 0,01 px breed in Figma terecht. De vulling stond
+ * er, hij was alleen onzichtbaar — precies de vorm die een groene bouw verbergt.
+ *
+ * Alleen de as die 0 is wordt overgenomen, en alleen van een ouder die er zelf wél een heeft.
+ */
+function erfMaatVanOuder(node, ouder) {
+  if (ouder && node.positie === 'absolute') {
+    if (node.w < 2 && ouder.w >= 2) { node.geerfd = { ...(node.geerfd ?? {}), w: node.w }; node.w = ouder.w; }
+    if (node.h < 2 && ouder.h >= 2) { node.geerfd = { ...(node.geerfd ?? {}), h: node.h }; node.h = ouder.h; }
+  }
+  for (const k of node.kinderen ?? []) erfMaatVanOuder(k, node);
+}
+
+async function meet(storyId, args, herladen = false) {
+  // Terug naar het standaard-viewport, tenzij dit de tweede ronde van een kantelende story is.
+  // Zonder dit lekt de landscape-maat door naar de volgende story en meet die stil verkeerd.
+  if (!herladen) await zetViewport(VIEWPORT.width, VIEWPORT.height);
+  const q = (Object.keys(args).length ? `&args=${encodeURIComponent(argsQuery(args))}` : '')
+    // --rnw-keys-uit is de NEGATIEVE CONTROLE van de sleutelkaart. Zonder hem is "elke node
+    // heet wrapper" niet te onderscheiden van "het instrument staat uit": beide geven een
+    // gevulde spec zonder foutmelding. Met de vlag hoort de walker hard te falen.
+    + (process.argv.includes('--rnw-keys-uit') ? '&rnwKeysUit=1' : '')
+    // --kap=N verzet de dieptekap. Bestaat om de KOST van de kap te meten in plaats van hem
+    // te schatten: de walker rapporteert per run hoeveel nodes hij weggooit, dus twee runs
+    // met verschillende N zeggen precies wat een diepere boom oplevert.
+    + (kapFlag ? `&kap=${kapFlag.split('=')[1]}` : '');
+  await page.goto(`http://localhost:${poort}/iframe.html?id=${storyId}&viewMode=story${q}`,
+    { waitUntil: 'networkidle', timeout: 20000 });
+  await page.waitForTimeout(120);
+  // `parameters.toestel` staat NIET in index.json — Storybook indexeert alleen titel, naam en
+  // tags. Hij is dus pas ná het laden te lezen, en een story die kantelt kost daarom één extra
+  // laadbeurt. Alleen de landscape-story betaalt die: portret is al het standaard-viewport.
+  if (!herladen) {
+    const t = await page.evaluate(async (id) => {
+      try { const ctx = await window.__STORYBOOK_PREVIEW__?.loadStory?.({ storyId: id }); return ctx?.parameters?.toestel ?? null; }
+      catch (e) { return null; }
+    }, storyId);
+    if (t?.breedte && await zetViewport(t.breedte, t.hoogte)) return meet(storyId, args, true);
+  }
+  const r = await page.evaluate(WALKER);
+  if (r.boom) erfMaatVanOuder(r.boom, null);
+  for (const o of r.overlays ?? []) erfMaatVanOuder(o, null);
+  // De args van deze story, uit Storybook's eigen preview-API. Die geven de WAARDE van elke
+  // prop ('Start training'), en daarmee is de slot-koppeling meetbaar in plaats van geraden:
+  // de tekstnode met exact die inhoud is de doelnode.
+  r.args = await page.evaluate(async (id) => {
+    try { const ctx = await window.__STORYBOOK_PREVIEW__?.loadStory?.({ storyId: id }); return ctx?.initialArgs ?? null; }
+    catch (e) { return null; }
+  }, storyId);
+  return r;
+}
+
+/**
+ * Markeert per component welke tekstnode aan welke prop hangt — het slot.
+ *
+ * De regel is dezelfde als bij de tokenmatching: koppel alleen wat ONDUBBELZINNIG is. Komt de
+ * waarde van een prop niet precies één keer als tekstnode voor, dan is de koppeling
+ * dubbelzinnig en wordt ze gemeld in plaats van gegokt. Een variant-as doet niet mee — die
+ * wordt al door de variant-properties uitgedrukt.
+ */
+function markeerSlots(comp, items, assen, fouten) {
+  const asNamen = new Set(Object.keys(assen ?? {}));
+  const gevonden = new Set();
+  for (const it of items) {
+    const args = it.args ?? {};
+    for (const [prop, waarde] of Object.entries(args)) {
+      if (asNamen.has(prop) || typeof waarde !== 'string' || !waarde.trim()) continue;
+      const treffers = [];
+      (function loop(n) {
+        if (n.tekst && n.tekst.inhoud === waarde) treffers.push(n);
+        for (const k of n.kinderen ?? []) loop(k);
+      })(it.boom);
+      if (treffers.length === 1) { treffers[0].slot = prop; gevonden.add(prop); }
+      else if (treffers.length > 1) fouten.push(`${comp} [${it.naam}]: prop "${prop}" komt ${treffers.length}x voor als tekst — dubbelzinnig, geen slot`);
+      // 0 treffers is normaal: een variant kan de prop niet tonen (loading, of een icoon-only knop).
+    }
+  }
+  return [...gevonden];
+}
+
+/**
+ * Nodes die per render ANDERS zijn en dus geen stabiel Figma-artefact kunnen zijn.
+ *
+ * MotivationalToast tekent 60 confettideeltjes met `size: 6 + Math.random() * 8`, dus
+ * radius = size/2 levert 60 gebroken waarden op die bij elke render verschillen. Die als
+ * 60 tokengaten rapporteren is ruis: het is één ontwerpbeslissing (gerandomiseerde
+ * decoratie), geen zestig ontbrekende tokens. Ze worden geteld als decoratief en niet
+ * als gat — expliciet, want stil weglaten ziet er identiek uit als "geen probleem".
+ *
+ * De toets is de VORM, niet de storynaam. Tot 2026-09-08 stond hier
+ * `comp === 'MotivationalToast'`, en dat brak zodra de toast óók als overlay binnen
+ * ActivePhase gemeten werd: `comp` was daar `'ActivePhase'`, de filter zweeg, en de
+ * [binding]-as sprong van 46 naar 109 ongebonden waarden — hot pink, goud, en radii als
+ * 3,2993. Een componentnaam als filtersleutel beschrijft twee dingen tegelijk (welke story
+ * render ik / bij welk component hoort deze node) en is dus geen sleutel.
+ *
+ * De handtekening is gemeten, niet bedacht: van alle 120 nodes met een gebroken radius in
+ * de hele spec is er GEEN ENKELE die niet vierkant, kinderloos, tekstloos en kleiner dan
+ * 20 px is. Overmatchen kan dus niet — er is niets anders om te matchen.
+ */
+const decoratief = (comp, node) =>
+  node.radius?.[0] > 0 && !Number.isInteger(node.radius[0])
+  && !(node.kinderen ?? []).length && !node.tekst
+  && Math.abs(node.w - node.h) < 0.01 && node.w < 20;
+
+/** Voegt variabele-verwijzingen toe aan een gemeten boom, per eigenschapssoort. */
+function bind(node, pad, comp) {
+  if (decoratief(comp, node)) {
+    node.decoratief = 'gerandomiseerde confetti (size = 6 + random*8) — geen stabiel artefact';
+    spec.decoratief = (spec.decoratief ?? 0) + 1;
+    for (const k of node.kinderen ?? []) bind(k, pad + '>d', comp);
+    return;
+  }
+  const meld = (wat, waarde) => spec.ongebonden.push(`${comp} ${pad}: ${wat} = ${waarde}`);
+  if (node.bg && node.bg.a > 0) {
+    node.bgVar = kiesKleur(node.bg, comp);
+    if (!node.bgVar) meld('achtergrond', JSON.stringify(node.bg));
+  }
+  if (node.borderColor && node.borderWidth > 0) {
+    node.borderColorVar = kiesKleur(node.borderColor, comp);
+    if (!node.borderColorVar) meld('randkleur', JSON.stringify(node.borderColor));
+    node.borderWidthVar = kiesGetal('breedte', node.borderWidth, comp);
+    if (!node.borderWidthVar) meld('randbreedte', node.borderWidth);
+  }
+  node.radiusVar = node.radius.every(r => r === node.radius[0]) && node.radius[0] > 0
+    ? kiesGetal('radius', node.radius[0], comp) : null;
+  if (node.radius[0] > 0 && !node.radiusVar) meld('radius', node.radius[0]);
+  node.paddingVar = node.padding.map(p => p === 0 ? null : kiesGetal('spacing', p, comp));
+  node.padding.forEach((p, i) => { if (p > 0 && !node.paddingVar[i]) meld('padding', p); });
+  node.gapVar = node.gap ? kiesGetal('spacing', node.gap, comp) : null;
+  if (node.gap > 0 && !node.gapVar) meld('gap', node.gap);
+  // Gradients: CSS-string -> stops met hun eigen binding. Alle vijf de vormen in deze
+  // codebase zijn tweestops-lineair (gemeten), vier verticaal en één op 90deg.
+  if (node.backgroundImage?.includes('linear-gradient')) {
+    const g = ontleedGradient(node.backgroundImage);
+    if (!g) meld('gradient', node.backgroundImage.slice(0, 60));
+    else {
+      node.gradientStops = g.stops.map((st, i) => ({
+        positie: g.stops.length === 1 ? 0 : i / (g.stops.length - 1),
+        kleur: st, kleurVar: kiesKleur(st, comp),
+      }));
+      node.gradientHoek = g.hoek;
+      for (const st of node.gradientStops) if (!st.kleurVar) meld('gradientstop', JSON.stringify(st.kleur));
+    }
+  }
+  if (node.tekst) {
+    node.tekst.kleurVar = kiesKleur(node.tekst.kleur, comp);
+    if (!node.tekst.kleurVar) meld('tekstkleur', JSON.stringify(node.tekst.kleur));
+    // DE TRACKING FILTERT ALTIJD MEE — ook bij één kandidaat.
+    //
+    // Tot 2026-09-09 won de enige kandidaat op familie+grootte zonder dat zijn tracking ooit
+    // werd nagekeken; `letterSpacing` werd pas een toets zodra er twee kandidaten waren. Dat
+    // is precies omgekeerd: bij één kandidaat is er niemand om tegen te vergelijken, dus daar
+    // is de toets het hardst nodig. Gevolg: `heroLabel` (AlbertSans_600SemiBold 16, tracking
+    // 3,2 px — hardcoded als `letterSpacing: 3.2, // 20% van 16` in
+    // `components/workout/active/HeroPanel.tsx:77`) kreeg `type/segmentActive`, en die style
+    // draagt in Figma −1,5 % = −0,24 px. Verschil 3,44 px per teken op "RESTERENDE TIJD", en
+    // in Figma won de STYLE van de meting: de builder doet bij een style uitsluitend
+    // `setTextStyleIdAsync` en zet fontSize en letterSpacing dan niet zelf.
+    //
+    // Wat er nu gebeurt met die 32 nodes (4 unieke combinaties, gemeten op de spec van
+    // 2026-09-09): ze verliezen hun style en komen als `text style`-gat in `ongebonden.json`
+    // (52 → 56 uniek, 3 760 → 3 792 voorkomens, ratels in figma-sync-check.mjs). Het BEELD
+    // wordt daarmee correcter — zonder style zet de builder fontSize en letterSpacing zélf uit
+    // de meting — en de binding is wat we verliezen. Dat verlies is de eerlijke uitkomst: er
+    // bestaat geen `Theme/type/*` met die tracking, en dat is een tokenvraag (BACKLOG, item
+    // over de 52 ongebonden waarden), geen reden om de walker te laten liegen.
+    //
+    // De drempel 0,02 draagt hier niets en blijft alleen als bescherming tegen floating point:
+    // gemeten over 2 804 nodes met een kandidaat is de afwijking bij een treffer 1 728 × exact
+    // 0, en bij een misser minimaal 0,16.
+    const kandidaten = payload.textStyles.filter(t =>
+      t.expoVariant === node.tekst.family && t.fontSize === node.tekst.size);
+    node.tekst.styleRef = kandidaten.find(t =>
+      Math.abs((t.letterSpacingPx ?? 0) - node.tekst.letterSpacing) < 0.02)?.naam ?? null;
+    if (!node.tekst.styleRef) meld('text style', `${node.tekst.family} ${node.tekst.size}px ls=${node.tekst.letterSpacing}`);
+  }
+  for (const k of node.kinderen ?? []) bind(k, pad + '>' + (node.kinderen.indexOf(k)), comp);
+}
+
+/** Union van wat de DOM per story werkelijk droeg. */
+function onthoudGezien(r) {
+  for (const t of r.gezien?.testid ?? []) gezienTestid.add(t);
+  for (const l of r.gezien?.laag ?? []) gezienLaag.add(l);
+  for (const b of r.gezien?.bron ?? []) gezienBron.add(b);
+  spec.weggelatenComponenten += r.weggelatenComponenten ?? 0;
+  spec.weggelatenNodes = (spec.weggelatenNodes ?? 0) + (r.weggelatenNodes ?? 0);
+  spec.weggelatenTekst = (spec.weggelatenTekst ?? 0) + (r.weggelatenTekst ?? 0);
+}
+
+/** Toetst de grens van één component en meldt hem als hij ontbreekt of te diep zit. */
+function toetsGrens(comp, item) {
+  const g = grensVan(item.boom, comp) ?? (item.overlays ?? []).map(o => grensVan(o, comp)).find(Boolean);
+  if (!g) {
+    spec.fouten.push(`${comp}: geen data-testid="${comp}" in de DOM — de prop bereikt geen element `
+      + '(een derde-partij component kan hem weggooien), of hij staat op de verkeerde node');
+    return;
+  }
+  const eigenSleutel = (n) => (n.kandidaten ?? [])
+    .filter((k) => k.bron.endsWith(`/${comp}.tsx`) && k.eigen.length / k.n >= DREMPEL)
+    .map((k) => `${comp}.tsx:${k.s} ${k.eigen.length}/${k.n}`);
+  spec.grenzen[comp] = {
+    diepte: g.diepte,
+    boven: g.boven.map((n) => n.rnw ?? (eigenSleutel(n)[0] ?? (n.doorvoer ? 'doorvoer' : `<${n.tag}>`))),
+  };
+  const vreemd = g.boven.filter((n) => !n.rnw && eigenSleutel(n).length);
+  if (vreemd.length)
+    spec.fouten.push(`${comp}: de grens staat ${g.diepte} niveau(s) diep, met ${vreemd.length} node(s) `
+      + `erboven die een sleutel uit ${comp}.tsx zelf dragen (${vreemd.flatMap(eigenSleutel).join(', ')}) `
+      + '— die node rendert dit component, dus de testID staat te laag');
+}
+
+spec.uitgesloten = [];
+for (const [comp, d] of Object.entries(assen.componenten)) {
+  if (SCHERMEN[comp]) continue;
+  const gebruikteAssen = {};
+  for (const [as, waarden] of Object.entries(d.assen)) {
+    const sleutel = `${comp}.${as}`;
+    if (NIET_VISUEEL[sleutel]) { spec.uitgesloten.push(`${sleutel} — ${NIET_VISUEEL[sleutel]}`); continue; }
+    gebruikteAssen[as] = waarden;
+  }
+  d.assen = gebruikteAssen;
+  const combis = combinaties(d.assen);
+  const varianten = [];
+  for (const c of combis) {
+    const r = await meet(d.storyId, c.args);
+    if (r.fout) { spec.fouten.push(`${comp} [${c.naam}]: ${r.fout}`); continue; }
+    bind(r.boom, '', comp);
+    r.overlays?.forEach((o, i) => bind(o, `overlay${i}`, comp));
+    onthoudGezien(r);
+    varianten.push({ naam: c.naam, args: c.args, boom: r.boom, overlays: r.overlays, storyArgs: r.args });
+  }
+  if (varianten.length) toetsGrens(comp, varianten[0]);
+  (spec.naamStats ??= []).push(...benoemAlles(comp, varianten));   // laagnamen: één beslissing per component
+  const slots = markeerSlots(comp, varianten.map(v => ({ naam: v.naam, boom: v.boom, args: v.storyArgs })), d.assen, spec.fouten);
+  spec.componenten[comp] = { storyId: d.storyId, assen: d.assen, slots, varianten };
+  process.stderr.write(`  ${comp}: ${varianten.length}/${combis.length}\n`);
+}
+
+// Schermen: de benoemde stories, geen assen.
+const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'));
+for (const [comp, storyNamen] of Object.entries(SCHERMEN)) {
+  const frames = [];
+  for (const naam of storyNamen) {
+    const e = Object.values(index.entries).find(x => x.title === `Componenten/${comp}` && x.name === naam);
+    if (!e) { spec.fouten.push(`${comp}: story "${naam}" bestaat niet`); continue; }
+    const r = await meet(e.id, {});
+    if (r.fout) { spec.fouten.push(`${comp} [${naam}]: ${r.fout}`); continue; }
+    bind(r.boom, '', comp);
+    r.overlays?.forEach((o, i) => bind(o, `overlay${i}`, comp));
+    onthoudGezien(r);
+    frames.push({ naam, storyId: e.id, boom: r.boom, overlays: r.overlays });
+  }
+  if (frames.length) toetsGrens(comp, frames[0]);
+  (spec.naamStats ??= []).push(...benoemAlles(comp, frames));
+  spec.schermen[comp] = { frames, afgeschrevenAssen: assen.componenten[comp].assen };
+  process.stderr.write(`  ${comp} (scherm): ${frames.length}/${storyNamen.length}\n`);
+}
+
+await browser.close(); server.close();
+
+spec.gezien = { testid: [...gezienTestid].sort(), laag: [...gezienLaag].sort(), bron: [...gezienBron].sort() };
+process.stderr.write(`grenzen: ${Object.keys(spec.grenzen).length} componenten met een gemeten testID-grens, `
+  + `${spec.gezien.testid.length} unieke testid's in de DOM, ${spec.gezien.laag.length} data-laag, `
+  + `${spec.weggelatenComponenten} grens(en) weggegooid door de dieptekap\n`);
+process.stderr.write(`dieptekap: ${spec.weggelatenNodes ?? 0} node(s) weggekapt, waarvan `
+  + `${spec.weggelatenTekst ?? 0} met tekst\n`);
+
+// ---- Poort vóór het schrijven ----------------------------------------------------------
+// Deze stap SCHRIJFT: figma/build-spec.json is de invoer van de builder én van de guard. Een
+// mislukte meting die tóch wegschrijft, vervangt een goede spec door een lege — en exit 0
+// maakt dat onzichtbaar. Gemeten 2026-09-08: de negatieve controle (`--rnw-keys-uit`) liet
+// alle 33 componenten op 0 varianten uitkomen en het script overschreef vrolijk de goede
+// spec met exit 0. Een component zonder enkele variant is per definitie een meetfout, nooit
+// een geldige uitkomst.
+const leeg = [
+  ...Object.entries(spec.componenten).filter(([, d]) => !d.varianten.length).map(([c]) => c),
+  ...Object.entries(spec.schermen).filter(([, d]) => !d.frames.length).map(([c]) => c),
+];
+if (leeg.length) {
+  console.error(`\nGEEN SPEC GESCHREVEN — ${leeg.length} component(en) leverden nul varianten: ${leeg.slice(0, 8).join(', ')}${leeg.length > 8 ? ', …' : ''}`);
+  console.error(`Eerste fouten:\n  ${spec.fouten.slice(0, 3).join('\n  ')}`);
+  console.error('figma/build-spec.json is ONGEWIJZIGD gelaten.');
+  process.exit(2);
+}
+
+writeFileSync(join(APP, 'figma/build-spec.json'), JSON.stringify(spec, null, 1));
+const nVar = Object.values(spec.componenten).reduce((n, c) => n + c.varianten.length, 0);
+console.log(`\ncomponent sets : ${Object.keys(spec.componenten).length}  (${nVar} variant-nodes)`);
+console.log(`schermen       : ${Object.keys(spec.schermen).length}  (${Object.values(spec.schermen).reduce((n,s)=>n+s.frames.length,0)} frames)`);
+console.log(`uitgesloten    : ${spec.uitgesloten.length} as(sen)`);
+for (const u of spec.uitgesloten) console.log('   -- ' + u);
+console.log(`decoratief     : ${spec.decoratief ?? 0} nodes (gerandomiseerd, niet als gat geteld)`);
+console.log(`ongebonden     : ${spec.ongebonden.length}`);
+console.log(`fouten         : ${spec.fouten.length}`);
+for (const f of spec.fouten.slice(0, 20)) console.log('  FOUT ' + f);
+const uniek = [...new Set(spec.ongebonden.map(o => o.split(': ')[1]))];
+for (const o of uniek.slice(0, 25)) console.log('  ONGEBONDEN ' + o);
+if (uniek.length > 25) console.log(`  ... en ${uniek.length - 25} andere unieke ongebonden waarden`);

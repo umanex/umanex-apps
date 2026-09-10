@@ -1,0 +1,40 @@
+{
+  "name": "dashboard",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "NEXT_DIST_DIR=.next-dev next dev --hostname 127.0.0.1 --port 3011",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 3010",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test": "node scripts/guards-selftest.mjs",
+    "clean": "rm -rf .next .next-dev .runtime",
+    "pm2:start": "pm2 start ./node_modules/.bin/next --name dashboard --interpreter none -- start --hostname 127.0.0.1 --port 3010",
+    "pm2:stop": "pm2 stop dashboard",
+    "pm2:restart": "pm2 restart dashboard",
+    "pm2:logs": "pm2 logs dashboard",
+    "pm2:rebuild": "next build && pm2 restart dashboard",
+    "pm2:status": "pm2 status"
+  },
+  "dependencies": {
+    "@umanex/tokens": "workspace:*",
+    "@umanex/ui": "workspace:*",
+    "lucide-react": "^0.400.0",
+    "next": "^14",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@umanex/config": "workspace:*",
+    "autoprefixer": "^10",
+    "eslint": "^8",
+    "eslint-config-next": "^14",
+    "postcss": "^8",
+    "tailwindcss": "^3",
+    "typescript": "^5"
+  }
+}

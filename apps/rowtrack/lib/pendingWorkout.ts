@@ -21,6 +21,8 @@ const KEY = 'rowtrack.pendingWorkout';
 
 /** Postgres unique_violation — de rit stond er al. */
 export const UNIQUE_VIOLATION = '23505';
+/** Postgres: kolom bestaat niet — hier alleen `pr_metrics`, zie runDrain. */
+const UNDEFINED_COLUMN = '42703';
 
 // De insert-payload voor de `workouts`-tabel (incl. user_id). Los getypeerd zodat
 // deze helper niet aan de workout-kolomvorm vastzit.
@@ -107,7 +109,15 @@ async function runDrain(userId: string): Promise<void> {
   const pending = await loadPendingWorkout();
   if (!pending || pending.user_id !== userId) return;
 
-  const { error } = await supabase.from('workouts').insert(pending);
+  let { error } = await supabase.from('workouts').insert(pending);
+
+  // Dezelfde overgangsmaatregel als in saveWorkout: een rit die hier al wachtte mag niet
+  // stranden op `pr_metrics` wanneer die kolom nog niet gemigreerd is. Liever de rit
+  // zonder PR-detail dan een rit die eeuwig in de wachtrij blijft staan.
+  if (error?.code === UNDEFINED_COLUMN && 'pr_metrics' in pending) {
+    const { pr_metrics: _dropped, ...withoutPrMetrics } = pending as Record<string, unknown>;
+    ({ error } = await supabase.from('workouts').insert(withoutPrMetrics));
+  }
 
   // Een unique violation betekent dat de rij er al staat — bijvoorbeeld doordat de
   // app werd afgesloten tussen een geslaagde insert en het wissen van de slot. Dan

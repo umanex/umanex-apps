@@ -11,6 +11,37 @@ Dit is een **Figma → Code** operatie. Pas NOOIT Figma nodes aan tijdens deze o
 
 ---
 
+## Bronnen-poort — verplicht vóór je bouwt
+
+Bouw nooit op een leeg vel wanneer er al een bron ligt. Stel eerst vast welke van de drie
+bestaan, en noem ze in je antwoord. De app-eigen `CLAUDE.md` draagt dat sinds 2026-09-07 in
+een `## Design-systeem-bron`-sectie: welke Tailwind-preset, welke componentbron, welke Storybook.
+Ontbreekt die sectie, dan is dát je eerste bevinding — `pnpm ds:guard` toetst hem hard in CI.
+
+| Bron | Wat het betekent voor deze taak | Harde check |
+|---|---|---|
+| **Design system** (tokens + preset) | elke kleur, spacing, radius en typografie bindt aan een rol; nooit een rauwe waarde, nooit een primitive | `pnpm --filter @umanex/tokens guard` |
+| **Figma library** (component library-bestand) | het component bestáát daar mogelijk al: instantieer in plaats van na te tekenen | `pnpm --filter @umanex/ui figma:check` |
+| **Storybook** | de gerenderde component is het meetbare doelwit, en zijn maten liggen vast in een basislijn | `pnpm --filter @umanex/ui geometry` |
+
+Drie regels die daaruit volgen.
+
+**Bestaat het component al in de library, dan bouw je het niet opnieuw.** Zoek eerst
+(`figma_search_components` aan de Figma-kant, de `exports` van de componentpackage aan de
+code-kant). Een nagetekend component is een tweede bron van waarheid, precies zoals een
+variabele zonder token.
+
+**Bestaat er een Storybook, dan is die de bedoeld-kant.** Niet je eigen lezing van de code, en
+niet een grep. In umanex-apps ligt de gemeten code-kant in `packages/ui/figma/geometry.code.json`
+(`pnpm --filter @umanex/ui geometry:write`); dat bestand draagt per story de doosmaten van elk
+element. Gebruik díe getallen als vergelijkingsbron.
+
+**Ontbreekt een van de drie, zeg dat.** "Geen Storybook in deze app" is een geldig antwoord dat
+de meetbare as verzwakt, en dat hoort in je rapport te staan — niet weggelaten te worden. Zelfde
+regime als "geen" in het `## Verify-pad`.
+
+---
+
 ## Kernprincipe — mapping moet semantisch correct zijn, niet alleen tokenized
 
 De waarde van deze skill zit niet in "geen hardcoded waarden" alleen. Een token dat *bestaat* maar de verkeerde betekenis draagt is even fout als een hardcoded hex — het compileert, het ziet er juist uit, en het breekt stilletjes bij de volgende theme- of token-wijziging.
@@ -20,6 +51,62 @@ Twee regels die de hele skill sturen:
 1. **Kies altijd het semantisch juiste token, niet het eerste token met de juiste waarde.** Dezelfde hex-waarde komt vaak voor op meerdere tokens over meerdere lagen heen — een achtergrond-, tekst-, border- en component-token kunnen dezelfde kleur delen. Alleen één is correct per context.
 2. **Bij twijfel: voorstel + bevestiging, nooit gokken.** Een verkeerde stille mapping is duurder dan een extra vraag.
 3. **Identificeer het scherm aan zijn inhoud, niet aan zijn laagnaam.** Een laagnaam is een bewering van de designer, geen eigenschap van het scherm — en hij groeit zelden mee. Lees de titel, de velden en de knoppen vóór je een Figma-frame aan een code-scherm koppelt. Gemeten op LQB (2026-08-18): frame `604:42883` heet `unit:04-contact`, zijn kind `screen:d1-account-manager-handoff`, en de kaart erin draagt de titel "Add your company details" met de velden `Company name` en `Street` — de naam wees een bedankscherm aan, de inhoud een invulformulier. Spreekt een tweede signaal de naam tegen (een connector-label in het flow-diagram, de node-id in de `@figma`-header van een bestaand component), dan is die tegenspraak het alarm: verklaar hem vóór je koppelt, en trek een onbevestigde koppeling nooit door naar zusterschermen "voor de consistentie".
+
+---
+
+### Leesbaarheidscontract — wat je mag verwachten, en wat je meldt
+
+`code-naar-figma` schrijft volgens een contract van zeven regels: laagnaam is de code-naam,
+geen `GROUP`, één component set met de variant-assen van de cva, elke tekstnode aan een text
+style, de description draagt het codepad, één sectie per component, geen losse absolute
+positionering.
+
+Toets dat vóór je vertaalt, want het bepaalt hoeveel je mag afleiden en hoeveel je moet vragen:
+
+| Aanwezig | Dan mag je | Ontbreekt het | Dan |
+|---|---|---|---|
+| description met codepad | dat bestand als bron nemen | — | zoek zelf, en meld dat je gezocht hebt |
+| `state`-variant-as | de states daaruit lezen | — | val terug op `reactions`, dan op "geen states" |
+| text styles | typografie uit de style nemen | — | lees de losse waarden en meld ze als ongebonden |
+| auto layout | padding en gap als spacing-tokens lezen | — | de maten zijn rauwe getallen; meld dat |
+
+### Wat de generator zelf toevoegde — en dus géén ontwerp is
+
+Een gegenereerd bestand bevat nodes die niemand getekend heeft: ze zijn de vertaling van iets dat
+Figma niet kent. Lees je die terug als intentie, dan produceer je code die de bron nooit had.
+Zes vormen, alle zes gemeten in rowtrack op 2026-09-10 toen `code-naar-figma` ze ging schrijven.
+
+| Wat je ziet in Figma | Wat het in de bron was | Wat je NIET moet genereren |
+|---|---|---|
+| Een `spacer`-frame van 1×N of N×1 zonder inhoud, tussen twee zusters | een `margin` op de zuster erna — auto-layout kent geen per-kind marge | een lege `<View style={{height:8}}/>`; het is een marge |
+| Een horizontale rij die hugt, met een kind dat `label` heet naast een echte node | één tekstnode met genest kind: `Nog geen account? <Text>Registreer</Text>` | twee losse `<Text>` naast elkaar; het is inline-stroom |
+| Een absoluut kind met een NEGATIEVE y in een knippende ouder | een scrollpositie (`scrollTop`), niet een offset | `top: -450`; het is een ScrollView op een positie |
+| Een property met een letter-achtervoegsel (`subtitleText_bbc`, `value_abca`) | een afgeleide slotnaam, machinaal ontstaan uit een boompad | die naam als prop; vraag hoe het veld hoort te heten |
+| De x/y van een frame op de pagina | `index × (breedte + marge)`, puur voor de leesbaarheid van het canvas | volgorde of groepering afleiden uit de plaatsing |
+| `clipsContent` op een binnenframe | `overflow: hidden` in de bron | niets — dit is juist wél echte informatie, neem hem mee |
+
+**Herkenningsteken voor de eerste twee:** ze dragen een naam die niet uit de code komt. Draagt de
+generator een herkomstmerker (in rowtrack `naamBron`, of pluginData op de node), lees die dan
+eerst — dat is goedkoper en betrouwbaarder dan de vorm herkennen.
+
+**En lees de randbreedte per ZIJDE.** `strokeWeight` geeft `figma.mixed` zodra de zijden
+verschillen, en dat serialiseert makkelijk naar `null`; `strokeTopWeight`, `strokeRightWeight`,
+`strokeBottomWeight` en `strokeLeftWeight` dragen de echte waarden. Gemeten over één codebase:
+138 van de 333 nodes met een rand zijn asymmetrisch, in twee vormen — een scheidingslijn
+(`0/0/1/0`) en een lijn boven en onder (`1/0/1/0`). Lees je alleen `strokeWeight`, dan wordt de
+eerste onzichtbaar en de tweede een volledige doos.
+
+**Een verse publicatie is nog niet bij jou aangekomen.** Leest je runtime een component vlak nadat
+iemand de library publiceerde, dan kan hij de vorige versie teruggeven — zonder fout. In een
+plugin-runtime is de oorzaak dat imports gecachet worden vanaf het verbinden; een herstart van de
+plugin is de remedie. Zie `code-naar-figma` principe 1f voor het gemeten geval; hier is de
+consequentie dat je je gelezen contract toetst vóór je erop vertaalt.
+
+**Een laagnaam blijft een bewering, ook onder dit contract.** Gemeten op 2026-08-18: een
+framenaam wees naar het scherm `account-manager` terwijl het frame `account-manager-details`
+toonde, en twee onafhankelijke signalen spraken die naam tegen zonder dat ik er één meldde.
+Het contract maakt de naam bruikbaar, niet waar. Spreken naam en inhoud elkaar tegen, dan is
+díe tegenspraak het alarm — verklaar hem of meld beide.
 
 ---
 
@@ -67,6 +154,69 @@ figma_get_component_for_development_deep(
   codebasePath: "<project root, of components-pad uit klant-CLAUDE.md>"
 )
 ```
+
+**`depth` is een gok tot je hem toetst.** De parameter zegt hoe diep je *vraagt*, niet of dat
+genoeg wás. Krijg je een boom terug die er intact uitziet maar waarin de tekst ontbreekt, dan
+is hij afgekapt — en die twee zien er identiek uit. Drie plekken waar je budget stilletjes
+opgaat aan lagen die niets zeggen:
+
+- **Doorvoer-lagen.** Groepen, naamloze `Frame 1234`-containers en auto-layout-wrappers met
+  één kind. Ze kosten diepte en dragen niets.
+- **Z-volgorde bij een broer-grens.** Lees je "de eerste N kinderen", dan krijg je in Figma de
+  ONDERSTE lagen: achtergrondvlakken en decoratie. De inhoud ligt bovenaan en valt eraf.
+- **De INSTANCE-grens.** Een scherm dat uit library-componenten is opgebouwd bestaat vrijwel
+  volledig uit INSTANCE-nodes. Stop je daar, dan lees je placeholders in plaats van inhoud.
+  Reken hierop zodra een klant een gepubliceerde library heeft en zijn schermen daaruit
+  samenstelt: RowTrack publiceerde het bestand *RowTrack - Design System*
+  (`QkRgMc7Quqtbow71DiYa1n`) als library en koppelde het als asset in *RowTrack - Design*
+  (`T1bGrvIzSNeLyh5CbarATZ`), waar de schermen op de pagina *Screens v2* komen. Tel de
+  INSTANCE-nodes vóór je een scherm terugleest — staat dat aantal hoog en je tekstteller laag,
+  dan las je de omhulsels en niet de inhoud.
+
+**En een instance is geen inhoud — drie dingen die je niet ziet maar wel kunt toetsen.**
+Waar de schermen uit een gepubliceerde library komen, is dat het verschil tussen wat er staat
+en wat het betekent. GEMETEN 2026-09-09 (rowtrack, 24 schermframes, 135 instances):
+
+1. **De tekst kan van de library zijn.** Een instance draagt de story-data van het component
+   tenzij er een tekst-property op staat. 23 tekstnodes toonden zo de data van een ánder
+   scherm — "20 AUG 2026" waar het scherm 2 september rendert. Neem tekst uit een instance dus
+   nooit over zonder te toetsen of er een property aan hangt.
+2. **Een `FRAME` met een componentnaam is een teruggevallen kopie**, en die toont wél de
+   schermdata. Waar de generator de instance niet getrouw kreeg, verving hij hem door een
+   nagebouwde subboom: 37 van de 135. In één frame staan dus `Segmented` als INSTANCE en
+   `Segmented` als FRAME naast elkaar, met dezelfde naam en tegengestelde waarheden. Lees het
+   `type`, nooit de naam.
+3. **Een instance toont de GEPUBLICEERDE library, niet de werkversie.** Tussen een wijziging
+   in de library en de publicatie leest een schermframe de vórige component. Gemeten: na een
+   fix in library én schermen stonden twaalf frames nog exact op hun oude waarde tot na de
+   publicatie. Kijk naar de publicatiestatus vóór je een verschil als drift meldt.
+
+**Ga van de tekstnode naar de property, nooit van de naam naar de property.**
+`componentProperties` is een map met sleutels als `value#12:3` en `value2#12:9`. Wie op naam
+leest pakt de eerste, terwijl de zichtbare tekstnode aan de tweede kan hangen: de Figma-API
+hernoemt stil bij een naambotsing en laat de vorige property zonder node achter. Volg dus de
+`componentPropertyReferences` van de node die je las, en niet de sleutel die het beste klinkt.
+
+**Toets de volledigheid, tel niet op je gevoel.** De controle is goedkoop en exact: vraag via
+`figma_execute` hoeveel er werkelijk staat, en leg dat naast wat je binnenkreeg.
+
+```js
+// figma_execute — waarheid uit de runtime, naast je _deep-antwoord
+const n = await figma.getNodeByIdAsync("<node-id>");
+const alle = n.findAll(() => true);
+return {
+  nodes: alle.length,
+  tekstnodes: alle.filter(x => x.type === "TEXT").length,
+  instances: alle.filter(x => x.type === "INSTANCE").length,
+  teksten: alle.filter(x => x.type === "TEXT").map(x => x.characters).slice(0, 40),
+};
+```
+
+Wijkt dat af van je `_deep`-resultaat, dan is je read incompleet — verhoog `depth`, of daal
+expliciet af in de instances. **Nul tekstnodes op een scherm dat tekst hoort te hebben is
+altijd een leesfout, nooit een designfout.** Dezelfde faalvorm bijt in de andere richting
+(zie `code-naar-figma`, principe 4): daar gingen vijf componenten als leeg frame het bestand
+in en bleven alle structuurchecks groen, omdat een leeg frame een correcte maat heeft.
 
 **Plugin-versie-afhankelijkheid.** `figma_get_component_for_development_deep` is een plugin-methode. Faalt hij met "Unknown method: DEEP_GET_COMPONENT", dan komt de geladen Desktop Bridge-plugin niet overeen met de `figma-console-mcp`-serverversie — "in de tool-lijst staan" garandeert geen werkende methode. Fix: laad de gebundelde plugin (`~/.figma-console-mcp/plugin`), niet een oudere losse build.
 
@@ -157,6 +307,57 @@ Regels:
 - Bij ontbrekende tokens: placeholder + voorstel (zie stap 4, niveau 4)
 - Zet (of behoud) de `// @figma [node-URL]` header bovenaan het bestand — dat is de bron voor de gegenereerde component-inventaris (`gen-snapshot.sh`) en houdt de traceability naar de Figma-node
 
+**Sizing terugvertalen, niet de maat overnemen.**
+De tegenhanger van principe 1 in `code-naar-figma` (*auto layout by default — en dat is méér
+dan `layoutMode`*). Een node draagt per as een sizing: `FILL`, `HUG` of `FIXED`, en dat staat in
+de design-snapshot (stap 4b). Vertaal die intentie, niet het getal:
+
+| Figma | code (flex / React Native) |
+|---|---|
+| `layoutSizingHorizontal: 'FILL'` op de hoofdas | `flex: 1` |
+| `FILL` op de kruis-as | `alignSelf: 'stretch'` (of `width: '100%'`) |
+| `HUG` | niets — de inhoud bepaalt de maat |
+| `FIXED` | een expliciete maat, en alléén dan |
+
+**Een tekstbreedte is een uitkomst, geen maat.** Lees `textAutoResize`: `WIDTH_AND_HEIGHT`
+betekent dat de node zijn inhoud volgt, en die breedte is dan de tekstengine van Figma — die
+meet dezelfde tekst breder dan een browser of een app-runtime. Overnemen geeft een view die
+overal te breed is. Alleen `HEIGHT` (vaste breedte, vrije hoogte) is een echte maat. GEMETEN
+2026-09-09 (rowtrack): 495 van de 625 tekstnodes in de schermframes huggen, 130 zijn een blok.
+
+**En `FILL` plus een uitlijning binnenin is `alignSelf`, geen breedte.** Figma kent geen
+`align-self`; een rechts of gecentreerd kind staat er daarom als FILL met de uitlijning op de
+inhoud. Zie je een node die de volle breedte vult met `textAlignHorizontal: RIGHT`, schrijf dan
+`alignSelf: 'flex-end'` — geen `width: '100%'`. Dezelfde vorm, andere betekenis.
+
+Neem je de gemeten breedte over waar Figma `FILL` zegt, dan schrijf je een component dat op
+één plek klopt en overal elders te smal of te breed is — precies de fout in spiegelbeeld die
+`code-naar-figma` in rowtrack maakte: 390 breed met inhoud van 224, op elk scherm met een
+formulier. Een `FIXED` die uit een sizing-mode komt is een maat; een maat die je uit een `FILL`
+afleest is een momentopname.
+
+**En op een instance zegt de node niet of de maat van hém komt of van de library.** Een
+generator zet de gemeten layout van het scherm als override op de instance — padding, gap,
+maat, opacity. `paddingTop: 20` op een instance ziet er dus even exact uit als de 24 die in de
+library staat. Voor een component in zijn eigen pagina is Figma de bron; voor een instance in
+een scherm is dat de library, en het verschil is een override die iemand bedoeld heeft óf een
+meting die de generator meebracht. Toets dat vóór je hem overneemt.
+
+**States: eerst de `state`-variant-as, dan pas `reactions`.**
+Dit is de afspraak die deze skill met `code-naar-figma` deelt. Een component die door die skill
+geëxporteerd is, draagt zijn states als **variantframes op een `state`-as** en heeft géén
+reactions. Lees je alleen `reactions`, dan concludeer je dat zo'n component geen states heeft —
+gemeten op 2026-09-07, en het is de scherpste breuk in de round-trip.
+
+Volgorde:
+1. `variantGroupProperties` van de component set — draagt hij een `state`-as, dan zijn dié
+   waarden de states, en de visuele waarden per state komen uit de `boundVariables` van het
+   bijbehorende variantframe.
+2. Pas als die as ontbreekt: `reactions`, zoals hieronder. Een handgetekend prototype draagt
+   zijn states daar, en die bron blijft geldig.
+3. Ontbreken ze allebei, dan heeft het component geen states in Figma. Verzin ze niet — meld
+   het als gat, en vraag of ze erbij moeten.
+
 **States afleiden uit `reactions` — niet verzinnen.**
 De `reactions` uit de deep-response (stap 3) zijn de bron-van-waarheid voor welke interactie-states het component heeft. Genereer state-handling op basis daarvan, niet op basis van een aanname:
 - Elke `reaction`-trigger (`ON_HOVER`, `ON_PRESS`/active, focus) → een corresponderende state in code (`:hover`/`:focus-visible`/`:active` of een `state`-prop, volgens het project-patroon)
@@ -171,13 +372,13 @@ De `reactions` uit de deep-response (stap 3) zijn de bron-van-waarheid voor welk
 
 Token-correctheid (stap 7) bewijst niet dat het component eruitziet als het design. Deze stap doet dat wel — een vergelijking, geen aanname. Dit is de Figma → Code tegenhanger van de check in `code-naar-figma`.
 
-1. **Figma-referentie ophalen** — `figma_take_screenshot` van de bron-node (`nodeId` uit stap 3).
+1. **Figma-referentie ophalen** — `node.exportAsync({format:'PNG', constraint:{type:'SCALE',value:1}})` via `figma_execute`, niet `figma_take_screenshot`. Twee redenen, allebei gemeten. De REST-tool leest de laatst **opgeslagen** cloud-staat en is na een verse edit per definitie stale (zie *Valideer je eigen edits op de runtime* in CLAUDE.md). En een canvas-screenshot draagt zoomniveau, selectie-randen en raster mee, terwijl `exportAsync` de node zelf levert op een gekozen schaal — 43 ms en 24 KB voor een frame van 430×932. De bytes overleven de tool-call niet: stuur ze base64 naar een lokale server (de plugin mag localhost op 9223–9232).
 2. **Gebouwd component renderen** — render via de preview van het project (Storybook-story, dev-route, of de methode uit klant-CLAUDE.md) en screenshot dat. Is er geen render-pad geconfigureerd → vraag welke; ga niet zelf gokken.
 3. **Vergelijk** op de dingen die de token-checks níet vangen: layout & flex-richting, spacing/gap, proporties & afmetingen, alignment, typografie, afgekapte of overlopende content, en elke state uit stap 5.
 4. **Itereer** — bij een mismatch: fix in code → opnieuw renderen → opnieuw vergelijken. Max 3 iteraties; daarna structurele afwijkingen melden i.p.v. blijven bijschaven.
 5. **Meet wat het oog niet haalt** — de enumererende kant. Een visuele vergelijking accepteert stil élk verschil onder je waarnemingsdrempel, en daar zit parity-drift nu net: `pb-3` vs `pb-4` is 4 px, naast elkaar onzichtbaar, en een maand later een fix-commit. Gemeten in Luminus `partner-portal`: 16 parity-fix-commits in 90 dagen, waarvan twee paren met een identiek subject — dezelfde afwijking twee keer gevonden, twee keer met de hand bijgesteld.
 
-   Diff daarom getallen tegen getallen, niet beeld tegen beeld. De Figma-kant staat machine-leesbaar in de design-snapshot (stap 4b) en `token-mapping.json` (stap 3); de code-kant komt uit `getComputedStyle` op de gerenderde component. Vergelijk per property — de vier paddings, gap, `font-size`, `line-height`, `border-radius`, `border-width`, kleur — en rapporteer elk verschil mét zijn twee waarden, ook 1 px. Heeft het doelwit geen DOM (React Native, native preview), dan bestaat dit pad niet: meld dat als `[NIET GEMETEN — geen computed-style-pad]` en behandel de visuele vergelijking als wat ze dan is, een zwakkere as.
+   Diff daarom getallen tegen getallen, niet beeld tegen beeld — **maar laat het beeld niet vallen zodra de getallen een as uitsluiten.** Een numerieke parity sluit breedte vaak uit omdat twee tekstengines dezelfde tekst anders meten, en dan is dát de as waar de drift leeft. Gemeten in rowtrack (2026-09-09): dertien guard-assen groen, geometrie-parity nul verschillen over 27 480 velden, en tóch was elke formulier-instance 390 breed met een inhoud van 224 — alleen een beeldvergelijking vond het. De twee assen zijn complementair: getallen vangen wat onder je waarnemingsdrempel ligt, het beeld vangt wat buiten de vergelijking valt. Meet ook de vloer, dan weet je wat een verschil wáárd is: het enige scherm zonder instances week 0,02% af, dus alles daarboven was echt. De Figma-kant staat machine-leesbaar in de design-snapshot (stap 4b) en `token-mapping.json` (stap 3); de code-kant komt uit `getComputedStyle` op de gerenderde component. Vergelijk per property — de vier paddings, gap, `font-size`, `line-height`, `border-radius`, `border-width`, kleur — en rapporteer elk verschil mét zijn twee waarden, ook 1 px. Heeft het doelwit geen DOM (React Native, native preview), dan bestaat dit pad niet: meld dat als `[NIET GEMETEN — geen computed-style-pad]` en behandel de visuele vergelijking als wat ze dan is, een zwakkere as.
 
 6. **Meet ook de structuur, niet alleen de waarden.** Een diff op tekst en op losse
    properties mist nog steeds de vorm: of een blok een **kaart** is (vulling + rand-paint +
@@ -207,6 +408,24 @@ Token-correctheid (stap 7) bewijst niet dat het component eruitziet als het desi
    dat mislukt. Een parity-run die zijn eigen instrument niet toetst, rapporteert vertrouwen
    dat hij niet heeft.
 
+9. **Bij elke mismatch die de numerieke diff (5), de structuur-as (6) of de render-meting
+   (7) vindt: capture via `vastleggen`, niet-interactief.** Dit is de spiegel van de
+   parity-gate in `code-naar-figma` stap 8, die sinds 2026-06 per mismatch captured — deze
+   richting deed dat niet, en de drift uit punt 5 hierboven (partner-portal: 16
+   parity-fix-commits in 90 dagen volgens die meting) bereikte de eval-loop nooit (gemeten 2026-09-07: één `figma-naar-code`-entry in
+   `umanex-os/LEARNINGS.md` tegen zeven voor `code-naar-figma`). Vul de velden vooraf in
+   volgens het contract in `vastleggen` (*Niet-interactieve aanroep*):
+   - **Header:** `figma-naar-code parity`
+   - **Input:** de Figma-node-URL (stap 3) plus het pad van de gebouwde component
+   - **Fout:** de concrete diff — property, Figma-waarde, gemeten waarde (`padding-bottom:
+     Figma 16 (spacing/4), code 12 (pb-3)`) — of de structurele afwijking (kaart ontbreekt,
+     titel 16 i.p.v. 24)
+   - **Routing:** afgeleid uit de cwd, niet gevraagd
+
+   De capture blijft staan, ook na de fix: ze registreert dat de mapping op deze input
+   faalde en dient als verificatie-test. Nul mismatches is óók een uitkomst — zeg dat dan
+   expliciet in het rapport, zodat "geen capture" niet hetzelfde leest als "niet gekeken".
+
 Pas door naar stap 7 als de render visueel overeenkomt met de Figma-referentie **én** de numerieke diff nul verschillen geeft — of expliciet als niet-meetbaar gemeld is. Kan het component niet gerenderd worden (geen preview-pad beschikbaar) → meld expliciet dat de parity-check is overgeslagen; sluit nooit stil af alsof hij geslaagd is.
 
 ---
@@ -231,6 +450,7 @@ Aanwezigheid én correctheid. De eerste vier checks vangen hardcoded waarden; de
 - [ ] Het meetscript zelf draagt een positieve controle die de run laat falen als de meting
       ongeldig is?
 - [ ] **Design parity (stap 6) geslaagd — render komt visueel overeen met de Figma-node én de numerieke per-property diff geeft nul verschillen — of expliciet als overgeslagen/niet-meetbaar gemeld?**
+- [ ] Elke parity-mismatch uit stap 6 gecaptured via `vastleggen` (niet-interactief, stap 6.9) — of expliciet "nul mismatches" gemeld?
 - [ ] States afgeleid uit `reactions` (stap 5), geen speculatieve states toegevoegd?
 - [ ] `codebasePath`-scan (stap 3) nagekeken — geen dubbele implementatie van een bestaand component?
 - [ ] **Design-snapshot (`<ComponentNaam>.design-snapshot.md`, stap 4b) weggeschreven of bijgewerkt — dekt token-bindings, structuur en states?**

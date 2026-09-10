@@ -186,7 +186,6 @@ export const nl = {
     summary: {
       title: 'Samenvatting',
       todayAt: (time: string) => `Vandaag - ${time}`,
-      prBanner: 'Nieuw persoonlijk record. Proficiat!',
       kpiDistance: 'AFSTAND',
       kpiDuration: 'DUUR',
       kpiEnergy: 'ENERGIE',
@@ -213,6 +212,30 @@ export const nl = {
     },
   },
 
+  // Persoonlijke records. Gedeeld door de samenvatting, de archieflijst en het
+  // detailscherm — één vocabularium, zodat "Vermogen" overal hetzelfde heet.
+  pr: {
+    badge: 'PR',
+    metric: {
+      distance: 'Afstand',
+      best2k: '2000 m',
+      watts: 'Vermogen',
+      split: 'Split',
+    },
+    bannerTitleOne: 'Nieuw persoonlijk record',
+    bannerTitleMany: (n: number) => `${n} nieuwe persoonlijke records`,
+    /** "vorige beste 142 W · 20 aug" */
+    previous: (value: string, date: string) => `vorige beste ${value} · ${date}`,
+    /** Record zonder bekende voorganger — komt voor bij ritten van vóór pr_metrics. */
+    previousUnknown: 'vorige waarde onbekend',
+    /** Rij-badge wanneer één badge meerdere records moet dragen. */
+    count: (n: number) => `${n} records`,
+    /** Screenreader-tekst op een archiefrij. */
+    a11yRow: (metrics: string) => `Persoonlijk record: ${metrics}`,
+    /** Idem, voor een record waarvan de metric niet meer te achterhalen is. */
+    a11yPlain: 'Persoonlijk record',
+  },
+
   history: {
     title: 'Historiek',
     filterWeek: 'Deze week',
@@ -227,7 +250,6 @@ export const nl = {
     tabSplits: 'Splits',
     tabHeartRate: 'Hartslag',
     backLink: 'OVERZICHT',
-    prBadge: 'PR',
     notFound: 'Workout niet gevonden',
     colAvg: 'GEM',
     colPeak: 'PIEK',

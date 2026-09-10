@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack-web
-_Gegenereerd op 2026-08-11_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** rowtrack-web
@@ -46,17 +46,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+20bf818 fix(rowtrack-web): give the hero slogan its deliberate line break
 48e2f4b feat(rowtrack-web): design iteration on Jeroen's feedback
 be61b93 fix(rowtrack-web): address all 15 code-review findings on the motion layer
 b55f640 docs(rowtrack-web): ux-audit report and acceptance evidence for redesign
 5c9b867 feat(rowtrack-web): premium redesign with scroll-motion layer
-cb5139a docs(rowtrack-web): add premium redesign TC-EBC briefing
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack-web/BACKLOG.md
-  M  apps/rowtrack-web/components/sections/Hero.tsx
-  M  apps/rowtrack-web/messages/nl.json
+  M  apps/rowtrack-web/CLAUDE.md
+  M  apps/rowtrack-web/HANDOFF.md
+  M  apps/rowtrack-web/context-snapshot.md
+  M  packages/tokens/package.json
+  A  packages/ui/.storybook/main.ts
+  A  packages/ui/.storybook/preview.tsx
+  A  packages/ui/CLAUDE.md
+  A  packages/ui/components/ui/ThemeToggle.stories.tsx
+  A  packages/ui/components/ui/badge.stories.tsx
+  A  packages/ui/components/ui/button.stories.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

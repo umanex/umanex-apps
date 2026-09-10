@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-08-17_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** rowtrack
@@ -40,10 +40,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | HealthConsentScreen | `apps/rowtrack/components/HealthConsentScreen.tsx` | components | — | — | — |
 | HrStatusBar | `apps/rowtrack/components/HrStatusBar.tsx` | components | — | — | — |
 | Icon | `apps/rowtrack/components/Icon.tsx` | components | — | — | — |
-| KPI_single | `apps/rowtrack/components/KPI_single.tsx` | components | — | — | — |
 | KPI | `apps/rowtrack/components/KPI.tsx` | components | — | — | — |
+| KpiSingle | `apps/rowtrack/components/KpiSingle.tsx` | components | — | — | — |
 | MotivationalToast | `apps/rowtrack/components/MotivationalToast.tsx` | components | — | — | — |
 | PaceZone | `apps/rowtrack/components/PaceZone.tsx` | components | — | — | — |
+| PrBadge | `apps/rowtrack/components/PrBadge.tsx` | components | — | — | — |
 | SectionHeader | `apps/rowtrack/components/SectionHeader.tsx` | components | — | — | — |
 | Segmented | `apps/rowtrack/components/Segmented.tsx` | components | — | — | — |
 | Skeleton | `apps/rowtrack/components/Skeleton.tsx` | components | — | — | — |
@@ -51,21 +52,44 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | Subtitle | `apps/rowtrack/components/Subtitle.tsx` | components | — | — | — |
 | TabLabel | `apps/rowtrack/components/TabLabel.tsx` | components | — | — | — |
 | WheelPicker | `apps/rowtrack/components/WheelPicker.tsx` | components | — | — | — |
+| ActiveHeader | `apps/rowtrack/components/workout/active/ActiveHeader.tsx` | active | — | — | — |
+| ConnectionOverlay | `apps/rowtrack/components/workout/active/ConnectionOverlay.tsx` | active | — | — | — |
+| GoalPill | `apps/rowtrack/components/workout/active/GoalPill.tsx` | active | — | — | — |
+| HeroPanel | `apps/rowtrack/components/workout/active/HeroPanel.tsx` | active | — | — | — |
+| KpiRow | `apps/rowtrack/components/workout/active/KpiRow.tsx` | active | — | — | — |
+| PrBanner | `apps/rowtrack/components/workout/active/PrBanner.tsx` | active | — | — | — |
+| ProgressBar | `apps/rowtrack/components/workout/active/ProgressBar.tsx` | active | — | — | — |
+| StatsTable | `apps/rowtrack/components/workout/active/StatsTable.tsx` | active | — | — | — |
+| SubtitleProgress | `apps/rowtrack/components/workout/active/SubtitleProgress.tsx` | active | — | — | — |
+| SummaryKpiBand | `apps/rowtrack/components/workout/active/SummaryKpiBand.tsx` | active | — | — | — |
+| SummaryTitle | `apps/rowtrack/components/workout/active/SummaryTitle.tsx` | active | — | — | — |
 | ActivePhase | `apps/rowtrack/components/workout/ActivePhase.tsx` | workout | — | — | — |
 | DeviceSelectionModal | `apps/rowtrack/components/workout/DeviceSelectionModal.tsx` | workout | — | — | — |
+| DeviceSection | `apps/rowtrack/components/workout/idle/DeviceSection.tsx` | idle | — | — | — |
+| GoalHeader | `apps/rowtrack/components/workout/idle/GoalHeader.tsx` | idle | — | — | — |
+| StartCta | `apps/rowtrack/components/workout/idle/StartCta.tsx` | idle | — | — | — |
 | IdlePhase | `apps/rowtrack/components/workout/IdlePhase.tsx` | workout | — | — | — |
 | WorkoutCard | `apps/rowtrack/components/WorkoutCard.tsx` | components | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+c54190d docs(rowtrack): spm_halved-toggle heroverwegen na de meting van 2026-08-16
 ee95e7a fix(rowtrack): elk gemiddelde deelt door zijn eigen teller, niet door tickCount
 aa0cb47 docs(rowtrack): record sim render-verify of #257-261 in HANDOFF
 4108515 docs: session retrospective — handoff checks and Apollo XL follow-up
 2810551 feat(rowtrack): accept any FTMS-advertising rower in device scan
-be05bdb docs(rowtrack): fix two checks that could not answer themselves
 ```
 
 ## Uncommitted wijzigingen
+  D  apps/rowtrack/.claude/skills/code-naar-figma/SKILL.md
+  M  apps/rowtrack/.claude/skills/figma-naar-code/SKILL.md
+  M  apps/rowtrack/.gitignore
+  A  apps/rowtrack/.storybook/main.ts
+  A  apps/rowtrack/.storybook/mocks/expo-router.tsx
+  A  apps/rowtrack/.storybook/mocks/supabase.ts
+  A  apps/rowtrack/.storybook/preview.tsx
+  A  apps/rowtrack/.storybook/rnw-style-keys.ts
+  A  apps/rowtrack/.storybook/toestel.ts
   M  apps/rowtrack/BACKLOG.md
 
 ## Bestanden met TODO/FIXME

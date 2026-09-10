@@ -19,6 +19,9 @@ import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard, GoalSheet, Goal
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
 import { usePeriodGoal, type PeriodGoalProgress } from '@/lib/hooks/usePeriodGoal';
+import { usePrHistory } from '@/lib/hooks/usePrHistory';
+import { selectWithPrMetrics } from '@/lib/prColumn';
+import { retryOnClockSkew } from '@/lib/authClockSkew';
 import { formatDecimal, formatInt } from '@/lib/formatters';
 import { t } from '@/i18n';
 import {
@@ -43,6 +46,9 @@ type HomeWorkout = {
   avg_spm: number | null;
   avg_split_seconds: number | null;
   calories: number | null;
+  is_pr: boolean | null;
+  /** jsonb — vorm bewaakt door parsePrEntries, niet door dit type. */
+  pr_metrics: unknown;
 };
 
 function getGreeting(): string {
@@ -79,6 +85,7 @@ const GOAL_SKELETON_PROGRESS: PeriodGoalProgress = {
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { entriesFor, refresh: refreshPrHistory } = usePrHistory(user?.id);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -109,17 +116,34 @@ export default function HomeScreen() {
     // of een auth-event dat een nieuw user-object oplevert).
     await drainPendingWorkout(user.id);
 
+    // `retryOnClockSkew`: beide queries delen één token, en dat token kan bij het
+    // openen van de app net te vers zijn voor PostgREST — zie `authClockSkew.ts`.
     const [profileRes, workoutsRes] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('id', user.id)
-        .single(),
-      supabase
-        .from('workouts')
-        .select('id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories')
-        .order('started_at', { ascending: false })
-        .limit(3),
+      retryOnClockSkew<{ display_name: string | null }>(
+        () =>
+          supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', user.id)
+            .single(),
+        (e) => reportError(e, { where: 'home.fetchProfile', transient: true }),
+      ),
+      // Zie history/index.tsx: zonder deze terugval zet een niet-gemigreerde
+      // `pr_metrics`-kolom het hele home-scherm op een ErrorState.
+      retryOnClockSkew<HomeWorkout[]>(
+        () =>
+          selectWithPrMetrics<HomeWorkout[]>((prColumn) => {
+            // Zie history/index.tsx: `string`, niet template-literal — anders parseert
+            // postgrest-js de dynamische kolomstaart als typefout.
+            const columns: string = `id, started_at, duration_seconds, distance_meters, avg_watts, avg_spm, avg_split_seconds, calories, is_pr${prColumn}`;
+            return supabase
+              .from('workouts')
+              .select(columns)
+              .order('started_at', { ascending: false })
+              .limit(3);
+          }),
+        (e) => reportError(e, { where: 'home.fetchWorkouts', transient: true }),
+      ),
     ]);
 
     if (profileRes.error) reportError(profileRes.error, { where: 'home.fetchProfile' });
@@ -141,7 +165,8 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchData();
-    }, [fetchData]),
+      void refreshPrHistory();
+    }, [fetchData, refreshPrHistory]),
   );
 
   const onRefresh = useCallback(async () => {
@@ -302,6 +327,7 @@ export default function HomeScreen() {
                   workout={w}
                   onPress={handleWorkoutPress}
                   index={i}
+                  prEntries={entriesFor(w)}
                 />
               ))}
             </View>

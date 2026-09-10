@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-08-11_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** jobradar
@@ -22,11 +22,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 | Component | Pad | Categorie | Figma-node | Snapshot | Status |
 |---|---|---|---|---|---|
+| ContactPanel | `apps/jobradar/components/ContactPanel.tsx` | components | — | — | — |
+| ContactTimeline | `apps/jobradar/components/ContactTimeline.tsx` | components | — | — | — |
 | CoverageBar | `apps/jobradar/components/CoverageBar.tsx` | components | — | — | — |
 | DashboardClient | `apps/jobradar/components/DashboardClient.tsx` | components | — | — | — |
 | FilterBar | `apps/jobradar/components/FilterBar.tsx` | components | — | — | — |
+| HerkomstFilter | `apps/jobradar/components/HerkomstFilter.tsx` | components | — | — | — |
 | JobCard | `apps/jobradar/components/JobCard.tsx` | components | — | — | — |
 | LeadCard | `apps/jobradar/components/LeadCard.tsx` | components | — | — | — |
+| NextActionBadge | `apps/jobradar/components/NextActionBadge.tsx` | components | — | — | — |
+| ProspectCard | `apps/jobradar/components/ProspectCard.tsx` | components | — | — | — |
+| ProspectMap | `apps/jobradar/components/ProspectMap.tsx` | components | — | — | — |
 | RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
 | ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
 | SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
@@ -36,20 +42,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+49072dc fix(jobradar): stop the card and its own button from counting different things
 f1ecf3e feat(jobradar): make a lead checkable, and give the list a search field
 4c6860b fix(jobradar): test the ceiling per sub-query, not against a growing threshold
 5e49969 docs(jobradar): UX-audit van het dashboard en de zoekinstellingen
 ef4acc0 feat(jobradar): allow exact phrases as search terms
-bc95d61 fix(jobradar): ask Adzuna politely, and try again when it says no
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/jobradar/.env.example
+  M  apps/jobradar/BACKLOG.md
+  M  apps/jobradar/CLAUDE.md
+  A  apps/jobradar/app/api/kaart/route.ts
+  A  apps/jobradar/app/api/opvolging/actie/route.ts
+  A  apps/jobradar/app/api/opvolging/moment/[id]/route.ts
+  A  apps/jobradar/app/api/opvolging/route.ts
+  A  apps/jobradar/app/api/prospects/[nr]/route.ts
+  A  apps/jobradar/app/api/prospects/route.ts
   M  apps/jobradar/app/api/sync/route.ts
-  M  apps/jobradar/components/DashboardClient.tsx
-  M  apps/jobradar/components/FilterBar.tsx
-  M  apps/jobradar/components/LeadCard.tsx
-  M  apps/jobradar/lib/sync/upsert.ts
-  M  apps/jobradar/scripts/signal-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

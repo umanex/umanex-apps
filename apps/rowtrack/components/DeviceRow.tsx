@@ -10,6 +10,27 @@ export type DeviceRowProps = {
   onPress: () => void;
   loading?: boolean;
   actionDisabled?: boolean;
+  /**
+   * De OVERSCHRIJFBARE grens. Naast deze prop draagt de wortel ook `dataSet={{ bron:
+   * 'DeviceRow' }}` — dat is de niet-overschrijfbare identiteit: `testID` zegt van wélk
+   * component dit de wortel is, `data-bron` zegt welke code hem rendert.
+   *
+   * De componentgrens in de DOM. react-native-web schrijft hem als `data-testid`
+   * (createDOMProps/index.js:831) en `scripts/figma-build-spec.mjs` leest hem terug, zodat de
+   * laagnaam-pas een FEIT gebruikt in plaats van een sleutel-heuristiek. Een component dat
+   * dit component ALS ZIJN EIGEN WORTEL rendert (BleStatusBar, HrStatusBar) geeft hier zijn
+   * eigen naam mee — anders zou de grens van dat component nergens in de DOM staan.
+   */
+  testID?: string;
+  /**
+   * De variant-vingerafdruk van het component dat deze rij als zijn eigen wortel rendert.
+   * Zelfde vorm als overal (`lib/variantData.ts`), maar hij moet hier langs een prop: de
+   * wortel draagt al `dataSet={{ bron }}`, en twee `dataSet`-props op één node zouden elkaar
+   * overschrijven. Zonder deze doorgifte kan de builder voor BleStatusBar en HrStatusBar
+   * géén variant kiezen en bouwt hij de subboom na in plaats van te instantiëren — gemeten
+   * 2026-09-09: 8 van de 8 voorkomens in de schermen.
+   */
+  dataSet?: Record<string, string>;
 };
 
 /**
@@ -27,9 +48,11 @@ export function DeviceRow({
   onPress,
   loading = false,
   actionDisabled = false,
+  testID = 'DeviceRow',
+  dataSet,
 }: DeviceRowProps) {
   return (
-    <View style={styles.container}>
+    <View testID={testID} dataSet={{ bron: 'DeviceRow', ...dataSet }} style={styles.container}>
       <View style={styles.left}>
         <View style={styles.iconContainer}>
           {loading ? (

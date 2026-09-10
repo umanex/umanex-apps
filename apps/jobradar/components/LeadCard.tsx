@@ -3,6 +3,8 @@
 import { ExternalLink, Building2 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@umanex/ui/components/ui/card'
 import { Badge } from '@umanex/ui/components/ui/badge'
+import { cn } from '@umanex/ui/lib/utils'
+import { focusRing } from '@umanex/ui/lib/focus'
 import {
   Tooltip,
   TooltipContent,
@@ -11,16 +13,25 @@ import {
 import { ScoreBadge } from './ScoreBadge'
 import { StatusDropdown } from './StatusDropdown'
 import type { Company, ItemStatus } from '@/lib/db/schema'
+import type { KboVermoeden } from '@/lib/kbo/spiegel'
 
 type LeadCardProps = {
   company: Company
+  /**
+   * Wat KBO vermoedelijk over dit bedrijf zegt, of null. Nadrukkelijk een vermoeden: de
+   * koppeling loopt over een genormaliseerde naam, en gemeten over 27 leads koppelde er één
+   * van de twaalf naar een tandartspraktijk. Vandaar dat de kaart de officiële naam, de
+   * gemeente én de hoofdactiviteit toont — genoeg om een misser te zien — en niets van wat
+   * er al stond overschrijft.
+   */
+  vermoeden: KboVermoeden | null
   isNew: boolean
   onStatusChange: (status: ItemStatus) => void
   /** Springt naar het Vacatures-tabblad met dit bedrijf als zoekterm. */
   onToonVacatures: (bedrijf: string) => void
 }
 
-export function LeadCard({ company, isNew, onStatusChange, onToonVacatures }: LeadCardProps) {
+export function LeadCard({ company, vermoeden, isNew, onStatusChange, onToonVacatures }: LeadCardProps) {
   const signals = JSON.parse(company.signals) as string[]
   const breakdown = JSON.parse(company.scoreBreakdown) as Record<string, number>
   const hasBreakdown = Object.keys(breakdown).length > 0
@@ -86,11 +97,21 @@ export function LeadCard({ company, isNew, onStatusChange, onToonVacatures }: Le
           <button
             type="button"
             onClick={() => onToonVacatures(company.companyName)}
-            className="rounded text-foreground underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+            className={cn('rounded-sm text-foreground underline-offset-2 hover:underline', focusRing)}
           >
             toon deze vacatures
           </button>
         </div>
+
+        {vermoeden && (
+          <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 border-l-2 border-border pl-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">KBO?</span>
+            <span className="truncate">{vermoeden.kboNaam ?? '—'}</span>
+            {vermoeden.gemeente && <span>· {vermoeden.gemeente}</span>}
+            {vermoeden.labels.length > 0 && <span>· {vermoeden.labels.join(', ')}</span>}
+            <span className="tabular-nums">· {vermoeden.nummer}</span>
+          </p>
+        )}
 
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="flex items-center gap-2">
@@ -107,7 +128,10 @@ export function LeadCard({ company, isNew, onStatusChange, onToonVacatures }: Le
               href={company.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-foreground transition-colors"
+              className={cn(
+                'flex items-center gap-1 rounded-sm transition-colors hover:text-foreground',
+                focusRing
+              )}
             >
               Website <ExternalLink className="h-3 w-3" />
             </a>
@@ -115,9 +139,8 @@ export function LeadCard({ company, isNew, onStatusChange, onToonVacatures }: Le
         </div>
         <div className="mt-2 border-t pt-2">
           <StatusDropdown
-            itemId={company.id}
+            endpoint={`/api/leads/${company.id}`}
             status={company.leadStatus as ItemStatus}
-            type="lead"
             onStatusChange={onStatusChange}
           />
         </div>

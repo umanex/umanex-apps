@@ -1,0 +1,12 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+import { TypeScale } from '../blocks/TypeScale';
+
+<Meta title="Tokens/Typografie" />
+
+# Typografie
+
+De schaal uit `Typography/Scale`. Elke size-stap draagt zijn eigen leading (`font.leading.*`),
+dus `text-sm` zet font-size én line-height. De familienaam komt uit `font.family.*`; de apps
+laden het font via next/font en zetten `--font-sans`, Storybook doet hetzelfde via Google Fonts.
+
+<TypeScale />

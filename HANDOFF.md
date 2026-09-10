@@ -25,24 +25,54 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
     ## YYYY-MM-DD — {korte titel} · [{type}]
     - **Bevinding:** {1-2 zinnen}
+    - **Check:** {hoe je in één handeling vaststelt of dit nog openstaat}
     - **Volgende zet:** {concreet actiepunt of "-"}
     - **Status:** open
 
-<!-- De sessie-reflectie skill voegt hieronder de juiste laag-header toe bij de eerste entry. -->
+## Schrijf de check, niet de staat
 
+`Bevinding` is per definitie een waarneming van toen: "de guard matcht alleen Tailwind-syntax", "CLAUDE.md is 32 123 chars". Zulke zinnen worden onwaar zodra de code eronder verandert, en niets in de lus merkt dat — de SessionStart-hook blijft het item elke ochtend tonen als openstaand werk, ook nadat het opgelost is. Op 2026-08-10 stond tien van de zesendertig rowtrack-entries zo verkeerd open; één ervan lokte vijf dagen na zijn oplossing alsnog een productvraag uit die al beantwoord was.
+
+Daarom hoort er bij elke nieuwe entry een **`Check`**: hoe je in één handeling vaststelt of dit item nog leeft. Een commando is het beste (`grep -q 'periodType' apps/rowtrack/lib/period.ts`), een vraag met een eenduidig antwoord mag ook ("draaien `history/index.tsx` en `usePeriodGoal` door dezelfde `lib/period.ts`?"). Kun je er geen formuleren, dan is het item te vaag om over drie weken nog te beoordelen — herformuleer het tot je er wel een hebt.
+
+De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij stap 1 vóór een item open blijft staan. Een check die door niets aangeroepen wordt, meet niets.
+
+<!-- De sessie-reflectie skill voegt hieronder de juiste laag-header toe bij de eerste entry. -->
 # Klant — umanex
+
+## 2026-08-25 — "100% in sync" is structureel bewezen, niet visueel · [onzekerheid]
+- **Bevinding:** De Storybook→Figma-export is op vijf assen getoetst (pagina per component, variant-assen, kleurrollen, afgeleide schalen, deep-links) plus 86 mode-waarden tegen `theme.css`. Wat níet getoetst is: of een component in Figma er hetzelfde *uitziet* als in de browser. Beide kanten putten uit dezelfde bron, maar de twee renders zijn nooit naast elkaar gelegd. Een Button met 2px verkeerde padding in Figma zou door elke groene check komen. De claim in de PR is dus enger dan "100% in sync" suggereert — dat is bewust, maar het staat nergens in de guard-output zelf.
+- **Check:** `pnpm --filter @umanex/ui figma:check | grep -i "pixel\|render\|screenshot"` — leeg = er is nog geen visuele as; een treffer = er is er een bijgekomen.
+- **Volgende zet:** Beslissen of dit gat gedicht moet worden. Kandidaat: `figma_capture_screenshot` van een component-node naast een Playwright-screenshot van dezelfde story, vergeleken op afmetingen in plaats van pixels (byte-exacte PNG-hashes zijn in Chromium geen identiteitstoets — zie umanex-os LEARNINGS 2026-08-25). Of expliciet verwerpen en de scope in `packages/ui/CLAUDE.md` benoemen.
+- **Beantwoord (2026-09-08):** **ja, dichten** — en de voorgestelde kandidaat is precies wat werkt. Op RowTrack zijn beide lagen gebouwd en gemeten: `geometry-parity.mjs` (109 variant-nodes, 1066 velden, tolerantie 0,5px, mét een tegenproef die rood wordt op één verschoven hoogte) plus een handmatige beeldronde. Die beeldronde verdiende zichzelf meteen terug: hij vond dat `text-transform: uppercase` niet in de DOM-tekst zit, dus Figma toonde "500m" waar de browser "500M" rendert — 42 nodes in 12 componenten, en de geometrie-as kán dat per constructie niet zien. De vraag is dus beantwoord; het restwerk (dezelfde beeldronde op `packages/ui` draaien) staat in `BACKLOG.md` (entry 2026-09-08).
+- **Status:** resolved
+
+## 2026-08-25 — Figma node-ids zijn de zwakste schakel van de deep-links · [risico]
+- **Bevinding:** De elf `parameters.figma.url` in de stories wijzen op node-ids (`27:374` enz.). Die ids overleven hernoemen, verplaatsen en herlayouten — dat is deze sessie gemeten — maar niet delete-en-opnieuw-aanmaken. Wie een component in Figma herbouwt in plaats van bijwerkt, breekt elf links tegelijk, en de guard zwijgt tot iemand de manifest ververst (dat gat staat apart in `BACKLOG.md`). De builder in `code-naar-figma` doet zélf `for (const c of [...page.children]) c.remove()` vóór hij bouwt — dus een herbouw ís het normale pad, niet de uitzondering.
+- **Check:** `node -e "const m=require('./packages/ui/figma/manifest.json'); console.log(m.pages.Button.primary.id)"` vergelijken met wat `figma_execute` teruggeeft voor de node met naam `Button` op pagina `Button` — gelijk = de ids leven nog.
+- **Volgende zet:** Bij de eerstvolgende Figma-herbouw eerst de manifest verversen en `figma:check` draaien vóór de commit; overwegen om de link op **pagina**-id te laten wijzen in plaats van node-id (stabieler, minder precies) of de node-id-check in `pre-commit` te hangen.
+- **Bewezen (2026-09-08), en erger dan hier staat:** het risico is op RowTrack werkelijkheid geworden en de guard zweeg niet alleen — hij stond **groen**. Na een herbouw waren 29 van de 33 primary-ids veranderd en wezen alle 33 deep-links naar niet-bestaande nodes, terwijl `figma:check` tien assen groen meldde. De reden is structureel: de `[link]`-as legt de stories naast het manifest, en de stories wáren uit dat manifest gegenereerd — twee artefacten uit dezelfde verouderde bron bevestigen elkaar. Voor RowTrack is de volgorde nu een harde regel in `apps/rowtrack/CLAUDE.md` (eerst manifest verversen, dan links en check); `packages/ui` heeft die regel nog niet. Vastgelegd als learning in umanex-os (2026-09-08, "code-naar-figma — een guard op twee artefacten uit dezelfde verouderde bron").
+- **Volgende zet (2026-09-08):** de procedure is te zwak als enige bescherming. Overweeg een verse-heid-as in `figma:check`: faal wanneer `manifest.gegenereerd` ouder is dan de nieuwste wijziging aan de stories of de bouwspec. Dat is een proxy, maar hij kan wél rood worden zonder Figma-toegang.
+- **Status:** resolved (2026-09-09) — de premisse is weggenomen in plaats van het risico beheerd. De builder hergebruikt sinds vandaag de COMPONENT- en VARIANT-nodes en vervangt alleen hun kinderen, dus **id én key blijven gelijk over een herbouw**. Tweezijdig gemeten op Button, vóór en ná in één aanroep: set-id gelijk, set-key gelijk, alle 32 variant-ids en -keys gelijk, 32 nodes hergebruikt, 0 geweigerd, gebouwd zonder force. Een deep-link overleeft daarmee een herbouw. Wat blijft: een node die de spec niet meer kent wordt wél vervangen — daar is de volgorde (eerst manifest, dan `figma:links`) nog steeds de bescherming, en de `[link]`-as vangt het.
+
+## 2026-08-25 — De variant-modellering is een oordeel dat de guard nu als waarheid vastlegt · [aanname]
+- **Bevinding:** Welke props een visuele Figma-variant verdienen is niet uit de code af te leiden — `cva` levert er een deel van, `argTypes` een deel, en de rest is een keuze. `Input.type` en `Tooltip.side` zijn uitgesloten, `ThemeToggle.mode` is Figma-only (interne state). Die drie staan mét reden in `figma-sync-check.mjs`, dus ze zijn telbaar — maar ze zijn wél mijn oordeel, niet dat van Jeroen, en de guard dwingt ze vanaf nu af.
+- **Check:** `grep -A3 "NIET_VISUEEL\|FIGMA_ONLY" packages/ui/scripts/figma-sync-check.mjs` — de lijst is kort en leesbaar; klopt elke regel nog met wat je van het component verwacht?
+- **Volgende zet:** Bij de eerstvolgende component-wijziging de drie uitsluitingen doorlopen en bevestigen of bijstellen. Ze staan bewust in de guard en niet in een config-bestand, zodat ze bij het lezen van de guard vanzelf langskomen.
+- **Uitgebreid (2026-09-08):** het zijn nu twee lijsten, in twee repos-onderdelen, allebei mijn oordeel. `apps/rowtrack/scripts/figma-sync-check.mjs` heeft er drie soorten: `NIET_VISUEEL` (vier keer `visible` — een mount-schakelaar; bij false rendert het component niets, gemeten), `SCHERMEN` (ActivePhase en IdlePhase zijn schermcomposities, geen component sets — hun statusassen zouden 160 respectievelijk 320 nodes eisen en zijn in beeld niet orthogonaal) en `GEEN_COMPONENT` (PaceZone exporteert een pure functie zonder JSX). Jeroen heeft de schermen-keuze expliciet bevestigd; de andere twee niet. Dezelfde vraag geldt dus nu op twee plekken.
+- **Status:** open
 
 ## 2026-08-10 — De laag-discipline-guard ziet kale hex in CSS niet · [debt]
 - **Bevinding:** De regel `hardcoded-color` in `packages/tokens/scripts/guard.mjs` matcht alleen Tailwinds arbitrary-syntax (`bg-[#fff]`), niet een gewone `color: #ff0000` in een `.css`-bestand of een `fill="#..."` in een SVG — terwijl de docstring van diezelfde guard juist zegt dat hij bestaat omdat ESLint die twee niet ziet. Ontdekt doordat een tegenproef níet afging waar ik hem verwachtte.
 - **Volgende zet:** Het gat is klein en gemeten: kale hex komt in álle guard-scopes samen **één keer** voor, in `apps/cashflow/scripts/render-charts.tsx:149` (inline `<style>` in een preview-script). Een zevende regel toevoegen kost dus één baseline-entry of één refactor. Niet zelf gedaan: het verbreedt een guard die vier apps raakt.
 - **Check:** `grep -c "id: '" packages/tokens/scripts/guard.mjs` — 7 = status quo (zes regels + font-token-drift), de kale-hex-regel is er nog niet; 8+ = er is een regel bij, toets of die kale hex in CSS/SVG dekt.
-- **Status:** open
+- **Status:** resolved (2026-09-09) — check gedraaid: `grep -c "id: '" packages/tokens/scripts/guard.mjs` → 7, de status quo, dus de regel ontbreekt nog. Werk dat blijft liggen: verplaatst naar de root-`BACKLOG.md` (2026-09-09); ouder dan 30 dagen.
 
 ## 2026-08-10 — hexToHslTriplet staat nu in twee pakketten · [debt]
 - **Bevinding:** `packages/rowtrack-tokens/lib/hslTriplet.mjs` is een bewuste kopie van `packages/tokens/lib/hslTriplet.mjs`. De afweging: de twee token-pipelines zijn onafhankelijk ontworpen, en een import ertussen creëert een koppeling waar er geen hoort — voor een pure functie van vijftig regels. Prijs: verandert de afrondingsstrategie, dan moet dat op twee plekken.
 - **Volgende zet:** Niets, tenzij er een derde consument komt. Dan is een gedeeld `packages/color-utils` goedkoper dan een derde kopie.
 - **Check:** `grep -rln hexToHslTriplet packages/ apps/ | wc -l` — 4 = status quo (twee kopieën + hun twee builds); 5+ = er is een derde consument en het gedeelde pakket wordt goedkoper dan een derde kopie.
-- **Status:** open
+- **Status:** resolved (2026-09-09) — check gedraaid: 4 bestanden noemen hem, de status quo — nog geen derde consument, dus de afweging is ongewijzigd. Verplaatst naar de root-`BACKLOG.md` (2026-09-09); ouder dan 30 dagen.
 
 ## 2026-08-04 — React 18 en 19 delen één platte node_modules · [risico]
 - **Verplaatst:** dit punt hoort bij RowTrack, want die app dwingt de platte layout af. De volledige bevinding — inclusief de mislukte poging met de geïsoleerde layout (alle Next-builds groen, Metro valt op de phantom dependency `@expo/metro-runtime`) en de drie uitwegen — staat in `apps/rowtrack/HANDOFF.md`, entry van dezelfde datum. Hieronder de oorspronkelijke, inmiddels achterhaalde formulering.
@@ -156,8 +186,20 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   beoordeling, geen defect.
 - **Volgende zet:** De pill in jobradar naast de kaart beoordelen en beslissen: bruin houden, of
   een eigen rol voor een pil-achtergrond met donkere tekst erop (dan haalt helder amber wél AA).
+- **Volgende zet (2026-08-27):** het besluit is gevallen — een **eigen rol**, geen bruin. De rol is
+  gebouwd en gemeten, maar bewust **niet gemerged**: `Semantic/light|dark → score/mid` (+
+  `-foreground`), Warning.500 met Neutral.900 respectievelijk Neutral.950 erop. Gemeten op een
+  lokale build met de rol erin: `bg #F59F0B` met `tekst #101828` = **8.32:1** in light en `#0C111D`
+  = **8.84:1** in dark. In dark verandert er feitelijk niets — `--warning` was daar al Warning.500.
+  Wat het tegenhoudt: `pnpm --filter @umanex/ui figma:check` eist een Figma-variabele per tokenrol
+  en draait in CI (`figma:check:selftest`), dus de rol vraagt éérst `score-mid` en
+  `score-mid-foreground` in de collectie `Theme` van **Component library**
+  (`ko2OuasYxyY2YRD69MYhWX`), met Light/Dark-modes, plus een verse `figma/manifest.json`. Dat kan
+  alleen met de Desktop Bridge op dát bestand. Volgorde dus: variabelen in Figma → manifest
+  verversen → tokens.json + ScoreBadge in één PR.
 - **Check:** `grep -n "'warning'" apps/jobradar/components/ScoreBadge.tsx` — treffer = de pill hangt nog aan de generieke warning-rol (het bruin uit de contrastfix); leeg = er is een eigen rol gekozen en het besluit is gevallen.
-- **Status:** open
+- **Afgesloten (2026-09-08):** 31 dagen open en het besluit is allang gevallen — dit is geen sessie-context meer maar werk dat blijft liggen. Verplaatst naar `apps/jobradar/BACKLOG.md` (entry 2026-09-08, "score-pill: eigen rol `score/mid` bouwen"), mét de check als eerste zet en de dwingende volgorde erin.
+- **Status:** resolved
 
 ## 2026-08-05 — Een nieuwe token-set levert stil geen output · [risico]
 - **Bevinding:** `classifySet` in `packages/tokens/build.mjs` noemt alles buiten `Theme/` en
@@ -271,3 +313,34 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   tweede afwijkend merk in beeld, dus de zes overrides in `apps/jobradar/app/globals.css`
   blijven de hele oplossing. Blijft hier staan als spoor: kantelt dat ooit, dan is dit het
   vertrekpunt.
+
+## 2026-08-25 — De potverdeling in het businessplan is met de hand afgeleid, niet uit de app gelezen · [onzekerheid]
+- **Bevinding:** De splitsing €17.489 in provisiepotten tegenover €2.828 vrij — waarop de runway en de hele buffer-redenering in het businessplan staan — heb ik zelf berekend als `monthlyAmount × maanden − opgenomen` uit de JSONB, niet uit wat de app zélf toont. Dat is een tweede implementatie van precies de rekenkern die tussen juni en augustus veertien fix-commits nodig had (dubbele aftrek, subtotalen die niet sloten, doorrol tussen maanden).
+- **Check:** Open de app en lees de potstanden van augustus 2026 af; tel ze op. Komt het totaal op €17.489 ± €50, dan klopt mijn afleiding. Wijkt het af, dan verschuift de runway en elke bufferdatum in het businessplan mee.
+- **Volgende zet:** Eén keer aflezen en vergelijken. Dit is de #1 eerste zet van de volgende sessie, want het draagt de kop van het document.
+- **Status:** open
+
+## 2026-08-25 — De runway van 0,85 maand rekent privé sparen als onvermijdelijk · [aanname]
+- **Bevinding:** Ik nam vaste uitgaven plus het volledige maandbudget (€7.968) als wat doorloopt zodra de omzet stopt. Daar zit €500 privé sparen en €500 vrije uitgave in, en dat is precies wat je als eerste stopzet. Strikt genomen is de onvermijdelijke last €6.968 en de runway 0,97 maand in plaats van 0,85.
+- **Check:** `grep -c "0,85 maand" businessplan-artifact` — of eenvoudiger: staat er in deel 7 nog 0,85, dan is de correctie niet doorgevoerd. Het verschil is klein maar het is een kopcijfer, en te laag oogt hier alarmerender dan het is.
+- **Volgende zet:** Bepalen welke budgetposten je in een noodscenario écht stopzet, en het getal daarop herzien. Dat is dezelfde vraag als de vast/variabel-splitsing die al in het plan staat.
+- **Status:** open
+
+## 2026-08-25 — Het rekenmodel achter het businessplan bestaat alleen in de scratchpad · [debt]
+- **Bevinding:** Elk cijfer in het businessplan komt uit wegwerpscripts in de sessie-scratchpad — de scenariotabellen, de kasopbouw, de driejarenprojectie, het besparingsargument. Die map is sessie-lokaal en verdwijnt. Het artifact draagt de uitkomsten maar niet de afleiding, dus een volgende herrekening begint van nul en kan stil van deze afwijken.
+- **Check:** `ls scripts/plan-model.* 2>/dev/null || echo ontbreekt` in de repo-root — ontbreekt = het model is nog steeds nergens vastgelegd.
+- **Volgende zet:** Eén gecommit script dat de kostenbasis uit de cashflow-app leest en de kerncijfers van het plan opnieuw uitrekent. Dan wordt het artifact een momentopname van iets herhaalbaars in plaats van een eindpunt.
+- **Opgelost 2026-08-27:** `scripts/plan-model.mjs` bestaat (238 regels, gecommit 2026-08-25 — dezelfde dag als dit item, dus het werk is gedaan zonder het item te sluiten). Niet alleen op bestaan getoetst maar gedraaid: het model rekent de kostenbasis uit (`vast €6.261 + budget €1.706 + provisies €7.289 = €15.257`), en `--selftest` bewijst dat invariant 3 afgaat op een opgewekte afwijking van €500. Dat laatste is het punt — het item vroeg om een herhaalbaar model, niet om een script dat toevallig een getal drukt.
+- **Status:** resolved
+
+## 2026-08-25 — De bezoldigingsdrempel kan al voor inkomstenjaar 2026 bijten · [risico]
+- **Bevinding:** Het verlaagde tarief van 20% vraagt een bezoldiging van €51.000; die van 2024 was €46.258. De uitzondering "bezoldiging ≥ belastbaar resultaat" dekt dat, want het resultaat was €13.896 — maar alleen zolang het resultaat onder de bezoldiging blijft. Het businessplan plaatst de beslissing in Q4 2027; komt het resultaat van 2026 onverwacht boven €46.258 uit, dan lag de deadline al op 31 december 2026.
+- **Check:** Vraag de boekhouder het verwachte belastbaar resultaat 2026. Onder €46.258 = geen actie nodig dit jaar; erboven = de beslissing moet vóór 31 december vallen en niet volgend jaar.
+- **Volgende zet:** Eén mail naar de boekhouder met die ene vraag. Kost niets en sluit een deadline van vier maanden.
+- **Status:** open
+
+## 2026-09-08 — Een gepubliceerde library nodigt uit tot bewerken; de keten is eenrichting · [risico]
+- **Bevinding:** Beide design-system-bestanden (`QkRgMc7Quqtbow71DiYa1n` voor RowTrack, `ko2OuasYxyY2YRD69MYhWX` voor umanex) zijn gebouwd op de regel *code is de bron, Figma de ontvanger* — en de builder leegt elke pagina vóór hij bouwt. RowTracks bestand is nu als library gepubliceerd en gekoppeld in `RowTrack - Design`. Publiceren nodigt uit tot bewerken ín Figma, en dat is precies wat deze keten niet aankan: een bewuste wijziging daar wordt bij de volgende herbouw zonder waarschuwing overschreven, of door `figma:check` als drift gemeld terwijl het intentie is. Het onderscheid tussen "drift" en "iemand heeft hier iets bedoeld" bestaat nergens in het systeem.
+- **Check:** `grep -n 'kind.remove()\|children\]) kind.remove' apps/rowtrack/figma/builder.js` — treffer = de builder leegt nog steeds elke pagina, dus een Figma-bewerking overleeft de eerstvolgende herbouw niet.
+- **Volgende zet:** Met Jeroen afspreken wat een bewerking ín Figma betekent. Drie richtingen: (a) de regel expliciet maken in het bestand zelf, bijvoorbeeld met een beschrijving op elke pagina die zegt dat hij gegenereerd is; (b) de builder alleen laten overschrijven wat hij zelf gemaakt heeft en handmatige nodes laten staan; (c) accepteren dat het eenrichting blijft en de library alleen voor *gebruik*, niet voor *bewerking*, bedoelen.
+- **Status:** resolved (2026-09-09) — beslist door Jeroen: **Figma beslist, code bewaart.** Geen van de drie richtingen letterlijk, maar een rondgang: een wijziging wordt in de library-file op de variant gemaakt (nooit op een scherm-instance), de bouwhash-poort van de builder meldt daarna precies welke nodes handwerk dragen en is daarmee de wijzigingslijst, `figma-naar-code` zet die om in de component-code, en een herbouw (sinds 2026-09-09 een update in place, keys blijven) bewijst de rondgang met een beeld- en parity-diff van nul; daarna publiceert Jeroen. De Check slaat dus nog aan en hoort dat te blijven doen: het legen is geen risico meer maar de tegenproef van de rondgang. Uitgeschreven, met wat er vandaag nog niét rondgaat per eigenschap, in `apps/rowtrack/briefings/2026-09-09-audit-figma-verschilklassen.md` en in `apps/rowtrack/CLAUDE.md` onder *Figma — Design System-bestand*.

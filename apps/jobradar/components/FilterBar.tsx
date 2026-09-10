@@ -2,6 +2,8 @@
 
 import { Search, X } from 'lucide-react'
 import { Slider } from '@umanex/ui/components/ui/slider'
+import { cn } from '@umanex/ui/lib/utils'
+import { focusRing } from '@umanex/ui/lib/focus'
 import { RegionFilter } from './RegionFilter'
 import type { RegionCode } from '@/lib/regions'
 import type { ItemStatus } from '@/lib/db/schema'
@@ -52,14 +54,17 @@ export function FilterBar({
           onChange={(e) => onZoekChange(e.target.value)}
           aria-label="Zoek op titel of bedrijf"
           placeholder="Zoek op titel of bedrijf"
-          className="w-56 rounded border border-input bg-background py-1 pl-8 pr-8 text-sm text-foreground outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          className={cn(
+            'w-56 rounded-md border border-input bg-background py-1 pl-8 pr-8 text-sm text-foreground',
+            focusRing
+          )}
         />
         {zoek && (
           <button
             type="button"
             onClick={() => onZoekChange('')}
             aria-label="Zoekterm wissen"
-            className="absolute right-1 rounded p-1 text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+            className={cn('absolute right-1 rounded-sm p-1 text-muted-foreground hover:text-foreground', focusRing)}
           >
             <X className="h-3 w-3" />
           </button>
@@ -68,7 +73,12 @@ export function FilterBar({
       <select
         value={statusFilter}
         onChange={(e) => onStatusFilterChange(e.target.value as ItemStatus | '')}
-        className="cursor-pointer rounded border bg-background px-2 py-1 text-sm text-foreground outline-none"
+        // `outline-none` zonder vervanging maakte de focus hier onzichtbaar — geen
+        // afwijkende vorm maar helemaal geen indicator (gemeten, ux-audit-vervolg).
+        className={cn(
+          'cursor-pointer rounded-md border bg-background px-2 py-1 text-sm text-foreground',
+          focusRing
+        )}
       >
         {STATUS_OPTIONS.map(({ value, label }) => (
           <option key={value} value={value}>

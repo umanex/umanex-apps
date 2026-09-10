@@ -32,7 +32,9 @@ export function CoverageBar({ dekking }: CoverageBarProps) {
         <span className="font-medium tabular-nums text-foreground">{geclassificeerd}</span> van{' '}
         <span className="tabular-nums">{totaal}</span> vacatures geclassificeerd
       </span>
-      <span aria-hidden className="text-border">
+      {/* text-border mat 1.24:1 tegen de kaart — zichtbaar noch onzichtbaar, dus als
+          scheiding zinloos (ux-audit 2026-08-11, P3). muted-foreground meet 4.97:1. */}
+      <span aria-hidden className="text-muted-foreground">
         |
       </span>
       <span className="tabular-nums">design {design}</span>

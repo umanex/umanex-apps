@@ -1,0 +1,644 @@
+{
+  "fileKey": "QkRgMc7Quqtbow71DiYa1n",
+  "fileName": "RowTrack -  Design System",
+  "gegenereerd": "2026-09-10",
+  "gepubliceerd": 45,
+  "totaal": 45,
+  "componenten": {
+    "Chip": {
+      "type": "COMPONENT_SET",
+      "key": "95e9ab5d5a4de60573c2d049d90ea36cec1488ad",
+      "status": "CHANGED",
+      "varianten": {
+        "active=true": "98572212415bbb0b0df70096140c5e81b84dc99b",
+        "active=false": "dc519c5c9e010973ec538f68c178afdefae4f289"
+      },
+      "slots": [
+        "value#2036:868",
+        "unit#2036:871",
+        "active"
+      ]
+    },
+    "BottomSheet": {
+      "type": "COMPONENT",
+      "key": "72f5c49637509abc35068fb44e82b73f97a2add1",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "title#2036:874"
+      ]
+    },
+    "GoalSheet": {
+      "type": "COMPONENT",
+      "key": "0d261bdfb67ec202ff5ea33d67fd7500b19567e9",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "HealthConsentScreen": {
+      "type": "COMPONENT",
+      "key": "551fb2adc6c7af9ff5ed35852c9f7133a3f7dd7b",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "BottomFade": {
+      "type": "COMPONENT",
+      "key": "c561eeb364c5219b642e7d85c3620baee47d0314",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "Dot": {
+      "type": "COMPONENT",
+      "key": "fd537a43d290624576c3b892b548229ea4c80729",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "Icon": {
+      "type": "COMPONENT",
+      "key": "1275f68ecd3eabaed9b342cc01c378b689ec9ca6",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "SectionHeader": {
+      "type": "COMPONENT",
+      "key": "66cb3a37d1e706f6325020163b005abdb7961049",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "title#2036:875"
+      ]
+    },
+    "Subtitle": {
+      "type": "COMPONENT",
+      "key": "f209ad4660a5a3509ae1496516088149c7eb6e93",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "label#2036:876"
+      ]
+    },
+    "Skeleton": {
+      "type": "COMPONENT",
+      "key": "a8472e19689b6c20e388e4b6d6bf81d3ae4fb877",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "TabLabel": {
+      "type": "COMPONENT_SET",
+      "key": "09de92e072dfc718bbb1c2949f021003bd16ddcb",
+      "status": "CHANGED",
+      "varianten": {
+        "focused=true": "b57122158e240d077f65d19bcec6b53f5c815f54",
+        "focused=false": "d8a1b921c8f48daed070c8a8f33ffb4c51d48941"
+      },
+      "slots": [
+        "label#2036:877",
+        "focused"
+      ]
+    },
+    "KpiSingle": {
+      "type": "COMPONENT",
+      "key": "52ef1b6427d6a8083ef443eb1f1fd539784089dc",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "value#2036:880",
+        "unit#2036:881",
+        "label#2036:882"
+      ]
+    },
+    "ErrorMessage": {
+      "type": "COMPONENT",
+      "key": "0b6b260b47ce98e14bed183167ab3db96c32e85c",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "message#2036:883"
+      ]
+    },
+    "GoalCardSkeleton": {
+      "type": "COMPONENT",
+      "key": "853441470c6d646c2b1e2845a1c1d8f82eea3c03",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "MotivationalToast": {
+      "type": "COMPONENT",
+      "key": "c8a3f0172439175e91dea7964dcb3a3bd8084b6f",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "message#2036:884"
+      ]
+    },
+    "DeviceSelectionModal": {
+      "type": "COMPONENT_SET",
+      "key": "a676b6f254d557034d94cf1e2a61e3bbb7315414",
+      "status": "CHANGED",
+      "varianten": {
+        "kind=rower": "edb884258e9aeb6c916fbce9ae846b82739bfc27",
+        "kind=hr": "09ce23a0fc0297868b4dc1b44ac7840cfcdb839b"
+      },
+      "slots": [
+        "kind"
+      ]
+    },
+    "EmptyState": {
+      "type": "COMPONENT_SET",
+      "key": "170f40970d467f7bfe4cc8e80ce2b6b4a4c452d8",
+      "status": "CHANGED",
+      "varianten": {
+        "size=sm": "0fa88b33a0aedf12008da09bbdd34834aa1b3c61",
+        "size=lg": "7306da136446eced6782a385875212ecbb3b8a30"
+      },
+      "slots": [
+        "title#2036:885",
+        "subtitle#2036:888",
+        "size"
+      ]
+    },
+    "PrBadge": {
+      "type": "COMPONENT_SET",
+      "key": "61f3a203077905a45e202ebf470fb202f79d83c4",
+      "status": "CHANGED",
+      "varianten": {
+        "size=sm": "ff65d8dc42df977e39774636680ee16acd928361",
+        "size=md": "ba7745b8c582e4a39cfe5a5b064176513225773d"
+      },
+      "slots": [
+        "label#2036:891",
+        "size"
+      ]
+    },
+    "FormField": {
+      "type": "COMPONENT_SET",
+      "key": "43756965d059b09cc8ed6ca5ed7d345257efc681",
+      "status": "CHANGED",
+      "varianten": {
+        "secureTextEntry=true": "cb1a0c71663262500564cb19ee2d5398f6088708",
+        "secureTextEntry=false": "3fbb9bfa13434a4f89e135096f5dc490952153fa"
+      },
+      "slots": [
+        "label#2036:894",
+        "placeholder#2049:1687",
+        "secureTextEntry"
+      ]
+    },
+    "WorkoutCard": {
+      "type": "COMPONENT_SET",
+      "key": "5218e131a50f25620d29706d868c126fa35a199b",
+      "status": "CHANGED",
+      "varianten": {
+        "index=0": "df5acd564860b98d87b330085469a865a88fa0af",
+        "index=1": "3a948ce282aca9a110b8b944cba7f0486862940b"
+      },
+      "slots": [
+        "date#2049:1711",
+        "value#2049:1714",
+        "value_abca#2049:1717",
+        "distValue#2049:1720",
+        "index"
+      ]
+    },
+    "ErrorState": {
+      "type": "COMPONENT_SET",
+      "key": "23a7a8c297e518bfc80060db9d9c1e1c532a70fc",
+      "status": "CHANGED",
+      "varianten": {
+        "size=sm": "cf1c1d35ad246b8396240ef6782a39c07a63bc0c",
+        "size=lg": "c4ddfcecb77c6f145c42ef99cf9ec7d9327960a4"
+      },
+      "slots": [
+        "title#2036:897",
+        "subtitle#2036:900",
+        "retryLabel#2036:903",
+        "size"
+      ]
+    },
+    "SplitsList": {
+      "type": "COMPONENT",
+      "key": "76b8dd09974c856925c125bc3df9c3530a2541b0",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "GoalProgressCard": {
+      "type": "COMPONENT",
+      "key": "b04cacc56e55999266efecf4c8ca5cfa6ac05758",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "Segmented": {
+      "type": "COMPONENT_SET",
+      "key": "be6f3af9d2116d69c2548fe68be48f209d88e323",
+      "status": "CHANGED",
+      "varianten": {
+        "variant=filled": "780b84b80b39990d5a512a8025d8773e435c94ce",
+        "variant=band": "e5dc45af5d69852d66df513fdd8580aa866f6c13"
+      },
+      "slots": [
+        "btnTextActive#2049:1702",
+        "btnText#2049:1705",
+        "btnText_ca#2049:1708",
+        "variant"
+      ]
+    },
+    "HrStatusBar": {
+      "type": "COMPONENT_SET",
+      "key": "e15772b4ac59cce2c741f51c23d27127f96dbd9f",
+      "status": "CHANGED",
+      "varianten": {
+        "hrStatus=idle": "e238a711a7d9e3921f5a3c6b35eedb7e9dcfec96",
+        "hrStatus=scanning": "7ec1dd44b9450d0fce7ccff319e00fb2590a3084",
+        "hrStatus=waiting": "ece230b555fa8334279ae6c78478f053290045d4",
+        "hrStatus=connected": "5df22d21a3e2153dc687037f073b591ce2a85131",
+        "hrStatus=error": "9aad83e2b511816946ad06ae2e3e428785063186"
+      },
+      "slots": [
+        "label#2049:1690",
+        "actionText#2049:1696",
+        "hrStatus"
+      ]
+    },
+    "WheelPicker": {
+      "type": "COMPONENT_SET",
+      "key": "7b1763b70da74ccde2c5971ebe82eee0a0e19caa",
+      "status": "CHANGED",
+      "varianten": {
+        "showPill=true, surface=base": "4bee6bf501c3e1e2934cda11cf8311d8c9262ba8",
+        "showPill=true, surface=raised": "3c14547c1865376c756ef9cf75f5b0a22e4b6890",
+        "showPill=false, surface=base": "310c573767842f95a4ab20d4a6c4804090137c2a",
+        "showPill=false, surface=raised": "e8667f7c5f2db4278bdb4d587341f7f36036ecdf"
+      },
+      "slots": [
+        "showPill",
+        "surface"
+      ]
+    },
+    "BleStatusBar": {
+      "type": "COMPONENT_SET",
+      "key": "9cf83f34d225184146d5895bcc285d9be0f2dbf6",
+      "status": "CHANGED",
+      "varianten": {
+        "bleStatus=idle": "c304d70f7aa1bef66be8ef1dd51d76eab6254e67",
+        "bleStatus=scanning": "6fdcfef332f0d25c668597ac09dae12d04c09add",
+        "bleStatus=connecting": "1c822710624a1922a7d3580ad119f8de9cd18a55",
+        "bleStatus=discovering": "b4f1aef1398c230b2581c55cfbe9d151d13761c4",
+        "bleStatus=connected": "026bfe4639a0d51f3242166c9094c89277c5bed5",
+        "bleStatus=disconnecting": "28df68391ba0adebe14b19b2a6cd9b98e9b67aeb",
+        "bleStatus=reconnecting": "748266bbb0e978bdb53845b62cd9aa94f48e7e31",
+        "bleStatus=error": "c388da25b1c1710d000c1e981ba6ad9b9eda6516"
+      },
+      "slots": [
+        "deviceName#2036:906",
+        "label#2049:1669",
+        "actionText#2049:1678",
+        "bleStatus"
+      ]
+    },
+    "DeviceRow": {
+      "type": "COMPONENT_SET",
+      "key": "7f7acb3259c2a710c4bf09f255b6e1ca140668dd",
+      "status": "CHANGED",
+      "varianten": {
+        "icon=dot, loading=true, actionDisabled=true": "c238b37bf4ef38f8aaf624cd87c46df54f6af25c",
+        "icon=dot, loading=true, actionDisabled=false": "173fe0d3b2dac0a9611b28bbbe554b9a69b761a9",
+        "icon=dot, loading=false, actionDisabled=true": "f93d942fa82f35d61ddd73e78c535dc85453f6fc",
+        "icon=dot, loading=false, actionDisabled=false": "507e66abb443eee730a85bfc700fc646c7254b12",
+        "icon=heart, loading=true, actionDisabled=true": "e68423dfd2f4b627d7331a9d448fcbfd7b72a0ef",
+        "icon=heart, loading=true, actionDisabled=false": "1d352a519b796d1ce6943fd9b542c66cd36616b9",
+        "icon=heart, loading=false, actionDisabled=true": "1da1a35f383eb3f8d6a665e474957f278a750bd0",
+        "icon=heart, loading=false, actionDisabled=false": "19119c691513ce6c603f4e9d4ed7df513e5f7257"
+      },
+      "slots": [
+        "label#2036:915",
+        "action#2036:924",
+        "icon",
+        "loading",
+        "actionDisabled"
+      ]
+    },
+    "GoalSegments": {
+      "type": "COMPONENT_SET",
+      "key": "32cb388f3812072dac606ddf00e78dea7fab193a",
+      "status": "CHANGED",
+      "varianten": {
+        "selected=none": "12c9e47900208ef398911de68f963cfa3d8f57ec",
+        "selected=duration": "7c7d1cc2c2a411bb600a29d3bb3b318364897540",
+        "selected=distance": "97efd22b8ab61272564fe63ea308f18a35dfca64",
+        "selected=split": "1efb0e090864d39ba5cff5457090b477e146d720",
+        "selected=watts": "424dcc4b5afdb569ae18d880b937ec0adf27c04c"
+      },
+      "slots": [
+        "selected"
+      ]
+    },
+    "KPI": {
+      "type": "COMPONENT_SET",
+      "key": "ef024e8703415e823531ce46a2bdde51b3925491",
+      "status": "CHANGED",
+      "varianten": {
+        "highlighted=true, compact=true, fill=true, loading=true": "f59fa532187f27325ede8b4b38edb76168db8f0a",
+        "highlighted=true, compact=true, fill=true, loading=false": "b48bf14b50df69a40301a4ae8499690829e12aa2",
+        "highlighted=true, compact=true, fill=false, loading=true": "588dedeebe7b8c65628a3476de72107e2ba4dc0e",
+        "highlighted=true, compact=true, fill=false, loading=false": "d43b92a8e815150a680bbd2bbd4caeeebabb7ab7",
+        "highlighted=true, compact=false, fill=true, loading=true": "2050744b0bef15cf5f1f941385e77f3ead21c65b",
+        "highlighted=true, compact=false, fill=true, loading=false": "d1f275c64b8678457cdd2a52a406ce1da590a9c1",
+        "highlighted=true, compact=false, fill=false, loading=true": "201fba682297061f3ab0e5f6d74184c1ff2cb5e8",
+        "highlighted=true, compact=false, fill=false, loading=false": "b1bb4bad62eed06774c8a3fb12a46cbf957f14f2",
+        "highlighted=false, compact=true, fill=true, loading=true": "efebdeff161a3370a89ec8f83362da747a202064",
+        "highlighted=false, compact=true, fill=true, loading=false": "a747a2434c1ad7dda19b6ef215b3eeeaf1c08719",
+        "highlighted=false, compact=true, fill=false, loading=true": "3849542135f7f7ecceebc76d941733054084a770",
+        "highlighted=false, compact=true, fill=false, loading=false": "53ac4a58e053296c36bc9546a7221ad2b5c7c89c",
+        "highlighted=false, compact=false, fill=true, loading=true": "33ac1bcb1a93dc376da46ba025f5ef48ded195c9",
+        "highlighted=false, compact=false, fill=true, loading=false": "dcb4f331f3fc44fc9a801b5aa69d7c03f3f104f0",
+        "highlighted=false, compact=false, fill=false, loading=true": "5d576b514bb1e57380052da92824080ee6ddc6c9",
+        "highlighted=false, compact=false, fill=false, loading=false": "8980fc0f0acbb4019f555a377781e22ceb9a503f"
+      },
+      "slots": [
+        "label#2036:933",
+        "value#2036:950",
+        "highlighted",
+        "compact",
+        "fill",
+        "loading"
+      ]
+    },
+    "Button": {
+      "type": "COMPONENT_SET",
+      "key": "d91787c7df124ad5b1bc36a2af1afa62b83ec412",
+      "status": "CHANGED",
+      "varianten": {
+        "variant=primary, size=md, loading=true, disabled=true": "9db313ebcf766e1aa6b699b1833eecc59941d768",
+        "variant=primary, size=md, loading=true, disabled=false": "001f09ace5e088bcef8ab3ed0a00aa87c598469b",
+        "variant=primary, size=md, loading=false, disabled=true": "19846b8f5ec3031d0292b0992f3fb4088b257f5b",
+        "variant=primary, size=md, loading=false, disabled=false": "9239aceac48d010685328fda4ebdb2975ba0e5f9",
+        "variant=primary, size=lg, loading=true, disabled=true": "ecf7a312bb998610085f49dcceb3de2defc49503",
+        "variant=primary, size=lg, loading=true, disabled=false": "ba9bd5b5cb543baa09d5c3ff492edbee09336321",
+        "variant=primary, size=lg, loading=false, disabled=true": "bb6110106a025e24c730e920933ff53cc63f119d",
+        "variant=primary, size=lg, loading=false, disabled=false": "9a27e7f787fa8ab71caf0a100d59ca726b58f44e",
+        "variant=destructive, size=md, loading=true, disabled=true": "95ae9977c268a3b3439053ff2d0c4de3eabaf7dd",
+        "variant=destructive, size=md, loading=true, disabled=false": "ec8b852bb36a3bc749a76fd61a251f11d0d268a5",
+        "variant=destructive, size=md, loading=false, disabled=true": "cd162181479baff4e39497b6c8e0577d7a4e2e24",
+        "variant=destructive, size=md, loading=false, disabled=false": "ade5a6d3eae9ea0f691b5133f1e071ff733695c7",
+        "variant=destructive, size=lg, loading=true, disabled=true": "0132986717af77e4bb33dc0916acb28660e95cf7",
+        "variant=destructive, size=lg, loading=true, disabled=false": "a415a9dea0a22eeef600827e75f4ff4cc9f6c88d",
+        "variant=destructive, size=lg, loading=false, disabled=true": "2203c950ede93ba8b7a7e7b10ae09126b8fd6364",
+        "variant=destructive, size=lg, loading=false, disabled=false": "1526cdd8b7640db5f45455ce5c3f049417cb34f9",
+        "variant=ghost, size=md, loading=true, disabled=true": "44fd92cd113ed16f8a8a27c4a4931b45049ec9ed",
+        "variant=ghost, size=md, loading=true, disabled=false": "b345f17c09ffc2328af7c04590f0c06c62de3c33",
+        "variant=ghost, size=md, loading=false, disabled=true": "9e82b2f3795c9e6e24e72614caab051dc5753be1",
+        "variant=ghost, size=md, loading=false, disabled=false": "c5237743fdb8402074942cee1045d9a2687d30ac",
+        "variant=ghost, size=lg, loading=true, disabled=true": "3a7c6f567b81bd608bace4e69fc88f9007bca074",
+        "variant=ghost, size=lg, loading=true, disabled=false": "d70941e0c0363e2b2dcd6450069f62d4cae90037",
+        "variant=ghost, size=lg, loading=false, disabled=true": "e8a58b9bfc91d1fcef69056b0e3b8426b8dce50f",
+        "variant=ghost, size=lg, loading=false, disabled=false": "6c1430a99a5a7ea7063cadb7827b522f59e48423",
+        "variant=outline, size=md, loading=true, disabled=true": "0e0687d332449287b61265fddd2a080ccc49636c",
+        "variant=outline, size=md, loading=true, disabled=false": "abfcdf5ce1d168f1f3ff648b4f191af73d697242",
+        "variant=outline, size=md, loading=false, disabled=true": "92f15f0f192c6bb1f997dd243e75421ef7e99a5d",
+        "variant=outline, size=md, loading=false, disabled=false": "02bfe13f6a7809b03e80e97e75e33faac2c92829",
+        "variant=outline, size=lg, loading=true, disabled=true": "bf20bcb35651dbae16298023c7e83954192f9d3b",
+        "variant=outline, size=lg, loading=true, disabled=false": "3c564b74fc5834ff4e994b9fd83be086dbe67876",
+        "variant=outline, size=lg, loading=false, disabled=true": "7fe706f82f4b20f5c2c4d54a0d178e6eda9510d8",
+        "variant=outline, size=lg, loading=false, disabled=false": "8d7e4de10c928935af46bc99127df5be4fddf4ad"
+      },
+      "slots": [
+        "title#2036:967",
+        "variant",
+        "size",
+        "loading",
+        "disabled"
+      ]
+    },
+    "GoalPill": {
+      "type": "COMPONENT",
+      "key": "1ff8cc32cd37c36d130b4a04b1062cb17af49507",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "doelPillValue#2049:1725",
+        "doelPillUnit#2049:1726"
+      ]
+    },
+    "SubtitleProgress": {
+      "type": "COMPONENT",
+      "key": "86d00f0aaa01ae304cee6d61433f4272c44a64eb",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "left#2036:1000",
+        "subtitleText#2049:1729"
+      ]
+    },
+    "HeroPanel": {
+      "type": "COMPONENT",
+      "key": "b321ac6a27cf617e345388764ada1d4f51885437",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "heroLabel#2036:1001",
+        "heroText#2036:1002",
+        "subLabel#2036:1003",
+        "subtitleText#2049:1727",
+        "subtitleText_bbc#2049:1728"
+      ]
+    },
+    "ActiveHeader": {
+      "type": "COMPONENT",
+      "key": "be959e2c1a93987840c7e9fe2e61389da11c80c5",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "doelPillValue#2049:1723",
+        "doelPillUnit#2049:1724"
+      ]
+    },
+    "ProgressBar": {
+      "type": "COMPONENT_SET",
+      "key": "521d7ba52cee20754519e767829eeaabe77cb863",
+      "status": "CHANGED",
+      "varianten": {
+        "fillKind=none, richting=h": "0d95ccff56604927d4108c7d6d91774181be0e7c",
+        "fillKind=none, richting=v": "c92f6cf156841aaad9025aab36d4dcd2ba1935dd",
+        "fillKind=gradient, richting=h": "dbd739d62a3c9d9d005326da7eaaf7123f2f95f1",
+        "fillKind=gradient, richting=v": "623233716d8a368e311792a919a2ddc1a5fbf370",
+        "fillKind=success, richting=h": "0828305f2361da8efcd74621e4627070bb2a7ae7",
+        "fillKind=success, richting=v": "8c8ee56031c28c3437b071122aeb2af44d6aa40f",
+        "fillKind=warning, richting=h": "f88a0ce44267ea50f6cf706a61bb3bea210222f8",
+        "fillKind=warning, richting=v": "091c6fa7457d8208606fe2f391ff28b0b33b5f1a"
+      },
+      "slots": [
+        "fillKind",
+        "richting"
+      ]
+    },
+    "KpiRow": {
+      "type": "COMPONENT_SET",
+      "key": "bda284921ca7b0713321f570404e31cfd223e86f",
+      "status": "CHANGED",
+      "varianten": {
+        "fill=true, divider=true, disabled=true, loading=true": "6fe8d339baa770bafefc31141d91957b4ba3b547",
+        "fill=true, divider=true, disabled=true, loading=false": "2fe1433203829f5e735ce8d3afdb8cb4d95c69a5",
+        "fill=true, divider=true, disabled=false, loading=true": "4e8769a52c26cf00328a036f53532d49e72eb13a",
+        "fill=true, divider=true, disabled=false, loading=false": "7181269874ebff4da3aec65ee7cc21a1dda686a2",
+        "fill=true, divider=false, disabled=true, loading=true": "4e9a3451f7763b4bc1fb7436be8678587b71c013",
+        "fill=true, divider=false, disabled=true, loading=false": "dd16a45fcab8ace3c8d19fab6d9cd43a26131052",
+        "fill=true, divider=false, disabled=false, loading=true": "65ac140d2b8caa7d4791a1dd0b44344a009fc61b",
+        "fill=true, divider=false, disabled=false, loading=false": "f671334ec4551c89c076edee77510fb11d65d71d",
+        "fill=false, divider=true, disabled=true, loading=true": "c5aabfb7950b6930224c7930f91ff9c3e2066f38",
+        "fill=false, divider=true, disabled=true, loading=false": "5a7e38a00f0e177f8344618f1533a7554adf65dd",
+        "fill=false, divider=true, disabled=false, loading=true": "75da7b5f58604feb4312e8431a4c419f65485ff1",
+        "fill=false, divider=true, disabled=false, loading=false": "e9a8d97c53d6579e38c7c4f1b9a10d2f24fd5930",
+        "fill=false, divider=false, disabled=true, loading=true": "e22640c2d78dd6716efe4eac78036fec5306182a",
+        "fill=false, divider=false, disabled=true, loading=false": "c0cbd1d490d67ca38fbba77813ac278ad22bc7aa",
+        "fill=false, divider=false, disabled=false, loading=true": "e7754dee035608c5767315318abc36ea6c142123",
+        "fill=false, divider=false, disabled=false, loading=false": "1f5b912eaf5cc805347e84af2d7e34841b6f3c46"
+      },
+      "slots": [
+        "label#2036:1004",
+        "value#2036:1021",
+        "fill",
+        "divider",
+        "disabled",
+        "loading"
+      ]
+    },
+    "ConnectionOverlay": {
+      "type": "COMPONENT_SET",
+      "key": "fdafe3129463a38ca904d97cf1833c3a410a0399",
+      "status": "CHANGED",
+      "varianten": {
+        "bleStatus=idle": "79214244c65627bff175bd5c48673f18b616cb31",
+        "bleStatus=scanning": "45c4776417b15b91be4fc16bdd580b77f9e33f4f",
+        "bleStatus=connecting": "af7fa333e9b04dc9be5fd25ec6c96188661a62e9",
+        "bleStatus=discovering": "4df4b6b191b8461d52d3e893f9613791d681216f",
+        "bleStatus=disconnecting": "0619e235d55d11ff1adde199fa0a0f581342e073",
+        "bleStatus=reconnecting": "2b30987cf4f9f33ba229308b2d64aaf20319b345",
+        "bleStatus=error": "19724798ccbd25d9197022cdfb4d0c35e3d30049"
+      },
+      "slots": [
+        "bleStatus"
+      ]
+    },
+    "SummaryTitle": {
+      "type": "COMPONENT",
+      "key": "53e26220f9b944499c5ada5cb2f2e12e72177944",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "title#2036:1038",
+        "dateLabel#2036:1039"
+      ]
+    },
+    "PrBanner": {
+      "type": "COMPONENT",
+      "key": "4c0c0664af53cb771fe657b146bc218452a58c79",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "SummaryKpiBand": {
+      "type": "COMPONENT",
+      "key": "ec1e5c4fec1f8da14b6845c4cc9d13226c8ed4ae",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    },
+    "StatsTable": {
+      "type": "COMPONENT",
+      "key": "fa9c797ed66f9cc1360b8d3ddcd54cd09e0ea9da",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": [
+        "colAvg#2036:1040",
+        "colPeak#2036:1041"
+      ]
+    },
+    "DeviceSection": {
+      "type": "COMPONENT_SET",
+      "key": "3229c399e005451a49481b5b900b7ede45f7c537",
+      "status": "CHANGED",
+      "varianten": {
+        "bleStatus=idle, hrStatus=idle": "73ba0a240eb04eaf7634cf219c382ca83d706ad1",
+        "bleStatus=idle, hrStatus=scanning": "b672ac1f69137454d3f71950fc4c395f61874539",
+        "bleStatus=idle, hrStatus=waiting": "ada952fd1bdefc5493b1e7c038630d179724033f",
+        "bleStatus=idle, hrStatus=connected": "03fe2704b734e7319ac056f69740f088e3f1eaab",
+        "bleStatus=idle, hrStatus=error": "fb168df0f3d0fa99ce0da97f7f0b24614a26fc03",
+        "bleStatus=scanning, hrStatus=idle": "7dae4acbb5f9a4d1567af8ceefaee9262473a2ee",
+        "bleStatus=scanning, hrStatus=scanning": "f5071585248d7a13458ae53075c93db43406ccfb",
+        "bleStatus=scanning, hrStatus=waiting": "9886ec8c45c114563fdfce4c0fe664bb48a1a68a",
+        "bleStatus=scanning, hrStatus=connected": "9bdf9265e44a3adfc758dd24115c0f16794ae22f",
+        "bleStatus=scanning, hrStatus=error": "a8072865ada39b96967a6d83f5cd0dfe2395a786",
+        "bleStatus=connecting, hrStatus=idle": "2cfd4061e6755b6dd4055245e3a39f149c68ff24",
+        "bleStatus=connecting, hrStatus=scanning": "c6c8fc53b4fd2b527894c04c3574cfe3a1c53171",
+        "bleStatus=connecting, hrStatus=waiting": "cd3fb21c441476c0b3feac6a1adcff0d05e2476e",
+        "bleStatus=connecting, hrStatus=connected": "2de2b66849b9e946bd0af08b71aa0bade87feb8d",
+        "bleStatus=connecting, hrStatus=error": "1a29aa7e3c15db4ccb3e3ff20feea55ad8cb9b05",
+        "bleStatus=discovering, hrStatus=idle": "e678054644da48447b2bfebc25a5fc668523ca0c",
+        "bleStatus=discovering, hrStatus=scanning": "a695fd62ed3aa2a1084e04c350113e701c4cdfbc",
+        "bleStatus=discovering, hrStatus=waiting": "f5d8235fa822c11b7f142b8ca6fec11bf9c56e1b",
+        "bleStatus=discovering, hrStatus=connected": "d9074c27ad0be37a65d67089eb337f048fd0d6b4",
+        "bleStatus=discovering, hrStatus=error": "4b3b1ad057e13ef1a391f7856ebdf00fea51cd1e",
+        "bleStatus=connected, hrStatus=idle": "b5237053a6110412bc9c04240a372497d9c1a361",
+        "bleStatus=connected, hrStatus=scanning": "542a56fb4e0c8207575dfec365404a7ff461a39a",
+        "bleStatus=connected, hrStatus=waiting": "f67a49845387cb11d9c970615f295eaf4b1790d9",
+        "bleStatus=connected, hrStatus=connected": "b1f6a9ab99ab851534be3178a46d03f1ec4c1a32",
+        "bleStatus=connected, hrStatus=error": "aadfde4d7688053bdae4d6e8ae48311bec02951f",
+        "bleStatus=disconnecting, hrStatus=idle": "ce0e660b9b1e9eb2a90c679516f3dab2b35f2f52",
+        "bleStatus=disconnecting, hrStatus=scanning": "b3f446181bcd2248b04315d1b3996a2342598052",
+        "bleStatus=disconnecting, hrStatus=waiting": "35a554ab0fc4ac3dc50ee455913ac1149b0e2b53",
+        "bleStatus=disconnecting, hrStatus=connected": "d97e05c0ae8c5b65461b8318dcdc4c11b5057ce9",
+        "bleStatus=disconnecting, hrStatus=error": "2ae6672ebe69ca5ab6577e5bffd9d79499856dc8",
+        "bleStatus=reconnecting, hrStatus=idle": "998213502a5f7e416efe554ce869bc01a47589d1",
+        "bleStatus=reconnecting, hrStatus=scanning": "9593ffb1393a1a3397660f0333bd9210e305ab1b",
+        "bleStatus=reconnecting, hrStatus=waiting": "6dd2f5fc37a83039360d9c9e8abab9abc12bec07",
+        "bleStatus=reconnecting, hrStatus=connected": "6112807378bf413f3f392fac7dacd7c5a5a47d2b",
+        "bleStatus=reconnecting, hrStatus=error": "1eed60367c81ac259f900d55bddc8a23525fc9fc",
+        "bleStatus=error, hrStatus=idle": "0043aad3c2bc6df7661cee57de97954c7a5fa793",
+        "bleStatus=error, hrStatus=scanning": "ac3bc185401fa49099e934cd2d1cd5b1f5ed9c8d",
+        "bleStatus=error, hrStatus=waiting": "b4e2b4b298291a865b500e012d55375074929243",
+        "bleStatus=error, hrStatus=connected": "22a72003be186b4598bfca02ec8b7e96a0cd2615",
+        "bleStatus=error, hrStatus=error": "60dd073ec64b6277c73120bf875c9ea3bf22aedc"
+      },
+      "slots": [
+        "hrDeviceName#2036:1042",
+        "deviceName#2036:1083",
+        "label#2049:1730",
+        "actionText#2049:1771",
+        "label_bcab#2049:1812",
+        "actionText_bcba#2049:1853",
+        "bleStatus",
+        "hrStatus"
+      ]
+    },
+    "GoalHeader": {
+      "type": "COMPONENT_SET",
+      "key": "99105eec5c6f0b005f47a9d4a348cdaddc8170c8",
+      "status": "CHANGED",
+      "varianten": {
+        "selectedSegment=none": "143d66ffa7d829f0de645e43a73f8c52d179c64d",
+        "selectedSegment=duration": "2aa88e7aa7abb76702ddd714400a635f9aa77f06",
+        "selectedSegment=distance": "7eab545d11d9fe07cc47833a3cff79b0c5d558ec",
+        "selectedSegment=split": "f4d709aa058ee2083b2af4c5e461b0167582242a",
+        "selectedSegment=watts": "d859f1c9e0c4f874cb9928024569e64c8943f001"
+      },
+      "slots": [
+        "selectedSegment"
+      ]
+    },
+    "StartCta": {
+      "type": "COMPONENT",
+      "key": "4f2a2ad320e71f083c047abee4d42e79aee1bbd4",
+      "status": "CHANGED",
+      "varianten": null,
+      "slots": []
+    }
+  }
+}

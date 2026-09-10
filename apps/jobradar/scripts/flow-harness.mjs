@@ -25,11 +25,18 @@
  * 4. **`--selftest` voegt een scenario toe dat hóórt te falen.** Een harness die alleen
  *    ooit geslaagd is, bewijst niet dat hij meet. Zonder die kant weet je niet of groen
  *    "alles goed" betekent of "ik kijk nergens naar".
+ * 5. **Toegankelijkheid wordt gemeten, niet gelezen.** Twee dingen die de UX-audit van
+ *    2026-08-11 met de hand vaststelde en daarna stil konden verlopen: de kopstructuur
+ *    (h1 → h3, geen h2) en de focus-zichtbaarheid. De toetsenbord-pass loopt de echte
+ *    tab-volgorde af en toetst per stop of de computed stijl bij focus verandert — een
+ *    differentiële meting, niet een grep op klassenamen. De audit kon dit niet: zijn
+ *    browserautomatisering kreeg geen Tab in de pagina (BACKLOG, 2026-08-11).
  */
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
-import { dirname, resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -43,7 +50,7 @@ const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3103)
 const BASE = `http://127.0.0.1:${PORT}`;
 
 /** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
-const ROUTES = ['/'];
+const ROUTES = ['/', '/instellingen'];
 
 const fails = [];
 const notes = [];
@@ -78,6 +85,109 @@ async function waitForServer(url, timeoutMs = 60_000) {
   return false;
 }
 
+/**
+ * Kopstructuur: geen overgeslagen niveau.
+ *
+ * Meet op de DOM in documentvolgorde, niet op de bron: de kaarttitels worden per rij
+ * gerenderd, dus alleen de gerenderde pagina weet hoeveel het er zijn en in welke
+ * volgorde ze staan.
+ */
+async function kopstructuur(page) {
+  return page.evaluate(() => {
+    const koppen = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map((h) => ({
+      niveau: Number(h.tagName[1]),
+      tekst: (h.textContent ?? '').trim().slice(0, 40),
+    }));
+    const problemen = [];
+    if (koppen.length && koppen[0].niveau !== 1) {
+      problemen.push(`eerste kop is h${koppen[0].niveau}, geen h1`);
+    }
+    for (let i = 1; i < koppen.length; i++) {
+      const sprong = koppen[i].niveau - koppen[i - 1].niveau;
+      if (sprong > 1) {
+        problemen.push(
+          `h${koppen[i - 1].niveau} → h${koppen[i].niveau} bij "${koppen[i].tekst}" (niveau overgeslagen)`
+        );
+      }
+    }
+    return { aantal: koppen.length, niveaus: [...new Set(koppen.map((k) => k.niveau))].sort(), problemen };
+  });
+}
+
+/**
+ * Toetsenbordvolgorde + focus-zichtbaarheid.
+ *
+ * De meting is DIFFERENTIEEL: per tab-stop wordt de computed stijl mét focus bewaard,
+ * daarna wordt alles geblurd en dezelfde eigenschappen opnieuw gelezen. Verandert er
+ * niets, dan is er geen zichtbare focus — ongeacht welke klassen het element draagt.
+ * Een absolute meting zou hier liegen: een kaart met `shadow-md` heeft een box-shadow
+ * zonder ooit focus te tonen.
+ *
+ * `positieve tabindex` wordt apart gemeld: die breekt de documentvolgorde en is de
+ * klassieke oorzaak van een volgorde die niet met het beeld overeenkomt.
+ */
+async function toetsenbord(page, maxStops = 80) {
+  await page.evaluate(() => {
+    // `blur()` alleen is niet genoeg: het vertrekpunt voor sequentiële focus blijft dan op
+    // het laatst gefocuste element staan, en de walk begint dáár in plaats van bovenaan het
+    // document. Na een klik op een tabblad zag de pass daardoor alleen wat ná die knop komt.
+    // Focus expliciet op body verzet het vertrekpunt wél.
+    document.activeElement instanceof HTMLElement && document.activeElement.blur();
+    document.body.setAttribute('tabindex', '-1');
+    document.body.focus();
+    for (const el of document.querySelectorAll('[data-tabstop]')) el.removeAttribute('data-tabstop');
+  });
+
+  const volgorde = [];
+  for (let i = 0; i < maxStops; i++) {
+    await page.keyboard.press('Tab');
+    const stop = await page.evaluate((index) => {
+      const el = document.activeElement;
+      if (!el || el === document.body || el === document.documentElement) return null;
+      if (el.hasAttribute('data-tabstop')) return { rond: true };
+      el.setAttribute('data-tabstop', String(index));
+      const s = getComputedStyle(el);
+      return {
+        index,
+        tag: el.tagName.toLowerCase(),
+        naam: (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 40),
+        tabindex: el.getAttribute('tabindex'),
+        gefocust: `${s.outlineStyle}|${s.outlineWidth}|${s.outlineColor}|${s.boxShadow}`,
+      };
+    }, i);
+    if (stop === null) break;      // terug op body: de cyclus is rond
+    if (stop.rond) break;          // dit element hadden we al
+    volgorde.push(stop);
+  }
+
+  const ongefocust = await page.evaluate(() => {
+    document.activeElement instanceof HTMLElement && document.activeElement.blur();
+    const uit = {};
+    for (const el of document.querySelectorAll('[data-tabstop]')) {
+      const s = getComputedStyle(el);
+      uit[el.getAttribute('data-tabstop')] = `${s.outlineStyle}|${s.outlineWidth}|${s.outlineColor}|${s.boxShadow}`;
+    }
+    return uit;
+  });
+
+  const problemen = [];
+  for (const stop of volgorde) {
+    if (ongefocust[String(stop.index)] === stop.gefocust) {
+      problemen.push(`geen zichtbare focus: <${stop.tag}> "${stop.naam || '(zonder tekst)'}"`);
+    }
+    if (stop.tabindex && Number(stop.tabindex) > 0) {
+      problemen.push(`positieve tabindex (${stop.tabindex}) op <${stop.tag}> "${stop.naam}" — breekt de documentvolgorde`);
+    }
+  }
+  return { stops: volgorde.length, volgorde, problemen };
+}
+
+/**
+ * De build-map van de harness. Letterlijk, geen vlag: `next build` wíst zijn doelmap, dus
+ * vrije invoer is een wisser. `.next` blijft van de dev-server en van de productie-build.
+ */
+const DIST = '.next-harness';
+
 async function main() {
   if (!(await portFree(PORT))) {
     console.error(`✗ Poort ${PORT} is bezet. Deze harness start zijn eigen server en mag`);
@@ -85,12 +195,41 @@ async function main() {
     process.exit(2);
   }
 
-  console.log('→ Verse build');
-  await run('npx', ['next', 'build']);
+  // Eigen build-map. `.next` is van de dev-server op 3003 en van een eventuele
+  // productie-build; `next build` maakt zijn doelmap eerst leeg, dus daar bouwen betekent
+  // die server slopen. Een vaste naam en geen vrije invoer: de waarde wordt gewist.
+  const env = { ...process.env, NEXT_DIST_DIR: DIST };
 
-  console.log(`→ Server op ${BASE}`);
+  // De nulmeting hoort VÓÓR de handeling die ze moet betrappen. Gemeten 2026-09-09: een
+  // eerdere versie las hem er ná uit en bleef groen terwijl de build wél in `.next` was
+  // beland — een nulmeting na de handeling meet niets.
+  //
+  // En niet de mtime van de máp: die beweegt alleen bij toevoegen of verwijderen van een
+  // direct kind. `BUILD_ID` is de inhoud zelf en krijgt bij elke build een nieuwe waarde,
+  // dus dát is het anker.
+  const gedeeld = join(APP, '.next');
+  const buildId = (map) => {
+    try {
+      return readFileSync(join(map, 'BUILD_ID'), 'utf8').trim();
+    } catch {
+      return null;
+    }
+  };
+  const gedeeldVoor = buildId(gedeeld);
+
+  console.log(`→ Verse build in ${DIST}`);
+  await run('npx', ['next', 'build'], { env });
+
+  // "Bouwt in .next-harness" mag niet van de vlag komen: als `distDir` niet zou werken,
+  // schrijft de build gewoon in `.next` en zegt de log iets anders dan er gebeurde.
+  if (!existsSync(join(APP, DIST))) {
+    console.error(`✗ ${DIST} bestaat niet na de build — distDir werkt niet zoals verwacht.`);
+    process.exit(2);
+  }
+
+  console.log(`→ Server op ${BASE} (uit ${DIST})`);
   const server = spawn('npx', ['next', 'start', '--port', String(PORT)], {
-    cwd: APP, stdio: 'ignore', detached: false,
+    cwd: APP, stdio: 'ignore', detached: false, env,
   });
   const stop = () => { try { server.kill('SIGTERM'); } catch { /* al weg */ } };
   process.on('exit', stop);
@@ -140,6 +279,15 @@ async function main() {
     const where = landed === route ? `${route}` : `${route} → ${landed}`;
     if (text.length < 20) fail(`${where} rendert vrijwel niets (${text.length} tekens)`);
     else ok(`${where} → ${status}, ${text.length} tekens tekst`);
+
+    const koppen = await kopstructuur(page);
+    if (koppen.problemen.length) for (const p of koppen.problemen) fail(`${route} kopstructuur: ${p}`);
+    else ok(`${route} kopstructuur: ${koppen.aantal} koppen, niveaus ${koppen.niveaus.map((n) => 'h' + n).join(' → ')}`);
+
+    const tb = await toetsenbord(page);
+    if (tb.problemen.length) for (const p of tb.problemen) fail(`${route} toetsenbord: ${p}`);
+    else ok(`${route} toetsenbord: ${tb.stops} stops, elk met zichtbare focus`);
+    notes.push(`${route} tab-volgorde: ${tb.volgorde.map((s) => `${s.tag}${s.naam ? `(${s.naam.slice(0, 18)})` : ''}`).join(' → ') || '(geen)'}`);
     if (SHOT) {
       const name = route === '/' ? 'index' : route.replace(/\//g, '-').replace(/^-/, '');
       const file = resolve(process.cwd(), `${SHOT}/${name}.png`);
@@ -153,6 +301,12 @@ async function main() {
   // één "Sync nu" en die haalt externe data op. Dat zou de origin-guard hierboven terecht
   // als lek tellen en de run laten falen op iets dat geen defect is.
   console.log('→ Interactie (echt aangedreven, geen goto)');
+  // De route-lus eindigt op de láátste route. Zonder deze regel zou de interactie
+  // meeverhuizen naar /instellingen zodra daar een route bijkomt — daar is geen
+  // status-select, dus hij zou stil terugvallen op een linkklik en het filter niet
+  // meer aandrijven. De interactie hoort op het dashboard.
+  await page.goto(BASE + ROUTES[0], { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
   const select = page.locator('select:visible').first();
   // Een link naar de pagina waar je al staat (het logo, meestal) bewijst niets: die
   // "navigeert" naar zichzelf en slaagt altijd. Sluit het huidige pad dus uit.
@@ -183,17 +337,473 @@ async function main() {
     notes.push('geen select en geen interne link op de eerste route — interactie niet uitgereden');
   }
 
+  // ── Prospects-tabblad ──────────────────────────────────────────────────────
+  // Dit tabblad haalt zijn eigen pagina op en rendert dus pas na een klik. Zonder deze stap
+  // meten de kopstructuur- en toetsenbord-passes hierboven een paneel dat nooit gemount is.
+  // Een tab-trigger aanklikken is veilig: hij navigeert niet en raakt geen externe bron.
+  console.log('→ Prospects-tabblad');
+  {
+    const trigger = page.locator('[role="tab"]', { hasText: 'Prospects' }).first();
+    if (!(await trigger.count())) {
+      notes.push('geen Prospects-tabblad gevonden — overgeslagen');
+    } else {
+      const antwoord = page.waitForResponse((r) => r.url().includes('/api/prospects'), { timeout: 20_000 })
+        .catch(() => null);
+      await trigger.click();
+      const res = await antwoord;
+      if (!res) {
+        fail('prospects: geen antwoord van /api/prospects binnen 20s');
+      } else if (res.status() >= 400) {
+        fail(`prospects: /api/prospects → HTTP ${res.status()}`);
+      } else {
+        const body = await res.json().catch(() => null);
+        ok(`prospects: HTTP ${res.status()}, ${body?.totaal ?? '?'} in totaal, spiegel ${body?.staat?.soort ?? '?'}`);
+        await page.waitForTimeout(600);
+
+        // De harde grens uit de briefing: hoogstens één pagina in de DOM.
+        const kaarten = await page.locator('[role="tabpanel"]:visible h3').count();
+        if (body?.staat?.soort === 'ontbreekt') {
+          notes.push('prospects: geen KBO-spiegel op deze machine — kaartentelling niet zinvol');
+          const melding = await page.locator('[role="tabpanel"]:visible', { hasText: 'kbo:sync' }).count();
+          if (melding) ok('prospects: lege staat legt uit wat er moet gebeuren');
+          else fail('prospects: geen spiegel én geen uitleg — dat is een stille nul');
+        } else if (kaarten > 60) {
+          fail(`prospects: ${kaarten} kaarten in de DOM, hoogstens 60 verwacht`);
+        } else {
+          ok(`prospects: ${kaarten} kaarten in de DOM (grens 60)`);
+        }
+
+        const koppen = await kopstructuur(page);
+        if (koppen.problemen.length) for (const p of koppen.problemen) fail(`prospects kopstructuur: ${p}`);
+        else ok(`prospects kopstructuur: ${koppen.aantal} koppen, niveaus ${koppen.niveaus.map((n) => 'h' + n).join(' → ')}`);
+
+        const tb = await toetsenbord(page);
+        if (tb.problemen.length) for (const p of tb.problemen) fail(`prospects toetsenbord: ${p}`);
+        else ok(`prospects toetsenbord: ${tb.stops} stops, elk met zichtbare focus`);
+
+        // ── De herkomst- en winstfilters ─────────────────────────────────────
+        // Deze twee zijn interne controls: ze veranderen een querystring naar de eigen
+        // origin, dus de origin-guard hierboven blijft geldig. Een `select` is het niet —
+        // de herkomst is een segmented control uit knoppen — dus de select-interactie
+        // eerder in deze run verhuist er niet stil naartoe.
+        if (body?.staat?.soort !== 'ontbreekt') {
+          // Ankeren op de ROL binnen het zichtbare paneel, niet op één attribuut: de groep
+          // werd van `aria-label` naar `aria-labelledby` verbouwd, en een selector op het
+          // oude attribuut vond hem toen niet meer. De rol is wat het ding ís; het label is
+          // een bewering erover. Tellen hoort erbij — één radiogroup, niet "minstens één".
+          const groep = page.locator('[role="tabpanel"]:visible [role="radiogroup"]');
+          const aantalGroepen = await groep.count();
+          if (aantalGroepen !== 1) {
+            fail(`prospects: ${aantalGroepen} radiogroup(s) in het paneel, verwacht 1`);
+          } else {
+            // Een groep zonder toegankelijke naam is voor een schermlezer naamloos.
+            const naam = await groep.evaluate((el) => {
+              const via = el.getAttribute('aria-labelledby');
+              return via
+                ? (document.getElementById(via)?.textContent ?? '').trim()
+                : (el.getAttribute('aria-label') ?? '').trim();
+            });
+            if (naam) ok(`prospects: de herkomst-groep heet "${naam}"`);
+            else fail('prospects: de herkomst-groep heeft geen toegankelijke naam');
+            const gekozen = await groep.locator('[role="radio"][aria-checked="true"]').innerText();
+            if (gekozen.trim() === 'Beide') ok('prospects: herkomst staat standaard op "Beide"');
+            else fail(`prospects: herkomst staat bij het laden op "${gekozen.trim()}", verwacht "Beide"`);
+
+            // Roving tabindex: één stop in de tabvolgorde, niet drie. Dat is wat een
+            // radiogroup onderscheidt van een rij losse knoppen, en het is meetbaar.
+            const inTab = await groep.locator('[role="radio"][tabindex="0"]').count();
+            const buitenTab = await groep.locator('[role="radio"][tabindex="-1"]').count();
+            if (inTab === 1 && buitenTab === 2) ok('prospects: herkomst is één tabstop (roving tabindex 1/2)');
+            else fail(`prospects: herkomst heeft ${inTab} tabstop(s) en ${buitenTab} buiten de volgorde, verwacht 1 en 2`);
+
+            // Pijltjesbediening: de interactie-as van de briefing. Focus de gekozen optie
+            // en stap één naar rechts; de selectie hoort mee te verspringen.
+            await groep.locator('[role="radio"][tabindex="0"]').focus();
+            await page.keyboard.press('ArrowRight');
+            await page.waitForTimeout(200);
+            const naPijl = (await groep.locator('[role="radio"][aria-checked="true"]').innerText()).trim();
+            if (naPijl !== gekozen.trim()) ok(`prospects: pijltje verplaatst de keuze "${gekozen.trim()}" → "${naPijl}"`);
+            else fail(`prospects: pijltje veranderde de keuze niet, blijft "${naPijl}"`);
+
+            const lijstAntwoord = page
+              .waitForResponse((r) => r.url().includes('/api/prospects') && r.url().includes('herkomst=csv'), { timeout: 20_000 })
+              .catch(() => null);
+            await groep.locator('[role="radio"]', { hasText: 'Lijst' }).click();
+            const lijstRes = await lijstAntwoord;
+            if (!lijstRes) {
+              fail('prospects: klik op "Lijst" leverde geen verzoek met herkomst=csv');
+            } else {
+              const lijstBody = await lijstRes.json().catch(() => null);
+              const totaalCsv = lijstBody?.totaal ?? -1;
+              if (totaalCsv > 0 && totaalCsv < (body?.totaal ?? Infinity)) {
+                ok(`prospects: herkomst "Lijst" versmalt ${body?.totaal} → ${totaalCsv}`);
+              } else {
+                fail(`prospects: herkomst "Lijst" gaf ${totaalCsv}, verwacht een kleiner getal dan ${body?.totaal}`);
+              }
+              // De rijen zonder KBO-tegenhanger horen gemeld te worden, niet verzwegen.
+              if ((lijstBody?.zonderKbo ?? 0) > 0) {
+                await page.waitForTimeout(400);
+                const melding = await page
+                  .locator('[role="tabpanel"]:visible', { hasText: 'niet in de KBO-spiegel' })
+                  .count();
+                if (melding) ok(`prospects: de ${lijstBody.zonderKbo} rijen buiten de spiegel worden gemeld`);
+                else fail(`prospects: ${lijstBody.zonderKbo} rijen vallen buiten de selectie zonder melding`);
+              }
+            }
+
+            // Sortering: de reden dat dit bestaat is dat de aangeleverde lijst anders
+            // onvindbaar is — de CSV-bedrijven landen op rang 221+ van 2939 wanneer er op
+            // oprichtingsdatum geordend wordt.
+            const sorteer = page.locator('#prospect-sortering');
+            if (!(await sorteer.count())) {
+              fail('prospects: geen sorteerkeuze gevonden');
+            } else {
+              const eersteVoor = await page.locator('[role="tabpanel"]:visible h3').first().innerText();
+              const sorteerAntwoord = page
+                .waitForResponse((r) => r.url().includes('/api/prospects') && r.url().includes('sortering=omvang'), { timeout: 20_000 })
+                .catch(() => null);
+              await sorteer.selectOption('omvang');
+              const sortRes = await sorteerAntwoord;
+              if (!sortRes) {
+                fail('prospects: sorteren op omvang leverde geen verzoek met sortering=omvang');
+              } else {
+                await page.waitForTimeout(600);
+                const eersteNa = await page.locator('[role="tabpanel"]:visible h3').first().innerText();
+                if (eersteNa !== eersteVoor) ok(`prospects: sorteren op omvang verandert de kop "${eersteVoor.trim()}" → "${eersteNa.trim()}"`);
+                else fail(`prospects: sorteren op omvang liet de kop op "${eersteVoor.trim()}" staan`);
+              }
+            }
+
+            // ── Het opvolgingspaneel ──────────────────────────────────────────
+            // De briefing kiest een sheet boven een modal of inline uitklappen omdát de
+            // kaartlijst zichtbaar blijft. Dat is dus de check: telt het grid nog evenveel
+            // kaarten terwijl het paneel open staat?
+            const opvolgKnop = page.locator('[role="tabpanel"]:visible button', { hasText: /^Opvolging$/ }).first();
+            if (!(await opvolgKnop.count())) {
+              fail('prospects: geen Opvolging-knop op de kaarten');
+            } else {
+              const kaartenVoor = await page.locator('[role="tabpanel"]:visible h3').count();
+              const historiek = page
+                .waitForResponse((r) => r.url().includes('/api/opvolging?'), { timeout: 20_000 })
+                .catch(() => null);
+              await opvolgKnop.click();
+              const res = await historiek;
+              if (!res) {
+                fail('opvolging: klik vroeg geen historiek op');
+              } else {
+                await page.waitForTimeout(500);
+                const paneel = page.locator('[role="dialog"]');
+                if ((await paneel.count()) !== 1) {
+                  fail(`opvolging: ${await paneel.count()} dialogen, verwacht 1`);
+                } else {
+                  ok('opvolging: het paneel opent als dialog');
+
+                  // Dit onderscheidt een sheet van een modal die de lijst vervangt.
+                  const kaartenNa = await page.locator('[role="tabpanel"]:visible h3').count();
+                  if (kaartenNa >= kaartenVoor) ok(`opvolging: de kaartlijst blijft staan (${kaartenVoor} → ${kaartenNa})`);
+                  else fail(`opvolging: kaartlijst kromp van ${kaartenVoor} naar ${kaartenNa}`);
+
+                  const heeftFormulier = await paneel.locator('#contact-datum').count();
+                  if (heeftFormulier) ok('opvolging: het formulier staat in het paneel');
+                  else fail('opvolging: geen formulier in het paneel');
+
+                  // NIET de generieke toetsenbord-pass: die zet focus op `document.body` en
+                  // loopt vandaar het document af, en een modal trapt focus juist — dus die
+                  // aanname geldt hier niet. Gemeten 2026-09-09: hij rapporteerde "1 stops"
+                  // voor een paneel met acht bedienbare elementen, en meldde dat als groen.
+                  // Voor een dialog is de trap zélf de eigenschap die telt.
+                  const trap = await (async () => {
+                    await paneel.locator('#contact-datum').focus();
+                    const stops = [];
+                    for (let i = 0; i < 20; i++) {
+                      await page.keyboard.press('Tab');
+                      const s = await page.evaluate(() => {
+                        const el = document.activeElement;
+                        if (!el) return null;
+                        const dlg = el.closest('[role="dialog"]');
+                        const st = getComputedStyle(el);
+                        return {
+                          sleutel: (el.id || el.tagName + ':' + (el.textContent ?? '').trim().slice(0, 20)),
+                          binnen: !!dlg,
+                          zichtbaar: st.outlineStyle !== 'none' || st.boxShadow !== 'none',
+                        };
+                      });
+                      if (!s) break;
+                      stops.push(s);
+                    }
+                    return stops;
+                  })();
+
+                  const uniek = new Set(trap.map((s) => s.sleutel)).size;
+                  const buiten = trap.filter((s) => !s.binnen).length;
+                  const zonderRing = trap.filter((s) => !s.zichtbaar).length;
+
+                  if (uniek >= 5) ok(`opvolging: ${uniek} bedienbare elementen in het paneel`);
+                  else fail(`opvolging: slechts ${uniek} bedienbare elementen — de pass meet vermoedelijk niets`);
+
+                  if (buiten === 0) ok('opvolging: focus blijft in het paneel (trap werkt)');
+                  else fail(`opvolging: focus verliet het paneel ${buiten}× — de trap lekt`);
+
+                  if (zonderRing === 0) ok('opvolging: elke stop toont focus');
+                  else
+                    fail(
+                      `opvolging: ${zonderRing} stop(s) zonder zichtbare focus — ` +
+                        trap.filter((s) => !s.zichtbaar).map((s) => s.sleutel).join(', ')
+                    );
+
+                  await page.keyboard.press('Escape');
+                  await page.waitForTimeout(400);
+                  if ((await page.locator('[role="dialog"]').count()) === 0) ok('opvolging: Escape sluit het paneel');
+                  else fail('opvolging: Escape sloot het paneel niet');
+                }
+              }
+            }
+
+            // ── De kaart ──────────────────────────────────────────────────────
+            // Er is geen kaart-library en geen basemap, dus de kaart mag per constructie
+            // geen enkel verzoek naar buiten doen. De origin-guard hierboven bewijst dat
+            // voor de hele run; hier tellen we wat er getekend staat.
+            //
+            // Eerst de bron terugzetten op "Beide". De stappen hierboven laten hem op
+            // "Lijst" staan, en dan opent de kaart in een toestand zónder lead-vermoedens:
+            // de markervorm-checks hieronder zouden dan `0 leads → 0 ruiten` melden en
+            // vacuüm slagen, en de filter-tegenproef verderop zou al in zijn eindtoestand
+            // beginnen. Een check die niet meer rood kán worden is geen check.
+            {
+              const bronGroep = page.locator('[role="tabpanel"]:visible [role="radiogroup"]');
+              if (await bronGroep.count()) {
+                const beideAntwoord = page
+                  .waitForResponse((r) => r.url().includes('/api/prospects'), { timeout: 20_000 })
+                  .catch(() => null);
+                await bronGroep.locator('[role="radio"]', { hasText: 'Beide' }).click();
+                await beideAntwoord;
+                await page.waitForTimeout(400);
+              }
+            }
+
+            const kaartKnop = page.locator('[role="tabpanel"]:visible button', { hasText: /^Kaartweergave$/ });
+            if (!(await kaartKnop.count())) {
+              fail('prospects: geen kaart/lijst-toggle gevonden');
+            } else {
+              const kaartAntwoord = page
+                .waitForResponse((r) => r.url().includes('/api/kaart'), { timeout: 20_000 })
+                .catch(() => null);
+              await kaartKnop.click();
+              const kres = await kaartAntwoord;
+              if (!kres) {
+                fail('prospects: de kaart vroeg /api/kaart niet op');
+              } else {
+                const kbody = await kres.json().catch(() => null);
+                await page.waitForTimeout(800);
+
+                const svg = page.locator('[role="tabpanel"]:visible svg[role="img"]');
+                if ((await svg.count()) !== 1) {
+                  fail(`kaart: ${await svg.count()} svg's gevonden, verwacht 1`);
+                } else {
+                  ok(`kaart: ${kbody?.punten?.length ?? '?'} punten uit /api/kaart`);
+
+                  const vlakken = await svg.locator('path').count();
+                  if (vlakken === 3) ok('kaart: drie provincievlakken');
+                  else fail(`kaart: ${vlakken} vlakken, verwacht 3`);
+
+                  // Elke marker is een aanklikbare groep; clusters tellen als één.
+                  const markers = await svg.locator('[role="button"]').count();
+                  if (markers > 0 && markers <= (kbody?.punten?.length ?? 0)) {
+                    ok(`kaart: ${markers} markers voor ${kbody.punten.length} punten (clusters meegeteld als één)`);
+                  } else {
+                    fail(`kaart: ${markers} markers bij ${kbody?.punten?.length} punten`);
+                  }
+
+                  // Twee vormen: cirkel voor een bronadres, ruit (rect) voor een vermoeden.
+                  // Twee vormen én een derde geval: een cluster waarin een vermoeden zit.
+                  // Zonder die derde valt het onderscheid weg waar het het drukst is.
+                  const ruiten = await svg.locator('rect').count();
+                  const gestreept = await svg.locator('circle[stroke-dasharray]').count();
+                  const leads = (kbody?.punten ?? []).filter((p) => p.herkomst === 'lead').length;
+                  if (leads === 0 || ruiten + gestreept >= 1) {
+                    ok(`kaart: ${leads} lead-punten → ${ruiten} losse ruiten + ${gestreept} gestreepte clusters`);
+                  } else {
+                    fail(`kaart: ${leads} lead-punten maar geen enkele afwijkende markering`);
+                  }
+                  // De scherpste: elk lead-punt zit óf in een ruit óf in een gestreept
+                  // cluster. Anders staat een gok als feit op de kaart.
+                  const gedekt = await svg.evaluate((el) => {
+                    const ruit = el.querySelectorAll('rect').length;
+                    let inCluster = 0;
+                    for (const g of el.querySelectorAll('[role="button"]')) {
+                      const label = g.getAttribute('aria-label') ?? '';
+                      const m = label.match(/waarvan (\d+) op een KBO-vermoeden/);
+                      if (m) inCluster += Number(m[1]);
+                    }
+                    return ruit + inCluster;
+                  });
+                  if (leads === 0 || gedekt >= leads) ok(`kaart: alle ${leads} vermoedens zijn gemarkeerd (${gedekt} gedekt)`);
+                  else fail(`kaart: ${leads} vermoedens, maar slechts ${gedekt} gemarkeerd`);
+
+                  // De kaart zit achter twee klikken, dus hij staat in geen enkele
+                  // route-snapshot. Zonder deze regel is "de kaart klopt" een bewering
+                  // zonder beeld.
+                  if (SHOT) {
+                    const pad = join(SHOT, 'prospects-kaart.png');
+                    await page.locator('[role="tabpanel"]:visible').screenshot({ path: pad });
+                    ok(`render vastgelegd: ${pad}`);
+                  }
+
+                  // Wat er niet op staat, hoort erbij te staan.
+                  if ((kbody?.leadsZonderAdres ?? 0) > 0) {
+                    const melding = await page
+                      .locator('[role="tabpanel"]:visible', { hasText: 'geen adres' })
+                      .count();
+                    if (melding) ok(`kaart: de ${kbody.leadsZonderAdres} leads zonder adres worden gemeld`);
+                    else fail(`kaart: ${kbody.leadsZonderAdres} leads zonder adres, zonder melding`);
+                  }
+
+                  // Een marker moet met het toetsenbord te bereiken zijn.
+                  const eersteMarker = svg.locator('[role="button"]').first();
+                  await eersteMarker.focus();
+                  const heeftFocus = await eersteMarker.evaluate((el) => el === document.activeElement);
+                  if (heeftFocus) ok('kaart: een marker is focusbaar');
+                  else fail('kaart: een marker kan geen focus krijgen');
+
+                  // ── Volgt de kaart het filter? ─────────────────────────────
+                  // Dit is de scherpste check van het hele kaart-blok, want het is de
+                  // enige die rood was toen alles eromheen groen stond: tot 2026-09-09
+                  // las `/api/kaart` geen enkele parameter en bleef de kaart op al zijn
+                  // punten staan bij elke filterkeuze, terwijl de tellingen hierboven
+                  // netjes klopten met een antwoord dat zélf het filter negeerde. Een
+                  // telling tegen het antwoord kan die klasse per constructie niet zien;
+                  // alleen een tweede filterstand kan dat.
+                  const bron = page.locator('[role="tabpanel"]:visible [role="radiogroup"]');
+                  if (!(await bron.count())) {
+                    fail('kaart: geen bronfilter zichtbaar in de kaartweergave');
+                  } else {
+                    const naFilter = page
+                      .waitForResponse(
+                        (r) => r.url().includes('/api/kaart') && r.url().includes('herkomst=csv'),
+                        { timeout: 20_000 }
+                      )
+                      .catch(() => null);
+                    await bron.locator('[role="radio"]', { hasText: 'Lijst' }).click();
+                    const fres = await naFilter;
+                    if (!fres) {
+                      fail('kaart: bron "Lijst" leverde geen /api/kaart-verzoek met herkomst=csv');
+                    } else {
+                      const fbody = await fres.json().catch(() => null);
+                      await page.waitForTimeout(800);
+                      const voor = kbody?.punten?.length ?? 0;
+                      const na = fbody?.punten?.length ?? 0;
+                      if (na > 0 && na < voor) ok(`kaart: bron "Lijst" versmalt ${voor} → ${na} punten`);
+                      else fail(`kaart: bron "Lijst" gaf ${na} punten bij ${voor} — het filter doet niets`);
+
+                      // Een lead is geen rij uit de aangeleverde lijst; onder "Lijst"
+                      // hoort er geen enkel vermoeden meer te staan.
+                      const nogLeads = (fbody?.punten ?? []).filter((p) => p.herkomst === 'lead').length;
+                      if (nogLeads === 0) ok('kaart: bron "Lijst" laat geen lead-vermoedens staan');
+                      else fail(`kaart: bron "Lijst" toont nog ${nogLeads} lead-vermoedens`);
+
+                      // Wat wegvalt door een keuze van de gebruiker, hoort geteld te
+                      // worden — anders is een smaller filter niet te onderscheiden van
+                      // een geocoder die niets vond.
+                      if ((fbody?.buitenFilter ?? 0) > 0) {
+                        const gemeld = await page
+                          .locator('[role="tabpanel"]:visible', { hasText: 'buiten je huidige filters' })
+                          .count();
+                        if (gemeld) ok(`kaart: de ${fbody.buitenFilter} punten buiten het filter worden gemeld`);
+                        else fail(`kaart: ${fbody.buitenFilter} punten vallen weg zonder telling`);
+                      }
+                    }
+                    // Terug naar "Beide", zodat de checks hierna dezelfde stand zien.
+                    const terug = page
+                      .waitForResponse((r) => r.url().includes('/api/kaart'), { timeout: 20_000 })
+                      .catch(() => null);
+                    await bron.locator('[role="radio"]', { hasText: 'Beide' }).click();
+                    await terug;
+                    await page.waitForTimeout(400);
+                  }
+                }
+              }
+
+              // Terug naar de lijst, zodat de checks hieronder hun paneel terugvinden.
+              await page.locator('[role="tabpanel"]:visible button', { hasText: /^Lijstweergave$/ }).click();
+              await page.waitForTimeout(400);
+            }
+
+            // Winstzeef: hij hoort UIT te staan bij het laden, en aangezet hoort hij
+            // te melden dat de KBO-herkomst geen EBITDA draagt.
+            const winst = page.locator('#alleen-winstgevend');
+            if (!(await winst.count())) {
+              fail('prospects: geen winstgevendheidsfilter gevonden');
+            } else {
+              const aanBijStart = await winst.getAttribute('data-state');
+              if (aanBijStart === 'unchecked') ok('prospects: "Alleen winstgevend" staat bij het laden uit');
+              else fail(`prospects: "Alleen winstgevend" staat bij het laden op "${aanBijStart}", verwacht uit`);
+
+              const winstAntwoord = page
+                .waitForResponse((r) => r.url().includes('/api/prospects') && r.url().includes('winstgevend=1'), { timeout: 20_000 })
+                .catch(() => null);
+              await winst.click();
+              const winstRes = await winstAntwoord;
+              if (!winstRes) {
+                fail('prospects: winstfilter leverde geen verzoek met winstgevend=1');
+              } else {
+                await page.waitForTimeout(400);
+                const uitleg = await page
+                  .locator('[role="tabpanel"]:visible', { hasText: 'zeeft op EBITDA' })
+                  .count();
+                if (uitleg) ok('prospects: de winstzeef legt uit waarom de KBO-herkomst wegvalt');
+                else fail('prospects: winstzeef aan zonder uitleg over de wegvallende KBO-herkomst');
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   if (SELFTEST) {
     console.log('→ Zelftest (dit scenario hóórt te falen)');
     await page.goto(BASE + '/deze-route-bestaat-niet-' + Date.now(), { waitUntil: 'domcontentloaded' })
       .catch(() => {});
     const res = await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
     if (res?.status() === 200) fail('ZELFTEST: bewust gefaalde assertie — de harness kan falen');
+
+    // De twee a11y-passes krijgen elk hun eigen defect ingespoten. Een pass die groen
+    // blijft op een pagina waar het defect er aantoonbaar ín zit, meet niets.
+    await page.evaluate(() => {
+      const kop = document.createElement('h5');
+      kop.textContent = 'zelftest: overgeslagen niveau';
+      document.body.appendChild(kop);
+      const knop = document.createElement('button');
+      knop.textContent = 'zelftest: onzichtbare focus';
+      // !important, anders wint de ring-utility alsnog en toont de knop gewoon focus.
+      knop.style.setProperty('outline', 'none', 'important');
+      knop.style.setProperty('box-shadow', 'none', 'important');
+      // PREPEND, niet append: het dashboard heeft honderden tab-stops en de pass loopt
+      // er maxStops af. Achteraan viel de knop buiten het bereik en bleef de zelftest
+      // stil groen — gemeten op 2026-08-27, precies de vorm die deze zelftest hoort te
+      // vangen. Vooraan is hij de eerste stop, op elke pagina.
+      document.body.prepend(knop);
+    });
+    const kopZelftest = await kopstructuur(page);
+    if (kopZelftest.problemen.length) fail(`ZELFTEST kopstructuur: ${kopZelftest.problemen[0]}`);
+    else console.log('  ! kopstructuur-pass zag het ingespoten defect NIET');
+    const tbZelftest = await toetsenbord(page);
+    if (tbZelftest.problemen.length) fail(`ZELFTEST toetsenbord: ${tbZelftest.problemen[0]}`);
+    else console.log('  ! toetsenbord-pass zag het ingespoten defect NIET');
   }
 
   if (consoleErrors.length) {
     for (const e of [...new Set(consoleErrors)].slice(0, 5)) fail(`console: ${e.slice(0, 160)}`);
   } else ok('console schoon');
+
+  const gedeeldNa = buildId(gedeeld);
+  if (gedeeldVoor !== gedeeldNa) {
+    fail(`de gedeelde .next is herbouwd (BUILD_ID ${gedeeldVoor} → ${gedeeldNa}) — een dev-server daarop zou nu kapot zijn`);
+  } else if (gedeeldVoor !== null) {
+    ok(`de gedeelde .next is ongemoeid gebleven (BUILD_ID ${gedeeldVoor})`);
+  } else {
+    notes.push('geen .next met BUILD_ID aanwezig — niets om te beschermen deze run');
+  }
 
   if (leaks.size) fail(`lek naar externe origin(s): ${[...leaks].join(', ')}`);
   else ok('geen enkel verzoek buiten de eigen origin');
@@ -204,9 +814,13 @@ async function main() {
   console.log('');
   for (const n of notes) console.log(`  • ${n}`);
   if (SELFTEST) {
-    const expected = fails.some((f) => f.startsWith('ZELFTEST'));
-    console.log(expected ? '✓ zelftest: de harness faalt wanneer hij hoort te falen' : '✗ zelftest faalde NIET — de harness meet niets');
-    process.exit(expected ? 0 : 1);
+    // Elke as apart: één gefaalde assertie bewees vroeger alleen dat de routecheck meet.
+    const assen = ['ZELFTEST:', 'ZELFTEST kopstructuur', 'ZELFTEST toetsenbord'];
+    const gemist = assen.filter((a) => !fails.some((f) => f.startsWith(a)));
+    console.log(gemist.length === 0
+      ? '✓ zelftest: alle drie de assen falen wanneer ze horen te falen'
+      : `✗ zelftest: deze as/assen faalden NIET — ${gemist.join(', ')}`);
+    process.exit(gemist.length === 0 ? 0 : 1);
   }
   console.log(fails.length ? `✗ ${fails.length} bevinding(en)` : '✓ alle checks geslaagd');
   process.exit(fails.length ? 1 : 0);

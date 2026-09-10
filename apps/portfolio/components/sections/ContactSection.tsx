@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Container } from '@/components/layout/Container';
 import { Reveal } from '@/components/ui/Reveal';
@@ -19,13 +20,16 @@ export const ContactSection = () => (
           </h2>
           <p className="max-w-2xl text-lg text-muted-foreground">{contact.body}</p>
           <div className="flex flex-wrap items-center gap-4">
-            <a
-              href={site.contactHref}
-              className={buttonVariants({ size: 'lg' })}
-            >
+            <a href={site.scanHref} className={buttonVariants({ size: 'lg' })}>
               {contact.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
+            <Link
+              href={contact.secondaryCta.href}
+              className={buttonVariants({ variant: 'outline', size: 'lg' })}
+            >
+              {contact.secondaryCta.label}
+            </Link>
             <a href={site.phoneHref} className="text-sm font-medium hover:text-foreground">
               {site.phone}
             </a>

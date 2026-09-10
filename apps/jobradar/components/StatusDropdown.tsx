@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { cn } from '@umanex/ui/lib/utils'
+import { focusRing } from '@umanex/ui/lib/focus'
 import type { ItemStatus } from '@/lib/db/schema'
 
 const STATUS_OPTIONS: { value: ItemStatus; label: string; className: string }[] = [
@@ -14,13 +16,18 @@ const STATUS_OPTIONS: { value: ItemStatus; label: string; className: string }[] 
 ]
 
 type Props = {
-  itemId: number
+  /**
+   * Het PATCH-pad van dít item. Was eerst `itemId` + `type`, met de padopbouw in dit
+   * component — dat werkte voor twee soorten en brak bij de derde: een prospect heeft geen
+   * numerieke id maar een ondernemingsnummer. De aanroeper weet zijn eigen pad; dit
+   * component hoort dat niet te raden.
+   */
+  endpoint: string
   status: ItemStatus
-  type: 'job' | 'lead'
   onStatusChange: (status: ItemStatus) => void
 }
 
-export function StatusDropdown({ itemId, status, type, onStatusChange }: Props) {
+export function StatusDropdown({ endpoint, status, onStatusChange }: Props) {
   const [pending, setPending] = useState(false)
 
   const current = STATUS_OPTIONS.find((o) => o.value === status) ?? STATUS_OPTIONS[0]!
@@ -29,7 +36,6 @@ export function StatusDropdown({ itemId, status, type, onStatusChange }: Props) 
     const newStatus = e.target.value as ItemStatus
     setPending(true)
     try {
-      const endpoint = type === 'job' ? `/api/jobs/${itemId}` : `/api/leads/${itemId}`
       const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -46,7 +52,11 @@ export function StatusDropdown({ itemId, status, type, onStatusChange }: Props) 
       value={status}
       onChange={handleChange}
       disabled={pending}
-      className={`cursor-pointer border-none bg-transparent text-xs outline-none disabled:opacity-50 ${current.className}`}
+      className={cn(
+        'cursor-pointer rounded-sm border-none bg-transparent text-xs disabled:opacity-50',
+        focusRing,
+        current.className
+      )}
     >
       {STATUS_OPTIONS.map(({ value, label }) => (
         <option key={value} value={value}>

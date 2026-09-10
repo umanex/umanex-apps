@@ -17,10 +17,20 @@
 # - .claude/agents/<naam>.md       (subagent-definities met tool-beperking, zelfde regime)
 # - ~/.claude/hooks/tcebc-reminder.sh + settings.json  (TC-EBC UserPromptSubmit hook, user-level)
 # - ~/.claude/hooks/session-start-handoff.sh + settings.json  (SessionStart handoff-hook, user-level)
+# - ~/.claude/hooks/askquestion-estimate-guard.sh + settings.json  (PreToolUse schatting-guard, user-level)
+# - ~/.claude/hooks/bron-assertie-guard.sh + settings.json          (PreToolUse bron-guard, user-level)
+# - ~/.claude/hooks/acceptatie-guard.sh + settings.json             (PreToolUse acceptatie-guard, user-level)
+# - ~/.claude/hooks/meting-guard.sh + settings.json                 (PreToolUse meting-guard, user-level)
+# - ~/.claude/hooks/nulmeting-guard.sh + settings.json              (PostToolUse nulmeting-guard, user-level)
+# - ~/.claude/hooks/identifier-bron-guard.sh + settings.json        (PreToolUse identifier-guard, user-level)
+# - ~/.claude/hooks/tegenspraak-guard.sh + settings.json            (PostToolUse tegenspraak-guard, user-level)
+# - ~/.claude/hooks/tegenproef-guard.sh + settings.json             (PostToolUse tegenproef-guard, user-level)
+# - ~/.claude/hooks/cwd-guard.sh + settings.json                    (PostToolUse cwd-guard, user-level)
 # - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
 # - HANDOFF.md                     (sessie-handoff in root + elke app, geseed als afwezig — nooit overschreven)
 # - BACKLOG.md                     (gemeld-niet-gebouwd in root + elke app, geseed als afwezig — nooit overschreven)
 # - scripts/gen-snapshot.sh + .githooks/pre-commit   (context-snapshots, incl. core.hooksPath-activatie)
+# - scripts/refs-check.mjs        (PR-verwijzingen: gekwalificeerd en bestaand — CI-check)
 # - .githooks/commit-msg           (commit-scope guard: een app-scope mag geen andere app raken)
 #
 # SKILLS ZIJN REPO-BESTANDEN, GEEN USER-LEVEL KOPIEËN. Tot 2026-08-17 stonden de globale
@@ -69,6 +79,58 @@ CLIENT_ROOT="$( cd "$SCRIPT_DIR/.." 2>/dev/null && pwd )" \
   || die "repo-root loste op naar '$CLIENT_ROOT' — dat kan geen repo zijn"
 [ -d "$CLIENT_ROOT/.git" ] || [ -f "$CLIENT_ROOT/.git" ] \
   || die "'$CLIENT_ROOT' is geen git-repo — sync-os.sh hoort in <repo>/scripts/ te staan"
+
+# ── --refresh-headers ─────────────────────────────────────────────────────────
+# Vervangt in élke HANDOFF.md van deze repo het blok BÓVEN de eerste laag-header
+# door de canonieke kop uit de template, en laat de entries ongemoeid. Bestaat om
+# één reden: seeding overschrijft nooit, dus een HANDOFF.md die vóór 2026-08-10 is
+# aangemaakt legt nog het oude entry-formaat uit — zonder `Check`-veld en zonder de
+# sectie *Schrijf de check, niet de staat*. De regel bereikt die repo's wél via de
+# skill en de globale laag, maar de kop spreekt hem tegen, en dat is de vorm waarin
+# een verouderde uitleg schade doet: hij oogt gezaghebbend.
+#
+# Aparte modus, geen stap in de gewone sync: dit herschrijft bestanden die de sync
+# juist met rust hoort te laten, en dat hoort een expliciete keuze te zijn.
+refresh_handoff_headers() {
+  TPL="$UMANEX_OS_PATH/templates/HANDOFF.template.md"
+  [ -f "$TPL" ] || die "template ontbreekt: $TPL"
+  KOP="$(awk '/^# Globaal|^# Klant|^# Project/{exit} {print}' "$TPL")"
+  [ -n "$KOP" ] || die "kon geen kop uit de template lezen"
+  n=0; ongemoeid=0
+  echo "→ HANDOFF-koppen verversen in $CLIENT_ROOT"
+  while IFS= read -r f; do
+    # De kop eindigt bij de eerste laag-header OF bij de eerste entry. Die tweede
+    # grens is niet theoretisch: `columba/HANDOFF.md` draagt twee entries zonder ooit
+    # een laag-header gekregen te hebben (gemeten 2026-08-27), en een eerste versie van
+    # deze functie sloeg hem daardoor over — precies het bestand dat het item bedoelde.
+    # Zonder beide grenzen valt zo'n bestand tussen wal en schip.
+    if grep -qE '^# (Globaal|Klant|Project)' "$f"; then
+      REST="$(awk '/^# Globaal|^# Klant|^# Project/{f=1} f' "$f")"
+    elif grep -qE '^## [0-9]{4}-[0-9]{2}-[0-9]{2}' "$f"; then
+      REST="$(awk '/^## [0-9]{4}-[0-9]{2}-[0-9]{2}/{f=1} f' "$f")"
+    else
+      # Echt niets te scheiden: een vers geseed of leeg bestand. Afblijven in plaats
+      # van gokken — er is geen entry die verloren kan gaan, maar ook niets te winnen.
+      echo "  • ${f#$CLIENT_ROOT/} — geen entries, ongemoeid"
+      ongemoeid=$((ongemoeid + 1)); continue
+    fi
+    OUD="$(cat "$f")"
+    printf '%s\n%s\n' "$KOP" "$REST" > "$f.tmp" && mv "$f.tmp" "$f"
+    if [ "$OUD" = "$(cat "$f")" ]; then
+      echo "  • ${f#$CLIENT_ROOT/} — al canoniek"
+    else
+      echo "  ✓ ${f#$CLIENT_ROOT/}"; n=$((n + 1))
+    fi
+  done <<EOF
+$(find "$CLIENT_ROOT" -name HANDOFF.md -not -path '*/node_modules/*' -not -path '*/.claude/worktrees/*' | sort)
+EOF
+  echo "  → $n bijgewerkt, $ongemoeid ongemoeid gelaten"
+}
+
+if [ "${1:-}" = "--refresh-headers" ]; then
+  refresh_handoff_headers
+  exit 0
+fi
 
 # Zelf-modus: draait dit script in umanex-os zelf?
 #
@@ -400,6 +462,8 @@ echo "→ Installeer context-snapshot systeem..."
 GEN_SNAPSHOT="$UMANEX_OS_PATH/templates/gen-snapshot.sh"
 GITHOOK="$UMANEX_OS_PATH/templates/githooks-pre-commit"
 CONTEXT_TEMPLATE="$UMANEX_OS_PATH/templates/context.json.template"
+TOKEN_COVERAGE="$UMANEX_OS_PATH/templates/figma-token-coverage.mjs"
+REFS_CHECK="$UMANEX_OS_PATH/templates/refs-check.mjs"
 
 if [ "$SELF_MODE" -eq 1 ]; then
   # In de bron is een kópie van de hook een tweede waarheid die wegdrijft van het
@@ -425,6 +489,29 @@ else
     echo "  ✓ scripts/gen-snapshot.sh"
   else
     echo "  ⚠ templates/gen-snapshot.sh niet gevonden — overgeslagen"
+  fi
+
+  # Token-dekkingscheck: toetst of elke Figma-variabele een tegenhanger heeft in
+  # tokens.json. Config-vrij over de klant-tokenvormen heen, dus één kopie volstaat.
+  if [ -f "$TOKEN_COVERAGE" ]; then
+    mkdir -p scripts
+    cp "$TOKEN_COVERAGE" scripts/figma-token-coverage.mjs
+    chmod +x scripts/figma-token-coverage.mjs
+    echo "  ✓ scripts/figma-token-coverage.mjs"
+  else
+    echo "  ⚠ templates/figma-token-coverage.mjs niet gevonden — overgeslagen"
+  fi
+
+  # Referentie-checker: toetst of elke PR-verwijzing in de markdown bestaat én zegt uit
+  # welke repo ze komt. Draait in CI (netwerk nodig), naast de vorm-waarschuwing die de
+  # pre-commit hook geeft. Config-vrij, dus één kopie volstaat over de klanten heen.
+  if [ -f "$REFS_CHECK" ]; then
+    mkdir -p scripts
+    cp "$REFS_CHECK" scripts/refs-check.mjs
+    chmod +x scripts/refs-check.mjs
+    echo "  ✓ scripts/refs-check.mjs"
+  else
+    echo "  ⚠ templates/refs-check.mjs niet gevonden — overgeslagen"
   fi
 
   if [ -f "$GITHOOK" ]; then
@@ -567,6 +654,307 @@ else
   fi
 fi
 
+# AskUserQuestion-guard: PreToolUse, user-level, zelfde patroon als de twee hooks hierboven.
+# Waarschuwt bij een ongemarkeerd getal in een optie-tekst — de faalklasse uit LEARNINGS
+# 2026-08-26. Anders dan die twee draagt deze entry een `matcher`, want PreToolUse vuurt op
+# élke tool en we willen alleen AskUserQuestion.
+echo ""
+echo "→ Installeer AskUserQuestion-guard (PreToolUse, user-level)..."
+ASKQ_SRC="$UMANEX_OS_PATH/templates/askquestion-estimate-guard.sh"
+ASKQ_CMD="$USER_HOOKS/askquestion-estimate-guard.sh"
+if [ ! -f "$ASKQ_SRC" ]; then
+  echo "  ⚠ templates/askquestion-estimate-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$ASKQ_SRC" "$ASKQ_CMD"
+  chmod +x "$ASKQ_CMD"
+  echo "  ✓ ~/.claude/hooks/askquestion-estimate-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast. Voeg de PreToolUse-hook handmatig toe (zie docs/architecture.md)."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$ASKQ_CMD" '.hooks.PreToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$ASKQ_CMD" '.hooks.PreToolUse += [{"matcher":"AskUserQuestion","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Schatting-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        # Zie de toelichting bij de UserPromptSubmit-hook hierboven: schrijf dóór een
+        # eventuele symlink heen in plaats van hem te vervangen.
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PreToolUse-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
+      else
+        rm -f "$_tmp"
+        echo "  ⚠ kon settings.json niet bewerken — controleer of het geldige JSON is"
+      fi
+    fi
+  fi
+fi
+
+# Bron-assertie-guard: PreToolUse op Write|Edit|NotebookEdit, user-level, zelfde patroon als de
+# AskUserQuestion-guard hierboven. Waarschuwt wanneer een feitenbron (audits/, LEARNINGS, HANDOFF,
+# BACKLOG, strategie/, *.tcebc.md) een ongemarkeerde "ik heb het nooit gezien"-zin krijgt — de
+# faalklasse uit LEARNINGS 2026-09-02. Instructie alleen bleek daar niet genoeg: de replay ná de
+# CLAUDE.md-harding reproduceerde de fout identiek.
+echo ""
+echo "→ Installeer bron-assertie-guard (PreToolUse, user-level)..."
+BRON_SRC="$UMANEX_OS_PATH/templates/bron-assertie-guard.sh"
+BRON_CMD="$USER_HOOKS/bron-assertie-guard.sh"
+if [ ! -f "$BRON_SRC" ]; then
+  echo "  ⚠ templates/bron-assertie-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$BRON_SRC" "$BRON_CMD"
+  chmod +x "$BRON_CMD"
+  echo "  ✓ ~/.claude/hooks/bron-assertie-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast. Voeg de PreToolUse-hook handmatig toe (zie docs/architecture.md)."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$BRON_CMD" '.hooks.PreToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$BRON_CMD" '.hooks.PreToolUse += [{"matcher":"Write|Edit|NotebookEdit","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Bron-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PreToolUse-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
+      else
+        rm -f "$_tmp"
+        echo "  ⚠ kon settings.json niet bewerken — controleer of het geldige JSON is"
+      fi
+    fi
+  fi
+fi
+
+# Acceptatie-guard: de trigger van de Beoordeel-stap. Vuurt op de HANDELING (een vinkje,
+# een statusovergang in een *.tcebc.md) en niet op de prompt, want het gemeten gat zit niet
+# in wat de gebruiker vraagt maar in wat er tijdens de taak gebeurt: 22 van 78 briefings
+# blijven op `gebouwd` staan, 49% van de acceptatie-items draagt meer dan één meting, en
+# 14% kan per constructie niet rood worden (2026-09-07, umanex-apps).
+echo ""
+echo "→ Installeer acceptatie-guard (PreToolUse, user-level)..."
+ACC_SRC="$UMANEX_OS_PATH/templates/acceptatie-guard.sh"
+ACC_CMD="$USER_HOOKS/acceptatie-guard.sh"
+if [ ! -f "$ACC_SRC" ]; then
+  echo "  ⚠ templates/acceptatie-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$ACC_SRC" "$ACC_CMD"
+  chmod +x "$ACC_CMD"
+  echo "  ✓ ~/.claude/hooks/acceptatie-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast. Voeg de PreToolUse-hook handmatig toe."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$ACC_CMD" '.hooks.PreToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$ACC_CMD" '.hooks.PreToolUse += [{"matcher":"Write|Edit|NotebookEdit","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Acceptatie-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PreToolUse-hook toegevoegd aan settings.json (open /hooks of herstart om te activeren)"
+      else
+        rm -f "$_tmp"
+        echo "  ⚠ kon settings.json niet bewerken — controleer of het geldige JSON is"
+      fi
+    fi
+  fi
+fi
+
+# Meting-guard: de verify-discipline in een taak zónder briefing. Vuurt wanneer je een
+# instrument schrijft — een guard, een check, een test — want daar is "hij draait" niet
+# hetzelfde als "hij meet". Gemeten op 243 schrijfacties: 6% vuurrate, nul vals.
+echo ""
+echo "→ Installeer meting-guard (PreToolUse, user-level)..."
+MET_SRC="$UMANEX_OS_PATH/templates/meting-guard.sh"
+MET_CMD="$USER_HOOKS/meting-guard.sh"
+if [ ! -f "$MET_SRC" ]; then
+  echo "  ⚠ templates/meting-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$MET_SRC" "$MET_CMD"
+  chmod +x "$MET_CMD"
+  echo "  ✓ ~/.claude/hooks/meting-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$MET_CMD" '.hooks.PreToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$MET_CMD" '.hooks.PreToolUse += [{"matcher":"Write|Edit|NotebookEdit","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Meting-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PreToolUse-hook toegevoegd aan settings.json"
+      else
+        rm -f "$_tmp"; echo "  ⚠ kon settings.json niet bewerken"
+      fi
+    fi
+  fi
+fi
+
+# Nulmeting-guard: PostToolUse op Bash. Vuurt wanneer een telcommando een nul teruggeeft —
+# het moment waarop "er is niets" en "mijn instrument staat stuk" er identiek uitzien.
+# Gemeten op 592 Bash-calls: 2% vuurrate met de eis dat het commando óók een telling is.
+echo ""
+echo "→ Installeer nulmeting-guard (PostToolUse, user-level)..."
+NUL_SRC="$UMANEX_OS_PATH/templates/nulmeting-guard.sh"
+NUL_CMD="$USER_HOOKS/nulmeting-guard.sh"
+if [ ! -f "$NUL_SRC" ]; then
+  echo "  ⚠ templates/nulmeting-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$NUL_SRC" "$NUL_CMD"
+  chmod +x "$NUL_CMD"
+  echo "  ✓ ~/.claude/hooks/nulmeting-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$NUL_CMD" '.hooks.PostToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$NUL_CMD" '.hooks.PostToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Nulmeting-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PostToolUse-hook toegevoegd aan settings.json"
+      else
+        rm -f "$_tmp"; echo "  ⚠ kon settings.json niet bewerken"
+      fi
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Identifier-bron-guard: PreToolUse op Write|Edit|NotebookEdit|Bash. Vuurt op een
+# ondoorzichtige sleutel in een URL die nergens in de repo staat. Bash zit er bewust bij:
+# de fout van 2026-09-07 landde via `cat > lib/appsConfig.ts <<EOF`, niet via Write.
+# ---------------------------------------------------------------------------
+echo "→ Installeer identifier-bron-guard (PreToolUse, user-level)..."
+IDB_SRC="$UMANEX_OS_PATH/templates/identifier-bron-guard.sh"
+IDB_CMD="$USER_HOOKS/identifier-bron-guard.sh"
+if [ ! -f "$IDB_SRC" ]; then
+  echo "  ⚠ templates/identifier-bron-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$IDB_SRC" "$IDB_CMD"
+  chmod +x "$IDB_CMD"
+  echo "  ✓ ~/.claude/hooks/identifier-bron-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$IDB_CMD" '.hooks.PreToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$IDB_CMD" '.hooks.PreToolUse += [{"matcher":"Write|Edit|NotebookEdit|Bash","hooks":[{"type":"command","command":$cmd,"timeout":25,"statusMessage":"Identifier-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PreToolUse-hook toegevoegd aan settings.json"
+      else
+        rm -f "$_tmp"; echo "  ⚠ kon settings.json niet bewerken"
+      fi
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Tegenspraak-guard: PostToolUse op Bash. Vuurt wanneer een commando zijn tweede meting
+# als controle labelt en die controle een ander getal geeft dan de hoofdmeting.
+# ---------------------------------------------------------------------------
+echo "→ Installeer tegenspraak-guard (PostToolUse, user-level)..."
+TGS_SRC="$UMANEX_OS_PATH/templates/tegenspraak-guard.sh"
+TGS_CMD="$USER_HOOKS/tegenspraak-guard.sh"
+if [ ! -f "$TGS_SRC" ]; then
+  echo "  ⚠ templates/tegenspraak-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$TGS_SRC" "$TGS_CMD"
+  chmod +x "$TGS_CMD"
+  echo "  ✓ ~/.claude/hooks/tegenspraak-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$TGS_CMD" '.hooks.PostToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$TGS_CMD" '.hooks.PostToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Tegenspraak-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PostToolUse-hook toegevoegd aan settings.json"
+      else
+        rm -f "$_tmp"; echo "  ⚠ kon settings.json niet bewerken"
+      fi
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Tegenproef-guard: PostToolUse op Bash. Vuurt wanneer een tegenproef een mutatie
+# aankondigt en daarna "geen verschil" meldt — een tegenproef die slaagt bewijst niets.
+# ---------------------------------------------------------------------------
+echo "→ Installeer tegenproef-guard (PostToolUse, user-level)..."
+TPF_SRC="$UMANEX_OS_PATH/templates/tegenproef-guard.sh"
+TPF_CMD="$USER_HOOKS/tegenproef-guard.sh"
+if [ ! -f "$TPF_SRC" ]; then
+  echo "  ⚠ templates/tegenproef-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$TPF_SRC" "$TPF_CMD"
+  chmod +x "$TPF_CMD"
+  echo "  ✓ ~/.claude/hooks/tegenproef-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$TPF_CMD" '.hooks.PostToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$TPF_CMD" '.hooks.PostToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Tegenproef-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PostToolUse-hook toegevoegd aan settings.json"
+      else
+        rm -f "$_tmp"; echo "  ⚠ kon settings.json niet bewerken"
+      fi
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# cwd-guard (PostToolUse op Bash, user-level). Vuurt wanneer een relatief pad vanuit de
+# shell-cwd niet gevonden werd (de tool-shell houdt zijn cwd vast tussen calls): een `cd`
+# die er al stond, of een git-pathspec die verdubbelde. Wat ná zo'n fout in de uitkomst
+# staat, bewijst niets over wat ervóór had moeten draaien.
+# ---------------------------------------------------------------------------
+echo "→ Installeer cwd-guard (PostToolUse, user-level)..."
+CWD_SRC="$UMANEX_OS_PATH/templates/cwd-guard.sh"
+CWD_CMD="$USER_HOOKS/cwd-guard.sh"
+if [ ! -f "$CWD_SRC" ]; then
+  echo "  ⚠ templates/cwd-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$CWD_SRC" "$CWD_CMD"
+  chmod +x "$CWD_CMD"
+  echo "  ✓ ~/.claude/hooks/cwd-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$CWD_CMD" '.hooks.PostToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$CWD_CMD" '.hooks.PostToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Cwd-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PostToolUse-hook toegevoegd aan settings.json"
+      else
+        rm -f "$_tmp"; echo "  ⚠ kon settings.json niet bewerken"
+      fi
+    fi
+  fi
+fi
+
 echo ""
 echo "✓ Sync compleet."
 echo ""
@@ -574,5 +962,6 @@ echo "Volgende stappen:"
 echo "  1. Check 'git status' om te zien wat er gewijzigd is in de klant-repo"
 echo "  2. Commit de wijzigingen wanneer je wil"
 echo ""
-echo "Let op: een gelijknamige skill in deze klant-repo's .claude/skills/ heeft voorrang"
-echo "op de zojuist gesyncte globale versie in ~/.claude/skills/."
+echo "Let op: bij een naamconflict wint een achtergebleven kopie in ~/.claude/skills/ van"
+echo "de repo-versie in .claude/skills/ — die maskeert hem dus. Daarom ruimt dit script de"
+echo "beheerde namen daar op (gemeten 2026-08-17). Staat er toch nog iets, verwijder het."

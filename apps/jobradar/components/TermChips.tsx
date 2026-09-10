@@ -3,6 +3,8 @@
 import { useId, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@umanex/ui/components/ui/button'
+import { cn } from '@umanex/ui/lib/utils'
+import { focusRing } from '@umanex/ui/lib/focus'
 import { splitsTermen, normaliseerZinsnedes } from '@/lib/settings'
 
 type TermChipsProps = {
@@ -78,7 +80,10 @@ export function TermChips({
               onClick={() => onChange(termen.filter((t) => t !== term))}
               disabled={disabled}
               aria-label={`${term} verwijderen`}
-              className="rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
+              className={cn(
+                'rounded-sm text-muted-foreground hover:text-foreground disabled:opacity-50',
+                focusRing
+              )}
             >
               <X className="h-3 w-3" />
             </button>
@@ -103,7 +108,10 @@ export function TermChips({
           }}
           onBlur={voegToe}
           placeholder={vol ? 'maximum bereikt' : modus === 'zinsnede' ? 'combinatie toevoegen…' : 'term toevoegen…'}
-          className="min-w-[10rem] flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50"
+          className={cn(
+            'min-w-[10rem] flex-1 rounded-sm bg-transparent px-1 py-1 text-sm placeholder:text-muted-foreground disabled:opacity-50',
+            focusRing
+          )}
         />
 
         <Button type="button" size="sm" variant="secondary" onClick={voegToe} disabled={disabled || vol || !invoer.trim()}>

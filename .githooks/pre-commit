@@ -22,9 +22,10 @@
 # gemak: de commit die dit vangt was er één die per ongeluk op main landde terwijl
 # er in dezelfde working tree aan een ándere app gewerkt werd.
 #
-# De losse-HEAD-tak dekt de worktree-opzet af. Een app-worktree parkeert op een
-# losse HEAD tot je een taak start; zonder deze guard zou een commit daar stil
-# verdwijnen zodra je wegcheckt. Nu word je gedwongen eerst te vertakken.
+# De losse-HEAD-tak dekt een linked worktree af die zónder `-b` op een commit of op
+# `origin/main` is gezet (`git worktree add <pad> origin/main`, of een `checkout origin/main`
+# erin): die staat op een losse HEAD, en zonder deze guard zou een commit daar stil
+# verdwijnen zodra je wegcheckt. Met `-b` (het recept in CLAUDE.md) speelt dit niet.
 #
 # Rebase, cherry-pick en een lopende merge draaien per definitie op een losse HEAD
 # of committen op de huidige branch — die laat de guard met rust, anders zou hij
@@ -116,8 +117,16 @@ fi
 #    daarop afgaan zou de guard permanent laten piepen, en een wachter die altijd afgaat leer
 #    je vooral negeren. Aanwezigheid is machinaal te toetsen, betekenis niet: of de check
 #    ergens naar kíjkt blijft mensenwerk.
+# Paden NUL-gescheiden en mét R: `for f in $(… | grep)` splitste een pad met een spatie in
+# twee fragmenten (twee valse meldingen), liet een pad met een niet-ASCII-teken stil vallen
+# (git quoteert dat pad, dus de `$`-anker van de grep miste) en zag een hernoemd bestand
+# helemaal niet (`--diff-filter=ACM` laat R weg, en git detecteert renames standaard).
+# Gemeten 2026-09-07 door het review-panel, op beide kanten. Zelfde vorm in 2b en 2c.
+staged_paths() { git diff --cached --name-only -z --diff-filter=ACMR; }
+
 zonder_check=""
-for f in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)HANDOFF\.md$' || true); do
+while IFS= read -r -d '' f; do
+  case "$f" in HANDOFF.md|*/HANDOFF.md) ;; *) continue ;; esac
   # Per toegevoegd entry-blok: staat er tussen de toegevoegde regels een `Check`?
   missing=$(git diff --cached -U0 -- "$f" \
     | awk '
@@ -132,7 +141,7 @@ for f in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)HANDO
         END { if (open_entry && is_open && !has_check) n++; print n + 0 }
       ')
   [ "${missing:-0}" -gt 0 ] 2>/dev/null && zonder_check="$zonder_check $f"
-done
+done < <(staged_paths)
 
 if [ -n "$zonder_check" ]; then
   echo "⚠ Nieuwe open HANDOFF-entry zonder 'Check'-regel in:$zonder_check"
@@ -141,17 +150,184 @@ if [ -n "$zonder_check" ]; then
   echo "  Schrijf de check op: een commando, of een vraag met een eenduidig antwoord."
 fi
 
+# 2b. Acceptatie-signaal — draagt een nieuw vinkje in een briefing zijn bewijs?
+#     Waarschuwt, blokkeert niet. Zelfde plek en zelfde reden als het HANDOFF-blok
+#     hierboven: een briefing kan in de root én in een app staan.
+#
+#     De faalvorm: een acceptatie-item is een bewering over het ding, en `- [x]` werd
+#     gezet op de herinnering van de bouwstap. Gemeten op Soda+ (2026-08-25): zeventien
+#     van negentien items afgevinkt, vijf ervan sprak het bestand tegen — "CTA's op één
+#     hoogte" bij 288 px spreiding, "≤ 2 zinnen" bij drie. Een vinkje mét `bewijs:` in
+#     de regel kan nog steeds liegen, maar dwingt een meting af die iemand kan nalezen.
+#
+#     Alleen op toegevoegde `- [x]`-regels in `*.tcebc.md`. Aanwezigheid van het woord
+#     is machinaal te toetsen; of het bewijs iets meet, blijft mensenwerk.
+zonder_bewijs=""
+while IFS= read -r -d '' f; do
+  case "$f" in *.tcebc.md) ;; *) continue ;; esac
+  n_zb=$(git diff --cached -U0 -- "$f" \
+    | awk '/^\+ *- \[[xX]\]/ && !/bewijs:/ { n++ } END { print n + 0 }')
+  [ "${n_zb:-0}" -gt 0 ] 2>/dev/null && zonder_bewijs="$zonder_bewijs $f ($n_zb)"
+done < <(staged_paths)
+
+if [ -n "$zonder_bewijs" ]; then
+  echo "⚠ Acceptatie-item(s) afgevinkt zonder 'bewijs:' in:$zonder_bewijs"
+  echo "  Een vinkje zonder meting is een bewering, geen validatie — op Soda+ stond het"
+  echo "  vijf keer verkeerd op negentien. Zet het bewijs ín de regel:"
+  echo "    - [x] CTA's op één hoogte — bewijs: y=612 op 02–08 (figma_execute)"
+fi
+
+# 2b-bis. As-mix-signaal — mengt een acceptatie-item een inhoudelijke claim met een
+#     procedurele? Waarschuwt, blokkeert niet. De commit-tijd tegenhanger van
+#     `~/.claude/hooks/acceptatie-guard.sh`: die vuurt bij het schrijven, deze vangt ook
+#     wat met de hand in een editor is aangepast.
+#
+#     GEMETEN (2026-09-07, 78 briefings / 629 items in umanex-apps): 49% van de items
+#     draagt twee of meer beweringen die elk een eigen meting vragen. Een leestekenregex
+#     vangt daar maar de helft van (recall 51%), want het dominante mechanisme is
+#     juxtapositie zónder voegwoord. Het betrouwbaarste énkele signaal bleek de as-mix:
+#     een inhoudelijke claim geniet aan een procedurele — "Portrait-gedrag ongewijzigd;
+#     tsc groen". Die twee helften delen nooit een instrument, dus het groene commando
+#     draagt routineus het vinkje voor de helft die niemand bekeken heeft.
+#
+#     Bewust NAUW: procedureel woord ÉN scheidingsteken op dezelfde regel. Een variant op
+#     elke puntkomma vuurt op 22% van alle items en leert vooral hoe je hem wegleest.
+as_mix=""
+while IFS= read -r -d '' f; do
+  case "$f" in *.tcebc.md) ;; *) continue ;; esac
+  n_am=$(git diff --cached -U0 -- "$f" | awk '
+    /^\+ *- \[[ xX]\]/ {
+      kop = $0; sub(/— bewijs:.*/, "", kop)
+      if (kop ~ /tsc|type-?check|typecheck|lint|build|exit 0|compileert/ && kop ~ /;|·| \+ /) n++
+    }
+    END { print n + 0 }')
+  [ "${n_am:-0}" -gt 0 ] 2>/dev/null && as_mix="$as_mix $f ($n_am)"
+done < <(staged_paths)
+
+if [ -n "$as_mix" ]; then
+  echo "⚠ Acceptatie-item(s) mengen een inhoudelijke claim met een procedurele in:$as_mix"
+  echo "  Eén item, één meting. \`tsc groen\` en een visuele claim delen nooit een instrument,"
+  echo "  dus het groene commando draagt het vinkje voor de helft die niemand bekeken heeft."
+  echo "  Splits ze — de procedurele helft krijgt zijn eigen regel."
+fi
+
+# 2c. Briefing-status-signaal — draagt een aangeraakte briefing een status uit het
+#     vocabulaire van de triade? Waarschuwt, blokkeert niet. Zelfde plek als 2a/2b: een
+#     briefing kan in de root én in een app staan.
+#
+#     De faalvorm: de triade kent drie statussen (gepland → gebouwd → gevalideerd) en niets
+#     bewaakte het woord. Gemeten 2026-09-07 over 197 briefings in vier repo's: 64 gevalideerd,
+#     59 gebouwd, 10 gepland, 1 zónder Status en 63 met een van veertien eigen woorden
+#     ("In uitvoering", "uitgevoerd", "geïmplementeerd", "draft", "ready", "concept", "akkoord").
+#     De enige telling die zegt of de cyclus
+#     sluit — hoeveel briefings halen `gevalideerd` — was daardoor niet te maken; die telling
+#     staat nu in doctor.sh en leest alleen deze drie woorden.
+#
+#     Op aanraking, niet op de hele repo — dezelfde reden als het verify-pad-signaal: de
+#     bestaande afwijkers zijn er tientallen, en een wachter die permanent afgaat leer je
+#     negeren. Leest de gestagede inhoud (`git show :pad`), niet de working tree.
+#     De parser leest drie schrijfwijzen — `- **Status:** x`, `| **Status** | x |` en kaal
+#     `Status: x` — en slaat codeblocks over. De eerste versie las alleen de lijstvorm en
+#     meldde 34 briefings als "zonder Status" waarvan er 33 wél een Status droegen (gemeten
+#     2026-09-07 door het review-panel over 197 briefings). Dezelfde awk staat in
+#     scripts/doctor.sh (blok 6b); wijzig ze samen.
+status_af=""
+while IFS= read -r -d '' f; do
+  case "$f" in *.tcebc.md) ;; *) continue ;; esac
+  st="$(git show ":$f" 2>/dev/null \
+    | awk '/^```/ { blok = !blok; next } blok { next }
+           { sub(/\r$/, "") }
+           match($0, /^[[:space:]]*(- )?\*\*Status:?\*\*:?[[:space:]]*/) { v = substr($0, RLENGTH + 1) }
+           match($0, /^\| *(\*\*)?Status(\*\*)? *\| */)              { v = substr($0, RLENGTH + 1) }
+           match($0, /^Status: */)                                     { v = substr($0, RLENGTH + 1) }
+           v != "" { gsub(/\*/, "", v); sub(/[[:space:]|].*/, "", v); gsub(/[.,;:]+$/, "", v)
+                     print tolower(v); exit }')"
+  case "$st" in
+    gepland|gebouwd|gevalideerd) ;;
+    "") status_af="$status_af $f (geen Status)" ;;
+    *)  status_af="$status_af $f ('$st')" ;;
+  esac
+done < <(staged_paths)
+
+if [ -n "$status_af" ]; then
+  echo "⚠ Briefing-status buiten het vocabulaire in:$status_af"
+  echo "  De triade kent drie statussen — gepland → gebouwd → gevalideerd — en alleen die"
+  echo "  drie tellen mee in de telling van doctor.sh. Een eigen woord of geen Status zegt"
+  echo "  niets over of de cyclus sloot. Zet in het metadata-blok: - **Status:** gebouwd"
+fi
+
 # `D` hoort erbij. Een commit die alleen verwijdert raakt de app net zo goed, en juist een
 # delete maakt de context-snapshot ongeldig: die blijft anders een bestand als `gekoppeld`
 # vermelden dat niet meer bestaat. Zonder de D sloeg zo'n commit alle vier de app-blokken
 # hieronder over — geen snapshot, geen token-sync, geen parallel-werk- en geen
 # verify-pad-signaal. De zusterguard `.githooks/commit-msg` telde deletes al wél mee.
+# 3. Naamruimte-signaal — een kaal `#N` is dubbelzinnig zodra de tekst reist.
+#
+#    Waarschuwt, blokkeert niet, en kijkt alleen naar regels die je in DEZE commit
+#    tóevoegt — niet naar wat er al stond. Een oud bestand aanraken mag geen lawine
+#    van legacy-treffers geven; dezelfde "op aanraking"-logica als de signalen hieronder.
+#
+#    Waarom: umanex-os reist naar elke klant-repo, en een PR-nummer is per repo. Gemeten
+#    op 2026-09-07: van de verwijzingen in umanex-os bestónden er **19 van 19** óók in
+#    umanex-apps, en zes wezen aantoonbaar naar umanex-apps terwijl umanex-os dat nummer
+#    niet eens kán hebben. Een lezer in Columba lost `#112` dus op naar een derde PR die
+#    niemand bedoeld heeft, zonder één foutmelding.
+#
+#    Code-spans op één regel gaan eruit (de `sed` hieronder), want een tekst die uitlegt
+#    wat een kaal nummer is, draagt er per definitie eentje als voorbeeld — een guard die
+#    op zijn eigen uitleg blaft, leert vooral dat je hem mag negeren. Meerregelige
+#    codeblokken ziet deze regel-voor-regel-check niet; die dekt scripts/refs-check.mjs,
+#    dat óók aan GitHub vraagt of het nummer bestaat.
+#
+#    De fix is GitHub's eigen cross-repo-syntax: `umanex-apps#372` in plaats van `#372`.
+#    Die rendert als een echte link én noemt het systeem dat het nummer uitgaf.
+#
+#    Scope: precies wat de sync kopieert — in umanex-os `CLAUDE.md`, `profiles/` en de
+#    skills; in een klant-repo `.umanex-os/` en `.claude/skills/`.
+#    De eigen backlog van een klant-repo verwijst legitiem kaal naar zijn eigen PR's en
+#    blijft dus buiten schot.
+#    Alleen `.md`: anders zou dít bestand bij zijn eigen commit klagen over de
+#    voorbeeldnummers in de uitleg hierboven — het meetbereik dat de meting bevat.
+#    De pathspec gaat via `set --` zodat een pad met een glob niet door woordsplitsing hoeft.
+if [ -f templates/githooks-pre-commit ]; then
+  # umanex-os zelf: alleen wat de sync naar een klant-repo kopieert. Zijn eigen
+  # BACKLOG/HANDOFF/LEARNINGS blijven lokaal — daar dekt refs-check.mjs de bestaans-as
+  # af tegen de eigen repo, en waarschuwen zou hier alleen ruis op legacy opleveren.
+  set -- 'CLAUDE.md' 'profiles/*.md' '.claude/skills/*.md'
+elif [ -f .umanex-os/profile ]; then
+  set -- '.umanex-os/*.md' '.claude/skills/*.md'       # klant-repo: wat meereist
+else
+  set --
+fi
+
+if [ "$#" -gt 0 ]; then
+  # Alleen toegevoegde regels (-U0, `^+`), en de `+++`-header eruit. Twee tot vier cijfers
+  # — het laagste ooit aangehaalde PR-nummer is 19, en één cijfer is hier altijd een
+  # rangtelwoord ("de #1 eerste zet"). Geen leidende nul: een PR-nummer begint nooit met
+  # een 0, een hex-kleur vaak wel (`#000@30%` in een rowtrack-briefing las anders als 0):
+  # een hex-kleur valt zo buiten bereik (#123456 heeft zes cijfers, #1a2b3c een letter
+  # direct achter het cijfer), `umanex-apps#372` ook want daar staat
+  # een woordteken vóór de #, en een markdown-kop `## ` heeft geen cijfer direct achter de #.
+  ns_treffers="$(git diff --cached -U0 --diff-filter=ACMR -- "$@" 2>/dev/null \
+    | grep -E '^[+]' | grep -v -E '^[+][+][+]' \
+    | sed 's/`[^`]*`/ /g' \
+    | grep -oE '(^|[^A-Za-z0-9_/#-])#[1-9][0-9]{1,3}([^0-9A-Za-z]|$)' \
+    | grep -oE '#[1-9][0-9]{1,3}' | sort -u | tr '\n' ' ')"
+
+  if [ -n "$ns_treffers" ]; then
+    echo "⚠ Kaal PR-nummer in de gedeelde laag: $ns_treffers"
+    echo "  Deze tekst reist naar elke klant-repo, en daar wijst hetzelfde nummer naar een"
+    echo "  andere PR. Schrijf de repo erbij: umanex-apps#372 — GitHub maakt daar een link van."
+    echo "  Harde toets: node scripts/refs-check.mjs (draait in CI, vraagt of de PR bestaat)."
+  fi
+fi
+
 changed_apps="$(git diff --cached --name-only --diff-filter=ACMRD \
   | sed -n 's#^apps/\([^/]*\)/.*#\1#p' | sort -u)"
 
 [ -z "$changed_apps" ] && exit 0
 
-# 3. Context-snapshots.
+# 4. Context-snapshots.
 #
 # De uitkomst van gen-snapshot.sh wordt gecontroleerd, en de ✅ komt alleen als er ook echt
 # iets gelukt is. Voorheen draaide de generator, mocht hij falen, werd de `git add` met
@@ -182,7 +358,7 @@ if [ -f ./scripts/gen-snapshot.sh ]; then
   fi
 fi
 
-# 4. Design tokens — constants/ in sync houden met tokens.json.
+# 5. Design tokens — constants/ in sync houden met tokens.json.
 #    Strikt gegateerd: alleen apps die een tokens:build-script én constants/ hebben.
 for app in $changed_apps; do
   [ -d "apps/$app/constants" ] || continue
@@ -200,10 +376,11 @@ for app in $changed_apps; do
   fi
 done
 
-# 5. Parallel-werk-signaal — onvastgelegd werk in apps buiten deze commit.
+# 6. Parallel-werk-signaal — onvastgelegd werk in apps buiten deze commit.
 #    Dat is op zichzelf legitiem (je bent aan twee dingen bezig), dus dit blokkeert niet.
 #    Het maakt alleen het moment zichtbaar waarop een tweede taak in dezelfde working tree
-#    leeft — precies het moment waarop een worktree goedkoper is dan de opruiming achteraf.
+#    leeft — het moment om die andere taak eerst af te ronden of te stashen, niet om een
+#    tweede tree te maken (CLAUDE.md → Git workflow → Parallel werk).
 #    context-snapshot.md telt niet mee: dat is hook-output, niet jouw tweede taak.
 dirty_apps="$(git status --porcelain -- apps 2>/dev/null \
   | sed -n 's#^...apps/\([^/]*\)/.*#\1#p' | sort -u)"
@@ -218,10 +395,10 @@ done
 
 if [ -n "$parallel_apps" ]; then
   echo "⚠ Onvastgelegde wijzigingen buiten deze commit in:$parallel_apps"
-  echo "  Twee taken in één working tree? 'git worktree add' scheidt ze fysiek — zie CLAUDE.md, Git workflow."
+  echo "  Twee taken in één working tree? Rond de andere eerst af of parkeer hem: git stash push -u -- apps/<app> — zie CLAUDE.md, Git workflow."
 fi
 
-# 6. Verify-pad-signaal — heeft de app die je aanraakt een uitvoerbaar verificatiepad?
+# 7. Verify-pad-signaal — heeft de app die je aanraakt een uitvoerbaar verificatiepad?
 #    Waarschuwt, blokkeert niet. Toen deze guard gebouwd werd had 1 van de 11 apps een
 #    `## Verify-pad`-sectie; hard falen zou dus op dag één tien apps blokkeren en vooral
 #    aanleren hoe je `--no-verify` typt. Door op *aanraking* te waarschuwen komt de druk
@@ -236,13 +413,29 @@ fi
 #    aandrijven · state forceren · invariant draaien · verse build), waarbij "geen" een
 #    geldig antwoord is zolang het zichtbaar staat. Een eerlijke "geen" is het punt —
 #    dan weet de Beoordeel-stap vooraf dat die as overgeslagen wordt.
-zonder_pad=""
+#
+#    PER ITEM, NIET PER POORT. Tot 2026-09-08 toetste dit blok alleen of de KOP bestond, en
+#    een sectie die uit niets dan die kop bestaat kwam er even groen doorheen als een
+#    volledig ingevulde — aantoonbaar: `printf '# x\n\n## Verify-pad\n' | grep -q '^## Verify-pad'`
+#    slaagt. Een poort met een opsomming moet elk item van die opsomming meten; de kop is
+#    het label van de sectie en niet haar inhoud. GEMETEN over de acht apps in umanex-apps:
+#    zeven noemen alle vijf capabilities letterlijk, één noemt er één — dat is een terechte
+#    waarschuwing, want "geen" is een geldig antwoord dat zichtbaar hoort te staan.
+zonder_pad=""; pad_gaten=""
 for app in $changed_apps; do
   [ -d "apps/$app" ] || continue
   md="apps/$app/CLAUDE.md"
   if [ ! -f "$md" ] || ! grep -q '^## Verify-pad' "$md"; then
     zonder_pad="$zonder_pad $app"
+    continue
   fi
+  blok="$(awk '/^## Verify-pad/{f=1;next} /^## /{f=0} f' "$md")"
+  mis=""
+  for cap in "render vastleggen" "flow aandrijven" "state forceren" "invariant draaien" "verse build"; do
+    grep -qiF "$cap" <<<"$blok" || mis="$mis, $cap"
+  done
+  [ -n "$mis" ] && pad_gaten="$pad_gaten
+    $app: mist ${mis#, }"
 done
 
 if [ -n "$zonder_pad" ]; then
@@ -250,4 +443,58 @@ if [ -n "$zonder_pad" ]; then
   echo "  Zonder dat pad valt de Beoordeel-stap terug op 'overgeslagen' zonder dat iemand het merkt."
   echo "  Vul de vijf capabilities in (render · flow · state · invariant · verse build);"
   echo "  'geen' is een geldig antwoord, mits zichtbaar. Zie de \`verify\` skill."
+fi
+if [ -n "$pad_gaten" ]; then
+  echo "⚠ Verify-pad-sectie aanwezig maar onvolledig:$pad_gaten"
+  echo "  Elk van de vijf capabilities hoort er te staan — óók met 'geen' als antwoord."
+  echo "  Een kop zonder het item eronder maakt de as onmeetbaar zonder dat iets rood wordt."
+fi
+
+# 8. Design-systeem-bron-signaal — welke laag geeft de app die je aanraakt zijn vorm?
+#    Waarschuwt, blokkeert niet, en precies zoals blok 6 alleen voor apps die in DEZE
+#    commit veranderen. De harde toets staat in CI (`pnpm ds:guard`, met tegenproef);
+#    dit is het vroege signaal, want CI spreekt pas ná de push.
+#
+#    Waarom dit een guard is en geen afspraak: `@umanex/ui` bestond in umanex-apps
+#    maanden mét Storybook, mét Figma-sync en mét een CI-build, terwijl cashflow — het
+#    grootste UI-oppervlak van die monorepo — hem in nul app-bestanden importeerde. De
+#    dependency stond in package.json, `transpilePackages` stond in next.config.mjs, en
+#    de enige importeur was een render-script. Een gedeelde componentlaag zichtbaar
+#    maken is niet hetzelfde als hem gebruikt krijgen; zonder een sectie die zegt wat
+#    de bron ís, valt dat verschil aan niets op.
+#
+#    Het contract is drie regels in `apps/<app>/CLAUDE.md`, onder `## Design-systeem-bron`:
+#    Preset · Componentbron · Storybook. "geen" is overal een geldig antwoord zolang het
+#    er staat — zelfde regime als het Verify-pad hierboven. Een lege regel laat de vraag
+#    terugkomen, het woord "geen" maakt de keuze telbaar.
+#    Ook hier per item: het contract is drie benoemde regels, dus drie metingen. GEMETEN op
+#    de acht apps in umanex-apps: alle acht dragen alle drie de regels, dus deze vernauwing
+#    kost nul nieuwe ruis en vangt alleen de sectie die alleen uit haar kop bestaat.
+zonder_ds=""; ds_gaten=""
+for app in $changed_apps; do
+  [ -d "apps/$app" ] || continue
+  md="apps/$app/CLAUDE.md"
+  if [ ! -f "$md" ] || ! grep -q '^## Design-systeem-bron' "$md"; then
+    zonder_ds="$zonder_ds $app"
+    continue
+  fi
+  blok="$(awk '/^## Design-systeem-bron/{f=1;next} /^## /{f=0} f' "$md")"
+  mis=""
+  for k in Preset Componentbron Storybook; do
+    grep -qE "^- \\*\\*$k:\\*\\*" <<<"$blok" || mis="$mis, $k"
+  done
+  [ -n "$mis" ] && ds_gaten="$ds_gaten
+    $app: mist ${mis#, }"
+done
+
+if [ -n "$zonder_ds" ]; then
+  echo "⚠ Geen '## Design-systeem-bron'-sectie in de CLAUDE.md van:$zonder_ds"
+  echo "  Zonder die sectie is niet te zien welke preset, welke componentbron en welke"
+  echo "  Storybook deze app gebruikt — en drift naar een eigen kopie valt aan niets op."
+  echo "  Drie regels: - **Preset:** · - **Componentbron:** · - **Storybook:**"
+  echo "  'geen' is een geldig antwoord, mits zichtbaar. De harde toets is 'pnpm ds:guard'."
+fi
+if [ -n "$ds_gaten" ]; then
+  echo "⚠ Design-systeem-bron-sectie aanwezig maar onvolledig:$ds_gaten"
+  echo "  Drie regels horen er te staan: - **Preset:** · - **Componentbron:** · - **Storybook:**"
 fi

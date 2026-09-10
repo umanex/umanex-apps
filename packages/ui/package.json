@@ -4,14 +4,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "figma:check": "node scripts/figma-sync-check.mjs",
+    "figma:check:selftest": "node scripts/figma-sync-selftest.mjs && node scripts/figma-sync-check.mjs",
+    "geometry": "node scripts/geometry-check.mjs",
+    "geometry:write": "node scripts/geometry-check.mjs --write",
+    "parity": "node scripts/geometry-parity.mjs"
   },
   "exports": {
     "./lib/utils": "./lib/utils.ts",
+    "./lib/focus": "./lib/focus.ts",
     "./globals.css": "./globals.css",
     "./components/ui/button": "./components/ui/button.tsx",
     "./components/ui/input": "./components/ui/input.tsx",
     "./components/ui/checkbox": "./components/ui/checkbox.tsx",
+    "./components/ui/dropdown-menu": "./components/ui/dropdown-menu.tsx",
     "./components/ui/card": "./components/ui/card.tsx",
     "./components/ui/separator": "./components/ui/separator.tsx",
     "./components/ui/label": "./components/ui/label.tsx",
@@ -19,6 +28,7 @@
     "./components/ui/tabs": "./components/ui/tabs.tsx",
     "./components/ui/slider": "./components/ui/slider.tsx",
     "./components/ui/tooltip": "./components/ui/tooltip.tsx",
+    "./components/ui/sheet": "./components/ui/sheet.tsx",
     "./components/ui/theme-toggle": "./components/ui/ThemeToggle.tsx"
   },
   "peerDependencies": {
@@ -27,6 +37,8 @@
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.1.0",
+    "@radix-ui/react-dialog": "^1.1.23",
+    "@radix-ui/react-dropdown-menu": "^2.1.0",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slider": "^1.2.0",
@@ -38,9 +50,22 @@
     "tailwind-merge": "^2.6.1"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^10.5.10",
+    "@storybook/addon-docs": "^10.5.10",
+    "@storybook/addon-themes": "^10.5.10",
+    "@storybook/react-vite": "^10.5.10",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@umanex/config": "workspace:*",
-    "typescript": "^5"
+    "@umanex/tokens": "workspace:*",
+    "autoprefixer": "^10",
+    "playwright": "^1.62.1",
+    "postcss": "^8",
+    "react": "^18",
+    "react-dom": "^18",
+    "storybook": "^10.5.10",
+    "tailwindcss": "^3",
+    "typescript": "^5",
+    "vite": "^8"
   }
 }

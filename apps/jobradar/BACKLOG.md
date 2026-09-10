@@ -131,3 +131,34 @@ Briefing: `briefings/2026-08-27-feature-jobradar-a11y-afronding.tcebc.md` aan de
 - **Check:** `grep -n "'warning'" apps/jobradar/components/ScoreBadge.tsx` — treffer = de pill
   hangt nog aan de generieke warning-rol; leeg = de eigen rol is er.
 - **Status:** open
+
+## 2026-09-10 — Prospect-classificatie en het labelscherm: opnieuw bouwen op het tabblad, niet mergen uit #327 · [feature]
+
+- **Wat:** PR umanex-apps#327 (`feature/prospect-classificatie`, 16 commits, +4 178) bouwt een
+  `/prospects`-pagina met een labelscherm — per toetsaanslag een oordeel wegschrijven, teller
+  meebewegen, herlaadbeurt overleven — plus KBO/NBB-bronnen en `classificatie`/`geclassificeerd_op`
+  op `companies`. Gemeten op 2026-09-10 vóór de merge: `main` heeft prospects ná de vertakking
+  opnieuw gebouwd — een Prospects-**tabblad** gevoed door de KBO-spiegel (`c2b353c`), leads
+  gekoppeld op ondernemingsnummer (`4936599`), CSV-prospects, de kaart en filters — en de
+  KBO-bron waar de branch op leunt is verwijderd (`9f8b8d7`). De API-routes lopen uiteen
+  (`[id]` op de branch, `[nr]` op `main`), acht bestanden raken beide kanten, en de
+  merge-preview gaf zes inhoudelijke conflicten: `lib/db/ddl.ts`, de flow-harness (388 tegen
+  105 regels op dezelfde plek), `scenarios.mjs`, `CLAUDE.md`, `BACKLOG.md`, het snapshot.
+  Dat is geen merge-conflict maar twee ontwerpen van dezelfde feature; een mechanische
+  oplossing zou hooguit compileren en een tweede prospects-oppervlak op een verwijderde bron
+  zetten. Besluit Jeroen, 2026-09-10: #327 gesloten, de branch blijft bestaan als bron.
+- **Waarom niet nu:** het labelscherm is een feature *op* het huidige tabblad, niet een merge
+  *van* een oud ontwerp. Dat is een jobradar-bouwtaak van minstens een dagdeel, met een eigen
+  TC-EBC en de flow-harness als rechter — niet iets dat in een merge-ronde thuishoort.
+- **Eerste zet:** Lees op de branch `apps/jobradar/app/prospects/page.tsx` en de labelscherm-
+  sectie in `scripts/flow-harness.mjs` (de 105 regels achter `→ Labelscherm aandrijven`) als
+  gedragsspecificatie; neem de drie acceptatie-eisen daaruit over. Schrijf dan een TC-EBC voor
+  een classificatie-actie ín het bestaande tabblad, met `classificatie`/`geclassificeerd_op` als
+  kolommen op de tabel die het tabblad vandaag leest. De DDL-hunk uit de branch (kolommen +
+  `companies_classificatie_idx`, met de reden waarom de index buiten `SCHEMA_DDL` staat) is
+  herbruikbaar zoals hij is.
+- **Check:** `git ls-tree -r --name-only origin/main -- apps/jobradar/app | grep -c prospects/page`
+  — 0 = het labelscherm is nog niet op het tabblad gebouwd (de branch had wél een pagina; die
+  telt niet, want ze staat niet op `main`). En `gh pr view 327 --json state -q .state` = `CLOSED`
+  hoort te blijven; wordt hij heropend, dan is dit item de reden waarom dat geen goede weg is.
+- **Status:** open

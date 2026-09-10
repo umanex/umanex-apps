@@ -170,18 +170,36 @@ try {
    */
   const BREEDTE = 48;
   const plek = new Map();
-  let px2 = 0;
+  const volgorde = new Map();
+  let px2 = 0, idx2 = 0;
   for (const [n, dd] of Object.entries(min.schermen))
-    for (const fr of dd.frames) { plek.set(`${n}/${fr.naam}`, px2); px2 += Math.ceil(fr.boom.w) + BREEDTE; }
+    for (const fr of dd.frames) {
+      plek.set(`${n}/${fr.naam}`, px2); volgorde.set(`${n}/${fr.naam}`, idx2++);
+      px2 += Math.ceil(fr.boom.w) + BREEDTE;
+    }
   const zetPlek = (naam, frameNaam) => {
-    const x = plek.get(`${naam}/${frameNaam}`);
+    const sleutel = `${naam}/${frameNaam}`;
+    const x = plek.get(sleutel);
     if (x === undefined) return null;
     const p2 = figma.root.children.find(q => q.name === 'Screens v2');
     const f2 = p2?.children.find(c => c.getPluginData('scherm') === naam && c.getPluginData('frame') === frameNaam);
     if (!f2) return null;
     const oud2 = Math.round(f2.x);
-    if (Math.abs(f2.x - x) > 0.5 || Math.abs(f2.y) > 0.5) { f2.x = x; f2.y = 0; return { van: oud2, naar: x }; }
-    return null;
+    let bewogen = null;
+    if (Math.abs(f2.x - x) > 0.5 || Math.abs(f2.y) > 0.5) { f2.x = x; f2.y = 0; bewogen = { van: oud2, naar: x }; }
+    /**
+     * DE LAAGVOLGORDE HOORT ER OOK BIJ. Een frame dat apart herbouwd wordt, wordt achteraan de
+     * pagina gehangen; de x klopt dan wel maar het lagenpaneel raakt uit de pas met de spec.
+     * Gemeten: na een losse herbouw van Login en Register stonden die twee onderaan, en de
+     * schermgeometrie verschilde alleen in de VOLGORDE van zijn sleutels — inhoudelijk
+     * byte-identiek. Cosmetisch, maar het is dezelfde drift als de x: laat de pagina de spec
+     * volgen in plaats van de bouwgeschiedenis.
+     */
+    const doelIdx = volgorde.get(sleutel);
+    if (doelIdx !== undefined && doelIdx < p2.children.length && p2.children[doelIdx] !== f2) {
+      try { p2.insertChild(doelIdx, f2); } catch (e) { /* index buiten bereik tijdens een deelbouw */ }
+    }
+    return bewogen;
   };
   const verplaatst = [];
   for (const naam of SCHERMEN) {

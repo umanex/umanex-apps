@@ -1062,20 +1062,30 @@ for (const [comp, d] of Object.entries(SPEC)) {
   // Hergebruik-detectie MOET vóór de poort: zijn set en varianten terug te vinden, dan
   // vervangt deze bouw geen enkele gepubliceerde node en heeft de poort niets te weigeren.
   const namenNu = (d.frames ?? d.varianten ?? []).map(v => v.naam);
+  // In scherm-modus staan er meerdere schermen én meerdere frames op één pagina, en wordt er
+  // PER FRAME gebouwd. Alleen de frames weghalen die deze aanroep opnieuw maakt — niet de buren
+  // en niet de frames van een vorige aanroep van hetzelfde scherm.
+  //
+  // Staat hier en niet lager, omdat `kanHergebruiken` hem nodig heeft en die vóór de poort
+  // draait. Dezelfde vorm als de `meldingen`-fout van 2026-09-09: een `const` gebruiken vóór
+  // zijn declaratie geeft geen waarschuwing bij het schrijven, alleen een lege bouw bij het
+  // draaien (`teBouwen is not initialized`, gemeten).
+  const teBouwen = new Set(namenNu);
   const bestaandeSet = DOEL ? null : (page.children.find(c => c.type === 'COMPONENT_SET')
     ?? (page.children.filter(c => c.type === 'COMPONENT').length === 1 ? page.children.find(c => c.type === 'COMPONENT') : null));
   const bestaandeNamen = bestaandeSet
     ? (bestaandeSet.type === 'COMPONENT_SET' ? bestaandeSet.children.map(v => v.name) : [bestaandeSet.name]) : [];
-  const kanHergebruiken = !!bestaandeSet && namenNu.every(n => bestaandeNamen.includes(n))
-    && bestaandeNamen.every(n => namenNu.includes(n));
+  const kanHergebruiken = DOEL
+    // In scherm-modus is hergebruik mogelijk zodra elk te bouwen frame al als node bestaat.
+    // Er is geen set en geen variantnaam-verzameling om tegen te vergelijken: elk frame staat
+    // op zichzelf, dus de vraag is per frame en niet per pagina.
+    ? [...teBouwen].every(fr => page.children.some(k => k.getPluginData('scherm') === comp && k.getPluginData('frame') === fr))
+    : (!!bestaandeSet && namenNu.every(n => bestaandeNamen.includes(n))
+       && bestaandeNamen.every(n => namenNu.includes(n)));
   const bezwaren = await poort(page, comp, SPEC.__force === true, kanHergebruiken);
   if (bezwaren) { geweigerd.push(...bezwaren); continue; }
   // In scherm-modus staan er meerdere schermen op één pagina: alleen de eigen frames weg,
   // niet de buren. Buiten die modus is de pagina van dit component alleen.
-  // In scherm-modus staan er meerdere schermen én meerdere frames op één pagina, en wordt er
-  // PER FRAME gebouwd. Alleen de frames weghalen die deze aanroep opnieuw maakt — niet de buren
-  // en niet de frames van een vorige aanroep van hetzelfde scherm.
-  const teBouwen = new Set((d.frames ?? d.varianten ?? []).map(v => v.naam));
 
   /**
    * BEHOUD DE COMPONENT-NODE, VERVANG ZIJN INHOUD.
@@ -1098,6 +1108,28 @@ for (const [comp, d] of Object.entries(SPEC)) {
    */
   let hergebruikSet = null;
   const hergebruikVariant = new Map();
+  /**
+   * OOK EEN SCHERM WORDT BIJGEWERKT, NIET VERVANGEN.
+   *
+   * Deze tak stond tot 2026-09-10 achter `if (!DOEL)`: alleen library-componenten werden
+   * hergebruikt, een schermframe werd elke ronde verwijderd en opnieuw gemaakt. Gemeten:
+   * twee herbouwde schermen kregen nieuwe node-ids (`466:11547 -> 470:4841`) terwijl de 22
+   * onaangeraakte frames de hunne hielden. Dat kost bij elke ronde alles wat aan de NODE hangt
+   * en niet aan zijn inhoud — prototype-verbindingen, commentaren, een selectie in iemands
+   * scherm — en het was ook de motor achter de frame-drift van eigenaardigheid 13: een
+   * hergebruikt frame houdt zijn plek, een nieuw frame kreeg er telkens een verderop.
+   *
+   * De sleutel is hier de `frame`-pluginData in plaats van de variantnaam, want een scherm is
+   * een gewone FRAME op een gedeelde pagina. De handwerk-poort verandert niet: `bouwhash` wordt
+   * hierboven op elk kind getoetst, ongeacht of het een component of een scherm is.
+   */
+  if (DOEL) {
+    for (const kind of page.children) {
+      if (kind.getPluginData('scherm') !== comp) continue;
+      const fr = kind.getPluginData('frame');
+      if (teBouwen.has(fr)) hergebruikVariant.set(fr, kind);
+    }
+  }
   if (!DOEL) {
     hergebruikSet = page.children.find(c => c.type === 'COMPONENT_SET')
       ?? (page.children.filter(c => c.type === 'COMPONENT').length === 1
@@ -1136,9 +1168,15 @@ for (const [comp, d] of Object.entries(SPEC)) {
     let c;
     if (bestaand) {
       c = bestaand;
-      c.name = v.naam;
+      // Een hergebruikt SCHERM krijgt precies wat `frameWrapper` een nieuw scherm geeft: de
+      // naam mét component-prefix, zijn eigen achtergrond en clipsContent. De component-tak
+      // eronder doet het omgekeerde (`fills = []`, kale variantnaam) — die twee door elkaar
+      // halen leegde de schermachtergrond en hernoemde "ActivePhase / Playground" naar
+      // "Playground".
+      c.name = DOEL ? `${comp} / ${v.naam}` : v.naam;
       c.resize(Math.max(0.01, br), Math.max(0.01, ho));
-      c.fills = [];
+      c.fills = DOEL ? [bgPaint()] : [];
+      if (DOEL) c.clipsContent = true;
       c.layoutMode = 'NONE';   // schoon vertrekpunt; de auto-layout wordt hieronder gezet
     } else {
       c = DOEL ? frameWrapper(`${comp} / ${v.naam}`, br, ho) : wrapper(v.naam, br, ho);

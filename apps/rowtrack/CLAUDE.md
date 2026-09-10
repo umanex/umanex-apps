@@ -313,6 +313,25 @@ alle 45: **194 nodes hielden hun key, 0 geweigerd, 0 geforceerd.** Gevolg voor d
 herbouw kost geen ontkoppelde instances meer en geen herpublicatie — Jeroen publiceert een
 wijziging in plaats van een vervanging.
 
+**En sinds 2026-09-10 geldt datzelfde voor de SCHERMEN.** Die tak stond achter `if (!DOEL)`:
+alleen library-componenten werden hergebruikt, een schermframe werd elke ronde verwijderd en
+opnieuw gemaakt. Gemeten door de node-ids vóór en ná een herbouw te vergelijken: twee herbouwde
+schermen kregen `466:11547 -> 470:4841` terwijl de 22 onaangeraakte frames de hunne hielden.
+Dat kost bij elke ronde alles wat aan de NODE hangt in plaats van aan zijn inhoud —
+prototype-verbindingen, commentaren, een selectie in iemands scherm — en het was óók de motor
+achter de frame-drift van eigenaardigheid 13. De sleutel is hier de `frame`-pluginData in plaats
+van de variantnaam; de handwerk-poort verandert niet, want `bouwhash` wordt op elk kind getoetst
+ongeacht of het een component of een scherm is. **Tegenproef, beide kanten:** vóór de wijziging
+veranderden de ids, erna hielden alle 24 frames ze, en de teruggelezen schermgeometrie is
+**byte-identiek** aan die van de vervang-ronde (parity 0 over 3 521 nodes). Bijwerken levert dus
+hetzelfde op, mét identiteit.
+
+*Let op wat een hergebruikt frame nodig heeft en een hergebruikte component niet.* De
+hergebruik-tak was voor componenten geschreven (`fills = []`, kale variantnaam). Een scherm
+heeft juist wél zijn eigen achtergrond, `clipsContent` en een naam mét component-prefix — die
+twee door elkaar halen leegde de schermachtergrond en hernoemde "ActivePhase / Playground" naar
+"Playground".
+
 **Daarom staat er een poort vóór het legen** — die nu één vraag méér stelt. `figma/builder.js`
 weigert een pagina te legen zodra een van beide waar is:
 

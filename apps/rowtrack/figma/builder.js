@@ -935,9 +935,26 @@ if (DOEL) {
 // overleeft dat venster niet — gemeten 2026-09-09: fire-and-forget bleef hangen op de eerste
 // `importComponentByKeyAsync`, dezelfde aanroep awaited duurde 39 ms). Zonder deze offset
 // stapelt elke aanroep zijn frame op x=0.
-let doelX = doelPagina
-  ? doelPagina.children.reduce((m, c) => Math.max(m, c.x + c.width + 48), 0)
-  : 0;
+/**
+ * DE PLAATSING MAG NIET MEEGROEIEN MET DE GESCHIEDENIS VAN DE PAGINA.
+ *
+ * Hier stond `reduce((m, c) => Math.max(m, c.x + c.width + 48), 0)` — nieuwe frames rechts van
+ * álles wat er al staat. Dat lost het stapelen binnen één bouw op, maar het is cumulatief: elke
+ * herbouw die een frame opnieuw aanmaakt in plaats van hergebruikt, duwt het blok 24 x 478 px
+ * verder naar rechts. Gemeten 2026-09-10 op *Screens v2*: de 24 frames stonden op
+ * x = 170 600 tot 182 526, terwijl elke andere pagina in dat bestand rond de oorsprong ligt
+ * (-3 287 tot 7 533). Dat is ongeveer 357 geplaatste frames, ofwel vijftien bouwronden.
+ *
+ * Zo ver van de oorsprong begeeft Figma's canvas-precisie het: de gebruiker zag alle schermen
+ * bij het laden van de pagina en ze verdwenen zodra hij zoomde of scrolde, terwijl het
+ * lagenpaneel ze bleef tonen. Geen enkele as zag dit — `parity` en `beeld` meten binnen een
+ * frame, nooit wáár dat frame staat.
+ *
+ * De offset hoort dus relatief te zijn aan de frames die deze bouw zelf plaatst, met de
+ * oorsprong als vertrekpunt. `bouw-schermen.js` zet de definitieve x per frame op zijn index,
+ * zodat de plaatsing idempotent is over aanroepen én over ronden heen.
+ */
+let doelX = 0;
 
 /**
  * NA HET BOUWEN: is elke instance getrouw?

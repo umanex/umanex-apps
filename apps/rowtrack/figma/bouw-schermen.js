@@ -155,6 +155,35 @@ try {
   const F = Object.getPrototypeOf(async function () {}).constructor;
   const gebouwd = [], meldingen = [], geweigerd = [], resterend = [];
   let vervangen = 0, aantalMeldingen = 0;
+  /**
+   * DE PLAATSING IS EEN FUNCTIE VAN DE SPEC, NIET VAN DE GESCHIEDENIS.
+   *
+   * De builder plaatste een nieuw frame rechts van álles wat al op de pagina stond. Dat is
+   * cumulatief: elke herbouw die een frame opnieuw aanmaakt duwde het blok 24 x 478 px verder.
+   * Gemeten 2026-09-10 stonden de 24 frames op x = 170 600 — vijftien ronden ver — en zo ver
+   * van de oorsprong begeeft Figma's canvas-precisie het: alles zichtbaar bij het laden, weg
+   * zodra je zoomt of scrolt, lagenpaneel intact.
+   *
+   * Hier ligt de volgorde van álle schermen vast, dus hier hoort de x thuis. Elk frame krijgt
+   * zijn plek uit zijn index in de spec — ook een frame dat hergebruikt wordt, want anders
+   * blijft een oud frame op zijn afgedreven plek staan. Idempotent over aanroepen én ronden.
+   */
+  const BREEDTE = 48;
+  const plek = new Map();
+  let px2 = 0;
+  for (const [n, dd] of Object.entries(min.schermen))
+    for (const fr of dd.frames) { plek.set(`${n}/${fr.naam}`, px2); px2 += Math.ceil(fr.boom.w) + BREEDTE; }
+  const zetPlek = (naam, frameNaam) => {
+    const x = plek.get(`${naam}/${frameNaam}`);
+    if (x === undefined) return null;
+    const p2 = figma.root.children.find(q => q.name === 'Screens v2');
+    const f2 = p2?.children.find(c => c.getPluginData('scherm') === naam && c.getPluginData('frame') === frameNaam);
+    if (!f2) return null;
+    const oud2 = Math.round(f2.x);
+    if (Math.abs(f2.x - x) > 0.5 || Math.abs(f2.y) > 0.5) { f2.x = x; f2.y = 0; return { van: oud2, naar: x }; }
+    return null;
+  };
+  const verplaatst = [];
   for (const naam of SCHERMEN) {
     const d = kies(min.schermen[naam]);
     for (const f of d.frames) {
@@ -169,11 +198,13 @@ try {
       geweigerd.push(...(r.geweigerd ?? [])); vervangen += r.vervangen ?? 0; aantalMeldingen += r.aantalMeldingen ?? 0;
       meldingen.push(...(r.meldingen ?? []));
       gebouwd.push(...(r.gebouwd ?? []).map(g => ({ component: g.component, frame: f.naam, type: g.type, nodes: g.nodes })));
+      const v = zetPlek(naam, f.naam);
+      if (v) verplaatst.push(`${naam}/${f.naam}: x ${v.van} -> ${v.naar}`);
     }
   }
   figma.root.setPluginData('bouwvoortgang', '');
   uitkomst = {
-    schermen: SCHERMEN, fout: null, ms: Date.now() - t0, resterend,
+    schermen: SCHERMEN, fout: null, ms: Date.now() - t0, resterend, verplaatst,
     bibliotheek: { totaal: Object.keys(keys.componenten).length, bruikbaar: Object.keys(instanties).length },
     geweigerd, vervangen, aantalMeldingen,
     meldingen: meldingen.slice(0, 12),

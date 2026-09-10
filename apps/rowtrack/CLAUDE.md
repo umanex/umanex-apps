@@ -123,7 +123,7 @@ tegenproef van de rondgang, geen risico.
 | Componentpagina's | **21 COMPONENT_SETs met 172 variant-nodes plus 24 losse componenten = 45 pagina's** (stand 2026-09-09, geteld in `figma/manifest.json`) |
 | Schermpagina's | **geen** — de schermen staan sinds 2026-09-08 niet meer in dit bestand maar als 24 frames op *Screens v2* in `T1bGrvIzSNeLyh5CbarATZ`, opgebouwd uit instances van deze library |
 
-**Twaalf eigenaardigheden, elk gemeten en niet af te leiden:**
+**Dertien eigenaardigheden, elk gemeten en niet af te leiden:**
 
 1. `Core/fontFamily/sourceSerif` staat in de bron als `"Source Serif Pro"`, maar dat is de
    *opzoeksleutel* in de FONTS-tabel; de app rendert **Source Serif 4**. De Figma-variabele
@@ -253,6 +253,26 @@ tegenproef van de rondgang, geen risico.
    styles tot 381 ms. Hij draagt nu een `VERS`-vlag (zet hem ná elke publicatie én na een
    plugin-herstart) en zegt het hardop in `letOp` wanneer een ronde nul imports deed terwijl er
    markeringen stonden.
+
+13. **Ver van de oorsprong stopt Figma met tekenen, en geen enkele as ziet wáár een frame
+   staat.** Gemeten 2026-09-10 op *Screens v2*: de 24 schermframes stonden op x = 170 600 tot
+   182 526, terwijl elke andere pagina in dat bestand tussen −3 287 en 7 533 ligt. Het beeld
+   was daar: alle schermen zichtbaar bij het laden van de pagina, en weg zodra je zoomde of
+   scrolde — het lagenpaneel bleef ze gewoon tonen. De oorzaak zat in `figma/builder.js`, dat
+   een nieuw schermframe rechts van **alles wat al op de pagina stond** plaatste
+   (`reduce((m, c) => Math.max(m, c.x + c.width + 48), 0)`). Dat lost het stapelen binnen één
+   bouw op, maar het is cumulatief: elke herbouw die een frame opnieuw aanmaakt in plaats van
+   hergebruikt duwt het blok 24 × 478 px verder. 170 600 / 478 ≈ 357 geplaatste frames, ofwel
+   ongeveer vijftien ronden — en de gebruiker merkte het pas toen de drempel gepasseerd was,
+   niet bij de ronde die hem veroorzaakte.
+
+   **Waarom niets het ving:** `parity` vergelijkt maten en structuur bínnen een frame, `beeld`
+   legt een frame-export naast een browser-render, en `figma:check` leest het manifest. Geen
+   van drieën heeft een mening over de positie van het frame op het canvas — die is voor het
+   ontwerp ook irrelevant, tot de renderer ermee stopt. De plaatsing komt daarom sinds die dag
+   uit de **spec-index** (`bouw-schermen.js`, `zetPlek`): frame *i* op `i × (breedte + 48)`,
+   y = 0, ook bij hergebruik, zodat een afgedreven frame vanzelf terugkomt. Idempotent over
+   aanroepen én over ronden.
 
 **Twee dingen over de Bridge die je pas merkt als het misgaat.**
 

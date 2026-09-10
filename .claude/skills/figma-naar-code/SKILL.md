@@ -70,6 +70,38 @@ Toets dat vóór je vertaalt, want het bepaalt hoeveel je mag afleiden en hoevee
 | text styles | typografie uit de style nemen | — | lees de losse waarden en meld ze als ongebonden |
 | auto layout | padding en gap als spacing-tokens lezen | — | de maten zijn rauwe getallen; meld dat |
 
+### Wat de generator zelf toevoegde — en dus géén ontwerp is
+
+Een gegenereerd bestand bevat nodes die niemand getekend heeft: ze zijn de vertaling van iets dat
+Figma niet kent. Lees je die terug als intentie, dan produceer je code die de bron nooit had.
+Zes vormen, alle zes gemeten in rowtrack op 2026-09-10 toen `code-naar-figma` ze ging schrijven.
+
+| Wat je ziet in Figma | Wat het in de bron was | Wat je NIET moet genereren |
+|---|---|---|
+| Een `spacer`-frame van 1×N of N×1 zonder inhoud, tussen twee zusters | een `margin` op de zuster erna — auto-layout kent geen per-kind marge | een lege `<View style={{height:8}}/>`; het is een marge |
+| Een horizontale rij die hugt, met een kind dat `label` heet naast een echte node | één tekstnode met genest kind: `Nog geen account? <Text>Registreer</Text>` | twee losse `<Text>` naast elkaar; het is inline-stroom |
+| Een absoluut kind met een NEGATIEVE y in een knippende ouder | een scrollpositie (`scrollTop`), niet een offset | `top: -450`; het is een ScrollView op een positie |
+| Een property met een letter-achtervoegsel (`subtitleText_bbc`, `value_abca`) | een afgeleide slotnaam, machinaal ontstaan uit een boompad | die naam als prop; vraag hoe het veld hoort te heten |
+| De x/y van een frame op de pagina | `index × (breedte + marge)`, puur voor de leesbaarheid van het canvas | volgorde of groepering afleiden uit de plaatsing |
+| `clipsContent` op een binnenframe | `overflow: hidden` in de bron | niets — dit is juist wél echte informatie, neem hem mee |
+
+**Herkenningsteken voor de eerste twee:** ze dragen een naam die niet uit de code komt. Draagt de
+generator een herkomstmerker (in rowtrack `naamBron`, of pluginData op de node), lees die dan
+eerst — dat is goedkoper en betrouwbaarder dan de vorm herkennen.
+
+**En lees de randbreedte per ZIJDE.** `strokeWeight` geeft `figma.mixed` zodra de zijden
+verschillen, en dat serialiseert makkelijk naar `null`; `strokeTopWeight`, `strokeRightWeight`,
+`strokeBottomWeight` en `strokeLeftWeight` dragen de echte waarden. Gemeten over één codebase:
+138 van de 333 nodes met een rand zijn asymmetrisch, in twee vormen — een scheidingslijn
+(`0/0/1/0`) en een lijn boven en onder (`1/0/1/0`). Lees je alleen `strokeWeight`, dan wordt de
+eerste onzichtbaar en de tweede een volledige doos.
+
+**Een verse publicatie is nog niet bij jou aangekomen.** Leest je runtime een component vlak nadat
+iemand de library publiceerde, dan kan hij de vorige versie teruggeven — zonder fout. In een
+plugin-runtime is de oorzaak dat imports gecachet worden vanaf het verbinden; een herstart van de
+plugin is de remedie. Zie `code-naar-figma` principe 1f voor het gemeten geval; hier is de
+consequentie dat je je gelezen contract toetst vóór je erop vertaalt.
+
 **Een laagnaam blijft een bewering, ook onder dit contract.** Gemeten op 2026-08-18: een
 framenaam wees naar het scherm `account-manager` terwijl het frame `account-manager-details`
 toonde, en twee onafhankelijke signalen spraken die naam tegen zonder dat ik er één meldde.

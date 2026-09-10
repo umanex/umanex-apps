@@ -168,6 +168,17 @@ Vier stukken uit de oude `CLAUDE.md`-tekst hoeven hier niet bij, want rail 6 dra
 
 *Een poort die per run een ander antwoord geeft.* GEMETEN 2026-09-09 (rowtrack, `scripts/render-sweep.mjs` vóór `f0b404c`): dezelfde build vijf keer door de render-poort gaf **16, 0, 0, 5 en 2** problemen — en één losse run kwam gewoon groen terug, dus één run kán dit niet zien. Oorzaak: alle 257 stories door één Chromium-pagina, die na een paar honderd navigaties requests laat vallen; de gemelde stories waren telkens de laatste drie van de lijst, een eigenschap van de volgorde en niet van de story. Dagenlang gold "alle 257 renderen" als bewijs, in samenvattingen en commit-bodies. Tweede voorkomen van dezelfde vorm, read-only gemeten: `packages/ui/scripts/geometry-parity.mjs` en `geometry-check.mjs` sturen elk één `page.goto`-pagina over alle varianten. Draai een poort twee keer op identieke invoer vóór zijn groen of rood als bewijs telt, en toets een falend item aan het einde van een reeks eerst in isolatie: `for i in 1 2 3; do node <poort> 2>&1 | tail -1; done`.
 
+*Een predicaat op een veldnaam die niet bestaat, is altijd onwaar — en dat leest als nul.* De
+vorige alinea's gaan over een instrument dat de verkeerde plek meet; dit gaat over een instrument
+dat een veld leest dat er niet is. In JavaScript is dat geen fout maar een stille `undefined`,
+dus de telling komt op 0 en die 0 is niet te onderscheiden van een echte afwezigheid. GEMETEN
+2026-09-10 (rowtrack): een telling van "hoe vaak zit dit op een icoon" gebruikte `n.t.fam`, terwijl
+het veld `n.t.f` heet; de uitkomst was 0, ik rapporteerde dat als weerlegging van mijn eigen
+hypothese, en het echte aantal was 1. Let op wat hier NIET helpt: een positieve controle op
+"raakt mijn selectie wel nodes" was groen geweest — de meting mist niet haar object, ze mist haar
+**veld**. Wat wel helpt: lees één treffer volledig terug vóór je over de hele verzameling telt, en
+laat het schema de veldnamen leveren in plaats van je geheugen.
+
 **7. De verwachting is de reden om te meten, nooit het bewijs.** Een vuistregel uit de literatuur, een typische waarde, een aggregaat dat logisch oogt — dat is de hypothese die de meting motiveert, niet de meting zelf. Bestaat de meetbare as (een log, een opname, een teller, het Verify-pad van de app), dan sluit alleen díe de vraag; kun je niet meten, dan lever je een hypothese mét het meetpad erbij, geen conclusie met een tabel eronder.
 
 *Herkenningsteken:* wijkt het getal af met precies een ronde factor (×2, ×½, ×60), dan is dat vrijwel zeker een tel- of eenheidsfout — die ga je meten, niet verklaren, en de kant waarop hij valt beslis je nooit uit plausibiliteit. Gemeten op rowtrack (2026-08-16): "20-24 spm is je echte slagfrequentie" klonk sluitend met twee vuistregels als steun; een FTMS-opname en een handtelling dezelfde avond wezen het tegendeel uit, en de echte oorzaak (een noemer die rustpackets meetelde) produceerde exact het klachtgetal 24.
@@ -260,6 +271,13 @@ gehoist is. De vorm:
 ```bash
 [ -d "$PAD" ] || { echo "STOP — cache-pad bestaat niet: $PAD"; exit 1; }
 ```
+
+*De vroege uitgang die zijn slot niet teruggaf.* Een blok dat een marker, lock of "bezig"-vlag
+zet, moet die bij **elke** uitgang weer vrijgeven — ook bij de nieuwe poort die je er net voor
+zette. GEMETEN 2026-09-10 (rowtrack): een gate die vóór het bouwen weigerde, keerde terug zonder
+de `bouwbezig`-marker te legen; de volgende aanroep kreeg "er loopt nog een batch" terwijl er
+niets liep, en dat leek een vastloper van iets heel anders. De fout zat er binnen een minuut in
+en kostte meer tijd om te herkennen dan om te schrijven.
 
 *De harness die niets patchte en groen rapporteerde.* Een tegenproef-script haalde per rail één
 regel uit een configuratie, herstartte en mat. Na een versmalling van de regex elders matchte de

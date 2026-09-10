@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-09-09_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** jobradar
@@ -42,24 +42,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-d84679f Merge remote-tracking branch 'origin/main' into fix/rowtrack-schermverschillen
-2c970c9 test(ui): add Sheet to the rendered-size baseline
-86a9885 Merge remote-tracking branch 'origin/main' into feature/jobradar-contactopvolging
-9fbb5cf feat(jobradar): contact panel, next-action badge and sorting
-172079a feat(ui): add Sheet, and repair the manifest recipe it exposed
+49072dc fix(jobradar): stop the card and its own button from counting different things
+f1ecf3e feat(jobradar): make a lead checkable, and give the list a search field
+4c6860b fix(jobradar): test the ceiling per sub-query, not against a growing threshold
+5e49969 docs(jobradar): UX-audit van het dashboard en de zoekinstellingen
+ef4acc0 feat(jobradar): allow exact phrases as search terms
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/jobradar/.env.example
+  M  apps/jobradar/BACKLOG.md
   M  apps/jobradar/CLAUDE.md
-  M  apps/jobradar/app/api/kaart/route.ts
-  M  apps/jobradar/app/api/prospects/route.ts
-  M  apps/jobradar/briefings/2026-09-08-feature-prospectkaart.tcebc.md
-  M  apps/jobradar/components/DashboardClient.tsx
-  M  apps/jobradar/components/ProspectMap.tsx
-  M  apps/jobradar/lib/kbo/spiegel.ts
-  M  apps/jobradar/lib/kbo/universum.ts
-  M  apps/jobradar/scripts/flow-harness.mjs
-  M  apps/jobradar/scripts/kbo-scenarios.ts
+  A  apps/jobradar/app/api/kaart/route.ts
+  A  apps/jobradar/app/api/opvolging/actie/route.ts
+  A  apps/jobradar/app/api/opvolging/moment/[id]/route.ts
+  A  apps/jobradar/app/api/opvolging/route.ts
+  A  apps/jobradar/app/api/prospects/[nr]/route.ts
+  A  apps/jobradar/app/api/prospects/route.ts
+  M  apps/jobradar/app/api/sync/route.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -1,5 +1,5 @@
 # Context Snapshot — dashboard
-_Gegenereerd op 2026-09-09_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** dashboard
@@ -30,16 +30,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-d84679f Merge remote-tracking branch 'origin/main' into fix/rowtrack-schermverschillen
-93a448b docs(dashboard): close the shared-.next backlog item
-c8672e2 fix(dashboard): give next dev its own dist dir and port
-2c970c9 test(ui): add Sheet to the rendered-size baseline
-86a9885 Merge remote-tracking branch 'origin/main' into feature/jobradar-contactopvolging
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
+899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
+62ab13d chore: prune four orphans, and declare the binary the render scripts need
+e59eaa1 chore(config): remove the dead flat-config eslint files
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/dashboard/context-snapshot.md
-  M  apps/dashboard/tsconfig.json
+  A  apps/dashboard/.eslintrc.js
+  A  apps/dashboard/.gitignore
+  A  apps/dashboard/BACKLOG.md
+  A  apps/dashboard/CLAUDE.md
+  A  apps/dashboard/HANDOFF.md
+  A  apps/dashboard/LEARNINGS.md
+  A  apps/dashboard/app/api/script/route.ts
+  A  apps/dashboard/app/api/start/route.ts
+  A  apps/dashboard/app/api/status/route.ts
+  A  apps/dashboard/app/api/stop/route.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

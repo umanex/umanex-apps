@@ -31,10 +31,11 @@ export async function generateMetadata({ params: { locale } }: Params): Promise<
 /**
  * De onepager, S1-S11 in de volgorde uit de briefing.
  *
- * Alles is een server-component: er gaat geen byte JavaScript naar de browser voor de
- * inhoud. De FAQ werkt op native `<details>`, dus ook de enige interactie op de pagina
- * heeft er geen nodig — daarmee is "leesbaar zonder JavaScript" geen belofte maar de
- * enige mogelijke uitkomst.
+ * Alles is een server-component; het enige content-JavaScript is het inline
+ * observer-script in layout.tsx dat de scroll-onthulling aandrijft — geen client
+ * component, geen hydration-afhankelijkheid, en zonder JS bestaat de verborgen
+ * begintoestand niet (data-js-gate). De FAQ werkt op native `<details>`, dus de
+ * enige echte interactie op de pagina heeft ook geen JavaScript nodig.
  *
  * TODO: de MATEN in de secties komen uit Tailwinds eigen schaal. RowTrack's tokenset
  * heeft geen web-typeschaal, geen spacing boven 48 en geen container-widths — zie

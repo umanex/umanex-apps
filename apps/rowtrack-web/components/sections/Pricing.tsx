@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { Section } from '@/components/layout/Section';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { PricingCard } from '@/components/ui/PricingCard';
+import { Reveal } from '@/components/ui/Reveal';
 import { site } from '@/lib/site';
 
 /**
@@ -19,26 +20,30 @@ export const Pricing = async () => {
 
   return (
     <Section id="prijzen" raised>
-      <SectionHeading eyebrow={t('eyebrow')} title={t('title')} body={t('body')} />
+      <Reveal>
+        <SectionHeading eyebrow={t('eyebrow')} title={t('title')} body={t('body')} />
+      </Reveal>
 
-      <div className="mt-12 grid gap-6 md:grid-cols-2">
-        <PricingCard
-          name={t('free.name')}
-          price={t('free.price')}
-          period={t('free.period')}
-          features={t.raw('free.features') as string[]}
-        />
-        <PricingCard
-          featured
-          badge={t('pro.badge')}
-          name={t('pro.name')}
-          price={`€${pricing.proMonthly}`}
-          period={t('pro.period')}
-          features={t.raw('pro.features') as string[]}
-        />
-      </div>
+      <Reveal>
+        <div className="reveal-stagger mt-12 grid gap-6 md:grid-cols-2">
+          <PricingCard
+            name={t('free.name')}
+            price={t('free.price')}
+            period={t('free.period')}
+            features={t.raw('free.features') as string[]}
+          />
+          <PricingCard
+            featured
+            badge={t('pro.badge')}
+            name={t('pro.name')}
+            price={`€${pricing.proMonthly}`}
+            period={t('pro.period')}
+            features={t.raw('pro.features') as string[]}
+          />
+        </div>
 
-      <p className="mt-8 max-w-2xl text-sm leading-relaxed text-fg-tertiary">{t('note')}</p>
+        <p className="mt-8 max-w-2xl text-sm leading-relaxed text-fg-tertiary">{t('note')}</p>
+      </Reveal>
     </Section>
   );
 };

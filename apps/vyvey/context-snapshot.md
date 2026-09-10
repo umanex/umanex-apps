@@ -1,5 +1,5 @@
 # Context Snapshot — vyvey
-_Gegenereerd op 2026-09-07_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** vyvey
@@ -61,15 +61,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-5b9aa03 refactor(ui): extract the shared focus ring into a constant
-a15b915 feat(ui): check every Figma variable against the token source
-3c61b21 feat(ui): export Storybook components to Figma with a sync guard
-e270ab1 feat(ui): add Storybook with token-driven docs
 9a2bc2e chore: sync umanex-os layer with global umanex-os
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
+899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
+e6d6a29 fix: judge a route on what renders, not on its status code
 ```
 
 ## Uncommitted wijzigingen
   M  apps/vyvey/CLAUDE.md
+  M  apps/vyvey/context-snapshot.md
+  M  packages/tokens/package.json
+  A  packages/ui/.storybook/main.ts
+  A  packages/ui/.storybook/preview.tsx
+  A  packages/ui/CLAUDE.md
+  A  packages/ui/components/ui/ThemeToggle.stories.tsx
+  A  packages/ui/components/ui/badge.stories.tsx
+  A  packages/ui/components/ui/button.stories.tsx
+  M  packages/ui/components/ui/button.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

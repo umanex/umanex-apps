@@ -1,5 +1,5 @@
 # Context Snapshot — soda-plus
-_Gegenereerd op 2026-09-08_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** soda-plus
@@ -26,23 +26,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-239539d feat(rowtrack): sync-guard, parity-as en gradient-ondersteuning
-46e5af8 feat(ui): geometrie-parity — Figma en browser per variant naast elkaar
-81e134a feat(ui): [varianten]-as — het aantal variant-nodes volgt uit de assen
-6668160 chore(ui): manifest naar schema 2 — 86 themawaarden en 68 variant-nodes
-d98be09 fix(ui): breedte-filter ankeren op hele klasse-tokens
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
+899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
+62ab13d chore: prune four orphans, and declare the binary the render scripts need
+e59eaa1 chore(config): remove the dead flat-config eslint files
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/soda-plus/CLAUDE.md
-  M  apps/soda-plus/context-snapshot.md
-  M  apps/soda-plus/package.json
-  A  packages/ui/components/ui/dropdown-menu.stories.tsx
-  A  packages/ui/components/ui/dropdown-menu.tsx
-  M  packages/ui/figma/geometry.code.json
-  M  packages/ui/figma/manifest.json
-  M  packages/ui/package.json
-  M  packages/ui/scripts/figma-sync-check.mjs
+  A  apps/soda-plus/.eslintrc.js
+  A  apps/soda-plus/BACKLOG.md
+  A  apps/soda-plus/CLAUDE.md
+  A  apps/soda-plus/HANDOFF.md
+  A  apps/soda-plus/LEARNINGS.md
+  A  apps/soda-plus/app/layout.tsx
+  A  apps/soda-plus/app/page.tsx
+  A  apps/soda-plus/audits/2026-08-25-analyse-gedane-werk.md
+  A  apps/soda-plus/audits/2026-08-25-ux-audit-wireframes.md
+  A  apps/soda-plus/briefings/2026-08-25-flow-attituderapport-revisie.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

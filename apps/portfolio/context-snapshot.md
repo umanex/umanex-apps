@@ -1,5 +1,5 @@
 # Context Snapshot — portfolio
-_Gegenereerd op 2026-09-07_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** portfolio
@@ -45,15 +45,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-5b9aa03 refactor(ui): extract the shared focus ring into a constant
-a15b915 feat(ui): check every Figma variable against the token source
-3c61b21 feat(ui): export Storybook components to Figma with a sync guard
-e270ab1 feat(ui): add Storybook with token-driven docs
-5d6aaa0 feat(portfolio): put the cost of doing nothing on the offer page
+9a2bc2e chore: sync umanex-os layer with global umanex-os
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
+899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
+e6d6a29 fix: judge a route on what renders, not on its status code
 ```
 
 ## Uncommitted wijzigingen
   M  apps/portfolio/CLAUDE.md
+  A  apps/portfolio/app/aanbod/page.tsx
+  A  apps/portfolio/app/scan/page.tsx
+  M  apps/portfolio/app/werkwijze/page.tsx
+  A  apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md
+  A  apps/portfolio/components/data-display/NumberedStep.tsx
+  A  apps/portfolio/components/data-display/TierCard.tsx
+  M  apps/portfolio/components/layout/Footer.tsx
+  M  apps/portfolio/components/layout/Header.tsx
+  M  apps/portfolio/components/sections/ContactSection.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

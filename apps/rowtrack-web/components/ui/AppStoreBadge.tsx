@@ -24,7 +24,10 @@ type Props = {
 export const AppStoreBadge = ({ pendingLabel, label }: Props) => {
   if (!site.appStore.url) {
     return (
-      <p className="inline-flex h-button-primary-height items-center rounded-button-primary border border-border-strong px-6 text-fg-secondary">
+      <p className="inline-flex h-button-primary-height items-center gap-3 rounded-button-primary border border-border-strong bg-bg-raised px-6 text-fg-secondary shadow-button-outline">
+        {/* Statusstip: "komt eraan" is een actieve staat, dus de accentrol mag hier.
+            animate-pulse is opacity-only en valt bij reduced motion stil op vol. */}
+        <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-pill bg-accent" />
         {pendingLabel}
       </p>
     );

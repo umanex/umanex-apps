@@ -19,17 +19,20 @@ type Props = {
  * Daarom staat er ook géén `aria-expanded` op. Het element draagt die status
  * natively; hem er met de hand bij zetten levert twee bronnen van waarheid op,
  * waarvan er één niet meebeweegt.
+ *
+ * De focus-ring staat er expliciet: `summary` valt buiten de browser-defaults van
+ * links en knoppen, en de acceptatie vraagt een zichtbare ring op de accentrol.
  */
 export const FaqAccordion = ({ items }: Props) => (
   <dl className="mt-12 divide-y divide-border-subtle border-y border-border-subtle">
     {items.map((item) => (
       <div key={item.q}>
         <details className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-left text-lg text-fg-primary marker:content-none hover:text-accent">
+          <summary className="-mx-2 flex cursor-pointer list-none items-center justify-between gap-4 rounded-highlight-row px-2 py-5 text-left text-lg text-fg-primary transition-colors marker:content-none hover:bg-accent-subtle hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
             <dt>{item.q}</dt>
             <span
               aria-hidden="true"
-              className="shrink-0 text-2xl text-fg-tertiary transition-transform group-open:rotate-45"
+              className="shrink-0 text-2xl text-fg-tertiary transition-transform duration-300 group-open:rotate-45"
             >
               +
             </span>

@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-09-09_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** cashflow
@@ -49,22 +49,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-259286a Merge remote-tracking branch 'origin/main' into feature/rowtrack-storybook-figma
-9e7a028 feat(ui): mirror DropdownMenu into the Figma Component library
-653fe13 fix(ui): resolve kebab-case component filenames in the sync guard
-1edc38c fix(ui): add the DropdownMenu stories to the geometry baseline
-ddcb3e4 feat(ui): add DropdownMenu primitive from shadcn
+9a2bc2e chore: sync umanex-os layer with global umanex-os
+e4f55bc docs(cashflow): zet de beginsaldo-briefing op gevalideerd
+bab65e5 feat(cashflow): beginsaldo wordt de eerste regel van de inkomsten
+6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
+3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/BACKLOG.md
-  M  apps/cashflow/context-snapshot.md
-  M  packages/ui/CLAUDE.md
-  A  packages/ui/components/ui/sheet.stories.tsx
-  A  packages/ui/components/ui/sheet.tsx
-  M  packages/ui/figma/geometry.code.json
-  M  packages/ui/figma/manifest.json
-  M  packages/ui/package.json
+  M  apps/cashflow/CLAUDE.md
+  M  apps/cashflow/HANDOFF.md
+  M  apps/cashflow/app/page.tsx
+  A  apps/cashflow/briefings/2026-09-06-feature-negatieve-bufferstand.tcebc.md
+  M  apps/cashflow/components/cashflow/BalanceFooter.tsx
+  M  apps/cashflow/components/cashflow/BufferChart.tsx
+  M  apps/cashflow/components/cashflow/MonthCard.tsx
+  M  apps/cashflow/components/cashflow/RepeatMonthModal.tsx
+  M  apps/cashflow/components/cashflow/ReservationPaymentModal.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

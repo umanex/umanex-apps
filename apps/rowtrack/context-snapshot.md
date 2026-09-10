@@ -73,17 +73,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-3379d82 feat(rowtrack): the consumption gate, as the exemplar — two axes and a decomposed image
-458c22f feat(rowtrack): update screen frames in place instead of replacing them
-fcd4592 fix(rowtrack): place screen frames by spec index, not by page history
-e2d38ec fix(rowtrack): release the build lock on the gate's early return
-3693634 docs(rowtrack): close the round in the briefing and the handoff
+c54190d docs(rowtrack): spm_halved-toggle heroverwegen na de meting van 2026-08-16
+ee95e7a fix(rowtrack): elk gemiddelde deelt door zijn eigen teller, niet door tickCount
+aa0cb47 docs(rowtrack): record sim render-verify of #257-261 in HANDOFF
+4108515 docs: session retrospective — handoff checks and Apollo XL follow-up
+2810551 feat(rowtrack): accept any FTMS-advertising rower in device scan
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/CLAUDE.md
-  M  apps/rowtrack/HANDOFF.md
-  M  apps/rowtrack/context-snapshot.md
+  D  apps/rowtrack/.claude/skills/code-naar-figma/SKILL.md
+  M  apps/rowtrack/.claude/skills/figma-naar-code/SKILL.md
+  M  apps/rowtrack/.gitignore
+  A  apps/rowtrack/.storybook/main.ts
+  A  apps/rowtrack/.storybook/mocks/expo-router.tsx
+  A  apps/rowtrack/.storybook/mocks/supabase.ts
+  A  apps/rowtrack/.storybook/preview.tsx
+  A  apps/rowtrack/.storybook/rnw-style-keys.ts
+  A  apps/rowtrack/.storybook/toestel.ts
+  M  apps/rowtrack/BACKLOG.md
 
 ## Bestanden met TODO/FIXME
   (geen)

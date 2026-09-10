@@ -42,8 +42,10 @@ const SHOT = args.find((a) => a.startsWith('--shot='))?.slice(7) ?? null;
 const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3104);
 const BASE = `http://127.0.0.1:${PORT}`;
 
-/** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
-const ROUTES = ['/nl', '/nl/support', '/nl/privacy'];
+/** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. `/nl/voorwaarden`
+ * staat bewust niet in de sitemap (concept-status) maar is wél publiek gelinkt vanuit
+ * de footer — publiek bereikbaar betekent hier meetbaar. */
+const ROUTES = ['/nl', '/nl/support', '/nl/privacy', '/nl/voorwaarden'];
 
 const fails = [];
 const notes = [];
@@ -141,9 +143,29 @@ async function main() {
     if (text.length < 20) fail(`${where} rendert vrijwel niets (${text.length} tekens)`);
     else ok(`${where} → ${status}, ${text.length} tekens tekst`);
     if (SHOT) {
+      // Eerst de hele pagina doorscrollen, in viewport-stappen. De scroll-onthulling
+      // (IntersectionObserver) vuurt alleen voor content die echt in beeld komt, en
+      // een fullPage-capture rendert buiten de viewport zonder dat ooit te doen —
+      // zonder deze doorloop legt de screenshot secties op opacity 0 vast: een leeg
+      // beeld van een werkende pagina. Scrollen is bovendien precies wat een echte
+      // bezoeker doet, dus dit ís de eindstaat die het beeld moet bewijzen.
+      await page.evaluate(async () => {
+        const step = Math.max(200, Math.floor(window.innerHeight * 0.8));
+        for (let y = 0; y <= document.body.scrollHeight; y += step) {
+          window.scrollTo(0, y);
+          await new Promise((r) => setTimeout(r, 120));
+        }
+        window.scrollTo(0, 0);
+      });
+      // Korte settle voor de reveal-attributen; de animaties zelf hoeven niet uit
+      // te lopen, want de capture schakelt ze uit. `animations: 'disabled'` spoelt
+      // eindige animaties/transities door naar hun eindstaat en zet oneindige
+      // (float, pulse) op hun beginstand — twee runs op dezelfde code leveren
+      // daardoor pixel-identieke beelden in plaats van een toevallig animatieframe.
+      await page.waitForTimeout(400);
       const name = route === '/' ? 'index' : route.replace(/\//g, '-').replace(/^-/, '');
       const file = resolve(process.cwd(), `${SHOT}/${name}.png`);
-      await page.screenshot({ path: file, fullPage: true });
+      await page.screenshot({ path: file, fullPage: true, animations: 'disabled' });
       ok(`render vastgelegd: ${file}`);
     }
   }

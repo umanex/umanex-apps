@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Section } from '@/components/layout/Section';
 import { SectionHeading } from '@/components/ui/SectionHeading';
+import { Reveal } from '@/components/ui/Reveal';
 
 /**
  * S2 — "Werkt dit met mijn machine?"
@@ -15,13 +16,22 @@ export const Compat = async () => {
 
   return (
     <Section id="compatibiliteit" raised>
-      <SectionHeading eyebrow={t('eyebrow')} title={t('title')} body={t('body')} />
+      <Reveal>
+        <SectionHeading eyebrow={t('eyebrow')} title={t('title')} body={t('body')} />
+      </Reveal>
 
-      <p className="mt-8 max-w-2xl border-l border-accent pl-5 leading-relaxed text-fg-secondary">
-        {t('scan')}
-      </p>
+      <Reveal delay={120}>
+        {/* Bewust géén accent-linkerrand: het quoteblock-met-linkerrand-patroon is
+            afgekeurd (designfeedback 2026-08-11) — een neutrale kaart met sheen
+            draagt hetzelfde gewicht zonder het cliché. */}
+        <p className="card-sheen mt-10 max-w-2xl rounded-card border border-border-subtle bg-bg-raised p-6 leading-relaxed text-fg-secondary">
+          {t('scan')}
+        </p>
 
-      <p className="mt-8 max-w-2xl text-sm leading-relaxed text-fg-tertiary">{t('disclaimer')}</p>
+        <p className="mt-8 max-w-2xl text-sm leading-relaxed text-fg-tertiary">
+          {t('disclaimer')}
+        </p>
+      </Reveal>
     </Section>
   );
 };

@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack-web
-_Gegenereerd op 2026-09-07_
+_Gegenereerd op 2026-09-10_
 
 ## Project
 - **App:** rowtrack-web
@@ -40,20 +40,30 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | FaqAccordion | `apps/rowtrack-web/components/ui/FaqAccordion.tsx` | ui | — | — | — |
 | MetricCard | `apps/rowtrack-web/components/ui/MetricCard.tsx` | ui | — | — | — |
 | PricingCard | `apps/rowtrack-web/components/ui/PricingCard.tsx` | ui | — | — | — |
+| Reveal | `apps/rowtrack-web/components/ui/Reveal.tsx` | ui | — | — | — |
 | ScreenshotFrame | `apps/rowtrack-web/components/ui/ScreenshotFrame.tsx` | ui | — | — | — |
 | SectionHeading | `apps/rowtrack-web/components/ui/SectionHeading.tsx` | ui | — | — | — |
 
 ## Recente commits (app + packages)
 ```
-5b9aa03 refactor(ui): extract the shared focus ring into a constant
-4299863 docs(handoff): close the plan-model item, make the rowtrack-web seven measurable
-529d255 docs(handoff): bring the HANDOFF headers up to the current format
-a15b915 feat(ui): check every Figma variable against the token source
-3c61b21 feat(ui): export Storybook components to Figma with a sync guard
+20bf818 fix(rowtrack-web): give the hero slogan its deliberate line break
+48e2f4b feat(rowtrack-web): design iteration on Jeroen's feedback
+be61b93 fix(rowtrack-web): address all 15 code-review findings on the motion layer
+b55f640 docs(rowtrack-web): ux-audit report and acceptance evidence for redesign
+5c9b867 feat(rowtrack-web): premium redesign with scroll-motion layer
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack-web/CLAUDE.md
+  M  apps/rowtrack-web/HANDOFF.md
+  M  apps/rowtrack-web/context-snapshot.md
+  M  packages/tokens/package.json
+  A  packages/ui/.storybook/main.ts
+  A  packages/ui/.storybook/preview.tsx
+  A  packages/ui/CLAUDE.md
+  A  packages/ui/components/ui/ThemeToggle.stories.tsx
+  A  packages/ui/components/ui/badge.stories.tsx
+  A  packages/ui/components/ui/button.stories.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

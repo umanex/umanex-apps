@@ -123,11 +123,19 @@ try {
     const mist = [...verwacht].filter(v => !aanwezig.includes(v));
     if (mist.length) achterstallig.push(`${naam}: mist ${mist.join(', ')} (heeft ${aanwezig.join(', ') || 'geen properties'})`);
   }
-  if (achterstallig.length) return {
-    fout: 'de library-spiegel van dit bestand is achterstallig — haal de update binnen in het Assets-paneel '
-      + 'en draai opnieuw; bouwen zou instances opleveren die stil de library-data tonen',
-    achterstallig,
-  };
+  if (achterstallig.length) {
+    // DE MARKER MOET WEG BIJ ELKE UITGANG. Deze poort keerde in zijn eerste vorm terug
+    // zónder `bouwbezig` te legen, en de volgende aanroep kreeg daarna `er loopt nog een
+    // batch: LoginScreen` terwijl er niets liep (gemeten 2026-09-10, meteen). Een vroege
+    // return uit een blok dat een slot neemt, moet dat slot ook teruggeven.
+    figma.root.setPluginData('bouwbezig', '');
+    return {
+      fout: 'de geïmporteerde componenten missen properties die de spec verwacht — de plugin-runtime cachet '
+        + 'imports vanaf het moment dat hij verbindt, dus na een publicatie moet de Desktop Bridge-plugin in '
+        + 'DIT bestand opnieuw gestart worden; bouwen zou instances opleveren die stil de library-data tonen',
+      achterstallig,
+    };
+  }
 
   /**
    * EEN TIJDBUDGET, WANT DE WACHTLIMIET IS DODELIJK MIDDEN IN EEN IMPORT.

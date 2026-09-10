@@ -64,7 +64,7 @@ poort met een opsomming waarvan je er twee afvinkt en de derde niet expliciet me
 | Doel | Wat het eist bovenop een getrouwe transcriptie | Harde check |
 |---|---|---|
 | **Bewijsstuk** — aantonen dat code en design overeenkomen | niets extra; parity is het doel | geometrie- en token-parity, met tegenproef |
-| **Werkbestand** — iemand stelt er schermen mee samen | leesbare laagnamen uit het code-vocabulaire · slots als `componentPropertyDefinitions`, niet als varianten · **stabiele node-identiteit over herbouwen heen** | `componentPropertyDefinitions` niet leeg · publicatiestatus niet `UNPUBLISHED` |
+| **Werkbestand** — iemand stelt er schermen mee samen | leesbare laagnamen uit het code-vocabulaire · slots als `componentPropertyDefinitions`, niet als varianten · **stabiele node-identiteit over herbouwen heen** · **elke gegenereerde naam die een mens ziet — property, laag, variant-as — heeft een naamlijst gepasseerd** | `componentPropertyDefinitions` niet leeg · publicatiestatus niet `UNPUBLISHED` · aantal machinale namen (letter-achtervoegsel, boompad, index) geratelt en geaccepteerd |
 | **Library** — andere bestanden consumeren het | alles van *werkbestand*, plus: één tokenbron (geen eigen kopie in het consumerende bestand) · **wat er met een instance meereist**: eigen `fills`, effecten, een achtergrond die je per variant zette · **herbouwen is geen bijwerken** (zie hieronder) | variabelen-diff tussen bron- en doelbestand = 0 · `instanceFills` op een geplaatste instance = 0 |
 
 **Vraag het expliciet als je het niet weet.** GEMETEN 2026-09-08 (RowTrack): ik koos stilzwijgend
@@ -724,6 +724,15 @@ De les is uitdrukkelijk **niet** "voeg posities toe aan de parity-as" — dat pi
 layout-engine en maakt hem broos. Het is dat een klasse pas af is wanneer hij op de beeld-as
 gemeten is, tegen een basislijn van vóór de wijziging, en dat een geometrie-parity op nul een
 noodzakelijke maar geen voldoende voorwaarde is.
+
+**En wat de gate ernaast print, moet een lezer of een ratel hebben.** Een builder die zijn
+meldingen per soort telt en een parity die per frame een percentage geeft, leveren allebei
+meer dan een exit-code — en dat meerdere leest niemand zolang de exit-code groen is. GEMETEN
+2026-09-10 (rowtrack): 31 meldingen "marge zonder Figma-equivalent" geschreven en nooit gelezen,
+een beeld-som van 56,18 zonder ontleding, 23 machinale property-namen gepubliceerd zonder dat een
+ontwerper ze zag. Elke meldingsoort krijgt daarom een tweezijdige ratel, elk aggregaat zijn
+ontleding (in rowtrack: `tekst` tegen `overig` per frame), en elke gegenereerde naam een
+naamlijst-as. Zie `verify` rail 15.
 
 **De twee kanten van de diff:**
 - **Bedoeld** — de `token path → variable ID` lookup uit stap 4: wat de component-code per property voorschreef. **Let op bij een hex-source:** gebruikt de component rauwe hex i.p.v. token-referenties, dan is "bedoeld" geen code-feit maar de *bevestigde* reverse-lookup uit stap 4 (na voorstel + bevestiging). De gate verifieert dan dat de write dat bevestigde mapping volgt en flagt collisions — maar certificeert de laag-keuze niet autonoom, want de source droeg geen semantische intentie.

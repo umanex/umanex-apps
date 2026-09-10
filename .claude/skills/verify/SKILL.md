@@ -44,7 +44,7 @@ Meerdere assen tegelijk is normaal: een feature-flow met een berekening heeft er
 
 ---
 
-## Veertien rails — de discipline van de Beoordeel-stap
+## Vijftien rails — de discipline van de Beoordeel-stap
 
 Deze staan als werkprincipe in `CLAUDE.md`; hier zijn ze operationeel.
 
@@ -336,6 +336,37 @@ toetsSchema(bibliotheekPad, bib.schema);
 if (existsSync(schermPad)) { const sch = lees(schermPad); toetsSchema(schermPad, sch.schema); voegSamen(bib, sch); }
 ```
 
+**15. Een uitkomst die je instrument produceert maar die niemand leest, bestaat niet.** Rail 6
+en 8 gaan over de productie-kant: meet het instrument, kan het rood worden. Deze gaat over de
+consumptie-kant, en dat is waar de andere twee je met rust laten — elke guard is groen, en
+precies daarom kijkt niemand naar wat hij ernaast printte.
+
+GEMETEN 2026-09-10 (rowtrack), drie keer in één ronde, elk met de guards op groen:
+
+- *Het aggregaat zonder ontleding.* De beeld-as meldde per frame één percentage en over 24 frames
+  een som: 74,36 → 56,18. Ik rapporteerde de daling als winst. Niemand — ik niet — kon zeggen
+  hoeveel van die 56,18 de tekstengine was (Figma meet dezelfde tekst breder dan Chromium),
+  hoeveel kleur, hoeveel echt defect. Zonder die ontleding is er geen vloer en dus geen drempel;
+  de as blijft een rapport in plaats van een poort. **Plicht:** een aggregaat als bewijs draagt
+  zijn grootste bijdrager of zijn som per oorzaak.
+- *De meldingenlijst zonder ratel.* De pruner meldt netjes wat Figma van een marge niet kan
+  uitdrukken — 31 stuks — en de builder telt ze per soort. Geschreven, geteld, nooit gelezen.
+  Het label "kan niet" is precies waar een echte fout zich verstopt; diezelfde dag gebeurde dat
+  twee keer met andere labels. **Plicht:** elke meldingsoort krijgt een tweezijdige ratel, zodat
+  een vermelding erbij rood is en een vermelding eraf de constante meetrekt.
+- *De gegenereerde naam zonder lezer.* 23 afgeleide slots kregen een naam uit een boompad —
+  `subtitleText_bbc`, `value_abca` — en landden als component property in de gepubliceerde
+  library, wat een ontwerper in zijn properties-paneel ziet. Ik had geoptimaliseerd voor de
+  rondgang van de machine. **Plicht:** een gegenereerde naam in een gedeeld oppervlak passeert
+  een naamlijst; een ratel op het aantal machinale namen maakt elke nieuwe rood tot iemand hem
+  accepteert of hem in de bron een echte naam geeft.
+
+**Herkenningsteken:** een instrument dat een lijst of een telling print en exit 0 geeft. Vraag
+dan: wie leest dit? Is het antwoord "niemand", dan moet het instrument er zelf op gaten — of het
+niet printen. En in een acceptatie-item: staat er als bewijs een percentage dat daalde of een
+som die kleiner werd, zonder `waarvan`, `grootste` of `per …` erbij, dan is dat een richting en
+geen meting. `templates/acceptatie-guard.sh` waarschuwt sinds 2026-09-10 op precies die vorm.
+
 ---
 
 ## Rail-mapping — welke `CLAUDE.md`-kern hoort bij welke rail hier
@@ -365,6 +396,7 @@ verouderde regel valt hier op; een verouderde `case` in een script niet.
 | minstens één invariant | 12 |
 | muterende stap | 13 |
 | validatie dekt de bron | 14 |
+| die niemand leest | 15 |
 
 Het fragment is een substring van de rail-kop in `CLAUDE.md`; een streepje betekent dat deze
 skill er nog geen rail voor heeft en er dus een bij moet vóór het bewijs hierheen kan.

@@ -325,7 +325,31 @@ fi
 changed_apps="$(git diff --cached --name-only --diff-filter=ACMRD \
   | sed -n 's#^apps/\([^/]*\)/.*#\1#p' | sort -u)"
 
-[ -z "$changed_apps" ] && exit 0
+# Klant-eigen checks — het extension point van deze hook.
+#
+# Waarom dit bestaat. Dit bestand is canoniek: de sync doet er `cp` overheen en
+# `merge-sync-prs.yml` mergt dat automatisch, dus een klant-eigen blok ín dit bestand
+# overleeft precies één sync. GEMETEN 2026-09-09 in umanex-apps: een blok "Toestel-signaal"
+# van 44 regels landde op main in 349c9904 (18:38) en was in cec5661f (19:26) weg — één
+# sync-commit later, zonder één melding, en de klant merkte het aan niets.
+# `.githooks/pre-commit.local` staat bewust NIET in de canonieke set: niet in `is_canoniek()`
+# (scripts/sync-pr-guard.sh), niet in CANON (check-client-drift.yml), niet in de cp-stappen
+# van templates/sync-os.sh. Geen enkele sync-stap raakt hem dus.
+#
+# Twee call sites, en die tweede is het punt: de app-blokken hieronder slaan over zodra een
+# commit geen enkel `apps/`-pad raakt, en een extension point dat stil niet loopt is precies
+# de faalvorm die deze hook elders bewaakt. `changed_apps` gaat mee als omgevingsvariabele
+# (het blok dat dit uitlokte leunde erop) en een niet-nul status stopt de commit — het is de
+# hook van de klant, dus die mag blokkeren.
+klant_eigen_checks() {
+  [ -f .githooks/pre-commit.local ] || return 0
+  changed_apps="$changed_apps" bash .githooks/pre-commit.local
+}
+
+if [ -z "$changed_apps" ]; then
+  klant_eigen_checks
+  exit $?
+fi
 
 # 4. Context-snapshots.
 #
@@ -498,3 +522,5 @@ if [ -n "$ds_gaten" ]; then
   echo "⚠ Design-systeem-bron-sectie aanwezig maar onvolledig:$ds_gaten"
   echo "  Drie regels horen er te staan: - **Preset:** · - **Componentbron:** · - **Storybook:**"
 fi
+
+klant_eigen_checks

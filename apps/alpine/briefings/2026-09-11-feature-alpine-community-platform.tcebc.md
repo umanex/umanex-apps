@@ -100,12 +100,13 @@ Alle vier beantwoord op 2026-09-11, vóór Fase 1.
 - [x] Token-dekking in beide sets — bewijs: fills 56 van 56, strokes 8 van 8, tekst-eigenschappen 32 van 32 (alle vijf per node), auto-layout 34 van 34
 
 **Fase 3 — tijdlijn-scherm**
-- [ ] Mobiel gevuld draagt ≥ 12 items, alle vier de types, ≥ 1 jaarscheiding — bewijs: telling van instances per variant op het frame
-- [ ] Elk tijdlijn-item op elk scherm is een INSTANCE van de component set, nergens nagebouwd — bewijs: `findAll(n => n.type === 'INSTANCE')` + `mainComponent.parent.id` vergelijken met de set-id, mét noemer
-- [ ] Mobiele frames meten 390×844 — bewijs: `width`/`height` per frame op `02 — Mobile`
-- [ ] Desktopframes meten 1440 breed — bewijs: `width` per frame op `03 — Desktop`
-- [ ] De lege staat toont de geboortekaart en minstens één ingang tot toevoegen — bewijs: screenshot van het frame
-- [ ] Nul lorem ipsum in de schermen — bewijs: regex `lorem|ipsum|dolor sit` over alle TextNodes, mét noemer
+- [x] Mobiel gevuld draagt ≥ 12 items, alle vier de types, ≥ 1 jaarscheiding — bewijs: 13 items (photo 3 · maintenance 5 · story 3 · milestone 2) en 9 jaarscheidingen (`figma_execute`, 2026-09-11)
+- [x] Elk tijdlijn-item op elk scherm is een INSTANCE, nergens nagebouwd — bewijs: 46 instances van `timeline-item` en 29 van `year-divider` over `02` en `03`, **0 vreemde instances**; de enige eigen rail-rijen zijn `invitation` (2) en `skeleton` (8), die per ontwerp geen gedateerde gebeurtenis dragen
+- [x] Mobiele frames meten 390×844 — bewijs: 4 van 4 toestelframes; de scroll-uitrol (390×3533) staat er los naast en draagt dat in zijn naam
+- [x] Desktopframes meten 1440 breed — bewijs: 4 van 4
+- [x] De lege staat toont de geboortekaart en een ingang tot toevoegen — bewijs: screenshot van `03 · Tijdlijn — leeg` (1:1678) en `02 · Tijdlijn — leeg` (1:1258)
+- [x] Nul lorem ipsum in de schermen — bewijs: 0 van 429 tekstnodes
+- [x] Vier toestanden per platform — bewijs: `gevuld · leeg · laden · fout` op beide pagina's, 4 van 4 elk
 
 **Fase 4 en 5**
 - [ ] Het eigenaarsketen-blok bestaat in twee staten: meerdere eigenaars en precies één — bewijs: twee frames, screenshot van beide
@@ -113,24 +114,24 @@ Alle vier beantwoord op 2026-09-11, vóór Fase 1.
 - [ ] Elk van de drie ruwe schermen draagt een verantwoording van de platformkeuze — bewijs: de tekst in het eindrapport, per scherm één regel
 - [ ] Het tweeling-onderdeel is volledig afgewerkt, inclusief de ring verwante auto's — bewijs: screenshot
 
-**Fase 6 — doorlopende constraints**
-- [ ] Elke fill en elke tekststijl op `01/02/03` is gebonden aan een variable — bewijs: scan op `boundVariables` per node, afwijkingen als tabel node/waarde/voorgestelde token, mét noemer
-- [ ] Geen enkele node op `01/02/03` bindt rechtstreeks aan een `Core/*`-variabele — bewijs: scan van elke `boundVariables`-id tegen de Core-collectie-id, mét noemer
-- [ ] Elk frame en elke component is auto-layout — bewijs: telling `layoutMode !== 'NONE'` over alle FRAME/COMPONENT-nodes, mét noemer
-- [ ] Alle componentnamen zijn Engels — bewijs: naamlijst van alle COMPONENT/COMPONENT_SET-nodes, handmatig gelezen
-- [ ] Nul persoonlijke voornaamwoorden in UI-copy — bewijs: regex `\b(je|jij|jouw|jouw?e|u|uw|ik|mijn|we|wij|ons|onze)\b` over alle TextNodes, mét noemer
-- [ ] **States:** elk datascherm draagt vier frames — gevuld, leeg, laden en fout — bewijs: framenamen per scherm tellen op `02 — Mobile` en `03 — Desktop`, mét noemer
-- [ ] **Interactie:** de timeline-item component set draagt exact twee variant-assen, geen state-as — bewijs: `variantGroupProperties` van de set, verwacht precies de sleutels `type` en `layout`
-
+**Fase 6 — doorlopende constraints** *(tussenstand na Fase 3, hermeten bij de eindronde)*
+- [x] Elke fill en elke tekststijl op `01/02/03` is gebonden aan een variable — bewijs: fills **744 van 744**, strokes **94 van 94**, tekst-eigenschappen **429 van 429** (alle vijf per node)
+- [x] Geen enkele node op `01/02/03` bindt rechtstreeks aan een `Core/*`-variabele — bewijs: **0** treffers over alle gebonden properties
+- [x] Elk frame en elke component is auto-layout — bewijs: **420 van 420**
+- [ ] Alle componentnamen zijn Engels — hermeten bij Fase 6
+- [x] Nul persoonlijke voornaamwoorden in UI-copy — bewijs: regex over alle 429 tekstnodes geeft **geen** treffer
+- [x] Geen enkele TextNode toont een volledig chassisnummer — bewijs: **0 van 429** op de 17-teken VIN-vorm
+- [x] **States:** elk datascherm draagt vier frames — bewijs: `02` en `03` dragen elk `gevuld · leeg · laden · fout`
+- [x] **Interactie:** de component set draagt exact twee variant-assen, geen state-as — bewijs: `variantGroupProperties` = `{type, layout}`
 
 **Fase 6 — maat en overloop (impeccable's `type,layout`-regels, in Figma-medium)**
 
 Het instrument `impeccable detect` werkt op lokale bestanden en gerenderde pagina's, niet op Figma-frames — hier is er dus geen detector. Wat wél kan is de regels overnemen en zelf meten, zodat de code-versie later niets nieuws hoeft te repareren.
 
-- [ ] Geen `story-body`-blok boven 80 tekens per regel — bewijs: per TEXT-node regels = `height / leading`, tekens/regel = `characters.length / regels`, mét noemer (impeccable `line-length`; de ondergrens 45 geldt niet op 390 px, zie Aannames)
-- [ ] Geen tekst loopt buiten de binnenbreedte van zijn ouder — bewijs: tekstbreedte tegen `parent.width − paddingLeft − paddingRight`, nooit tegen de framebreedte, mét noemer (impeccable `text-overflow`)
-- [ ] Geen kaart-in-kaart-in-kaart — bewijs: maximale nestingdiepte van frames die zowel een eigen `surface/*`-fill als een stroke dragen, verwacht ≤ 2 (impeccable `nested-cards`)
-- [ ] Geen krappe padding — bewijs: elk frame met een eigen `surface/*`-fill heeft padding ≥ `space/sm` (12), telling mét noemer (impeccable `cramped-padding`)
+- [x] Geen `story-body`-blok boven 80 tekens per regel — bewijs: 15 verhaalteksten gemeten, **0 boven 80**; waarden 29–75 tekens (mobiel 294 px → 29–34, desktop 602–620 px → 52–75). Let op: de eerste versie van dit instrument mat **0 van 0** omdat `boundVariables.fontSize` een *array* van aliassen is, geen object — de positieve controle (15 nodes op `fontSize === 17`) legde dat bloot
+- [x] Geen tekst loopt buiten de binnenbreedte van zijn ouder — bewijs: **12 van 222** vóór de fix, **0 van 429** erna (de noemer groeide mee met de desktopschermen)
+- [x] Geen kaart-in-kaart-in-kaart — bewijs: maximale diepte **2** (`error-block` → geen; `auto-kaart` → `photo-placeholder`), drempel ≤ 2
+- [x] Geen krappe padding — bewijs: **0 van 16** inhoudskaders (`milestone-card`, `error-block`, `auto-kaart`); tegenproef: één kaart op `paddingLeft: 8` zetten brengt de telling op **7** (de wijziging plant zich voort naar de instances), herstel brengt hem terug op **0**
 
 ## Beslissingsgeschiedenis
 
@@ -139,3 +140,5 @@ Het instrument `impeccable detect` werkt op lokale bestanden en gerenderde pagin
 - 2026-09-11: Fase 1 gebouwd. Twee families gekozen na meting van 2205 beschikbare families: Fraunces (karakter) en IBM Plex Sans (rust). Een derde, mono-family voor typeplaatje en chassisnummer is overwogen en afgewezen — de opdracht zegt twee families; `ui-caps` op IBM Plex Sans met tracking 1,2 draagt dat register.
 - 2026-09-11: impeccable's `type,layout`-regels als acceptatie-items opgenomen na de vraag of het instrument hier bruikbaar is. Het instrument zelf niet: `impeccable detect` leest DOM en gerenderde pagina's, en er is geen render-pad van Figma naar een URL. De regels wel — `line-length` bepaalde de 620 px verhaalkolom.
 - 2026-09-11: Fase 2 gebouwd. Maten vastgelegd: compact 350 breed (rail 40 + gap 12 + inhoud 298), wide 700 (rail 56 + gap 24 + inhoud 620 — precies de gemeten leesmaat). Ritme per type via de verticale padding van de inhoudskolom: maintenance 16, photo 16, story 24, milestone 32.
+- 2026-09-11: Fase 3 gebouwd, acht schermen. Tijdlijn staat **nieuwste bovenaan**: nieuwe invoer schuift boven de vorige, en de geboortekaart is het anker onderaan. Mobiel krijgt naast de vier toestelframes één scroll-uitrol van 390×3533, omdat 13 items met 9 jaarscheidingen niet in 844 px passen en de opdracht die hoogte vastlegt.
+- 2026-09-11: de zwevende actieknop op mobiel is vervangen door een actie ín de onderbalk. Reden: hij bedekte permanent inhoud (gemeten op twee frames) en was het meest app-achtige element op een verder rustig scherm.

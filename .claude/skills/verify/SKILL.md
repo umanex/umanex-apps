@@ -194,6 +194,22 @@ hypothese, en het echte aantal was 1. Let op wat hier NIET helpt: een positieve 
 **veld**. Wat wel helpt: lees één treffer volledig terug vóór je over de hele verzameling telt, en
 laat het schema de veldnamen leveren in plaats van je geheugen.
 
+*Stilte is de derde vorm: "het instrument is kapot" is een vraag, geen eindpunt.* GEMETEN 2026-09-11,
+twee keer op één dag. (a) umanex-os CI: jobs faalden zonder log, en twee volle runs op dezelfde commit
+faalden op verschillende plekken. Ik las dat als "infrastructuur, onbetrouwbaar" en stopte daar. Eén
+call verder verklaarde beide symptomen tegelijk —
+`gh api repos/umanex/umanex-os/check-runs/<job-id>/annotations --jq '.[0].message'` gaf *"The job was
+not started because recent account payments have failed…"*, en een job die nooit start schrijft ook
+geen log. Faalt je log-kanaal, vraag dan een tweede kanaal (annotaties, run-status) vóór je iets over
+de code concludeert. (b) fleet-manager: `nohup sh -c '… node scripts/$s.mjs 2>&1 | tail -6' >
+/tmp/harness.log &` hield het logbestand leeg terwijl de runs normaal liepen — `tail` en `head`
+schrijven pas wanneer hun stdin sluit — en op die lezing is een wérkende run gekild, terwijl
+`pagination-flow` al `exit=0` had gemeld. Reproductie:
+`sh -c 'for i in 1 2 3; do echo stap $i; sleep 2; done | tail -2' > /tmp/x.log & sleep 3; cat /tmp/x.log`
+geeft leeg. Recept: schrijf ongefilterd naar het bestand en filter bij het **lezen**
+(`tail -n 20 /tmp/harness.log`), en toets leven positief (`kill -0 <pid>`, of de mtime van het log)
+vóór je iets afbreekt.
+
 *Een teller die nul kan rapporteren, draagt zijn noemer.* De alinea's hierboven over lege en nul-uitkomsten hebben één noemer, letterlijk. GEMETEN over 90 dagen in `umanex-apps` (`git log --since="120 days ago" --oneline -- apps/rowtrack/ | grep -iE "^[0-9a-f]+ fix"`, de onderwerpen als één lijst gelezen), vijf keer in dezelfde keten: de diepte-kap telde weggegooide `[data-testid]`-grenzen en meldde `0 weggegooid` terwijl er 3 018 nodes verdwenen; de publicatie-as telde groen mee in "14 van 14" met *NIET gemeten* eronder; de confetti-uitsluiting matchte geen enkele storynaam en sloot nul uit; de voorverwarming meldde `0 imports, 0 resterend` ná een publicatie en deed niets; en de `n.t.fam`-telling hierboven gaf 0 waar 1 hoorde. Een teller die de verkeerde grootheid telt, een filter dat niets matcht, een cache die alles al gedaan denkt te hebben en een predicaat op een veld dat niet bestaat geven allemaal `0` — precies de uitkomst die je bij succes verwacht, dus nul las elke keer als "niets te doen". De positieve controle die de rail voorschrijft werd vier van de vijf keer niet gedaan; wat bij het herstel wél werkte, óók vier van de vijf keer, is de **noemer naast de teller**: `0 uitgesloten van 333 met rand`, `0 imports van 315 taken`, `0 weggekapt van 4 142 nodes`. Een nul mét noemer dwingt de vraag af of de noemer klopt; een nul zonder is per constructie niet van een kapot instrument te onderscheiden. Geen replay-case: een fixture met een sweep die `uitgesloten: 0` meldt (veld dat niet bestaat; tweede variant: id-lijst tegen titels) werd in vier runs — twee mét de laag, twee zonder — vier keer doorzien, mét noemer. De klasse zit niet in het lezen van andermans script maar in de eigen teller die de eigen verwachting bevestigt, onder belasting; een verse lezer op drie bestanden reproduceert dat niet.
 
 **7. De verwachting is de reden om te meten, nooit het bewijs.** Een vuistregel uit de literatuur, een typische waarde, een aggregaat dat logisch oogt — dat is de hypothese die de meting motiveert, niet de meting zelf. Bestaat de meetbare as (een log, een opname, een teller, het Verify-pad van de app), dan sluit alleen díe de vraag; kun je niet meten, dan lever je een hypothese mét het meetpad erbij, geen conclusie met een tabel eronder.

@@ -51,7 +51,11 @@ staan in de root-`BACKLOG.md`.
   fout. Hernoemen raakt elke instance-naam in het bestand en is een eigen, saaie ronde.
 - **Eerste zet:** `figma_rename_node` op de twee varianten, daarna de instances hertellen; de
   variant-property `type` zelf hernoemen vraagt `figma_edit_component_property`.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-11, commit `e698141`. Gekozen: `service`, niet `log`. De vier
+  gebeurtenissen die onder dit type vallen (keuring, batterijcontrole, software-update, onderhoudsbeurt)
+  zijn alle vier *iets dat aan de wagen gedaan is*; `log` is te generiek want de hele tijdlijn is een
+  logboek. Gemeten na de hernoeming: variant-as `type` gaat van `photo · maintenance · story · milestone`
+  naar `photo · service · story · milestone`, **129 instances heel, 0 stuk**.
 
 ## 2026-09-11 — De tweeling werkt niet op schaal · [ux]
 - **Wat:** Bij een klassieker is er precies één wagen met dezelfde bouwweek, kleur en uitvoering. Bij een
@@ -61,7 +65,13 @@ staan in de root-`BACKLOG.md`.
   verleggen naar leverweek plus optiecombinatie en het eerlijk "dichtstbijzijnde configuratie" noemen.
   Dat is een productbeslissing van Jeroen, geen ontwerpfout die ik kan wegpoetsen.
 - **Eerste zet:** beslissen welke van de twee, en pas daarna `03 · De tweeling` aanpassen.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-11, commit `e698141`. Gekozen: **het label volgt de data**. Bij weinig
+  treffers blijft het "de tweeling" en gaat het over zeldzaamheid; bij veel treffers heet het "verwante
+  wagens" en kantelt de as van *zeldzaamheid* naar *contrast* — niet wie het meest op je lijkt, maar
+  wiens dossier het meest anders liep. `03 · Verwante wagens — A290` toont dat geval: 412 wagens delen
+  de configuratie, vijf dossiers lopen het verst uiteen (van 1 240 km in een klimaatkamer tot 41 200 km
+  woon-werk), en de resterende 407 staan als landen-grootboek. De drempel tussen beide labels is een
+  productbeslissing die nog open staat — vermoedelijk rond de vijf treffers.
 
 ## 2026-09-11 — De tijdlijn is niet getoetst op de dichtheid van een connected wagen · [ux]
 - **Wat:** Drieënvijftig jaar klassieker gaf dertien gebeurtenissen. Zeven maanden A290 geeft er
@@ -73,4 +83,12 @@ staan in de root-`BACKLOG.md`.
   Het is de grootste open vraag die de proef opleverde.
 - **Eerste zet:** een gevulde tijdlijn met honderd gebeurtenissen bouwen en kijken waar ze omvalt, vóór
   er een oplossing bedacht wordt.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-11, commit `e698141`. De regel: **machinale gebeurtenissen bundelen
+  standaard, door mensen geschreven gebeurtenissen nooit.** Ritten, laadsessies en routinemeldingen komen
+  uit de wagen en staan per maand gebundeld; foto's, verhalen, mijlpalen en service met een uitkomst
+  blijven altijd uitgeklapt. Nieuw component `timeline-cluster` (compact + wide) draagt de bundel op
+  dezelfde rail, met een lichtere markering. De jaarscheiding wordt een maandscheiding — dat vroeg geen
+  nieuw component, want `year-divider` neemt vrije tekst. Drie schermen: `02 · Tijdlijn dicht — gevuld`
+  (+ scroll-uitrol), `02 · Tijdlijn dicht — cluster open` en `03 · Tijdlijn dicht — gevuld`. Van 487
+  gebeurtenissen staan er negen uitgeklapt. **Wat open blijft:** de drempel waarboven gebundeld wordt, en
+  of de lens-rij (`ALLES · VERHAAL · SERVICE · RITTEN`) filtert of alleen benadrukt.

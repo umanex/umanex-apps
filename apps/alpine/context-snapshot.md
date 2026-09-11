@@ -26,7 +26,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-e698141 feat(alpine): address the four findings from the A290 probe
+36662e9 feat(alpine): address the four findings from the A290 probe
 3594a41 docs(alpine): run the A290 probe and record what breaks
 c4a4f0d docs(alpine): record phase 5 screens and open the app backlog
 c846c46 docs(alpine): record phase 4 car profile and birth certificate results
@@ -34,7 +34,7 @@ c846c46 docs(alpine): record phase 4 car profile and birth certificate results
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/alpine/BACKLOG.md
+  M  apps/alpine/briefings/2026-09-11-feature-alpine-community-platform.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

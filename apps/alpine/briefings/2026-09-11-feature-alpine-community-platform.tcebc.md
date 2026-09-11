@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** alpine (nieuw, nog geen code)
 - **Klant:** umanex (eigen product / conceptwerk)
-- **Status:** gepland
+- **Status:** gebouwd — 2026-09-11. Niet `gevalideerd`: één acceptatie-item vraagt de Tokens Studio-plugin, die in deze sessie niet bestond. Alle andere 52 items staan afgevinkt mét bewijs.
 
 ---
 
@@ -76,8 +76,8 @@ Alle vier beantwoord op 2026-09-11, vóór Fase 1.
 ## Acceptatie
 
 **Fase 0 — structuur**
-- [ ] De vijf pagina's bestaan met exact de gevraagde namen — bewijs: `figma.root.children.map(p => p.name)` via `figma_execute`
-- [ ] Geen bestaande pagina verwijderd — bewijs: paginalijst vóór en ná naast elkaar
+- [x] De vijf pagina's bestaan met exact de gevraagde namen — bewijs: `namesMatchExactly: true` uit dezelfde `figma_execute`-call die ze aanmaakte (2026-09-11)
+- [x] Geen bestaande pagina verwijderd — bewijs: `pagesDeleted: 0`; de lege standaardpagina `Page 1` is hernoemd, niet verwijderd
 
 **Fase 1 — foundations**
 - [x] Elke semantische variable is een alias naar een `Core/*`-variabele, nul directe waarden — bewijs: 198 van 198 alias-waarden, 0 rauw (`figma_execute`, 2026-09-11)
@@ -163,3 +163,15 @@ Het instrument `impeccable detect` werkt op lokale bestanden en gerenderde pagin
 - 2026-09-11: nieuwe rollen `color/scrim` + `surface/scrim` (rgba, 55%) voor het paneel over de tijdlijn — een ongebonden `opacity` op een node was de alternatieve route en die zou de kleur buiten de tokenlaag brengen.
 - 2026-09-11: Jeroen meldde tijdens deze fase dat het platform vooral op de moderne A110 en de A290/A390 mikt. Alle demo-inhoud staat op een klassieke A110 uit 1973. Vastgelegd in `apps/alpine/BACKLOG.md`; het concept houdt stand, de inhoud demonstreert de randgevallen.
 - 2026-09-11: A290-proef gedraaid op verzoek — `03 · Autoprofiel — A290 (proef)` met bevindingenpaneel. De geboortekaart en de specificaties houden stand zonder wijziging aan componenten of tokens; het type `maintenance`, de eigenaarsketen-standaard, de tweeling en de tijdlijn-dichtheid niet. Vier items in `apps/alpine/BACKLOG.md`.
+
+## Fase 6 — eindcontrole
+
+- [x] Alle kleur en typografie loopt via variables — bewijs: **0 afwijkingen van 5094 nodes** over `01/02/03`, gemeten per property (`fills`, `strokes`, `fontFamily`, `fontSize`, `lineHeight`, `fontWeight`, `letterSpacing`). Tegenproef: één fill losmaken geeft 1, herstellen geeft 0
+- [x] Geen enkel scherm of component bindt rechtstreeks aan een `Core/*`-primitief — bewijs: **0 afwijkingen**. Tegenproef: één markering aan een Core-kleur hangen geeft **26** (de binding plant zich via het component voort naar alle instances), herstellen geeft 0
+- [x] De tijdlijn-component is overal hergebruikt en nergens nagebouwd — bewijs: **252 instances, 0 ontkoppeld, 0 nagebouwd**. Tegenproef: één instance loskoppelen geeft 1 nagebouwd, herstellen geeft 0. De 20 eigen rail-rijen (`invitation`, `skeleton`, `herkomst`) dragen per ontwerp geen gedateerde gebeurtenis en tellen niet mee
+- [x] Geen tekst loopt buiten zijn kolom of wordt weggeklipt — bewijs: **0 van 2044** tekstoverloop, **0 van 1916** klippende frames
+- [x] Geen verhaaltekst boven 80 tekens per regel — bewijs: **54 gemeten, 0 boven 80, max 77**
+
+## Beslissingsgeschiedenis (vervolg)
+- 2026-09-11: Fase 6 gedraaid. Drie gevraagde controles, elk met een tegenproef die aantoont dat ze rood kunnen worden. Eén eigen fout onderweg: de tegenproef voor hergebruik gebruikte `detachInstance()` gevolgd door `remove()`, wat twee instances definitief uit `02 · Tijdlijn — gevuld (volledige scroll)` verwijderde. De check meldde "hersteld" omdat hij de *teller* controleerde en niet het *object*. Hersteld tegen het toestelframe als ijkpunt (22 kinderen, identieke volgorde, hoogte 3609, rail-gaten nul). Voortaan: kloon-detach-meten-verwijderen, nooit het origineel.
+- 2026-09-11: tijdens Fase 6 bleek een tweede Figma-bestand ("Partner Fleet Portal") de Bridge-plugin te hebben overgenomen als actief doelwit. Een hernoem-actie viel om op het opzoeken van de pagina, dus vóór elke schrijfactie; nul vreemde nodes achtergebleven. Sindsdien staat `figma.fileKey !== 'P552u2mCWH04IEMgnkUGyN'` als eerste regel in elke schrijf-call.

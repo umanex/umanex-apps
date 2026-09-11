@@ -27,7 +27,7 @@ Beide leveren hetzelfde: één machine-leesbare **acceptatie-checklist** (`- [ ]
 ### BOUW
 
 - **Main-agent** (erft de `@`-import CLAUDE.md-keten met git-, Figma- en token-rails), of
-- de **bouw-skill bij het taaktype**: `nieuw-component`, `figma-naar-code`, `code-naar-figma`.
+- de **bouw-skill bij het taaktype**: `tc-ebc` (briefing én scaffold), `figma-naar-code`, `code-naar-figma`.
 
 Een build-sub-agent alleen bewust en met reden — `@`-import-erving is buiten de main-agent niet gegarandeerd, dus een sub-agent bouwt mogelijk zonder de rails.
 

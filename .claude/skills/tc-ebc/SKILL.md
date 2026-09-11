@@ -1,6 +1,6 @@
 ---
 name: tc-ebc
-description: Schrijft een TC-EBC briefing (Task / Context / Elements / Behaviour / Constraints) voor een design- of prototype-taak, inclusief het stappenplan, de vier kritische items met hun vraag-formuleringen, en het bestandsformaat met acceptatie-checklist. Gebruik deze skill altijd wanneer je op het punt staat een TC-EBC te schrijven of bij te werken — dus bij elke design-, component-, scherm-, flow- of prototype-briefing, wanneer de TC-EBC-hook een design-taak signaleert, of wanneer de gebruiker zegt "maak een TC-EBC", "briefing", "schrijf de briefing uit".
+description: Schrijft een TC-EBC briefing (Task / Context / Elements / Behaviour / Constraints) voor een design- of prototype-taak, inclusief het stappenplan, de vier kritische items met hun vraag-formuleringen, en het bestandsformaat met acceptatie-checklist. Gebruik deze skill altijd wanneer je op het punt staat een TC-EBC te schrijven of bij te werken — dus bij elke design-, component-, scherm-, flow- of prototype-briefing, wanneer de TC-EBC-hook een design-taak signaleert, of wanneer de gebruiker zegt "maak een TC-EBC", "briefing", "schrijf de briefing uit". Dekt sinds 2026-09-11 ook het scaffolden zelf (mapje, bestand, styling, Figma-header), dus gebruik hem óók wanneer de gebruiker zegt "maak een nieuwe component", "voeg een component toe" of "bouw een component voor".
 ---
 
 ## Wat deze skill is
@@ -144,6 +144,71 @@ Een kantelpunt is NIET: typo's of formuleringsverbeteringen, aanvulling van Open
 Format per regel: `- {YYYY-MM-DD}: {wat veranderd is en waarom}`
 
 ---
+
+## Scaffold — van briefing naar bestand
+
+Hoort bij de TC-EBC, niet ernaast. Een briefing die zegt welk component er komt, beantwoordt
+daarmee ook waar het bestand landt en hoe het eruitziet — dus staat dat hier, in dezelfde
+skill die je toch al open hebt.
+
+Kwam hier op 2026-09-11 uit `nieuw-component`, een aparte skill die **nul keer** geladen is
+sinds hij bestaat (`/skill-doctor`, 2026-09-07, tegen `tc-ebc` 49× en `vastleggen` 34×). De
+reden is te zien aan zijn eigen eerste stap: die schreef voor dat je begint met een TC-EBC.
+Wie een component bouwt, laadt dus deze skill, en `nieuw-component` kwam nooit aan de beurt.
+Zijn stappen 1 en 2 waren dit stappenplan; wat hieronder staat is wat er werkelijk extra was.
+
+### 1. Het juiste mapje
+
+Gebruik de globale categorieën uit CLAUDE.md als basis:
+
+```
+components/
+├── ui/            (primitives)
+├── forms/         (input componenten + form composities)
+├── layout/        (header, sidebar, container, grid)
+├── feedback/      (toast, alert, empty state, loading, error)
+├── navigation/    (tabs, breadcrumbs, menu, pagination)
+├── data-display/  (table, list, card, chart)
+└── overlay/       (modal, sheet, popover, tooltip)
+```
+
+Klant- of project-specifieke **feature-folders** (bv. een domein-map zoals `features/kaart/`) staan in de klant-CLAUDE.md. Raadpleeg die voor je plaatst. Bij twijfel over de categorie: vraag expliciet voor je plaatst (conform CLAUDE.md).
+
+### 2. Het bestand aanmaken
+
+Eén component per bestand, bestandsnaam in PascalCase. Volg de globale TypeScript-conventies — `type` (niet `interface`), plain function (geen `React.FC`):
+
+```tsx
+// @figma [URL indien beschikbaar, anders weglaten]
+
+import { type ReactNode } from 'react'
+
+type ComponentNaamProps = {
+  // props
+}
+
+export const ComponentNaam = ({ ...props }: ComponentNaamProps) => {
+  return (
+    // JSX
+  )
+}
+```
+
+Zie `references/component-template.tsx` in deze skill voor een volledig voorbeeld.
+
+### 3. Styling
+
+- Geen hardcoded kleuren — altijd via het token-pad (Tailwind class of CSS variable die naar een token mapt)
+- Geen inline styles tenzij dynamisch (bv. kaart-/canvas-positioning)
+- Tailwind voor layout, spacing, flex
+- Spacing via een spacing-token, border radius via een radius-token — nooit losse pixelwaarden
+- De **complex-UI library** (bv. ShadCN, MUI, of een klant-eigen library) verschilt per klant — zie klant-CLAUDE.md. Pas library-componenten nooit direct aan.
+
+### 4. De Figma-koppeling in de header
+
+Zorg dat de `// @figma [node-URL]` header bovenaan het bestand staat (punt 2 hierboven). Dat is de **machine-leesbare bron** waaruit de component-inventaris wordt afgeleid: `gen-snapshot.sh` harvestt de header (+ een eventuele `<ComponentNaam>.design-snapshot.md` sidecar) tot de *Componenten*-sectie in `apps/{app}/context-snapshot.md`, gegenereerd bij elke commit.
+
+Onderhoud dus **geen** handmatige mapping-tabel meer — die verrotte en werd alleen door deze skill gevuld (`figma-naar-code` schreef er nooit naar terug). Is er nog geen Figma-node, laat de header weg; het component verschijnt dan met Figma-status `—` in de inventaris, wat het gat zichtbaar maakt.
 
 ## Voorbeelden
 

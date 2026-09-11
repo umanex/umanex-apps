@@ -30,7 +30,7 @@ Vul beide zelf in op basis van de conversatie en laat de gebruiker corrigeren; v
 
 ### Stap 2 — Identificeer welke skill of welk principe faalde
 
-Bepaal de header-tekst: de naam van de skill (bv. `nieuw-component`) of het werkprincipe (bv. `TC-EBC werkprincipe`, `Git workflow`, `token-mapping`) dat faalde. Kort en herkenbaar — dit wordt de `##`-header van de entry.
+Bepaal de header-tekst: de naam van de skill (bv. `figma-naar-code`) of het werkprincipe (bv. `TC-EBC werkprincipe`, `Git workflow`, `token-mapping`) dat faalde. Kort en herkenbaar — dit wordt de `##`-header van de entry.
 
 ### Stap 3 — Bepaal de laag: doe een voorstel, vraag bevestiging
 

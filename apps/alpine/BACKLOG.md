@@ -36,8 +36,41 @@ staan in de root-`BACKLOG.md`.
   ruggengraat) houdt stand, maar de inhoud demonstreert de randgevallen in plaats van de kern.
 - **Waarom niet nu:** de melding kwam nadat Fase 5 gebouwd was. Herinhoud geven aan drieëntwintig
   schermen is een eigen ronde, geen correctie binnen de lopende fase.
-- **Eerste zet:** één scherm omzetten naar een A290 uit 2026 en kijken wat er breekt — vermoedelijk de
-  geboortekaart (wordt een configuratiebon: fabriek Douai, batterij, uitrusting) en het type
-  `maintenance` (een elektrische wagen heeft nauwelijks onderhoudsbeurten, wel software-updates,
-  batterijcontroles en keuringen).
+- **Eerste zet — gedaan op 2026-09-11.** `03 · Autoprofiel — A290 (proef)` plus een bevindingenpaneel
+  ernaast, beide op `03 — Desktop`. Uitkomst: de geboortekaart en de specificaties houden stand zonder
+  één wijziging aan componenten of tokens; vier andere dingen niet. Die staan hieronder als eigen items.
+  Het omzetten van de overige tweeëntwintig schermen blijft open.
+- **Status:** open
+
+## 2026-09-11 — Het type `maintenance` hernoemen · [refactor]
+- **Wat:** De variant-as `type` draagt `photo · maintenance · story · milestone`. Voor een elektrische
+  Alpine dekt `maintenance` de lading niet: de gebeurtenissen zijn software-updates, batterijcontroles,
+  keuringen en circuitdagen. Hernoemen naar `service` of `log`.
+- **Waarom niet nu:** de A290-proef toont dat de **vorm** wél klopt — vier typische A290-gebeurtenissen
+  in de bestaande variant lezen alle vier goed als feitelijke, compacte logregel. Alleen het woord is
+  fout. Hernoemen raakt elke instance-naam in het bestand en is een eigen, saaie ronde.
+- **Eerste zet:** `figma_rename_node` op de twee varianten, daarna de instances hertellen; de
+  variant-property `type` zelf hernoemen vraagt `figma_edit_component_property`.
+- **Status:** open
+
+## 2026-09-11 — De tweeling werkt niet op schaal · [ux]
+- **Wat:** Bij een klassieker is er precies één wagen met dezelfde bouwweek, kleur en uitvoering. Bij een
+  A290 GTS in Bleu Alpine Vision zijn dat er in het proefvoorbeeld 412. Het onderdeel leeft van
+  zeldzaamheid en die is er bij de moderne modellen niet.
+- **Waarom niet nu:** de keuze is inhoudelijk, niet technisch — beperken tot de klassiekers, of de as
+  verleggen naar leverweek plus optiecombinatie en het eerlijk "dichtstbijzijnde configuratie" noemen.
+  Dat is een productbeslissing van Jeroen, geen ontwerpfout die ik kan wegpoetsen.
+- **Eerste zet:** beslissen welke van de twee, en pas daarna `03 · De tweeling` aanpassen.
+- **Status:** open
+
+## 2026-09-11 — De tijdlijn is niet getoetst op de dichtheid van een connected wagen · [ux]
+- **Wat:** Drieënvijftig jaar klassieker gaf dertien gebeurtenissen. Zeven maanden A290 geeft er
+  zevenenveertig, en een wagen die zelf laadsessies en software-updates wegschrijft haalt honderden per
+  jaar. De jaarscheiding wordt dan het verkeerde ritme, en groepering of filtering bestaat nog nergens
+  in het ontwerp.
+- **Waarom niet nu:** dit is een eigen ontwerpvraag met een eigen briefing — hoeveel een tijdlijn aankan
+  vóór ze een lijst wordt, is precies het soort vraag waar de opdracht van 2026-09-11 niet over ging.
+  Het is de grootste open vraag die de proef opleverde.
+- **Eerste zet:** een gevulde tijdlijn met honderd gebeurtenissen bouwen en kijken waar ze omvalt, vóór
+  er een oplossing bedacht wordt.
 - **Status:** open

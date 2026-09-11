@@ -26,15 +26,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+c4a4f0d docs(alpine): record phase 5 screens and open the app backlog
 c846c46 docs(alpine): record phase 4 car profile and birth certificate results
 8a20474 docs(alpine): record phase 3 timeline screen results
 ebf72ee docs(alpine): record phase 2 timeline component results
 b947dba docs(alpine): record phase 1 foundations results in the briefing
-81d5526 docs(alpine): add project context and TC-EBC briefing for the Alpine concept
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/alpine/BACKLOG.md
+  M  apps/alpine/BACKLOG.md
   M  apps/alpine/briefings/2026-09-11-feature-alpine-community-platform.tcebc.md
 
 ## Bestanden met TODO/FIXME

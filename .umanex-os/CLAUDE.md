@@ -60,9 +60,9 @@ Harde rail: **max 3 iteraties**. Convergeert het niet → gecontroleerde stop: `
 
 **Discipline in de Bouw-stap** — *een schrijf-actie erft haar bereik van je lus, niet van de opdracht.* Een normalisatie-pass over "alle frames", een find-and-replace over "elk voorkomen": per node correct, per opdracht fout, en dat verschil is aan de code niet te zien. Som eerst de nodes op die de taak noemde en laat de mutatie over díe lijst lopen; log per wijziging de vóór- en ná-waarde, want een overloop is anders onzichtbaar. Filtert een string twee bronnen (een join-sleutel), dan draagt elke bron haar eigen label: vraag per voorkomen *welke kant beschrijft deze string?* — een find-and-replace beantwoordt die vraag nooit.
 
-**Discipline in de Beoordeel-stap** — de regels hieronder staan hier en niet in de skill, want ze bijten in élke sessie die iets verifieert, ook zonder de cyclus.
+**Discipline in de Beoordeel-stap** — deze regels bijten in élke sessie die iets verifieert, ook zonder de cyclus.
 
-*De Beoordeel-stap schrijft.* Bouwen, migreren en installeren veranderen de schijf. Serveert een langlopend proces uit diezelfde map, dan deployt je verificatie ongewild: jij ziet exit 0, de gebruiker een witte pagina. Check vóór een build of er iets uit die map serveert (`pm2 status`, `lsof -nP -iTCP:<poort> -sTCP:LISTEN`).
+*De Beoordeel-stap schrijft.* Bouwen, migreren en installeren veranderen de schijf. Serveert een langlopend proces uit diezelfde map, dan deployt je verificatie ongewild: jij ziet exit 0, de gebruiker een witte pagina. Check vóór een build of er iets uit die map serveert (`pm2 status`, `lsof -nP -iTCP:<poort> -sTCP:LISTEN`). Ook je eigen `git add` is zo'n lezer: een run die de bron muteert waaruit je commit, legt de mutatie vast.
 
 *Verifieer op het doelwit van de gebruiker.* Groen op een ander toestel, een andere build of een andere omgeving bewijst niets over zijn geval. Draai de volledige cyclus op hetzelfde doelwit, of meld expliciet dat je op een surrogaat testte en wat dat níet uitsluit.
 
@@ -101,7 +101,7 @@ awk -v s=open '/^## [0-9]{4}-[0-9]{2}-[0-9]{2}/{h=$0; next}
 
 *Een validatie dekt de bron waarvoor ze geschreven is, niet de bron die er later bijkwam.* Herkenningsteken: een merge-blok dat een tweede bron invoegt vlak vóór een validatie die er één bij naam noemt, of een schema- of versie-assert in het enkelvoud terwijl de functie eromheen in het meervoud werkt. Maak er een functie van, roep hem op élke bron aan vóór de merge, en toets twee kanten.
 
-**Het gemeten bewijs achter deze veertien staat in de `verify` skill**, als genummerde rails met hun gevallen. Deze lijst is wat je altijd bij je hebt; het waaróm van een rail, de invariant-as en welk instrument precies wat verzweeg lees je daar.
+**Het gemeten bewijs achter deze veertien staat in de `verify` skill**, als genummerde rails met hun gevallen — mét het waaróm, de invariant-as en welk instrument precies wat verzweeg.
 
 **Elke app heeft een `## Verify-pad`-sectie in zijn eigen `CLAUDE.md`** — of zegt daar expliciet dat hij er geen heeft. De Beoordeel-stap kan niet elke run het terrein opnieuw ontdekken. De sectie geeft de letterlijke commando's per capability: render vastleggen · flow aandrijven · state forceren · invariant draaien · verse build. **"Geen" is een geldig antwoord en hoort er te staan** — een lege regel laat de vraag terugkomen, het woord "geen" maakt het gat telbaar. Ontbreekt de sectie, dan is dát de eerste bevinding van de run, vóór welk acceptatie-item ook. De `verify` skill heeft de volledige tabel; `.githooks/pre-commit` waarschuwt bij een app zonder sectie.
 
@@ -343,6 +343,13 @@ git -C <map> pull --ff-only origin main
 ### Cross-repo review — normaliseer eerst naar main
 
 Voor élke cross-repo inventarisatie of code review: bepaal per repo eerst `git -C <repo> rev-parse --abbrev-ref HEAD`. Staat een repo NIET op main, dan is de uitgecheckte werkkopie geen canonieke bron — normaliseer eerst (`git -C <repo> checkout main && git -C <repo> pull`; in een **worktree** faalt die checkout — gebruik daar `git -C <map> fetch -q origin && git -C <map> merge origin/main`, zie de `worktree` skill). Neem daarbij `origin/main` en niet `main`: de lokale `main`-ref beweegt alleen wanneer main érgens uitgecheckt en gepulld wordt, dus in een repo waar je enkel op feature branches werkt veroudert hij stil en antwoordt `git merge main` *Already up to date* terwijl je achterloopt (gemeten in Columba: lokale `main` op `234ebfd`, `origin/main` op `3959453`, merge zonder effect) of, als checkout niet wenselijk is, vergelijk expliciet tegen `origin/main` en flag elke afwijking. Dit geldt óók voor umanex-os zelf: rapporteer nooit content van een feature-branch (incl. nog-niet-gemergede skills of uncommitted wijzigingen) als bestaand systeemonderdeel zonder te markeren dat die nog niet op main staat. Behandel nooit een toevallig uitgecheckte staat als de waarheid.
+
+**En smoor zo'n commando nooit.** `2>/dev/null` op een lezend commando onderdrukt ruis; op een toestandsveranderend commando — `checkout`, `pull`, `merge`, `stash` — onderdrukt het de enige waarschuwing dat je in andermans werk staat. De exit-status blijft over, en een keten die die niet leest loopt gewoon door op de branch die er stond. Dit is dezelfde klasse als *een muterende stap is zelf een meting*, maar spiegelbeeldig: niet een stap die per constructie niet kán klagen, maar een die het wél doet en die jij hebt gedempt. Lees de status dus vóór de volgende regel:
+
+```bash
+out=$(git -C "$R" checkout main 2>&1); rc=$?
+[ "$rc" -eq 0 ] || { echo "STOP — $R: $out"; continue; }   # nooit `;` naar een pull
+```
 
 ### Commit messages
 Format: Conventional Commits in het Engels.

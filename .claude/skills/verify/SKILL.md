@@ -54,6 +54,21 @@ Vóór een build in een repo met draaiende processen: `pm2 status`, `lsof -nP -i
 
 *Diagnose-truc:* staat de mtime van de buildmap ná de starttijd van het proces, dan serveert het uit een build die het zelf niet kent. Bewijs is één stap: haal de HTML op, trek de chunk-paden eruit, kijk of ze op schijf bestaan.
 
+*De tweede lezer hoeft geen server te zijn — je eigen `git add` telt ook.* GEMETEN 2026-09-10
+(umanex-os): `scripts/test-mutatie-dekking.sh` draaide als achtergrondjob en muteert per
+beslisregel het échte bestand in de werkboom (`python3 "$MUT" "$TMP/bak" "$LN" "$TAAL" "$BRON"` —
+argument vier is het bronpad, niet een temp-pad), draait de contract-test en herstelt daarna.
+Mijn `git add templates/githooks-pre-commit` viel in dat venster en legde regel 44 vast als
+`if false; then`: de main-branch-guard blokkeerde niets meer. Wat het onzichtbaar maakte is het
+herstel — ná de run is de werkboom weer correct, dus `git status` toont op geen enkel moment iets
+verdachts, en élke lokale run van `scripts/test-guards.sh` gaf 104/0 terwijl CI twee cases rood
+gaf, twee keer op dezelfde commit. Vier hypotheses waren te weerleggen (`bash -e`,
+`init.defaultBranch`, een flaky suite, `printf | grep -q` onder `pipefail`); wat het uitwees was
+een sonde in CI die de **sha van de hook zelf** printte — `fae88b21` lokaal tegen `a28a3afd` in
+de commit, 526 regels allebei. De poort: draai geen muterende verificatiesuite uit de tree
+waaruit je op dat moment stageert, en bij een onverklaarbaar lokaal-tegen-CI-verschil is de
+eerste meting de hash van het bestand, niet zijn regelaantal.
+
 **2. Verifieer op het doelwit van de gebruiker.** Een groene check op een ander toestel, een andere build of een andere omgeving dan waar de gebruiker de fout ziet, bewijst niets over zijn geval. Draai de volledige cyclus — herstart of reload inbegrepen — op hetzelfde doelwit.
 
 Kan dat niet, dan is een surrogaat toegestaan **mits je twee dingen meldt**: dat je op een surrogaat getest hebt, en wat dat níet uitsluit. Sluit het gat waar mogelijk met een aantoonbare gelijkheid ("de uitgerolde hook is byte-identiek aan de geteste template, en `core.hooksPath` staat gezet") — dat is geen aanname maar een diff.
@@ -262,6 +277,16 @@ PLAN levert daarom minstens één **invariant** over het hele model, en BEOORDEE
 instrument waarmee je meet; deze over de stap die de toestand *verandert* vóór je meet — opruimen,
 resetten, patchen, invalideren. Zo'n stap die per constructie niet kán klagen is geen handeling
 maar een aanname.
+
+*De spiegelvorm: een stap die wél klaagt, maar gesmoord is.* GEMETEN 2026-09-11 (umanex-apps):
+`git -C "$R" checkout -q main 2>/dev/null` in een lus over drie klant-repo's. In één repo zat een
+tweede sessie op `feature/alpine-concept`; de checkout weigerde met *"Your local changes would be
+overwritten"*, ik had die melding zelf weggeleid, en de volgende regel deed `pull --ff-only` op
+húń branch. Alleen `--ff-only` hield het tegen. Nagemeten in een wegwerp-repo, drie kanten:
+gedempt zonder statuslezing → rc=1, geen melding, HEAD blijft staan en de keten loopt door;
+ongedempt → de weigering staat op het scherm; gedempt mét `|| { … }` → stopt. Let op de opstelling:
+een **ongetrackt** bestand blokkeert een checkout niet (eerste poging gaf rc=0 aan beide kanten en
+bewees dus niets) — het moet een gewijzigd getrackt bestand zijn dat tussen de branches verschilt.
 
 *Het opruimcommando dat niets opruimde.* `rm -rf` op een niet-bestaand pad geeft **exit 0** en
 schrijft niets naar stderr. GEMETEN 2026-09-08 (umanex-apps): tien metingen lang werd

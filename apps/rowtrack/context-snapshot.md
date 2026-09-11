@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-09-10_
+_Gegenereerd op 2026-09-11_
 
 ## Project
 - **App:** rowtrack
@@ -73,24 +73,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-c54190d docs(rowtrack): spm_halved-toggle heroverwegen na de meting van 2026-08-16
-ee95e7a fix(rowtrack): elk gemiddelde deelt door zijn eigen teller, niet door tickCount
-aa0cb47 docs(rowtrack): record sim render-verify of #257-261 in HANDOFF
-4108515 docs: session retrospective — handoff checks and Apollo XL follow-up
-2810551 feat(rowtrack): accept any FTMS-advertising rower in device scan
+2ca664b merge: main into feature/rowtrack-web-premium-redesign
+001432f docs(rowtrack): close two handoff items on measurement, sharpen the third
+3379d82 feat(rowtrack): the consumption gate, as the exemplar — two axes and a decomposed image
+1b3390f docs(rowtrack): session reflection — two items closed, three opened
+458c22f feat(rowtrack): update screen frames in place instead of replacing them
 ```
 
 ## Uncommitted wijzigingen
-  D  apps/rowtrack/.claude/skills/code-naar-figma/SKILL.md
-  M  apps/rowtrack/.claude/skills/figma-naar-code/SKILL.md
-  M  apps/rowtrack/.gitignore
-  A  apps/rowtrack/.storybook/main.ts
-  A  apps/rowtrack/.storybook/mocks/expo-router.tsx
-  A  apps/rowtrack/.storybook/mocks/supabase.ts
-  A  apps/rowtrack/.storybook/preview.tsx
-  A  apps/rowtrack/.storybook/rnw-style-keys.ts
-  A  apps/rowtrack/.storybook/toestel.ts
-  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/briefings/2026-05-07-screen-dashboard.tcebc.md
+  M  apps/rowtrack/briefings/2026-05-11-feature-history.tcebc.md
+  M  apps/rowtrack/briefings/2026-05-11-screen-active-summary.tcebc.md
+  M  apps/rowtrack/briefings/2026-05-11-screen-home-figma-sync.tcebc.md
+  M  apps/rowtrack/briefings/2026-05-12-component-tabbar.tcebc.md
+  M  apps/rowtrack/briefings/2026-05-12-screen-home.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

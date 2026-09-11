@@ -10,7 +10,7 @@ type: project
 **Type:** screen
 **Project:** RowTrack
 **Klant:** umanex
-**Status:** in progress
+**Status:** gebouwd
 
 ---
 

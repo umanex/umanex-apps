@@ -6,7 +6,7 @@
 | **Type** | feature |
 | **Project** | vyvey (`apps/vyvey`, umanex-apps monorepo) |
 | **Klant** | Vyvey Interieur (Jabbeke) |
-| **Status** | Akkoord — scaffold in uitvoering |
+| **Status** | gebouwd — scaffold in uitvoering |
 
 ---
 

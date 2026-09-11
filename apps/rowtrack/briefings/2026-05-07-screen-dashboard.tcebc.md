@@ -4,7 +4,7 @@
 **Type:** screen
 **Project:** RowTrack
 **Klant:** umanex
-**Status:** Open — blokkades
+**Status:** gebouwd — blokkades
 
 ---
 

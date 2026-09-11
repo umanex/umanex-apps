@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-09-10_
+_Gegenereerd op 2026-09-11_
 
 ## Project
 - **App:** jobradar
@@ -42,15 +42,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+802754f docs(jobradar): prospect classification goes to the backlog instead of merging #327
 2ca664b merge: main into feature/rowtrack-web-premium-redesign
 c0e407d fix(jobradar): the map now draws the active filter, not a fixed set
 d84679f Merge remote-tracking branch 'origin/main' into fix/rowtrack-schermverschillen
 2c970c9 test(ui): add Sheet to the rendered-size baseline
-86a9885 Merge remote-tracking branch 'origin/main' into feature/jobradar-contactopvolging
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/BACKLOG.md
+  M  apps/jobradar/briefings/2026-06-02-feature-status-tracking.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

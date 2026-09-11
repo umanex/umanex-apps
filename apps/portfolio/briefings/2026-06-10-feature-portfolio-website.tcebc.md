@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** portfolio (nieuwe app onder umanex-apps)
 - **Klant:** umanex (eigen werk)
-- **Status:** bouwklaar — kritische items beantwoord op 2026-06-10
+- **Status:** gebouwd — kritische items beantwoord op 2026-06-10
 
 ---
 

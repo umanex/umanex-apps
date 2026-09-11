@@ -5,7 +5,7 @@
 **Datum:** 2026-06-01
 **Type:** feature
 **Project:** cashflow
-**Status:** afgerond (nagelopen 2026-08-07 — gebouwd en in gebruik)
+**Status:** gebouwd (nagelopen 2026-08-07 — gebouwd en in gebruik)
 
 ---
 

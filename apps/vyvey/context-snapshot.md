@@ -1,5 +1,5 @@
 # Context Snapshot — vyvey
-_Gegenereerd op 2026-09-10_
+_Gegenereerd op 2026-09-11_
 
 ## Project
 - **App:** vyvey
@@ -61,24 +61,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-9a2bc2e chore: sync umanex-os layer with global umanex-os
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-e6d6a29 fix: judge a route on what renders, not on its status code
+2ca664b merge: main into feature/rowtrack-web-premium-redesign
+2c970c9 test(ui): add Sheet to the rendered-size baseline
+9fbb5cf feat(jobradar): contact panel, next-action badge and sorting
+172079a feat(ui): add Sheet, and repair the manifest recipe it exposed
+259286a Merge remote-tracking branch 'origin/main' into feature/rowtrack-storybook-figma
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/vyvey/CLAUDE.md
-  M  apps/vyvey/context-snapshot.md
-  M  packages/tokens/package.json
-  A  packages/ui/.storybook/main.ts
-  A  packages/ui/.storybook/preview.tsx
-  A  packages/ui/CLAUDE.md
-  A  packages/ui/components/ui/ThemeToggle.stories.tsx
-  A  packages/ui/components/ui/badge.stories.tsx
-  A  packages/ui/components/ui/button.stories.tsx
-  M  packages/ui/components/ui/button.tsx
+  M  apps/vyvey/briefings/2026-06-19-feature-vyvey-site-migratie.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

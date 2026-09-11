@@ -1,5 +1,5 @@
 # Context Snapshot — portfolio
-_Gegenereerd op 2026-09-10_
+_Gegenereerd op 2026-09-11_
 
 ## Project
 - **App:** portfolio
@@ -45,24 +45,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-9a2bc2e chore: sync umanex-os layer with global umanex-os
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-e6d6a29 fix: judge a route on what renders, not on its status code
+2ca664b merge: main into feature/rowtrack-web-premium-redesign
+2c970c9 test(ui): add Sheet to the rendered-size baseline
+9fbb5cf feat(jobradar): contact panel, next-action badge and sorting
+172079a feat(ui): add Sheet, and repair the manifest recipe it exposed
+259286a Merge remote-tracking branch 'origin/main' into feature/rowtrack-storybook-figma
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/portfolio/CLAUDE.md
-  A  apps/portfolio/app/aanbod/page.tsx
-  A  apps/portfolio/app/scan/page.tsx
-  M  apps/portfolio/app/werkwijze/page.tsx
-  A  apps/portfolio/briefings/2026-08-24-feature-bureau-positionering.tcebc.md
-  A  apps/portfolio/components/data-display/NumberedStep.tsx
-  A  apps/portfolio/components/data-display/TierCard.tsx
-  M  apps/portfolio/components/layout/Footer.tsx
-  M  apps/portfolio/components/layout/Header.tsx
-  M  apps/portfolio/components/sections/ContactSection.tsx
+  M  apps/portfolio/briefings/2026-06-10-feature-portfolio-website.tcebc.md
+  M  apps/portfolio/briefings/2026-06-10-feature-restyle-speels-rood.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

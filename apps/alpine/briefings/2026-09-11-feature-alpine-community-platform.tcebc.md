@@ -108,30 +108,34 @@ Alle vier beantwoord op 2026-09-11, vóór Fase 1.
 - [x] Nul lorem ipsum in de schermen — bewijs: 0 van 429 tekstnodes
 - [x] Vier toestanden per platform — bewijs: `gevuld · leeg · laden · fout` op beide pagina's, 4 van 4 elk
 
-**Fase 4 en 5**
-- [ ] Het eigenaarsketen-blok bestaat in twee staten: meerdere eigenaars en precies één — bewijs: twee frames, screenshot van beide
-- [ ] Geen enkele TextNode toont een volledig chassisnummer — bewijs: regex op 17-teken VIN-vorm over alle TextNodes in het bestand, mét noemer
-- [ ] Elk van de drie ruwe schermen draagt een verantwoording van de platformkeuze — bewijs: de tekst in het eindrapport, per scherm één regel
-- [ ] Het tweeling-onderdeel is volledig afgewerkt, inclusief de ring verwante auto's — bewijs: screenshot
+**Fase 4 — autoprofiel en geboortekaart**
+- [x] Het eigenaarsketen-blok bestaat in twee staten: meerdere eigenaars en precies één — bewijs: `Autoprofiel — gevuld` draagt 3 instances in `keten`, `Autoprofiel — één eigenaar` draagt er 1, op beide platformen (`figma_execute`, 2026-09-11)
+- [x] De geboortekaart is als certificaat uitgevoerd, niet als specificatietabel — bewijs: dubbele rand (buitenkader + binnenkader), gecentreerde as, eigen typografie-rol `type/certificate` (64/72), zegel met `border/critical`, en twee exportacties buiten het kader — screenshot `1:1928` en `1:2594`
+- [x] De geboortekaart draagt productiedatum, fabriek en oorspronkelijke specificaties — bewijs: 10 velden, twee kolommen op desktop, één op mobiel
+- [x] Specificaties staan eronder, feitelijk en rustig — bewijs: apart blok `specificaties`, 6 rijen label/waarde met haarlijn, geen kader en geen accentkleur
+- [x] Er is een ingang naar de tijdlijn en naar de tweeling — bewijs: `ingang-tijdlijn` en `ingang-tweeling` op elk van de acht autoprofiel-frames
+- [x] Vier toestanden per platform — bewijs: `gevuld · één eigenaar · laden · fout` op `02` en `03`; **`één eigenaar` staat op de plek van de lege staat**, omdat een autoprofiel nooit leeg kan zijn: de geboortekaart is er vanaf dag één
 
-**Fase 6 — doorlopende constraints** *(tussenstand na Fase 3, hermeten bij de eindronde)*
-- [x] Elke fill en elke tekststijl op `01/02/03` is gebonden aan een variable — bewijs: fills **744 van 744**, strokes **94 van 94**, tekst-eigenschappen **429 van 429** (alle vijf per node)
-- [x] Geen enkele node op `01/02/03` bindt rechtstreeks aan een `Core/*`-variabele — bewijs: **0** treffers over alle gebonden properties
-- [x] Elk frame en elke component is auto-layout — bewijs: **420 van 420**
-- [ ] Alle componentnamen zijn Engels — hermeten bij Fase 6
-- [x] Nul persoonlijke voornaamwoorden in UI-copy — bewijs: regex over alle 429 tekstnodes geeft **geen** treffer
-- [x] Geen enkele TextNode toont een volledig chassisnummer — bewijs: **0 van 429** op de 17-teken VIN-vorm
-- [x] **States:** elk datascherm draagt vier frames — bewijs: `02` en `03` dragen elk `gevuld · leeg · laden · fout`
+**Fase 5**
+
+**Fase 6 — doorlopende constraints** *(tussenstand na Fase 4, hermeten bij de eindronde)*
+- [x] Elke fill en elke tekststijl op `01/02/03` is gebonden aan een variable — bewijs: fills **1521 van 1521**, strokes **171 van 171**, tekst-eigenschappen **968 van 968**
+- [x] Geen enkele node op `01/02/03` bindt rechtstreeks aan een `Core/*`-variabele — bewijs: **0** treffers
+- [x] Elk frame en elke component is auto-layout — bewijs: **915 van 915**
+- [x] Alle componentnamen zijn Engels — bewijs: 12 namen gelezen — `timeline-item`, `year-divider` en hun tien varianten (`type=…, layout=…`)
+- [x] Nul persoonlijke voornaamwoorden in UI-copy — bewijs: eerst **`hem`** en **`hun`** gevonden (10 tekstnodes), na herschrijven **geen** treffer over 968 nodes
+- [x] Geen enkele TextNode toont een volledig chassisnummer — bewijs: **0 van 968** op de 17-teken VIN-vorm
+- [x] **States:** elk datascherm draagt vier frames — bewijs: `02` en `03` dragen elk vier tijdlijn- en vier autoprofiel-toestanden
 - [x] **Interactie:** de component set draagt exact twee variant-assen, geen state-as — bewijs: `variantGroupProperties` = `{type, layout}`
 
 **Fase 6 — maat en overloop (impeccable's `type,layout`-regels, in Figma-medium)**
 
 Het instrument `impeccable detect` werkt op lokale bestanden en gerenderde pagina's, niet op Figma-frames — hier is er dus geen detector. Wat wél kan is de regels overnemen en zelf meten, zodat de code-versie later niets nieuws hoeft te repareren.
 
-- [x] Geen `story-body`-blok boven 80 tekens per regel — bewijs: 15 verhaalteksten gemeten, **0 boven 80**; waarden 29–75 tekens (mobiel 294 px → 29–34, desktop 602–620 px → 52–75). Let op: de eerste versie van dit instrument mat **0 van 0** omdat `boundVariables.fontSize` een *array* van aliassen is, geen object — de positieve controle (15 nodes op `fontSize === 17`) legde dat bloot
-- [x] Geen tekst loopt buiten de binnenbreedte van zijn ouder — bewijs: **12 van 222** vóór de fix, **0 van 429** erna (de noemer groeide mee met de desktopschermen)
-- [x] Geen kaart-in-kaart-in-kaart — bewijs: maximale diepte **2** (`error-block` → geen; `auto-kaart` → `photo-placeholder`), drempel ≤ 2
-- [x] Geen krappe padding — bewijs: **0 van 16** inhoudskaders (`milestone-card`, `error-block`, `auto-kaart`); tegenproef: één kaart op `paddingLeft: 8` zetten brengt de telling op **7** (de wijziging plant zich voort naar de instances), herstel brengt hem terug op **0**
+- [x] Geen `story-body`-blok boven 80 tekens per regel — bewijs: **27 verhaalteksten, 0 boven 80**, hoogste waarde 75. Let op: de eerste versie van dit instrument mat `0 van 0` omdat `boundVariables.fontSize` een *array* van aliassen is, geen object — de positieve controle (15 nodes op `fontSize === 17`) legde dat bloot
+- [x] Geen tekst loopt buiten de binnenbreedte van zijn ouder — bewijs: **12 van 222** bij de eerste meting, **1 van 968** na Fase 4 (de foutkop op mobiel), **0 van 968** na herstel
+- [x] Geen kaart-in-kaart-in-kaart — bewijs: maximale diepte **2**, drempel ≤ 2
+- [x] Geen krappe padding — bewijs: **0 van 36** inhoudskaders. De eerste versie van dit instrument meldde er 4: dat bleken de dubbele-randwikkels van de geboortekaart (4 px mobiel, 12 px desktop), waar de padding de inzet *tussen twee randen* is en geen inhoudsmarge. Regel aangescherpt: een frame met precies één kind dat zelf een rand draagt, is een wikkel en telt niet mee
 
 ## Beslissingsgeschiedenis
 
@@ -142,3 +146,6 @@ Het instrument `impeccable detect` werkt op lokale bestanden en gerenderde pagin
 - 2026-09-11: Fase 2 gebouwd. Maten vastgelegd: compact 350 breed (rail 40 + gap 12 + inhoud 298), wide 700 (rail 56 + gap 24 + inhoud 620 — precies de gemeten leesmaat). Ritme per type via de verticale padding van de inhoudskolom: maintenance 16, photo 16, story 24, milestone 32.
 - 2026-09-11: Fase 3 gebouwd, acht schermen. Tijdlijn staat **nieuwste bovenaan**: nieuwe invoer schuift boven de vorige, en de geboortekaart is het anker onderaan. Mobiel krijgt naast de vier toestelframes één scroll-uitrol van 390×3533, omdat 13 items met 9 jaarscheidingen niet in 844 px passen en de opdracht die hoogte vastlegt.
 - 2026-09-11: de zwevende actieknop op mobiel is vervangen door een actie ín de onderbalk. Reden: hij bedekte permanent inhoud (gemeten op twee frames) en was het meest app-achtige element op een verder rustig scherm.
+- 2026-09-11: Fase 4 gebouwd, acht schermen. Nieuwe typografie-rol `type/certificate` (display 64/72, tracking tight-lg) — de geboortekaart vraagt een trap boven `display`, en een rauwe waarde was geen optie.
+- 2026-09-11: de eigenaarsketen hergebruikt de `type=story`-variant van het tijdlijn-component. Reden: een eigenaarsketen ís een chronologie, en zo hangt ook het autoprofiel aan dezelfde ruggengraat in plaats van ernaast te staan.
+- 2026-09-11: de foutstaat van het autoprofiel toont de geboortekaart **volledig**. Die is lokaal; alleen de eigenaarsketen komt van de server. Een dossier dat je bij je hebt, valt niet weg omdat het netwerk wegvalt.

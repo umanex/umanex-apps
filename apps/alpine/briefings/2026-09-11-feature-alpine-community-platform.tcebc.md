@@ -116,26 +116,35 @@ Alle vier beantwoord op 2026-09-11, vóór Fase 1.
 - [x] Er is een ingang naar de tijdlijn en naar de tweeling — bewijs: `ingang-tijdlijn` en `ingang-tweeling` op elk van de acht autoprofiel-frames
 - [x] Vier toestanden per platform — bewijs: `gevuld · één eigenaar · laden · fout` op `02` en `03`; **`één eigenaar` staat op de plek van de lege staat**, omdat een autoprofiel nooit leeg kan zijn: de geboortekaart is er vanaf dag één
 
-**Fase 5**
+**Fase 5 — snel-invoer, register, community-feed, tweeling**
+- [x] Elk van de drie ruwe schermen draagt een verantwoording van de platformkeuze — bewijs: snel-invoer mobiel (kernactie onderweg) · register desktop (doorbladeren met filters) · community mobiel (nabijheid en meldingen); één regel per scherm in het Fase 5-rapport
+- [x] Snel-invoer is het paneel over de tijdlijn dat bij vraag 1 gekozen is — bewijs: `scrim` + `paneel` absoluut onderaan, met de gevulde tijdlijn eronder zichtbaar, op alle vier de frames
+- [x] Het register maskeert elk chassisnummer — bewijs: 10 wagens, alle met `···· ####`, en **0 van 1643** tekstnodes matcht de 17-teken VIN-vorm
+- [x] Het register draagt filters op bouwjaar, kleur, uitvoering en land — bewijs: vier filter-controls in `filters`, met `BOUWJAAR 1973 — 1977` actief
+- [x] Elke auto in het register leidt naar zijn tijdlijn — bewijs: `TIJDLIJN →` op elke van de 10 rijen
+- [x] De community-feed staat niet náást de tijdlijn maar ís er een — bewijs: elk feed-item is een INSTANCE van `timeline-item`, voorafgegaan door een `herkomst`-rij op dezelfde rail; de lijn loopt door over de hele stroom
+- [x] Het tweeling-onderdeel is volledig afgewerkt, inclusief de ring verwante auto's — bewijs: `03 · De tweeling` (1440×2143) met gedeelde oorsprong, twee uiteenlopende kolommen van elk 4 items, en 6 verwante wagens met gedeelde-kenmerken-telling
+- [x] Vier toestanden per scherm — bewijs: snel-invoer `begin · ingevuld · opslaan · fout`, register `gevuld · leeg · laden · fout`, community `gevuld · leeg · laden · fout`
 
-**Fase 6 — doorlopende constraints** *(tussenstand na Fase 4, hermeten bij de eindronde)*
-- [x] Elke fill en elke tekststijl op `01/02/03` is gebonden aan een variable — bewijs: fills **1521 van 1521**, strokes **171 van 171**, tekst-eigenschappen **968 van 968**
+**Fase 6 — doorlopende constraints** *(tussenstand na Fase 5, hermeten bij de eindronde)*
+- [x] Elke fill en elke tekststijl op `01/02/03` is gebonden aan een variable — bewijs: fills **2690 van 2690**, strokes **325 van 325**, tekst-eigenschappen **1643 van 1643**
 - [x] Geen enkele node op `01/02/03` bindt rechtstreeks aan een `Core/*`-variabele — bewijs: **0** treffers
-- [x] Elk frame en elke component is auto-layout — bewijs: **915 van 915**
-- [x] Alle componentnamen zijn Engels — bewijs: 12 namen gelezen — `timeline-item`, `year-divider` en hun tien varianten (`type=…, layout=…`)
-- [x] Nul persoonlijke voornaamwoorden in UI-copy — bewijs: eerst **`hem`** en **`hun`** gevonden (10 tekstnodes), na herschrijven **geen** treffer over 968 nodes
-- [x] Geen enkele TextNode toont een volledig chassisnummer — bewijs: **0 van 968** op de 17-teken VIN-vorm
-- [x] **States:** elk datascherm draagt vier frames — bewijs: `02` en `03` dragen elk vier tijdlijn- en vier autoprofiel-toestanden
+- [x] Elk frame en elke component is auto-layout — bewijs: **1721 van 1721**
+- [x] Alle componentnamen zijn Engels — bewijs: 12 namen gelezen
+- [x] Nul persoonlijke voornaamwoorden in UI-copy — bewijs: **geen** treffer over 1643 tekstnodes
+- [x] Geen enkele TextNode toont een volledig chassisnummer — bewijs: **0 van 1643**
+- [x] **States:** elk datascherm draagt vier frames — bewijs: 5 schermen × 4 toestanden over `02` en `03`
 - [x] **Interactie:** de component set draagt exact twee variant-assen, geen state-as — bewijs: `variantGroupProperties` = `{type, layout}`
 
 **Fase 6 — maat en overloop (impeccable's `type,layout`-regels, in Figma-medium)**
 
 Het instrument `impeccable detect` werkt op lokale bestanden en gerenderde pagina's, niet op Figma-frames — hier is er dus geen detector. Wat wél kan is de regels overnemen en zelf meten, zodat de code-versie later niets nieuws hoeft te repareren.
 
-- [x] Geen `story-body`-blok boven 80 tekens per regel — bewijs: **27 verhaalteksten, 0 boven 80**, hoogste waarde 75. Let op: de eerste versie van dit instrument mat `0 van 0` omdat `boundVariables.fontSize` een *array* van aliassen is, geen object — de positieve controle (15 nodes op `fontSize === 17`) legde dat bloot
-- [x] Geen tekst loopt buiten de binnenbreedte van zijn ouder — bewijs: **12 van 222** bij de eerste meting, **1 van 968** na Fase 4 (de foutkop op mobiel), **0 van 968** na herstel
-- [x] Geen kaart-in-kaart-in-kaart — bewijs: maximale diepte **2**, drempel ≤ 2
-- [x] Geen krappe padding — bewijs: **0 van 36** inhoudskaders. De eerste versie van dit instrument meldde er 4: dat bleken de dubbele-randwikkels van de geboortekaart (4 px mobiel, 12 px desktop), waar de padding de inzet *tussen twee randen* is en geen inhoudsmarge. Regel aangescherpt: een frame met precies één kind dat zelf een rand draagt, is een wikkel en telt niet mee
+- [x] Geen `story-body`-blok boven 80 tekens per regel — bewijs: **42 gemeten, 0 boven 80, max 77**. Na Fase 5 stonden er twee op 132 en 91 (de foutmelding van het register over 1150 px, de intro van de tweeling over 1248 px); de gemeten leesmaat staat nu als `maxWidth: 620` op elke verhaaltekst, dus dit kan niet stil terugkomen
+- [x] Geen tekst loopt buiten de binnenbreedte van zijn ouder — bewijs: **0 van 1643**; onderweg gemeten op 12/222, 1/968 en 1/1643, telkens hersteld
+- [x] Geen frame klipt een kind weg — bewijs: **0 van 1602**. Dit instrument is er bijgekomen omdat het rij-instrument het `EIGEN DOSSIER`-label niet zag: `kop` hugt zijn inhoud, dus de overloop zat tegen de *ouder* en niet tegen de eigen breedte
+- [x] Geen kaart-in-kaart-in-kaart — bewijs: maximale diepte **2**. Twee keer aangescherpt: een dubbele-randwikkel telt niet mee, en een pil (radius `full`) is geen kaart
+- [x] Geen krappe padding — bewijs: **0 van 61** inhoudskaders
 
 ## Beslissingsgeschiedenis
 
@@ -149,3 +158,7 @@ Het instrument `impeccable detect` werkt op lokale bestanden en gerenderde pagin
 - 2026-09-11: Fase 4 gebouwd, acht schermen. Nieuwe typografie-rol `type/certificate` (display 64/72, tracking tight-lg) — de geboortekaart vraagt een trap boven `display`, en een rauwe waarde was geen optie.
 - 2026-09-11: de eigenaarsketen hergebruikt de `type=story`-variant van het tijdlijn-component. Reden: een eigenaarsketen ís een chronologie, en zo hangt ook het autoprofiel aan dezelfde ruggengraat in plaats van ernaast te staan.
 - 2026-09-11: de foutstaat van het autoprofiel toont de geboortekaart **volledig**. Die is lokaal; alleen de eigenaarsketen komt van de server. Een dossier dat je bij je hebt, valt niet weg omdat het netwerk wegvalt.
+- 2026-09-11: Fase 5 gebouwd op hetzelfde detailniveau als de vorige fases, op verzoek — dertien schermen in plaats van drie ruwe. Platformkeuze: snel-invoer mobiel, register desktop, community mobiel, tweeling desktop.
+- 2026-09-11: de community-feed is opgebouwd uit instances van `timeline-item` met een `herkomst`-rij erboven op dezelfde rail. Dat is het antwoord op "zoek de verbinding": de feed is dezelfde chronologie, maar over auto's heen in plaats van binnen één.
+- 2026-09-11: nieuwe rollen `color/scrim` + `surface/scrim` (rgba, 55%) voor het paneel over de tijdlijn — een ongebonden `opacity` op een node was de alternatieve route en die zou de kleur buiten de tokenlaag brengen.
+- 2026-09-11: Jeroen meldde tijdens deze fase dat het platform vooral op de moderne A110 en de A290/A390 mikt. Alle demo-inhoud staat op een klassieke A110 uit 1973. Vastgelegd in `apps/alpine/BACKLOG.md`; het concept houdt stand, de inhoud demonstreert de randgevallen.

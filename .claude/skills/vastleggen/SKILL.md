@@ -77,6 +77,24 @@ Bestaat de `LEARNINGS.md` op het doelpad nog niet (typisch bij de eerste capture
 
 Bestaat het bestand al → niets kopiëren, ga door naar stap 6. Overschrijf een bestaande `LEARNINGS.md` nooit met de template.
 
+**Schrijf je buiten de repo waarin je werkt, kijk dan eerst in welke staat die tree staat.** Een
+`globaal`- of `skill`-entry gaat per absoluut pad naar `~/Documents/umanex-os/LEARNINGS.md`, ook wanneer
+je in een klant-repo zit — en die tree heeft een eigen HEAD, mogelijk de feature branch van iemand
+anders. GEMETEN 2026-09-11: een sessie in Luminus legde een globale learning vast; de entry landde
+onvastgelegd op de feature branch van een sessie die op dat moment in umanex-os aan het committen was.
+Daar had één `git add LEARNINGS.md` hem in een ongerelateerde PR getrokken, en `git checkout main`
+weigerde er later op. Meet dus vóór je schrijft:
+
+```bash
+git -C ~/Documents/umanex-os rev-parse --abbrev-ref HEAD
+git -C ~/Documents/umanex-os status --porcelain -uall -- LEARNINGS.md
+```
+
+Staat die tree niet op `main`, of draagt `LEARNINGS.md` al onvastgelegd werk, dan schrijf je **nog
+steeds** — een entry die je niet vastlegt is weg — maar je noemt in stap 7 op welke branch hij landde en
+dat hij daar onvastgelegd staat. Anders ziet alleen jouw sessie hem, en de sessie die de tree bezit
+vindt een gewijzigd bestand dat ze niet herkent.
+
 ### Stap 6 — Append de entry (nooit overschrijven)
 
 Voeg de entry **toe** aan het doelbestand onder de juiste laag-header — overschrijf nooit bestaande inhoud.

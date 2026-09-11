@@ -82,6 +82,15 @@ Herkenningsteken voor stap 2: je nieuwe kop zou beginnen met dezelfde werkwoords
 
 **Wanneer een sectie te vol is voor D alleen.** Passeert een sectie de tien rails, dan is de volgende promotie het moment om te vragen of een blok naar een skill kan in plaats van erbij — met de toets uit de resolved HANDOFF van 2026-08-10: niet *"staat dit ook in een skill"* maar **"laadt die skill in de situatie waar de regel bijt?"**. Een rail die in élke sessie bijt (het merge-protocol, de discipline-regels) blijft inline, ook als hij lang is; een blok dat alleen bij een zeldzame, herkenbare beslissing bijt (de worktree-procedure) hoort in een skill met een trigger-beschrijving die op die beslissing aanslaat.
 
+**Gemeten 2026-09-11, en het antwoord viel de andere kant op.** Het blok stond op 14 rails en 7 577 van
+7 600 bytes, dus de vraag hierboven kwam aan de beurt. Bij de laadtoets valt echter **géén enkele rail
+af**: ze bijten alle veertien midden in het werk, vóór er een skill is aangeroepen. `verify` is daarmee
+geen uitweg maar precies wat check 7 van `scripts/test-discipline-blok.sh` vangt — een rail daarheen
+verplaatsen zou hem onzichtbaar maken voor de sessie die hem nodig heeft (2026-09-08: drie globale
+lessen zakten zo weg). Bij een vol blok blijft dus **D** over — samenvoegen binnen het bestaande
+railbudget, desnoods met een micro-trim elders in diezelfde rail — of **B**: een hook-guard die vuurt op
+het moment zelf. Verzet het plafond niet omdat het knelt; dat is wat het plafond meet.
+
 Bij twijfel A vs C: lees éérst de doel-CLAUDE.md of de regel er al staat.
 
 ### Stap 3 — Verifieer

@@ -10,7 +10,7 @@ type: component
 **Type:** component
 **Project:** RowTrack
 **Klant:** umanex
-**Status:** in progress
+**Status:** gebouwd
 
 ---
 

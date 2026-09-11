@@ -10,7 +10,7 @@ type: feature
 **Type:** feature
 **Project:** RowTrack
 **Klant:** umanex
-**Status:** in implementatie
+**Status:** gebouwd
 
 ---
 

@@ -5,7 +5,7 @@ Datum:   2026-06-02
 Type:    feature
 Project: jobradar
 Klant:   umanex
-Status:  ready
+Status:  gebouwd
 ---
 
 ---

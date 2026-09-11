@@ -4,7 +4,7 @@
 **Type:** feature
 **Project:** portfolio (apps/portfolio)
 **Klant:** umanex
-**Status:** in uitvoering
+**Status:** gebouwd
 
 ---
 

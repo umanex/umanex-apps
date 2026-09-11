@@ -141,7 +141,7 @@ Per voorstel:
 - **Verwacht effect** — welke scores stijgen (bv. Findable 2→4), in observeerbare termen.
 - **Grove effort-inschatting** — S/M/L, geen valse precisie in dagen tenzij gevraagd.
 
-Voor het bouwen van die redesign: verwijs door naar de skills `nieuw-component` (scaffolden) en `figma-naar-code` / `code-naar-figma` (design ↔ code). Deze audit-skill ontwerpt niet zelf in Figma — ze levert de richting.
+Voor het bouwen van die redesign: verwijs door naar de skills `tc-ebc` (briefing + scaffold) en `figma-naar-code` / `code-naar-figma` (design ↔ code). Deze audit-skill ontwerpt niet zelf in Figma — ze levert de richting.
 
 ---
 

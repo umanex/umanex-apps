@@ -408,7 +408,7 @@ Haal vóór design- of token-werk de meest recente `tokens.json` op (`git pull` 
 
 **Build-valkuil (DTCG).** Een custom Style Dictionary format of transform leest **`token.$value`** (fallback `?? token.value`), nooit enkel `token.value` — bij DTCG landt de waarde op `$value`. Een custom format dat `token.value` leest produceert **stil `undefined`**: de build slaagt zónder error, de output is kapot. Built-in formats (`css/variables`) handelen DTCG zelf af; enkel custom formats zijn de val. Verifieer een DTCG-build dus door te herbouwen en de output op echte waarden te checken, niet op een geslaagde exit.
 
-**Referentie-schermen.** Bestaat er een `reference/`-map (in monorepos `apps/{app}/reference/`), lees de relevante schermen dan vóór je bouwt of audit — bij een TC-EBC, in `nieuw-component`, bij `ux-audit`. Dat is vastgelegd referentiebeeld: geen token-bron, geen Figma-vervanger, en niet te verwarren met `public/images/` (runtime-assets).
+**Referentie-schermen.** Bestaat er een `reference/`-map (in monorepos `apps/{app}/reference/`), lees de relevante schermen dan vóór je bouwt of audit — bij een TC-EBC, bij `ux-audit`. Dat is vastgelegd referentiebeeld: geen token-bron, geen Figma-vervanger, en niet te verwarren met `public/images/` (runtime-assets).
 
 **MCP-keuze.** Figma Console MCP (Desktop Bridge) is primair voor **alle** Figma-operaties, lezen én schrijven — geen lees/schrijf-split. Native Figma MCP is **fallback-only**: nooit de aangewezen tool, uitsluitend wanneer de Bridge niet beschikbaar is én de gebruiker daar expliciet voor kiest. **Code Connect wordt niet gebruikt**, noch native, noch via Console — stel geen mappings voor.
 

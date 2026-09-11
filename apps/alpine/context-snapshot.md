@@ -26,11 +26,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b947dba docs(alpine): record phase 1 foundations results in the briefing
 81d5526 docs(alpine): add project context and TC-EBC briefing for the Alpine concept
 2c970c9 test(ui): add Sheet to the rendered-size baseline
 9fbb5cf feat(jobradar): contact panel, next-action badge and sorting
 172079a feat(ui): add Sheet, and repair the manifest recipe it exposed
-259286a Merge remote-tracking branch 'origin/main' into feature/rowtrack-storybook-figma
 ```
 
 ## Uncommitted wijzigingen

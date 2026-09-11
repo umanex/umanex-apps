@@ -68,6 +68,8 @@ Alle vier beantwoord op 2026-09-11, vóór Fase 1.
 - [GEMETEN 2026-09-11: mobiel haalt de ondergrens van 45 tekens niet] 390 − 2×20 = 350 px content geeft 42 tekens bij `story-body` (17 px). Dat is natuurkunde, geen defect: de bovengrens van 80 is de bindende regel, de ondergrens geldt alleen op desktop.
 - [GEMETEN 2026-09-11: `space` en `radius` bestaan in beide collecties] Core draagt de numerieke stappen, Semantic de rollen. Bij een platte export vallen ze in dezelfde groep — in Tokens Studio scheidt de set-naam ze, in een flat-JSON-export niet.
 - [BEKEND 2026-09-11: typografie exporteert niet als DTCG-composite] De 11 type-rollen staan als 5 losse tokens per rol (family/size/leading/weight/tracking), niet als één `typography`-token. Style Dictionary verwerkt dat prima; een `$type: typography`-composite is het niet.
+- [GEMETEN 2026-09-11: tekst is per instance te overschrijven] Een `characters`-override op een tekstnode binnen een instance komt aan en leest terug — Fase 3 heeft dus geen component properties nodig om twaalf items met eigen inhoud te vullen.
+- [AFWIJKING 2026-09-11: `year-divider` is een set, geen los component] De opdracht vraagt één component; twee platformen vragen twee breedtes. Eén as `layout=[compact, wide]`, verder identiek.
 - [ASSUMPTION: donkere modus] — licht en donker worden als modes opgezet, maar de schermen worden in licht uitgewerkt; donker wordt op één frame getoetst.
 - [ASSUMPTION: beeldmateriaal] — placeholder-vlakken met een variable-gebonden vulling, geen gelicenseerde foto's.
 
@@ -89,10 +91,13 @@ Alle vier beantwoord op 2026-09-11, vóór Fase 1.
 - [ ] De werkelijke export via de Tokens Studio-plugin — `[NIET TE VERIFIËREN — plugin niet aanwezig in deze sessie; de structurele voorwaarden zijn wel gemeten]`
 
 **Fase 2 — timeline-item**
-- [ ] De component set draagt 8 varianten: type (photo/maintenance/story/milestone) × layout (compact/wide) — bewijs: telling `componentSet.children.length` + `variantGroupProperties`
-- [ ] De verbindende lijn zit ín het component, niet op het scherm — bewijs: de lijn-node komt voor in `component.findAll()`, niet als sibling op het scherm
-- [ ] Datum-behandeling is identiek over alle vier de types — bewijs: per variant de naam, `fontSize`, gebonden text-variable en positie van de datum-node naast elkaar
-- [ ] `year-divider` bestaat als eigen component — bewijs: `figma.currentPage.findOne(n => n.type === 'COMPONENT' && n.name === 'year-divider')`
+- [x] De component set draagt 8 varianten: type (photo/maintenance/story/milestone) × layout (compact/wide) — bewijs: `variantGroupProperties` geeft exact `{type: [...4], layout: [...2]}`, 8 children (`figma_execute`, 2026-09-11)
+- [x] De verbindende lijn zit ín het component, niet op het scherm — bewijs: `rail-line` zit in elke variant; zes gestapelde instances geven 5 gaten van 0 px, en de tegenproef (`itemSpacing = 8`) maakt er 5 van 8 px van — de nul beweegt dus mee met het object
+- [x] Datum-behandeling is identiek over alle vier de types — bewijs: 8 van 8 varianten `fontSize 12`, rol `text/muted`, afstand van datummidden tot markermidden **0** op alle acht
+- [x] `year-divider` bestaat als eigen component — bewijs: `COMPONENT_SET · year-divider` met as `layout=[compact, wide]` op `01 — Components`
+- [x] De vier types verschillen in ritme — bewijs: gemeten hoogtes compact/wide — maintenance 94/94, story 282/198, milestone 270/226, photo 322/402
+- [x] Geen enkele node in beide sets bindt aan `Core/*` — bewijs: 0 treffers over alle 34 frames en 32 tekstnodes
+- [x] Token-dekking in beide sets — bewijs: fills 56 van 56, strokes 8 van 8, tekst-eigenschappen 32 van 32 (alle vijf per node), auto-layout 34 van 34
 
 **Fase 3 — tijdlijn-scherm**
 - [ ] Mobiel gevuld draagt ≥ 12 items, alle vier de types, ≥ 1 jaarscheiding — bewijs: telling van instances per variant op het frame
@@ -133,3 +138,4 @@ Het instrument `impeccable detect` werkt op lokale bestanden en gerenderde pagin
 - 2026-09-11: vier open vragen beantwoord. De keuze voor alle vier de toestanden op elk datascherm vergroot Fase 3 en 5 met ongeveer acht frames; scope bewust verruimd.
 - 2026-09-11: Fase 1 gebouwd. Twee families gekozen na meting van 2205 beschikbare families: Fraunces (karakter) en IBM Plex Sans (rust). Een derde, mono-family voor typeplaatje en chassisnummer is overwogen en afgewezen — de opdracht zegt twee families; `ui-caps` op IBM Plex Sans met tracking 1,2 draagt dat register.
 - 2026-09-11: impeccable's `type,layout`-regels als acceptatie-items opgenomen na de vraag of het instrument hier bruikbaar is. Het instrument zelf niet: `impeccable detect` leest DOM en gerenderde pagina's, en er is geen render-pad van Figma naar een URL. De regels wel — `line-length` bepaalde de 620 px verhaalkolom.
+- 2026-09-11: Fase 2 gebouwd. Maten vastgelegd: compact 350 breed (rail 40 + gap 12 + inhoud 298), wide 700 (rail 56 + gap 24 + inhoud 620 — precies de gemeten leesmaat). Ritme per type via de verticale padding van de inhoudskolom: maintenance 16, photo 16, story 24, milestone 32.

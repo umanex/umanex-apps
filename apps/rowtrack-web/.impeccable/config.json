@@ -1,0 +1,5 @@
+{
+  "detector": {
+    "ignoreRules": ["low-contrast", "kicker-above-heading"]
+  }
+}

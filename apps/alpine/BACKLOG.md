@@ -74,21 +74,19 @@ staan in de root-`BACKLOG.md`.
   productbeslissing die nog open staat — vermoedelijk rond de vijf treffers.
 
 ## 2026-09-11 — De tijdlijn is niet getoetst op de dichtheid van een connected wagen · [ux]
-- **Wat:** Drieënvijftig jaar klassieker gaf dertien gebeurtenissen. Zeven maanden A290 geeft er
-  zevenenveertig, en een wagen die zelf laadsessies en software-updates wegschrijft haalt honderden per
-  jaar. De jaarscheiding wordt dan het verkeerde ritme, en groepering of filtering bestaat nog nergens
-  in het ontwerp.
-- **Waarom niet nu:** dit is een eigen ontwerpvraag met een eigen briefing — hoeveel een tijdlijn aankan
-  vóór ze een lijst wordt, is precies het soort vraag waar de opdracht van 2026-09-11 niet over ging.
-  Het is de grootste open vraag die de proef opleverde.
-- **Eerste zet:** een gevulde tijdlijn met honderd gebeurtenissen bouwen en kijken waar ze omvalt, vóór
-  er een oplossing bedacht wordt.
-- **Status:** gebouwd — 2026-09-11, commit `e698141`. De regel: **machinale gebeurtenissen bundelen
-  standaard, door mensen geschreven gebeurtenissen nooit.** Ritten, laadsessies en routinemeldingen komen
-  uit de wagen en staan per maand gebundeld; foto's, verhalen, mijlpalen en service met een uitkomst
-  blijven altijd uitgeklapt. Nieuw component `timeline-cluster` (compact + wide) draagt de bundel op
-  dezelfde rail, met een lichtere markering. De jaarscheiding wordt een maandscheiding — dat vroeg geen
-  nieuw component, want `year-divider` neemt vrije tekst. Drie schermen: `02 · Tijdlijn dicht — gevuld`
-  (+ scroll-uitrol), `02 · Tijdlijn dicht — cluster open` en `03 · Tijdlijn dicht — gevuld`. Van 487
-  gebeurtenissen staan er negen uitgeklapt. **Wat open blijft:** de drempel waarboven gebundeld wordt, en
-  of de lens-rij (`ALLES · VERHAAL · SERVICE · RITTEN`) filtert of alleen benadrukt.
+- **Wat:** De aanname was dat een A290 die zelf laadsessies en ritten wegschrijft honderden gebeurtenissen
+  per jaar produceert, waardoor de jaarscheiding het verkeerde ritme zou worden en groepering nodig was.
+- **Waarom niet nu:** —
+- **Status:** verworpen — 2026-09-11. **De premisse was een aanname van mij, geen waarneming.** Ik sprong van
+  "connected wagen" naar "de app logt elke laadbeurt en elke rit"; dat is een productbeslissing die ik voor
+  Jeroen nam. Hij corrigeerde het diezelfde dag: **laadsessies en routineritten zijn geen gebeurtenissen in
+  deze applicatie.** Zonder die twee krijgt een A290-dossier service, foto's, ritverslagen en mijlpalen —
+  tientallen per jaar, vergelijkbaar met een goed bijgehouden klassieker. De jaarscheiding blijft dus een
+  jaarscheiding en het bundelmechanisme is voor dit probleem niet nodig.
+- **Wat er wél uit overbleef, en gebouwd is:** één rit levert twintig foto's op, en dát is een echte
+  bundelbehoefte. `timeline-cluster` (2 varianten) dient sindsdien **fotobundels** — "22 foto's van de
+  Vogezen" — met een holle markering in de fotokleur, en klapt open tot een raster miniaturen bínnen die
+  ene rij in plaats van tot twintig losse tijdlijn-items. Een verslag van een toeristische rit is gewoon
+  een `story`; daar was geen nieuw type voor nodig. De vier "dicht"-schermen zijn vervangen door vier
+  A290-tijdlijnschermen met normale dichtheid (8 gebeurtenissen, 31 foto's in twee bundels over zeven
+  maanden). Bevinding 05 op `03 · A290-proef — bevindingen` staat nu als **INGETROKKEN** met de reden erbij.

@@ -48,16 +48,26 @@ CONSTRAINTS: Alle kleur, typografie en spacing via Figma variables - geen hardco
 
 ## Open vragen
 
-1. **Component-typologie snel-invoer** — wordt het toevoegen van een gebeurtenis een bottom sheet over de tijdlijn (minste stappen, mobiele kernactie), een volledig scherm, of een inline-compositie bovenaan de tijdlijn? De opdracht zegt "zo weinig mogelijk stappen" maar niet welke vorm.
-2. **States** — de tijdlijn krijgt expliciet gevuld + leeg. Vallen loading en error af voor dit conceptwerk, of horen ze er bij het register (netwerk-afhankelijk doorbladeren) en de snel-invoer (upload) wél bij?
-3. **Interactie-modaliteit** — blijven het statische concept-frames, of horen hover/pressed/focus als varianten in de timeline-item component set? Dat verdubbelt de variant-as en is voor een concept niet vanzelfsprekend.
-4. **Eigen brandnaam** — het merk staat los van umanex, maar heeft nog geen naam. Blijft "Alpine" de werknaam in collectie- en tokennamen, of komt er een eigen productnaam (die later de tokens.json-prefix wordt)?
+Alle vier beantwoord op 2026-09-11, vóór Fase 1.
+
+1. ~~Component-typologie snel-invoer~~ → **paneel over de tijdlijn**. Schuift van onder omhoog, de chronologie blijft erachter zichtbaar. Toevoegen gebeurt visueel bínnen de tijdlijn, niet ernaast.
+2. ~~States~~ → **alle toestanden op elk datascherm**: default/gevuld, leeg, laden en fout. Niets valt af.
+3. ~~Interactie-modaliteit~~ → **statisch**. Geen hover/pressed-varianten; de component set blijft op de twee assen type × layout. Interactie wordt in tekst bij het scherm beschreven.
+4. ~~Eigen brandnaam~~ → **`Alpine` als werknaam**. Collectienaam en token-prefix volgen die naam; hernoemen is later één ingreep op collectieniveau.
 
 ## Aannames
 
 - [ASSUMPTION: type = `feature`] — het werk kruist meerdere schermen, twee platformen en een foundations-laag; geen enkel scherm draagt het alleen.
 - [ASSUMPTION: doelgroep] — A110-eigenaars, wereldwijd, hobbyist tot verzamelaar; de emotionele waarde van het object weegt zwaarder dan taak-efficiëntie.
 - [ASSUMPTION: datamodel] — één datamodel over beide platformen; een gebeurtenis draagt datum, type, korte tekst, optioneel foto's, optioneel kosten/kilometerstand bij maintenance.
+- [BESLIST 2026-09-11: snel-invoer is een paneel over de tijdlijn]
+- [BESLIST 2026-09-11: alle vier de toestanden op elk datascherm]
+- [BESLIST 2026-09-11: statische frames, geen state-as in de component set]
+- [BESLIST 2026-09-11: werknaam `Alpine` voor collecties en token-paden]
+- [GEMETEN 2026-09-11: verhaalkolom desktop = 620 px] Bij 560/600/620 px blijft `story-body` op 68 tekens per regel; vanaf 660 px springt het naar 85, boven de 80 die WCAG 1.4.8 noemt. 620 is de breedste veilige maat.
+- [GEMETEN 2026-09-11: mobiel haalt de ondergrens van 45 tekens niet] 390 − 2×20 = 350 px content geeft 42 tekens bij `story-body` (17 px). Dat is natuurkunde, geen defect: de bovengrens van 80 is de bindende regel, de ondergrens geldt alleen op desktop.
+- [GEMETEN 2026-09-11: `space` en `radius` bestaan in beide collecties] Core draagt de numerieke stappen, Semantic de rollen. Bij een platte export vallen ze in dezelfde groep — in Tokens Studio scheidt de set-naam ze, in een flat-JSON-export niet.
+- [BEKEND 2026-09-11: typografie exporteert niet als DTCG-composite] De 11 type-rollen staan als 5 losse tokens per rol (family/size/leading/weight/tracking), niet als één `typography`-token. Style Dictionary verwerkt dat prima; een `$type: typography`-composite is het niet.
 - [ASSUMPTION: donkere modus] — licht en donker worden als modes opgezet, maar de schermen worden in licht uitgewerkt; donker wordt op één frame getoetst.
 - [ASSUMPTION: beeldmateriaal] — placeholder-vlakken met een variable-gebonden vulling, geen gelicenseerde foto's.
 
@@ -68,13 +78,15 @@ CONSTRAINTS: Alle kleur, typografie en spacing via Figma variables - geen hardco
 - [ ] Geen bestaande pagina verwijderd — bewijs: paginalijst vóór en ná naast elkaar
 
 **Fase 1 — foundations**
-- [ ] Elke semantische variable is een alias naar een `Core/*`-variabele, nul directe waarden — bewijs: telling `valuesByMode` van type `VARIABLE_ALIAS` over de semantische laag (`figma_get_variables`), mét noemer
-- [ ] Licht en donker zijn twee modes binnen één collectie, niet twee collecties — bewijs: `collection.modes.length === 2` op de semantische collectie
-- [ ] De neutrale schaal draagt alle stappen 50 t/m 950 — bewijs: naamlijst van de `Core/neutral/*`-variabelen
-- [ ] Alle variable-namen zijn kebab-case — bewijs: regex `^[a-z0-9/-]+$` over elke naam, mét noemer
-- [ ] Elke kleur-primitief is opgeslagen als hex-herleidbare COLOR-waarde — bewijs: type-telling over `Core/color/*`
-- [ ] Het moodboard-frame staat op `04 — Explorations` — bewijs: `figma_capture_screenshot` van het frame
-- [ ] Exporteerbaarheid via Tokens Studio expliciet gerapporteerd, inclusief wat niet meekomt — bewijs: `figma_export_tokens` draaien en de uitkomst tegen de gemaakte structuur leggen
+- [x] Elke semantische variable is een alias naar een `Core/*`-variabele, nul directe waarden — bewijs: 198 van 198 alias-waarden, 0 rauw (`figma_execute`, 2026-09-11)
+- [x] Geen alias-ketens: elke semantische alias wijst rechtstreeks naar Core, niet naar een andere rol — bewijs: 198 van 198 naar de Core-collectie, 0 naar Semantic (`figma_execute`)
+- [x] Licht en donker zijn twee modes binnen één collectie, niet twee collecties — bewijs: `Semantic [light, dark]` naast `Core [value]` (`figma_execute`)
+- [x] De neutrale schaal draagt alle stappen 50 t/m 950 — bewijs: 11 namen `color/neutral/50`…`950` (`figma_get_variables`, summary)
+- [x] Alle variable-namen zijn kebab-case — bewijs: 199 van 199; de regex is tweezijdig getoetst (`Color/Neutral/50`, `surface_page`, `type/uiBody/size` afgekeurd · `surface/page` doorgelaten)
+- [x] Elke kleur-primitief is een COLOR-waarde, hex-herleidbaar — bewijs: 57 COLOR-tokens, hex uitgeschreven op het kleurblad (`figma_execute` + screenshot `1:211`)
+- [x] Het moodboard-frame staat op `04 — Explorations` — bewijs: `figma_capture_screenshot` van pagina `1:5`
+- [x] `figma_export_tokens` is hier géén geldig bewijs — bewijs: levert `collections: []` bij `success: true`, terwijl `figma_get_variables` 199 variables in 2 collecties ziet (positieve controle, 2026-09-11)
+- [ ] De werkelijke export via de Tokens Studio-plugin — `[NIET TE VERIFIËREN — plugin niet aanwezig in deze sessie; de structurele voorwaarden zijn wel gemeten]`
 
 **Fase 2 — timeline-item**
 - [ ] De component set draagt 8 varianten: type (photo/maintenance/story/milestone) × layout (compact/wide) — bewijs: telling `componentSet.children.length` + `variantGroupProperties`
@@ -102,9 +114,22 @@ CONSTRAINTS: Alle kleur, typografie en spacing via Figma variables - geen hardco
 - [ ] Elk frame en elke component is auto-layout — bewijs: telling `layoutMode !== 'NONE'` over alle FRAME/COMPONENT-nodes, mét noemer
 - [ ] Alle componentnamen zijn Engels — bewijs: naamlijst van alle COMPONENT/COMPONENT_SET-nodes, handmatig gelezen
 - [ ] Nul persoonlijke voornaamwoorden in UI-copy — bewijs: regex `\b(je|jij|jouw|jouw?e|u|uw|ik|mijn|we|wij|ons|onze)\b` over alle TextNodes, mét noemer
-- [ ] **States:** open vraag 2 is beantwoord en elke state die van toepassing blijft, is ontworpen; wat afvalt staat hier met reden — bewijs: deze regel ingevuld vóór Fase 6 sluit
-- [ ] **Interactie:** open vraag 3 is beantwoord; blijft het statisch, dan staat hier `n.v.t. — statische concept-frames, geen interactieve varianten` — bewijs: deze regel ingevuld vóór Fase 6 sluit
+- [ ] **States:** elk datascherm draagt vier frames — gevuld, leeg, laden en fout — bewijs: framenamen per scherm tellen op `02 — Mobile` en `03 — Desktop`, mét noemer
+- [ ] **Interactie:** de timeline-item component set draagt exact twee variant-assen, geen state-as — bewijs: `variantGroupProperties` van de set, verwacht precies de sleutels `type` en `layout`
+
+
+**Fase 6 — maat en overloop (impeccable's `type,layout`-regels, in Figma-medium)**
+
+Het instrument `impeccable detect` werkt op lokale bestanden en gerenderde pagina's, niet op Figma-frames — hier is er dus geen detector. Wat wél kan is de regels overnemen en zelf meten, zodat de code-versie later niets nieuws hoeft te repareren.
+
+- [ ] Geen `story-body`-blok boven 80 tekens per regel — bewijs: per TEXT-node regels = `height / leading`, tekens/regel = `characters.length / regels`, mét noemer (impeccable `line-length`; de ondergrens 45 geldt niet op 390 px, zie Aannames)
+- [ ] Geen tekst loopt buiten de binnenbreedte van zijn ouder — bewijs: tekstbreedte tegen `parent.width − paddingLeft − paddingRight`, nooit tegen de framebreedte, mét noemer (impeccable `text-overflow`)
+- [ ] Geen kaart-in-kaart-in-kaart — bewijs: maximale nestingdiepte van frames die zowel een eigen `surface/*`-fill als een stroke dragen, verwacht ≤ 2 (impeccable `nested-cards`)
+- [ ] Geen krappe padding — bewijs: elk frame met een eigen `surface/*`-fill heeft padding ≥ `space/sm` (12), telling mét noemer (impeccable `cramped-padding`)
 
 ## Beslissingsgeschiedenis
 
 - 2026-09-11: briefing aangemaakt. Conceptwerk in Figma, expliciet zonder code en zonder eigen repo; de variable-structuur is de latere bron voor `tokens.json` via Tokens Studio.
+- 2026-09-11: vier open vragen beantwoord. De keuze voor alle vier de toestanden op elk datascherm vergroot Fase 3 en 5 met ongeveer acht frames; scope bewust verruimd.
+- 2026-09-11: Fase 1 gebouwd. Twee families gekozen na meting van 2205 beschikbare families: Fraunces (karakter) en IBM Plex Sans (rust). Een derde, mono-family voor typeplaatje en chassisnummer is overwogen en afgewezen — de opdracht zegt twee families; `ui-caps` op IBM Plex Sans met tracking 1,2 draagt dat register.
+- 2026-09-11: impeccable's `type,layout`-regels als acceptatie-items opgenomen na de vraag of het instrument hier bruikbaar is. Het instrument zelf niet: `impeccable detect` leest DOM en gerenderde pagina's, en er is geen render-pad van Figma naar een URL. De regels wel — `line-length` bepaalde de 620 px verhaalkolom.

@@ -9,15 +9,18 @@ import { caseStudies, getCaseStudy } from '@/lib/cases';
 import { copy } from '@/lib/copy';
 
 type Props = {
-  params: { slug: string };
+  // Next 15: `params` is een Promise. Synchroon uitlezen werkt nog via een
+  // compat-shim, waarschuwt op runtime en verdwijnt in Next 16.
+  params: Promise<{ slug: string }>;
 };
 
 export function generateStaticParams() {
   return caseStudies.map((caseStudy) => ({ slug: caseStudy.slug }));
 }
 
-export function generateMetadata({ params }: Props): Metadata {
-  const caseStudy = getCaseStudy(params.slug);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const caseStudy = getCaseStudy(slug);
   if (!caseStudy) {
     return {};
   }
@@ -27,8 +30,9 @@ export function generateMetadata({ params }: Props): Metadata {
   };
 }
 
-export default function CaseDetailPage({ params }: Props) {
-  const caseStudy = getCaseStudy(params.slug);
+export default async function CaseDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const caseStudy = getCaseStudy(slug);
   if (!caseStudy) {
     notFound();
   }

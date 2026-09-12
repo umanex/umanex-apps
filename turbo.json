@@ -3,10 +3,12 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": ["NEXT_PUBLIC_*", "EXPO_PUBLIC_*", "NEXT_DIST_DIR"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
     },
     "build-storybook": {
       "dependsOn": ["^build"],
+      "env": ["EXPO_PUBLIC_*"],
       "outputs": ["storybook-static/**"]
     },
     "dev": {

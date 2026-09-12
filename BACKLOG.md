@@ -41,6 +41,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Globaal
 
+## 2026-09-12 — `next lint` verdwijnt in Next 16; de hele lint-keten moet naar ESLint 9 flat config · [infra]
+- **Wat:** Alle zeven Next-apps draaien `"lint": "next lint"`, en dat commando is in 15.5.25 deprecated en weg in 16. Migreren is geen scriptregel maar een keten: `packages/config/eslint/tokens.cjs` is bewust ESLint 8-vorm (`module.exports = { rules }`, geladen via `require.resolve` — zie het resolved HANDOFF-item van 2026-08-05, dat de vórige flat-config juist terugbouwde omdat niets hem consumeerde), zeven app-`.eslintrc`-bestanden hangen eraan, en `eslint` staat op 8.57.1 dat zelf al deprecated is. Gemeten 2026-09-12: nul `eslint.config.*` in de repo.
+- **Waarom niet nu:** Gevonden in de opruimronde ná de Next 15-upgrade. De deprecatie is vandaag alleen een waarschuwing — `lint` geeft over alle zeven apps exit 0 zonder bevindingen. Het omzetten raakt een gedeeld package waar een eigen CI-guard op staat (`pnpm --filter @umanex/tokens guard`), dus het verdient een ronde met een tegenproef dat de token-regels ná de migratie nog vuren — precies wat een haastige migratie stil zou verliezen.
+- **Eerste zet:** `packages/config/eslint/tokens.cjs` een flat-config-export ernaast geven en die op één app bedraden (`rowtrack-web`, de kleinste), mét een tegenproef: zet er bewust een `bg-green-500` in en eis dat lint rood wordt. Pas als die twee kanten kloppen, de andere zes volgen en `eslint` naar 9 tillen.
+- **Status:** open
+
 ## 2026-09-09 — Sheet valt buiten de geometrie-parity, en die capture is nergens beschreven · [test]
 - **Wat:** `pnpm --filter @umanex/ui parity` vergelijkt 64 varianten tussen Figma en browser, maar `Sheet` zit er niet bij: `figma/geometry.figma.json` dateert van 2026-09-07 en kent hem niet. De guard is dus groen over de nieuwe component omdat hij er niet naar kijkt. Twee dingen ontbreken: een `STORY`-entry in `geometry-parity.mjs` die de `side`-as als prop aanbiedt, en een verse Figma-capture in dat bestand.
 - **Waarom niet nu:** De capture van `geometry.figma.json` staat — anders dan die van `manifest.json` — **nergens beschreven** in `packages/ui/CLAUDE.md`. Hem reconstrueren is een tweede ongedocumenteerd Figma-recept schrijven, en dat verdient een eigen ronde in plaats van een bijproduct van deze PR. CI blokkeert er niet op; `geometry` (de browser-kant) dekt Sheet sinds vandaag wél.

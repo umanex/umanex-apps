@@ -21,7 +21,6 @@
   },
   "pnpm": {
     "overrides": {
-      "styled-jsx>react": "18.3.1",
       "@types/react": "19.1.17",
       "@types/react-dom": "19.2.3"
     },

@@ -115,9 +115,9 @@ export function IdlePhase({
   const [splitIdx, setSplitIdx] = useState(DEFAULT_SPLIT_IDX);
   const [wattIdx,  setWattIdx]  = useState(DEFAULT_WATT_IDX);
 
-  // A suggestion chip only reads as "active" once the user has actually chosen a
-  // value. At the default (untouched) nothing highlights, so landing on any
-  // segment looks the same whether or not its default happens to match a chip.
+  // Een suggestie-chip leest pas als "actief" zodra de gebruiker echt een waarde
+  // gekozen heeft. Op de standaardstand (onaangeraakt) licht er niets op, zodat elk
+  // segment er hetzelfde uitziet ongeacht of zijn default toevallig een chip raakt.
   const [goalTouched, setGoalTouched] = useState(false);
 
   // --- Sync helpers (wheel index → parent goal props) ---
@@ -140,7 +140,7 @@ export function IdlePhase({
     setIdleGoalInput(String(wattItems[idx].value));
   }
 
-  // --- Mode config (unifies the 4 goal modes) ---
+  // --- Modus-config (brengt de vier doeltypes onder één vorm) ---
 
   function getModeConfig(goalType: GoalType) {
     switch (goalType) {
@@ -312,15 +312,15 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
     gap: 20, // segments ↔ picker breathing room
-    // No paddingBottom: the fixed CTA area below already provides the gap, and
-    // reclaiming it lets the wheel centre instead of overflowing under the CTA.
+    // Geen paddingBottom: het vaste CTA-vlak eronder levert die ruimte al, en hem
+    // terugnemen laat de wheel centreren in plaats van onder de CTA door te lopen.
   },
-  // Natural-height top block; the picker below it fills the rest and centres.
+  // Bovenblok op natuurlijke hoogte; de picker eronder vult de rest en centreert.
   topGroup: {
     gap: 28,
   },
-  // Picker sits in the space between the segments and the CTA, vertically
-  // centred and elastic so it adapts to any screen height.
+  // De picker zit in de ruimte tussen de segmenten en de CTA, verticaal gecentreerd
+  // en elastisch, zodat hij zich naar elke schermhoogte voegt.
   pickerCenter: {
     flex: 1,
     justifyContent: 'center',
@@ -343,10 +343,10 @@ const styles = StyleSheet.create({
     color: fg.primary,
   },
 
-  // Goal input area — chips pinned at the top, wheel centred in the space
-  // below them. No fixed gap here: the wheel's flex centring supplies the
-  // breathing room, so the 250pt wheel can float centred instead of being
-  // pushed down against the CTA.
+  // Doelinvoer — chips bovenaan vastgezet, wheel gecentreerd in de ruimte eronder.
+  // Hier geen vaste gap: de flex-centrering van de wheel levert de ademruimte, zodat
+  // de wheel van 250 pt gecentreerd kan zweven in plaats van tegen de CTA geduwd te
+  // worden.
   pickerArea: {
     flex: 1,
   },

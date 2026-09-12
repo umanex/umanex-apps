@@ -1,8 +1,11 @@
-// Dutch translation table — the single source for every user-facing string.
-// Values are plain strings; parametrized messages are functions so plural rules
-// and word order stay inside the locale file (an English en.ts implements the
-// same shape with its own logic; `Translations` in ../types.ts enforces that).
-// Do NOT mark this `as const`: the widened types ARE the contract for en.ts.
+// Nederlandse stringtabel — de enige bron voor élke user-facing string, inclusief
+// de eenheden (die stonden tot 2026-09-12 verspreid over dertig plaatsen in tien
+// bestanden, terwijl deze kopregel het tegendeel beweerde).
+// Waarden zijn gewone strings; geparametriseerde meldingen zijn functies, zodat
+// meervoudsregels en woordvolgorde in het locale-bestand blijven (een Engelse en.ts
+// implementeert dezelfde vorm met zijn eigen logica; `Translations` in ../types.ts
+// dwingt dat af).
+// Zet hier NOOIT `as const` op: de verbrede types ZIJN het contract voor en.ts.
 export const nl = {
   common: {
     save: 'Opslaan',
@@ -28,9 +31,27 @@ export const nl = {
     hourShort: 'u',
     hourLong: 'uur',
     minuteShort: 'min',
-    // Ritten korter dan een minuut: "17 sec", niet "0:17 min".
+    // Trainingen korter dan een minuut: "17 sec", niet "0:17 min".
     secondShort: 'sec',
-    sessions: 'sessies',
+
+    // SI- en afgeleide symbolen. Ze veranderen tussen NL en EN niet, en toch staan ze
+    // hier: de kopregel van dit bestand zegt dat élke user-facing string hier staat, en
+    // een uitzondering die alleen in het hoofd van de schrijver bestaat is drift. Ze
+    // stonden verspreid over dertig plaatsen in tien bestanden, waaronder één functie
+    // die 'min' hardcodeerde náást een sleutel uit deze tabel (GoalPill).
+    meter: 'm',
+    kilometer: 'km',
+    watt: 'W',
+    kcal: 'kcal',
+    centimeter: 'cm',
+    kilogram: 'kg',
+    /** Split-eenheid. Altijd deze vorm: "500/m" leest als "500 per meter". */
+    per500m: '/500m',
+
+    /** Kale meervoudsvorm, voor waar de eenheid los van het getal staat. */
+    workouts: 'trainingen',
+    /** Telbaar, dus met meervoudsregel: "1 training" / "5 trainingen". */
+    workoutCount: (n: number) => `${n} ${n === 1 ? 'training' : 'trainingen'}`,
   },
 
   dates: {
@@ -41,6 +62,8 @@ export const nl = {
       'januari', 'februari', 'maart', 'april', 'mei', 'juni',
       'juli', 'augustus', 'september', 'oktober', 'november', 'december',
     ],
+    /** Scheidt datum en tijd in de lange datumvorm: "maandag 1 sep 2026 • 18:30". */
+    dateTimeSeparator: '•',
     today: 'Vandaag',
     yesterday: 'Gisteren',
   },
@@ -62,6 +85,11 @@ export const nl = {
   },
 
   auth: {
+    // Gedeeld over inloggen, registreren, wachtwoord vergeten en wachtwoord
+    // instellen: het verzoek haalde de server niet. Apart van de `failed`-zinnen
+    // hieronder, want die vragen impliciet om je gegevens na te kijken en dat is
+    // bij een netwerkfout het verkeerde advies.
+    offline: 'Geen verbinding. Controleer je internet en probeer het opnieuw.',
     emailLabel: 'E-mail',
     emailPlaceholder: 'naam@voorbeeld.be',
     passwordLabel: 'Wachtwoord',
@@ -123,10 +151,10 @@ export const nl = {
     goalCtaBody: 'Zet een week- of maanddoel en volg je voortgang.',
     prSectionTitle: 'Persoonlijke records',
     prMaxDistance: 'Maximale\nafstand',
-    prBest2k: 'Beste tijd\n2000m',
+    prBest2k: 'Beste tijd\n2000 m',
     recentTitle: 'Recente trainingen',
     allAction: 'alle',
-    emptyTitle: 'Nog geen workouts — tijd om te beginnen!',
+    emptyTitle: 'Nog geen trainingen — tijd om te beginnen!',
   },
 
   workout: {
@@ -148,11 +176,11 @@ export const nl = {
       signalWeak: 'Zwak',
     },
     connection: {
-      searching: 'Zoeken naar roeier...',
-      connecting: 'Verbinden...',
-      discovering: 'Services ontdekken...',
-      reconnecting: 'Opnieuw verbinden...',
-      disconnecting: 'Verbinding verbreken...',
+      searching: 'Zoeken naar de roeitrainer…',
+      connecting: 'Verbinden…',
+      discovering: 'Services ontdekken…',
+      reconnecting: 'Opnieuw verbinden…',
+      disconnecting: 'Verbinding verbreken…',
       elapsed: (time: string) => `verstreken ${time}`,
       stopButton: 'Stop training',
     },
@@ -166,22 +194,22 @@ export const nl = {
       remainingTime: 'Resterende tijd',
       remainingDistance: 'Resterende afstand',
       covered: 'Afgelegd',
-      currentSplit: 'Huidige split 500/m',
+      currentSplit: 'Huidige split /500m',
       currentPower: 'Huidige kracht',
-      startRowing: 'Begin met roeien...',
-      splitFaster: (sec: number) => `Je bent ${sec} seconden sneller`,
-      splitSlower: (sec: number) => `Je bent ${sec} seconden trager`,
+      startRowing: 'Begin met roeien…',
+      splitFaster: (sec: number) => `Je bent ${sec} ${sec === 1 ? 'seconde' : 'seconden'} sneller`,
+      splitSlower: (sec: number) => `Je bent ${sec} ${sec === 1 ? 'seconde' : 'seconden'} trager`,
       splitOnTarget: 'Je zit op doeltempo',
-      wattsMore: (w: number) => `Je levert ${w} W meer`,
+      wattsMore: (w: number) => `Je levert ${w} W meer dan je doel`,
       wattsLess: (w: number) => `Je levert ${w} W minder dan je doel`,
       wattsOnTarget: 'Je zit op doelvermogen',
-      kpiSplit: 'Split 500/m',
+      kpiSplit: 'Split /500m',
       kpiWatt: 'Watt',
       kpiSpm: 'SPM',
       kpiBpm: 'BPM',
-      kpiDistance: 'Totaal afstand',
+      kpiDistance: 'Totale afstand',
       kpiTime: 'Tijd',
-      kpiKcal: 'Totaal Kcal',
+      kpiKcal: 'Totale kcal',
     },
     summary: {
       title: 'Samenvatting',
@@ -190,7 +218,7 @@ export const nl = {
       kpiDuration: 'DUUR',
       kpiEnergy: 'ENERGIE',
       kpiStrokes: 'SLAGEN',
-      statSplit: 'SPLIT /500M',
+      statSplit: 'Split /500m',
       statWatt: 'WATT',
       statSpm: 'SPM',
       statBpm: 'BPM',
@@ -226,10 +254,10 @@ export const nl = {
     bannerTitleMany: (n: number) => `${n} nieuwe persoonlijke records`,
     /** "vorige beste 142 W · 20 aug" */
     previous: (value: string, date: string) => `vorige beste ${value} · ${date}`,
-    /** Record zonder bekende voorganger — komt voor bij ritten van vóór pr_metrics. */
+    /** Record zonder bekende voorganger — komt voor bij trainingen van vóór pr_metrics. */
     previousUnknown: 'vorige waarde onbekend',
     /** Rij-badge wanneer één badge meerdere records moet dragen. */
-    count: (n: number) => `${n} records`,
+    count: (n: number) => `${n} ${n === 1 ? 'record' : 'records'}`,
     /** Screenreader-tekst op een archiefrij. */
     a11yRow: (metrics: string) => `Persoonlijk record: ${metrics}`,
     /** Idem, voor een record waarvan de metric niet meer te achterhalen is. */
@@ -242,15 +270,15 @@ export const nl = {
     filterMonth: 'Deze maand',
     filterYear: 'Dit jaar',
     filterAll: 'Alle',
-    emptyTitle: 'Geen workouts in deze periode.',
+    emptyTitle: 'Geen trainingen in deze periode.',
   },
 
   detail: {
     tabOverview: 'Overzicht',
     tabSplits: 'Splits',
     tabHeartRate: 'Hartslag',
-    backLink: 'OVERZICHT',
-    notFound: 'Workout niet gevonden',
+    backLink: 'HISTORIEK',
+    notFound: 'Training niet gevonden',
     colAvg: 'GEM',
     colPeak: 'PIEK',
     colBest: 'BEST',
@@ -263,7 +291,7 @@ export const nl = {
     deleteConfirmTitle: 'Training verwijderen',
     deleteConfirmBody: 'Ben je zeker dat je deze training wil verwijderen? Dit kan niet ongedaan gemaakt worden.',
     delete: 'Verwijderen',
-    deleteFailed: 'Verwijderen mislukt. Probeer opnieuw.',
+    deleteFailed: 'Verwijderen mislukt. Probeer het opnieuw.',
     emptySplits: 'Geen splits beschikbaar.',
     emptyHeartRate: 'Geen hartslag-detail per segment. Beschikbaar vanaf je volgende training.',
   },
@@ -277,8 +305,8 @@ export const nl = {
     totalStrokes: 'TOTALE\nSLAGEN',
     avgSplit: 'GEMIDDELDE\nSPLIT',
     fastestSplit: 'SNELSTE\nSPLIT',
-    bpmAvg: 'BPM\nGEMIDDELD',
-    bpmMax: 'BPM\nMAXIMAAL',
+    bpmAvg: 'GEMIDDELDE\nBPM',
+    bpmMax: 'MAXIMALE\nBPM',
   },
 
   profile: {
@@ -289,7 +317,7 @@ export const nl = {
     sectionRower: 'ROEITRAINER',
     firstName: 'Voornaam',
     firstNamePlaceholder: 'Je voornaam',
-    email: 'Email',
+    email: 'E-mail',
     gender: 'Geslacht',
     genderMale: 'Man',
     genderFemale: 'Vrouw',
@@ -300,7 +328,7 @@ export const nl = {
     spmHalved: 'SPM halveren',
     spmHalvedHint: 'Voor trainers die de slagfrequentie dubbel tellen',
     logout: 'Uitloggen',
-    logoutConfirmBody: 'Weet je zeker dat je wilt uitloggen?',
+    logoutConfirmBody: 'Ben je zeker dat je wil uitloggen?',
     emailSheet: {
       title: 'E-mail wijzigen',
       currentEmail: 'HUIDIG E-MAILADRES',
@@ -318,7 +346,7 @@ export const nl = {
     deleteSheet: {
       title: 'Account verwijderen',
       warning:
-        'Je account en alles wat erbij hoort verdwijnt: al je ritten met hun splits en ' +
+        'Je account en alles wat erbij hoort verdwijnt: al je trainingen met hun splits en ' +
         'hartslaggegevens, je lichaamsgegevens en je doel. Dit kan niet ongedaan gemaakt worden.',
       password: 'WACHTWOORD',
       passwordPlaceholder: 'Je wachtwoord',
@@ -360,7 +388,7 @@ export const nl = {
     periodMonth: 'Maand',
     metricDistance: 'Afstand',
     metricDuration: 'Duur',
-    metricWorkouts: 'Sessies',
+    metricWorkouts: 'Trainingen',
     // GoalProgressCard
     thisWeek: 'Deze week',
     thisMonth: 'Deze maand',
@@ -368,7 +396,7 @@ export const nl = {
     done: 'voldaan',
     editAction: 'wijzig',
     remaining: (formatted: string) => `${formatted} resterend`,
-    remainingWorkouts: (n: number) => `${n} trainingen resterend`,
+    remainingWorkouts: (n: number) => `${n} ${n === 1 ? 'training' : 'trainingen'} resterend`,
   },
 
   devices: {
@@ -402,7 +430,7 @@ export const nl = {
       'RowTrack kan gegevens verwerken die onder de privacywetgeving als gezondheidsgegevens ' +
       'gelden. Daar vragen we je apart toestemming voor — niet verstopt in de voorwaarden.',
     items: [
-      'Je hartslag tijdens een rit, ongeveer één meting per seconde',
+      'Je hartslag tijdens een training, ongeveer één meting per seconde',
       'Je gewicht en lengte',
       'Je geboortedatum en geslacht',
     ],
@@ -410,7 +438,7 @@ export const nl = {
       'We gebruiken ze om je calorieverbruik te berekenen en om je trainingen in context te ' +
       'zetten. Ze worden nooit gedeeld, verkocht of gebruikt voor advertenties.',
     optional:
-      'Zeg je nee, dan werkt de app gewoon. Je ritten worden opgeslagen met afstand, tijd, ' +
+      'Zeg je nee, dan werkt de app gewoon. Je trainingen worden opgeslagen met afstand, tijd, ' +
       'vermogen en split; alleen je hartslag en lichaamsgegevens blijven weg.',
     withdraw:
       'Je kunt je keuze later altijd wijzigen in je profiel. Trek je de toestemming in, dan ' +
@@ -424,8 +452,8 @@ export const nl = {
     settingHint: 'Hartslag, gewicht, lengte, geboortedatum en geslacht',
     revokeTitle: 'Toestemming intrekken',
     revokeBody:
-      'Je hartslag wordt uit al je opgeslagen ritten gewist, samen met je gewicht, lengte, ' +
-      'geboortedatum en geslacht. Je ritten zelf blijven bestaan. Dit kan niet ongedaan gemaakt worden.',
+      'Je hartslag wordt uit al je opgeslagen trainingen gewist, samen met je gewicht, lengte, ' +
+      'geboortedatum en geslacht. Je trainingen zelf blijven bestaan. Dit kan niet ongedaan gemaakt worden.',
     revokeConfirm: 'Intrekken en wissen',
     revokeFailed: 'Intrekken is mislukt. Probeer het opnieuw.',
     // Waar de gegevens geblokkeerd zijn
@@ -437,14 +465,14 @@ export const nl = {
     // gebeurt aan de UI-kant (i18n/bleErrors.ts).
     rower: {
       bluetoothOff: 'Bluetooth staat uit. Schakel Bluetooth in.',
-      bluetoothUnauthorized: 'Bluetooth toestemming is vereist.',
+      bluetoothUnauthorized: 'Bluetooth-toestemming is vereist. Sta Bluetooth toe in Instellingen.',
       permissionDenied: 'Bluetooth toestemming geweigerd.',
-      rowerNotFound: 'Geen roeier gevonden. Controleer of de roeier aan staat.',
+      rowerNotFound: 'Geen roeitrainer gevonden. Controleer of de roeitrainer aanstaat.',
       scanError: (detail: string) => `Scanfout: ${detail}`,
-      scanFailed: 'BLE scan mislukt',
-      connectFailed: 'Verbinding mislukt',
+      scanFailed: 'Zoeken naar de roeitrainer is mislukt.',
+      connectFailed: 'Verbinden met de roeitrainer is mislukt.',
       noData: 'Kan geen data ontvangen. Herstart de app.',
-      connectionLost: 'Verbinding verloren. Probeer opnieuw.',
+      connectionLost: 'Verbinding verloren. Probeer het opnieuw.',
     },
     hr: {
       bluetoothOff: 'Bluetooth staat uit. Schakel Bluetooth in.',

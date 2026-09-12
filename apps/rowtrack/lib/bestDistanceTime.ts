@@ -1,11 +1,11 @@
 /**
- * Best-time-for-a-fixed-distance over a rowing session.
+ * Snelste tijd over een vaste afstand binnen één training.
  *
- * Given a time-series of cumulative {t, d} samples (t = seconds since start,
- * d = meters since start), find the fastest contiguous window that covers
- * exactly `targetMeters` — e.g. the best 2000m inside a longer piece.
+ * Gegeven een tijdreeks van cumulatieve {t, d}-samples (t = seconden sinds de
+ * start, d = meters sinds de start): vind het snelste aaneengesloten venster dat
+ * exact `targetMeters` dekt — bijvoorbeeld de beste 2000 m binnen een langer stuk.
  *
- * Aanpak (professioneel, O(N)):
+ * Aanpak (O(N)):
  *  - Two-pointer sliding window i.p.v. een naïeve O(N²) dubbele lus.
  *  - Lineaire interpolatie op de virtuele start- én eindgrens, zodat de tijd
  *    tot op de milliseconde klopt ook al eindigt geen enkel datapunt exact op
@@ -31,9 +31,9 @@
  */
 
 export type Sample = {
-  /** Cumulative seconds since the start of the effort. Non-decreasing. */
+  /** Cumulatieve seconden sinds de start van de inspanning. Niet-dalend. */
   t: number;
-  /** Cumulative meters since the start of the effort. Non-decreasing. */
+  /** Cumulatieve meters sinds de start van de inspanning. Niet-dalend. */
   d: number;
   /** Momentane hartslag (bpm) op dit sample, indien beschikbaar. Ontbreekt op
    *  workouts van vóór de HR-in-samples-invoering. */
@@ -48,21 +48,22 @@ export function samplesFromTuples(tuples: number[][] | null | undefined): Sample
 
 export type BestTimeOptions = {
   /**
-   * Absolute floor (seconds) for the dropout threshold. A gap only counts as a
-   * BLE dropout when it exceeds both this floor and a multiple of the run's
-   * median cadence — so a device that legitimately reports every few seconds
-   * isn't mistaken for a stream that dropped packets. Default 3.
+   * Absolute ondergrens (seconden) voor de dropout-drempel. Een gat telt pas als
+   * BLE-dropout wanneer het zowel deze ondergrens als een veelvoud van de mediane
+   * cadans van de reeks overschrijdt — zodat een toestel dat legitiem om de paar
+   * seconden meldt niet aangezien wordt voor een stroom die pakketten verloor.
+   * Standaard 3.
    */
   maxGapSeconds?: number;
 };
 
-/** A gap beyond GAP_FACTOR × median cadence (and the absolute floor) is a dropout. */
+/** Een gat boven GAP_FACTOR × de mediane cadans (én de ondergrens) is een dropout. */
 const GAP_FACTOR = 4;
 
 /**
- * Fastest time (in seconds, fractional) to cover exactly `targetMeters`.
- * Returns null when the session never covers `targetMeters` in a single
- * uninterrupted run.
+ * Snelste tijd (in seconden, fractioneel) over exact `targetMeters`.
+ * Geeft null wanneer de training `targetMeters` nooit in één ononderbroken
+ * stuk aflegt.
  */
 export function bestTimeForDistance(
   samples: Sample[],
@@ -103,9 +104,9 @@ export function timeAtDistance(samples: Sample[], dMeters: number): number | nul
 }
 
 /**
- * Drop non-finite points, enforce a non-decreasing series in both t and d
- * (BLE glitches can send a point that goes backwards), and collapse exact
- * duplicates. The result is monotone in both axes.
+ * Gooit niet-eindige punten weg, dwingt een niet-dalende reeks af op zowel t als d
+ * (een BLE-hikje kan een punt sturen dat teruggaat) en vouwt exacte duplicaten
+ * samen. Het resultaat is monotoon op beide assen.
  */
 function sanitize(samples: Sample[]): Sample[] {
   const clean: Sample[] = [];
@@ -124,12 +125,12 @@ function sanitize(samples: Sample[]): Sample[] {
 }
 
 /**
- * Cadence estimate: the lower median of the gaps between consecutive samples.
- * We use the lower median (no averaging of the two middle values) on purpose —
- * a single large dropout gap must not pollute the very statistic used to detect
- * it. With few samples the averaging median of e.g. [1, 99] would be 50 and hide
- * the dropout; the lower median is 1, so the threshold stays near the true
- * cadence and the dropout is split out.
+ * Cadans-schatting: de ondermediaan van de gaten tussen opeenvolgende samples.
+ * Bewust de ondermediaan (geen gemiddelde van de twee middelste waarden) — één
+ * groot dropout-gat mag juist de statistiek niet vervuilen waarmee hij ontdekt
+ * wordt. Bij weinig samples zou de middelende mediaan van bv. [1, 99] op 50
+ * uitkomen en de dropout verbergen; de ondermediaan is 1, dus de drempel blijft
+ * bij de werkelijke cadans en de dropout wordt eruit gesneden.
  */
 function medianInterval(clean: Sample[]): number {
   const gaps: number[] = [];
@@ -139,7 +140,7 @@ function medianInterval(clean: Sample[]): number {
   return gaps[(gaps.length - 1) >> 1];
 }
 
-/** Split at BLE dropouts: a device-time gap larger than the threshold breaks the run. */
+/** Knip op BLE-dropouts: een gat in toesteltijd boven de drempel breekt de reeks. */
 function splitRuns(clean: Sample[], threshold: number): Sample[][] {
   const runs: Sample[][] = [];
   let run: Sample[] = [clean[0]];
@@ -163,8 +164,8 @@ function bestInRun(s: Sample[], target: number): number | null {
 
   let best = Infinity;
 
-  // Pass A — end anchored on each sample, interpolate the start boundary.
-  // left is a monotone trailing pointer: the largest index with d ≤ startDist.
+  // Ronde A — einde verankerd op elk sample, startgrens geïnterpoleerd.
+  // `left` is een monotone naloop-wijzer: de grootste index met d ≤ startDist.
   let left = 0;
   for (let right = 1; right < n; right++) {
     const startDist = s[right].d - target;
@@ -175,8 +176,8 @@ function bestInRun(s: Sample[], target: number): number | null {
     if (cand < best) best = cand;
   }
 
-  // Pass B — start anchored on each sample, interpolate the end boundary.
-  // right is a monotone leading pointer: the smallest index with d ≥ endDist.
+  // Ronde B — start verankerd op elk sample, eindgrens geïnterpoleerd.
+  // `right` is een monotone voorloop-wijzer: de kleinste index met d ≥ endDist.
   let right = 1;
   for (let l = 0; l < n - 1; l++) {
     const endDist = s[l].d + target;
@@ -192,10 +193,11 @@ function bestInRun(s: Sample[], target: number): number | null {
 }
 
 /**
- * Linear interpolation of the time at distance `dTarget`, assumed to lie in
- * the segment [a, b] (a.d ≤ dTarget ≤ b.d). Guards a zero-distance segment
- * (a pause captured as same-d, rising-t) by returning the segment's own time.
- * Frac is clamped to [0,1] against floating-point drift at the boundaries.
+ * Lineaire interpolatie van de tijd op afstand `dTarget`, aangenomen dat die in
+ * segment [a, b] ligt (a.d ≤ dTarget ≤ b.d). Vangt een segment zonder afstand op
+ * (een pauze, vastgelegd als gelijke d met stijgende t) door de eigen tijd van het
+ * segment terug te geven. `frac` wordt op [0,1] geklemd tegen drijvendekomma-drift
+ * aan de randen.
  */
 function interpTime(dTarget: number, a: Sample, b: Sample): number {
   if (b.d <= a.d) return a.t;

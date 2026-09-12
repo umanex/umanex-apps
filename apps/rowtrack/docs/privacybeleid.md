@@ -11,7 +11,7 @@ over de app zelf — niet over deze website of andere producten van umanex.
 
 - RowTrack bewaart je **e-mailadres**, je **lichaamsgegevens** (geslacht, geboortedatum, lengte,
   gewicht) en je **trainingen**, inclusief je **hartslag ongeveer één keer per seconde** tijdens
-  elke rit.
+  elke training.
 - Hartslag en lichaamsgegevens zijn **gezondheidsgegevens**. Die verwerken we alleen met jouw
   uitdrukkelijke toestemming, en je kunt die toestemming altijd intrekken.
 - Er is **geen advertentie- of analysesoftware** in de app. Er wordt niets doorverkocht, niets
@@ -68,19 +68,19 @@ sterretje bij het getal.
 
 ### 2.3 Je trainingen
 
-Per rit bewaren we:
+Per training bewaren we:
 
 - **Tijd en afstand**: starttijdstip, duur, afgelegde meters.
 - **Prestatie**: vermogen (watt, gemiddeld en maximum), slagfrequentie, tempo per 500 meter,
   beste split, totaal aantal slagen, weerstandsniveau, verbrande calorieën.
 - **Hartslag**: gemiddelde en maximum, én — als je een hartslagmeter gebruikt — een meetpunt met je
-  hartslag **ongeveer één keer per seconde**, de hele rit lang. Een rit van een half uur levert dus
+  hartslag **ongeveer één keer per seconde**, de hele training lang. Een training van een half uur levert dus
   zo'n 1800 hartslagmetingen op.
-- **Afgeleiden**: je beste 2000 meter, of een rit een persoonlijk record was, splits per segment.
-- **Je doel** voor die rit en of je het gehaald hebt.
+- **Afgeleiden**: je beste 2000 meter, of een training een persoonlijk record was, splits per segment.
+- **Je doel** voor die training en of je het gehaald hebt.
 
 Die tijdreeks per seconde is fijnmaziger dan wat de app je toont. Hij is er zodat je beste 2000 meter
-exact berekend kan worden en zodat we later grafieken kunnen tonen zonder je oude ritten kwijt te
+exact berekend kan worden en zodat we later grafieken kunnen tonen zonder je oude trainingen kwijt te
 zijn.
 
 **Grondslag: jouw uitdrukkelijke toestemming** voor het hartslaggedeelte; uitvoering van de
@@ -96,7 +96,7 @@ Deze voer je niet in — ze ontstaan doordat je de app gebruikt.
 | **Toestelinformatie**: app-versie en versie van je besturingssysteem | Idem; zit in de technische kenmerken van je verbinding |
 | **Tijdstip van je laatste aanmelding** | Idem |
 | **Tijdstip van een wachtwoordreset-aanvraag** | Idem |
-| **Aanmaak- en wijzigingstijdstippen** van je profiel en je ritten | Om wijzigingen te kunnen volgen en dubbele opslag te voorkomen |
+| **Aanmaak- en wijzigingstijdstippen** van je profiel en je trainingen | Om wijzigingen te kunnen volgen en dubbele opslag te voorkomen |
 
 **Grondslag: gerechtvaardigd belang** (art. 6.1.f) — de beveiliging van je account en het correct
 laten werken van de dienst. Dit zijn standaardgegevens van het aanmeldsysteem; ze worden niet
@@ -108,18 +108,18 @@ Een deel van je gegevens staat lokaal, niet op onze servers:
 
 - **Je aanmeldsessie**, versleuteld in de beveiligde opslag van je toestel (Keychain op iOS). Die
   staat bewust buiten je iCloud-back-up.
-- **Een rit die niet verstuurd kon worden** (bijvoorbeeld omdat je offline was) wordt tijdelijk
+- **Een training die niet verstuurd kon worden** (bijvoorbeeld omdat je offline was) wordt tijdelijk
   onversleuteld op je toestel bewaard, inclusief je hartslagcurve, tot hij alsnog verstuurd is.
 - **Welk bluetooth-toestel je het laatst gebruikte** — het id en de naam van je roeitrainer en
   hartslagmeter, zodat de app de volgende keer meteen kan verbinden. Dit verlaat je telefoon niet.
 
 **Uitloggen wist dit alles.** Zowel uitloggen als je account verwijderen ruimt de niet-verstuurde
-rit en de onthouden bluetooth-toestellen op. Deel je je telefoon met iemand anders, dan blijft er na
+training en de onthouden bluetooth-toestellen op. Deel je je telefoon met iemand anders, dan blijft er na
 het uitloggen dus niets van jou achter in de app.
 
 Eén ding blijft buiten onze macht: **de onversleutelde delen kunnen in de back-up van je telefoon
 terechtkomen** — in iCloud (Apple) of Google Drive — zolang ze er staan. Dat is een back-up die jij
-beheert, niet wij, maar het betekent wel dat een rit die nog niet verstuurd is met hartslaggegevens
+beheert, niet wij, maar het betekent wel dat een training die nog niet verstuurd is met hartslaggegevens
 daarin kan zitten.
 
 ---
@@ -137,10 +137,10 @@ Daarom:
   waarvoor. Er staat niets voorgevinkt en de twee keuzes zijn gelijkwaardig — ja is niet groter of
   opvallender dan nee.
 - Je kunt de app **gebruiken zonder** je lichaamsgegevens in te vullen en zonder hartslagmeter. Je
-  ritten worden dan gewoon opgeslagen, zonder hartslag en met een geschat calorieverbruik.
+  trainingen worden dan gewoon opgeslagen, zonder hartslag en met een geschat calorieverbruik.
 - Je kunt je toestemming **altijd intrekken**, met één schakelaar in je profiel — even makkelijk
   als geven. Trek je hem in, dan **wissen we wat er al is**: je hartslag wordt uit al je opgeslagen
-  ritten verwijderd, samen met je gewicht, lengte, geboortedatum en geslacht. Je ritten zelf blijven
+  trainingen verwijderd, samen met je gewicht, lengte, geboortedatum en geslacht. Je trainingen zelf blijven
   bestaan, met afstand, tijd, vermogen en split. Dat wissen is onomkeerbaar.
 - Zonder toestemming is de hartslagmeter niet koppelbaar en zijn de lichaamsvelden niet zichtbaar.
   Er wordt dan niets van deze gegevens vastgelegd — ook niet tijdelijk.
@@ -181,7 +181,7 @@ Verder: **niemand**. Concreet betekent dat:
   vergelijkbaars in de app.
 - Geen crashrapportage naar een externe dienst.
 - Geen verkoop of verhuur van gegevens, aan niemand, om geen enkele reden.
-- Geen doorgifte aan andere gebruikers. Je ritten zijn alleen voor jou zichtbaar; er is geen
+- Geen doorgifte aan andere gebruikers. Je trainingen zijn alleen voor jou zichtbaar; er is geen
   ranglijst, geen vriendenlijst, geen delen.
 
 De app praat alleen met de server terwijl je hem gebruikt. Er is geen achtergrondmodus: sluit je de
@@ -205,13 +205,13 @@ Apple of Google die opslaat, bepaal jij via de instellingen van je toestel.
 | Gegeven | Bewaartermijn |
 |---|---|
 | Account, profiel en lichaamsgegevens | Tot je je account verwijdert |
-| Trainingen, inclusief hartslag | Tot je de rit of je account verwijdert |
+| Trainingen, inclusief hartslag | Tot je de training of je account verwijdert, of je toestemming voor gezondheidsgegevens intrekt (dan verdwijnt alleen de hartslag) |
 | Aanmeldsessie (met IP en toestelinformatie) | Tot je uitlogt of je account verwijdert — er staat geen automatische vervaltermijn op |
-| Niet-verstuurde rit op je toestel | Tot hij alsnog verstuurd is, of tot je je account verwijdert |
-| Onthouden bluetooth-toestellen | Tot je de app van je telefoon verwijdert |
+| Niet-verstuurde training op je toestel | Tot hij alsnog verstuurd is, of tot je uitlogt of je account verwijdert |
+| Onthouden bluetooth-toestellen | Tot je uitlogt, je account verwijdert, of de app van je telefoon verwijdert |
 
-Er is geen automatische opschoning: we bewaren je ritten zolang je account bestaat, omdat de waarde
-van een trainingslogboek juist in de historiek zit. Wil je dat anders, dan verwijder je een losse rit
+Er is geen automatische opschoning: we bewaren je trainingen zolang je account bestaat, omdat de waarde
+van een trainingslogboek juist in de historiek zit. Wil je dat anders, dan verwijder je een losse training
 of je hele account.
 
 ---
@@ -239,8 +239,8 @@ en **overdraagbaarheid** van je gegevens. Concreet:
 **Zelf, meteen, in de app:**
 
 - *Corrigeren* — je voornaam, lichaamsgegevens en doel pas je aan in je profiel.
-- *Verwijderen van één rit* — via de detailpagina van die rit.
-- *Verwijderen van alles* — Profiel → Account verwijderen. Je account, je profiel en al je ritten
+- *Verwijderen van één training* — via de detailpagina van die training.
+- *Verwijderen van alles* — Profiel → Account verwijderen. Je account, je profiel en al je trainingen
   verdwijnen onmiddellijk en onherroepelijk. Er is geen herstelperiode en geen prullenbak.
 
 **Via e-mail, aan jeroen@umanex.be:**

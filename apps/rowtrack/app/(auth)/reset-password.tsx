@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { completePasswordReset } from '@/lib/auth';
+import { completePasswordReset, isOfflineAuthError } from '@/lib/auth';
+import { reportError } from '@/lib/monitoring';
 import {
   passwordFieldError,
   confirmFieldError,
@@ -67,8 +68,12 @@ export default function ResetPasswordScreen() {
     try {
       await completePasswordReset(tokens, password);
       setDone(true);
-    } catch (e: any) {
-      setSubmitError(e.message ?? t.auth.reset.failed);
+    } catch (e: unknown) {
+      // Nooit `e.message`: dat is de rauwe Engelse GoTrue-tekst, en met `??`
+      // werd de Nederlandse zin hieronder per definitie onbereikbaar — een
+      // AuthError draagt altijd een message. Het detail gaat naar monitoring.
+      reportError(e, { where: 'auth.completePasswordReset' });
+      setSubmitError(isOfflineAuthError(e) ? t.auth.offline : t.auth.reset.failed);
     } finally {
       setSaving(false);
     }

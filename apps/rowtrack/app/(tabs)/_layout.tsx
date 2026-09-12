@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Alert } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -107,13 +108,38 @@ function TabsInner() {
  */
 function ConsentGate({ children }: { children: React.ReactNode }) {
   const { consent, loading, grant, revoke } = useHealthConsent();
+
+  /**
+   * Weigeren is destructief: `revoke_health_consent()` knipt de hartslag uit élke
+   * opgeslagen rit en nult geslacht, geboortedatum, lengte en gewicht. Op een
+   * bestaand account is dat maanden data, onomkeerbaar, op één tik — en de
+   * knoptekst ("Nee, zonder deze gegevens") kondigt dat niet aan.
+   *
+   * Dezelfde bevestiging als de schakelaar in het profiel (`profile.tsx`), met
+   * dezelfde copy: één gedrag voor één RPC, op beide plekken waar hij vertrekt.
+   * `null` bij annuleren, zodat het scherm dat niet als mislukte opslag leest.
+   */
+  const declineWithConfirm = () =>
+    new Promise<boolean | null>((resolve) => {
+      Alert.alert(t.consent.revokeTitle, t.consent.revokeBody, [
+        { text: t.common.cancel, style: 'cancel', onPress: () => resolve(null) },
+        {
+          text: t.consent.revokeConfirm,
+          style: 'destructive',
+          onPress: () => {
+            void revoke().then(resolve);
+          },
+        },
+      ]);
+    });
+
   return (
     <>
       {children}
       <HealthConsentScreen
         visible={!loading && consent === null}
         onGrant={grant}
-        onDecline={revoke}
+        onDecline={declineWithConfirm}
       />
     </>
   );

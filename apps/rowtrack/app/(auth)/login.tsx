@@ -8,7 +8,8 @@ import {
   Platform,
 } from 'react-native';
 import { Link } from 'expo-router';
-import { signIn } from '@/lib/auth';
+import { signIn, isOfflineAuthError } from '@/lib/auth';
+import { reportError } from '@/lib/monitoring';
 import { isValidEmail, emailFieldError, passwordFieldError } from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
 import { t } from '@/i18n';
@@ -32,8 +33,12 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await signIn(email.trim(), password);
-    } catch (e: any) {
-      setSubmitError(e.message ?? t.auth.login.failed);
+    } catch (e: unknown) {
+      // Nooit `e.message`: dat is de rauwe Engelse GoTrue-tekst, en met `??`
+      // werd de Nederlandse zin hieronder per definitie onbereikbaar — een
+      // AuthError draagt altijd een message. Het detail gaat naar monitoring.
+      reportError(e, { where: 'auth.signIn' });
+      setSubmitError(isOfflineAuthError(e) ? t.auth.offline : t.auth.login.failed);
     } finally {
       setLoading(false);
     }

@@ -41,6 +41,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-09-12 — Redactie- en code review: 214 bevindingen, 1 P0 en 25 P1 · [fix]
+- **Wat:** Volledige review van `apps/rowtrack` op twee assen — alle user-facing NL-copy en de code — met 222 onderzochte en 214 overeind gebleven bevindingen. Het rapport staat in `apps/rowtrack/audits/2026-09-12-redactie-en-code-review.md`, mét bewijs per bevinding, de negen weerlegde beweringen en de zes gaten die niemand bekeek. Bewust één backlog-item en niet 214: dat zou het sessiestart-signaal slopen dat deze lijst juist moet dragen. Vier oorzaken dragen de meeste symptomen — de toestemmingsgate op de schrijfactie in plaats van op de bron, de doeltoets op een andere grootheid dan het scherm, "laden" als eindtoestand doordat geen enkele Supabase-aanroep een deadline heeft, en `??` waar `||` hoort.
+- **Waarom niet nu:** De opdracht was reviewen, niet fixen. De P0 en de eerste drie punten uit §10 zijn samen minder dan twintig regels diff en verdienen een eigen ronde met een tegenproef per fix; de rest vraagt keuzes (terminologie, eenheden, a11y-strategie) die van Jeroen zijn.
+- **Eerste zet:** §10 van het rapport, punt 1 tot en met 3: de `Alert` vóór `revoke` op de consent-gate (`app/(tabs)/_layout.tsx:116`), `||` in plaats van `??` op de drie auth-schermen, en `"type-check": "tsc --noEmit"` in `package.json`.
+- **Status:** open
+
 ## 2026-08-28 — Dubbele `destroy()` op één gedeelde BleManager · [fix]
 - **Wat:** `lib/ble/ble-context.tsx:146-148` roept in de effect-cleanup eerst `service.destroy()` en dan `hrService.destroy()` aan. Beide diensten delen één `BleManager` — de constructor van ble-plx geeft de bestaande instance terug (`BleManager.js:78-81`, geverifieerd in de geïnstalleerde 3.5.1-bron), en `BleManager.destroy()` zet `sharedInstance` op null (`:162-164`). De tweede aanroep vernietigt dus een al vernietigde client, en de eerste sloopt de manager onder de HR-dienst vandaan terwijl die nog operaties in de lucht kan hebben.
 - **Waarom niet nu:** gevonden tijdens de HR-diagnose van 2026-08-28; die opdracht was instrumentatie plus het listener-lek. Dit raakt de levenscyclus van beide diensten en verdient een eigen ronde met een toestel ernaast — de faalmodus is vandaag niet waargenomen, alleen uit de bron afgeleid.

@@ -25,9 +25,9 @@ export function formatPrValue(metric: PrMetric, value: number): string {
     case 'best2k':
       return formatSplit(value);
     case 'watts':
-      return `${Math.round(value)} W`;
+      return `${Math.round(value)} ${t.units.watt}`;
     case 'split':
-      return `${formatSplit(value)} /500m`;
+      return `${formatSplit(value)} ${t.units.per500m}`;
   }
 }
 

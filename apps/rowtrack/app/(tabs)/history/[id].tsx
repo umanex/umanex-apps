@@ -336,7 +336,7 @@ export default function WorkoutDetailScreen() {
                     : workout.avg_split_seconds != null ? formatSplit(workout.avg_split_seconds)
                     : '—'
                   }
-                  unit={avgSplitSec != null || workout.avg_split_seconds != null ? '/500m' : ''}
+                  unit={avgSplitSec != null || workout.avg_split_seconds != null ? t.units.per500m : ''}
                   label={t.kpi.avgSplit}
                   style={styles.kpiCell}
                 />
@@ -346,7 +346,7 @@ export default function WorkoutDetailScreen() {
                     : workout.best_split != null ? formatSplit(workout.best_split)
                     : '—'
                   }
-                  unit={fastestSplitSec != null || workout.best_split != null ? '/500m' : ''}
+                  unit={fastestSplitSec != null || workout.best_split != null ? t.units.per500m : ''}
                   label={t.kpi.fastestSplit}
                   style={styles.kpiCell}
                 />

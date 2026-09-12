@@ -119,10 +119,10 @@ export function ActivePhase({
   const isLandscape = width > height;
   const spmHalved = useSpmHalved();
 
-  // Landscape 50/50: measure the row and hand each column an explicit half-width.
-  // A definite width can't be content-sized by the engine, so the split holds on
-  // any RN version/architecture (old arch resolves `flex:1` → flexBasis 'auto',
-  // which lets the wide KPI column starve the metric column — hero wraps).
+  // Landscape 50/50: meet de rij en geef elke kolom een expliciete halve breedte.
+  // Een vaste breedte kan de engine niet op inhoud schalen, dus de verdeling houdt op
+  // elke RN-versie en -architectuur (de oude arch lost `flex:1` op naar flexBasis
+  // 'auto', waardoor de brede KPI-kolom de metriekkolom uithongert — de hero breekt af).
   const [landColWidth, setLandColWidth] = useState<number | null>(null);
   const landColStyle = landColWidth != null
     ? { width: landColWidth, flexGrow: 0, flexShrink: 0 }
@@ -174,7 +174,7 @@ export function ActivePhase({
         heroLabel = t.workout.active.remainingDistance;
         heroText = formatInt(Math.max(0, target - distanceMeters));
         subLabel = t.workout.active.covered;
-        subtitle = { kind: 'progress', left: `${formatInt(distanceMeters)} m`, pct: fillPct };
+        subtitle = { kind: 'progress', left: `${formatInt(distanceMeters)} ${t.units.meter}`, pct: fillPct };
         break;
       }
       case 'split': {
@@ -207,7 +207,7 @@ export function ActivePhase({
         subLabel = null;
         // Idem watts: één keer afronden, dan weergave/tint/coaching op dezelfde waarde.
         const w = Math.round(wattsDisplay);
-        heroText = `${w} W`;
+        heroText = `${w} ${t.units.watt}`;
         fillPct = 1;
         fillKind = w >= goal!.target ? 'success' : 'warning';
         let sub = t.workout.active.startRowing;
@@ -227,7 +227,7 @@ export function ActivePhase({
       default:
         // Geen doel: hero = verstreken tijd, subtitle = verstreken afstand.
         heroText = formattedTimer;
-        subtitle = { kind: 'plain', text: `${formatInt(distanceMeters)} m` };
+        subtitle = { kind: 'plain', text: `${formatInt(distanceMeters)} ${t.units.meter}` };
     }
     return { heroLabel, heroText, subLabel, subtitle, fillPct, fillKind };
   }
@@ -277,7 +277,7 @@ export function ActivePhase({
         case 'WATT': return `${Math.round(wattsDisplay)}`;
         case 'SPM': return `${correctSpm(spmDisplay, spmHalved)}`;
         case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
-        case 'AFSTAND': return `${formatInt(distanceMeters)} m`;
+        case 'AFSTAND': return `${formatInt(distanceMeters)} ${t.units.meter}`;
         case 'TIJD': return formattedTimer;
         case 'KCAL': return `${formatInt(calories)}${hasProfileWeight ? '' : '*'}`;
       }
@@ -448,7 +448,7 @@ export function ActivePhase({
             kpis={[
               { value: formattedDistance.value, unit: formattedDistance.unit, label: t.workout.summary.kpiDistance },
               { value: formatTimerFull(seconds), label: t.workout.summary.kpiDuration },
-              { value: `${formatInt(calories)}${hasProfileWeight ? '' : '*'}`, unit: 'kcal', label: t.workout.summary.kpiEnergy },
+              { value: `${formatInt(calories)}${hasProfileWeight ? '' : '*'}`, unit: t.units.kcal, label: t.workout.summary.kpiEnergy },
               { value: summaryTotalStrokes != null ? formatInt(correctSpm(summaryTotalStrokes, spmHalved)) : '—', label: t.workout.summary.kpiStrokes },
             ]}
           />

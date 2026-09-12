@@ -76,6 +76,18 @@ export type DeleteAccountOutcome =
  * foutklassen: die klassen komen uit `@supabase/auth-js`, dat hier een transitieve
  * dependency is. Er direct uit importeren is een phantom dependency.
  */
+/**
+ * Haalde het verzoek de server niet? Zelfde duck-typing als `classifyAuthError`
+ * hieronder, maar los bruikbaar door de auth-schermen: die tonen een vaste
+ * Nederlandse zin en moeten "verkeerd wachtwoord" kunnen scheiden van "geen
+ * netwerk" — anders krijgt een offline gebruiker het advies zijn gegevens na te
+ * kijken voor een probleem dat niet bij hem ligt.
+ */
+export function isOfflineAuthError(error: unknown): boolean {
+  const e = (error ?? {}) as { name?: string; status?: number };
+  return e.name === 'AuthRetryableFetchError' || e.status === 0 || e.status === undefined;
+}
+
 function classifyAuthError(error: { name?: string; status?: number; code?: string }): DeleteAccountFailure {
   // AuthRetryableFetchError krijgt status 0 — het verzoek is nooit aangekomen.
   if (error.name === 'AuthRetryableFetchError' || error.status === 0 || error.status === undefined) {

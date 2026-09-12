@@ -54,18 +54,18 @@ export function formatDecimal(value: number, digits: number): string {
 }
 
 export function formatDistance(meters: number): string {
-  return `${formatDecimal(meters / 1000, 2)} km`;
+  return `${formatDecimal(meters / 1000, 2)} ${t.units.kilometer}`;
 }
 
 export function formatDistanceDynamic(meters: number): { value: string; unit: string } {
   if (meters < 1000) {
-    return { value: formatInt(meters), unit: 'm' };
+    return { value: formatInt(meters), unit: t.units.meter };
   }
-  return { value: formatDecimal(meters / 1000, 2), unit: 'km' };
+  return { value: formatDecimal(meters / 1000, 2), unit: t.units.kilometer };
 }
 
 /**
- * `padMinutes` pads the minutes to two digits ('02:10') — landscape-only; portrait keeps '2:10'.
+ * `padMinutes` vult de minuten aan tot twee cijfers ('02:10') — alleen landscape; portrait houdt '2:10'.
  * `tenths` toont één decimaal ('2:10.4') — enkel zinvol op fractionele split-tijden die uit
  * `samples` zijn afgeleid; de live FTMS-pace is heel-seconde, daar zou de tiende nep zijn.
  */
@@ -81,8 +81,13 @@ export function formatSplit(splitSec: number, padMinutes = false, tenths = false
     const mm = padMinutes ? m.toString().padStart(2, '0') : m.toString();
     return `${mm}:${s.toString().padStart(2, '0')}${t.format.decimalSeparator}${d}`;
   }
-  const m = Math.floor(splitSec / 60);
-  const s = Math.round(splitSec % 60);
+  // Eerst afronden op hele seconden, dán splitsen — net als de tenths-tak hierboven.
+  // `Math.round(splitSec % 60)` rondde de rest apart af en gaf daardoor ':60' zodra die
+  // boven 59,5 lag: 539,7 werd '8:60' in plaats van '9:00'. Raakt elke fractionele bron,
+  // dus de `real`-kolommen (best_2k_seconds is per bestDistanceTime interpolatie-uitkomst).
+  const totaal = Math.round(splitSec);
+  const m = Math.floor(totaal / 60);
+  const s = totaal % 60;
   const mm = padMinutes ? m.toString().padStart(2, '0') : m.toString();
   return `${mm}:${s.toString().padStart(2, '0')}`;
 }
@@ -101,7 +106,7 @@ export function formatDateLong(iso: string): string {
   const date = new Date(iso);
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${t.dates.daysLong[date.getDay()]} ${date.getDate()} ${t.dates.monthsLong[date.getMonth()]} ${date.getFullYear()} \u2022 ${hours}:${minutes}`;
+  return `${t.dates.daysLong[date.getDay()]} ${date.getDate()} ${t.dates.monthsLong[date.getMonth()]} ${date.getFullYear()} ${t.dates.dateTimeSeparator} ${hours}:${minutes}`;
 }
 
 // --- Wheel picker item builders ---
@@ -109,11 +114,11 @@ export function formatDateLong(iso: string): string {
 export type WheelItem = { label: string; value: number; unit?: string };
 
 /**
- * Splits a WheelItem label into its value part and (italic) unit part.
- * Single source of truth for both the WheelPicker rows and the suggestion
- * chips, so the value/unit rendering can never drift between the two.
- * When the unit isn't a trailing token of the label (e.g. split "2:00"),
- * the whole label is the value and no unit is returned.
+ * Splitst een WheelItem-label in zijn waarde-deel en zijn (cursieve) eenheid-deel.
+ * Eén bron voor zowel de WheelPicker-rijen als de suggestie-chips, zodat de
+ * waarde/eenheid-weergave tussen die twee niet kan driften.
+ * Staat de eenheid niet als laatste token in het label (bv. split "2:00"), dan is
+ * het hele label de waarde en komt er geen eenheid terug.
  */
 export function wheelItemParts(item: WheelItem): { value: string; unit?: string } {
   if (!item.unit) return { value: item.label };
@@ -125,7 +130,7 @@ export function wheelItemParts(item: WheelItem): { value: string; unit?: string 
 
 /**
  * Duur-label: onder een uur "45 min", vanaf een uur "1 u" / "1 u 10 min".
- * E\u00e9n bron voor de workout-duur-wheel (buildDurItems, seconden) en de
+ * Één bron voor de workout-duur-wheel (buildDurItems, seconden) en de
  * periode-doel-wheel (GoalSheet.itemsFor, minuten), zodat ze niet driften.
  */
 export function formatDurationLabel(totalMinutes: number): string {
@@ -137,37 +142,37 @@ export function formatDurationLabel(totalMinutes: number): string {
     : `${h} ${t.units.hourShort} ${min} ${t.units.minuteShort}`;
 }
 
-/** 5\u2013180 minutes, step 5 min. value = total seconds. */
+/** 5–180 min, stap 5 min. `value` = totaal aantal seconden. */
 export function buildDurItems(): WheelItem[] {
   const items: WheelItem[] = [];
   for (let m = 5; m <= GOAL_INPUT_BOUNDS.duration.max; m += 5) {
-    items.push({ label: formatDurationLabel(m), unit: 'min', value: m * 60 });
+    items.push({ label: formatDurationLabel(m), unit: t.units.minuteShort, value: m * 60 });
   }
   return items;
 }
 
-/** 500 m \u2013 42 km, step 500 m. value = total meters. */
+/** 500 m – 42 km, stap 500 m. `value` = totaal aantal meter. */
 export function buildDistItems(): WheelItem[] {
   const items: WheelItem[] = [];
   for (let m = GOAL_INPUT_BOUNDS.distance.min; m <= GOAL_INPUT_BOUNDS.distance.max; m += 500) {
     let label: string;
     let unit: string;
     if (m < 1000) {
-      label = `${m} m`;
-      unit = 'm';
+      label = `${m} ${t.units.meter}`;
+      unit = t.units.meter;
     } else {
       const km = m / 1000;
       label = Number.isInteger(km)
-        ? `${formatInt(km)} km`
-        : `${formatDecimal(km, 1)} km`;
-      unit = 'km';
+        ? `${formatInt(km)} ${t.units.kilometer}`
+        : `${formatDecimal(km, 1)} ${t.units.kilometer}`;
+      unit = t.units.kilometer;
     }
     items.push({ label, unit, value: m });
   }
   return items;
 }
 
-/** 1:30 \u2013 3:00 /500m, step 5 sec. value = total seconds. */
+/** 1:30 – 3:00 /500m, stap 5 s. `value` = totaal aantal seconden. */
 export function buildSplitItems(): WheelItem[] {
   const items: WheelItem[] = [];
   for (let s = GOAL_INPUT_BOUNDS.split.min; s <= GOAL_INPUT_BOUNDS.split.max; s += 5) {
@@ -178,11 +183,11 @@ export function buildSplitItems(): WheelItem[] {
   return items;
 }
 
-/** 50 \u2013 500 W, step 5 W. value = watts. */
+/** 50 – 500 W, stap 5 W. `value` = watt. */
 export function buildWattItems(): WheelItem[] {
   const items: WheelItem[] = [];
   for (let w = GOAL_INPUT_BOUNDS.watts.min; w <= GOAL_INPUT_BOUNDS.watts.max; w += 5) {
-    items.push({ label: `${w} W`, unit: 'W', value: w });
+    items.push({ label: `${w} ${t.units.watt}`, unit: t.units.watt, value: w });
   }
   return items;
 }

@@ -14,10 +14,10 @@
   "dependencies": {
     "@umanex/rowtrack-tokens": "workspace:*",
     "marked": "^18.0.9",
-    "next": "^14",
+    "next": "^15.5.25",
     "next-intl": "^3",
-    "react": "^18",
-    "react-dom": "^18"
+    "react": "^19",
+    "react-dom": "^19"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",

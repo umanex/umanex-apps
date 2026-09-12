@@ -3,9 +3,12 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { legalHtml } from '@/lib/legal';
 import { pageMetadata } from '@/lib/metadata';
 
-type Params = { params: { locale: string } };
+// Next 15: `params` is een Promise. Synchroon destructureren werkt nog via een
+// compat-shim, waarschuwt op runtime en verdwijnt in Next 16.
+type Params = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params: { locale } }: Params): Promise<Metadata> {
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'privacy.meta' });
 
   return pageMetadata({
@@ -36,7 +39,8 @@ export async function generateMetadata({ params: { locale } }: Params): Promise<
  * TODO: maten en typografie komen uit Tailwinds eigen schaal — de bron heeft geen
  * web-typeschaal. Zie packages/rowtrack-tokens/TOKENS-TODO.md §2.
  */
-export default async function PrivacyPage({ params: { locale } }: Params) {
+export default async function PrivacyPage({ params }: Params) {
+  const { locale } = await params;
   setRequestLocale(locale);
   const html = await legalHtml('privacy');
 

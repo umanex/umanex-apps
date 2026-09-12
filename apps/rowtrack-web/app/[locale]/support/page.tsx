@@ -3,9 +3,12 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { pageMetadata } from '@/lib/metadata';
 import { site } from '@/lib/site';
 
-type Params = { params: { locale: string } };
+// Next 15: `params` is een Promise. Synchroon destructureren werkt nog via een
+// compat-shim, waarschuwt op runtime en verdwijnt in Next 16.
+type Params = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params: { locale } }: Params): Promise<Metadata> {
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'support.meta' });
 
   return pageMetadata({
@@ -29,7 +32,8 @@ export async function generateMetadata({ params: { locale } }: Params): Promise<
  * heeft geen web-typeschaal, spacing boven 48 of container-widths. Zie
  * packages/rowtrack-tokens/TOKENS-TODO.md §2 en §3.
  */
-export default async function SupportPage({ params: { locale } }: Params) {
+export default async function SupportPage({ params }: Params) {
+  const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('support');
 

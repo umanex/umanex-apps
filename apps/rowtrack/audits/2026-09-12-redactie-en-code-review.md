@@ -196,3 +196,82 @@ Zie §3-A1. Dit is één regel op drie plaatsen en tegelijk de zichtbaarste reda
 Dat is exact de verwisseling die `HANDOFF.md:426` als **F6** beschrijft en die op 2026-08-10 **alleen op Home** is gefixt. Home heeft nu de vier-uitkomsten-boom (`index.tsx:231-256`: skeleton / ErrorState+retry / kaart / CTA); Profiel heeft hem niet gekregen.
 
 ---
+### B7 · P1 — "Laden" is een eindtoestand: geen enkele Supabase-aanroep heeft een deadline
+
+Dit is de tweede oorzaak met veel symptomen, en de codebase weet het antwoord al. De BLE-laag draagt **vier** benoemde deadlines — `ADAPTER_READY_TIMEOUT_MS`, `SCAN_TIMEOUT_MS`, `KNOWN_CONNECT_TIMEOUT_MS`, `HR_DATA_TIMEOUT_MS` — en `ble-service.ts` legt drie keer in commentaar uit waaróm: *"zonder timer bleef de rij dán voorgoed op 'Zoeken…' staan met een uitgeschakelde knop — geen fout, geen uitgang, alleen een app-herstart."*
+
+De Supabase-kant heeft er precies **één**: `DELETE_TIMEOUT_MS` op `deleteAccount` (`lib/auth.ts:52`). Gemeten over `app/`, `lib/` en `components/` buiten `lib/ble/`: geen tweede `TIMEOUT`, geen `AbortController`, geen `Promise.race`.
+
+Gevolg per plek:
+
+| Plek | Wat er blijft staan |
+|---|---|
+| `index.tsx:117` | `await drainPendingWorkout(user.id)` staat vóór de reads en vóór `setLoading(false)` (`:161`). Hangt de drain, dan blijft Home op zijn laadtoestand — en `onRefresh` (`:173-176`) wacht op dezelfde gedeelde `drainInFlight`-promise, dus pull-to-refresh hangt mee. |
+| `workout.tsx:207` | `savedRef.current = true` staat op `:127`, vóór de await; `savePendingWorkout(row)` pas op `:227`, achter `if (error …)`. Een app-kill tijdens de round-trip verliest de rit volledig — er bestaat op dat moment geen lokale kopie. |
+| `health-consent-context.tsx:79` | Toestemming opslaan zonder deadline zet de hele app achter een modal die niet te sluiten is. |
+| `auth-context.tsx:31` | `supabase.auth.getSession().then(…)` zonder `.catch` — een gooiende SecureStore-lezing laat `isLoading` staan, en `RootNavigator` redirect dan nooit. |
+| `usePeriodGoal.ts:62`, `usePrHistory.ts:42` | "laden" is een eindtoestand; de `ErrorState` die er wél is, is onbereikbaar. |
+
+Het venijn zit in de samenloop: de drain draait *alleen* wanneer er een geparkeerde rit is, en die bestaat *juist* wanneer het netwerk al haperde. De faalmodus selecteert zijn eigen voorwaarde.
+
+**Fix:** één helper die elke Supabase-round-trip in een `Promise.race` met een deadline zet, in dezelfde vorm als `DELETE_TIMEOUT_MS` — en de pending-slot schrijven **vóór** de insert in plaats van erna.
+
+---
+
+## 5. Deel B — de overige code-bevindingen
+
+76 bevindingen onderzocht in de kern-groep, 72 overeind, **4 weerlegd**. Alle vier op de gevolgketen, niet op het codefeit — dat is de juiste vorm van weerleggen (zie §7).
+
+### Per as, samengevat
+
+**BLE-roeier** — behalve de twee P1's uit §4: `startMonitoring` overschrijft een lopend abonnement zonder het te verwijderen terwijl de transactionId een vaste string is (`:524`); een 403 op beide characteristics laat abonnement én verbinding staan (`:547`); `connectKnown` negeert de `isConnecting`-poort (`:127`); de 2 s-fallbacktimer abonneert op het toestel van tóén (`:537`). Plus: **`ftms-parser.ts` en `ble-service.ts` — de twee grootste faalbronnen van de app — hebben geen enkele test**, terwijl `parseRowerData` puur is en elk getal draagt dat de roeier ziet.
+
+**BLE-hartslag** — een band die stilvalt krijgt geen herstelpoging waar een GATT-disconnect er drie krijgt (`hr-service.ts:682`); `connectToDeviceById` toetst het generatie-token niet (`:397`); `HrStatusBar` mist de error-tak die `BleStatusBar` wél heeft; de `BleContext`-provider-value is een verse objectliteral per render.
+
+**Rekenlogica** — dezelfde rit toont twee verschillende gemiddelde splits in samenvatting en historiek (`useGoalProgress.ts:83`); de samenvatting toont `0` en `0:00` waar de rit `null` opslaat en de detailpagina `—` toont; de PR-drempel telt BLE-pakketten in plaats van tijd en is met een hartslagband ongeveer twee keer zo zwak (`workout.tsx:159`); `calculateCalories` heeft geen ondergrens op het gewicht (0 kg → `NaN`); de live timer rolt niet naar uren terwijl de samenvatting van dezelfde rit dat wél doet.
+
+**Hooks en state** — `refs` is bij elke render een nieuw object, dus elke `useMemo` in `useGoalProgress` cachet nooit en de countdown-`Animated.loop` herstart per render; profielgewicht wordt na de eerste read nooit ververst en een mislukte her-read wist het; `usePeriodGoal` en `useRecentGoals` hebben geen volgorde-guard, dus de traagste van twee fetches wint.
+
+**Auth** — de recovery-deep-link wordt zonder pad- of herkomstbinding tot sessie gepromoveerd (`reset-password.tsx:38`); de SecureStore-probe vangt élke fout af en zet de app voor de rest van de sessie stil op platte opslag (`secureStorage.ts:107`); een oude platte sessie in AsyncStorage wordt na de migratie naar SecureStore nooit gewist (`:175`); `completePasswordReset` laat bij netwerkfout precies de recovery-sessie staan die zijn eigen commentaar zegt op te ruimen.
+
+**Backend en data** — hier zit het scherpste na §4:
+
+- **`supabase/schema.sql` is niet meer uitvoerbaar als opbouwpad.** `add_workout_goals.sql` botst met `schema.sql` en breekt een verse opbouw halverwege af. De kolommen `max_spm` en `is_pr` worden door **geen enkel** SQL-bestand aangemaakt. En `README.md` verwijst wél naar dit bestand als de manier om de database op te zetten.
+- `delete-account` doet geen server-side her-authenticatie — de wachtwoordcheck zit alleen in de client (`auth.ts:120`). Wie een geldig token heeft, kan de functie rechtstreeks aanroepen.
+- `add_period_goals.sql` is half idempotent: de `ADD CONSTRAINT` faalt bij een tweede run.
+- `revoke_health_consent()` laat `profiles.age` staan, terwijl `add_profile_body_metrics.sql` die kolom in dezelfde migratie aanmaakt als de vier die wél gewist worden.
+- Drie overlappende indexen op `workouts(user_id, started_at)`; `workout_intervals` is dode oppervlakte zonder UPDATE-policy.
+- `CLAUDE.md:746` telt elf migraties, er staan er twaalf op schijf.
+
+**Positief, en het verdient vermelding:** de RLS zelf houdt. Elke policy is aan `auth.uid()` gebonden, `handle_new_user` is gehard met `search_path = ''`, en `revoke_health_consent()` haalt de user-id uit `auth.uid()` en niet uit een argument — met een comment dat precies uitlegt waarom een parameter daar een gat zou zijn. Er is geen IDOR gevonden.
+
+---
+## 6. Dependencies en CI
+
+### 6.1 · Rowtrack is de enige app zonder `type-check` en zonder `lint`
+
+`apps/rowtrack/package.json` heeft 28 scripts en geen van beide. De CI-stap in `.github/workflows/ci.yml:43` draait `pnpm turbo type-check lint build`, dus turbo slaat rowtrack over — voor alle drie de taken. Van de acht apps in de monorepo is dit de enige zonder allebei (gemeten over `apps/*/package.json`).
+
+De code is er niet slechter van geworden: `tsc --noEmit` is vandaag groen. Maar er is niets dat het morgen tegenhoudt, en 16 746 regels zijn precies het oppervlak waar dat gaat schuiven. **Fix:** `"type-check": "tsc --noEmit"` toevoegen; dat is één regel en turbo pikt hem vanzelf op.
+
+Ruimer beeld: van de guards die het Verify-pad in `CLAUDE.md` opsomt — `figma:check`, `parity`, `beeld`, `spec-diff`, `laagnamen`, `render:sweep`, plus hun zelftests — draait er **geen enkele** in CI. Ze zijn alle acht groen (§2), maar ze draaien alleen wanneer iemand eraan denkt. Dat is precies de norm die deze repo elders zelf stelt: *"een test die alleen draait wanneer iemand eraan denkt, meet niets"* (`ci.yml:69`).
+
+### 6.2 · `app.json`: de permissielijst is volledig overbodig
+
+`android.permissions` bevat zes regels: `BLUETOOTH`, `BLUETOOTH_ADMIN` en `BLUETOOTH_CONNECT`, elk **twee keer**. `TODO.md:67` heeft dit als open item met als fix "duplicaten verwijderen".
+
+De echte oorzaak ligt een laag dieper. De config-plugin voegt diezelfde drie zelf al toe — `node_modules/react-native-ble-plx/plugin/build/withBLE.js:25-27` — en `withBLEAndroidManifest.js:51-62` voegt daarnaast `BLUETOOTH_SCAN` toe plus de locatiepermissies. De hele array in `app.json` is dus redundant, niet alleen de duplicaten. **Fix:** de array weghalen, niet ontdubbelen.
+
+*(Bijvangst uit dezelfde controle: `BLUETOOTH_SCAN` ontbreekt niet, ook al staat hij niet in `app.json` — de plugin injecteert hem. Dat vermoeden is dus weerlegd vóór het in dit rapport kwam.)*
+
+### 6.3 · Kwetsbare dependencies — nauwkeurig gescheiden
+
+`pnpm audit --prod` over de monorepo geeft 4 critical, 65 high, 35 moderate, 5 low. Voor `apps/rowtrack` afzonderlijk: **2 critical, 37 high, 17 moderate, 3 low distincte adviezen** — meer dan elke andere app (die zitten op 10-11 high).
+
+Dat getal is misleidend zonder de ontleding. Alle adviezen bereiken rowtrack via de **Expo/Metro-bouwketen** (`@expo/cli` en zijn boom): `shell-quote`, `tar`, `@xmldom/xmldom`, `browserslist`, `postcss`, `js-yaml`, `image-size`, `nanoid`, `undici`, `ws`, `brace-expansion`, `@babel/core`. Gemeten: **geen enkel app-bestand importeert een van deze pakketten rechtstreeks** (grep over `app/`, `components/`, `lib/`, `i18n/`, `types/` op `from '<pkg>'` en `require('<pkg>')`: nul treffers). Metro bundelt alleen wat geïmporteerd wordt, dus dit is bouwgereedschap, geen app-oppervlak.
+
+Eén uitzondering verdient een blik: `ws` komt óók binnen via `@supabase/supabase-js`, en dat pakket wordt wél gebundeld. In React Native gebruikt supabase-js de native WebSocket, dus waarschijnlijk raakt het de bundel niet — maar dat is een gevolgtrekking, geen meting. `[NIET GEMETEN — vereist een bundel-analyse van een echte build]`
+
+**Buiten bereik maar dringend:** de vier critical-adviezen op `next` treffen zeven Next.js-apps, waaronder **`apps/rowtrack-web`** op `next: "^14"` (opgelost in ≥ 15.5.24). Eén daarvan is *Unauthenticated Remote Code Execution in de Image Optimization API bij AVIF-bestanden* (CWE-1395) — die geldt ook op Linux, dus ook op Vercel. Dit valt buiten de scope van deze review, maar het is de enige bevinding in dit document die vandaag een draaiende, publiek bereikbare server raakt.
+
+---

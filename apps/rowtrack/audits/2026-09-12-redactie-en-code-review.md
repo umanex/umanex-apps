@@ -3,9 +3,9 @@
 **Datum:** 2026-09-12
 **Bereik:** `apps/rowtrack` — React Native + Expo (SDK 54), Supabase-backend. 16 746 regels TS/TSX in `app/`, `components/`, `lib/`, `i18n/`, `types/`, plus `supabase/` en `scripts/`.
 **Type:** volledige app-review op twee assen — **redactie** (alle user-facing Nederlandse copy) en **code review** — niet een diff-review.
-**Werkwijze:** 17 review-assen in drie parallelle workflows, elke bevinding daarna sceptisch getoetst tegen de bron (batch-verificatie), en elke zware bevinding nog een tweede, onafhankelijke lens. De hoofdagent heeft de P0's en P1's zelf nagemeten. Wat de verificatie niet overleefde staat in §7, wat niemand bekeken heeft in §8.
+**Werkwijze:** 17 review-assen in drie parallelle workflows, elke bevinding daarna sceptisch getoetst tegen de bron (batch-verificatie), en elke zware bevinding nog een tweede, onafhankelijke lens. De hoofdagent heeft de P0's en P1's zelf nagemeten. Wat de verificatie niet overleefde staat in §8, wat niemand bekeken heeft in §9.
 
-**Niet in bereik:** `apps/rowtrack-web` (aparte commerciële site) — met één uitzondering in §6, want die is dringend.
+**Niet in bereik:** `apps/rowtrack-web` (aparte commerciële site) — met één uitzondering in §7.3, want die is dringend.
 
 ---
 

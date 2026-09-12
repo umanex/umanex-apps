@@ -11,13 +11,18 @@
 
 ## 1. Samenvatting
 
+**222 bevindingen onderzocht, 214 overeind, 9 weerlegd (§8). Na mijn eigen hertriage: P0 1 · P1 25 · P2 98 · P3 90.** Tweeëndertig ervan staan al in `TODO.md`, `BACKLOG.md` of `HANDOFF.md` en zijn als bekend gemarkeerd.
+
+Twee bevindingen kwamen als P0 uit de assen en zijn door mij verlaagd: `workouts.is_pr` en `workouts.max_spm` staan in geen enkel DDL-bestand terwijl de app ze schrijft en leest. Het codefeit klopt, maar de app draait — dus die kolommen bestaan live, met de hand aangemaakt buiten de migraties om. Dat is **drift**, geen crash, en het hoort bij de DDL-bevinding in §5. Eén bevinding is juist verhóógd tot de enige P0: de wis-actie op de toestemmingsgate (§4-B1).
+
 De app is **goed gebouwd en uitzonderlijk goed gedocumenteerd**. De guard-laag doet wat hij belooft (§2), de BLE-code is defensief en verantwoordt zijn keuzes in commentaar, en `lib/auth.ts` classificeert foutsoorten met een precisie die je zelden ziet. Deze review vindt dan ook weinig slordigheid en veel *randen* — plekken waar een bewuste regel op één plaats wél en op de andere niet is toegepast.
 
-Dat patroon is de rode draad, en het is één oorzaak in drie gedaanten:
+Dat patroon is de rode draad, en het komt in vier gedaanten terug — bij alle vier staat het juiste antwoord al ergens in deze codebase:
 
 1. **De toestemmingslaag gate't de schrijfactie, niet de bron.** Gezondheidsdata wordt gemeten, vastgehouden en getoond zonder toestemming; alleen het wegschrijven naar de database is afgeschermd. Vier symptomen, één oorzaak.
 2. **De doeltoets gebruikt een andere grootheid dan het scherm.** Het scherm toont de gesmoothe waarde, de toets leest de rauwe — en de code documenteert dat onderscheid zelf, op de regel ernaast.
-3. **`??` waar `||` hoort.** Twee plaatsen doen het goed mét geschreven motivering, drie doen het fout — en die drie maken de Nederlandse foutmeldingen van het inlogpad onbereikbaar.
+3. **"Laden" is een eindtoestand.** De BLE-laag draagt vier benoemde deadlines en legt drie keer uit waarom; de Supabase-laag heeft er één. Nergens anders een `AbortController` of `Promise.race`, dus elke hangende round-trip is een scherm dat niet meer terugkomt.
+4. **`??` waar `||` hoort.** Twee plaatsen doen het goed mét geschreven motivering, drie doen het fout — en die drie maken de Nederlandse foutmeldingen van het inlogpad onbereikbaar.
 
 De redactie-helft heeft geen P0 maar wel een consistent beeld: de stringtabel is zorgvuldig opgebouwd en van commentaar voorzien, en juist daarom vallen de afwijkingen op — vier woorden voor één ding, drie schrijfwijzen voor één eenheid, en een handvol meldingen die de gebruiker in het Engels bereiken.
 
@@ -220,7 +225,7 @@ Het venijn zit in de samenloop: de drain draait *alleen* wanneer er een geparkee
 
 ## 5. Deel B — de overige code-bevindingen
 
-76 bevindingen onderzocht in de kern-groep, 72 overeind, **4 weerlegd**. Alle vier op de gevolgketen, niet op het codefeit — dat is de juiste vorm van weerleggen (zie §7).
+76 bevindingen onderzocht in de kern-groep, 72 overeind, **4 weerlegd**. Alle vier op de gevolgketen, niet op het codefeit — dat is de juiste vorm van weerleggen (zie §8).
 
 ### Per as, samengevat
 
@@ -246,9 +251,25 @@ Het venijn zit in de samenloop: de drain draait *alleen* wanneer er een geparkee
 **Positief, en het verdient vermelding:** de RLS zelf houdt. Elke policy is aan `auth.uid()` gebonden, `handle_new_user` is gehard met `search_path = ''`, en `revoke_health_consent()` haalt de user-id uit `auth.uid()` en niet uit een argument — met een comment dat precies uitlegt waarom een parameter daar een gat zou zijn. Er is geen IDOR gevonden.
 
 ---
-## 6. Dependencies en CI
+## 6. Deel B — het schermoppervlak
 
-### 6.1 · Rowtrack is de enige app zonder `type-check` en zonder `lint`
+95 bevindingen onderzocht, 92 overeind, 3 weerlegd.
+
+**Profiel en Home.** Het profielscherm is met 1 004 regels het grootste bestand van de app en draagt de meeste bevindingen. Naast de twee leesfouten uit §4-B6: `handleEmailChange` (`:342`) mist de `try/catch/finally` die zijn twee buren wél hebben mét motivering, waardoor `emailChanging` bij een keychain-fout voorgoed op `true` blijft en de knop de rest van de sessie een spinner is. De dag-wheel telt altijd 31 dagen (`:57`), dus 31 februari is kiesbaar en Opslaan toont de rauwe Postgres-fout `22008`. De returntoets op het wachtwoordveld van *Account verwijderen* (`:837`) is rechtstreeks aan `handleDeleteAccount` gehangen — terwijl dezelfde toets in de e-mailsheet negen regels eerder wél achter een validatiepoort zit; "Gereed" op het toetsenbord leest niet als "verwijder mijn account definitief". En na een `uncertain`-verwijdering levert de door de copy aanbevolen tweede poging *"Wachtwoord klopt niet"* op, omdat het account dan al weg is en `classifyAuthError` een 400 op een niet-bestaande gebruiker als `wrong_password` leest.
+
+**Trainingsflow.** Terugkeren uit de achtergrond tijdens de viering verbindt de erg opnieuw en laat de metrics doorlopen ná de opgeslagen rit (`workout.tsx:256`) — de fase blijft `active` bij doel bereikt, dus de `AppState`-listener staat nog aan. De live BPM-tegel leest alleen `hrBpm` (`ActivePhase.tsx:279`) terwijl de accumulator óók de FTMS-hartslag pakt: wie zijn band aan de erg koppelt ziet de hele rit `—` en tikt daar dus op — precies de knop uit §4-B2. En bij de tweede rit toont de doel-wheel de standaardwaarde terwijl Start het doel van de vorige rit gebruikt (`IdlePhase.tsx:113`): `workout.tsx:76-83` schrijft de vorige keuze terug in de parent-state, maar `IdlePhase` wordt bij elke fasewissel ge-unmount en start op `DEFAULT_DUR_IDX`. `goalTargetToWheelIndex` bestaat al en doet precies wat hier nodig is.
+
+**Toegankelijkheid** is de zwakste as, en dat is zichtbaar consistent: `WheelPicker` — het enige invoermiddel voor de doelwaarde én voor lengte, gewicht en geboortedatum — heeft **nul** accessibility-props en is met VoiceOver niet te bedienen; beide schakelaars in het profiel zijn naamloos (de rol komt uit React Native zelf, de naam niet); `Chip` mist de `accessibilityRole` en `selected`-state die zijn twee zusters `Segmented` en `GoalSegments` wél dragen; de auth-links missen `accessibilityRole="link"` en zijn ±18 pt hoog tegen de 44 pt-norm; `KpiRow` heeft een vaste hoogte van 56 met een 28 px-cijfer en geen `maxFontSizeMultiplier`, terwijl elk ander component met vaste hoogte die cap wél zet. En de app reageert nergens op *verminder beweging*: `MotivationalToast` laat 60 deeltjes oneindig vallen tot er getikt wordt, want de viering heeft bewust geen auto-dismiss.
+
+**Token-discipline is juist goed** — dat verdient vermelding, want de meting weerlegde de verwachting. Gemeten: 12 hexwaarden over 5 bestanden, waarvan 5 in commentaar; 7 in echte code, geconcentreerd in `Icon.tsx:12` en de decoratieve `CONFETTI_COLORS`; 11 `rgba(`; nul `hsl(`. Beide echte gevallen staan al in `TODO.md`. Wat er wél zit is subtieler: 22 layoutgetallen in `profile.tsx` waar de rol bestaat, 34 met de hand opgebouwde tekststijlen in `WheelPicker` waarvan er vier letterlijk gelijk zijn aan een bestaande `typeStyle`, en 11 van de 31 `TouchableOpacity`'s zonder `activeOpacity` — die dimmen naar 0.2 in plaats van de voorgeschreven 0.8.
+
+**Tooling** — behalve §7.1: de BLE-plugin krijgt geen `neverForLocation`, dus de app vraagt op Android 12+ locatietoestemming die ze niet nodig heeft (`app.json:48`). De token-drift-guard in CI diff't `packages/tokens/build` maar niet het even goed herbouwde `apps/rowtrack/constants`. En tien imports in `ActivePhase.tsx` zijn nergens meer gebruikt — wat niemand ziet, omdat er geen lint draait.
+
+---
+
+## 7. Dependencies en CI
+
+### 7.1 ·  Rowtrack is de enige app zonder `type-check` en zonder `lint`
 
 `apps/rowtrack/package.json` heeft 28 scripts en geen van beide. De CI-stap in `.github/workflows/ci.yml:43` draait `pnpm turbo type-check lint build`, dus turbo slaat rowtrack over — voor alle drie de taken. Van de acht apps in de monorepo is dit de enige zonder allebei (gemeten over `apps/*/package.json`).
 
@@ -256,7 +277,7 @@ De code is er niet slechter van geworden: `tsc --noEmit` is vandaag groen. Maar 
 
 Ruimer beeld: van de guards die het Verify-pad in `CLAUDE.md` opsomt — `figma:check`, `parity`, `beeld`, `spec-diff`, `laagnamen`, `render:sweep`, plus hun zelftests — draait er **geen enkele** in CI. Ze zijn alle acht groen (§2), maar ze draaien alleen wanneer iemand eraan denkt. Dat is precies de norm die deze repo elders zelf stelt: *"een test die alleen draait wanneer iemand eraan denkt, meet niets"* (`ci.yml:69`).
 
-### 6.2 · `app.json`: de permissielijst is volledig overbodig
+### 7.2 ·  `app.json`: de permissielijst is volledig overbodig
 
 `android.permissions` bevat zes regels: `BLUETOOTH`, `BLUETOOTH_ADMIN` en `BLUETOOTH_CONNECT`, elk **twee keer**. `TODO.md:67` heeft dit als open item met als fix "duplicaten verwijderen".
 
@@ -264,7 +285,7 @@ De echte oorzaak ligt een laag dieper. De config-plugin voegt diezelfde drie zel
 
 *(Bijvangst uit dezelfde controle: `BLUETOOTH_SCAN` ontbreekt niet, ook al staat hij niet in `app.json` — de plugin injecteert hem. Dat vermoeden is dus weerlegd vóór het in dit rapport kwam.)*
 
-### 6.3 · Kwetsbare dependencies — nauwkeurig gescheiden
+### 7.3 · Kwetsbare dependencies — nauwkeurig gescheiden
 
 `pnpm audit --prod` over de monorepo geeft 4 critical, 65 high, 35 moderate, 5 low. Voor `apps/rowtrack` afzonderlijk: **2 critical, 37 high, 17 moderate, 3 low distincte adviezen** — meer dan elke andere app (die zitten op 10-11 high).
 
@@ -275,3 +296,49 @@ Eén uitzondering verdient een blik: `ws` komt óók binnen via `@supabase/supab
 **Buiten bereik maar dringend:** de vier critical-adviezen op `next` treffen zeven Next.js-apps, waaronder **`apps/rowtrack-web`** op `next: "^14"` (opgelost in ≥ 15.5.24). Eén daarvan is *Unauthenticated Remote Code Execution in de Image Optimization API bij AVIF-bestanden* (CWE-1395) — die geldt ook op Linux, dus ook op Vercel. Dit valt buiten de scope van deze review, maar het is de enige bevinding in dit document die vandaag een draaiende, publiek bereikbare server raakt.
 
 ---
+## 8. Wat de verificatie niet overleefde
+
+Negen beweringen zijn gesneuveld: acht in de verificatieronde, één door mijn eigen meting. Ze staan hier omdat een review zonder deze lijst niet te wegen is.
+
+| Bewering | Waarom ze viel |
+|---|---|
+| De viering-emoji is nergens als keuze vastgelegd | Ze is dat wél; het bestand en een briefing leggen hem vast |
+| Na een preemptie stopt de dienst zijn eigen native scan nooit | Codefeit juist, gevolgketen niet: `SCAN_TIMEOUT_MS` (15 s) ligt onder `MAX_HOLD_MS` (25 s), dus het venster bestaat niet |
+| `dev-ble` geeft de hr-gate niet door | Codefeit juist, gevolg onmogelijk: `opts?.hr === false` is de enige poort en `undefined` valt daar niet in |
+| `usePrHistory` deelt zijn in-flight fetch zonder userId-toets | Vereist een gebruikerswissel tijdens een vlucht; dat pad bestaat niet |
+| `useSpmHalved` houdt de instelling van de vorige gebruiker vast | Vereist dat de hook-instantie een gebruikerswissel overleeft; dat doet ze niet |
+| Slagtotaal wordt gehalveerd door de SPM-correctie | De gedocumenteerde grond van de toggle is dubbel *tellen*, niet een rate-artefact |
+| Detailscherm haalt de volledige historiek op vóór de rit | Gedocumenteerde, bewust uitgestelde afweging — de bevinding citeerde haar eigen weerlegging |
+| Hex-telling wijst op token-drift | De telling klopt maar is klein en grotendeels commentaar; dit is een gezonde as |
+| Het `test`-script mist de strip-types-vlag die CI wél zet | **Zelf gemeten:** `npm run test` geeft 57/57 op Node 22.22.2 zónder de vlag. `ci.yml:77` schrijft zelf al dat hij op nieuwere versies "een geaccepteerde no-op" is |
+
+Alle negen vielen op de **gevolgketen**, niet op het codefeit. Dat is het patroon om te onthouden: de assen zagen de code goed en overschatten wat eruit volgt.
+
+---
+
+## 9. Wat niemand bekeken heeft
+
+Geen stille afkappingen. De volledigheidscritici noemden negen gaten; drie zijn nagelopen (de auth-foutafhandeling, het privacybeleid en de `supabase/`-map — alle drie leverden bevindingen op). Deze zes staan open:
+
+1. **Alle transactionele e-mailcopy.** Wachtwoordreset, e-mailwijziging en bevestiging hebben nergens in de repo een bron — geen `supabase/config.toml`, geen templates-map. Dat is dus de Supabase-default, in het Engels, en het is het enige copy-kanaal dat de app verlaat.
+2. **De gesproken copy.** Wat VoiceOver voorleest is nooit als redactie-oppervlak bekeken; `t.a11y` telt drie strings voor de hele app, de rest wordt uit visuele afkortingen samengesteld (`SPM`, `GEM`, `PIEK`, `/500M`).
+3. **Geheugen en payload over een lange rit.** De `samples`-array groeit onbegrensd op ~1 Hz en gaat in zijn geheel drie keer door het systeem. Een rit van twee uur is 7 200 punten.
+4. **De Storybook-mocklaag.** Elke render-, parity-, beeld- en Figma-guard staat erop, en geen enkele as heeft hem bekeken. Hij kan per constructie geen fout- of laadtoestand tonen.
+5. **Dependency-versies.** `.storybook/main.ts` leunt op interne implementatiedetails van vite 8.2.2 terwijl `package.json` `"vite": "^8"` zegt.
+6. **Offline en trage verbinding als eigen faalklasse.** §4-B7 dekt de deadline-kant, maar niemand heeft de 24 Supabase-aanroepen systematisch op netwerkdetectie en herstel doorgelopen.
+
+Verder buiten bereik gebleven, bewust: `apps/rowtrack-web` (39 bestanden, eigen `type-check` en `lint`), de Figma-keten zelf, en de 24 scripts in `scripts/` — die zijn wél gedraaid (§2) maar niet gereviewd.
+
+---
+
+## 10. Wat ik eerst zou doen
+
+1. **`_layout.tsx:116`** — de `Alert` uit `profile.tsx:418-438` vóór `revoke` op de consent-gate. Kleinste diff, grootste gevolg: het stopt onomkeerbaar dataverlies op één tik.
+2. **`||` in plaats van `??`** op `login.tsx:36`, `forgot-password.tsx:37`, `reset-password.tsx:71`. Drie tekens, en de app spreekt weer Nederlands op zijn zichtbaarste foutpad.
+3. **`"type-check": "tsc --noEmit"`** in `package.json`. Eén regel; turbo pikt hem vanzelf op en CI dekt vanaf dan 16 746 regels die hij nu overslaat.
+4. **De consent-gate naar de bron** — `useWorkoutMetrics` een `healthGranted`-parameter, de check in `ble-context.startHRScan`, en `revoke()` de lokale slot laten opruimen. Dat sluit vier symptomen met één ingreep.
+5. **Een deadline-helper** rond elke Supabase-round-trip, in de vorm van `DELETE_TIMEOUT_MS`, plus de pending-slot schrijven vóór de insert.
+6. **De doeltoets** op `splitSmoothed` en achter een minimum-tickspoort in de vorm van `MIN_PR_TICKS`.
+7. **`README.md` en `docs/privacybeleid.md` §7** — goedkoop, en het zijn de twee documenten die een nieuwe lezer als eerste vertrouwt.
+
+Punt 1 tot en met 3 zijn samen minder dan twintig regels diff.

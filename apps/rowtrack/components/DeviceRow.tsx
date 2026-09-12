@@ -34,11 +34,11 @@ export type DeviceRowProps = {
 };
 
 /**
- * One device line inside the TOESTELLEN card: left status icon + device
- * label, right an italic connect/disconnect verb with a bluetooth glyph.
+ * Eén toestelregel in de TOESTELLEN-kaart: links het statusicoon en het
+ * toestellabel, rechts een cursief verbind/verbreek-werkwoord met bluetooth-glyph.
  * Purely presentational — BleStatusBar / HrStatusBar map their connection
- * state onto these props. Carries no border/radius/background; the card
- * wrapper provides those and the divider between rows.
+ * toestand op deze props. Draagt zelf geen rand, radius of achtergrond; de
+ * kaart-wrapper levert die, plus de scheidingslijn tussen de rijen.
  */
 export function DeviceRow({
   icon,

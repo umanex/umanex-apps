@@ -67,8 +67,8 @@ const styles = StyleSheet.create({
     ...typeStyles.labelGoalPrefix,
     color: fg.tertiary,
   },
-  // Grouped device card: one rounded container holding both rows, split by a
-  // hairline divider. The rows themselves are transparent (DeviceRow).
+  // Gegroepeerde toestelkaart: één afgeronde container met beide rijen, gescheiden
+  // door een haarlijn. De rijen zelf zijn transparant (DeviceRow).
   deviceCard: {
     backgroundColor: bg.elevated,
     borderRadius: radii.sm,

@@ -45,19 +45,19 @@ export function goalPillParts(goal: WorkoutGoal | null): { value: string; unit: 
     case 'duration': {
       const m = Math.floor(goal.target / 60);
       const s = goal.target % 60;
-      return { value: s === 0 ? `${m}` : `${m}:${String(s).padStart(2, '0')}`, unit: 'min' };
+      return { value: s === 0 ? `${m}` : `${m}:${String(s).padStart(2, '0')}`, unit: t.units.minuteShort };
     }
     case 'distance': {
       if (goal.target >= 1000) {
         const km = goal.target / 1000;
-        return { value: Number.isInteger(km) ? formatInt(km) : formatDecimal(km, 1), unit: 'km' };
+        return { value: Number.isInteger(km) ? formatInt(km) : formatDecimal(km, 1), unit: t.units.kilometer };
       }
-      return { value: formatInt(goal.target), unit: 'm' };
+      return { value: formatInt(goal.target), unit: t.units.meter };
     }
     case 'split':
       return { value: formatSplit(goal.target, true), unit: t.workout.active.goalUnitSplit };
     case 'watts':
-      return { value: `${goal.target}`, unit: 'W' };
+      return { value: `${goal.target}`, unit: t.units.watt };
   }
 }
 

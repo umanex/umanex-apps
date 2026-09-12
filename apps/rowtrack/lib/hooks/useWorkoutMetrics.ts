@@ -280,16 +280,17 @@ export function useWorkoutMetrics(
     if (partial.seconds != null) currentSecondsRef.current = partial.seconds;
     if (partial.distanceMeters != null) currentDistanceRef.current = partial.distanceMeters;
 
-    // Capture the {t, d} time-series at ~1 Hz (one point per whole device-second)
-    // for the exact best-2000m calculation at save time (lib/bestDistanceTime.ts).
-    // Device-elapsedTime is integer seconds and freezes on pause, so dedupe by
-    // whole second keeps the payload small and pauses out of the moving time.
+    // Leg de {t, d}-tijdreeks vast op ~1 Hz (één punt per hele toestelseconde) voor
+    // de exacte beste-2000m-berekening bij het opslaan (lib/bestDistanceTime.ts).
+    // De elapsedTime van het toestel is in hele seconden en bevriest bij een pauze,
+    // dus ontdubbelen op hele seconde houdt de payload klein én de pauzes buiten de
+    // bewegende tijd.
     //
-    // Key sampling on a fresh elapsed reading AND require distance to be baselined
-    // first: a device that ever emits a distance-only packet before the first
-    // elapsed field would otherwise collapse accumulated distance onto t=0 and
-    // produce a false-fast best-2k. Requiring an elapsed baseline (initialElapsed
-    // is set whenever partial.seconds != null) plus an established distance
+    // Bemonster op een VERSE elapsed-lezing én eis dat de afstand al een baseline
+    // heeft: een toestel dat ooit een distance-only pakket stuurt vóór het eerste
+    // elapsed-veld zou anders de opgebouwde afstand op t=0 samenvouwen en een
+    // vals-snelle beste 2k opleveren. De eis van een elapsed-baseline (initialElapsed
+    // wordt gezet zodra partial.seconds != null) plus een vastgestelde afstand
     // baseline pairs every sample's t and d correctly.
     if (partial.seconds != null && initialDistance.current !== null) {
       const whole = Math.floor(currentSecondsRef.current);

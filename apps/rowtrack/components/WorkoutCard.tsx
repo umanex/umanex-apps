@@ -45,7 +45,7 @@ function fmtDuration(sec: number | null): { value: string; unit: string } | null
 // Duizendtal-groepering via de gedeelde formatter. De handgerolde variant hardcodeerde
 // de punt én schaduwde de i18n-`t` met een lokale variabele van dezelfde naam.
 function fmtMetersVU(m: number): { value: string; unit: string } {
-  return { value: formatInt(m), unit: 'm' };
+  return { value: formatInt(m), unit: t.units.meter };
 }
 
 /** Minimale rij-data — zowel WorkoutSummary (historiek) als HomeWorkout (home) voldoen. */
@@ -101,7 +101,7 @@ export const WorkoutCard = memo(function WorkoutCard({
       accessibilityLabel={[
         dateLabel,
         dur != null ? `${dur.value} ${dur.unit}` : null,
-        w.calories != null ? `${w.calories} kcal` : null,
+        w.calories != null ? `${w.calories} ${t.units.kcal}` : null,
         dist != null ? `${dist.value} ${dist.unit}` : null,
         prA11y,
       ]

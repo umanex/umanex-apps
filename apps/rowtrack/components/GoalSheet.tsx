@@ -33,9 +33,9 @@ const METRIC_OPTIONS: readonly SegmentedOption<PeriodGoalMetric>[] = [
 
 // Streefwaarde-bereik + eenheid per doeltype (weergave-eenheden; save() converteert naar opslag).
 const RANGES: Record<PeriodGoalMetric, { min: number; max: number; step: number; unit: string }> = {
-  distance: { min: 1, max: 500, step: 1, unit: 'km' },
+  distance: { min: 1, max: 500, step: 1, unit: t.units.kilometer },
   duration: { min: 5, max: 600, step: 5, unit: t.units.minuteShort },
-  workouts: { min: 1, max: 100, step: 1, unit: t.units.sessions },
+  workouts: { min: 1, max: 100, step: 1, unit: t.units.workouts },
 };
 const DEFAULTS: Record<PeriodGoalMetric, number> = { distance: 10, duration: 60, workouts: 4 };
 
@@ -44,7 +44,12 @@ function itemsFor(metric: PeriodGoalMetric): WheelItem[] {
   const items: WheelItem[] = [];
   for (let v = min; v <= max; v += step) {
     // Duur vanaf een uur als "1 u 10 min" (gedeelde helper, gelijk aan de workout-wheel).
-    const label = metric === 'duration' ? formatDurationLabel(v) : `${v} ${unit}`;
+    // Trainingen via de meervoudsregel: `${v} ${unit}` gaf "1 sessies" op de laagste stand,
+    // en dat is precies de waarde die een periodedoel als laatste toont.
+    const label =
+      metric === 'duration' ? formatDurationLabel(v)
+      : metric === 'workouts' ? t.units.workoutCount(v)
+      : `${v} ${unit}`;
     items.push({ label, value: v, unit });
   }
   return items;

@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { sendPasswordReset } from '@/lib/auth';
+import { sendPasswordReset, isOfflineAuthError } from '@/lib/auth';
+import { reportError } from '@/lib/monitoring';
 import { isValidEmail, emailFieldError } from '@/lib/validation';
 import { Button, FormField, ErrorMessage } from '@/components';
 import { t } from '@/i18n';
@@ -33,8 +34,12 @@ export default function ForgotPasswordScreen() {
     try {
       await sendPasswordReset(email);
       setSent(true);
-    } catch (e: any) {
-      setSubmitError(e.message ?? t.auth.forgot.failed);
+    } catch (e: unknown) {
+      // Nooit `e.message`: dat is de rauwe Engelse GoTrue-tekst, en met `??`
+      // werd de Nederlandse zin hieronder per definitie onbereikbaar — een
+      // AuthError draagt altijd een message. Het detail gaat naar monitoring.
+      reportError(e, { where: 'auth.sendPasswordReset' });
+      setSubmitError(isOfflineAuthError(e) ? t.auth.offline : t.auth.forgot.failed);
     } finally {
       setLoading(false);
     }

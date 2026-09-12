@@ -313,7 +313,7 @@ export class HRBleService {
       // Single device: connect automatically
       this.connectToDeviceById(devices[0].id, devices[0].name);
     } else {
-      // Multiple devices: let user choose
+      // Meerdere toestellen: de gebruiker laten kiezen
       log('multiple HR devices found:', devices.length);
       this.onDevicesFound?.(devices);
     }

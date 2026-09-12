@@ -63,11 +63,11 @@ const HEIGHT_MIN = 100, HEIGHT_MAX = 250;
 const WEIGHT_MIN = 30, WEIGHT_MAX = 300;
 const HEIGHT_ITEMS: WheelItem[] = Array.from({ length: HEIGHT_MAX - HEIGHT_MIN + 1 }, (_, i) => {
   const v = HEIGHT_MIN + i;
-  return { label: `${v} cm`, value: v, unit: 'cm' };
+  return { label: `${v} ${t.units.centimeter}`, value: v, unit: t.units.centimeter };
 });
 const WEIGHT_ITEMS: WheelItem[] = Array.from({ length: WEIGHT_MAX - WEIGHT_MIN + 1 }, (_, i) => {
   const v = WEIGHT_MIN + i;
-  return { label: `${v} kg`, value: v, unit: 'kg' };
+  return { label: `${v} ${t.units.kilogram}`, value: v, unit: t.units.kilogram };
 });
 
 const DEFAULT_YEAR_IDX = Math.max(0, BIRTH_YEARS.indexOf(1990));
@@ -454,8 +454,8 @@ export default function ProfileScreen() {
   }
 
   const nameLabel = displayName || '—';
-  const heightLabel = heightCm != null ? `${heightCm} cm` : '—';
-  const weightLabel = weightKg != null ? `${weightKg} kg` : '—';
+  const heightLabel = heightCm != null ? `${heightCm} ${t.units.centimeter}` : '—';
+  const weightLabel = weightKg != null ? `${weightKg} ${t.units.kilogram}` : '—';
 
   return (
     <>

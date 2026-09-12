@@ -18,7 +18,13 @@ import {
 type Props = {
   visible: boolean;
   onGrant: () => Promise<boolean>;
-  onDecline: () => Promise<boolean>;
+  /**
+   * `null` = de gebruiker brak de bevestiging af. Bewust een derde uitkomst naast
+   * true/false: weigeren wist de al opgeslagen gezondheidsdata, dus er hangt een
+   * bevestiging voor. Zonder dit onderscheid zou "Annuleren" als een mislukte
+   * opslag lezen en de foutmelding hieronder tonen.
+   */
+  onDecline: () => Promise<boolean | null>;
 };
 
 /**
@@ -41,6 +47,12 @@ export const HealthConsentScreen = ({ visible, onGrant, onDecline }: Props) => {
     setFailed(false);
     setBusy(which);
     const ok = which === 'grant' ? await onGrant() : await onDecline();
+    // Afgebroken bevestiging: terug naar het scherm zonder foutmelding — er is
+    // niets mislukt, er is niets gekozen.
+    if (ok === null) {
+      setBusy(null);
+      return;
+    }
     if (!ok) {
       // Blijf staan. Doorlaten na een mislukte opslag zou betekenen dat de app
       // verdergaat zonder dat de keuze ergens vastligt.

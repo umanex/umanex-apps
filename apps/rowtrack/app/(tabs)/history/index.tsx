@@ -199,7 +199,7 @@ export default function HistoryScreen() {
         <View style={styles.kpiGridRow}>
           <KpiSingle
             value={totalsReady ? formatInt(totals.calories) : NO_VALUE}
-            unit={totalsReady ? 'kcal' : ''}
+            unit={totalsReady ? t.units.kcal : ''}
             label={t.kpi.totalEnergy}
             style={styles.kpiCell}
           />

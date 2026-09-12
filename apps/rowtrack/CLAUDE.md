@@ -33,6 +33,15 @@ Voor de beschikbare exports (kleuren, `fontFamily`, `typeStyles`, `space`, `radi
 ## Conventies
 
 ### Code
+- **Commentaar is Nederlands.** Bewuste afwijking van de globale regel in
+  `.umanex-os/CLAUDE.md` ("Taal in code: Engels voor … commentaar"), vastgelegd 2026-09-12.
+  Grond: gemeten stonden er **1 100 ondubbelzinnig Nederlandse commentaarregels tegen 129
+  Engelse** over 103 bestanden — de praktijk was al negen tegen één, en het commentaar in deze
+  app doet zwaar werk (het draagt metingen, tegenproeven en verworpen hypothesen, niet alleen
+  wat de regel doet). Dat vertalen kost precisie zonder een lezer te winnen: er is één lezer en
+  die is Nederlandstalig. **Code zelf blijft Engels** — namen, types, functies, commit messages.
+  Dertien bestanden droegen beide talen; die zijn diezelfde dag gelijkgetrokken. Komt er ooit een
+  tweede ontwikkelaar bij die geen Nederlands leest, dan kantelt deze afweging.
 - `StyleSheet.create()` — nooit inline styles
 - `TouchableOpacity` voor interactieve elementen, `activeOpacity={0.8}`
 - Iconen via `@expo/vector-icons` (Ionicons) — **nooit** `lucide-react-native`
@@ -743,7 +752,7 @@ Instances vragen een **gepubliceerde** library: een ongepubliceerde key geeft *"
 a published component with the key"*. De key overleeft de publicatie ongewijzigd (gemeten).
 
 **Migratiestaat: toets het schema, niet het ledger.** Migraties worden hier met de hand in de SQL
-Editor gedraaid, dus `list_migrations` kent er 6 van de 11 in `supabase/migrations/`. Alle elf zijn
+Editor gedraaid, dus `list_migrations` kent er 6 van de 12 in `supabase/migrations/`. Alle twaalf zijn
 toegepast — het ledger is stil onvolledig, niet het schema. Een briefing die schrijft "de migratie is
 nog niet gedraaid" veroudert daardoor zonder dat iemand het merkt; schrijf de *check* op in plaats
 van de *staat*, en toets tegen `information_schema` of `pg_indexes`. Let op: een unique constraint

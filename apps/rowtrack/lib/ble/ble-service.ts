@@ -25,7 +25,7 @@ const log: (...args: unknown[]) => void = __DEV__
   ? (...args: unknown[]) => console.log('[BLE]', ...args)
   : () => {};
 
-/** Return a RowerMetrics with all fields null. */
+/** Geeft een RowerMetrics terug met alle velden op null. */
 function emptyMetrics(): RowerMetrics {
   return {
     strokeRate: null, strokeCount: null, totalDistance: null,
@@ -37,7 +37,7 @@ function emptyMetrics(): RowerMetrics {
   };
 }
 
-/** Merge non-null fields from `incoming` into `base`, return new object. */
+/** Vouwt de niet-null velden van `incoming` in `base` en geeft een nieuw object terug. */
 function mergeMetrics(base: RowerMetrics, incoming: RowerMetrics): RowerMetrics {
   const merged = { ...base };
   for (const key of Object.keys(incoming) as (keyof RowerMetrics)[]) {
@@ -423,7 +423,7 @@ export class RowerBleService {
     return false;
   }
 
-  /** Returns true when the connection (incl. service discovery) succeeded. */
+  /** Geeft true wanneer de verbinding (inclusief service discovery) geslaagd is. */
   private async connectToDevice(device: Device): Promise<boolean> {
     if (this.isConnecting) {
       log(' connectToDevice skipped — already connecting');
@@ -568,7 +568,7 @@ export class RowerBleService {
           // springen of de EMA-staart nodig heeft. Zie `ergProbe.ts`.
           countPowerSample(merged.instantaneousPower, merged.strokeRate);
 
-          // When rower is idle (spm=0, watts=0), clear stale pace values
+          // Staat de roeitrainer stil (spm=0, watts=0), dan de verouderde pace-waarden wissen
           const idle = merged.strokeRate === 0 && merged.instantaneousPower === 0;
           if (idle) {
             merged.strokeRate = null;

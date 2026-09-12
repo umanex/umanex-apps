@@ -40,7 +40,7 @@ export const GOAL_INPUT_BOUNDS: Record<GoalType, { min: number; max: number }> =
 
 /**
  * Relevant fallback targets per goal type (raw Supabase units), used to fill
- * the suggestion row up to 3 chips when a user has fewer than 3 recent picks.
+ * de suggestierij aan tot 3 chips wanneer een gebruiker er minder dan 3 recent koos.
  * duration: seconds · distance: meters · split: sec/500m · watts: watt.
  */
 export const GOAL_DEFAULT_SUGGESTIONS: Record<GoalType, number[]> = {
@@ -51,10 +51,11 @@ export const GOAL_DEFAULT_SUGGESTIONS: Record<GoalType, number[]> = {
 };
 
 /**
- * Builds exactly 3 WheelPicker indices to suggest for a goal type: the most
- * recently chosen targets first, padded with relevant defaults. Deduplicates
- * on wheel index and drops out-of-range targets, so the result is always ≤ 3
- * valid, distinct indices (3 whenever defaults are in range, which they are).
+ * Bouwt precies 3 WheelPicker-indices als suggestie per doeltype: de recentst
+ * gekozen streefwaarden eerst, aangevuld met passende defaults. Ontdubbelt op
+ * wheel-index en laat streefwaarden buiten bereik vallen, dus het resultaat is
+ * altijd ≤ 3 geldige, verschillende indices (3 zolang de defaults binnen bereik
+ * liggen, en dat doen ze).
  */
 export function buildGoalSuggestions(type: GoalType, recents: number[]): number[] {
   const indices: number[] = [];
@@ -72,8 +73,8 @@ export function buildGoalSuggestions(type: GoalType, recents: number[]): number[
 }
 
 /**
- * Converts a saved goal_target value (raw Supabase units) back to its
- * index in the matching WheelPicker array. Returns null when out of range.
+ * Zet een opgeslagen `goal_target` (rauwe Supabase-eenheden) terug om naar zijn
+ * index in de bijbehorende WheelPicker-array. Geeft null buiten bereik.
  */
 export function goalTargetToWheelIndex(type: GoalType, target: number): number | null {
   switch (type) {

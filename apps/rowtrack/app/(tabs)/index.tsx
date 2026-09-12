@@ -62,16 +62,16 @@ function getGreeting(): string {
 function fmtPrDistance(m: number): { value: string; unit: string } {
   if (m >= 1000) {
     const km = m / 1000;
-    return { value: Number.isInteger(km) ? formatInt(km) : formatDecimal(km, 1), unit: 'km' };
+    return { value: Number.isInteger(km) ? formatInt(km) : formatDecimal(km, 1), unit: t.units.kilometer };
   }
-  return { value: formatInt(m), unit: 'm' };
+  return { value: formatInt(m), unit: t.units.meter };
 }
 
 function fmtPr2k(sec: number): { value: string; unit: string } {
   const total = Math.round(sec); // round first so 7:59.7 → 8:00, never "7:60"
   const m = Math.floor(total / 60);
   const s = total % 60;
-  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: 'min' };
+  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: t.units.minuteShort };
 }
 
 // Maatvoerder voor het doel-skelet: de echte kaart wordt onzichtbaar gerenderd, zodat de
@@ -265,10 +265,10 @@ export default function HomeScreen() {
             <Subtitle label={t.home.prSectionTitle} />
             <View style={styles.prRow}>
               <Skeleton style={styles.prCell}>
-                <KpiSingle value="0" unit="km" label={t.home.prMaxDistance} />
+                <KpiSingle value="0" unit={t.units.kilometer} label={t.home.prMaxDistance} />
               </Skeleton>
               <Skeleton style={styles.prCell}>
-                <KpiSingle value="0:00" unit="min" label={t.home.prBest2k} />
+                <KpiSingle value="0:00" unit={t.units.minuteShort} label={t.home.prBest2k} />
               </Skeleton>
             </View>
           </View>

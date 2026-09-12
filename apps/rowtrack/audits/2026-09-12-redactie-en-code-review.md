@@ -68,7 +68,9 @@ Dat dit een vergissing is en geen keuze, staat in dezelfde codebase op twee plaa
 - `i18n/bleErrors.ts:21` gebruikt `||` mét motivering: *"`||` (niet `??`): een lege BLE-message valt terug op de vaste melding"*.
 - `register.tsx:58` gebruikt `raw || t.auth.register.failed` — correct.
 
-**P1.** Fix: `||` op die drie regels. Dezelfde `catch (e: any)` zijn bovendien de enige vier `any`'s in gecommitte niet-testcode (gemeten: 4, geen enkele met `// TODO`), tegen de projectregel in.
+**P1.** Dezelfde `catch (e: any)` zijn bovendien de enige vier `any`'s in gecommitte niet-testcode (gemeten: 4, geen enkele met `// TODO`), tegen de projectregel in.
+
+> **Correctie, 2026-09-12 (na het schrijven van deze paragraaf).** Dit rapport stelde eerst `||` in plaats van `??` voor als fix. Dat is **onvoldoende**: `e.message` is in het normale geval een niet-lege string, dus `||` valt net zo min terug — de gebruiker leest nog steeds *"Invalid login credentials"*. `||` repareert alleen het lege-string-geval. De werkelijke fix is `e.message` helemaal niet tonen maar naar `reportError` sturen, en de Nederlandse zin tonen — met een aparte zin voor offline, want "Inloggen mislukt." zonder reden is precies het defect uit §3-A2. Zo is het gebouwd.
 
 ### A2 · Rauwe Engelse servertekst in de UI — vier andere plekken
 
@@ -192,7 +194,7 @@ Er is bovendien nergens een React error boundary (`grep` op `ErrorBoundary|compo
 
 ### B5 · P1 — De Nederlandse foutmelding van het inlogpad is dode code
 
-Zie §3-A1. Dit is één regel op drie plaatsen en tegelijk de zichtbaarste redactiefout van de app.
+Zie §3-A1, inclusief de correctie op de voorgestelde fix. Dit is één regel op drie plaatsen en tegelijk de zichtbaarste redactiefout van de app.
 
 ### B6 · P1 — `fetchProfile` en de doel-read tonen een mislukte read als leegte
 
@@ -334,7 +336,7 @@ Verder buiten bereik gebleven, bewust: `apps/rowtrack-web` (39 bestanden, eigen 
 ## 10. Wat ik eerst zou doen
 
 1. **`_layout.tsx:116`** — de `Alert` uit `profile.tsx:418-438` vóór `revoke` op de consent-gate. Kleinste diff, grootste gevolg: het stopt onomkeerbaar dataverlies op één tik.
-2. **`||` in plaats van `??`** op `login.tsx:36`, `forgot-password.tsx:37`, `reset-password.tsx:71`. Drie tekens, en de app spreekt weer Nederlands op zijn zichtbaarste foutpad.
+2. **De rauwe Engelse melding niet tonen** op `login.tsx`, `forgot-password.tsx` en `reset-password.tsx`: `e.message` naar `reportError`, de Nederlandse zin naar het scherm, en een aparte zin voor offline. (Niet `||` in plaats van `??` — zie de correctie in §3-A1.)
 3. **`"type-check": "tsc --noEmit"`** in `package.json`. Eén regel; turbo pikt hem vanzelf op en CI dekt vanaf dan 16 746 regels die hij nu overslaat.
 4. **De consent-gate naar de bron** — `useWorkoutMetrics` een `healthGranted`-parameter, de check in `ble-context.startHRScan`, en `revoke()` de lokale slot laten opruimen. Dat sluit vier symptomen met één ingreep.
 5. **Een deadline-helper** rond elke Supabase-round-trip, in de vorm van `DELETE_TIMEOUT_MS`, plus de pending-slot schrijven vóór de insert.
@@ -342,3 +344,25 @@ Verder buiten bereik gebleven, bewust: `apps/rowtrack-web` (39 bestanden, eigen 
 7. **`README.md` en `docs/privacybeleid.md` §7** — goedkoop, en het zijn de twee documenten die een nieuwe lezer als eerste vertrouwt.
 
 Punt 1 tot en met 3 zijn samen minder dan twintig regels diff.
+
+---
+
+## 11. Wat er in dezelfde ronde gefixt is
+
+Besluit Jeroen, 2026-09-12, op vier voorgelegde keuzes. Wat hieronder staat zit in deze branch; de rest van dit rapport staat nog open.
+
+**De P0.** `app/(tabs)/_layout.tsx` — de `Alert` uit `profile.tsx` staat nu vóór `revoke`, met dezelfde copy (`t.consent.revokeTitle` / `revokeBody` / `revokeConfirm`). Het contract van `HealthConsentScreen.onDecline` is verbreed naar `Promise<boolean | null>`: `null` betekent "bevestiging afgebroken", zodat annuleren niet als mislukte opslag leest en de foutmelding toont. Getoetst aan de geïnstalleerde bron dat `Alert.alert` zonder opties `cancelable: false` zet (`react-native/Libraries/Alert/Alert.js:90`) — de belofte kan dus niet onopgelost blijven doordat iemand de dialoog wegtikt. *Ruwe rand, bewust blijven staan:* de titel luidt "Toestemming intrekken" terwijl de gebruiker op de gate weigert in plaats van intrekt, en een vers account heeft niets om te wissen.
+
+**Het auth-foutpad.** `e.message` verdwijnt van het scherm op alle vier de auth-schermen; het detail gaat naar `reportError`, de gebruiker krijgt de Nederlandse zin, en offline krijgt een eigen zin (`t.auth.offline`) via de nieuwe `isOfflineAuthError` — dezelfde duck-typing die `classifyAuthError` al deed. Daarmee zijn ook de vier `any`'s weg: `catch (e: unknown)`.
+
+**Terminologie.** Eén woord voor het object: *training*. Gewijzigd in `nl.ts` (home, historiek, detail, doelen, consent- en verwijdercopy) en in `docs/privacybeleid.md` (19 voorkomens). `'Je sessie is verlopen'` blijft staan — dat gaat over de loginsessie, een ander referent.
+
+**Eenheden.** De `units`-laag draagt nu ook `meter`, `kilometer`, `watt`, `kcal`, `centimeter`, `kilogram`, `per500m`, `workouts` en `workoutCount(n)`. Dertig call-sites over tien bestanden zijn erop gezet; `GoalPill` hardcodeerde `'min'` náást een sleutel uit de tabel, dat is nu één bron. De kopregel van `nl.ts` klopt daarmee voor het eerst.
+
+**Commentaartaal.** De afwijking staat gedeclareerd in `CLAUDE.md` → *Conventies* → *Code*, met de meting als grond. De gemengde bestanden zijn van **14 naar 0**; de tien regels die de meter nog aanwijst zijn Nederlandse zinnen met een Engelse vakterm of een geciteerde foutmelding erin (`value`, `user-id`, `"User interaction is not allowed"`) — die hoor je niet te vertalen. Engelse commentaarregels: van 129 naar 56.
+
+**Losse fixes.** `formatSplit` rondt eerst af op hele seconden en rolt dus door naar de volgende minuut (`8:60` → `9:00`) · `"type-check": "tsc --noEmit"` in `package.json`, zodat turbo de app niet meer overslaat · `README.md` herschreven op de vier foute secties · de bewaartermijnentabel in `docs/privacybeleid.md` §7 gelijkgetrokken met §2.5 en met `auth.ts:21-24` · de vijf `\uXXXX`-escapes in commentaar · de migratietelling in `CLAUDE.md` (11 → 12) · de KPI-stories die de oude copy kopieerden.
+
+**Verificatie na de wijziging**, dezelfde instrumenten als §2: `tsc --noEmit` **exit 0** · `node:test` **57/57** · `build-storybook` + `render:sweep` **257/257, geen console-fout, geen lege render** — dezelfde uitkomst als de baseline, op een instrument waarvan §2 bewijst dat het rood kan worden.
+
+**Niet gefixt, en waarom.** De diepe gedragsfixes uit §10 punt 4 tot 6 — de consent-gate naar de bron, de deadline-helper, de doeltoets op de gesmoothe waarde — vragen een toestel om te toetsen (`xcrun`, Maestro), en dat is hier niet beschikbaar. Ze schrijven zonder ze te kunnen meten maakt er aannames van. Ook open: de zeven Next-apps (zie §7.3) — er is **geen 14.x-patch**, dus dat is een major van 14 naar ≥ 15.5.24 over zeven productie-apps, geen bump. Gemeten: alle zeven staan op `^14`, zes gebruiken `next/image` en geen enkele zet de optimizer uit. `images.unoptimized` is géén mitigatie voor zover ik kon vaststellen: het houdt de eigen componenten van het endpoint af (`get-img-props.js:234`), maar ik vond geen server-side gate die `/_next/image` zelf sluit.

@@ -22,7 +22,7 @@ const meta = {
     onPress: { control: false },
   },
   args: {
-    label: 'Split 500/m',
+    label: 'Split /500m',
     value: '1:52',
     highlighted: false,
     compact: false,
@@ -61,7 +61,7 @@ export const Laden: Story = {
  * dicht tot zijn minHeight, en dan toont de story de as niet.
  */
 export const Vullend: Story = {
-  args: { label: 'Totaal afstand', value: '5.000 m', fill: true },
+  args: { label: 'Totale afstand', value: '5.000 m', fill: true },
   render: (args) => (
     <View style={styles.kolom}>
       <KPI {...args} />
@@ -71,7 +71,7 @@ export const Vullend: Story = {
 
 /** Nulwaarde bij een rit die net begonnen is — geen streepje, gewoon 0. */
 export const Nulwaarde: Story = {
-  args: { label: 'Totaal Kcal', value: '0' },
+  args: { label: 'Totale kcal', value: '0' },
 };
 
 /** Edge case: label en waarde delen één regel met space-between; geen van beide mag wijken. */

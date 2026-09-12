@@ -19,9 +19,9 @@ function fmtDistance(meters: number): string {
   if (meters >= 1000) {
     const km = meters / 1000;
     const rounded = Math.round(km * 10) / 10;
-    return `${Number.isInteger(rounded) ? formatInt(rounded) : formatDecimal(rounded, 1)} km`;
+    return `${Number.isInteger(rounded) ? formatInt(rounded) : formatDecimal(rounded, 1)} ${t.units.kilometer}`;
   }
-  return `${formatInt(meters)} m`;
+  return `${formatInt(meters)} ${t.units.meter}`;
 }
 
 function fmtDuration(seconds: number): string {

@@ -8,7 +8,8 @@ import {
   Platform,
 } from 'react-native';
 import { Link } from 'expo-router';
-import { signUp } from '@/lib/auth';
+import { signUp, isOfflineAuthError } from '@/lib/auth';
+import { reportError } from '@/lib/monitoring';
 import {
   isValidEmail,
   isValidPassword,
@@ -46,16 +47,24 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await signUp(email.trim(), password);
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Neutrale foutmelding voor een reeds-bestaand adres — de rauwe Supabase-
       // melding ("User already registered") verraadt anders of een account bestaat
       // (user enumeration, security-audit P2-7).
-      const code = String(e?.code ?? '');
-      const raw = String(e?.message ?? '');
+      const err = (e ?? {}) as { code?: string; message?: string };
+      const code = String(err.code ?? '');
+      const raw = String(err.message ?? '');
       const revealsExisting =
         code === 'user_already_exists' || /already registered|already exists/i.test(raw);
+      // `raw` diende hier als zichtbare fallback en toonde dus de Engelse tekst zodra
+      // het adres níet bestond. Hij bepaalt nu alleen nog de enumeratie-tak.
+      reportError(e, { where: 'auth.signUp' });
       setSubmitError(
-        revealsExisting ? t.auth.register.failedNeutral : raw || t.auth.register.failed,
+        revealsExisting
+          ? t.auth.register.failedNeutral
+          : isOfflineAuthError(e)
+            ? t.auth.offline
+            : t.auth.register.failed,
       );
     } finally {
       setLoading(false);

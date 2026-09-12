@@ -8,9 +8,10 @@ const VALID_STATUSES: ItemStatus[] = ['new', 'saved', 'dismissed', 'contacted']
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id)
+  const { id: idParam } = await params
+  const id = Number(idParam)
   if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ ok: false, error: 'Invalid id' }, { status: 400 })
   }

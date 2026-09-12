@@ -9,8 +9,8 @@ const GELDIGE_STATUSSEN: ItemStatus[] = ['new', 'saved', 'dismissed', 'contacted
  * Status van één prospect. De sleutel is het ondernemingsnummer zonder punten — dezelfde
  * vorm die de spiegel bewaart, zodat er nergens een tweede notatie ontstaat.
  */
-export async function PATCH(request: Request, { params }: { params: { nr: string } }) {
-  const nummer = params.nr
+export async function PATCH(request: Request, { params }: { params: Promise<{ nr: string }> }) {
+  const { nr: nummer } = await params
   if (!/^\d{10}$/.test(nummer)) {
     return NextResponse.json({ ok: false, error: 'Invalid enterprise number' }, { status: 400 })
   }

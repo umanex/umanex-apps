@@ -11,8 +11,9 @@ export const dynamic = 'force-dynamic'
  * De status blijft staan: die is een aparte beslissing, en hem terugdraaien omdat je een
  * notitie corrigeert zou een tweede ding doen dat niemand vroeg.
  */
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-  const id = Number(params.id)
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id: idParam } = await params
+  const id = Number(idParam)
   if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ ok: false, error: 'ongeldig id' }, { status: 400 })
   }

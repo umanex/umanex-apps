@@ -37,10 +37,12 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string };
+  // Next 15: `params` is een Promise. Zie de gelijkluidende type-alias in de pagina's.
+  params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'meta' });
 
   return {
@@ -61,11 +63,13 @@ export async function generateMetadata({
 
 export default async function LocaleLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
+
   // De middleware matcht op het URL-segment, niet op de locale-lijst. Zonder deze
   // check rendert /de een lege layout in plaats van een 404.
   if (!isLocale(locale)) notFound();

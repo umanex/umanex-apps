@@ -230,7 +230,8 @@ fi
 #     `Status: x` — en slaat codeblocks over. De eerste versie las alleen de lijstvorm en
 #     meldde 34 briefings als "zonder Status" waarvan er 33 wél een Status droegen (gemeten
 #     2026-09-07 door het review-panel over 197 briefings). Dezelfde awk staat in
-#     scripts/doctor.sh (blok 6b); wijzig ze samen.
+#     scripts/doctor.sh (blok 6b); wijzig ze samen — scripts/test-awk-parity.sh dwingt de
+#     gelijkheid af en wordt rood zodra één van de twee kopieën verschuift.
 status_af=""
 while IFS= read -r -d '' f; do
   case "$f" in *.tcebc.md) ;; *) continue ;; esac

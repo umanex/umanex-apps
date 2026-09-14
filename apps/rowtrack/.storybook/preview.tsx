@@ -23,6 +23,15 @@ const preview: Preview = {
       // komt daar per definitie te laat.
       __setSupabaseData(context.parameters?.supabase);
       __setRouteParams(context.parameters?.routeParams ?? {});
+      // Een story met een `play` is pas ná die play in zijn eindvorm. Elk instrument dat de
+      // DOM leest (de bouwspec-walker voorop) zou anders het moment ervóór vastleggen, zonder
+      // enige foutmelding. Deze vlag is het contract: "wacht" hier, "klaar" in de play zelf
+      // (zie .storybook/formulier.ts). Een play die hem vergeet laat de walker hard aflopen —
+      // dat is de goede faalrichting.
+      if (typeof document !== 'undefined') {
+        if (context.playFunction) document.documentElement.dataset.play = 'wacht';
+        else delete document.documentElement.dataset.play;
+      }
       // Een SCHERM-story rendert full-bleed op toestelmaat; alles anders houdt zijn eigen
       // maat met lucht eromheen. Zie .storybook/toestel.ts voor het waarom en de meting.
       const t = context.parameters?.toestel as { breedte: number; hoogte: number } | undefined;

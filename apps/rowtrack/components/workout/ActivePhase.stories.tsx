@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-native-web-vite';
-import { Animated } from 'react-native';
 import { TOESTEL } from '../../.storybook/toestel';
 import { ActivePhase } from './ActivePhase';
 import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
@@ -9,10 +8,10 @@ import type { WorkoutMetricsState } from '@/lib/hooks/useWorkoutMetrics';
  * `phase` (het scherm vs. de samenvatting-modal), `bleStatus` (de verbindings-overlay),
  * `hrStatus` (de BPM-rij) en `hasProfileWeight` (het sterretje achter kcal).
  *
- * `isCountdown` en `paceZone` staan wél in het props-type maar worden nergens
- * gedestructureerd of gelezen — een as ervan maken zou in Figma varianten opleveren die
- * onderling identiek renderen. Ze staan daarom op `control: false`; verdwijnen ze uit het
- * type, dan verandert er niets aan de assen.
+ * `isCountdown`, `paceZone` en `pulseAnim` stonden hier tot 2026-09-14 op `control: false`:
+ * ze zaten in het props-type maar werden nergens gelezen. Ze zijn nu uit het type weg
+ * (UX-audit 2026-07-16, F18) en er veranderde niets aan de assen — precies wat die notitie
+ * voorspelde.
  *
  * `goal` en `metricsState` zijn samengestelde objecten, geen assen: het doeltype bepaalt de
  * hero, de subtitle, de KPI-volgorde én de progress-fill, en dat verschil is data. De vier
@@ -56,15 +55,12 @@ const meta = {
     },
     hrStatus: { control: 'select', options: ['idle', 'scanning', 'waiting', 'connected', 'error'] },
     hasProfileWeight: { control: 'boolean' },
-    isCountdown: { control: false },
-    paceZone: { control: false },
     metricsState: { control: 'object' },
     goal: { control: 'object' },
     splits: { control: 'object' },
     prEntries: { control: 'object' },
     insets: { control: 'object' },
     now: { control: false },
-    pulseAnim: { control: false },
     startScan: { control: false },
     startHRScan: { control: false },
     onStop: { control: false },
@@ -79,8 +75,6 @@ const meta = {
     bleError: null,
     startScan: () => {},
     goal: { type: 'duration', target: 1800 }, // 30 min
-    isCountdown: false,
-    paceZone: 'on_pace',
     toastMsg: null,
     splits: [
       { distance: 500, split: 113.2, watts: 206 },
@@ -88,7 +82,6 @@ const meta = {
       { distance: 1500, split: 112.6, watts: 209 },
     ],
     prEntries: [],
-    pulseAnim: new Animated.Value(1),
     avgWatts: 208,
     avgSpm: 25,
     avgSplit: 113,
@@ -205,6 +198,16 @@ export const DoelBereikt: Story = {
 /** De samenvatting-modal na het stoppen: KPI-band, gem/piek-tabel en Ga verder. */
 export const Samenvatting: Story = {
   args: { phase: 'summary' },
+};
+
+/**
+ * Hetzelfde sterretje als `ZonderProfielgewicht`, maar in de samenvatting — en dáár staat sinds
+ * 2026-09-14 de legende eronder (UX-audit 2026-07-16, F19). Zonder deze story heeft die regel
+ * geen render-pad: elke andere samenvatting-story heeft wél een profielgewicht en dus geen
+ * sterretje om uit te leggen.
+ */
+export const SamenvattingZonderGewicht: Story = {
+  args: { phase: 'summary', hasProfileWeight: false },
 };
 
 /** Records gebroken: de banner noemt per record de nieuwe waarde en wat hij verving. */

@@ -62,6 +62,12 @@ export const HealthConsentScreen = ({ visible, onGrant, onDecline }: Props) => {
   }
 
   return (
+    /*
+      BEWUST GEEN `onRequestClose`. Dit is een toestemmingspoort, geen dialoog: Android-back
+      zou hem wegklikken zonder dat er een keuze gemaakt is, en het scherm eronder toont dan
+      gezondheidsdata waarvoor niets is toegestaan. De andere modals in deze app dragen hem
+      wél — zie UX-audit 2026-07-16, F16.
+    */
     <Modal visible={visible} animationType="slide" statusBarTranslucent>
       <View testID="HealthConsentScreen" style={[styles.screen, { paddingTop: insets.top + space['24'] }]}>
         <ScrollView

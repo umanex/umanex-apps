@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
@@ -7,9 +6,8 @@ import { calculateProgress } from '@/lib/workout-goals';
 import type { WorkoutGoal } from '@/lib/workout-goals';
 import { formatDistanceDynamic, formatSplit } from '@/lib/formatters';
 import { t } from '@/i18n';
-import { getPaceZone } from '@/components/workout';
 import { EMPTY_BASELINE, extendBaseline, type PrBaseline } from '@/lib/personalRecords';
-import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
+import type { SplitEntry } from '@/types/workout';
 import type { WorkoutMetricsState, AccumulatorRefs } from './useWorkoutMetrics';
 
 // --- Goal-reached celebration message (dynamisch per doeltype) ---
@@ -52,7 +50,6 @@ export function useGoalProgress(
   const [goalReached, setGoalReached] = useState(false);
 
   // Refs
-  const pulseAnim = useRef(new Animated.Value(1)).current;
   const goalReachedRef = useRef(false);
   const milestonesHit = useRef(new Set<string>());
   const lastSplitDistance = useRef(0);
@@ -94,18 +91,6 @@ export function useGoalProgress(
         : 0,
     });
   }, [goal, seconds, distanceMeters, splitSeconds, refs]);
-
-  const isCountdown = useMemo(
-    () => goalProgress != null && goalProgress.percentage >= 90 && !goalProgress.reached,
-    [goalProgress],
-  );
-
-  const paceZone = useMemo((): PaceZoneLevel | null => {
-    if (!goal || (goal.type !== 'split' && goal.type !== 'watts')) return null;
-    if (refs.tickCount.current < 5) return null;
-    if (goal.type === 'split') return getPaceZone(avgSplit, goal.target, true);
-    return getPaceZone(goal.target, avgWatts, false);
-  }, [goal, avgSplit, avgWatts, refs]);
 
   // --- Fetch personal records ---
   const fetchPRs = useCallback(async () => {
@@ -184,35 +169,6 @@ export function useGoalProgress(
   // — dezelfde getallen die de gebruiker in de samenvatting ziet, en de enige plek waar
   // ook de exacte 2000m bekend is.
 
-  // --- Countdown pulse animation ---
-  useEffect(() => {
-    if (phase !== 'active' || !goal || !goalProgress) {
-      pulseAnim.setValue(1);
-      return;
-    }
-
-    if (goalProgress.percentage >= 90 && !goalProgress.reached) {
-      const loop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 0.4,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-      loop.start();
-      return () => loop.stop();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [phase, goal, goalProgress]); // pulseAnim is stable ref, excluded from deps
-
   // --- Dismiss callbacks ---
   const dismissToast = useCallback(() => setToastMsg(null), []);
 
@@ -239,14 +195,11 @@ export function useGoalProgress(
     toastMsg,
     splits,
     goalReached,
-    pulseAnim,
     // Computed
     avgWatts,
     avgSpm,
     avgSplit,
     goalProgress,
-    isCountdown,
-    paceZone,
     // Actions
     dismissToast,
     fetchPRs,

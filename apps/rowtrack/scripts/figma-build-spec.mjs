@@ -853,6 +853,13 @@ async function meet(storyId, args, herladen = false) {
   await page.goto(`http://localhost:${poort}/iframe.html?id=${storyId}&viewMode=story${q}`,
     { waitUntil: 'networkidle', timeout: 20000 });
   await page.waitForTimeout(120);
+  // Een story met een `play` is ná `networkidle` nog niet in zijn eindvorm: de foutvorm van de
+  // auth-schermen ontstaat pas ná een submit, en die duurt langer dan deze 120 ms. De
+  // preview-decorator zet `data-play="wacht"` zodra een story een play heeft, de play zet hem
+  // op "klaar". Zonder dit venster meet de walker het lege formulier en is de story er voor
+  // niets — een meting die het verkeerde moment vastlegt, zonder één foutmelding.
+  await page.waitForFunction(() => document.documentElement.dataset.play !== 'wacht', null, { timeout: 10000 })
+    .catch(() => { throw new Error(`play van ${storyId} werd niet "klaar" binnen 10 s — de spec zou de vorm van vóór de play vastleggen`); });
   // `parameters.toestel` staat NIET in index.json — Storybook indexeert alleen titel, naam en
   // tags. Hij is dus pas ná het laden te lezen, en een story die kantelt kost daarom één extra
   // laadbeurt. Alleen de landscape-story betaalt die: portret is al het standaard-viewport.

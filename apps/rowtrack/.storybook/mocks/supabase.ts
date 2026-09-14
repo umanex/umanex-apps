@@ -30,6 +30,20 @@ export type SupabaseStoryData = {
   session?: boolean | { id?: string; email?: string };
   /** Rijen per tabelnaam. Wat er niet in staat, blijft `null`. */
   tabellen?: Record<string, unknown[]>;
+  /**
+   * Laat de auth-aanroepen falen, zodat de FOUTVORM van een auth-scherm een render-pad krijgt.
+   *
+   * De drie auth-schermen hadden tot 2026-09-14 alleen een leeg formulier als story: hun
+   * tweede zichtbare vorm zit in `useState` ná een submit, en die is van buitenaf niet te
+   * zetten. Met deze vlag plus een `play` die het formulier invult en verstuurt, doorloopt de
+   * story de ÉCHTE foutweg van het scherm — geen prop, geen `__DEV__`-tak, geen productiecode
+   * die van stories weet.
+   *
+   * De status hoort erbij: `isOfflineAuthError` in `lib/auth.ts` leest `status === undefined`
+   * als "verzoek nooit aangekomen", dus een foutobject zonder status levert altijd de
+   * offline-zin op — ook wanneer je de inhoudelijke fout wilde tonen (gemeten).
+   */
+  authFout?: 'ongeldig' | 'bestaat-al' | 'offline';
 };
 
 let data: SupabaseStoryData = {};
@@ -38,6 +52,22 @@ let data: SupabaseStoryData = {};
 export function __setSupabaseData(d: SupabaseStoryData | undefined) {
   data = d ?? {};
 }
+
+/**
+ * De drie auth-fouten, in de vorm die GoTrue echt teruggeeft. Zonder `authFout` slaagt de
+ * aanroep met een lege uitkomst: geen enkele bestaande story verstuurt een formulier, dus dat
+ * verandert aan geen enkele render iets.
+ */
+const AUTH_FOUTEN = {
+  ongeldig: { name: 'AuthApiError', status: 400, code: 'invalid_credentials', message: 'Invalid login credentials' },
+  'bestaat-al': { name: 'AuthApiError', status: 400, code: 'user_already_exists', message: 'User already registered' },
+  offline: { name: 'AuthRetryableFetchError', status: 0, message: 'Failed to fetch' },
+} as const;
+
+const authAntwoord = async () => ({
+  data: { user: null, session: null },
+  error: data.authFout ? AUTH_FOUTEN[data.authFout] : null,
+});
 
 const gebruiker = () => {
   if (!data.session) return null;
@@ -85,5 +115,8 @@ export const supabase: any = {
     getUser: async () => ({ data: { user: gebruiker() }, error: null }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     signOut: async () => ({ error: null }),
+    signInWithPassword: async () => authAntwoord(),
+    signUp: async () => authAntwoord(),
+    resetPasswordForEmail: async () => authAntwoord(),
   },
 };

@@ -207,6 +207,10 @@ export const nl = {
       kpiWatt: 'Watt',
       kpiSpm: 'SPM',
       kpiBpm: 'BPM',
+      // De BPM-rij is de enige tikbare KPI-rij en zag er tot 2026-09-14 uit als alle andere
+      // (UX-audit 2026-07-16, F15). Deze tekst staat op de waardeplek in plaats van "—", en
+      // alleen zolang tikken werkelijk een scan start.
+      kpiBpmVerbind: 'Verbind',
       kpiDistance: 'Totale afstand',
       kpiTime: 'Tijd',
       kpiKcal: 'Totale kcal',
@@ -222,6 +226,9 @@ export const nl = {
       statWatt: 'WATT',
       statSpm: 'SPM',
       statBpm: 'BPM',
+      // Het sterretje staat achter kcal zodra er geen profielgewicht is; zonder deze regel
+      // legt niets in de app uit wat het betekent (UX-audit 2026-07-16, F19).
+      kcalSchatting: '* Schatting op een standaardgewicht. Vul je gewicht in bij je profiel.',
     },
     celebration: {
       title: 'Doel bereikt!',

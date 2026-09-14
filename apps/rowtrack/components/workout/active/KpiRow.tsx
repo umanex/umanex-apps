@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { border, fg, fontFamily, fontSize } from '@/constants';
+import { accent, border, fg, fontFamily, fontSize } from '@/constants';
 import { variantData } from '@/lib/variantData';
 
 export type KpiRowProps = {
@@ -13,7 +13,14 @@ export type KpiRowProps = {
   fill?: boolean;
   /** Hairline onder de rij. De laatste rij van een lijst heeft er geen. */
   divider?: boolean;
-  /** Zonder handler is de rij een gewone View — geen lege raakzone en geen a11y-knop. */
+  /**
+   * Zonder handler is de rij een gewone View — geen lege raakzone en geen a11y-knop.
+   *
+   * MÉT handler, en zolang hij niet `disabled` is, krijgt de waarde de accentrol. De BPM-rij
+   * was tot 2026-09-14 de enige tikbare rij en visueel niet van de andere te onderscheiden
+   * (UX-audit 2026-07-16, F15): tikken was een gok. De affordance hangt dus aan exact dezelfde
+   * conditie als het gedrag, en niet aan een losse prop die daarvan kan afdrijven.
+   */
   onPress?: () => void;
   disabled?: boolean;
   /** Toont een spinner in plaats van de waarde. Alleen zinvol op een tikbare rij. */
@@ -29,10 +36,13 @@ export type KpiRowProps = {
  */
 export function KpiRow({ label, value, fill = false, divider = false, onPress, disabled = false, loading = false }: KpiRowProps) {
   const stijl = [styles.kpiRow, fill ? styles.kpiRowFill : styles.kpiRowFixed, divider && styles.kpiRowDivider];
+  const tikbaar = !!onPress && !disabled;
   const inhoud = (
     <>
       <Text style={styles.kpiLabel}>{label}</Text>
-      {loading ? <ActivityIndicator size="small" color={fg.secondary} /> : <Text style={styles.kpiValue}>{value}</Text>}
+      {loading
+        ? <ActivityIndicator size="small" color={fg.secondary} />
+        : <Text style={[styles.kpiValue, tikbaar && styles.kpiValueTikbaar]}>{value}</Text>}
     </>
   );
   const variant = variantData({ fill, divider, disabled, loading });
@@ -72,5 +82,10 @@ const styles = StyleSheet.create({
     fontSize: fontSize['28'],
     letterSpacing: -0.7, // -2.5% van 28
     color: fg.primary,
+  },
+  // Alleen de kleurrol verandert: maat en gewicht blijven die van elke andere waarde, zodat
+  // de rij in het raster blijft staan en er geen tweede typografische vorm bijkomt.
+  kpiValueTikbaar: {
+    color: accent.default,
   },
 });

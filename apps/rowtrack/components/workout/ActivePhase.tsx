@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Modal,
-  Animated,
   useWindowDimensions,
   StyleSheet,
 } from 'react-native';
@@ -22,7 +21,7 @@ import { SummaryTitle } from './active/SummaryTitle';
 import { ProgressBar, type FillKind } from './active/ProgressBar';
 import { HeroPanel, type HeroSubtitle } from './active/HeroPanel';
 import { MotivationalToast } from '@/components/workout';
-import type { PaceZoneLevel, SplitEntry } from '@/components/workout';
+import type { SplitEntry } from '@/types/workout';
 import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatInt, formatDecimal, correctSpm } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import type { PrEntry } from '@/lib/personalRecords';
@@ -44,13 +43,10 @@ type ActivePhaseProps = {
   bleError: string | null;
   startScan: () => void;
   goal: WorkoutGoal | null;
-  isCountdown: boolean;
-  paceZone: PaceZoneLevel | null;
   toastMsg: string | null;
   splits: SplitEntry[];
   /** De records die deze rit brak, met de waarde die ze vervingen. Leeg = geen record. */
   prEntries: readonly PrEntry[];
-  pulseAnim: Animated.Value;
   avgWatts: number;
   avgSpm: number;
   avgSplit: number;
@@ -236,6 +232,10 @@ export function ActivePhase({
   type KPIKey = 'SPLIT' | 'WATT' | 'SPM' | 'BPM' | 'AFSTAND' | 'TIJD' | 'KCAL';
   function renderKpiList(fill: boolean): ReactNode {
     const goalType = goal?.type ?? null;
+    // Eén bron voor "tikken doet iets": de rij is alleen tikbaar zolang er geen band hangt en
+    // er geen scan loopt. Zowel de `disabled`-prop als de tekst hieronder leest hem, zodat de
+    // affordance niet van het gedrag kan afdrijven.
+    const bpmTikbaar = hrStatus !== 'connected' && hrStatus !== 'scanning' && hrStatus !== 'waiting';
 
     let kpiOrder: KPIKey[];
     switch (goalType) {
@@ -276,7 +276,11 @@ export function ActivePhase({
         case 'SPLIT': return formatSplit(Math.round(splitDisplay), true);
         case 'WATT': return `${Math.round(wattsDisplay)}`;
         case 'SPM': return `${correctSpm(spmDisplay, spmHalved)}`;
-        case 'BPM': return hrBpm != null && hrBpm > 0 ? `${hrBpm}` : '—';
+        // Zonder band staat er geen '—' maar wat een tik doet. '—' leest als "geen data" en
+        // verbergt dat deze rij de enige weg naar een hartslagband is (F15).
+        case 'BPM':
+          if (hrBpm != null && hrBpm > 0) return `${hrBpm}`;
+          return bpmTikbaar ? t.workout.active.kpiBpmVerbind : '—';
         case 'AFSTAND': return `${formatInt(distanceMeters)} ${t.units.meter}`;
         case 'TIJD': return formattedTimer;
         case 'KCAL': return `${formatInt(calories)}${hasProfileWeight ? '' : '*'}`;
@@ -301,7 +305,7 @@ export function ActivePhase({
                 divider={divider}
                 loading={hrStatus === 'scanning'}
                 onPress={startHRScan}
-                disabled={hrStatus === 'connected' || hrStatus === 'scanning' || hrStatus === 'waiting'}
+                disabled={!bpmTikbaar}
               />
             );
           }
@@ -431,7 +435,13 @@ export function ActivePhase({
       ) : null}
 
       {/* Summary Modal — volle-breedte secties (Figma 43-8278) */}
-      <Modal visible={phase === 'summary'} transparent animationType="fade" statusBarTranslucent>
+      {/*
+        Android-back doet hetzelfde als "Ga verder": dat is de enige uitgang die dit scherm
+        heeft, dus zonder `onRequestClose` negeert Android de terugknop en leest de
+        samenvatting als een scherm waar je vastzit (UX-audit 2026-07-16, F16). Niet stil
+        sluiten zonder `onContinue`: die handler sluit de rit af.
+      */}
+      <Modal visible={phase === 'summary'} transparent animationType="fade" statusBarTranslucent onRequestClose={onContinue}>
         <View style={summaryStyles.screen}>
           {/* Top: titel + datum + PR-banner */}
           <View style={summaryStyles.topSection}>
@@ -445,6 +455,9 @@ export function ActivePhase({
 
           {/* KPI-metrics — volle-breedte bg.raised band */}
           <SummaryKpiBand
+            // De voetnoot volgt exact dezelfde conditie als het sterretje hieronder: staat er
+            // geen sterretje, dan legt de regel niets uit en hoort hij er niet.
+            voetnoot={hasProfileWeight ? undefined : t.workout.summary.kcalSchatting}
             kpis={[
               { value: formattedDistance.value, unit: formattedDistance.unit, label: t.workout.summary.kpiDistance },
               { value: formatTimerFull(seconds), label: t.workout.summary.kpiDuration },

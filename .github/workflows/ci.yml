@@ -46,7 +46,7 @@ jobs:
           cp "$F" "$K" || { echo "::error::kopie mislukt"; exit 1; }
           printf '\nconst tegenproef: number = "dit is geen getal";\nconsole.log(tegenproef);\n' >> "$K"
           echo "--- de kopie, laatste regels ---"; tail -3 "$K"
-          out=$(deno check "$K" 2>&1)
+          out=$(deno check --config apps/rowtrack/supabase/functions/deno.json "$K" 2>&1)
           rc=$?
           rm -f "$K"
           echo "--- deno check (exit $rc) ---"
@@ -61,8 +61,12 @@ jobs:
           fi
           echo "ok — de tegenproef gaat af op de type-fout zelf."
 
+      # `--config` expliciet: deno zoekt zijn deno.json vanaf de WERKMAP, niet vanaf het
+      # bestand dat je checkt. Gemeten in run 34854872034: met de config op zijn plek naast de
+      # functie, maar zonder deze vlag, bleef hij de monorepo-node_modules gebruiken en gaf
+      # exact dezelfde fout als daarvóór.
       - name: deno check op de echte functie
-        run: deno check apps/rowtrack/supabase/functions/delete-account/index.ts
+        run: deno check --config apps/rowtrack/supabase/functions/deno.json apps/rowtrack/supabase/functions/delete-account/index.ts
 
   ci:
     name: Type-check, lint, build

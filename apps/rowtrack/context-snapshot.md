@@ -70,20 +70,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b0e33f4 ci(rowtrack): type-check the Edge Function, and stop the spinner from rewriting the spec
 84fbe8b fix(rowtrack): an empty ride is no longer a ride, and every average proves its own denominator
 b43a7df docs(rowtrack): the vite bump answers the storybook item, and one item gets an honest title
 280c508 Merge origin/main into chore/rowtrack-vite-en-expo-patches
 b976f9c chore(rowtrack): vite 8.3.0 and the three Expo patches that were within reach
-8a91851 docs(rowtrack): relevance-check the ten newly triaged items before any of them is built
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/figma/beeld-verschillen.json
-  M  apps/rowtrack/figma/build-spec.min.json
-  M  apps/rowtrack/figma/niet-reproduceerbaar.json
-  M  apps/rowtrack/scripts/figma-build-spec.mjs
-  M  apps/rowtrack/scripts/instance-tekst.mjs
+  M  apps/rowtrack/CLAUDE.md
+  M  apps/rowtrack/figma/manifest.json
 
 ## Bestanden met TODO/FIXME
   (geen)

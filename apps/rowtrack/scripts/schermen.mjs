@@ -18,13 +18,12 @@
  */
 export const SCHERMEN = {
   ActivePhase: {
-    // BEWUST GEEN 'Samenvatting Zonder Gewicht', hoewel die story bestaat. De walker loopt
-    // `#storybook-root`, en een react-native-web `<Modal>` rendert in een eigen div direct
-    // onder `body` — gemeten 2026-09-14. Het frame 'Samenvatting' bevat daardoor niet de
-    // samenvatting maar het active-scherm eronder, en een tweede frame zou dus een exacte
-    // kopie van dat verkeerde beeld zijn. Zie het BACKLOG-item van 2026-09-14 over de
-    // portal-blinde vlek; zodra die dicht is, hoort dit frame er alsnog bij (F19).
-    frames: ['Playground', 'Doel Afstand', 'Zonder Hartslagband', 'Doel Bereikt', 'Samenvatting', 'Landscape'],
+    // 'Samenvatting Zonder Gewicht' erbij op 2026-09-14: het enige frame met het sterretje
+    // achter kcal, en dus het enige waarin de legende eronder te zien is (UX-audit
+    // 2026-07-16, F19). De inhoud komt uit de OVERLAY van dat frame, niet uit de boom — een
+    // react-native-web `<Modal>` portaleert buiten `#storybook-root` en de walker zet hem
+    // sinds 2026-09-08 als aparte overlay naast de schermboom.
+    frames: ['Playground', 'Doel Afstand', 'Zonder Hartslagband', 'Doel Bereikt', 'Samenvatting', 'Samenvatting Zonder Gewicht', 'Landscape'],
     reden: 'schermcompositie — bleStatus × hrStatus × phase × hasProfileWeight zou 160 nodes eisen voor één scherm, en die assen zijn in beeld niet orthogonaal; hoort in RowTrack - Design op Screens v2',
   },
   IdlePhase: {

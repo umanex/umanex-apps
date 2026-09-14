@@ -9,19 +9,19 @@
    "story": "componenten-activephase--doel-bereikt",
    "W": 430,
    "H": 932,
-   "zicht": 9.34,
-   "grof": 6.09,
-   "tekst": 2.35,
-   "overig": 3.74,
-   "heet": 131,
+   "zicht": 9.33,
+   "grof": 6.07,
+   "tekst": 2.4,
+   "overig": 3.67,
+   "heet": 129,
    "blokken": 1034,
    "plaatsen": [
-    "20,0",
-    "100,0",
-    "140,0",
+    "260,0",
+    "300,0",
+    "400,0",
+    "420,0",
     "100,40",
-    "120,40",
-    "20,60"
+    "120,40"
    ],
    "iconenGemaskeerd": 2
   },
@@ -131,6 +131,27 @@
    "iconenGemaskeerd": 1
   },
   {
+   "bestand": "ActivePhase__Zonder-Hartslagband.figma.png",
+   "story": "componenten-activephase--zonder-hartslagband",
+   "W": 430,
+   "H": 932,
+   "zicht": 3.84,
+   "grof": 2.94,
+   "tekst": 2.91,
+   "overig": 0.03,
+   "heet": 48,
+   "blokken": 1034,
+   "plaatsen": [
+    "100,40",
+    "120,40",
+    "140,40",
+    "320,40",
+    "120,200",
+    "140,200"
+   ],
+   "iconenGemaskeerd": 1
+  },
+  {
    "bestand": "ActivePhase__Landscape.figma.png",
    "story": "componenten-activephase--landscape",
    "W": 932,
@@ -192,27 +213,6 @@
     "0,40"
    ],
    "iconenGemaskeerd": 5
-  },
-  {
-   "bestand": "ActivePhase__Zonder-Hartslagband.figma.png",
-   "story": "componenten-activephase--zonder-hartslagband",
-   "W": 430,
-   "H": 932,
-   "zicht": 3.6,
-   "grof": 2.71,
-   "tekst": 2.69,
-   "overig": 0.03,
-   "heet": 43,
-   "blokken": 1034,
-   "plaatsen": [
-    "100,40",
-    "120,40",
-    "140,40",
-    "320,40",
-    "120,200",
-    "140,200"
-   ],
-   "iconenGemaskeerd": 1
   },
   {
    "bestand": "ActivePhase__Doel-Afstand.figma.png",

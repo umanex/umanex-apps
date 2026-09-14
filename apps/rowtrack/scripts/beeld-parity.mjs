@@ -285,19 +285,30 @@ const ZONDER_RATEL = { 'ActivePhase__Doel-Bereikt': 'confetti wordt per render g
  * krijgt dus zijn eigen sectie, en een platform zonder sectie is een fout en geen overslaan.
  */
 const leesBasislijn = () => (existsSync(BASISLIJN_PAD) ? JSON.parse(readFileSync(BASISLIJN_PAD, 'utf8')) : null);
-const gemetenOverig = () => Object.fromEntries(rijen.filter((r) => !r.fout).map((r) => [r.bestand.replace(/\.figma\.png$/, ''), r.overig]));
+/**
+ * Per frame BEIDE emmers. Alleen `overig` ratelen was een gat, en het is er op de dag zelf
+ * doorheen gelopen: de BPM-rij kreeg het woord "Verbind" waar "—" stond, het frame ging van
+ * 2,71 naar 2,94 % grof — en de ratel zweeg, want die 0,23 zat volledig in `tekst`. Een
+ * tekstWIJZIGING is geen engine-ruis; de reden om niet op de SOM te ratelen was dat één getal
+ * over 24 frames niets lokaliseert, niet dat tekst onmeetbaar zou zijn. Gemeten over drie
+ * runs: `tekst` beweegt op 3 van de 24 frames, maximaal 0,02 buiten het frame dat toch al
+ * geen ratel draagt — ruim binnen dezelfde tolerantie.
+ */
+const gemetenWaarden = () => Object.fromEntries(rijen.filter((r) => !r.fout)
+  .map((r) => [r.bestand.replace(/\.figma\.png$/, ''), { tekst: r.tekst, overig: r.overig }]));
 
 if (SCHRIJF_BASISLIJN) {
-  const overig = gemetenOverig();
+  const waarden = gemetenWaarden();
   const bestaand = leesBasislijn();
-  const platformen = { ...(bestaand?.platformen ?? {}), [process.platform]: { gemeten: new Date().toISOString().slice(0, 10), overig } };
+  const platformen = { ...(bestaand?.platformen ?? {}), [process.platform]: { gemeten: new Date().toISOString().slice(0, 10), waarden } };
   writeFileSync(BASISLIJN_PAD, JSON.stringify({
-    $comment: 'GESCHREVEN door `beeld-parity.mjs --schrijf-basislijn`. Per frame het `overig`-percentage: het grove '
-      + 'verschil buiten de tekstgebieden. PLATFORM-GEBONDEN, want de getallen komen uit de fontrendering van de '
-      + 'machine die meet — schrijf een sectie op elk doelwit waar de guard draait.',
+    $comment: 'GESCHREVEN door `beeld-parity.mjs --schrijf-basislijn`. Per frame twee emmers: `tekst` (grof '
+      + 'verschil BINNEN een tekstgebied van de browser-render) en `overig` (daarbuiten). PLATFORM-GEBONDEN, want '
+      + 'de getallen komen uit de fontrendering van de machine die meet — schrijf een sectie op elk doelwit waar '
+      + 'de guard draait.',
     schaal: SCHAAL, tolerantie: TOLERANTIE, platformen,
   }, null, 1) + '\n');
-  console.log(`\nbasislijn geschreven: ${Object.keys(overig).length} frames onder "${process.platform}" -> figma/beeld-basislijn.json`);
+  console.log(`\nbasislijn geschreven: ${Object.keys(waarden).length} frames onder "${process.platform}" -> figma/beeld-basislijn.json`);
   await browser.close(); server.close();
   process.exit(0);
 }
@@ -305,18 +316,18 @@ if (SCHRIJF_BASISLIJN) {
 let ratelFout = 0;
 if (GEEN_RATEL) {
   console.log('\n  ratel overgeslagen (--geen-ratel): dit is een rapport en geen poort.');
-} else if (!leesBasislijn()?.platformen?.[process.platform]) {
+} else if (!leesBasislijn()?.platformen?.[process.platform]?.waarden) {
   console.error(`\n  GEEN BASISLIJN voor platform "${process.platform}" — deze run meet wel, maar toetst niets.`);
   console.error('  Draai `beeld-parity.mjs --schrijf-basislijn` op dit platform; een run zonder basislijn is een fout en geen overslaan.');
   ratelFout = 1;
 } else {
   const basis = leesBasislijn().platformen[process.platform];
-  const gemeten = gemetenOverig();
+  const gemeten = gemetenWaarden();
   const afwijkingen = [];
   // De NOEMER eerst: een frame dat wegvalt haalt zijn getal uit de vergelijking en dat leest
   // als winst. Een frame erbij is geen fout, maar wel een basislijn die hem niet kent.
-  const weg = Object.keys(basis.overig).filter((k) => !(k in gemeten));
-  const erbij = Object.keys(gemeten).filter((k) => !(k in basis.overig));
+  const weg = Object.keys(basis.waarden).filter((k) => !(k in gemeten));
+  const erbij = Object.keys(gemeten).filter((k) => !(k in basis.waarden));
   if (weg.length) afwijkingen.push(`${weg.length} frame(s) uit de basislijn niet gemeten: ${weg.join(', ')}`);
   if (erbij.length) afwijkingen.push(`${erbij.length} nieuw frame(s) zonder basislijn: ${erbij.join(', ')} — draai --schrijf-basislijn`);
   // De uitsluiting mag niet stil verrotten: staat er een naam in die niet meer bestaat, dan
@@ -326,10 +337,12 @@ if (GEEN_RATEL) {
   }
   for (const [naam, waarde] of Object.entries(gemeten)) {
     if (naam in ZONDER_RATEL) continue;
-    const b = basis.overig[naam];
+    const b = basis.waarden[naam];
     if (b === undefined) continue;
-    if (waarde > b + TOLERANTIE) afwijkingen.push(`${naam}: overig ${waarde}% tegen basislijn ${b}% — regressie`);
-    else if (waarde < b - TOLERANTIE) afwijkingen.push(`${naam}: overig ${waarde}% tegen basislijn ${b}% — winst, leg hem vast met --schrijf-basislijn`);
+    for (const emmer of ['tekst', 'overig']) {
+      if (waarde[emmer] > b[emmer] + TOLERANTIE) afwijkingen.push(`${naam}: ${emmer} ${waarde[emmer]}% tegen basislijn ${b[emmer]}% — regressie`);
+      else if (waarde[emmer] < b[emmer] - TOLERANTIE) afwijkingen.push(`${naam}: ${emmer} ${waarde[emmer]}% tegen basislijn ${b[emmer]}% — winst, leg hem vast met --schrijf-basislijn`);
+    }
   }
   if (afwijkingen.length) {
     console.error(`\n  RATEL — ${afwijkingen.length} afwijking(en) van figma/beeld-basislijn.json [${process.platform}, gemeten ${basis.gemeten}], tolerantie ${TOLERANTIE}:`);
@@ -338,7 +351,7 @@ if (GEEN_RATEL) {
   } else {
     const uitgesloten = Object.keys(ZONDER_RATEL).filter((k) => k in gemeten);
     console.log(`\n  ok — ${Object.keys(gemeten).length - uitgesloten.length} van ${Object.keys(gemeten).length} frames op de basislijn (tolerantie ${TOLERANTIE}).`);
-    uitgesloten.forEach((k) => console.log(`     zonder ratel: ${k} — ${ZONDER_RATEL[k]} (gemeten ${gemeten[k]}%)`));
+    uitgesloten.forEach((k) => console.log(`     zonder ratel: ${k} — ${ZONDER_RATEL[k]} (gemeten tekst ${gemeten[k].tekst}%, overig ${gemeten[k].overig}%)`));
   }
 }
 

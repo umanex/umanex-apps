@@ -86,8 +86,12 @@ const SELFTEST = process.argv.includes('--selftest');
  * meetmoment afhangt. Een ratel eromheen zou één op de drie runs vals alarm slaan, en een
  * wachter die dat doet leer je negeren.
  */
-const BEKEND = { stories: 42, randkleur: 0, metRand: 226, placeholder: 4, gescrold: 11,
-  overloop: 0, inline: 3, centerRight: 32, marge: 40 };
+// Bijgesteld 2026-09-14: de noemer ging van 42 naar 46 schermstories — drie auth-schermen
+// kregen een `Met Fout` en ActivePhase een `Samenvatting Zonder Gewicht`. Geen enkele teller
+// hieronder is een NIEUWE klasse; het zijn dezelfde klassen over meer stories (metRand +19,
+// inline +3 — één per foutmelding, centerRight +13, marge +7).
+const BEKEND = { stories: 46, randkleur: 0, metRand: 245, placeholder: 4, gescrold: 11,
+  overloop: 0, inline: 6, centerRight: 45, marge: 47 };
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.map': 'application/json' };
 

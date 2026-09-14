@@ -1,35 +1,107 @@
 {
- "$comment": "GESCHREVEN door `beeld-parity.mjs --schrijf-basislijn`. Per frame het `overig`-percentage: het grove verschil buiten de tekstgebieden. PLATFORM-GEBONDEN, want de getallen komen uit de fontrendering van de machine die meet — schrijf een sectie op elk doelwit waar de guard draait.",
+ "$comment": "GESCHREVEN door `beeld-parity.mjs --schrijf-basislijn`. Per frame twee emmers: `tekst` (grof verschil BINNEN een tekstgebied van de browser-render) en `overig` (daarbuiten). PLATFORM-GEBONDEN, want de getallen komen uit de fontrendering van de machine die meet — schrijf een sectie op elk doelwit waar de guard draait.",
  "schaal": 1,
  "tolerantie": 0.1,
  "platformen": {
   "darwin": {
    "gemeten": "2026-09-14",
-   "overig": {
-    "ActivePhase__Doel-Bereikt": 3.63,
-    "ForgotPasswordScreen__Playground": 2.05,
-    "RegisterScreen__Playground": 1.84,
-    "WorkoutDetailScreen__Playground": 0.45,
-    "WorkoutDetailScreen__Zonder-Hartslag": 0.43,
-    "LoginScreen__Playground": 1.03,
-    "ActivePhase__Landscape": 0.03,
-    "ActivePhase__Playground": 0.03,
-    "HistoryScreen__Playground": 0.05,
-    "ActivePhase__Zonder-Hartslagband": 0.03,
-    "ActivePhase__Doel-Afstand": 0.07,
-    "IdlePhase__Doel-Afstand": 0.77,
-    "IdlePhase__Playground": 0.87,
-    "IdlePhase__Niet-Verbonden": 0.87,
-    "ProfileScreen__Playground": 0.2,
-    "ProfileScreen__Zonder-Gewicht": 0.2,
-    "ProfileScreen__Onvolledig": 0.2,
-    "ActivePhase__Samenvatting": 0.33,
-    "IdlePhase__Toestel-Keuze": 0.54,
-    "HistoryScreen__Een-Record": 0.02,
-    "HistoryScreen__Leeg": 0,
-    "WorkoutDetailScreen__Niet-Gevonden": 0,
-    "ResetPasswordScreen__Met-Link": 0.02,
-    "ResetPasswordScreen__Playground": 0.02
+   "waarden": {
+    "ActivePhase__Doel-Bereikt": {
+     "tekst": 2.27,
+     "overig": 3.79
+    },
+    "ForgotPasswordScreen__Playground": {
+     "tekst": 2.72,
+     "overig": 2.05
+    },
+    "RegisterScreen__Playground": {
+     "tekst": 2.67,
+     "overig": 1.84
+    },
+    "WorkoutDetailScreen__Playground": {
+     "tekst": 3.13,
+     "overig": 0.45
+    },
+    "WorkoutDetailScreen__Zonder-Hartslag": {
+     "tekst": 2.95,
+     "overig": 0.43
+    },
+    "LoginScreen__Playground": {
+     "tekst": 2.07,
+     "overig": 1.03
+    },
+    "ActivePhase__Zonder-Hartslagband": {
+     "tekst": 2.91,
+     "overig": 0.03
+    },
+    "ActivePhase__Landscape": {
+     "tekst": 2.78,
+     "overig": 0.03
+    },
+    "ActivePhase__Playground": {
+     "tekst": 2.77,
+     "overig": 0.03
+    },
+    "HistoryScreen__Playground": {
+     "tekst": 2.71,
+     "overig": 0.05
+    },
+    "ActivePhase__Doel-Afstand": {
+     "tekst": 2.5,
+     "overig": 0.07
+    },
+    "IdlePhase__Doel-Afstand": {
+     "tekst": 1.3,
+     "overig": 0.77
+    },
+    "IdlePhase__Playground": {
+     "tekst": 1.09,
+     "overig": 0.87
+    },
+    "IdlePhase__Niet-Verbonden": {
+     "tekst": 1.03,
+     "overig": 0.87
+    },
+    "ProfileScreen__Playground": {
+     "tekst": 1.62,
+     "overig": 0.2
+    },
+    "ProfileScreen__Zonder-Gewicht": {
+     "tekst": 1.62,
+     "overig": 0.2
+    },
+    "ProfileScreen__Onvolledig": {
+     "tekst": 1.59,
+     "overig": 0.2
+    },
+    "ActivePhase__Samenvatting": {
+     "tekst": 1.33,
+     "overig": 0.33
+    },
+    "IdlePhase__Toestel-Keuze": {
+     "tekst": 1.1,
+     "overig": 0.54
+    },
+    "HistoryScreen__Een-Record": {
+     "tekst": 1.56,
+     "overig": 0.02
+    },
+    "HistoryScreen__Leeg": {
+     "tekst": 1.45,
+     "overig": 0
+    },
+    "WorkoutDetailScreen__Niet-Gevonden": {
+     "tekst": 0.51,
+     "overig": 0
+    },
+    "ResetPasswordScreen__Met-Link": {
+     "tekst": 0,
+     "overig": 0.02
+    },
+    "ResetPasswordScreen__Playground": {
+     "tekst": 0,
+     "overig": 0.02
+    }
    }
   },
   "linux": {
@@ -54,10 +126,10 @@
     "IdlePhase__Playground": 0.87,
     "HistoryScreen__Een-Record": 0.03,
     "IdlePhase__Niet-Verbonden": 0.87,
-    "HistoryScreen__Leeg": 0.0,
+    "HistoryScreen__Leeg": 0,
     "ActivePhase__Samenvatting": 0.33,
     "IdlePhase__Toestel-Keuze": 0.27,
-    "WorkoutDetailScreen__Niet-Gevonden": 0.0,
+    "WorkoutDetailScreen__Niet-Gevonden": 0,
     "ResetPasswordScreen__Met-Link": 0.02,
     "ResetPasswordScreen__Playground": 0.02
    }

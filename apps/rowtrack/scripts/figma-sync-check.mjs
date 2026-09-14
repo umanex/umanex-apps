@@ -103,7 +103,9 @@ const NIET_VISUEEL = {
 // `typeStyles.sectionValue` en `typeStyles.buttonPrimary`. Wat overblijft is één gat dat een
 // écht ontbrekende token is: AlbertSans_600SemiBold 16px met 20 % tracking (`heroLabel`, 14
 // nodes) — de 20 %-reeks bestaat op 13 en 11 px, maar niet op 16. Zie het BACKLOG-item.
-const BEKENDE_GATEN = 53;
+// 53 -> 51 op 2026-09-14: KPI.tsx, SectionHeader.tsx en SplitsList.tsx zijn verwijderd
+// (UX-audit F18) en namen twee ongebonden waarden mee die nergens anders voorkwamen.
+const BEKENDE_GATEN = 51;
 /** Voorkomens, niet alleen unieke waarden. De deduplicatie is app-breed, dus een nieuw gat dat
  *  een bekende waarde hergebruikt is in `aantalUniek` onzichtbaar. */
 // 2 257 -> 3 760 op 2026-09-09. Het aantal UNIEKE ongebonden waarden bleef 52: dit zijn
@@ -115,7 +117,11 @@ const BEKENDE_GATEN = 53;
 // gap en gradient lopen niet langs `styleRef`.
 // 3 792 -> 3 774: exact de 18 nodes die hun tekststijl terugkregen (14x Chip.value in Chip en
 // de vier IdlePhase-frames, 2x toast-titel, 2x toast-body).
-const BEKENDE_VOORKOMENS = 3774;   // 1996 + 148: DeviceSection heeft 40 variantcombinaties (bleStatus x hrStatus), dus elke ongebonden waarde in een toestelrij wordt nu 40 keer geteld in plaats van een handvol keer in het scherm
+// 3774 -> 3793 op 2026-09-14: de vier nieuwe schermstories brengen 19 extra VOORKOMENS van
+// waarden die al bekend waren — het aantal unieke ongebonden waarden daalde tegelijk van
+// 53 naar 51 door de drie verwijderde componenten. Twee assen, twee richtingen, en juist
+// daarom staan ze los: een gelijk uniek getal verbergt een gegroeid oppervlak.
+const BEKENDE_VOORKOMENS = 3793;   // 1996 + 148: DeviceSection heeft 40 variantcombinaties (bleStatus x hrStatus), dus elke ongebonden waarde in een toestelrij wordt nu 40 keer geteld in plaats van een handvol keer in het scherm
 /** Aandeel laagnamen dat uit de code komt (sleutel + gefold + componentnaam), in procent.
  *  Een ratel zoals BEKENDE_GATEN: dalen is een regressie, stijgen vraagt om bijstellen.
  *  Sinds 2026-09-08 over de APP-noemer: de 250 nodes die react-native-web zelf schrijft
@@ -142,7 +148,11 @@ const BEKENDE_VOORKOMENS = 3774;   // 1996 + 148: DeviceSection heeft 40 variant
 // 90,1 -> 90,0 door de zeven route-schermen (een grotere noemer: 355 app-nodes waarvan een
 // handvol op een structurele terugval landt, de kale Views in `profile`), en daarna -> 90,2
 // door de diepere kap: de nodes die daarbij zichtbaar werden dragen wél een eigen sleutel.
-const LAAGNAAM_DEKKING = 90.2;
+// 90.2 -> 90.1 op 2026-09-14. Géén regressie in de naamgeving: de vier nieuwe schermstories
+// (3x `Met Fout`, 1x `Samenvatting Zonder Gewicht`) brachten 108 nodes mee, waarvan 5 met
+// structurele terugval — 82 -> 87 op 3 715 -> 3 823 nodes. Nieuw oppervlak met een iets
+// hogere terugvalgraad, gemeten tegen de vorige laagnamen.json en niet afgeleid.
+const LAAGNAAM_DEKKING = 90.1;
 /**
  * Hoe vaak de HEURISTISCHE componentgrens nog vuurt — en dat is sinds 2026-09-09 NUL, want de
  * tak bestaat niet meer.
@@ -166,7 +176,7 @@ const BEKENDE_HEURISTIEK = 0;
  * `figma-sync-selftest.mjs` mikt precies hierop: hij strippt `component` van elke node en eist
  * dat dit getal instort.
  */
-const BEKENDE_GRENSNODES = 305;   // 243 + 61 uit de zeven route-schermen (elk declareert zijn eigen grens en gebruikt Button, FormField en ErrorMessage) + 1 door de tweede WorkoutCard-variant
+const BEKENDE_GRENSNODES = 337;   // 243 + 61 uit de zeven route-schermen (elk declareert zijn eigen grens en gebruikt Button, FormField en ErrorMessage) + 1 door de tweede WorkoutCard-variant
 /** Posities die `stabiliseer()` moest gladstrijken. `instabiel` is ná die pas gemeten en dus
  *  per constructie leeg — dit is de enige onafhankelijke maat voor dezelfde eigenschap. */
 const BEKENDE_INSTABIELE_POSITIES = 2;
@@ -729,7 +739,11 @@ else {
 // Een meldingenlijst zonder ratel is stilte met een teller. Tweezijdig, zoals [binding]: een
 // vermelding erbij is een nieuwe onvertaalbaarheid die iemand moet zien, een vermelding eraf is
 // winst die de constante moet volgen — anders groeit de speling waar het volgende gat in past.
-const BEKENDE_VERTAALREST = 31;
+// 31 -> 38 op 2026-09-14, en de zeven zijn bij naam gelezen in plaats van geteld: ze zitten
+// alle zeven in de drie nieuwe `Met Fout`-stories (Login 3, Register 2, Forgot 2) en komen
+// van de marge op `ErrorMessage`. Die ruimte overleeft de bouw naar Figma niet — dezelfde
+// klasse als de bestaande marge-blindvlek, op nieuw oppervlak.
+const BEKENDE_VERTAALREST = 38;
 {
   const specPad = join(APP, 'figma/build-spec.min.json');
   if (!existsSync(specPad)) sla('vertaalrest', 'geen figma/build-spec.min.json');

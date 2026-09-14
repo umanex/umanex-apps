@@ -162,10 +162,11 @@ function invariant(months: MonthData[], label: string) {
     // saldo. De pot alleen is €0 in precies de maanden waarin je er slecht voor staat,
     // want de opname is begrensd tot wat erin zit.
     // `uncovered` is dan hetzelfde getal met omgekeerd teken — de regel "Niet gedekt"
-      // was een tweede naam voor een negatieve positie, en is daarom uit de footer weg.
-      // Alleen zolang de pot zelf niet negatief staat: dat is een andere faalklasse
-    // (een betaling groter dan de pot, zie S10) en geen door de buffer gedekt tekort.
-    if (b.present && b.total > -0.005) {
+    // was een tweede naam voor een negatieve positie, en is daarom uit de footer weg.
+    // Tot 2026-09-14 stond hier de uitzondering "zolang de pot zelf niet negatief staat".
+    // Die kon weg toen de potstand een bodem kreeg: een pot kán niet meer negatief staan,
+    // dus een uitzondering ervoor zou vandaag alleen de vólgende zo'n pot verbergen.
+    if (b.present) {
       check(`${label} · positie == −niet gedekt ${m.monthKey}`, Math.min(b.position, 0), -b.uncovered);
     }
     // In de ankermaand is de kostenkop van de buffer de stand ná beweging (het banksaldo
@@ -173,14 +174,14 @@ function invariant(months: MonthData[], label: string) {
     // bufferstand. Dat is de reden dat de footer daar wél een stand mag tonen en géén
     // beweging: van de drie regels is alleen "Deze maand" op een andere grondslag.
     //
-    // Twee uitsluitingen, allebei een pre-existing defect uit `BACKLOG.md` en niet iets
-    // wat deze check mag wegdefiniëren: een pot die zelf negatief staat (S10, een betaling
-    // groter dan het potsaldo) en een cash-bijbetaling op de bufferpot (S19, waar
-    // `hasCashOverflow` het potsaldo op 0 zet terwijl de kostenkop de volle stand boekt —
-    // gemeten verschil €12.000). Zijn die twee opgelost, dan hoort deze check het zonder
-    // guard te doen: dát is hun acceptatietest.
-    const bufferCash = potten.some((p) => p.paymentsThisMonth.some((pay) => pay.fromCash > 0.005));
-    if (i === 0 && b.total > -0.005 && !bufferCash) {
+    // Hier stonden twee uitsluitingen, allebei een pre-existing defect uit `BACKLOG.md`: een
+    // pot die zelf negatief stond (S10, een betaling groter dan het potsaldo, verschil €200)
+    // en een cash-bijbetaling op de bufferpot (S19, waar de potstand op 0 ging terwijl de
+    // kostenkop de volle stand boekte, verschil €12.000). Beide zijn op 2026-09-14 bij de
+    // oorzaak opgelost — één geklemde potledger — en het wegvallen van deze guard ís hun
+    // acceptatietest. Komt hij ooit terug, dan is dat een regressie en geen reden voor een
+    // nieuwe uitzondering.
+    if (i === 0) {
       check(`${label} · anker: zichtbaar == bufferstand ${m.monthKey}`, zichtbaar, b.position);
     }
     // `movement` komt uit `netBurn` (stromen), de positie uit de potstand en de doorrol.
@@ -694,8 +695,11 @@ console.log('\nS19 — cash-bijbetaling op de bufferpot');
        invoiceAmount: 150, fromReservation: 100, fromCash: 50 }],
     [], [], [], [], 3,
   );
-  // De pot is met de cash-bijbetaling volledig benut: hij staat op 0 én rolt als 0 door,
-  // dus valt er in de maanden erna niets uit te lenen en blijft het tekort zichtbaar.
+  // Een cash-bijbetaling verschuift de betaalbron, ze leegt de pot niet. Van de €150 komt
+  // €100 uit de pot en €50 van de rekening; wat er daarna nog in zit, zit er nog in. Tot
+  // 2026-09-14 wiste de vlag `fromCash > 0` de hele pot — €50 cash woog daarmee zwaarder
+  // dan €12.100 stand. De potstand kan nu niet meer negatief zijn, en de bodem doet in
+  // het geval dat die nulzetting ooit moest dekken (opname == stand) hetzelfde werk.
   months.forEach((m) => {
     const p = bufferPot(m)!;
     checkBool(`S19 · potsaldo niet negatief in ${m.monthKey}`, p.potBalance >= -0.005, true);
@@ -705,9 +709,28 @@ console.log('\nS19 — cash-bijbetaling op de bufferpot');
       true,
     );
   });
-  check('S19 · pot leeg na de bijbetaling', bufferPot(months[0]!)!.potBalance, 0);
-  check('S19 · april dekt niets meer', bufferPot(months[1]!)!.autoContribution!, 0);
-  check('S19 · april toont het tekort', bufferPot(months[1]!)!.deficitUncovered, 1000);
+  // 2.800 opgebouwd + 9.300 uit de sweep − 100 betaald = 12.000, en dat is óók wat de
+  // kostenkop aanrekent. Vóór de fix stond hier 0 met een kop van 12.000 ernaast.
+  check('S19 · pot draagt de sweep', bufferPot(months[0]!)!.potBalance, 12000);
+  check('S19 · april leent uit de pot', bufferPot(months[1]!)!.autoContribution!, -1000);
+  check('S19 · april heeft geen tekort meer', bufferPot(months[1]!)!.deficitUncovered, 0);
+  // De tegenproef die het defect zelf draagt: dezelfde maand zonder cash-deel. Verschilt de
+  // positie, dan weegt de betaalbron weer mee in een getal waar alleen het bedrag telt.
+  {
+    const zonderCash = calculateMonths(
+      '2026-03', 10000,
+      [], [{ id: 'i1', monthKey: '2026-03', label: 'inkomen', amount: 3000, received: false }],
+      [{ id: 'r1', label: 'vast', amount: 1000, type: 'expense', frequency: 'monthly', startMonth: '2025-01' }],
+      [buf],
+      [{ id: 'pay1', reservationId: 'buffer', monthKey: '2026-03', label: 'factuur',
+         invoiceAmount: 150, fromReservation: 150, fromCash: 0 }],
+      [], [], [], [], 3,
+    );
+    months.forEach((m, i) => {
+      check(`S19 · cash verschuift alleen de bron ${m.monthKey}`,
+        bufferSummary(m).position, bufferSummary(zonderCash[i]!).position);
+    });
+  }
   invariant(months, 'S19');
 }
 
@@ -1040,6 +1063,56 @@ console.log('\nS31 — drie tekortmaanden op rij, de stand cumuleert');
   // de maand zelf erger wordt. Precies dat onderscheid mist een reeks die stilstaat.
   bewegingen.forEach((b, i) => check(`S31 · beweging maand ${i + 1}`, b, -500));
   invariant(months, 'S31');
+}
+
+// ── S32: opname groter dan de pot, zónder cash-deel ───────────────────────────
+// Het geval dat de klem op de betalingslus draagt. Geen enkel scenario bevatte het, dus
+// zonder dit blok zou de verwijderde guard hierboven groen zijn om de verkeerde reden:
+// niet omdat het defect weg is, maar omdat de suite het niet opwekt. Bereikbaar in de app
+// via `setDeficitBuffer` (geen guard) en via `onMovePayment` naar een maand met een
+// kleinere potstand — de twee paden die het BACKLOG-item van 2026-09-06 noemt.
+console.log('\nS32 — opname groter dan de pot laat hem leeg, niet negatief');
+{
+  const buf: ReservationItem = { ...BUFFER, monthlyAmount: 200, startMonth: '2025-01' };
+  const months = calculateMonths(
+    '2026-03', 10000,
+    [], [{ id: 'i1', monthKey: '2026-03', label: 'inkomen', amount: 3000, received: false }],
+    [{ id: 'r1', label: 'vast', amount: 1000, type: 'expense', frequency: 'monthly', startMonth: '2025-01' }],
+    [buf],
+    [{ id: 'pay1', reservationId: 'buffer', monthKey: '2026-03', label: 'factuur',
+       invoiceAmount: 20000, fromReservation: 20000, fromCash: 0 }],
+    [], [], [], [], 1,
+  );
+  const p = bufferPot(months[0]!)!;
+  checkBool('S32 · potstand niet negatief', p.potBalance >= -0.005, true);
+  check('S32 · pot landt op leeg', p.potBalance, 0);
+  invariant(months, 'S32');
+}
+
+// ── S33: gefinaliseerd spaardoel mét cash-bijbetaling ──────────────────────────
+// Dezelfde oorzaak, buiten de bufferpot om: de nulzetting maakte hier zélf een negatieve
+// potstand (gemeten −143,35 vóór de fix). Geen enkele assertie in beide suites las een
+// niet-buffer `potBalance`, dus deze klasse was volledig ongedekt. De vorm komt van een
+// echte rij uit het document van 2026-09.
+console.log('\nS33 — gefinaliseerd spaardoel met cash-bijbetaling');
+{
+  const doel: ReservationItem = {
+    id: 'verzekering', label: 'Verzekeringen', monthlyAmount: 230, startMonth: '2026-01',
+    type: 'spaardoel', coversDeficit: false,
+  };
+  const months = calculateMonths(
+    '2026-03', 5000,
+    [], [{ id: 'i1', monthKey: '2026-03', label: 'inkomen', amount: 2000, received: false }],
+    [], [doel],
+    [{ id: 'pay1', reservationId: 'verzekering', monthKey: '2026-03', label: 'polis',
+       invoiceAmount: 220.47, fromReservation: 86.65, fromCash: 133.82 }],
+    [], [], [],
+    [{ id: 'set1', reservationId: 'verzekering', monthKey: '2026-03', effectiveAmount: 230, finalized: true }],
+    2, new Map([['verzekering', 0]]),
+  );
+  const p = months[0]!.reservationPots.find((x) => x.reservationId === 'verzekering')!;
+  checkBool('S33 · potstand niet negatief', p.potBalance >= -0.005, true);
+  check('S33 · gefinaliseerde pot is leeg', p.potBalance, 0);
 }
 
 // Tegenproef. `scripts/scenarios.mjs` draait deze suite eerst mét deze vlag en eist dan een

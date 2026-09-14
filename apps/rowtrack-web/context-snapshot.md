@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack-web
-_Gegenereerd op 2026-09-10_
+_Gegenereerd op 2026-09-14_
 
 ## Project
 - **App:** rowtrack-web
@@ -46,24 +46,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-20bf818 fix(rowtrack-web): give the hero slogan its deliberate line break
-48e2f4b feat(rowtrack-web): design iteration on Jeroen's feedback
-be61b93 fix(rowtrack-web): address all 15 code-review findings on the motion layer
-b55f640 docs(rowtrack-web): ux-audit report and acceptance evidence for redesign
-5c9b867 feat(rowtrack-web): premium redesign with scroll-motion layer
+154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
+86d8287 chore(rowtrack-web): upgrade to Next 15.5.25 and React 19
+0e89c73 feat(rowtrack-web): deterministic detector run as a Verify-pad capability
+2ca664b merge: main into feature/rowtrack-web-premium-redesign
+2c970c9 test(ui): add Sheet to the rendered-size baseline
 ```
 
 ## Uncommitted wijzigingen
+  A  apps/rowtrack-web/.detect.config.json
+  M  apps/rowtrack-web/.impeccable/config.json
   M  apps/rowtrack-web/CLAUDE.md
-  M  apps/rowtrack-web/HANDOFF.md
-  M  apps/rowtrack-web/context-snapshot.md
-  M  packages/tokens/package.json
-  A  packages/ui/.storybook/main.ts
-  A  packages/ui/.storybook/preview.tsx
-  A  packages/ui/CLAUDE.md
-  A  packages/ui/components/ui/ThemeToggle.stories.tsx
-  A  packages/ui/components/ui/badge.stories.tsx
-  A  packages/ui/components/ui/button.stories.tsx
+  M  apps/rowtrack-web/scripts/detect.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

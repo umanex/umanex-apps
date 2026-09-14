@@ -1,0 +1,10 @@
+{
+  "routes": ["/nl", "/nl/support", "/nl/privacy", "/nl/voorwaarden"],
+  "viewports": [[1280, 800], [390, 844]],
+  "port": 3104,
+  "build": ["npx", "next", "build"],
+  "start": ["npx", "next", "start", "--port", "{port}"],
+  "targetMin": 24,
+  "targetExclude": [],
+  "impeccable": "impeccable@4.1.0"
+}

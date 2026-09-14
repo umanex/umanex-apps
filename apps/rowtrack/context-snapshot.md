@@ -70,16 +70,19 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+692f835 Merge origin/main into ci/rowtrack-edge-function-en-stabiele-spec
 61f34d6 fix(rowtrack): give the Edge Functions their own Deno config so the typecheck can resolve
+810e97d docs(rowtrack): design the analysis layer on a real ride, and let the form pick the technique
 1671b4d chore(rowtrack): refresh the image-diff report after the spinner normalisation
 3ef0ea1 fix(rowtrack): give the Figma snapshot a read timestamp, so its own remedy works
-b0e33f4 ci(rowtrack): type-check the Edge Function, and stop the spinner from rewriting the spec
-84fbe8b fix(rowtrack): an empty ride is no longer a ride, and every average proves its own denominator
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/briefings/2026-09-14-feature-analyse-laag.tcebc.md
-  M  apps/rowtrack/context-snapshot.md
+  M  apps/rowtrack/BACKLOG.md
+  A  apps/rowtrack/briefings/2026-09-14-feature-taal-en-eenheden.tcebc.md
+  A  apps/rowtrack/briefings/2026-09-14-flow-foutpad-verbindingsverlies.tcebc.md
+  A  apps/rowtrack/briefings/2026-09-14-screen-hierarchie-en-eindscherm.tcebc.md
+  A  apps/rowtrack/briefings/2026-09-14-taakcontract-routelek-stories.md
 
 ## Bestanden met TODO/FIXME
   (geen)

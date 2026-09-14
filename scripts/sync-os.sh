@@ -26,6 +26,7 @@
 # - ~/.claude/hooks/tegenspraak-guard.sh + settings.json            (PostToolUse tegenspraak-guard, user-level)
 # - ~/.claude/hooks/tegenproef-guard.sh + settings.json             (PostToolUse tegenproef-guard, user-level)
 # - ~/.claude/hooks/cwd-guard.sh + settings.json                    (PostToolUse cwd-guard, user-level)
+# - ~/.claude/hooks/build-serveert-guard.sh + settings.json         (PreToolUse build-guard, user-level)
 # - LEARNINGS.md                   (capture-staging in root + elke app, geseed als afwezig — nooit overschreven)
 # - HANDOFF.md                     (sessie-handoff in root + elke app, geseed als afwezig — nooit overschreven)
 # - BACKLOG.md                     (gemeld-niet-gebouwd in root + elke app, geseed als afwezig — nooit overschreven)
@@ -948,6 +949,39 @@ else
       if jq --arg cmd "$CWD_CMD" '.hooks.PostToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":$cmd,"timeout":10,"statusMessage":"Cwd-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
         cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
         echo "  ✓ PostToolUse-hook toegevoegd aan settings.json"
+      else
+        rm -f "$_tmp"; echo "  ⚠ kon settings.json niet bewerken"
+      fi
+    fi
+  fi
+fi
+
+# build-serveert-guard (PreToolUse op Bash, user-level). Vuurt wanneer een commando de bundel
+# op schijf vervangt terwijl er een proces uit diezelfde tree serveert — `verify` rail 1,
+# gemeten 2026-08-07 op cashflow (witte pagina na een build op een feature branch). Anders dan
+# de andere Bash-guards is dit een PRE-hook: ná de build is de schade er al.
+echo ""
+echo "→ Installeer build-serveert-guard (PreToolUse, user-level)..."
+BSG_SRC="$UMANEX_OS_PATH/templates/build-serveert-guard.sh"
+BSG_CMD="$USER_HOOKS/build-serveert-guard.sh"
+if [ ! -f "$BSG_SRC" ]; then
+  echo "  ⚠ templates/build-serveert-guard.sh niet gevonden — hook overgeslagen"
+else
+  mkdir -p "$USER_HOOKS"
+  cp "$BSG_SRC" "$BSG_CMD"
+  chmod +x "$BSG_CMD"
+  echo "  ✓ ~/.claude/hooks/build-serveert-guard.sh"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq niet gevonden — settings.json niet aangepast."
+  else
+    [ -f "$USER_SETTINGS" ] || echo '{}' > "$USER_SETTINGS"
+    if jq -e --arg cmd "$BSG_CMD" '.hooks.PreToolUse[]?.hooks[]? | select(.command == $cmd)' "$USER_SETTINGS" >/dev/null 2>&1; then
+      echo "  • settings.json bevat de hook al — ongemoeid gelaten"
+    else
+      _tmp="$(mktemp)"
+      if jq --arg cmd "$BSG_CMD" '.hooks.PreToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":$cmd,"timeout":15,"statusMessage":"Build-check"}]}]' "$USER_SETTINGS" > "$_tmp" 2>/dev/null; then
+        cat "$_tmp" > "$USER_SETTINGS" && rm -f "$_tmp"
+        echo "  ✓ PreToolUse-hook toegevoegd aan settings.json"
       else
         rm -f "$_tmp"; echo "  ⚠ kon settings.json niet bewerken"
       fi

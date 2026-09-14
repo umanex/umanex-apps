@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Toetst of gebouwd werk zich werkelijk gedraagt zoals het acceptatie-contract zegt, door het uit te vóéren op het doelwit van de gebruiker — niet door de code te lezen. Kiest de meetbare as bij het taaktype (design-snapshot, invariant, flow-doorloop, request/response, before-after-reproductie), levert P0–P3 bevindingen met runtime-bewijs, en vinkt de acceptatie-items van de briefing af. Gebruik deze skill in de Beoordeel-stap van de triade, of wanneer de gebruiker zegt "verifieer dit", "klopt het gedrag", "werkt het echt", "check of dit doet wat de briefing zegt", "vink de acceptatie af". **Roep hem ook aan zodra je zélf gaat meten, ook zonder dat de gebruiker erom vraagt** — bij een positieve of negatieve controle, een tegenproef, de vraag of een check rood kan worden, een lege of verdachte uitkomst, een telling waarvan het meetbereik onzeker is, of vóór je een getal aan de gebruiker rapporteert. Dat is de meerderheid van de gevallen: de discipline komt op midden in het werk, niet uit de prompt. De dertien rails hier dragen het gemeten bewijs waar `CLAUDE.md` alleen de kern van draagt. NIET voor diff-correctheid (`code-review`), design-kwaliteit (`ux-audit`) of backend-hardening (`security-audit`).
+description: Toetst of gebouwd werk zich werkelijk gedraagt zoals het acceptatie-contract zegt, door het uit te vóéren op het doelwit van de gebruiker — niet door de code te lezen. Kiest de meetbare as bij het taaktype (design-snapshot, invariant, flow-doorloop, request/response, before-after-reproductie), levert P0–P3 bevindingen met runtime-bewijs, en vinkt de acceptatie-items van de briefing af. Gebruik deze skill in de Beoordeel-stap van de triade, of wanneer de gebruiker zegt "verifieer dit", "klopt het gedrag", "werkt het echt", "check of dit doet wat de briefing zegt", "vink de acceptatie af". Roep hem daarnaast aan bij één van deze drie, ook ongevraagd: **je instrument spreekt zichzelf tegen** (de telling zegt nul maar de positieve controle faalt), **je staat op het punt een getal te rapporteren dat je niet zelf gemeten hebt**, of **een check is groen en je kunt niet aanwijzen hoe hij rood zou worden**. Drie herkenbare momenten, geen achtergrondconditie — de vijftien rails hier dragen het gemeten bewijs waar `CLAUDE.md` alleen de kern van draagt, dus voor de regel zelf volstaat die kern. NIET voor diff-correctheid (`code-review`), design-kwaliteit (`ux-audit`) of backend-hardening (`security-audit`).
 ---
 
 ## Werkwijze
@@ -453,6 +453,46 @@ draagt dan `[operationeel]` in zijn kop, óf een globale regel die in deze skill
 de altijd-geladen laag vol zat. Dat tweede gebeurde die dag met drie lessen en niets merkte het.
 Het fragment mag naar een kern búiten het discipline-blok wijzen: rail 3, 4 en 12 hangen aan
 *Geen verzonnen bewijs*, *Root cause boven patch* en de invariant-eis van de triade.
+
+---
+
+## Rail → guard — waar een rail óók buiten deze skill bijt
+
+De rails hierboven werken alleen als iemand ze leest. Een guard leest ze vóór je, op het
+moment van de handeling — en dat is gemeten de enige plek waar ze buiten de triade landen.
+Deze tabel zegt welke rail zo'n guard heeft en welke niet, zodat het gat telbaar is in
+plaats van gevoeld.
+
+| Rail | Guard | Event |
+|---|---|---|
+| 3 · geen verzonnen bewijs | `acceptatie-guard.sh`, `bron-assertie-guard.sh` | PreToolUse Write/Edit |
+| 6 · toets ook je instrument | `meting-guard.sh`, `nulmeting-guard.sh` | PreToolUse Write/Edit · PostToolUse Bash |
+| 7 · de verwachting is geen bewijs | `askquestion-estimate-guard.sh` | PreToolUse AskUserQuestion |
+| 8 · kan je check rood worden | `tegenproef-guard.sh` | PostToolUse Bash |
+| 9 · anker op het object | `cwd-guard.sh`, `tegenspraak-guard.sh` | PostToolUse Bash |
+| 11 · je zekerheid dekt wat je deed | `identifier-bron-guard.sh` | PreToolUse Write/Edit |
+| 15 · een ongelezen uitkomst bestaat niet | `acceptatie-guard.sh` | PreToolUse Write/Edit |
+| **1, 2, 4, 5, 10, 12, 13, 14** | **geen** | — |
+
+**Zeven van de vijftien.** Van de acht ongedekte zijn er vier mechanisch te vangen en vier
+niet, en dat onderscheid is het bruikbare deel van deze tabel:
+
+- **Kandidaat voor een guard.** Rail 1 (een build terwijl er iets uit die map serveert —
+  `PreToolUse` op Bash bij `next build|pm2|npm run build`, met een `lsof`-vraag), rail 5 (een
+  destructief pad tegen productiedata — `DELETE FROM`, `drop table`, `rm -rf` naast een
+  productie-aanwijzing), rail 10 (`$?` na een pipe, of een `grep -c` op een bestand dat zijn
+  eigen voorbeeld bevat) en rail 13 (`rm -rf`, `git stash`, `patch` zonder een controle op
+  het effect erna).
+- **Niet mechanisch te vangen.** Rail 2 (wát het doelwit van de gebruiker is, weet alleen de
+  context), rail 4 (een bewering over een bibliotheek herkennen vóór ze geschreven is), rail
+  12 (of een berekening afhankelijk is) en rail 14 (of een validatie een tweede bron mist).
+  Die blijven leeswerk, en dus precies de rails waarvoor déze skill geopend moet worden.
+
+**Waarom deze tabel hier staat en niet in een script.** Gemeten 2026-09-14: van de vijftien
+rails vuurde de skill zelf 2× in 1 175 transcripts, terwijl de guards dagelijks draaien. Wie
+een rail wil laten bijten, kijkt hier eerst of er al een guard voor is — en bouwt er anders
+een, in plaats van de skill-description opnieuw te herschrijven. Die route is op 2026-08-27
+geprobeerd en leverde in achttien dagen één extra aanroep op.
 
 ---
 

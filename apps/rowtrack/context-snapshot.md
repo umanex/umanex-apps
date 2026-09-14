@@ -70,15 +70,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+1671b4d chore(rowtrack): refresh the image-diff report after the spinner normalisation
 3ef0ea1 fix(rowtrack): give the Figma snapshot a read timestamp, so its own remedy works
 b0e33f4 ci(rowtrack): type-check the Edge Function, and stop the spinner from rewriting the spec
 84fbe8b fix(rowtrack): an empty ride is no longer a ride, and every average proves its own denominator
 b43a7df docs(rowtrack): the vite bump answers the storybook item, and one item gets an honest title
-280c508 Merge origin/main into chore/rowtrack-vite-en-expo-patches
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/figma/beeld-verschillen.json
+  M  apps/rowtrack/.gitignore
+  A  apps/rowtrack/supabase/functions/deno.json
 
 ## Bestanden met TODO/FIXME
   (geen)

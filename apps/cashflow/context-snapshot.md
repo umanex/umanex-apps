@@ -49,16 +49,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+c473afe fix(cashflow): close the Ctrl+C window that left next start orphaned on :3100
 92176de refactor(cashflow): refuse a busy port before the build, not sixteen seconds after it
 ec29bfa docs(cashflow): relevance-check the seven open backlog items before any of them is built
 154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 25d3b8e chore(cashflow): upgrade to Next 15.5.25 and React 19
-ff20863 docs: briefing statuses onto the triad vocabulary
 ```
 
 ## Uncommitted wijzigingen
-   M apps/cashflow/package.json
-  M  apps/cashflow/scripts/flow-harness.mjs
+  M  apps/cashflow/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

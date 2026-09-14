@@ -3,12 +3,12 @@ _Gegenereerd op 2026-09-14_
 
 ## Project
 - **App:** cashflow
-- **Beschrijving:** [TODO: korte beschrijving van cashflow]
+- **Beschrijving:** Persoonlijke cashflow-prognose (Next.js + Supabase). Draait als PM2 productie-build op :3000, loopback-gebonden — geen next dev. Geen eigen Figma-bestand: de componentbron is @umanex/ui.
 - **Dir:** `apps/cashflow`
 
 ## Figma
-- **Key:** `[TODO]`
-- **URL:** [TODO]
+- **Key:** `geen`
+- **URL:** geen
 - ⚠️ Node IDs veranderen na edits — altijd opnieuw ophalen via "Copy link to selection"
 
 ## Packages
@@ -49,17 +49,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0103cb4 fix(cashflow): a withdrawal from the buffer pot is an outflow, so the month flow says so
 b24f0f8 fix(cashflow): give the pot ledger a floor, and stop a cash top-up from wiping the pot
 5e86457 fix(cashflow): pin the build's dist dir so an inherited env cannot redirect a rebuild
 c473afe fix(cashflow): close the Ctrl+C window that left next start orphaned on :3100
 92176de refactor(cashflow): refuse a busy port before the build, not sixteen seconds after it
-ec29bfa docs(cashflow): relevance-check the seven open backlog items before any of them is built
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/BACKLOG.md
-  M  apps/cashflow/lib/cashflow/burn.ts
-  M  apps/cashflow/scripts/buffer-scenarios.ts
+  M  apps/cashflow/context-snapshot.md
 
 ## Bestanden met TODO/FIXME
   (geen)

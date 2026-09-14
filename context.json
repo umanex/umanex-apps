@@ -1,12 +1,12 @@
 {
-  "_comment": "Per-repo metadata voor gen-snapshot.sh. Vul per app de Figma-gegevens in. gen-snapshot matcht een app op het .dir-veld (apps/<app>), niet op de key hieronder — de key mag dus vrij gekozen worden.",
+  "_comment": "Per-repo metadata voor gen-snapshot.sh. Vul per app de Figma-gegevens in. gen-snapshot matcht een app op het .dir-veld (apps/<app>), niet op de key hieronder — de key mag dus vrij gekozen worden. Heeft een app geen eigen Figma-bestand, zet dan het woord 'geen' in plaats van een key te verzinnen: dat is overal in deze repo een geldig antwoord (zie Verify-pad en Design-systeem-bron), het houdt de keuze telbaar, en .githooks/pre-commit zwijgt erover omdat er geen [TODO meer staat.",
   "project": "umanex",
   "apps": {
     "cashflow": {
       "dir": "apps/cashflow",
-      "figmaKey": "[TODO]",
-      "figmaUrl": "[TODO]",
-      "description": "[TODO: korte beschrijving van cashflow]",
+      "figmaKey": "geen",
+      "figmaUrl": "geen",
+      "description": "Persoonlijke cashflow-prognose (Next.js + Supabase). Draait als PM2 productie-build op :3000, loopback-gebonden — geen next dev. Geen eigen Figma-bestand: de componentbron is @umanex/ui.",
       "status": "active"
     },
     "jobradar": {

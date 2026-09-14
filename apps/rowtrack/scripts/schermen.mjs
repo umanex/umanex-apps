@@ -18,6 +18,12 @@
  */
 export const SCHERMEN = {
   ActivePhase: {
+    // BEWUST GEEN 'Samenvatting Zonder Gewicht', hoewel die story bestaat. De walker loopt
+    // `#storybook-root`, en een react-native-web `<Modal>` rendert in een eigen div direct
+    // onder `body` — gemeten 2026-09-14. Het frame 'Samenvatting' bevat daardoor niet de
+    // samenvatting maar het active-scherm eronder, en een tweede frame zou dus een exacte
+    // kopie van dat verkeerde beeld zijn. Zie het BACKLOG-item van 2026-09-14 over de
+    // portal-blinde vlek; zodra die dicht is, hoort dit frame er alsnog bij (F19).
     frames: ['Playground', 'Doel Afstand', 'Zonder Hartslagband', 'Doel Bereikt', 'Samenvatting', 'Landscape'],
     reden: 'schermcompositie — bleStatus × hrStatus × phase × hasProfileWeight zou 160 nodes eisen voor één scherm, en die assen zijn in beeld niet orthogonaal; hoort in RowTrack - Design op Screens v2',
   },
@@ -34,9 +40,15 @@ export const SCHERMEN = {
   // Ze zijn per definitie een scherm: een route is geen herbruikbaar ding. Hun `reden` is
   // daarom korter dan die van ActivePhase/IdlePhase — daar was het een oordeel over
   // variant-assen, hier volgt het uit wat ze zijn.
-  LoginScreen: { frames: ['Playground'], reden: 'route-scherm — een route is geen herbruikbaar component; hoort in RowTrack - Design op Screens v2' },
-  RegisterScreen: { frames: ['Playground'], reden: 'route-scherm — idem' },
-  ForgotPasswordScreen: { frames: ['Playground'], reden: 'route-scherm — idem' },
+  //
+  // 'Met Fout' kwam er op 2026-09-14 bij. Deze drie hadden één frame omdat hun tweede vorm —
+  // de serverfout — in `useState` zit en pas ná een submit bestaat; een story kon hem niet
+  // tonen. Dat kan nu wél, via `parameters.supabase.authFout` plus een `play` die het
+  // formulier verstuurt (zie .storybook/formulier.ts). Ze zijn dus geen uitzondering meer op
+  // "elk route-scherm heeft minstens twee frames".
+  LoginScreen: { frames: ['Playground', 'Met Fout'], reden: 'route-scherm — een route is geen herbruikbaar component; hoort in RowTrack - Design op Screens v2' },
+  RegisterScreen: { frames: ['Playground', 'Met Fout'], reden: 'route-scherm — idem' },
+  ForgotPasswordScreen: { frames: ['Playground', 'Met Fout'], reden: 'route-scherm — idem' },
   ResetPasswordScreen: { frames: ['Playground', 'Met Link'], reden: 'route-scherm — idem' },
   HistoryScreen: { frames: ['Playground', 'Leeg', 'Een Record'], reden: 'route-scherm — idem' },
   WorkoutDetailScreen: { frames: ['Playground', 'Zonder Hartslag', 'Niet Gevonden'], reden: 'route-scherm — idem' },

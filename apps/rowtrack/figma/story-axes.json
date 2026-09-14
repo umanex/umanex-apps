@@ -231,30 +231,6 @@
    "uitgesloten": {},
    "variantNodes": 1
   },
-  "KPI": {
-   "storyId": "componenten-kpi--playground",
-   "titel": "Componenten/KPI",
-   "assen": {
-    "highlighted": [
-     true,
-     false
-    ],
-    "compact": [
-     true,
-     false
-    ],
-    "fill": [
-     true,
-     false
-    ],
-    "loading": [
-     true,
-     false
-    ]
-   },
-   "uitgesloten": {},
-   "variantNodes": 16
-  },
   "KpiSingle": {
    "storyId": "componenten-kpisingle--playground",
    "titel": "Componenten/KpiSingle",
@@ -281,13 +257,6 @@
    "uitgesloten": {},
    "variantNodes": 2
   },
-  "SectionHeader": {
-   "storyId": "componenten-sectionheader--playground",
-   "titel": "Componenten/SectionHeader",
-   "assen": {},
-   "uitgesloten": {},
-   "variantNodes": 1
-  },
   "Segmented": {
    "storyId": "componenten-segmented--playground",
    "titel": "Componenten/Segmented",
@@ -303,13 +272,6 @@
   "Skeleton": {
    "storyId": "componenten-skeleton--playground",
    "titel": "Componenten/Skeleton",
-   "assen": {},
-   "uitgesloten": {},
-   "variantNodes": 1
-  },
-  "SplitsList": {
-   "storyId": "componenten-splitslist--playground",
-   "titel": "Componenten/SplitsList",
    "assen": {},
    "uitgesloten": {},
    "variantNodes": 1
@@ -391,12 +353,7 @@
      "error"
     ]
    },
-   "uitgesloten": {
-    "isCountdown": [
-     true,
-     false
-    ]
-   },
+   "uitgesloten": {},
    "variantNodes": 160
   },
   "DeviceSelectionModal": {
@@ -664,5 +621,5 @@
  },
  "zonderPlayground": [],
  "fouten": [],
- "totaalVariantNodes": 688
+ "totaalVariantNodes": 670
 }

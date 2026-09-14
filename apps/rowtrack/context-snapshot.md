@@ -70,15 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+2a06ec0 ci(rowtrack): baseline the image axis on linux for all 28 frames, both buckets
 5f0e285 chore(rowtrack): refresh the image-diff report after the Figma round
 0f21cfd refactor(rowtrack): drop the three dead library pages and refresh the snapshot
 7130775 feat(rowtrack): build the five screen frames in Figma and re-baseline the image axis
 8ee8030 docs(rowtrack): tick the P3 acceptance on evidence, and leave the three that are not earned
-cad97f7 docs(rowtrack): close four backlog items and open the one this round created
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/figma/beeld-basislijn.json
+  M  apps/rowtrack/package.json
 
 ## Bestanden met TODO/FIXME
   (geen)

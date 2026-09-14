@@ -122,32 +122,120 @@
   },
   "linux": {
    "gemeten": "2026-09-14",
-   "bron": "CI-run 34818999551 (ubuntu-latest)",
-   "overig": {
-    "ActivePhase__Doel-Bereikt": 2.73,
-    "ForgotPasswordScreen__Playground": 2.05,
-    "RegisterScreen__Playground": 1.85,
-    "WorkoutDetailScreen__Playground": 0.45,
-    "HistoryScreen__Playground": 0.06,
-    "WorkoutDetailScreen__Zonder-Hartslag": 0.43,
-    "ActivePhase__Playground": 0.03,
-    "ActivePhase__Zonder-Hartslagband": 0.03,
-    "LoginScreen__Playground": 1.05,
-    "ActivePhase__Doel-Afstand": 0.07,
-    "ActivePhase__Landscape": 0.03,
-    "ProfileScreen__Playground": 0.2,
-    "ProfileScreen__Zonder-Gewicht": 0.2,
-    "ProfileScreen__Onvolledig": 0.2,
-    "IdlePhase__Doel-Afstand": 0.77,
-    "IdlePhase__Playground": 0.87,
-    "HistoryScreen__Een-Record": 0.03,
-    "IdlePhase__Niet-Verbonden": 0.87,
-    "HistoryScreen__Leeg": 0,
-    "ActivePhase__Samenvatting": 0.33,
-    "IdlePhase__Toestel-Keuze": 0.27,
-    "WorkoutDetailScreen__Niet-Gevonden": 0,
-    "ResetPasswordScreen__Met-Link": 0.02,
-    "ResetPasswordScreen__Playground": 0.02
+   "bron": "CI-run 34836969891 (ubuntu-latest)",
+   "waarden": {
+    "RegisterScreen__Met-Fout": {
+     "tekst": 3.59,
+     "overig": 2.43
+    },
+    "ForgotPasswordScreen__Met-Fout": {
+     "tekst": 3.33,
+     "overig": 2.12
+    },
+    "ActivePhase__Doel-Bereikt": {
+     "tekst": 2.42,
+     "overig": 2.72
+    },
+    "ForgotPasswordScreen__Playground": {
+     "tekst": 2.88,
+     "overig": 2.05
+    },
+    "RegisterScreen__Playground": {
+     "tekst": 2.82,
+     "overig": 1.85
+    },
+    "LoginScreen__Met-Fout": {
+     "tekst": 2.53,
+     "overig": 1.8
+    },
+    "WorkoutDetailScreen__Playground": {
+     "tekst": 3.27,
+     "overig": 0.45
+    },
+    "HistoryScreen__Playground": {
+     "tekst": 3.54,
+     "overig": 0.06
+    },
+    "WorkoutDetailScreen__Zonder-Hartslag": {
+     "tekst": 3.06,
+     "overig": 0.43
+    },
+    "ActivePhase__Zonder-Hartslagband": {
+     "tekst": 3.33,
+     "overig": 0.03
+    },
+    "ActivePhase__Playground": {
+     "tekst": 3.26,
+     "overig": 0.03
+    },
+    "LoginScreen__Playground": {
+     "tekst": 2.12,
+     "overig": 1.05
+    },
+    "ActivePhase__Doel-Afstand": {
+     "tekst": 3.07,
+     "overig": 0.07
+    },
+    "ActivePhase__Landscape": {
+     "tekst": 3.08,
+     "overig": 0.03
+    },
+    "ProfileScreen__Playground": {
+     "tekst": 2.57,
+     "overig": 0.2
+    },
+    "ProfileScreen__Zonder-Gewicht": {
+     "tekst": 2.57,
+     "overig": 0.2
+    },
+    "ProfileScreen__Onvolledig": {
+     "tekst": 2.51,
+     "overig": 0.2
+    },
+    "IdlePhase__Doel-Afstand": {
+     "tekst": 1.43,
+     "overig": 0.77
+    },
+    "IdlePhase__Playground": {
+     "tekst": 1.23,
+     "overig": 0.87
+    },
+    "HistoryScreen__Een-Record": {
+     "tekst": 2.0,
+     "overig": 0.03
+    },
+    "ActivePhase__Samenvatting-Zonder-Gewicht": {
+     "tekst": 1.69,
+     "overig": 0.32
+    },
+    "IdlePhase__Niet-Verbonden": {
+     "tekst": 1.11,
+     "overig": 0.87
+    },
+    "HistoryScreen__Leeg": {
+     "tekst": 1.88,
+     "overig": 0.0
+    },
+    "ActivePhase__Samenvatting": {
+     "tekst": 1.42,
+     "overig": 0.33
+    },
+    "IdlePhase__Toestel-Keuze": {
+     "tekst": 1.28,
+     "overig": 0.27
+    },
+    "WorkoutDetailScreen__Niet-Gevonden": {
+     "tekst": 0.79,
+     "overig": 0.0
+    },
+    "ResetPasswordScreen__Met-Link": {
+     "tekst": 0.0,
+     "overig": 0.02
+    },
+    "ResetPasswordScreen__Playground": {
+     "tekst": 0.0,
+     "overig": 0.02
+    }
    }
   }
  }

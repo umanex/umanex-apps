@@ -183,6 +183,25 @@ Voeg de `Fix`-regel in vóór de `Status`-regel (zoals de bestaande `verified` e
 - **Status:** verified
 ```
 
+**Bij `promoted`: leg de case aan, of leg vast waarom er geen is.** Een promotie zegt dat de
+regel geschreven is; alleen een case zegt dat hij morgen nog vuurt. De verhouding stond op
+2026-09-13 op 109 promoties tegen 4 cases — de harden-arm liep ver vooruit op de
+regressie-arm, en stap 1b kan per ronde maar één entry opnieuw afspelen. Dat gat sluit je
+hier, op het moment dat de Input nog vers in beeld is:
+
+- Is de Input reproduceerbaar (een letterlijke prompt, een `git log`-wijzer, een bestand),
+  draai dan `bash scripts/scaffold-eval-case.sh <slug> --learning <datum>` en noem de case in
+  de entry: `- **Regressie:** {datum} — case \`evals/<slug>\` aangelegd, grader nog in te vullen`.
+  Het scaffold weigert een entry zonder `Input`-regel, dus een geslaagde run ís het bewijs
+  dat er iets af te spelen valt.
+- Is hij dat niet, schrijf dan `- **Regressie:** geen case — {reden}`. Die regel is het punt:
+  zonder hem is "geen case" niet te onderscheiden van "vergeten", en dat verschil is precies
+  wat de teller onbruikbaar maakte.
+
+De grader blijft een PLACEHOLDER tot iemand hem invult — wát "de fout is weg" betekent kan
+geen script bepalen. Een case met een placeholder telt dus niet als dekking; hij maakt het
+gat wél telbaar in plaats van onzichtbaar.
+
 ### Stap 7 — Git
 
 Commit de CLAUDE.md- en LEARNINGS-wijzigingen volgens de globale git-workflow — **nooit direct op main**:

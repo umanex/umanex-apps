@@ -35,7 +35,9 @@ export default function AnalysePage() {
 
       <div className="space-y-5">
         <RunwayCard runway={runway} />
-        {currentMonth && <WaterfallChart month={currentMonth} />}
+        {/* `months[0]` is per constructie de ankermaand: `useMonths(3, getCurrentMonthKey())`
+            vertrekt bij de huidige maand. Er is geen pad dat hier een latere maand voedt. */}
+        {currentMonth && <WaterfallChart month={currentMonth} isAnchor />}
         <BufferChart points={points} closedMonths={runway.closedMonths} />
         <VarianceChart snapshots={sortedSnapshots} />
       </div>

@@ -49,15 +49,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+5c6add2 chore(cashflow): answer the context metadata instead of leaving three TODOs
 0103cb4 fix(cashflow): a withdrawal from the buffer pot is an outflow, so the month flow says so
 b24f0f8 fix(cashflow): give the pot ledger a floor, and stop a cash top-up from wiping the pot
 5e86457 fix(cashflow): pin the build's dist dir so an inherited env cannot redirect a rebuild
 c473afe fix(cashflow): close the Ctrl+C window that left next start orphaned on :3100
-92176de refactor(cashflow): refuse a busy port before the build, not sixteen seconds after it
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/context-snapshot.md
+  M  apps/cashflow/BACKLOG.md
+  M  apps/cashflow/app/analyse/page.tsx
+  M  apps/cashflow/components/cashflow/WaterfallChart.tsx
+  M  apps/cashflow/scripts/render-charts.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

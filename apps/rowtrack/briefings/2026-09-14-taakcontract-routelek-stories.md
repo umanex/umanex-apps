@@ -77,11 +77,11 @@ het ontstond stil en niets in de repo zag het.
 Elk item één meting. Afvinken met het bewijs in de regel.
 
 - [x] De routeboom telt 11 bladroutes in plaats van 18 — bewijs: `git ls-tree origin/main` geeft 18, `git ls-files` nu 11, beide zonder `_layout`
-- [x] Geen enkel bestand onder `app/` eindigt op `.stories.tsx` — bewijs: `git ls-files apps/rowtrack/app/**/*.stories.*` geeft 0
+- [x] Geen enkel bestand onder `app/` eindigt op `.stories.tsx` — bewijs: `git ls-files 'apps/rowtrack/app/**/*.stories.*'` geeft **0** op HEAD en **7** met `--with-tree=61b9675~1` (positieve controle). De quotes zijn niet optioneel: ongequoteerd geeft zsh `no matches found` met exit 1 en lege uitvoer, en dat is van een schone meting niet te onderscheiden — deze regel stond tot de review-ronde in die kapotte vorm.
 - [x] De tabbar toont vier items op het toestel — bewijs: `scratchpad/sim/na-fix-home.png`, vier labels geteld (HOME · TRAINING · HISTORIEK · PROFIEL)
 - [x] `HISTORIEK` staat op één regel en valt binnen de tabbar-achtergrond — bewijs: hetzelfde screenshot, de losse "K" buiten de achtergrond is weg
 - [x] Storybook vindt nog steeds alle stories — bewijs: `storybook-static/index.json` na een verse build, alle zeven verhuisde titels aanwezig (Login·Register·ForgotPassword·ResetPassword·Profile·History·WorkoutDetail). Let op: het totaal (297) heeft geen basislijn uit dezelfde sessie, dus daar leunt dit item niet op — de zeven titels zijn de positieve controle
-- [x] De guard wordt rood op het defect zelf — bewijs: `pnpm --filter rowtrack routes:selftest` 5/5, waarvan geval 2 ("story in de routeboom") exact het defect van vandaag is en geval 5 de negatieve controle op de parser
+- [x] De guard wordt rood op het defect zelf — bewijs: `pnpm --filter rowtrack routes:selftest` 11/11, waaronder de twee gaten die de code-review van 2026-09-14 mat (een `_`-bestand dat géén `_layout` is, en een geneste `_layout` die weggehaald wordt) plus drie negatieve controles
 - [x] `rowtrack://login.stories` opent niets meer — bewijs: `simctl openurl` geeft expo-routers "Unmatched Route — Page could not be found" in plaats van een Render Error, screenshot `sim/na-deeplink.png`
 - [x] De vier bestaande tabs zijn ongewijzigd in route, label, icoon en volgorde — bewijs: `git diff origin/main -- apps/rowtrack/app/(tabs)/_layout.tsx` is leeg
 
@@ -94,6 +94,9 @@ Elk item één meting. Afvinken met het bewijs in de regel.
   geen apart criterium.
 
 ## Beslissingsgeschiedenis
+
+- 2026-09-14 (review-ronde): `code-review` vond twaalf bevindingen, waarvan vijf P1. Drie daarvan zaten in de guard zelf en zijn zelf gemeten bevestigd: hij sloeg élk `_`-bestand over terwijl expo-router alléén `_layout` als layout ziet, hij telde elke map als één tab zonder te toetsen dát er een `_layout` in zat, en zijn zelftest-mutaties eisten geen uitkomst op hun effect. Alle drie staan nu als eigen zelftest-geval (11/11). Bij het repareren viel een vierde bug om die de review niet had: de venster-parser las bij een hernoemde prop de `name=` van de geneste `<Ionicons>` en gaf dus een vérkeerde naam in plaats van "onleesbaar" — nu leest hij alleen op brace-diepte 0.
+- 2026-09-14 (review-ronde): de bewijsregel bij het `.stories`-item stond in een vorm die in zsh faalt (`no matches found`, exit 1, lege uitvoer). Hersteld mét de positieve controle die er had moeten staan: 7 vóór de fix, 0 erna.
 
 - 2026-09-14: aangemaakt uit de designreview van dezelfde dag. Twee bronnen spraken elkaar tegen
   (de code declareert vier tabs, het toestel toont er vijf); verklaard vóór het opschrijven — beide

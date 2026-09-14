@@ -49,7 +49,10 @@ const SELFTEST = process.argv.includes('--selftest');
 // component waarvan de data-as niet meer als slot uitgedrukt wordt. De ratel blijft tweezijdig
 // zodat een verhoging even zichtbaar is als een verlaging.
 const BEKEND_ZONDER_SLOT = 0;
-const BEKEND_TERUGVAL = 37;
+// 37 -> 36 op 2026-09-14: winst uit de spinner-normalisatie in de walker. Eén instance
+// week alleen af doordat zijn spinner-subboom per meetmoment een andere maat had; nu die
+// maat vastligt, matcht hij de library en hoeft de subboom niet meer nagebouwd te worden.
+const BEKEND_TERUGVAL = 36;
 const TOL = 0.5;
 
 const paren = (str) => new Map(String(str).split(/[;,]\s*/).filter(Boolean)

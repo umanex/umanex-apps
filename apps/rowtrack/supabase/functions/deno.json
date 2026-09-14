@@ -1,0 +1,18 @@
+{
+  "$comment": [
+    "Deno-config voor de Edge Functions. Bestaat om één reden, gemeten in CI-run 34853002226:",
+    "`deno check` vond de monorepo-`node_modules` en schakelde daarmee over op 'breng je eigen",
+    "node_modules' — waarna hij weigerde de transitieve npm-afhankelijkheid van supabase-js",
+    "(@supabase/realtime-js) op te halen: 'Could not find a matching package ... in the",
+    "node_modules directory'. Deno leest pnpm-workspace.yaml niet, dus die node_modules is",
+    "voor hem betekenisloos; hij moet zijn eigen boom beheren.",
+    "",
+    "Dit raakt de functie zelf niet: Supabase draait hem in zijn eigen Deno-runtime en leest",
+    "deze config niet. Hij bestaat alleen zodat de typecheck in CI hetzelfde ziet als die",
+    "runtime."
+  ],
+  "nodeModulesDir": "auto",
+  "imports": {
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@2"
+  }
+}

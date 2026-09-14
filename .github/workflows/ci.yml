@@ -7,6 +7,67 @@ on:
     branches: [main]
 
 jobs:
+  # De Edge Function draait op Deno, niet op Node, en viel daarmee buiten élke stap hierboven:
+  # `turbo type-check` kent hem niet, en zijn `jsr:`-import is voor tsc geen module. Een tikfout
+  # in het account-verwijderpad kwam dus pas boven bij de deploy of bij de eerste echte aanroep —
+  # en dat pad is onomkeerbaar (AVG art. 17: het wist het account van de aanroeper).
+  #
+  # Eigen job in plaats van een stap: deze heeft Deno nodig en geen van de dertig andere stappen
+  # wil daarop wachten.
+  edge-functions:
+    name: Edge Functions — deno check (met tegenproef)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # DE TEGENPROEF EERST, en met de reden van het falen erbij. `deno check` op een kapot
+      # bestand faalt ook wanneer een import niet oplost of het pad niet bestaat, en dan zou
+      # "het faalde dus hij meet" een aanname zijn. De kopie staat daarom NAAST het origineel
+      # (identieke resolutie) en de uitvoer moet de type-fout bij zijn code noemen: TS2322,
+      # "Type 'string' is not assignable to type 'number'".
+      # `set +e` is niet optioneel. GitHub draait elke `run` met `bash -e`, en daaronder breekt
+      # `out=$(deno check …)` de shell af op de exit-code van deno — vóór `rc=$?` gelezen wordt.
+      # Gemeten in run 34851047836: de stap viel om na 0,23 s, te snel voor een deno die zijn
+      # jsr-module nog moet ophalen, en géén van de foutmeldingen hieronder kwam aan bod. Een
+      # tegenproef die op zijn eigen succes struikelt, meldt niets over wat hij moest meten.
+      - name: Tegenproef — een type-fout hoort deze job rood te maken
+        run: |
+          set +e
+          set -uo pipefail
+          F=apps/rowtrack/supabase/functions/delete-account/index.ts
+          K=apps/rowtrack/supabase/functions/delete-account/_tegenproef.ts
+          [ -f "$F" ] || { echo "::error::$F bestaat niet — de tegenproef heeft geen doel"; exit 1; }
+          cp "$F" "$K" || { echo "::error::kopie mislukt"; exit 1; }
+          printf '\nconst tegenproef: number = "dit is geen getal";\nconsole.log(tegenproef);\n' >> "$K"
+          echo "--- de kopie, laatste regels ---"; tail -3 "$K"
+          out=$(deno check --config apps/rowtrack/supabase/functions/deno.json "$K" 2>&1)
+          rc=$?
+          rm -f "$K"
+          echo "--- deno check (exit $rc) ---"
+          echo "$out"
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::deno check accepteerde een type-fout — deze job meet niets"
+            exit 1
+          fi
+          if ! echo "$out" | grep -q 'TS2322'; then
+            echo "::error::deno check faalde, maar niet op de type-fout (geen TS2322) — de tegenproef bewijst dan niets"
+            exit 1
+          fi
+          echo "ok — de tegenproef gaat af op de type-fout zelf."
+
+      # `--config` expliciet: deno zoekt zijn deno.json vanaf de WERKMAP, niet vanaf het
+      # bestand dat je checkt. Gemeten in run 34854872034: met de config op zijn plek naast de
+      # functie, maar zonder deze vlag, bleef hij de monorepo-node_modules gebruiken en gaf
+      # exact dezelfde fout als daarvóór.
+      - name: deno check op de echte functie
+        run: deno check --config apps/rowtrack/supabase/functions/deno.json apps/rowtrack/supabase/functions/delete-account/index.ts
+
   ci:
     name: Type-check, lint, build
     runs-on: ubuntu-latest

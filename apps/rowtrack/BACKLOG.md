@@ -41,6 +41,20 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-09-14 — De uitsluitingslijst sluit 292 nodes uit die weer stabiel zijn · [refactor]
+- **Wat:** `figma/niet-reproduceerbaar.json` telt 296 paden, maar sinds de spinner-normalisatie van
+  2026-09-14 zijn er nog maar **4** nodes werkelijk instabiel (de confetti-items). De overige 292 —
+  146 `spinnerArc`, 73 `spinnerBox`, 73 `spinnerSvg` — sluit `instabiele-nodes.mjs` uit omdat zijn
+  sluiting die rollen per constructie meeneemt, niet omdat ze bewegen. `parity` vergelijkt ze
+  daardoor niet, terwijl dat nu wél zou kunnen.
+- **Waarom niet nu:** de normalisatie zelf was de wijziging van die ronde, en de sluiting versmallen
+  is een tweede. Ze in één keer doen maakt een verschoven parity-uitkomst niet toewijsbaar.
+- **Eerste zet:** in `scripts/instabiele-nodes.mjs` de sluiting baseren op de MÉTING in plaats van op
+  de rolnaam, dan `parity` draaien: hij hoort groen te blijven met ~292 nodes méér in de vergelijking.
+  Blijft hij niet groen, dan is dát de uitkomst — een verschil dat de uitsluiting tot nu toe verborg.
+- **Check:** `node -e 'const d=require("./apps/rowtrack/figma/niet-reproduceerbaar.json"); console.log(Array.isArray(d)?d.length:Object.keys(d).length)'` naast de regel `N van M nodes gemeten instabiel` uit `npm run instabiele-nodes` — staan die ver uit elkaar, dan sluit de lijst meer uit dan er beweegt.
+- **Status:** open
+
 ## 2026-09-14 — `PaceZone.tsx` is dood sinds F18, maar niet verwijderd · [refactor]
 - **Wat:** `components/PaceZone.tsx` (type `PaceZoneLevel` + functie `getPaceZone`) had precies één
   gebruiker: de `paceZone`-prop van `ActivePhase`. Die prop is op 2026-09-14 verwijderd omdat niets
@@ -259,7 +273,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** In .github/workflows/ci.yml een job `edge-functions` toevoegen: `denoland/setup-deno@v2` + `deno check apps/rowtrack/supabase/functions/delete-account/index.ts`; tegenproef: een opzettelijke type-fout in index.ts moet de job rood maken; check daarna: `grep -rq deno .github/workflows/`.
 - **Check:** `grep -rq 'deno' .github/workflows/` → geen hit = `supabase/functions` wordt door niets getoetst.
 - **Relevantie 2026-09-14:** LEEFT. Check gedraaid: geen `deno` in `.github/workflows/`, en `supabase/functions/` bevat nog altijd precies één functie (`delete-account`).
-- **Status:** open
+- **Status:** gebouwd — 2026-09-14, eigen job `edge-functions` in `ci.yml` met `denoland/setup-deno`. De tegenproef zit ín de job en draait vóór de echte check: een kopie mét een type-fout moet rood worden, én de uitvoer moet TS2322 noemen. Zonder die tweede eis zou "hij faalde" ook kunnen betekenen dat een import niet oplost, en dan bewijst de tegenproef niets. Deno staat niet lokaal geïnstalleerd, dus de job is de enige eerlijke plek voor dat bewijs.
 
 ## 2026-09-07 — Drie rekenkernen hebben geen enkele test · [test]
 
@@ -472,7 +486,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** In `scripts/figma-build-spec.mjs`, in `lees()`: is `rnwRol` gelijk aan `spinnerBox` of dieper, neem dan de maat van de dichtstbijzijnde `spinner`-ouder over in plaats van de eigen `getBoundingClientRect()`. Daarna `node scripts/instabiele-nodes.mjs` opnieuw draaien — die hoort dan alleen de vier confetti-nodes nog te vinden, en dat is de tegenproef.
 - **Check:** twee keer `pnpm --filter rowtrack figma:spec` achter elkaar en `cmp` op `figma/build-spec.min.json` — verschillen ze, dan leeft het.
 - **Relevantie 2026-09-14:** LEEFT, gemeten in plaats van aangenomen: twee runs op onveranderde code gaven **742 640 verschillende bytes**. (Artefacten daarna teruggezet met `git checkout -- apps/rowtrack/figma/`.)
-- **Status:** open
+- **Status:** gebouwd — 2026-09-14. `lees()` in `scripts/figma-build-spec.mjs` geeft elke node bínnen een spinner de doos van de spinner-ouder; die draait niet en is dus wél stabiel. Gemeten op twee runs met onveranderde code, structureel vergeleken in plaats van op bytes (het bestand staat op één regel, dus één veranderd cijfer verschuift alles erna — die maatstaf deugt niet): **584 verschillende velden vóór, 32 erná**, en die 32 zitten allemaal in `MotivationalToast`. `instabiele-nodes` gaat mee: **4 van 4210 nodes instabiel**, tegen 309 van 4117 op 2026-09-09, en die vier zijn de confetti-items. Bijvangst: de terugval-ratel van `figma:instance-tekst` daalde van 37 naar 36 — één instance week alleen af door zijn wisselende spinner-maat.
 
 ## 2026-09-09 — Drie auth-schermen hebben maar één frame, want hun tweede vorm zit in component-state · [feature]
 - **Wat:** `LoginScreen`, `RegisterScreen` en `ForgotPasswordScreen` hebben in Storybook alleen een `Playground`-story, terwijl de vier andere route-schermen er minstens twee hebben. Hun enige tweede zichtbare vorm is de validatie- of servertfout (`FormField error`, `ErrorMessage`), en die staat in `useState` ná een submit — een story kan hem niet zetten zonder dat het scherm er een prop of een injecteerbare beginwaarde voor krijgt. Gevolg: de foutvorm van de drie schermen waar een gebruiker het vaakst een fout ziet, is nergens gemeten en staat niet in Figma.

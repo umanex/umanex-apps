@@ -52,3 +52,9 @@ figma/parity-beelden/
 
 # 3-luiken van beeld-parity: regenereerbaar uit figma/beelden + storybook-static
 figma/beeld-diff/
+
+# Deno beheert zijn eigen boom voor de Edge Functions (nodeModulesDir: auto in
+# supabase/functions/deno.json). Die map en het lockfile zijn build-output van de typecheck,
+# geen bron — de functie zelf draait in Supabase's eigen runtime.
+supabase/functions/node_modules/
+supabase/functions/deno.lock

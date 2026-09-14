@@ -549,6 +549,14 @@ return {
   $comment: "Neergeslagen Figma-staat. NIET met de hand bewerken — ververs via apps/rowtrack/CLAUDE.md.",
   schemaVersie: 3, fileKey: figma.fileKey, fileName: figma.root.name,
   gegenereerd: new Date().toISOString().slice(0, 10),
+  // Seconderesolutie, en daarom een EIGEN veld naast `gegenereerd` (dat heeft dagresolutie).
+  // De [publicatie]-as vergelijkt de COMMIT-tijd van dit bestand met die van de bouwspec, en
+  // zijn remedie ("ververs eerst het manifest") werkte niet wanneer Figma ongewijzigd was: de
+  // verversing gaf dan een byte-identiek bestand, er viel niets te committen, en de as bleef
+  // rood zonder uitweg. Gemeten 2026-09-14, nadat een wijziging aan de WALKER de spec jonger
+  // maakte dan de momentopname terwijl er in Figma niets bewogen was. Met dit veld levert elke
+  // lezing een wijziging op, dus een verversing is altijd vast te leggen.
+  gelezen: new Date().toISOString(),
   collections,
   textStyles: (await figma.getLocalTextStylesAsync()).map(t => ({
     name: t.name, family: t.fontName.family, style: t.fontName.style, fontSize: t.fontSize,

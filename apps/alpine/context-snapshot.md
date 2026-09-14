@@ -1,5 +1,5 @@
 # Context Snapshot — alpine
-_Gegenereerd op 2026-09-11_
+_Gegenereerd op 2026-09-14_
 
 ## Project
 - **App:** alpine
@@ -26,16 +26,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-49bcdf9 docs(alpine): close phase 6 with the three checks and their counter-tests
-36662e9 feat(alpine): address the four findings from the A290 probe
-3594a41 docs(alpine): run the A290 probe and record what breaks
-c4a4f0d docs(alpine): record phase 5 screens and open the app backlog
-c846c46 docs(alpine): record phase 4 car profile and birth certificate results
+4959311 Merge origin/main into ci/rowtrack-edge-function-en-stabiele-spec
+eb6c90b chore: sync umanex-os layer with global umanex-os
+3814889 Merge pull request #461 from umanex/feature/alpine-concept
+154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
+b5990ab fix(alpine): withdraw the density finding and repurpose the cluster to photo bundles
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/alpine/BACKLOG.md
-  M  apps/alpine/briefings/2026-09-11-feature-alpine-community-platform.tcebc.md
+  M  apps/alpine/context-snapshot.md
 
 ## Bestanden met TODO/FIXME
   (geen)

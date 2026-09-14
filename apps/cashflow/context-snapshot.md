@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-09-11_
+_Gegenereerd op 2026-09-14_
 
 ## Project
 - **App:** cashflow
@@ -49,18 +49,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
+25d3b8e chore(cashflow): upgrade to Next 15.5.25 and React 19
+ff20863 docs: briefing statuses onto the triad vocabulary
 2ca664b merge: main into feature/rowtrack-web-premium-redesign
 d84679f Merge remote-tracking branch 'origin/main' into fix/rowtrack-schermverschillen
-2c970c9 test(ui): add Sheet to the rendered-size baseline
-86a9885 Merge remote-tracking branch 'origin/main' into feature/jobradar-contactopvolging
-9fbb5cf feat(jobradar): contact panel, next-action badge and sorting
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-05-18-feature-deferred-payment-finalize.tcebc.md
-  M  apps/cashflow/briefings/2026-05-19-feature-section-subheader.tcebc.md
-  M  apps/cashflow/briefings/2026-05-20-component-spaarpot-betalingen-collapse.tcebc.md
-  M  apps/cashflow/briefings/2026-06-01-feature-model2-referentiebalans.tcebc.md
+  M  apps/cashflow/BACKLOG.md
 
 ## Bestanden met TODO/FIXME
   (geen)

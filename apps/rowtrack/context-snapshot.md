@@ -70,21 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+36c4c3e docs(rowtrack): design the analysis layer on a real ride, and let the form pick the technique
+84fbe8b fix(rowtrack): an empty ride is no longer a ride, and every average proves its own denominator
 b43a7df docs(rowtrack): the vite bump answers the storybook item, and one item gets an honest title
 280c508 Merge origin/main into chore/rowtrack-vite-en-expo-patches
 b976f9c chore(rowtrack): vite 8.3.0 and the three Expo patches that were within reach
-8a91851 docs(rowtrack): relevance-check the ten newly triaged items before any of them is built
-2a06ec0 ci(rowtrack): baseline the image axis on linux for all 28 frames, both buckets
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  A  apps/rowtrack/lib/bestDistanceTime.test.ts
-  A  apps/rowtrack/lib/storableWorkout.test.ts
-  A  apps/rowtrack/lib/storableWorkout.ts
-  M  apps/rowtrack/package.json
-  A  apps/rowtrack/scripts/check-averages.mjs
+  M  apps/rowtrack/briefings/2026-09-14-feature-analyse-laag.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

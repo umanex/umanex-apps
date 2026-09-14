@@ -340,6 +340,28 @@ jobs:
       # OVERGESLAGEN mét reden — nagemeten 2026-09-09 door het bestand weg te halen: exit 0,
       # 42 van 44 mutaties, en de twee producent-mutaties expliciet overgeslagen in plaats
       # van stil groen. Dat verschil is het punt: overgeslagen is geen ok.
+
+      # expo-router rendert ELKE route in app/(tabs)/ als tab; <Tabs.Screen> configureert alleen
+      # opties. Een route die niemand declareert krijgt er dus stil een tab bij, met de rauwe
+      # bestandsnaam als label. Op 2026-09-14 stond app/(tabs)/profile.stories.tsx zo als vijfde
+      # tab in de app: aantikken gaf een Render Error (het export default van een CSF-bestand is
+      # een object), en de extra tab brak "HISTORIEK" af tot "HISTORIE / K".
+      #
+      # De guard toetst de gelijkheid tussen schijf en declaratie, niet een maximum-aantal — dat
+      # laatste is een symptoom. Hij staat vooraan in deze sectie omdat hij alleen app/ leest en
+      # in milliseconden draait: achter de Figma- en Storybook-guards zou een rode parity hem
+      # nooit laten uitvoeren, en dan reist een herintroduceerde .stories-route mee met een CI
+      # die om een andere reden rood staat.
+      #
+      # De tegenproef dekt elf gevallen, waaronder drie negatieve controles: een lege map hoort
+      # GROEN te blijven, een parser die geen enkele Tabs.Screen matcht hoort te stoppen, en een
+      # die er ÉÉN niet leest ook — drie van de vier gelezen ziet er gezond uit en is het niet.
+      - name: Guard — rowtrack routes en tabbar (met tegenproef)
+        id: guard-rowtrack-routes-en-tabbar-met-tegenproef
+        run: |
+          pnpm --filter rowtrack routes
+          pnpm --filter rowtrack routes:selftest
+
       - name: Guard — rowtrack Figma ↔ code (met tegenproef)
         id: guard-rowtrack-figma-code-met-tegenproef
         run: |
@@ -390,22 +412,6 @@ jobs:
         run: |
           pnpm --filter rowtrack figma:instance-tekst
           pnpm --filter rowtrack figma:instance-tekst:selftest
-
-      # expo-router rendert ELKE route in app/(tabs)/ als tab; <Tabs.Screen> configureert alleen
-      # opties. Een route die niemand declareert krijgt er dus stil een tab bij, met de rauwe
-      # bestandsnaam als label. Op 2026-09-14 stond app/(tabs)/profile.stories.tsx zo als vijfde
-      # tab in de app: aantikken gaf een Render Error (het export default van een CSF-bestand is
-      # een object), en de extra tab brak "HISTORIEK" af tot "HISTORIE / K".
-      #
-      # De guard toetst de gelijkheid tussen schijf en declaratie, niet een maximum-aantal — dat
-      # laatste is een symptoom. De tegenproef dekt vijf gevallen, waaronder de negatieve
-      # controle op de guard zelf: een parser die geen enkele Tabs.Screen meer matcht ziet er in
-      # de uitvoer identiek uit aan "alles in orde".
-      - name: Guard — rowtrack routes en tabbar (met tegenproef)
-        id: guard-rowtrack-routes-en-tabbar-met-tegenproef
-        run: |
-          pnpm --filter rowtrack routes
-          pnpm --filter rowtrack routes:selftest
 
       # --- rowtrack, de render-assen ----------------------------------------------------
       #

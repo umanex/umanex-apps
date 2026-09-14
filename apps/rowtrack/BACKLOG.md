@@ -717,10 +717,10 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Status:** open
 
 ## 2026-09-14 — Drie dubbele koppen: het label zegt wat er direct onder staat · [ux]
-- **Wat:** Drie keer dezelfde vorm van ruis. (1) Op Profiel staat de sectiekop `GEZONDHEIDSGEGEVENS` direct boven een rij die ook `GEZONDHEIDSGEGEVENS` heet — en sectiekop en veldlabel delen dezelfde stijl (uppercase, tracking, grijs), waardoor de sectiestructuur niet leesbaar is. (2) Op WorkoutDetail staat de eyebrow `OVERZICHT` pal boven een tab die ook `Overzicht` heet. (3) Het maanddoelblok staat identiek op Home én Profiel — zelfde cijfers, zelfde `WIJZIG`, zelfde "46 % voldaan".
+- **Wat:** Drie keer dezelfde vorm van ruis. (1) Op Profiel lezen de sectiekop (`app/(tabs)/profile.tsx:585`) en het rijlabel eronder (`:589`) allebei dezelfde sleutel `t.consent.settingLabel` — "Gezondheidsgegevens", `i18n/translations/nl.ts:458`. Sectiekop en veldlabel delen bovendien dezelfde stijl (uppercase, tracking, grijs), waardoor de sectiestructuur niet leesbaar is. (2) Op WorkoutDetail staat de eyebrow `OVERZICHT` pal boven een tab die ook `Overzicht` heet. (3) Het maanddoelblok staat identiek op Home én Profiel — zelfde cijfers, zelfde `WIJZIG`, zelfde "46 % voldaan".
 - **Waarom niet nu:** (3) kan een bewuste snelkoppeling zijn in plaats van duplicatie; dat is Jeroens keuze en niet uit de code af te leiden. (1) en (2) zijn klein maar zitten in twee schermen die in briefing 4 sowieso opengaan — daar meenemen is goedkoper dan een eigen ronde.
 - **Eerste zet:** (1) en (2) meenemen in briefing 4 (`2026-09-14-screen-hierarchie-en-eindscherm`); (3) apart beslissen.
-- **Check:** `grep -c 'GEZONDHEIDSGEGEVENS' apps/rowtrack/app/\(tabs\)/profile.tsx` → 2 of meer = nog dubbel.
+- **Check:** `grep -c 't.consent.settingLabel' 'apps/rowtrack/app/(tabs)/profile.tsx'` → 2 = de sectiekop en het rijlabel delen nog dezelfde string.
 - **Status:** open
 
 ## 2026-09-14 — Vaste breedte 165 op labels zonder numberOfLines, zes plekken · [fix]

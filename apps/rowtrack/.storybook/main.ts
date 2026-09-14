@@ -156,9 +156,12 @@ const workletsInOptimizer = {
 };
 
 const config: StorybookConfig = {
-  // `app/` staat erbij sinds fase 1 van de schermen-briefing: de zeven route-schermen krijgen
-  // een story zodat ze een render-pad hebben. Ze zijn SCHERMEN, geen componenten — ze staan in
-  // `scripts/schermen.mjs` en worden daarmee uitgesloten van de library-assen.
+  // De zeven scherm-stories stonden tot 2026-09-14 onder `app/` — en `app/` IS de routeboom
+  // van expo-router, dus ze werden routes. `app/(tabs)/profile.stories.tsx` verscheen zo als
+  // vijfde tab in de uitgeleverde app en crashte hem bij een tik (PR #478). Ze staan nu in
+  // `stories/`, buiten de routeboom; `pnpm --filter rowtrack routes` bewaakt dat ze er niet
+  // terugkomen. Het blijven SCHERMEN, geen componenten — ze staan in `scripts/schermen.mjs` en
+  // worden daarmee uitgesloten van de library-assen.
   stories: ['../docs/**/*.mdx', '../components/**/*.stories.@(ts|tsx)', '../stories/**/*.stories.@(ts|tsx)'],
   addons: ['@storybook/addon-docs', '@storybook/addon-a11y'],
   staticDirs: ['./public'],

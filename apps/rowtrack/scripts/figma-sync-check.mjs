@@ -103,9 +103,11 @@ const NIET_VISUEEL = {
 // `typeStyles.sectionValue` en `typeStyles.buttonPrimary`. Wat overblijft is één gat dat een
 // écht ontbrekende token is: AlbertSans_600SemiBold 16px met 20 % tracking (`heroLabel`, 14
 // nodes) — de 20 %-reeks bestaat op 13 en 11 px, maar niet op 16. Zie het BACKLOG-item.
-// 53 -> 51 op 2026-09-14: KPI.tsx, SectionHeader.tsx en SplitsList.tsx zijn verwijderd
-// (UX-audit F18) en namen twee ongebonden waarden mee die nergens anders voorkwamen.
-const BEKENDE_GATEN = 51;
+// 53 -> 51 -> 50 op 2026-09-14. Eerst namen KPI.tsx, SectionHeader.tsx en SplitsList.tsx twee
+// ongebonden waarden mee die nergens anders voorkwamen (UX-audit F18). De derde viel weg toen
+// de kcal-voetnoot van een losse 12px Light naar de rol `body.xs` (Regular 12) ging: die
+// combinatie bestond al via PrBanner, dus het is er één minder in plaats van één erbij.
+const BEKENDE_GATEN = 50;
 /** Voorkomens, niet alleen unieke waarden. De deduplicatie is app-breed, dus een nieuw gat dat
  *  een bekende waarde hergebruikt is in `aantalUniek` onzichtbaar. */
 // 2 257 -> 3 760 op 2026-09-09. Het aantal UNIEKE ongebonden waarden bleef 52: dit zijn

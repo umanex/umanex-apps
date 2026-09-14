@@ -1175,6 +1175,45 @@ console.log('\nS36 — geen bufferpot, wel een tekort');
   invariant(months, 'S36');
 }
 
+// ── S37: een bufferpot finaliseert niet ───────────────────────────────────────
+// Besluit van 2026-09-14: de bufferstorting is volledig afgeleid van wat de maand overlaat,
+// dus er is geen bedrag om af te rekenen en geen rij waarin je dat zou doen. Een
+// `finalized`-settlement die nog uit het oude model in de data staat, hoort dus niets te doen.
+// De calculator regelt dat door élke settlement van de bufferpot uit `activeSettlements` te
+// filteren. Haal die filter weg en dit blok wordt rood: de finalisatie laat de pot dan
+// vrijvallen (pot 0 in plaats van 7.000, eindsaldo 7.000 in plaats van 0). Gemeten op beide
+// kanten — S20 vangt diezelfde filter ook, maar via een ándere pot, dus dit is niet dubbelop.
+console.log('\nS37 — een bufferpot finaliseert niet');
+{
+  const buf: ReservationItem = { ...BUFFER, monthlyAmount: 200, startMonth: '2025-01' };
+  // Een óverschotmaand, en dat is de hele truc: de pot houdt 7.000 over. In een tekortmaand
+  // loopt hij toch leeg en is "identiek" ook waar als de finalisatie wél doorwerkte — gemeten
+  // 2026-09-14, daar bleef dit blok groen terwijl de filter verwijderd was. Met een saldo dat
+  // blijft staan, laat een doorwerkende finalisatie de pot vrijvallen: pot 0, eindsaldo 7.000.
+  const maak = (settlements: ReservationSettlement[]) => calculateMonths(
+    '2026-03', 5000,
+    [{ id: 'e1', monthKey: '2026-03', label: 'kost', amount: 1000, paid: false }],
+    [{ id: 'i1', monthKey: '2026-03', label: 'inkomen', amount: 3000, received: false }],
+    [], [buf], [], [], [], [], settlements, 2, new Map([['buffer', 1000]]),
+  );
+  const zonder = maak([]);
+  const met = maak([
+    { id: 'set1', reservationId: 'buffer', monthKey: '2026-03', effectiveAmount: 200, finalized: true },
+  ]);
+  met.forEach((m, i) => {
+    const z = zonder[i]!;
+    check(`S37 · eindsaldo ongewijzigd ${m.monthKey}`, m.endBalance, z.endBalance);
+    check(`S37 · potstand ongewijzigd ${m.monthKey}`, bufferPot(m)!.potBalance, bufferPot(z)!.potBalance);
+    check(`S37 · sweep ongewijzigd ${m.monthKey}`,
+      bufferPot(m)!.autoContribution ?? 0, bufferPot(z)!.autoContribution ?? 0);
+  });
+  // Twee positieve controles, want "identiek" is een zwakke uitspraak. De pot moet écht vegen,
+  // en er moet écht saldo overblijven — anders kan dit blok het defect niet opwekken.
+  checkBool('S37 · de pot veegt wel degelijk', (bufferPot(met[0]!)!.autoContribution ?? 0) > 0.005, true);
+  check('S37 · en houdt saldo over', bufferPot(met[0]!)!.potBalance, 7000);
+  invariant(met, 'S37');
+}
+
 // Tegenproef. `scripts/scenarios.mjs` draait deze suite eerst mét deze vlag en eist dan een
 // niet-nul exit: een suite die niet kán falen meldt "546/546 geslaagd" even overtuigend als
 // een die werkt. Zonder de vlag verandert er niets aan de telling.

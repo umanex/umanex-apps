@@ -6,18 +6,6 @@ import type { MonthData } from '../../lib/cashflow/types';
 
 type WaterfallChartProps = {
   month: MonthData;
-  /**
-   * Draagt deze maand ankersemantiek? Dan is `startBalance` het échte banksaldo — de potten
-   * zitten er nog in en de afgevinkte betalingen zijn er al af — en antwoorden de kostenkoppen
-   * op "wat moet er nog van dit saldo af". Dat is een stand, geen mutatie. In een latere maand
-   * vertrekt de kolom van een geprojecteerd vrij saldo en zijn het wél mutaties.
-   *
-   * De prop staat er omdat `MonthData` het verschil niet draagt: `MonthSubtotals` heeft geen
-   * discriminant, dus een consument kan niet zien welke van de twee conventies hij vasthoudt.
-   * Zie het backlog-item van 2026-09-14 daarover. Elke afgesloten maand telt ook als anker —
-   * `useAutoCloseMonth` rekent die per stuk door als maand 0.
-   */
-  isAnchor: boolean;
 };
 
 const W = 640;
@@ -77,7 +65,11 @@ function buildSteps(month: MonthData, isAnchor: boolean): Step[] {
  * noemen dit de standaardvorm voor een cashflow-brug — bij gemengde plussen en minnen is
  * er geen goed alternatief.
  */
-export function WaterfallChart({ month, isAnchor }: WaterfallChartProps) {
+export function WaterfallChart({ month }: WaterfallChartProps) {
+  // Afgeleid, niet aangereikt. Tot 2026-09-14 was dit een prop, omdat `MonthSubtotals` de
+  // conventie niet droeg; nu wel, en een afgeleide waarde kan de aanroeper niet verkeerd
+  // meegeven. Dat was de hele reden voor het discriminant-item.
+  const isAnchor = month.subtotals.basis === 'bank';
   const [showTable, setShowTable] = useState(false);
   const steps = buildSteps(month, isAnchor);
 

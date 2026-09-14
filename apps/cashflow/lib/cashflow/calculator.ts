@@ -439,7 +439,6 @@ export function calculateMonths(
           releasedThisMonth: spaardoelReleases.get(r.id) ?? 0,
           isDeficitBuffer: r.id === bufferId,
           autoContribution: null,
-          deficitUncovered: 0,
         };
       });
 
@@ -571,7 +570,7 @@ export function calculateMonths(
         ? evaluation.reservationPots
         : evaluation.reservationPots.map((p) =>
             p.reservationId === bufferId
-              ? { ...p, autoContribution: bufferContribution, deficitUncovered: bufferUncovered }
+              ? { ...p, autoContribution: bufferContribution }
               : p,
           );
 

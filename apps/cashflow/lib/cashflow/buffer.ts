@@ -51,11 +51,26 @@ export function bufferSummary(data: MonthData): BufferSummary {
   const present = pots.length > 0;
   const total = pots.reduce((s, p) => s + p.potBalance, 0);
 
+  // Tot 2026-09-14 stond dit als `deficitUncovered` op élke pot, en het was daar een tweede
+  // naam voor hetzelfde getal: de calculator zette het op `-endBalance` zodra de sweep het
+  // tekort niet dekte, en hard op 0 zodra er geen buffer aan het werk was. Twee opslagplaatsen
+  // voor één grootheid kunnen alleen uit elkaar lopen, dus staat er nu één afleiding.
+  //
+  // De poort is `present`, en dat is gemeten in plaats van gekozen. Eerst stond hier
+  // `autoContribution !== null` — de conditie waaronder de calculator het oude veld vulde —
+  // maar die tak kán niet vuren: een bufferpot die niet aangerekend wordt levert helemaal
+  // geen potregel op, en `bufferIsFinalized` is per constructie onwaar omdat
+  // `activeSettlements` (calculator.ts:160-163) élke settlement van de bufferpot wegfiltert.
+  // Een bufferpot die bestaat, veegt dus altijd. Een tak die nooit vuurt is geen waarborg.
+  //
+  // Zonder pot is het antwoord wél 0 en niet `-endBalance`: dan is er geen buffer die iets
+  // had moeten dekken. S36 legt dat vast — haal `present` weg en die wordt rood.
+
   return {
     present,
     delta: pots.reduce((s, p) => s + (p.potBalance - p.deferredFromPrevious), 0),
     total,
-    uncovered: pots.reduce((s, p) => s + p.deficitUncovered, 0),
+    uncovered: present ? Math.max(0, -data.endBalance) : 0,
     position: total + data.endBalance,
     movement: -netBurn(data),
   };

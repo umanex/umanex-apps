@@ -49,18 +49,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+75e7efd fix(cashflow): the waterfall called an anchor-month balance a movement
 5c6add2 chore(cashflow): answer the context metadata instead of leaving three TODOs
 0103cb4 fix(cashflow): a withdrawal from the buffer pot is an outflow, so the month flow says so
 b24f0f8 fix(cashflow): give the pot ledger a floor, and stop a cash top-up from wiping the pot
 5e86457 fix(cashflow): pin the build's dist dir so an inherited env cannot redirect a rebuild
-c473afe fix(cashflow): close the Ctrl+C window that left next start orphaned on :3100
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/BACKLOG.md
   M  apps/cashflow/app/analyse/page.tsx
   M  apps/cashflow/components/cashflow/WaterfallChart.tsx
-  M  apps/cashflow/scripts/render-charts.tsx
+  M  apps/cashflow/lib/cashflow/buffer.ts
+  M  apps/cashflow/lib/cashflow/calculator.ts
+  M  apps/cashflow/lib/cashflow/normalize.ts
+  M  apps/cashflow/lib/cashflow/subtotals.ts
+  M  apps/cashflow/lib/cashflow/types.ts
+  M  apps/cashflow/scripts/buffer-scenarios.ts
+  M  apps/cashflow/scripts/calc-baseline.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

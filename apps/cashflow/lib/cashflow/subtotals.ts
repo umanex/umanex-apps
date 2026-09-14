@@ -143,6 +143,7 @@ export function computeMonthSubtotals(input: MonthSubtotalInput): MonthSubtotals
     provisions,
     buffer,
     costs,
+    basis: isFirstMonth ? 'bank' : 'vrij',
     endBalance: incoming - costs,
   };
 }

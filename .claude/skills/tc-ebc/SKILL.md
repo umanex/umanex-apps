@@ -174,6 +174,19 @@ components/
 
 Klant- of project-specifieke **feature-folders** (bv. een domein-map zoals `features/kaart/`) staan in de klant-CLAUDE.md. Raadpleeg die voor je plaatst. Bij twijfel over de categorie: vraag expliciet voor je plaatst (conform CLAUDE.md).
 
+**Gedeelde package of app-code — en waarom dat niet vanzelf goed gaat.** Hoort het component in de
+gedeelde laag (`@umanex/ui`, `@columba/ui`), bouw het dán daar, niet in app-code met het voornemen
+het later te verhuizen. Zichtbaar maken is namelijk niet hetzelfde als gebruikt krijgen: gemeten in
+umanex-apps op 2026-09-07 had `@umanex/ui` een Storybook, een Figma-sync-guard én een CI-build,
+terwijl cashflow — het grootste UI-oppervlak van de monorepo — hem in **nul** app-bestanden
+importeerde. De dependency stond in `package.json`, `transpilePackages` stond in `next.config.mjs`,
+en de enige importeur was een render-script. Alle infrastructuur was aanwezig en werd niet gebruikt.
+
+Daarom toetst `pnpm ds:guard` de **adoptie** als eigen as (een app die `@umanex/ui` declareert
+importeert hem ook echt in app-code; `scripts/` telt niet mee), en daarom draagt elke app een
+`## Design-systeem-bron`-sectie. Kijk dus vóór je plaatst wat die sectie zegt, en laat een nieuwe
+primitive daar landen waar de sectie hem verwacht.
+
 ### 2. Het bestand aanmaken
 
 Eén component per bestand, bestandsnaam in PascalCase. Volg de globale TypeScript-conventies — `type` (niet `interface`), plain function (geen `React.FC`):

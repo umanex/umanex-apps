@@ -85,6 +85,40 @@ Een parkeerbranch (`work/<app>-parked`) hoorde bij de permanente app-worktree en
 
 ---
 
+## Tref je een oude stash aan
+
+Een stash is de derde vorm van achtergelaten werk, en de lastigste: hij verschijnt **niet** in
+`git status`, **niet** in `git worktree list` en **niet** in `git log`. Elke controle die daarop
+leunt ziet hem dus niet. Gemeten 2026-08-27: een routinecontrole vóór een taak in Luminus vond
+1 425 regels ongetrackte briefings en audits, maar zag de stash uit augustus niet — die kwam pas
+boven toen Jeroen ernaar vroeg. Beide stashes bleken achteraf redundant, maar dat was toeval,
+niet het resultaat van de controle. Vandaar dat `git stash list` als derde in de tak-poort staat
+(`scripts/tak-poort.sh`).
+
+Tref je er een aan, kijk dan naar de **leeftijd** vóór de inhoud:
+
+```bash
+git stash list --date=short --format='%gd %cd %s'
+git stash show -p 'stash@{0}' | head -40
+```
+
+Een stash hangt aan de commit waarop hij gemaakt is, dus hoe ouder hij is, hoe minder zijn inhoud
+over vandaag zegt. Gemeten op de umanex-apps-stash van april: die droeg **hógere**
+dependency-majors dan wat productie sindsdien draait (`zustand ^5` tegen `^4`, `date-fns ^4`
+tegen `^3`). Toepassen zou daar geen herstel zijn maar een blinde upgrade van een draaiende app.
+
+Twee handtekeningen om te herkennen:
+
+- **De stash blijft staan terwijl zijn inhoud óók in de tree zit** — dat is `git stash apply` in
+  plaats van `pop`. De tree is dan al bijgewerkt; de stash is een dubbel.
+- **De stash is ouder dan de laatste dependency-wijziging** — vergelijk zijn datum met
+  `git log -1 --format=%as -- package.json pnpm-lock.yaml`.
+
+Verwijderen (`git stash drop`) is Jeroens beslissing, net als bij een zusmap. Meld wat erin zit en
+hoe oud het is; begin er geen taak naast en pas hem niet stil toe.
+
+---
+
 ## Tref je een oude zusmap aan
 
 `../<repo>-<app>`, te vinden met `git worktree list`. **Verwijder hem niet zelf.**

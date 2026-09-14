@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "rm -rf .next && next dev --port 3000",
-    "build": "next build",
+    "build": "NEXT_DIST_DIR=.next next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
@@ -14,7 +14,7 @@
     "pm2:restart": "pm2 restart cashflow",
     "pm2:logs": "pm2 logs cashflow",
     "pm2:status": "pm2 status",
-    "pm2:rebuild": "next build && pm2 restart cashflow",
+    "pm2:rebuild": "NEXT_DIST_DIR=.next next build && pm2 restart cashflow",
     "render:screens": "tsx --tsconfig scripts/tsconfig.json scripts/render-screens.tsx",
     "render:charts": "tsx --tsconfig scripts/tsconfig.json scripts/render-charts.tsx",
     "sweep": "node scripts/dom-sweep.mjs",

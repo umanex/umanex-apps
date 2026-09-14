@@ -172,9 +172,16 @@ export function calculateMonths(
   const prevMonth = format(addMonths(parseISO(`${anchorMonth}-01`), -1), 'yyyy-MM');
   for (const res of reservations) {
     if (res.type === 'spaardoel' && res.startMonth <= prevMonth) {
-      const historical = initialPotBalances
+      // Een pot kan niet minder dan niets bevatten. Een historische opname groter dan de
+      // opbouw is al van de rekening gegaan; hem als schuld het venster in dragen laat hem
+      // een tweede keer betalen. `spaardoelCost` (subtotals.ts) en `nextDeferred` (verderop)
+      // klemmen hier al — zonder deze bodem is `potBalanceMap` de enige grootheid in het
+      // model die een negatieve potstand draagt. `calcPotBalance` zelf blijft ongeklemd: die
+      // voedt ook het zijpaneel en de betaalmodal, waar de rauwe reconstructie juist de
+      // anomalie zichtbaar maakt.
+      const historical = Math.max(0, initialPotBalances
         ? (initialPotBalances.get(res.id) ?? 0)
-        : calcPotBalance(res, reservationPayments, activeSettlements, prevMonth, activeReservationDefers);
+        : calcPotBalance(res, reservationPayments, activeSettlements, prevMonth, activeReservationDefers));
       potBalanceMap.set(res.id, historical);
       deferredRemainingMap.set(res.id, historical);
     }
@@ -192,7 +199,9 @@ export function calculateMonths(
         // staan. De normale doorrol zegt dat ook (zie `nextPotBalances` verderop); zonder
         // dezelfde regel hier lekte het restant van een afgesloten maand de maand erna in,
         // en bood de betaalmodal een potstand aan die er niet meer was.
-        const carried = pot.potType === 'spaardoel' ? pot.potBalance : 0;
+        // `Math.max` om dezelfde reden als bij de openingsstand hierboven: een snapshot die
+        // vóór die klem geschreven is, kan een negatieve stand dragen.
+        const carried = pot.potType === 'spaardoel' ? Math.max(0, pot.potBalance) : 0;
         potBalanceMap.set(pot.reservationId, carried);
         deferredRemainingMap.set(pot.reservationId, carried);
       }
@@ -280,14 +289,6 @@ export function calculateMonths(
 
     const monthReservationPayments = reservationPayments.filter((p) => p.monthKey === monthKey);
 
-    /**
-     * Is er deze maand cash bijbetaald bovenop deze pot? Dan is de pot volledig benut en
-     * staat er niets meer in — zowel voor de getoonde stand als voor de doorrol en voor
-     * de ruimte die de buffer kan uitlenen. Eén bron voor die drie, want liepen ze uit
-     * elkaar, dan kon de pot ongemerkt negatief worden.
-     */
-    const hasCashOverflow = (resId: string): boolean =>
-      monthReservationPayments.some((p) => p.reservationId === resId && p.fromCash > 0);
     const monthSettlements = recurringSettlements.filter((s) => s.monthKey === monthKey);
 
     // --- BESCHIKBAAR / OPENSTAAND / EINDSALDO ---
@@ -372,17 +373,18 @@ export function calculateMonths(
         potBalances.set(resId, (potBalances.get(resId) ?? 0) + credit);
       }
 
+      // Dezelfde bodem als `nextDeferred` verderop en `spaardoelCost` in subtotals.ts: wat een
+      // betaling méér opneemt dan de pot kan dragen, kwam van de rekening en is daar al als
+      // `teveel` geboekt. De pot landt dus op leeg, niet op een schuld.
+      //
+      // Hier stond tot 2026-09-14 ook een tweede lus die het potsaldo op 0 zette zodra er cash
+      // was bijbetaald. Die regel woog de vlag zwaarder dan het bedrag: €50 cash naast een
+      // opname van €100 wiste een pot van €12.100, terwijl de kostenkop de volle stand bleef
+      // boeken. Een cash-bijbetaling verschuift de betaalbron, ze leegt de pot niet — en waar
+      // ze dat wél doet (opname == stand) komt de klem hieronder op hetzelfde nul uit.
       for (const payment of monthReservationPayments) {
-        potBalances.set(
-          payment.reservationId,
-          (potBalances.get(payment.reservationId) ?? 0) - payment.fromReservation,
-        );
-      }
-      // Als er cash bijbetaald werd, is de pot volledig benut — saldo naar 0
-      for (const payment of monthReservationPayments) {
-        if (hasCashOverflow(payment.reservationId)) {
-          potBalances.set(payment.reservationId, 0);
-        }
+        const na = (potBalances.get(payment.reservationId) ?? 0) - payment.fromReservation;
+        potBalances.set(payment.reservationId, na > 0 ? na : 0);
       }
 
       // Gefinaliseerde spaardoelen: de pot is afgesloten, het restsaldo
@@ -488,15 +490,6 @@ export function calculateMonths(
           nextPotBalances.set(res.id, 0);
           continue;
         }
-        // Cash bijbetaald: de pot is volledig benut en staat hierboven al op 0. Diezelfde
-        // regel moet ook de doorrol halen, anders zegt `potBalance` 0 terwijl de
-        // doorgerolde stand nog een saldo draagt — en dat saldo is precies wat de buffer
-        // als opnameruimte leest. De twee maps liepen daardoor uiteen en de pot kon
-        // ongemerkt onder nul zakken.
-        if (hasCashOverflow(res.id)) {
-          nextDeferred.set(res.id, 0);
-          continue;
-        }
         const paidFromReservation = monthReservationPayments
           .filter((p) => p.reservationId === res.id)
           .reduce((s, p) => s + p.fromReservation, 0);
@@ -509,10 +502,6 @@ export function calculateMonths(
       // wél een uitgestelde storting ontvangt, moet die storting toch bijgeschreven zien.
       for (const [resId, credit] of arrivingCredit) {
         if (billableReservations.some((r) => r.id === resId)) continue;
-        if (hasCashOverflow(resId)) {
-          nextDeferred.set(resId, 0);
-          continue;
-        }
         const paidFromReservation = monthReservationPayments
           .filter((p) => p.reservationId === resId)
           .reduce((s, p) => s + p.fromReservation, 0);
@@ -557,12 +546,10 @@ export function calculateMonths(
       const paidFromBuffer = monthReservationPayments
         .filter((p) => p.reservationId === bufferId)
         .reduce((s, p) => s + p.fromReservation, 0);
-      const potAvailable = hasCashOverflow(bufferId)
-        ? 0
-        : Math.max(
-            0,
-            getDeferred(bufferId) + (arrivingCredit.get(bufferId) ?? 0) - paidFromBuffer,
-          );
+      const potAvailable = Math.max(
+        0,
+        getDeferred(bufferId) + (arrivingCredit.get(bufferId) ?? 0) - paidFromBuffer,
+      );
       const target = Math.max(evaluateMonth(0).endBalance, -potAvailable);
       const swept = evaluateMonth(target);
       bufferContribution = target;

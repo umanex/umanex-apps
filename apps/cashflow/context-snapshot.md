@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-09-11_
+_Gegenereerd op 2026-09-14_
 
 ## Project
 - **App:** cashflow
@@ -49,18 +49,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-2ca664b merge: main into feature/rowtrack-web-premium-redesign
-d84679f Merge remote-tracking branch 'origin/main' into fix/rowtrack-schermverschillen
-2c970c9 test(ui): add Sheet to the rendered-size baseline
-86a9885 Merge remote-tracking branch 'origin/main' into feature/jobradar-contactopvolging
-9fbb5cf feat(jobradar): contact panel, next-action badge and sorting
+5e86457 fix(cashflow): pin the build's dist dir so an inherited env cannot redirect a rebuild
+c473afe fix(cashflow): close the Ctrl+C window that left next start orphaned on :3100
+92176de refactor(cashflow): refuse a busy port before the build, not sixteen seconds after it
+ec29bfa docs(cashflow): relevance-check the seven open backlog items before any of them is built
+154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-05-18-feature-deferred-payment-finalize.tcebc.md
-  M  apps/cashflow/briefings/2026-05-19-feature-section-subheader.tcebc.md
-  M  apps/cashflow/briefings/2026-05-20-component-spaarpot-betalingen-collapse.tcebc.md
-  M  apps/cashflow/briefings/2026-06-01-feature-model2-referentiebalans.tcebc.md
+  M  apps/cashflow/BACKLOG.md
+  M  apps/cashflow/lib/cashflow/calculator.ts
+  M  apps/cashflow/scripts/buffer-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

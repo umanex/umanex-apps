@@ -4,7 +4,7 @@
 - **Type:** fix (geen TC-EBC — geen ontwerpbeslissing; zie Waarom geen TC-EBC)
 - **Project:** rowtrack
 - **Klant:** umanex
-- **Status:** gebouwd
+- **Status:** gevalideerd
 - **Bron:** designreview 2026-09-14, bevinding P0
 
 ---
@@ -84,6 +84,40 @@ Elk item één meting. Afvinken met het bewijs in de regel.
 - [x] De guard wordt rood op het defect zelf — bewijs: `pnpm --filter rowtrack routes:selftest` 11/11, waaronder de twee gaten die de code-review van 2026-09-14 mat (een `_`-bestand dat géén `_layout` is, en een geneste `_layout` die weggehaald wordt) plus drie negatieve controles
 - [x] `rowtrack://login.stories` opent niets meer — bewijs: `simctl openurl` geeft expo-routers "Unmatched Route — Page could not be found" in plaats van een Render Error, screenshot `sim/na-deeplink.png`
 - [x] De vier bestaande tabs zijn ongewijzigd in route, label, icoon en volgorde — bewijs: `git diff origin/main -- apps/rowtrack/app/(tabs)/_layout.tsx` is leeg
+
+## Uitkomst van de Beoordeel-stap
+
+Panel gedraaid op 2026-09-14. `code-review` (high) op PR #478: twaalf bevindingen, vijf P1 —
+alle vijf gesloten in PR #480. `verify`: de acht items hierboven. `security-audit`: scope-gate,
+geen backend-, server- of datacode in deze diff; wel gemeten dat geen enkel bestand onder
+`app/` nog `.storybook/` importeert (de importgraaf, niet de gebouwde bundel).
+`ux-audit`: n.v.t. — er verdwijnt een kapotte tab en een label breekt niet meer af; er is geen
+nieuw ontwerp. Wat er aan de tabbar nog mankeert (de labelstijl op 11 px) staat als eigen
+BACKLOG-item van dezelfde dag.
+
+**De grond voor `gevalideerd` is een terugdraai-meting, geen oordeel.** Elke fix uit #480 is
+apart weggenomen op een wegwerpkopie van de echte boom, met de eis dat de suite omvalt op zíjn
+eigen geval — niet dat ze ergens omvalt:
+
+| Fix teruggedraaid | Uitkomst |
+|---|---|
+| alleen `_layout` is een layout | suite exit 1 · *underscore-bestand* zakt (exit 0 waar 2 verwacht werd) |
+| map telt alleen als tab mét `_layout` | suite exit 1 · *geneste `_layout` weg* zakt (exit 0 waar 2 verwacht werd) |
+| attribuut lezen op brace-diepte 0 | suite exit 1 · *parser leest er één niet* zakt **op de tekst**, niet op de exit-code |
+
+Die laatste rij is waarom de tekst-assertie in de zelftest staat: zónder die fix geeft de guard
+wél exit 2, maar om de verkeerde reden — hij oordeelt op een verkeerd gelezen naam in plaats van
+te stoppen. Een tegenproef die alleen exit-codes vergeleek had hier groen gestaan.
+
+Dit was een **eenmalige meting** (2026-09-14), geen gecommitteerd instrument: hij patcht
+brontekst van de guard en zou bij elke herschrijving stukgaan. Wat wél blijft staan is dat elk
+van de drie gaten een eigen zelftest-geval heeft; deze meting bewijst dat die gevallen dragend
+zijn. Herhaalbaar door de drie regels uit de tabel terug te draaien en
+`routes:selftest` te draaien.
+
+CI op #480: groen, en de stap *Guard — rowtrack routes en tabbar (met tegenproef)* heeft
+aantoonbaar gedraaid (run 34879213731, uitvoer `tegenproef: 11/11` in de log) — een groene job
+alleen bewijst niet dat een stap is uitgevoerd.
 
 ## Niet in deze taak
 

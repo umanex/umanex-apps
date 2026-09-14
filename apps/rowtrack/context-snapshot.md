@@ -70,20 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4eaa1c0 fix(rowtrack): close three holes the route guard could not see
 61b9675 fix(rowtrack): stories are not routes, and every tab is declared
 3fc9b12 docs(rowtrack): plan the design review into four briefings and eleven backlog items
 692f835 Merge origin/main into ci/rowtrack-edge-function-en-stabiele-spec
 61f34d6 fix(rowtrack): give the Edge Functions their own Deno config so the typecheck can resolve
-810e97d docs(rowtrack): design the analysis layer on a real ride, and let the form pick the technique
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/.storybook/main.ts
-  M  apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/CLAUDE.md
   M  apps/rowtrack/briefings/2026-09-14-taakcontract-routelek-stories.md
-  M  apps/rowtrack/scripts/guard-tabbar-routes.mjs
-  M  apps/rowtrack/scripts/guard-tabbar-routes.selftest.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

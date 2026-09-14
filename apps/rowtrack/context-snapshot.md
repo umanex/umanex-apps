@@ -70,23 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+37a5500 fix(rowtrack): the image ratchet also watches text, because a text change walked past it today
 97cef48 feat(rowtrack): give the three auth screens their error frame, without teaching the app about stories
 c783a3d fix(rowtrack): close the P3 list — the tappable row, Android back, the asterisk, the dead layers
 7035cb3 docs(rowtrack): brief the P3 list, with the re-triage measured against today's code
 be6eb13 ci(rowtrack): baseline the image axis on the runner, not on a Mac
-417ab79 feat(rowtrack): turn the image axis into a ratchet and run it in CI
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/figma/beeld-basislijn.json
-  M  apps/rowtrack/figma/beeld-verschillen.json
-  M  apps/rowtrack/figma/build-spec.min.json
-  M  apps/rowtrack/figma/laagnamen.json
-  M  apps/rowtrack/figma/ongebonden.json
-  M  apps/rowtrack/scripts/beeld-parity.mjs
-  M  apps/rowtrack/scripts/figma-sync-check.mjs
-  M  apps/rowtrack/scripts/schermen.mjs
-  M  apps/rowtrack/scripts/walker-blindvlekken.mjs
+  M  apps/rowtrack/BACKLOG.md
 
 ## Bestanden met TODO/FIXME
   (geen)

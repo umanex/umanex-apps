@@ -41,6 +41,20 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-09-14 — `PaceZone.tsx` is dood sinds F18, maar niet verwijderd · [refactor]
+- **Wat:** `components/PaceZone.tsx` (type `PaceZoneLevel` + functie `getPaceZone`) had precies één
+  gebruiker: de `paceZone`-prop van `ActivePhase`. Die prop is op 2026-09-14 verwijderd omdat niets
+  hem las (UX-audit F18), en daarmee is dit bestand dood — het hangt nog aan de barrel
+  `components/workout/index.ts` en verder nergens.
+- **Waarom niet nu:** het bestand stond niet in F18 en een bestand verwijderen is een actie die
+  vooraf bevestigd hoort te worden. Het is bovendien geen component maar een pure helper, dus het
+  kost niets om te blijven staan — behalve dat "dode laag" precies is wat F18 wilde opruimen.
+- **Eerste zet:** vragen of het weg mag. Zo ja: bestand weg, twee regels uit
+  `components/workout/index.ts`, `tsc --noEmit`. Zo nee: een comment in het bestand die zegt
+  waarvoor het bewaard wordt, anders is het over drie maanden opnieuw een vondst.
+- **Check:** `grep -rn "getPaceZone\|PaceZoneLevel" apps/rowtrack/app apps/rowtrack/components apps/rowtrack/lib | grep -v "components/PaceZone.tsx\|workout/index.ts"` — leeg betekent dat het bestand nog steeds nul gebruikers heeft.
+- **Status:** open
+
 ## 2026-09-12 — Redactie- en code review: 214 bevindingen, 1 P0 en 25 P1 · [fix]
 - **Wat:** Volledige review van `apps/rowtrack` op twee assen — alle user-facing NL-copy en de code — met 222 onderzochte en 214 overeind gebleven bevindingen. Het rapport staat in `apps/rowtrack/audits/2026-09-12-redactie-en-code-review.md`, mét bewijs per bevinding, de negen weerlegde beweringen en de zes gaten die niemand bekeek. Bewust één backlog-item en niet 214: dat zou het sessiestart-signaal slopen dat deze lijst juist moet dragen. Vier oorzaken dragen de meeste symptomen — de toestemmingsgate op de schrijfactie in plaats van op de bron, de doeltoets op een andere grootheid dan het scherm, "laden" als eindtoestand doordat geen enkele Supabase-aanroep een deadline heeft, en `??` waar `||` hoort.
 - **Waarom niet nu:** De opdracht was reviewen, niet fixen. De P0 en de eerste drie punten uit §10 zijn samen minder dan twintig regels diff en verdienen een eigen ronde met een tegenproef per fix; de rest vraagt keuzes (terminologie, eenheden, a11y-strategie) die van Jeroen zijn.
@@ -227,7 +241,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** HANDOFF-item van 2026-07-16, ouder dan 30 dagen bij de triage van 2026-09-07 (sessie-reflectie stap 1): werk dat blijft liggen, geen sessie-context. Triage-bewijs: `ls apps/rowtrack/components/KPI.tsx apps/rowtrack/components/SectionHeader.tsx` → beide bestaan; `grep -rn "KPI'\|SectionHeader'" apps/rowtrack/app apps/rowtrack/components | grep import` → leeg (alleen de barrel components/index.ts exporteert ze). `grep -c…
 - **Eerste zet:** F18 eerst, want puur opruimwerk zonder designoordeel: KPI.tsx en SectionHeader.tsx verwijderen (bevestigen vóór delete), de barrel bijwerken, `paceZone`/`pulseAnim`/`prFlags` uit ActivePhase-props en workout.tsx/dev-active.tsx halen, `tsc --noEmit`; check daarna: `ls apps/rowtrack/components/KPI.tsx` faalt.
 - **Check:** `ls apps/rowtrack/components/KPI.tsx apps/rowtrack/components/SectionHeader.tsx && grep -c "backLink: 'OVERZICHT'" apps/rowtrack/i18n/translations/nl.ts` — beide bestanden plus 1 = er is niets van F13–F19 opgepakt; verandert er iets, hertriageer de zeven tegen `audits/2026-07-16-ux-audit-rowtrack.md`.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-14, branch `fix/rowtrack-ux-p3-lijst`, met een her-triage die tegen de code van vandaag gemeten is in plaats van tegen de audit van juli. **F13** en **F17** waren onderweg al opgelost (`backLink` leest 'HISTORIEK'; de doelloze KPI-lijst laat AFSTAND weg, mét comment). **F14 is verworpen** — de vier labels passen niet naast elkaar op 430px, de gelijk-brede-segmentenvariant is eerder afgewezen, en elk segment draagt al een `accessibilityLabel`, dus VoiceOver leest de betekenis voor; het gat is dus visueel en alleen bij de eerste kennismaking. **F15, F16, F19** gebouwd en op de node gemeten. **F18**: de dode props en de drie componenten zijn weg. Wat er NIET in zat: de 3× `rgba(240,84,84,0.20)` en de confetti-kleuren — die horen bij het aparte token-item van 2026-09-07 en wachten op een push uit Tokens Studio.
 
 ## 2026-09-07 — De Edge Function wordt door niets getypecheckt · [infra]
 
@@ -404,7 +418,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   Storybook nodig — hoort bij de goedkope guards) en `node scripts/walker-blindvlekken.mjs`
   (vraagt `storybook-static`, dus ná `build-storybook`). Beide telbaar met dezelfde lus:
   `for s in … figma:instance-tekst walker-blindvlekken; do …`.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-14, PR umanex-apps#469. Vijf stappen erbij, alle vijf groen in run 34824883673: instance-voorvlucht (+ tegenproef), `render:sweep` (build-pad), `dev-sweep` (dev-pad), `walker-blindvlekken` (+ tegenproef) en de beeld-as. Twee defecten kwamen onderweg boven en zijn opgelost, want zonder die twee was de stap ofwel rood bij aankomst ofwel een stap die niet kán falen: zes stories renderden leeg in dev (de dependency-optimizer pre-bundelde de échte `expo-router`, dus de mock vuurde daar niet — 257/257 op het build-pad op dezelfde commit), en `walker-blindvlekken` printte zeven getallen met altijd exit 0.
 
 ## 2026-09-08 — Storybook-fixes voor vite 8 heroverwegen bij de volgende Storybook-bump · [infra]
 - **Wat:** Drie van de vier ingrepen in `.storybook/main.ts` van 2026-09-08 (de
@@ -438,7 +452,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** `LoginScreen`, `RegisterScreen` en `ForgotPasswordScreen` hebben in Storybook alleen een `Playground`-story, terwijl de vier andere route-schermen er minstens twee hebben. Hun enige tweede zichtbare vorm is de validatie- of servertfout (`FormField error`, `ErrorMessage`), en die staat in `useState` ná een submit — een story kan hem niet zetten zonder dat het scherm er een prop of een injecteerbare beginwaarde voor krijgt. Gevolg: de foutvorm van de drie schermen waar een gebruiker het vaakst een fout ziet, is nergens gemeten en staat niet in Figma.
 - **Waarom niet nu:** het vraagt een wijziging aan de schermen zelf (een `initialError`-achtige ingang, of de foutstaat naar een prop tillen), en dat is gedrag toevoegen aan productiecode om een meting mogelijk te maken. Dat is een eigen afweging, geen bijvangst van de render-pad-ronde. Het acceptatie-item in `briefings/2026-09-08-feature-schermen-naar-rowtrack-design.tcebc.md` staat daarom bewust op `- [ ]` met 4/7, in plaats van te worden verzacht tot iets dat wél afvinkbaar is.
 - **Eerste zet:** Kies de ingang — een `__storyError`-prop achter een `__DEV__`-guard is het goedkoopst, een gedeelde `useAuthForm`-hook met de fout als return-waarde het netst. Daarna per scherm één named story (`MetFout`), `figma:spec`, en de frames bouwen in `Screens v2`.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-14, zelfde branch. Niet via de `useAuthForm`-route uit de *Eerste zet* maar via de goedkopere: de supabase-mock kan nu een auth-fout teruggeven (`parameters.supabase.authFout`) en een `play` vult het formulier en verstuurt het, zodat de story de échte foutweg doorloopt. Productiecode is ongewijzigd — precies de reden waarom dit item bleef liggen. Eén ding moest erbij: een story met een `play` is ná `networkidle` nog niet in zijn eindvorm, dus de preview zet `data-play="wacht"` en de walker wacht erop; zonder dat legt de bouwspec het lege formulier vast.
 
 ## 2026-09-09 — Instances vallen terug op een nagebouwde subboom omdat de library-variant een ander aantal kinderen heeft · [feature]
 - **Wat:** De schermbouwer plaatst op elke gedeclareerde componentgrens een library-instance, en toetst daarna of die instance getrouw is. Waar niet, vervangt hij hem door de nagebouwde subboom — luid, met melding. Gemeten op 2026-09-09 over de 24 frames van `Screens v2` — en **drie instrumenten geven drie getallen die niet op elkaar te delen zijn**, dus ze staan alle drie:
@@ -529,7 +543,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** het is een afweging over CI-tijd die Jeroen hoort te maken, geen technische. En de drempel is nog niet vast: zonder `--drempel` rapporteert het script alleen. Die drempel kan pas gekozen worden als de tekstnode-afkapping (het item hierboven) weg is — nu zou elk getal boven de vloer van **0,02%** meteen 24 frames rood maken.
 - **Eerste zet:** Eerst het tekstnode-item oplossen, dan de vloer opnieuw meten (`node scripts/beeld-parity.mjs` en het laagste getal aflezen), dan `--drempel` op ruim boven die vloer zetten en de stap toevoegen ná `build-storybook` in `ci.yml`.
 - **Check:** `grep -c 'beeld' .github/workflows/ci.yml` — 0 = de as draait nog niet in CI.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-14, PR umanex-apps#469. De drempel staat niet op een som van `grof` maar als tweezijdige ratel per frame op `tekst` én `overig`, tegen een basislijn PER PLATFORM: `IdlePhase/Toestel-Keuze` geeft 0,27 in CI tegen 0,54 op de Mac, ruim buiten de tolerantie van 0,1. Eén frame draagt geen ratel (`ActivePhase/Doel-Bereikt`, confetti met `Math.random`, spreiding 0,23 over vijf runs) — dat blijft het item hieronder over het maskeren van niet-reproduceerbare nodes.
 
 ## 2026-09-09 — Slot-detectie op gelijkheid met story-args: 23 instances tonen stil library-data · [fix]
 - **Wat:** `markeerSlots` (`scripts/figma-build-spec.mjs`) markeert een tekstnode alleen als slot wanneer hij letterlijk gelijk is aan een string-arg van de story. Geformatteerde tekst — "27:00 min", "20 AUG 2026", de labels van een tab-rij — is dat nooit, dus de schermen-export plaatst instances die de story-data van de library tonen: de Historiek met vier ritten van "20 AUG 2026", WorkoutDetail met de tabs "Week Maand Jaar". Twee uitwegen: (a) slots afleiden uit de **prop-paden** die het component zelf declareert (`lib/variantData.ts` draagt al `data-variant`; een `data-slot` op de tekst-Views is dezelfde vorm), of (b) een diff tussen de story-render en de schermrender op hetzelfde componentpad — elke tekst die verschilt is per definitie een slot. (a) is expliciet en goedkoop per component; (b) is generiek maar rekent op de walker.

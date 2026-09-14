@@ -89,6 +89,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** Een check die alle `*Sum.current /`-delingen enumereert en faalt zodra de noemer niet de bijhorende `*Count`/`*TickCount` is. Vandaag met de hand gedraaid; dat vond één call-site méér (`useGoalProgress.ts:94`) dan de analyse had gemeld.
 - **Waarom niet nu:** De fix zelf was de vraag; een guard is de duurzame helft en hoort in `scripts/` + CI, wat een eigen beslissing over de rowtrack-CI vraagt (die heeft vandaag geen testrunner-stap).
 - **Eerste zet:** `scripts/check-averages.sh` naar het model van `umanex-os/scripts/test-guards.sh`, met een tegenproef op béide kanten: een bewust foute noemer moet hem doen afgaan, de huidige code moet hem doen zwijgen.
+- **Check:** `ls apps/rowtrack/scripts/check-averages.sh` — bestaat niet = de guard is er niet, en de conventie hangt aan wie eraan denkt.
+- **Relevantie 2026-09-14:** LEEFT. `check-averages.sh` bestaat niet; `grep -rn 'Sum.current /' apps/rowtrack/lib` geeft nog vijf delingen die alleen per conventie bij hun teller horen.
 - **Status:** open
 
 ## 2026-08-15 — `correctSpm` corrigeert ook een teller, geen frequentie · [refactor]
@@ -101,6 +103,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** `samples` bevat per seconde alleen tijd, afstand en hartslag (`apps/rowtrack/lib/hooks/useWorkoutMetrics.ts:286`). Daardoor is een slagfrequentie- of vermogensverloop achteraf niet te reconstrueren uit de database — enkel de eindwaarden (`avg_spm`, `max_spm`) overleven.
 - **Waarom niet nu:** Bleek pijnlijk op 2026-08-15: de vraag of de erg dubbel telt was uit de opgeslagen ritten *niet* te beantwoorden. Het antwoord moest uit een live Metro-log met rauwe FTMS-hex komen, wat een draaiende dev-client naast de training vereist. Uitbreiden van de payload raakt opslagformaat en `bestDistanceTime.ts`, dus geen bijzaak van een analyse.
 - **Eerste zet:** De tuple-vorm in `apps/rowtrack/app/(tabs)/workout.tsx:126` is positioneel (`[t, d]` of `[t, d, hr]`) en dus niet uitbreidbaar zonder versieveld. Eerst beslissen: sleutel-object per sample, of een versienummer naast de array. Daarna pas velden toevoegen.
+- **Check:** `grep -n 'samplesRef.current.push' -A6 apps/rowtrack/lib/hooks/useWorkoutMetrics.ts` — staat er geen `spm`/`watts` in het object, dan draagt de tijdreeks ze nog steeds niet.
+- **Relevantie 2026-09-14:** LEEFT. De doc-comment noemt de reeks nog `{t, d, hr}` en het push-object draagt geen spm of watt.
 - **Status:** open
 
 ## 2026-08-11 — Scanfilter verfijnen op machine-type uit FTMS service data · [feature]
@@ -119,6 +123,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** Een sessie die start en meteen gestopt wordt, wordt bewaard als volwaardige rit. In de historiek staat er zo één (2026-08-22 12:40:57: 0 m, 0 s, 1 sample, wel `avg_heart_rate` 90 uit de FTMS-fallback). Die rijen vervuilen de lijst en tellen mee in de periodetotalen. Voorstel: bij het opslaan een ondergrens (bv. `distance_meters > 0 && duration_seconds > 0`, of een minimum van ~30 s) en anders stil weggooien — of de gebruiker vragen.
 - **Waarom niet nu:** Bovengekomen tijdens de HR-diagnose van 2026-08-22, niet de gevraagde taak. Raakt het opslagpad (`app/(tabs)/workout.tsx`) en vraagt een beslissing over wat er met de bestaande lege rijen gebeurt.
 - **Eerste zet:** Drempel bepalen, dan de guard in `saveWorkout` vóór de insert; bestaande lege ritten apart opruimen (nooit blind — eerst tellen met een `select`).
+- **Check:** `grep -n -B4 "from('workouts').insert" 'apps/rowtrack/app/(tabs)/workout.tsx'` — geen ondergrens op `distance_meters`/`duration_seconds` vóór de insert = een lege rit kan nog steeds bewaard worden.
+- **Relevantie 2026-09-14:** LEEFT, maar de HELFT is vervallen. De guard ontbreekt nog steeds (de insert op regel 207 kent geen ondergrens), dus een nieuwe lege rit kan alsnog ontstaan. Het opruimen van bestaande rijen is niet meer nodig: gemeten op de productiedatabase (read-only `select`) staan er **0 lege ritten op 22**, dus de rit van 2026-08-22 12:40:57 uit dit item bestaat niet meer. Bouw dus alleen de drempel, en zoek geen opruimwerk dat er niet is.
 - **Status:** open
 
 ## 2026-08-22 — PR-historiek wordt per scherm opnieuw opgehaald · [refactor]
@@ -193,6 +199,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** HANDOFF-item van 2026-07-10, ouder dan 30 dagen bij de triage van 2026-09-07 (sessie-reflectie stap 1): werk dat blijft liggen, geen sessie-context. Triage-bewijs: `grep -rn reconnect apps/rowtrack/lib/hooks/useWorkoutMetrics.ts` → leeg (rc=1). `grep -n lastMetrics apps/rowtrack/lib/ble/ble-service.ts` → resets alleen op regel 130 (connectKnown) en 203 (startScan); attemptReconnect (626-650) roept connectToDevice aan…
 - **Eerste zet:** Eerst meten of het nodig is: op de Apollo XL tijdens een rit Bluetooth uit/aan zetten om een reconnect te forceren en in de `[BLE]`-log lezen of elapsedTime/totalDistance na de reconnect op 0 herstarten. Herstarten ze niet, dan is dit item met die meting als bewijs te sluiten.
 - **Check:** `grep -rn reconnect apps/rowtrack/lib/hooks/useWorkoutMetrics.ts` — geen treffer = het meetpad kent geen reconnect en zet de baseline dus niet opnieuw.
+- **Relevantie 2026-09-14:** LEEFT. Check gedraaid: `grep -rn reconnect apps/rowtrack/lib/hooks/useWorkoutMetrics.ts` geeft nul treffers (rc=1) — het meetpad kent nog steeds geen reconnect.
 - **Status:** open
 
 ## 2026-09-07 — Segment-breedte snapt (Fabric layout-animatie taboe) · [ux]
@@ -201,6 +208,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** HANDOFF-item van 2026-07-10, ouder dan 30 dagen bij de triage van 2026-09-07 (sessie-reflectie stap 1): werk dat blijft liggen, geen sessie-context. Triage-bewijs: `grep -nF '${selected === type}' apps/rowtrack/components/GoalSegments.tsx` → 1 treffer (regel 120, `key={\`${type}-${selected === type}\`}`). package.json: react-native-reanimated ~4.1.1, react-native 0.81.5, expo ~54.0.35; pnpm-lock:…
 - **Eerste zet:** Bij de eerstvolgende bump van react-native-reanimated (major/minor boven 4.1) of react-native boven 0.81: in GoalSegments.tsx de key op regel 120 tijdelijk door `key={type}` + `layout={LinearTransition}` vervangen en op de sim toetsen of een gedeactiveerd segment zijn labelbreedte nog vasthoudt (Split/Watt actief maken en kijken of het laatste segment van het scherm loopt).
 - **Check:** `grep -nF '${selected === type}' apps/rowtrack/components/GoalSegments.tsx` — een treffer = de remount-key (en dus de snap) staat er nog; leeg = vervangen door een layout-animatie of door gelijk-brede segmenten.
+- **Relevantie 2026-09-14:** LEEFT, maar GEBLOKKEERD op zijn eigen voorwaarde. De remount-key staat er nog (`GoalSegments.tsx:123`), dus de snap is er. De *Eerste zet* begint echter bij "de eerstvolgende bump van react-native-reanimated boven 4.1 of react-native boven 0.81" — en beide staan onveranderd op `~4.1.1` en `0.81.5`. Nu oppakken betekent de Fabric-clipping opnieuw uitlokken die de remount-key juist oplost. Wacht op de bump, of leg Jeroen de eerder afgewezen variant (gelijk-brede segmenten) opnieuw voor.
 - **Status:** open
 
 ## 2026-09-07 — BLE-replay test-harness voor de workout-flow · [test]
@@ -233,6 +241,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** HANDOFF-item van 2026-07-16, ouder dan 30 dagen bij de triage van 2026-09-07 (sessie-reflectie stap 1): werk dat blijft liggen, geen sessie-context. Triage-bewijs: `grep -c react-native-svg apps/rowtrack/package.json` → 0. `grep -rln 'victory|recharts|skia|chart' apps/rowtrack/package.json` → leeg. `git log --oneline --since=2026-08-06 -- apps/rowtrack` bevat geen commit over grafieken/visualisatie.
 - **Eerste zet:** Figma: één detail-scherm ontwerpen (HR-verloop + zones) op basis van een echte rit uit het testaccount; daarna een TC-EBC schrijven en `pnpm --filter rowtrack add react-native-svg` (dependency → eerst bevestigen) plus native rebuild; check: `grep -c react-native-svg apps/rowtrack/package.json` ≥1.
 - **Check:** `grep -c react-native-svg apps/rowtrack/package.json` — 0 = geen tekenlaag in de app, dus nog steeds nul grafieken.
+- **Relevantie 2026-09-14:** LEEFT. Check gedraaid: `grep -c react-native-svg apps/rowtrack/package.json` → 0, en er is geen victory/recharts/skia. Nog steeds nul grafieken. Let op de omvang: dit is een feature met een nieuwe tekenlaag, geen opruimwerk — het vraagt een eigen TC-EBC én een dependency-beslissing.
 - **Status:** open
 
 ## 2026-09-07 — UX-audit P3-verzamellijst (F13–F19) · [ux]
@@ -249,6 +258,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** HANDOFF-item van 2026-08-06, ouder dan 30 dagen bij de triage van 2026-09-07 (sessie-reflectie stap 1): werk dat blijft liggen, geen sessie-context. Triage-bewijs: `grep -rn deno .github/workflows/` → leeg (rc=1). `ls apps/rowtrack/supabase/functions/` → alleen `delete-account` (index.ts); nog steeds één functie. `grep -rn 'deno|supabase functions' .github/workflows/*.yml apps/rowtrack/package.json turbo.json` → leeg:…
 - **Eerste zet:** In .github/workflows/ci.yml een job `edge-functions` toevoegen: `denoland/setup-deno@v2` + `deno check apps/rowtrack/supabase/functions/delete-account/index.ts`; tegenproef: een opzettelijke type-fout in index.ts moet de job rood maken; check daarna: `grep -rq deno .github/workflows/`.
 - **Check:** `grep -rq 'deno' .github/workflows/` → geen hit = `supabase/functions` wordt door niets getoetst.
+- **Relevantie 2026-09-14:** LEEFT. Check gedraaid: geen `deno` in `.github/workflows/`, en `supabase/functions/` bevat nog altijd precies één functie (`delete-account`).
 - **Status:** open
 
 ## 2026-09-07 — Geen testrunner in de repo · [test]
@@ -258,6 +268,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** `apps/rowtrack/lib/secureStorage.test.ts` schrijven naar het patroon van lib/ble/scan-lock.test.ts (node:test + assert), met de 10 gerichte cases uit de chunk-fix (d180578) als startpunt; tegenproef: de byte-grens in de chunker één teken verschuiven en eisen dat de suite omvalt; check: `git ls-files apps/rowtrack/lib/secureStorage.test.ts` niet leeg.
 - **Verwant:** `apps/rowtrack/BACKLOG.md` 2026-08-22 *De node:test-suites draaien niet in CI* (gebouwd): de runner en de CI-stap bestaan sinds 2026-08-25, dit item is de inhoud die erdoorheen moet.
 - **Check:** `git ls-files 'apps/rowtrack/lib/bestDistanceTime.test.ts' 'apps/rowtrack/lib/secureStorage.test.ts' 'apps/rowtrack/lib/formatters.test.ts'` → leeg = geen van de drie modules heeft een committed test.
+- **Relevantie 2026-09-14:** DE TITEL IS ACHTERHAALD, de kern niet. Er ÍS een runner: `apps/rowtrack/package.json` draagt `"test": "node --test"`, er staan zes `*.test.ts` in git, en CI draait ze sinds 2026-08-10 als stap *Guard — invarianten (node:test)*. Wat wél leeft is de oorspronkelijke Check: `bestDistanceTime.ts`, `secureStorage.ts` en `formatters.ts` hebben nog steeds geen enkele test (`git ls-files` op die drie geeft leeg). Herformuleer dit item naar *drie rekenkernen zonder test* vóór je het oppakt — anders bouwt iemand een runner die er al staat.
 - **Status:** open
 
 ## 2026-09-07 — HR- en roeier-dienst delen één BleManager-singleton · [test]
@@ -440,12 +451,16 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   `.storybook/main.ts` en meet met de dev-sweep of hij nog dragend is — dezelfde tegenproef
   als op 2026-09-08 (vijf van zes rails werden toen rood, één bleek niet dragend en is
   daarop verwijderd).
+- **Check:** `grep -E '"(storybook|vite)"' apps/rowtrack/package.json` — staat storybook nog op 10.6 en vite op 8, dan is de bump waar dit item op wacht niet gebeurd.
+- **Relevantie 2026-09-14:** LEEFT, maar GEBLOKKEERD op zijn eigen trigger. `storybook ^10.6.0`, `@storybook/react-native-web-vite ^10.6.0`, `vite ^8` — ongewijzigd sinds het item geschreven is. Er is dus niets te heroverwegen tot er een bump is; de compensaties in `.storybook/main.ts` dragen elk hun eigen meting en blijven tot dan staan.
 - **Status:** open
 
 ## 2026-09-08 — De bouwspec verandert bij elke run door de roterende spinner · [refactor]
 - **Wat:** `figma/build-spec.min.json` is een gecommit artefact dat bij élke `figma:spec` een diff geeft, ook zonder codewijziging. Gemeten 2026-09-08 na de `testID`-ronde: 244 velden verschilden ten opzichte van HEAD, en alle 244 zaten binnen een `spinnerBox`-subboom — `getBoundingClientRect()` op de roterende `<ActivityIndicator>` geeft een as-gelijnde doos die per meetmoment anders is. Voorstel: de walker normaliseert die subboom naar de ongeroteerde maat (die staat op de `spinner`-ouder), zodat de spec deterministisch is en een diff erop weer iets betekent. Bijvangst: Figma bouwt de spinner dan op zijn echte maat in plaats van een willekeurige rotatiehoek.
 - **Waarom niet nu:** `parity` is er al tegen beschermd via `figma/niet-reproduceerbaar.json` (gemeten, twee walker-runs), dus het is een leesbaarheids- en review-probleem, geen correctheidsprobleem. Het raakt bovendien de walker midden in de sneden-reeks van ingreep 2, en dat is precies het moment waarop je de meting niet wil verplaatsen.
 - **Eerste zet:** In `scripts/figma-build-spec.mjs`, in `lees()`: is `rnwRol` gelijk aan `spinnerBox` of dieper, neem dan de maat van de dichtstbijzijnde `spinner`-ouder over in plaats van de eigen `getBoundingClientRect()`. Daarna `node scripts/instabiele-nodes.mjs` opnieuw draaien — die hoort dan alleen de vier confetti-nodes nog te vinden, en dat is de tegenproef.
+- **Check:** twee keer `pnpm --filter rowtrack figma:spec` achter elkaar en `cmp` op `figma/build-spec.min.json` — verschillen ze, dan leeft het.
+- **Relevantie 2026-09-14:** LEEFT, gemeten in plaats van aangenomen: twee runs op onveranderde code gaven **742 640 verschillende bytes**. (Artefacten daarna teruggezet met `git checkout -- apps/rowtrack/figma/`.)
 - **Status:** open
 
 ## 2026-09-09 — Drie auth-schermen hebben maar één frame, want hun tweede vorm zit in component-state · [feature]

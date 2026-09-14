@@ -1,6 +1,6 @@
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { KpiSingle } from '@/components/KpiSingle';
-import { bg, border, space } from '@/constants';
+import { bg, border, fg, fontFamily, fontSize, space } from '@/constants';
 
 /** Eén tegel: waarde, optionele eenheid, label eronder. */
 export type SummaryKpi = { value: string; unit?: string; label: string };
@@ -8,6 +8,12 @@ export type SummaryKpi = { value: string; unit?: string; label: string };
 export type SummaryKpiBandProps = {
   /** Exact vier tegels: twee rijen van twee, met een hairline ertussen. */
   kpis: [SummaryKpi, SummaryKpi, SummaryKpi, SummaryKpi];
+  /**
+   * Eén regel onder de tegels, alleen wanneer een waarde een sterretje draagt. Hij hoort
+   * binnen de band en niet eronder: de uitleg gaat over een waarde in de band, en losgemaakt
+   * leest hij als een voetnoot bij de hele samenvatting.
+   */
+  voetnoot?: string;
 };
 
 /**
@@ -17,7 +23,7 @@ export type SummaryKpiBandProps = {
  * Figma 43-8278): twee rijen van twee, met een hairline op de scheiding. Een `SummaryKpi[]`
  * zou een derde rij toelaten die nergens bestaat.
  */
-export function SummaryKpiBand({ kpis }: SummaryKpiBandProps) {
+export function SummaryKpiBand({ kpis, voetnoot }: SummaryKpiBandProps) {
   const [a, b, c, d] = kpis;
   return (
     <View testID="SummaryKpiBand" style={styles.kpiBand}>
@@ -30,6 +36,7 @@ export function SummaryKpiBand({ kpis }: SummaryKpiBandProps) {
         <KpiSingle value={c.value} unit={c.unit} label={c.label} style={styles.kpiCell} />
         <KpiSingle value={d.value} unit={d.unit} label={d.label} style={styles.kpiCell} />
       </View>
+      {voetnoot ? <Text style={styles.voetnoot}>{voetnoot}</Text> : null}
     </View>
   );
 }
@@ -51,5 +58,11 @@ const styles = StyleSheet.create({
   kpiBandDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: border.strong,
+  },
+  voetnoot: {
+    fontFamily: fontFamily.albertSansLight,
+    fontSize: fontSize['12'],
+    color: fg.tertiary,
+    paddingBottom: space['16'],
   },
 });

@@ -532,13 +532,17 @@ export function calculateMonths(
     let bufferUncovered = 0;
 
     const bufferIsBillable = bufferId !== null && billableReservations.some((r) => r.id === bufferId);
-    const bufferIsFinalized =
-      bufferId !== null &&
-      activeSettlements.some(
-        (s) => s.reservationId === bufferId && s.monthKey === monthKey && s.finalized,
-      );
 
-    if (bufferId !== null && bufferIsBillable && !bufferIsFinalized) {
+    // Hier stond tot 2026-09-14 ook `&& !bufferIsFinalized`. Die tak kon per constructie niet
+    // vuren: `bufferIsFinalized` werd berekend uit `activeSettlements`, en die lijst filtert
+    // hierboven juist élke settlement van de bufferpot weg. De vlag was dus altijd `false`.
+    //
+    // Weg dus, want een tak die nooit vuurt is geen waarborg maar een bewering die niemand kan
+    // narekenen. De regel eronder blijft en is nu expliciet: **een bufferpot finaliseert niet.**
+    // Zijn storting is volledig afgeleid van wat de maand overlaat, dus er is geen bedrag om
+    // af te rekenen en geen rij waarin je dat zou doen. Een `finalized`-settlement die nog uit
+    // het oude model in de data staat, hoort dan ook niets te doen — S37 legt dat vast.
+    if (bufferId !== null && bufferIsBillable) {
       // Wat de pot deze maand echt kan missen: het overgedragen saldo plus een
       // uitgestelde storting die nu toekomt, minus wat er deze maand al uit betaald is.
       // Nooit negatief — een overtrokken pot leent niets uit.

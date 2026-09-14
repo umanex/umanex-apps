@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-native-web-vite';
 import { TOESTEL } from '../../.storybook/toestel';
-import ResetPasswordScreen from './reset-password';
+import ResetPasswordScreen from '@/app/(auth)/reset-password';
 
 /**
  * Nieuw wachtwoord instellen na een herstel-link. Het scherm leest die link uit de

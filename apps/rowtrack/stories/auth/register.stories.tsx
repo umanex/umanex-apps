@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-native-web-vite';
 import { TOESTEL } from '../../.storybook/toestel';
 import { vulEnVerstuur } from '../../.storybook/formulier';
-import ForgotPasswordScreen from './forgot-password';
+import RegisterScreen from '@/app/(auth)/register';
 
-/** Wachtwoord vergeten: één veld en een terugweg naar inloggen. */
+/** Registratie: e-mail, wachtwoord en bevestiging, met veldvalidatie op blur. */
 const meta = {
-  title: 'Componenten/ForgotPasswordScreen',
-  component: ForgotPasswordScreen,
+  title: 'Componenten/RegisterScreen',
+  component: RegisterScreen,
   parameters: { toestel: TOESTEL.portret },
-} satisfies Meta<typeof ForgotPasswordScreen>;
+} satisfies Meta<typeof RegisterScreen>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -23,8 +23,8 @@ export const Playground: Story = {};
  * weet van niets.
  */
 export const MetFout: Story = {
-  parameters: { toestel: TOESTEL.portret, supabase: { authFout: 'ongeldig' } },
+  parameters: { toestel: TOESTEL.portret, supabase: { authFout: 'bestaat-al' } },
   play: async ({ canvasElement }) => {
-    await vulEnVerstuur(canvasElement, ['roeier@umanex.be'], 'Stuur reset-link');
+    await vulEnVerstuur(canvasElement, ['roeier@umanex.be', 'Geheim1234', 'Geheim1234'], 'Maak account');
   },
 };

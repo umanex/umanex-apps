@@ -391,6 +391,22 @@ jobs:
           pnpm --filter rowtrack figma:instance-tekst
           pnpm --filter rowtrack figma:instance-tekst:selftest
 
+      # expo-router rendert ELKE route in app/(tabs)/ als tab; <Tabs.Screen> configureert alleen
+      # opties. Een route die niemand declareert krijgt er dus stil een tab bij, met de rauwe
+      # bestandsnaam als label. Op 2026-09-14 stond app/(tabs)/profile.stories.tsx zo als vijfde
+      # tab in de app: aantikken gaf een Render Error (het export default van een CSF-bestand is
+      # een object), en de extra tab brak "HISTORIEK" af tot "HISTORIE / K".
+      #
+      # De guard toetst de gelijkheid tussen schijf en declaratie, niet een maximum-aantal — dat
+      # laatste is een symptoom. De tegenproef dekt vijf gevallen, waaronder de negatieve
+      # controle op de guard zelf: een parser die geen enkele Tabs.Screen meer matcht ziet er in
+      # de uitvoer identiek uit aan "alles in orde".
+      - name: Guard — rowtrack routes en tabbar (met tegenproef)
+        id: guard-rowtrack-routes-en-tabbar-met-tegenproef
+        run: |
+          pnpm --filter rowtrack routes
+          pnpm --filter rowtrack routes:selftest
+
       # --- rowtrack, de render-assen ----------------------------------------------------
       #
       # Deze drie leunen op de Storybook-build en op Chromium, dus ze staan ná beide. Ze zijn

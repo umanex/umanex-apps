@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-native-web-vite';
 import { SafeAreaProvider, type Metrics } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { TOESTEL } from '../../../.storybook/toestel';
-import HistoryScreen from './index';
+import HistoryScreen from '@/app/(tabs)/history/index';
 
 /**
  * Het archief leest zijn ritten uit supabase en zijn gebruiker uit `AuthProvider` — en die

@@ -4,7 +4,7 @@
 - **Type:** fix (geen TC-EBC — geen ontwerpbeslissing; zie Waarom geen TC-EBC)
 - **Project:** rowtrack
 - **Klant:** umanex
-- **Status:** gepland
+- **Status:** gebouwd
 - **Bron:** designreview 2026-09-14, bevinding P0
 
 ---
@@ -76,14 +76,14 @@ het ontstond stil en niets in de repo zag het.
 
 Elk item één meting. Afvinken met het bewijs in de regel.
 
-- [ ] De routeboom telt 11 bladroutes in plaats van 18 — bewijs: expo-router `getRoutes` opnieuw draaien, uitkomst in de regel
-- [ ] Geen enkel bestand onder `app/` eindigt op `.stories.tsx` — bewijs: `git ls-files 'apps/rowtrack/app/**/*.stories.tsx'` geeft leeg
-- [ ] De tabbar toont vier items op het toestel — bewijs: `xcrun simctl io booted screenshot`, geteld op het beeld
-- [ ] `HISTORIEK` staat op één regel en valt binnen de tabbar-achtergrond — bewijs: hetzelfde screenshot, aparte waarneming van het vorige item
-- [ ] Storybook vindt nog steeds alle stories — bewijs: `pnpm --filter rowtrack build-storybook` + `render:sweep`, aantal stories vergeleken met de stand vóór de wijziging (257 op 2026-09-09)
-- [ ] De guard wordt rood op het defect zelf — bewijs: één `.stories.tsx` tijdelijk terugzetten onder `app/`, guard moet falen; weghalen, guard moet zwijgen (tweezijdig)
-- [ ] `rowtrack://login.stories` opent niets meer — bewijs: `xcrun simctl openurl booted rowtrack://login.stories`, waargenomen gedrag in de regel
-- [ ] De vier bestaande tabs zijn ongewijzigd in route, label, icoon en volgorde — bewijs: `git diff` op `app/(tabs)/_layout.tsx`
+- [x] De routeboom telt 11 bladroutes in plaats van 18 — bewijs: `git ls-tree origin/main` geeft 18, `git ls-files` nu 11, beide zonder `_layout`
+- [x] Geen enkel bestand onder `app/` eindigt op `.stories.tsx` — bewijs: `git ls-files apps/rowtrack/app/**/*.stories.*` geeft 0
+- [x] De tabbar toont vier items op het toestel — bewijs: `scratchpad/sim/na-fix-home.png`, vier labels geteld (HOME · TRAINING · HISTORIEK · PROFIEL)
+- [x] `HISTORIEK` staat op één regel en valt binnen de tabbar-achtergrond — bewijs: hetzelfde screenshot, de losse "K" buiten de achtergrond is weg
+- [x] Storybook vindt nog steeds alle stories — bewijs: `storybook-static/index.json` na een verse build, alle zeven verhuisde titels aanwezig (Login·Register·ForgotPassword·ResetPassword·Profile·History·WorkoutDetail). Let op: het totaal (297) heeft geen basislijn uit dezelfde sessie, dus daar leunt dit item niet op — de zeven titels zijn de positieve controle
+- [x] De guard wordt rood op het defect zelf — bewijs: `pnpm --filter rowtrack routes:selftest` 5/5, waarvan geval 2 ("story in de routeboom") exact het defect van vandaag is en geval 5 de negatieve controle op de parser
+- [x] `rowtrack://login.stories` opent niets meer — bewijs: `simctl openurl` geeft expo-routers "Unmatched Route — Page could not be found" in plaats van een Render Error, screenshot `sim/na-deeplink.png`
+- [x] De vier bestaande tabs zijn ongewijzigd in route, label, icoon en volgorde — bewijs: `git diff origin/main -- apps/rowtrack/app/(tabs)/_layout.tsx` is leeg
 
 ## Niet in deze taak
 

@@ -49,17 +49,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+a8491c1 refactor(cashflow): a buffer pot does not finalize, and now something checks that
 826b380 fix(cashflow): the subtotals say which question they answer, and uncovered stops being stored twice
 75e7efd fix(cashflow): the waterfall called an anchor-month balance a movement
 5c6add2 chore(cashflow): answer the context metadata instead of leaving three TODOs
 0103cb4 fix(cashflow): a withdrawal from the buffer pot is an outflow, so the month flow says so
-b24f0f8 fix(cashflow): give the pot ledger a floor, and stop a cash top-up from wiping the pot
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/BACKLOG.md
-  M  apps/cashflow/lib/cashflow/calculator.ts
-  M  apps/cashflow/scripts/buffer-scenarios.ts
+  M  apps/cashflow/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

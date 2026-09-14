@@ -597,7 +597,10 @@ console.log('\nS15 — spaarpot afsluiten');
   invariant(months, 'S15');
 }
 
-// ── S16: netBurn telt de buffer niet mee ───────────────────────────────────────
+// ── S16: netBurn telt de STORTING in de buffer niet mee ───────────────────────
+// Sinds 2026-09-14 is dat de precieze formulering: de storting blijft buiten de stroom (ze is
+// per constructie het restant van de maand), de opname niet — zie S34. Dit scenario heeft geen
+// betaling, dus het toetst uitsluitend de stortingskant en is daarmee onveranderd geldig.
 console.log('\nS16 — netto tekort blijft leesbaar met een actieve buffer');
 {
   const months = run({
@@ -1113,6 +1116,36 @@ console.log('\nS33 — gefinaliseerd spaardoel met cash-bijbetaling');
   const p = months[0]!.reservationPots.find((x) => x.reservationId === 'verzekering')!;
   checkBool('S33 · potstand niet negatief', p.potBalance >= -0.005, true);
   check('S33 · gefinaliseerde pot is leeg', p.potBalance, 0);
+}
+
+// ── S34: een opname uit de bufferpot is een uitstroom ─────────────────────────
+// `invariant()` toetst voor elke maand ná de ankermaand of de beweging het positieverschil
+// verklaart. Die check bestond al; er was alleen geen enkel scenario met een betaling uit de
+// bufferpot in zo'n maand, dus de vraag werd nooit gesteld. Hij hoorde rood te zijn: `netBurn`
+// hield de hele bufferpot buiten de stroom, terwijl de storting erin nooit als kost geboekt is
+// en de opname er dus wél een is.
+console.log('\nS34 — opname uit de bufferpot telt mee in de maandstroom');
+{
+  const buf: ReservationItem = { ...BUFFER, monthlyAmount: 200, startMonth: '2025-01' };
+  const maak = (bedrag: number) => calculateMonths(
+    '2026-03', 10000,
+    [], [{ id: 'i1', monthKey: '2026-03', label: 'inkomen', amount: 3000, received: false }],
+    [{ id: 'r1', label: 'vast', amount: 1000, type: 'expense', frequency: 'monthly', startMonth: '2025-01' }],
+    [buf],
+    [{ id: 'pay1', reservationId: 'buffer', monthKey: '2026-04', label: 'factuur',
+       invoiceAmount: bedrag, fromReservation: bedrag, fromCash: 0 }],
+    [], [], [], [], 3,
+  );
+  // Binnen de pot: het gat was hier even groot als de betaling zelf (gemeten 500 op 500).
+  const binnen = maak(500);
+  check('S34 · beweging draagt de opname', bufferSummary(binnen[1]!).movement, -1500);
+  invariant(binnen, 'S34 binnen de pot');
+  // Groter dan de pot: hier verklaart de `teveel`-term maar een deel, dus het onderscheidt
+  // deze fix van de variant die alleen het teveel meeneemt.
+  const groter = maak(20000);
+  check('S34 · beweging draagt ook een opname groter dan de pot',
+    bufferSummary(groter[1]!).movement, -21000);
+  invariant(groter, 'S34 groter dan de pot');
 }
 
 // Tegenproef. `scripts/scenarios.mjs` draait deze suite eerst mét deze vlag en eist dan een

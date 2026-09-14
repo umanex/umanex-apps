@@ -30,6 +30,18 @@ export function netBurn(data: MonthData): number {
         (p.deferredFromPrevious + p.provisionThisMonth),
     );
 
+  // De bufferpot doet niet mee met `potFlow`: zijn storting is per constructie het restant van
+  // de maand, dus die meetellen zou elke maand op nul uitkomen. Een opname is iets anders. Dat
+  // geld is nooit als kost geboekt — de storting bleef immers buiten de burn — dus het vertrekt
+  // pas op het moment dat het betaald wordt, en dan is het een echte uitstroom.
+  //
+  // Niet alleen het `teveel`: gemeten op 2026-09-14 is het gat precies de volle opname. Een
+  // betaling van €500 uit een pot van €12.000 gaf een beweging van −1.000 tegenover een
+  // positieverschil van −1.500; een betaling van €20.000 uit diezelfde pot gaf −1.000 tegenover
+  // −21.000. Het `teveel` verklaart in dat tweede geval maar €8.000 van de €20.000.
+  const bufferFlow = (p: ReservationPotBalance): number =>
+    p.paymentsThisMonth.reduce((s, pay) => s + pay.fromReservation, 0);
+
   const potFlow = (p: ReservationPotBalance): number =>
     p.potType === 'maandelijks_budget'
       ? p.provisionThisMonth
@@ -39,7 +51,7 @@ export function netBurn(data: MonthData): number {
     data.totalRecurring +
     data.totalExpenses +
     data.totalReservationCashPayments +
-    data.reservationPots.filter((p) => !p.isDeficitBuffer).reduce((s, p) => s + potFlow(p), 0) +
+    data.reservationPots.reduce((s, p) => s + (p.isDeficitBuffer ? bufferFlow(p) : potFlow(p)), 0) +
     data.deferredReservationAmount;
 
   return costs - data.totalIncome;

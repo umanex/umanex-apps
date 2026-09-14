@@ -49,16 +49,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b24f0f8 fix(cashflow): give the pot ledger a floor, and stop a cash top-up from wiping the pot
 5e86457 fix(cashflow): pin the build's dist dir so an inherited env cannot redirect a rebuild
 c473afe fix(cashflow): close the Ctrl+C window that left next start orphaned on :3100
 92176de refactor(cashflow): refuse a busy port before the build, not sixteen seconds after it
 ec29bfa docs(cashflow): relevance-check the seven open backlog items before any of them is built
-154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 ```
 
 ## Uncommitted wijzigingen
   M  apps/cashflow/BACKLOG.md
-  M  apps/cashflow/lib/cashflow/calculator.ts
+  M  apps/cashflow/lib/cashflow/burn.ts
   M  apps/cashflow/scripts/buffer-scenarios.ts
 
 ## Bestanden met TODO/FIXME

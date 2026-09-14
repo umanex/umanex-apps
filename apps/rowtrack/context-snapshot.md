@@ -70,15 +70,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+8ee8030 docs(rowtrack): tick the P3 acceptance on evidence, and leave the three that are not earned
 cad97f7 docs(rowtrack): close four backlog items and open the one this round created
 37a5500 fix(rowtrack): the image ratchet also watches text, because a text change walked past it today
 97cef48 feat(rowtrack): give the three auth screens their error frame, without teaching the app about stories
 c783a3d fix(rowtrack): close the P3 list — the tappable row, Android back, the asterisk, the dead layers
-7035cb3 docs(rowtrack): brief the P3 list, with the re-triage measured against today's code
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/briefings/2026-09-14-feature-ux-p3-verzamellijst.tcebc.md
+  M  apps/rowtrack/components/workout/active/SummaryKpiBand.tsx
+  M  apps/rowtrack/figma/beeld-basislijn.json
+  M  apps/rowtrack/figma/beeld-verschillen.json
+  M  apps/rowtrack/figma/beelden/ActivePhase__Doel-Afstand.figma.png
+  M  apps/rowtrack/figma/beelden/ActivePhase__Doel-Bereikt.figma.png
+  M  apps/rowtrack/figma/beelden/ActivePhase__Landscape.figma.png
+  M  apps/rowtrack/figma/beelden/ActivePhase__Playground.figma.png
+  A  apps/rowtrack/figma/beelden/ActivePhase__Samenvatting-Zonder-Gewicht.figma.png
+  M  apps/rowtrack/figma/beelden/ActivePhase__Samenvatting.figma.png
+  M  apps/rowtrack/figma/beelden/ActivePhase__Zonder-Hartslagband.figma.png
 
 ## Bestanden met TODO/FIXME
   (geen)

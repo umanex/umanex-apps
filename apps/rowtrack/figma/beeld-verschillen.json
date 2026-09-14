@@ -9,21 +9,63 @@
    "story": "componenten-activephase--doel-bereikt",
    "W": 430,
    "H": 932,
-   "zicht": 9.33,
-   "grof": 6.07,
-   "tekst": 2.4,
-   "overig": 3.67,
-   "heet": 129,
+   "zicht": 9.25,
+   "grof": 6.02,
+   "tekst": 2.33,
+   "overig": 3.68,
+   "heet": 132,
    "blokken": 1034,
    "plaatsen": [
-    "260,0",
-    "300,0",
-    "400,0",
-    "420,0",
-    "100,40",
-    "120,40"
+    "20,20",
+    "360,20",
+    "20,40",
+    "60,40",
+    "80,40",
+    "100,40"
    ],
    "iconenGemaskeerd": 2
+  },
+  {
+   "bestand": "RegisterScreen__Met-Fout.figma.png",
+   "story": "componenten-registerscreen--met-fout",
+   "W": 430,
+   "H": 932,
+   "zicht": 7.87,
+   "grof": 5.48,
+   "tekst": 3.07,
+   "overig": 2.42,
+   "heet": 133,
+   "blokken": 1034,
+   "plaatsen": [
+    "40,200",
+    "60,200",
+    "80,200",
+    "100,200",
+    "120,200",
+    "140,200"
+   ],
+   "iconenGemaskeerd": 3
+  },
+  {
+   "bestand": "ForgotPasswordScreen__Met-Fout.figma.png",
+   "story": "componenten-forgotpasswordscreen--met-fout",
+   "W": 430,
+   "H": 932,
+   "zicht": 7.79,
+   "grof": 5.29,
+   "tekst": 3.18,
+   "overig": 2.11,
+   "heet": 149,
+   "blokken": 1034,
+   "plaatsen": [
+    "60,280",
+    "80,280",
+    "100,280",
+    "120,280",
+    "140,280",
+    "160,280"
+   ],
+   "iconenGemaskeerd": 1
   },
   {
    "bestand": "ForgotPasswordScreen__Playground.figma.png",
@@ -64,6 +106,27 @@
     "100,240",
     "120,240",
     "140,240"
+   ],
+   "iconenGemaskeerd": 2
+  },
+  {
+   "bestand": "LoginScreen__Met-Fout.figma.png",
+   "story": "componenten-loginscreen--met-fout",
+   "W": 430,
+   "H": 932,
+   "zicht": 6.45,
+   "grof": 4.25,
+   "tekst": 2.47,
+   "overig": 1.78,
+   "heet": 99,
+   "blokken": 1034,
+   "plaatsen": [
+    "120,240",
+    "140,240",
+    "160,240",
+    "180,240",
+    "200,240",
+    "220,240"
    ],
    "iconenGemaskeerd": 2
   },
@@ -131,27 +194,6 @@
    "iconenGemaskeerd": 1
   },
   {
-   "bestand": "ActivePhase__Zonder-Hartslagband.figma.png",
-   "story": "componenten-activephase--zonder-hartslagband",
-   "W": 430,
-   "H": 932,
-   "zicht": 3.84,
-   "grof": 2.94,
-   "tekst": 2.91,
-   "overig": 0.03,
-   "heet": 48,
-   "blokken": 1034,
-   "plaatsen": [
-    "100,40",
-    "120,40",
-    "140,40",
-    "320,40",
-    "120,200",
-    "140,200"
-   ],
-   "iconenGemaskeerd": 1
-  },
-  {
    "bestand": "ActivePhase__Landscape.figma.png",
    "story": "componenten-activephase--landscape",
    "W": 932,
@@ -182,6 +224,27 @@
    "tekst": 2.77,
    "overig": 0.03,
    "heet": 44,
+   "blokken": 1034,
+   "plaatsen": [
+    "100,40",
+    "120,40",
+    "140,40",
+    "320,40",
+    "120,200",
+    "140,200"
+   ],
+   "iconenGemaskeerd": 1
+  },
+  {
+   "bestand": "ActivePhase__Zonder-Hartslagband.figma.png",
+   "story": "componenten-activephase--zonder-hartslagband",
+   "W": 430,
+   "H": 932,
+   "zicht": 3.74,
+   "grof": 2.79,
+   "tekst": 2.76,
+   "overig": 0.03,
+   "heet": 43,
    "blokken": 1034,
    "plaatsen": [
     "100,40",
@@ -402,6 +465,27 @@
     "200,260"
    ],
    "iconenGemaskeerd": 11
+  },
+  {
+   "bestand": "ActivePhase__Samenvatting-Zonder-Gewicht.figma.png",
+   "story": "componenten-activephase--samenvatting-zonder-gewicht",
+   "W": 430,
+   "H": 932,
+   "zicht": 2.97,
+   "grof": 1.62,
+   "tekst": 1.3,
+   "overig": 0.32,
+   "heet": 23,
+   "blokken": 1034,
+   "plaatsen": [
+    "20,40",
+    "40,40",
+    "100,40",
+    "120,40",
+    "140,40",
+    "160,40"
+   ],
+   "iconenGemaskeerd": 2
   },
   {
    "bestand": "HistoryScreen__Een-Record.figma.png",

@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { KpiSingle } from '@/components/KpiSingle';
-import { bg, border, fg, fontFamily, fontSize, space } from '@/constants';
+import { bg, body, border, fg, space } from '@/constants';
 
 /** Eén tegel: waarde, optionele eenheid, label eronder. */
 export type SummaryKpi = { value: string; unit?: string; label: string };
@@ -60,8 +60,11 @@ const styles = StyleSheet.create({
     backgroundColor: border.strong,
   },
   voetnoot: {
-    fontFamily: fontFamily.albertSansLight,
-    fontSize: fontSize['12'],
+    // `body.xs` en niet een losse maat + gewicht: 12px Light bestaat in de typeschaal niet en
+    // dus ook niet als Figma text style — de builder meldde dat bij de eerste bouw
+    // ("tekst zonder text style"). Een voetnoot is body-copy op de kleinste maat, en dat is
+    // precies deze rol.
+    ...body.xs,
     color: fg.tertiary,
     paddingBottom: space['16'],
   },

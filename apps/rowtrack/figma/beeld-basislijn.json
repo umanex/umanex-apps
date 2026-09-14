@@ -7,8 +7,16 @@
    "gemeten": "2026-09-14",
    "waarden": {
     "ActivePhase__Doel-Bereikt": {
-     "tekst": 2.27,
-     "overig": 3.79
+     "tekst": 2.32,
+     "overig": 3.71
+    },
+    "RegisterScreen__Met-Fout": {
+     "tekst": 3.07,
+     "overig": 2.42
+    },
+    "ForgotPasswordScreen__Met-Fout": {
+     "tekst": 3.18,
+     "overig": 2.11
     },
     "ForgotPasswordScreen__Playground": {
      "tekst": 2.72,
@@ -17,6 +25,10 @@
     "RegisterScreen__Playground": {
      "tekst": 2.67,
      "overig": 1.84
+    },
+    "LoginScreen__Met-Fout": {
+     "tekst": 2.47,
+     "overig": 1.78
     },
     "WorkoutDetailScreen__Playground": {
      "tekst": 3.13,
@@ -30,16 +42,16 @@
      "tekst": 2.07,
      "overig": 1.03
     },
-    "ActivePhase__Zonder-Hartslagband": {
-     "tekst": 2.91,
-     "overig": 0.03
-    },
     "ActivePhase__Landscape": {
      "tekst": 2.78,
      "overig": 0.03
     },
     "ActivePhase__Playground": {
      "tekst": 2.77,
+     "overig": 0.03
+    },
+    "ActivePhase__Zonder-Hartslagband": {
+     "tekst": 2.76,
      "overig": 0.03
     },
     "HistoryScreen__Playground": {
@@ -81,6 +93,10 @@
     "IdlePhase__Toestel-Keuze": {
      "tekst": 1.1,
      "overig": 0.54
+    },
+    "ActivePhase__Samenvatting-Zonder-Gewicht": {
+     "tekst": 1.3,
+     "overig": 0.32
     },
     "HistoryScreen__Een-Record": {
      "tekst": 1.56,

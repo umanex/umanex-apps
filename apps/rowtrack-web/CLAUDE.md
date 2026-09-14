@@ -69,7 +69,33 @@ het af te leiden. Staat er "geen", dan is dat een gat dat gebouwd moet worden �
 |---|---|
 | **Render vastleggen** | `pnpm --filter rowtrack-web flow --shot=.flow-shots` — full-page PNG per route op de verse build. `.flow-shots/` is gitignored: bewijs van één run, geen artefact. |
 | **Flow aandrijven** | `pnpm --filter rowtrack-web flow` — Playwright op een verse build. Laadt de routes uit `ROUTES` en telt console-fouten. `--headed` om mee te kijken. |
-| **Detector draaien** | `pnpm --filter rowtrack-web exec node scripts/detect.mjs` — verse build en eigen server op **3104** (zoals de harness; weigert bij een bezette poort), dan axe-core (structuur en semantiek: WCAG 2.x A/AA + best-practice) en `impeccable detect --scope type,layout` (maat en overloop) over de vier routes op 1280×800 én 390×844. Exit 0 = schoon, 2 = bevindingen, 1 = een cel niet gemeten. `--no-build` hergebruikt `.next`, `--out=.detect-out` bewaart de ruwe JSON (gitignored), `--full` draait zonder scope en ignores. Ignores in `.impeccable/config.json`: `low-contrast` — vals-positief op de card-sheen, gemeten 2026-09-11 (1.8:1 gemeld tegen 7.70:1 op de gerenderde pixels: de alpha-stop van de sheen wordt als effen kleur gelezen) — en `kicker-above-heading` (bewust ontwerp, één kicker per sectie). Gemeten 2026-09-11 op `main` (`55e597b`), twee runs identiek: impeccable **28** bevindingen over 8 cellen (`line-length` 15, `nested-cards` 8, `cramped-padding` 4, `text-overflow` 1 op `/nl/voorwaarden` @390), axe **6** violations / 38 nodes (`definition-list` 1, `dlitem` 7, `region` 11 — telkens `/nl`, beide viewports), 284 passes; `--full` geeft 74 + 10 advisory mét `kicker-above-heading` 18 en `low-contrast` 16 terug, dus scope en ignores doen aantoonbaar iets. Wat dit níet meet: touch targets (een 20×20-knop passeert bij allebei) en alles wat een oordeel vraagt — dat blijft `ux-audit`. |
+| **Detector draaien** | `pnpm --filter rowtrack-web exec node scripts/detect.mjs` — verse build en eigen server op **3104** (zoals de harness; weigert bij een bezette poort). Vier instrumenten over de vier routes op 1280×800 én 390×844: axe-core (structuur en semantiek, WCAG 2.x A/AA + best-practice, **inclusief `incomplete`**), `impeccable detect`, touch targets ≥ 24 px en contrast voor effen kleurparen. Elke telling draagt zijn noemer; wat niet meetbaar is komt terug als `onmeetbaar` mét reden, niet als groen. Exit 0 = schoon, 2 = bevindingen, 1 = een cel niet gemeten. `--no-build` hergebruikt `.next`, `--out=.detect-out` bewaart de ruwe JSON (gitignored), `--full` zet alle ignores uit. Sinds 2026-09-14 is dit het gedeelde template uit `umanex-os/templates/detect.mjs` met een `.detect.config.json` ernaast — routes, poort en build-commando staan daar, niet meer in het script. |
+
+**`--scope` is eruit, ignores per regel-id zijn ervoor in de plaats — en dat is gemeten.**
+Scope is een *domein*filter, geen ruisfilter: `type,layout` gooide `cramped-padding` weg
+sámen met de smaakregels, en liet `kicker-above-heading` juist staan. Per regel-id
+uitzetten laat de meetbare regels intact. Gemeten 2026-09-14 op deze app, beide kanten,
+`--no-build`, twee runs:
+
+| | impeccable | waarvan meetbaar |
+|---|---|---|
+| zonder ignores | 40 + 10 advisory | `line-length` 15 · `cramped-padding` 4 · `text-overflow` 1 |
+| met de acht ignores | **20** + 0 advisory | dezelfde 20 |
+
+De dertig die wegvallen zijn precies de smaakregels: `dark-glow` 8, `nested-cards` 8,
+`radial-spotlight-glow` 4, `gpt-thin-border-wide-shadow` 4, `em-dash-overuse` 4,
+`codex-grid-background` 2 — de premium-laag die bewust zo ontworpen is. `low-contrast` en
+`kicker-above-heading` stonden er al. Alle acht ids zijn door `impeccable doctor --json`
+bevestigd als bestaand (`ruleRegistryAvailable: true`, nul `detector-ignore-rules-unknown`);
+`scripts/test-impeccable.sh` in umanex-os bewaakt dat een update ze niet stil hernoemt.
+
+**Twee metingen die er vóór 2026-09-14 niet waren.** Touch targets: **31 van de 70** gemeten
+zichtbare interactieve elementen zitten onder 24 px — geen van beide detectors zag die ooit.
+En contrast: **0 van 1010** tekstnodes zakt onder de eis, met **166 onmeetbaar** (verloop of
+afbeelding als achtergrond). Dat tweede getal is het punt: impeccable's `low-contrast` meldde
+op precies die nodes 1,8:1 waar de pixels 7,70:1 gaven. Wat niet te meten is, heet hier
+onmeetbaar in plaats van te worden geraden.
+
 | **State forceren** | **Geen.** Statische marketingsite zonder data-laag en zonder formulier: er is niets dat kan laden, leeg zijn of falen. Loading/empty/error zijn hier niet van toepassing in plaats van onbereikbaar — dat verschil is belangrijk, want het is géén gat dat gedicht moet worden. Komt er een supportformulier, dan verandert dit. |
 | **Invariant draaien** | **Geen, en niet nodig.** Geen afgeleide berekeningen in deze app. |
 | **Verse build** | Zit ín de harness: altijd eerst `next build`, dan `next start` op **3104**, en hij weigert als daar al iets luistert. Een dev-server op 3004 blijft ongemoeid. |

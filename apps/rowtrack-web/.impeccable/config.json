@@ -1,5 +1,14 @@
 {
   "detector": {
-    "ignoreRules": ["low-contrast", "kicker-above-heading"]
+    "ignoreRules": [
+      "low-contrast",
+      "kicker-above-heading",
+      "dark-glow",
+      "radial-spotlight-glow",
+      "nested-cards",
+      "gpt-thin-border-wide-shadow",
+      "codex-grid-background",
+      "em-dash-overuse"
+    ]
   }
 }

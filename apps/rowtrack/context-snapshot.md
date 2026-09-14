@@ -73,16 +73,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+fadf039 feat(rowtrack): turn the image axis into a ratchet and run it in CI
+7f0de81 feat(rowtrack): give walker-blindvlekken a ratchet, a selftest and a stable overflow count
 25a7309 fix(rowtrack): apply the story mocks on the dev path too
 154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 b5ec3f9 fix(rowtrack): confirm the destructive decline, stop leaking raw English errors, unify units and terminology
-524753c docs(rowtrack): fix stale cross-references in the review header
-007816c docs(rowtrack): complete the review — screen surface, refuted claims and coverage gaps
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/package.json
-  M  apps/rowtrack/scripts/walker-blindvlekken.mjs
+  M  apps/rowtrack/figma/beeld-verschillen.json
 
 ## Bestanden met TODO/FIXME
   (geen)

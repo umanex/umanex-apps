@@ -372,6 +372,22 @@ jobs:
           pnpm --filter rowtrack blindvlekken:selftest
           pnpm --filter rowtrack blindvlekken
 
+      # De beeld-as: de gecommitte Figma-export naast een verse browser-render, gedift in
+      # Chromium's canvas. Dit is de as die `parity` per constructie NIET heeft — kleurwaarde,
+      # icoonvorm, `text-transform` en BREEDTE. Juist daar leefde de drift: gemeten 2026-09-09
+      # stond elke formulier-instance 390 breed met inhoud van 224, met dertien guard-assen
+      # groen en nul parity-verschillen.
+      #
+      # De ratel staat op `overig` (het grove verschil buiten de tekstgebieden), per frame,
+      # tegen een basislijn die PER PLATFORM gemeten is: de getallen komen uit de fontrendering
+      # van de machine die meet, dus de linux-sectie is op deze runner geschreven en niet op een
+      # Mac. Eén frame staat bewust zonder ratel — zie het script.
+      - name: Guard — rowtrack Figma ↔ browser (beeld, met tegenproef)
+        id: guard-rowtrack-figma-browser-beeld-met-tegenproef
+        run: |
+          pnpm --filter rowtrack beeld:selftest
+          pnpm --filter rowtrack beeld
+
 
       # Elke guard hierboven levert één bit (de exit-code) en een rijkdom aan tekst voor een
       # lezer. Die tekst stond tot 2026-09-14 alleen in de log: 28 benoemde stappen, nul

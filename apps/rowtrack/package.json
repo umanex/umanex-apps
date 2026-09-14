@@ -34,6 +34,7 @@
     "render:shot": "node scripts/render-shot.mjs",
     "beeld": "node scripts/beeld-parity.mjs",
     "beeld:selftest": "node scripts/beeld-parity.mjs --selftest",
+    "beeld:basislijn": "node scripts/beeld-parity.mjs --schrijf-basislijn",
     "blindvlekken": "node scripts/walker-blindvlekken.mjs",
     "blindvlekken:selftest": "node scripts/walker-blindvlekken.mjs --selftest"
   },

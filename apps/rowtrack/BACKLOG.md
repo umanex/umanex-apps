@@ -91,7 +91,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** `scripts/check-averages.sh` naar het model van `umanex-os/scripts/test-guards.sh`, met een tegenproef op béide kanten: een bewust foute noemer moet hem doen afgaan, de huidige code moet hem doen zwijgen.
 - **Check:** `ls apps/rowtrack/scripts/check-averages.sh` — bestaat niet = de guard is er niet, en de conventie hangt aan wie eraan denkt.
 - **Relevantie 2026-09-14:** LEEFT. `check-averages.sh` bestaat niet; `grep -rn 'Sum.current /' apps/rowtrack/lib` geeft nog vijf delingen die alleen per conventie bij hun teller horen.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-14, `scripts/check-averages.mjs` + CI-stap. Meet tien delingen, waarvan drie via een lokale hulpvariabele die hij terugvolgt. `.mjs` in plaats van de voorgestelde `.sh`: hij moet een variabele kunnen herleiden, en dat is geen grep-werk. Tegenproef op beide takken. Die tweede tak bleek nodig: mijn eerste zelftest muteerde een ternary-conditie in plaats van een noemer, zweeg terecht, en wees naar de guard in plaats van naar zichzelf.
 
 ## 2026-08-15 — `correctSpm` corrigeert ook een teller, geen frequentie · [refactor]
 - **Wat:** `correctSpm(spm, halved)` uit `apps/rowtrack/lib/formatters.ts` wordt óók losgelaten op `total_strokes` — in `apps/rowtrack/app/(tabs)/history/[id].tsx:241` en `apps/rowtrack/components/workout/ActivePhase.tsx:621`. Dat is een correctie voor een *frequentie* toegepast op een *aantal*. Splits het in een eigen functie met eigen naam en eigen redenering, ook al is de rekensom vandaag dezelfde.
@@ -125,7 +125,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** Drempel bepalen, dan de guard in `saveWorkout` vóór de insert; bestaande lege ritten apart opruimen (nooit blind — eerst tellen met een `select`).
 - **Check:** `grep -n -B4 "from('workouts').insert" 'apps/rowtrack/app/(tabs)/workout.tsx'` — geen ondergrens op `distance_meters`/`duration_seconds` vóór de insert = een lege rit kan nog steeds bewaard worden.
 - **Relevantie 2026-09-14:** LEEFT, maar de HELFT is vervallen. De guard ontbreekt nog steeds (de insert op regel 207 kent geen ondergrens), dus een nieuwe lege rit kan alsnog ontstaan. Het opruimen van bestaande rijen is niet meer nodig: gemeten op de productiedatabase (read-only `select`) staan er **0 lege ritten op 22**, dus de rit van 2026-08-22 12:40:57 uit dit item bestaat niet meer. Bouw dus alleen de drempel, en zoek geen opruimwerk dat er niet is.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-14. De guard stond er al, maar toetste `tickCount`, en dát telt élk binnengekomen pakket — ook een dat alleen hartslag draagt. Zo kwam de rit van 2026-08-22 12:40:57 (0 m, 0 s, gemiddelde hartslag 90) er langs. `lib/storableWorkout.ts` toetst nu afstand én duur, met `lib/storableWorkout.test.ts` als tegenproef — die draagt die rit als geval. Geen verzonnen drempel van 30 s: bij nul is er letterlijk niets te tonen. Opruimen was niet meer nodig (0 lege ritten op 22).
 
 ## 2026-08-22 — PR-historiek wordt per scherm opnieuw opgehaald · [refactor]
 - **Wat:** `apps/rowtrack/lib/hooks/usePrHistory.ts` haalt de volledige ritlijst van de gebruiker op en hangt op drie schermen (home, historiek, detail). Navigeren home → historiek → detail is drie keer dezelfde query; het detailscherm haalt de hele historiek op om één badge van een label te voorzien. Eén gedeelde bron (context of module-cache met invalidatie na een save) haalt dat weg.
@@ -270,7 +270,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Check:** `git ls-files 'apps/rowtrack/lib/bestDistanceTime.test.ts' 'apps/rowtrack/lib/secureStorage.test.ts' 'apps/rowtrack/lib/formatters.test.ts'` → leeg = geen van de drie modules heeft een committed test.
 - **Hernoemd 2026-09-14** (was *Geen testrunner in de repo*, met akkoord van Jeroen): die titel was onwaar geworden en zou iemand een runner laten bouwen die er al staat.
 - **Relevantie 2026-09-14:** de kern leeft, de oude titel niet. Er ÍS een runner: `apps/rowtrack/package.json` draagt `"test": "node --test"`, er staan zes `*.test.ts` in git, en CI draait ze sinds 2026-08-10 als stap *Guard — invarianten (node:test)*. Wat wél leeft is de oorspronkelijke Check: `bestDistanceTime.ts`, `secureStorage.ts` en `formatters.ts` hebben nog steeds geen enkele test (`git ls-files` op die drie geeft leeg). Herformuleer dit item naar *drie rekenkernen zonder test* vóór je het oppakt — anders bouwt iemand een runner die er al staat.
-- **Status:** open
+- **Status:** deels gebouwd — 2026-09-14. **`bestDistanceTime` heeft nu een suite** (`lib/bestDistanceTime.test.ts`, 7 tests, tegenproef: dropout-detectie uitzetten maakt hem rood). De andere twee zijn NIET bereikbaar voor de huidige runner, gemeten in plaats van aangenomen: `formatters.ts` valt om op zijn eigen extensieloze import van `./workout-goals` (Node ESM eist de extensie; de bestaande suites importeren daarom mét `.ts`), en `secureStorage.ts` op `typeof import('expo-secure-store')` plus zijn react-native-imports. Die twee vragen dus eerst een keuze — bronwijziging of een resolver/mock-laag voor tests — en dat is een eigen item, geen restje van dit.
 
 ## 2026-09-07 — HR- en roeier-dienst delen één BleManager-singleton · [test]
 

@@ -19,6 +19,7 @@ import { userInputToTarget, targetToUserInput } from '@/lib/workout-goals';
 import { useWorkoutMetrics } from '@/lib/hooks/useWorkoutMetrics';
 import { useGoalProgress } from '@/lib/hooks/useGoalProgress';
 import { bestTimeForDistance } from '@/lib/bestDistanceTime';
+import { isWorthSaving } from '@/lib/storableWorkout';
 import { buildPrEntries, type PrEntry } from '@/lib/personalRecords';
 import { IdlePhase } from '@/components/workout/IdlePhase';
 import { ActivePhase } from '@/components/workout/ActivePhase';
@@ -116,14 +117,27 @@ export default function WorkoutScreen() {
     setPhase('active');
   }, [status, fetchPRs, resetAll, resetGameState, idleGoalType, idleDurMin, idleDurSec, idleGoalInput]);
 
-  // Slaat de rit op de achtergrond op — exact één keer (savedRef). Een lege rit (geen
-  // tick-data) wordt overgeslagen. Bij netwerkfout vangt de pendingWorkout-backstop +
-  // home-focus-retry het op (security-audit P2-4); géén alert, want dit draait op de
-  // achtergrond terwijl de gebruiker al richting de samenvatting is.
+  // Slaat de rit op de achtergrond op — exact één keer (savedRef). Een lege rit wordt
+  // overgeslagen. Bij netwerkfout vangt de pendingWorkout-backstop + home-focus-retry het op
+  // (security-audit P2-4); géén alert, want dit draait op de achtergrond terwijl de gebruiker
+  // al richting de samenvatting is.
+  //
+  // TWEE GUARDS, want de eerste meet niet wat hij lijkt te meten. `tickCount` telt ELK
+  // binnengekomen pakket, ook een dat alleen hartslag draagt — en een hartslagband stuurt
+  // door terwijl er niet geroeid wordt. Gemeten: de rit van 2026-08-22 12:40:57 stond met
+  // 0 m, 0 s en één sample in de historiek, mét `avg_heart_rate` 90. Die kwam dus langs de
+  // tick-guard heen. De tweede guard toetst waar een rit werkelijk uit bestaat: afstand én
+  // duur. Geen van beide is een verzonnen drempel — bij nul is er letterlijk niets te tonen,
+  // elke KPI op zo'n rit leest 0 of "—" en hij telt wél mee in de periodetotalen.
   const saveWorkout = useCallback(async () => {
     if (!user) return;
     if (savedRef.current) return;
     if (refs.tickCount.current === 0) return;
+    if (!isWorthSaving(metricsState.distanceMeters, metricsState.seconds)) {
+      // savedRef tóch zetten: de beslissing is genomen, en een retry zou hem herhalen.
+      savedRef.current = true;
+      return;
+    }
     savedRef.current = true;
 
     // Elk gemiddelde deelt door de teller die in dezelfde guard optelt als zijn som —

@@ -10,6 +10,8 @@
     "tokens:build": "style-dictionary build --config style-dictionary.config.mjs",
     "type-check": "tsc --noEmit",
     "test": "node --test \"lib/**/*.test.ts\"",
+    "averages": "node scripts/check-averages.mjs",
+    "averages:selftest": "node scripts/check-averages.mjs --selftest",
     "storybook": "node scripts/build-web-fonts.mjs && storybook dev -p 6007",
     "build-storybook": "node scripts/build-web-fonts.mjs && storybook build",
     "fonts:web": "node scripts/build-web-fonts.mjs",

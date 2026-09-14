@@ -548,9 +548,21 @@ fi
 # In zelf-modus overslaan: daar ís scripts/sync-os.sh de symlink naar de template, en
 # dat zou het origineel over zichzelf heen kopiëren.
 #
-# Let op: de nieuwe versie geldt pas vanaf de vólgende run. Bash leest het script tijdens
-# uitvoering, dus jezelf halverwege vervangen is nooit veilig — daarom kopiëren we hier
-# alleen en zeggen we het erbij.
+# VERVANGEN, NIET OVERSCHRIJVEN. Bash leest zijn bronbestand incrementeel tijdens de
+# uitvoering en onthoudt een byte-offset. Een `cp` schrijft in dezelfde inode, dus de
+# offsets schuiven onder de lopende interpreter en hij hervat middenin een constructie.
+# Een `mv` geeft een nieuwe inode: de draaiende bash houdt zijn fd op de oude en leest
+# die ongestoord uit tot het einde.
+#
+# GEMETEN 2026-09-14 in Columba, de eerste sync waarin dit bestand van lengte veranderde
+# (de build-serveert-guard kwam erbij): `syntax error near unexpected token 'fi'` op regel
+# 568, mét de regel erboven twee keer geprint — de handtekening van een verschoven offset.
+# In isolatie gereproduceerd met één variabele verschil: `cp` over zichzelf → syntax error,
+# `mv` erin → schoon tot het einde. De comment hier beschreef het gevaar vóór die meting al
+# woordelijk ("jezelf halverwege vervangen is nooit veilig") en concludeerde toen dat alléén
+# kopiëren de mitigatie was — maar kopiëren ís de onveilige handeling; "geldt pas vanaf de
+# volgende run" beantwoordt een andere vraag, namelijk wélke logica draait. Het defect bleef
+# elf syncs onzichtbaar omdat een gelijk-lange kopie de offsets niet verschuift.
 if [ "$SELF_MODE" -eq 0 ]; then
   echo ""
   echo "→ Werk het sync-script zelf bij..."
@@ -559,9 +571,17 @@ if [ "$SELF_MODE" -eq 0 ]; then
   elif cmp -s "$UMANEX_OS_PATH/templates/sync-os.sh" "$CLIENT_ROOT/scripts/sync-os.sh"; then
     echo "  • scripts/sync-os.sh is al canoniek"
   else
-    cp "$UMANEX_OS_PATH/templates/sync-os.sh" "$CLIENT_ROOT/scripts/sync-os.sh"
-    chmod +x "$CLIENT_ROOT/scripts/sync-os.sh"
-    echo "  ✓ scripts/sync-os.sh bijgewerkt — de nieuwe versie geldt vanaf de volgende run"
+    # Het tijdelijke bestand staat naast het doel: `mv` is alleen atomair binnen één
+    # filesystem, en /tmp kan een ander zijn.
+    _nieuw="$CLIENT_ROOT/scripts/.sync-os.sh.nieuw"
+    if cp "$UMANEX_OS_PATH/templates/sync-os.sh" "$_nieuw" \
+       && chmod +x "$_nieuw" \
+       && mv -f "$_nieuw" "$CLIENT_ROOT/scripts/sync-os.sh"; then
+      echo "  ✓ scripts/sync-os.sh bijgewerkt — de nieuwe versie geldt vanaf de volgende run"
+    else
+      rm -f "$_nieuw"
+      echo "  ⚠ kon scripts/sync-os.sh niet bijwerken — de oude versie staat er nog"
+    fi
   fi
 fi
 

@@ -261,14 +261,15 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Relevantie 2026-09-14:** LEEFT. Check gedraaid: geen `deno` in `.github/workflows/`, en `supabase/functions/` bevat nog altijd precies één functie (`delete-account`).
 - **Status:** open
 
-## 2026-09-07 — Geen testrunner in de repo · [test]
+## 2026-09-07 — Drie rekenkernen hebben geen enkele test · [test]
 
 - **Wat:** Committed node:test-suites voor de drie pure modules die nu alleen ad hoc geverifieerd zijn: lib/bestDistanceTime.ts (19 cases + fuzz), lib/secureStorage.ts (chunking op bytes, nooit mid-character; 10 cases + fuzz) en lib/formatters.ts (duizendtal-punt, komma-decimaal, spatie vóór eenheid).
 - **Waarom niet nu:** HANDOFF-item van 2026-08-06, ouder dan 30 dagen bij de triage van 2026-09-07 (sessie-reflectie stap 1): werk dat blijft liggen, geen sessie-context. Triage-bewijs: `git ls-files 'apps/rowtrack/lib/bestDistanceTime.test.ts' 'apps/rowtrack/lib/secureStorage.test.ts' 'apps/rowtrack/lib/formatters.test.ts'` → leeg (Check slaat aan). Maar: apps/rowtrack/package.json:11 `"test": "node --test \"lib/**/*.test.ts\""`;…
 - **Eerste zet:** `apps/rowtrack/lib/secureStorage.test.ts` schrijven naar het patroon van lib/ble/scan-lock.test.ts (node:test + assert), met de 10 gerichte cases uit de chunk-fix (d180578) als startpunt; tegenproef: de byte-grens in de chunker één teken verschuiven en eisen dat de suite omvalt; check: `git ls-files apps/rowtrack/lib/secureStorage.test.ts` niet leeg.
 - **Verwant:** `apps/rowtrack/BACKLOG.md` 2026-08-22 *De node:test-suites draaien niet in CI* (gebouwd): de runner en de CI-stap bestaan sinds 2026-08-25, dit item is de inhoud die erdoorheen moet.
 - **Check:** `git ls-files 'apps/rowtrack/lib/bestDistanceTime.test.ts' 'apps/rowtrack/lib/secureStorage.test.ts' 'apps/rowtrack/lib/formatters.test.ts'` → leeg = geen van de drie modules heeft een committed test.
-- **Relevantie 2026-09-14:** DE TITEL IS ACHTERHAALD, de kern niet. Er ÍS een runner: `apps/rowtrack/package.json` draagt `"test": "node --test"`, er staan zes `*.test.ts` in git, en CI draait ze sinds 2026-08-10 als stap *Guard — invarianten (node:test)*. Wat wél leeft is de oorspronkelijke Check: `bestDistanceTime.ts`, `secureStorage.ts` en `formatters.ts` hebben nog steeds geen enkele test (`git ls-files` op die drie geeft leeg). Herformuleer dit item naar *drie rekenkernen zonder test* vóór je het oppakt — anders bouwt iemand een runner die er al staat.
+- **Hernoemd 2026-09-14** (was *Geen testrunner in de repo*, met akkoord van Jeroen): die titel was onwaar geworden en zou iemand een runner laten bouwen die er al staat.
+- **Relevantie 2026-09-14:** de kern leeft, de oude titel niet. Er ÍS een runner: `apps/rowtrack/package.json` draagt `"test": "node --test"`, er staan zes `*.test.ts` in git, en CI draait ze sinds 2026-08-10 als stap *Guard — invarianten (node:test)*. Wat wél leeft is de oorspronkelijke Check: `bestDistanceTime.ts`, `secureStorage.ts` en `formatters.ts` hebben nog steeds geen enkele test (`git ls-files` op die drie geeft leeg). Herformuleer dit item naar *drie rekenkernen zonder test* vóór je het oppakt — anders bouwt iemand een runner die er al staat.
 - **Status:** open
 
 ## 2026-09-07 — HR- en roeier-dienst delen één BleManager-singleton · [test]
@@ -453,6 +454,16 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   daarop verwijderd).
 - **Check:** `grep -E '"(storybook|vite)"' apps/rowtrack/package.json` — staat storybook nog op 10.6 en vite op 8, dan is de bump waar dit item op wacht niet gebeurd.
 - **Relevantie 2026-09-14:** LEEFT, maar GEBLOKKEERD op zijn eigen trigger. `storybook ^10.6.0`, `@storybook/react-native-web-vite ^10.6.0`, `vite ^8` — ongewijzigd sinds het item geschreven is. Er is dus niets te heroverwegen tot er een bump is; de compensaties in `.storybook/main.ts` dragen elk hun eigen meting en blijven tot dan staan.
+- **Gemeten 2026-09-14 op vite 8.3.0 (was 8.2.2):** alle drie de compensaties zijn nog nodig. Per
+  stuk weggehaald en het dev-pad gedraaid, met een koude dep-cache:
+  · **expo-modules-core-stubs** weg → de dev-server start niet, met exact de gedocumenteerde
+    `[MISSING_EXPORT] "EventEmitter" is not exported by …/ts-declarations/EventEmitter.ts`.
+  · **worklets-transform in de optimizer** weg → 54 van 246 stories leeg (GoalSegments en alles
+    wat WheelPicker gebruikt).
+  · **expo-router uit de optimizer** weg → 6 van 246 leeg (HistoryScreen 3, ProfileScreen 3).
+  Storybook zelf is niet te bumpen: 10.6.0 ís de nieuwste. Dit item wacht dus op upstream, niet
+  op ons — en de eerstvolgende heroverweging hoeft deze drie proeven niet te herhalen tot er een
+  nieuwe storybook- of vite-minor is.
 - **Status:** open
 
 ## 2026-09-08 — De bouwspec verandert bij elke run door de roterende spinner · [refactor]

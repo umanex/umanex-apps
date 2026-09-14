@@ -524,4 +524,68 @@ if [ -n "$ds_gaten" ]; then
   echo "  Drie regels horen er te staan: - **Preset:** · - **Componentbron:** · - **Storybook:**"
 fi
 
+
+# 9. Context-signaal — draagt de app die je aanraakt echte metadata, of nog een [TODO]?
+#    Waarschuwt, blokkeert niet, en alleen voor apps die in DEZE commit veranderen —
+#    zelfde vorm als blok 7 en 8.
+#
+#    Waarom dit een guard is en geen afspraak: `context.json` voedt `gen-snapshot.sh`,
+#    dat bij élke commit per app een `context-snapshot.md` schrijft. Staat een veld op
+#    `[TODO]`, dan schrijft de generator die string letterlijk het snapshot in — en dat
+#    snapshot is precies het bestand dat een volgende Claude-sessie als eerste leest.
+#    GEMETEN in Luminus op 2026-09-13: alle drie de apps droegen vier `[TODO: …]`-regels,
+#    waaronder `Key: [TODO: figmaKey in context.json]`, en twee van de drie apps stonden
+#    helemaal niet in het bestand. Dat liep sinds de aanmaak mee in elke commit zonder
+#    dat iets het meldde: de generator slaagt, de hook zwijgt, het snapshot is leeg.
+#    Een ontbrekende waarde die zichzelf als tekst presenteert is erger dan een
+#    ontbrekend veld — hij ziet eruit als inhoud.
+#
+#    Twee gevallen, één melding: de app staat niet in `context.json`, of hij staat er
+#    met een `[TODO`-waarde. Beide leveren hetzelfde defecte snapshot op.
+#    Geen jq-afhankelijkheid: de test is een grep op het blok van die app, want `jq`
+#    is in een pre-commit hook niet gegarandeerd aanwezig (de generator zelf valt
+#    daar ook op terug).
+context_gaten=""
+if [ -f context.json ]; then
+  for app in $changed_apps; do
+    [ -d "apps/$app" ] || continue
+    if ! grep -q "\"apps/$app\"" context.json; then
+      context_gaten="$context_gaten
+    $app: staat niet in context.json"
+      continue
+    fi
+    # Het blok van déze app isoleren, en alleen dat blok — een naïeve vensterlezing
+    # pakt het [TODO] van de buurman erbij en meldt een app die wél ingevuld is
+    # (gemeten 2026-09-14 op een fixture met alpha ingevuld en beta op [TODO]).
+    # Daarom op accolade-diepte, wat zowel een object-per-regel als een uitgevouwen
+    # object aankan: zoek de dir-regel, loop terug naar de sleutel die het object
+    # opent, en lees vooruit tot de accolades weer in balans zijn.
+    blok="$(awk -v d="\"apps/$app\"" '
+      { L[NR] = $0 }
+      END {
+        for (i = 1; i <= NR; i++) if (index(L[i], d)) { hit = i; break }
+        if (!hit) exit
+        start = hit
+        for (i = hit; i >= 1; i--) if (L[i] ~ /"[^"]+"[[:space:]]*:[[:space:]]*\{/) { start = i; break }
+        for (i = start; i <= NR; i++) {
+          s = L[i]; no = gsub(/\{/, "{", s); nc = gsub(/\}/, "}", s)
+          print L[i]
+          depth += no - nc
+          if (depth <= 0) break
+        }
+      }
+    ' context.json)"
+    case "$blok" in
+      *"[TODO"*) context_gaten="$context_gaten
+    $app: heeft nog een [TODO]-waarde in context.json" ;;
+    esac
+  done
+fi
+
+if [ -n "$context_gaten" ]; then
+  echo "⚠ context.json is niet ingevuld voor:$context_gaten"
+  echo "  gen-snapshot.sh schrijft die [TODO]-string letterlijk in context-snapshot.md,"
+  echo "  en dat bestand is wat een volgende sessie als eerste leest. Vul figmaKey,"
+  echo "  figmaUrl en description in — of haal het veld weg als het niet van toepassing is."
+fi
 klant_eigen_checks

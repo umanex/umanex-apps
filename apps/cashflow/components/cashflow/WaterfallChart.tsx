@@ -6,6 +6,18 @@ import type { MonthData } from '../../lib/cashflow/types';
 
 type WaterfallChartProps = {
   month: MonthData;
+  /**
+   * Draagt deze maand ankersemantiek? Dan is `startBalance` het échte banksaldo — de potten
+   * zitten er nog in en de afgevinkte betalingen zijn er al af — en antwoorden de kostenkoppen
+   * op "wat moet er nog van dit saldo af". Dat is een stand, geen mutatie. In een latere maand
+   * vertrekt de kolom van een geprojecteerd vrij saldo en zijn het wél mutaties.
+   *
+   * De prop staat er omdat `MonthData` het verschil niet draagt: `MonthSubtotals` heeft geen
+   * discriminant, dus een consument kan niet zien welke van de twee conventies hij vasthoudt.
+   * Zie het backlog-item van 2026-09-14 daarover. Elke afgesloten maand telt ook als anker —
+   * `useAutoCloseMonth` rekent die per stuk door als maand 0.
+   */
+  isAnchor: boolean;
 };
 
 const W = 640;
@@ -21,7 +33,7 @@ type Step = {
   value: number;
 };
 
-function buildSteps(month: MonthData): Step[] {
+function buildSteps(month: MonthData, isAnchor: boolean): Step[] {
   const { startBalance, totalIncome, subtotals } = month;
   const afterIncome = startBalance + totalIncome;
   const afterRecurring = afterIncome - subtotals.recurring;
@@ -39,11 +51,21 @@ function buildSteps(month: MonthData): Step[] {
     { label: 'Eenmalig', delta: -subtotals.oneOff, value: afterOneOff },
     { label: 'Budgetten', delta: -subtotals.budgets, value: afterBudgets },
     { label: 'Provisies', delta: -subtotals.provisions, value: afterProvisions },
-    // "Naar de buffer" en niet "Buffer": dit is de storting of opname van die maand, en
-    // sinds 2026-09-06 heet de stand in de footer en op de runwaykaart "Buffer". Twee
-    // dingen met dezelfde naam op twee schermen las als een tegenspraak — gemeten stond
+    // "Naar de buffer" en niet "Buffer": in een latere maand is dit de storting of opname van
+    // die maand, en sinds 2026-09-06 heet de stand in de footer en op de runwaykaart "Buffer".
+    // Twee dingen met dezelfde naam op twee schermen las als een tegenspraak — gemeten stond
     // hier "Buffer € 0,00" terwijl de kaart erboven "Buffer −€ 1.500,00" meldde.
-    { label: 'Naar de buffer', delta: -subtotals.buffer, value: subtotals.endBalance },
+    //
+    // In de ankermaand is het géén storting. Daar trekt de kolom de hele staande pot van het
+    // banksaldo af, dus draagt deze stap de stand. Tot 2026-09-14 stond er ook daar "Naar de
+    // buffer": gemeten op de eigen chart-fixture tekende hij −€ 8.000,00 in een maand waarin
+    // er € 5.500,00 bíj kwam, en op de bevroren augustus van het echte document −€ 3.284,00
+    // bij een pot die € 695,72 opnam. Teken én grootte fout — het getal klopt, het woord niet.
+    {
+      label: isAnchor ? 'In de buffer' : 'Naar de buffer',
+      delta: -subtotals.buffer,
+      value: subtotals.endBalance,
+    },
     { label: 'Eindsaldo', delta: null, value: subtotals.endBalance },
   ];
 }
@@ -55,9 +77,9 @@ function buildSteps(month: MonthData): Step[] {
  * noemen dit de standaardvorm voor een cashflow-brug — bij gemengde plussen en minnen is
  * er geen goed alternatief.
  */
-export function WaterfallChart({ month }: WaterfallChartProps) {
+export function WaterfallChart({ month, isAnchor }: WaterfallChartProps) {
   const [showTable, setShowTable] = useState(false);
-  const steps = buildSteps(month);
+  const steps = buildSteps(month, isAnchor);
 
   const values = steps.flatMap((s, i) => [s.value, i > 0 ? steps[i - 1]!.value : 0, 0]);
   const min = Math.min(...values);
@@ -185,7 +207,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
           <thead>
             <tr className="text-left text-muted-foreground">
               <th scope="col" className="font-medium py-1">Stap</th>
-              <th scope="col" className="font-medium py-1">Mutatie</th>
+              <th scope="col" className="font-medium py-1">{isAnchor ? 'Nog af' : 'Mutatie'}</th>
               <th scope="col" className="font-medium py-1">Saldo</th>
             </tr>
           </thead>

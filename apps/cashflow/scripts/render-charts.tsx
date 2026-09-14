@@ -69,6 +69,15 @@ const goedeMaand = calculateMonths(
   [HUUR], [BUFFER, BTW, BOODSCHAPPEN], [], [], [], [], [], 1,
 )[0]!;
 
+// Dezelfde opzet, maar de tweede kolom: een maand die van een geprojecteerd vrij saldo
+// vertrekt in plaats van van het banksaldo. Staat er als tegenproef bij de ankerlabels —
+// dezelfde grafiek hoort hier "Naar de buffer" en "Mutatie" te tonen waar de ankerversie
+// "In de buffer" en "Nog af" toont. Tekenen beide hetzelfde, dan doet de tak niets.
+const latereMaand = calculateMonths(
+  '2026-06', 9000, [], inkomen(['2026-06', '2026-07'], () => 6000),
+  [HUUR], [BUFFER, BTW, BOODSCHAPPEN], [], [], [], [], [], 2,
+)[1]!;
+
 // Bufferreeks die door nul zakt — de stand die vroeger buiten de viewBox viel.
 const doorNul: BufferPoint[] = [
   { monthKey: '2026-01', buffer: 1800, isForecast: false },
@@ -122,8 +131,12 @@ const blokken: Array<[string, string]> = [
   ['Runway — negatieve bufferstand (randgeval)', renderToStaticMarkup(h(RunwayCard, {
     runway: { months: -0.67, buffer: -400, netBurn: 600, closedMonths: 5, hasEnoughData: true },
   }))],
-  ['Waterfall — normale maand met buffer', renderToStaticMarkup(h(WaterfallChart, { month: goedeMaand }))],
-  ['Waterfall — negatief eindsaldo (randgeval)', renderToStaticMarkup(h(WaterfallChart, { month: magereMaand }))],
+  ['Waterfall — ankermaand met buffer (stand: "In de buffer" / "Nog af")',
+    renderToStaticMarkup(h(WaterfallChart, { month: goedeMaand, isAnchor: true }))],
+  ['Waterfall — latere maand (mutatie: "Naar de buffer" / "Mutatie")',
+    renderToStaticMarkup(h(WaterfallChart, { month: latereMaand, isAnchor: false }))],
+  ['Waterfall — negatief eindsaldo (randgeval)',
+    renderToStaticMarkup(h(WaterfallChart, { month: magereMaand, isAnchor: true }))],
   ['Bufferopbouw — door nul heen (randgeval)', renderToStaticMarkup(h(BufferChart, {
     points: doorNul, closedMonths: 4,
   }))],

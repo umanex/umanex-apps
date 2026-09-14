@@ -472,7 +472,23 @@ const WALKER = () => {
 
   function lees(el, diepte, ouderRect) {
     const cs = getComputedStyle(el);
-    const r = el.getBoundingClientRect();
+    /**
+     * DE MAAT VAN EEN DRAAIENDE NODE IS EEN MEETMOMENT, GEEN EIGENSCHAP.
+     *
+     * `<ActivityIndicator>` roteert in react-native-web zijn binnenste View (keyframes 0->360
+     * in 0,75 s), en `getBoundingClientRect` geeft een AS-GELIJNDE doos: die zwelt en krimpt
+     * met de hoek. Gemeten 2026-09-08: 244 velden verschilden tussen twee runs op onveranderde
+     * code, en alle 244 zaten binnen een `spinnerBox`-subboom. `build-spec.min.json` is een
+     * gecommit artefact, dus dat leverde bij elke `figma:spec` een diff van honderdduizenden
+     * bytes — ruis waarin een echte wijziging niet meer te zien is.
+     *
+     * De ONGEROTEERDE maat staat op de `spinner`-ouder zelf: die draait niet (nagemeten — hij
+     * bleek in geen enkele run instabiel). Elke node binnen een spinner erft daarom diens doos.
+     * Dat is geen afvlakking van een echt verschil: binnen een spinner IS er geen stabiele
+     * eigen maat om te meten.
+     */
+    const spinner = el.closest?.('[role="progressbar"][aria-valuemax]');
+    const r = (spinner && spinner !== el) ? spinner.getBoundingClientRect() : el.getBoundingClientRect();
     // DE SCHEIDER TUSSEN TWEE INLINE-RUNS IS ZELF EEN TEKSTNODE.
     //
     // `{t.auth.login.noAccount}{' '}<Text>` rendert DRIE childNodes: "Nog geen account?", " "

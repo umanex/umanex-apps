@@ -31,15 +31,25 @@ jobs:
       # "het faalde dus hij meet" een aanname zijn. De kopie staat daarom NAAST het origineel
       # (identieke resolutie) en de uitvoer moet de type-fout bij zijn code noemen: TS2322,
       # "Type 'string' is not assignable to type 'number'".
+      # `set +e` is niet optioneel. GitHub draait elke `run` met `bash -e`, en daaronder breekt
+      # `out=$(deno check …)` de shell af op de exit-code van deno — vóór `rc=$?` gelezen wordt.
+      # Gemeten in run 34851047836: de stap viel om na 0,23 s, te snel voor een deno die zijn
+      # jsr-module nog moet ophalen, en géén van de foutmeldingen hieronder kwam aan bod. Een
+      # tegenproef die op zijn eigen succes struikelt, meldt niets over wat hij moest meten.
       - name: Tegenproef — een type-fout hoort deze job rood te maken
         run: |
+          set +e
           set -uo pipefail
           F=apps/rowtrack/supabase/functions/delete-account/index.ts
           K=apps/rowtrack/supabase/functions/delete-account/_tegenproef.ts
-          cp "$F" "$K"
+          [ -f "$F" ] || { echo "::error::$F bestaat niet — de tegenproef heeft geen doel"; exit 1; }
+          cp "$F" "$K" || { echo "::error::kopie mislukt"; exit 1; }
           printf '\nconst tegenproef: number = "dit is geen getal";\nconsole.log(tegenproef);\n' >> "$K"
-          out=$(deno check "$K" 2>&1); rc=$?
+          echo "--- de kopie, laatste regels ---"; tail -3 "$K"
+          out=$(deno check "$K" 2>&1)
+          rc=$?
           rm -f "$K"
+          echo "--- deno check (exit $rc) ---"
           echo "$out"
           if [ "$rc" -eq 0 ]; then
             echo "::error::deno check accepteerde een type-fout — deze job meet niets"

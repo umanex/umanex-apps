@@ -3,7 +3,7 @@ import { SafeAreaProvider, type Metrics } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { HealthConsentProvider } from '@/lib/health-consent-context';
 import { TOESTEL } from '../../.storybook/toestel';
-import ProfileScreen from './profile';
+import ProfileScreen from '@/app/(tabs)/profile';
 
 /**
  * Het profielscherm hangt aan twee contexten — `AuthProvider` voor de gebruiker en

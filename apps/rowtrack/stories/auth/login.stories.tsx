@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-native-web-vite';
 import { TOESTEL } from '../../.storybook/toestel';
 import { vulEnVerstuur } from '../../.storybook/formulier';
-import LoginScreen from './login';
+import LoginScreen from '@/app/(auth)/login';
 
 /**
  * Het inlogscherm heeft geen props: alles is interne state. De stories tonen daarom de

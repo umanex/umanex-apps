@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-native-web-vite';
 import { SafeAreaProvider, type Metrics } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { TOESTEL } from '../../../.storybook/toestel';
-import WorkoutDetailScreen from './[id]';
+import WorkoutDetailScreen from '@/app/(tabs)/history/[id]';
 
 /**
  * Het detailscherm leest zijn id uit de route-parameters en de rit uit supabase. De mock geeft

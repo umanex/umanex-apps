@@ -12,6 +12,8 @@
     "test": "node --test \"lib/**/*.test.ts\"",
     "averages": "node scripts/check-averages.mjs",
     "averages:selftest": "node scripts/check-averages.mjs --selftest",
+    "routes": "node scripts/guard-tabbar-routes.mjs",
+    "routes:selftest": "node scripts/guard-tabbar-routes.selftest.mjs",
     "storybook": "node scripts/build-web-fonts.mjs && storybook dev -p 6007",
     "build-storybook": "node scripts/build-web-fonts.mjs && storybook build",
     "fonts:web": "node scripts/build-web-fonts.mjs",

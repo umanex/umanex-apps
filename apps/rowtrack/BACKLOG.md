@@ -673,3 +673,80 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** `beeld-parity.mjs` maskeert al de Ionicons-glyphs op beide beelden identiek (die bestaan in Figma niet). Dezelfde weg werkt hier: bereken uit `niet-reproduceerbaar.json` de rechthoeken van de instabiele nodes in de browser-render en maskeer ze aan beide kanten. De tegenproef staat al klaar — drie runs op onveranderde invoer horen daarna hetzelfde getal te geven, en dat doen ze vandaag niet.
 - **Check:** `for i in 1 2 3; do node scripts/beeld-parity.mjs | grep Doel-Bereikt; done` — drie verschillende percentages = de klasse leeft.
 - **Status:** open
+
+## 2026-09-14 — 12 van 35 tikbare elementen hebben rol noch label · [ux]
+- **Wat:** 34 % van de `Pressable`/`Touchable*` in `components/` en `app/` draagt geen `accessibilityLabel` en geen `accessibilityRole`. Het scherpste geval is `app/(tabs)/history/[id].tsx:196`: de datum in de header is een terug-knop zonder rol, vijf regels boven een tweede terug-affordance die er wél een heeft (`:201`) — VoiceOver leest er dus één van de twee. Verder `components/Chip.tsx:14` (ook zonder `accessibilityState` terwijl `active` een prop is, waar `Segmented.tsx:48` en `GoalSegments.tsx:73` dat wél doen), `components/workout/active/KpiRow.tsx:51`, en 5× `linkContainer` in de auth-schermen. Twee schermvullende scrims (`BottomSheet.tsx:132`, `MotivationalToast.tsx:159`) horen juist `accessibilityElementsHidden` te krijgen: nu kan de focus op een onzichtbaar element landen.
+- **Waarom niet nu:** De designreview van 2026-09-14 leverde één P0 en acht P1's; dit is P2 en raakt twaalf bestanden zonder dat er een ontwerpbeslissing in zit. `BACKLOG 2026-07-16` noemt a11y-strategie al als een keuze die van Jeroen is — dit item is het concrete deel daarvan, niet de strategie.
+- **Eerste zet:** De twaalf oplijsten met `grep -rn 'Pressable\|TouchableOpacity\|TouchableHighlight' apps/rowtrack/components apps/rowtrack/app` en per geval rol + label toevoegen; `accessibilityState` op Chip en KpiRow naar het voorbeeld van `Segmented.tsx:48`. Begin met `history/[id].tsx:196`, want dat is de enige waar twee affordances hetzelfde doen en er één onzichtbaar is.
+- **Check:** `grep -c accessibilityState apps/rowtrack/components/Chip.tsx` → 0 = nog niet opgepakt.
+- **Status:** open
+
+## 2026-09-14 — De meest gebruikte labelstijl staat op 11 px, de kleinste op 9 · [ux]
+- **Wat:** `labelGoalPrefix` is 11 px uppercase met 2,2 tracking (`constants/typography.ts:157-163`) en staat op **19 plekken over 14 bestanden**, inclusief het tabbar-label (`TabLabel.tsx:22`) en elk sectie- en StatsTable-label. `labelMicro` is 9 px en staat op `PrBadge.tsx:78`, `PrBanner.tsx:92` en `history/[id].tsx:523`. Alleen `TabLabel` en `DeviceRow` cappen Dynamic Type (`maxFontSizeMultiplier={1.2}` → maximaal 13,2 px).
+- **Waarom niet nu:** Het is de meest gebruikte labelstijl van de app, dus de grens ophogen verschuift 19 plekken en daarmee de geometrie-basislijn van `parity` en `beeld`. Dat is een eigen ronde met een eigen meting, geen bijzaak van een andere fix. Anders dan het tracking-item van 2026-09-09 gaat dit over de **grootte**, niet over de tracking.
+- **Eerste zet:** Meten wat er breekt: `labelGoalPrefix` naar 12 px zetten, `pnpm --filter rowtrack parity` draaien en tellen hoeveel nodes van hoogte veranderen. Valt dat mee, dan is dit één tokenwijziging; valt het tegen, dan is het een gefaseerde uitrol per scherm.
+- **Check:** `grep -A2 'labelGoalPrefix' apps/rowtrack/constants/typography.ts | grep -c '11'` → treffer = nog op 11 px.
+- **Status:** open
+
+## 2026-09-14 — Geen instrument bewaakt rauwe kleur of maat in rowtrack's componentbron · [infra]
+- **Wat:** `pnpm ds:guard` staat groen op 9/9 apps maar meet voor rowtrack nul token-discipline: `Preset: geen` laat `echtePreset()` op `null` vallen, en `Componentbron: eigen` slaat de assen `[dubbel]` en `[adoptie]` allebei over — van de vijf assen doen er twee iets, en die toetsen de *declaratie*, niet de code. `figma:check [hardcoded]` scant uitsluitend `*.stories.tsx` (`scripts/figma-sync-check.mjs:212`, `:439`), dus de componentbron valt er per constructie buiten. Er is geen ESLint-config in `apps/rowtrack`, terwijl de monorepo-CLAUDE.md "ESLint-regels per app" belooft voor de consumptieregel. Gemeten gevolg in dat gat: **13 hardcoded kleurvoorkomens in 7 van 60 bestanden** en **60 numerieke layoutliterals over 25 van 63 bestanden**, waaronder `borderRadius: 8` op drie plekken waar `radii.sm` bestaat (`GoalPill.tsx:80`, `SubtitleProgress.tsx:59`, `dev-active.tsx:158`) en `gap: 20/28/8` in `IdlePhase.tsx:314,320,355`.
+- **Waarom niet nu:** Een guard bouwen die rood wordt op bestaande code betekent eerst die code opruimen, anders is hij vanaf dag één uitgeschakeld. Dat is twee rondes werk en de designreview leverde dringender dingen. Maar zonder dit item blijft het gat onzichtbaar — een groene guard die de bron niet leest, is stilte met een teller.
+- **Eerste zet:** De guard schrijven met een uitsluitingslijst die de huidige 13 + 60 bevat (zoals `BEKENDE_GATEN = 50` in `figma-sync-check.mjs:110` al doet), zodat hij vandaag groen is en morgen rood op elke nieuwe. Tweezijdige tegenproef verplicht: één rauwe hex toevoegen moet hem rood maken, weghalen weer groen.
+- **Check:** `ls apps/rowtrack/.eslintrc* apps/rowtrack/eslint.config.*` → geen treffer = nog geen lint-laag in deze app.
+- **Status:** open
+
+## 2026-09-14 — Drie kleuren buiten het merksysteem op betekenisdragende plekken · [tokens]
+- **Wat:** Gemeten pixelwaarden op de gebouwde app: de voortgangstrack is `#c9b894` (warm zand), de "op tempo"-balk is `#4caf50` (Material Design green 500) en de records-badge is `#e8dcc4`. `#c9b894` betekent *wat je niet gehaald hebt*, het bijna identieke `#e8dcc4` betekent *wat je wél presteerde* — en de track is lichter dan de vulling, dus het onafgemaakte deel domineert de voortgangsbalk visueel.
+- **Waarom niet nu:** Het is niet vastgesteld of deze drie al in de 50 ongebonden waarden van `figma/ongebonden.json` zitten (BACKLOG 2026-09-09). Dat moet eerst gemeten, anders staat dezelfde waarde in twee items. Bovendien raakt het de tokenlaag, en die wacht al op een push uit Tokens Studio voor het accent-item van 2026-09-07.
+- **Eerste zet:** `grep -i 'c9b894\|4caf50\|e8dcc4' apps/rowtrack/figma/ongebonden.json apps/rowtrack/constants/*.ts` — treffers bepalen of dit een nieuw item is of een deelverzameling van 2026-09-09. Pas daarna een rol kiezen.
+- **Check:** `grep -ril 'c9b894' apps/rowtrack/constants apps/rowtrack/tokens` → geen treffer = de waarde komt nog nergens uit een token.
+- **Status:** open
+
+## 2026-09-14 — Uitloggen is de prominentste knop van het profielscherm · [ux]
+- **Wat:** `Uitloggen` is een volle rode pil met glow — exact dezelfde behandeling als `Start training`, de primaire actie van de app. Pal eronder staat `Account verwijderen` als muted rij, en bovenaan het scherm staat `GEEN DOEL INGESTELD` als de allerlichtste tekst. De hiërarchie staat om: de uitgang schreeuwt, het verwijderen fluistert, en het instellen van een doel — de motor onder het motivatiemechanisme dat Home aandrijft — is bijna onzichtbaar.
+- **Waarom niet nu:** Vraagt een keuze over wat de primaire actie van het profielscherm ís. Dat is een productbeslissing, geen opruimwerk, en ze raakt ook de plek waar het doel ingesteld wordt.
+- **Eerste zet:** `Uitloggen` naar een tekstknop degraderen en meten of er iets misgaat in de flow; daarna apart beslissen of "doel instellen" een echte primaire actie krijgt mét de huidige waarde erbij.
+- **Check:** Screenshot van `app/(tabs)/profile.tsx` onderaan — is `Uitloggen` nog de enige gevulde knop op het scherm?
+- **Status:** open
+
+## 2026-09-14 — Emoji dragen de celebration en de records-badge · [ux]
+- **Wat:** Een trofee- en biceps-emoji in "Doel bereikt!", een medaille-emoji in de `3 RECORDS`-badge op Home. Emoji renderen per OS-versie anders en botsen met het verder strakke Ionicons-systeem. Uitgerekend op het moment dat het merk het meest zichzelf zou moeten zijn — het vieren van een gehaald doel — leent de app een systeemglyph.
+- **Waarom niet nu:** Er is geen eigen viermarkering in de tokens, dus dit vraagt een getekend icoon of een typografische oplossing. Dat is ontwerpwerk, geen vervanging.
+- **Eerste zet:** Beslissen of de viering een icoon krijgt of typografisch gedragen wordt; bij een icoon hoort het in de Ionicons-set of als eigen asset door de Figma-keten.
+- **Check:** `grep -rn '🏆\|💪\|🥇' apps/rowtrack/components apps/rowtrack/app` → treffers = nog niet vervangen.
+- **Status:** open
+
+## 2026-09-14 — Drie dubbele koppen: het label zegt wat er direct onder staat · [ux]
+- **Wat:** Drie keer dezelfde vorm van ruis. (1) Op Profiel staat de sectiekop `GEZONDHEIDSGEGEVENS` direct boven een rij die ook `GEZONDHEIDSGEGEVENS` heet — en sectiekop en veldlabel delen dezelfde stijl (uppercase, tracking, grijs), waardoor de sectiestructuur niet leesbaar is. (2) Op WorkoutDetail staat de eyebrow `OVERZICHT` pal boven een tab die ook `Overzicht` heet. (3) Het maanddoelblok staat identiek op Home én Profiel — zelfde cijfers, zelfde `WIJZIG`, zelfde "46 % voldaan".
+- **Waarom niet nu:** (3) kan een bewuste snelkoppeling zijn in plaats van duplicatie; dat is Jeroens keuze en niet uit de code af te leiden. (1) en (2) zijn klein maar zitten in twee schermen die in briefing 4 sowieso opengaan — daar meenemen is goedkoper dan een eigen ronde.
+- **Eerste zet:** (1) en (2) meenemen in briefing 4 (`2026-09-14-screen-hierarchie-en-eindscherm`); (3) apart beslissen.
+- **Check:** `grep -c 'GEZONDHEIDSGEGEVENS' apps/rowtrack/app/\(tabs\)/profile.tsx` → 2 of meer = nog dubbel.
+- **Status:** open
+
+## 2026-09-14 — Vaste breedte 165 op labels zonder numberOfLines, zes plekken · [fix]
+- **Wat:** `StatsTable.tsx:59` en `:80` plus `history/[id].tsx:594,615,656,670` zetten `width: 165` op een label in `labelGoalPrefix` — 11 px uppercase met 2,2 tracking. Geen van de zes heeft `numberOfLines`; `numberOfLines` staat in de hele app op 7 van 204 `<Text>`. Een label dat 165 px overschrijdt breekt naar twee regels en verschuift de rij. Dit is dezelfde klasse als de afgebroken `HISTORIEK`-tab, en `apps/rowtrack/CLAUDE.md` registreert de Figma-spiegel ervan al ("de labelkolom van StatsTable was anders 'WATT208'").
+- **Waarom niet nu:** Vandaag past elk label; het is een latente breuk die pas bij een langer woord of grotere Dynamic Type zichtbaar wordt. Hangt bovendien samen met het 11 px-item hierboven — die twee samen oppakken voorkomt dat de fix twee keer gemeten wordt.
+- **Eerste zet:** `numberOfLines={1}` plus `adjustsFontSizeToFit` op de zes; daarna `parity` draaien om te zien of er een rijhoogte verschuift.
+- **Check:** `grep -c 'width: 165' apps/rowtrack/components/workout/active/StatsTable.tsx` → treffer = nog vaste breedte.
+- **Status:** open
+
+## 2026-09-14 — Op Profiel scrollt de content onder de systeemstatusbalk door · [fix]
+- **Wat:** Na scrollen op het profielscherm staat de klok van het toestel bovenop de rijen `VOORNAAM` en `E-MAIL`; er is geen safe-area-achtergrond bovenaan. De systeemtijd leest daardoor als een waarde in het formulier.
+- **Waarom niet nu:** Klein, permanent zichtbaar, en het raakt de scroll-container van één scherm. Geen ontwerpbeslissing, wel een meting waard omdat `react-native-safe-area-context` in het browser-render-pad nul insets geeft — dit is per constructie niet in Storybook te zien, alleen op het toestel.
+- **Eerste zet:** Een dekkend vlak ter hoogte van `insets.top` boven de scroll-container, of een header die meescrollt met een dekkende vulling. Verifiëren met `xcrun simctl io booted screenshot` ná scrollen, niet ervoor.
+- **Check:** Screenshot van Profiel na scrollen — staat de systeemklok nog op de inhoud?
+- **Status:** open
+
+## 2026-09-14 — Icon.tsx is een dode primitive met een hardcoded kleur · [refactor]
+- **Wat:** `components/Icon.tsx:12` heeft `color = '#FFFFFF'` als default-prop. Die waarde is exact `fg.onAccent`, dus het token bestaat — het wordt alleen niet geïmporteerd. Gemeten gevolg is vandaag nul: `<Icon>` wordt in **nul** app- en componentbestanden gebruikt; de enige referentie is de herexport in `components/index.ts:20`. Zelfde klasse als `PaceZone` (BACKLOG 2026-09-14, dood sinds F18).
+- **Waarom niet nu:** Verwijderen vraagt bevestiging (CLAUDE.md-regel), en het hoort bij dezelfde opruimronde als `PaceZone` in plaats van los.
+- **Eerste zet:** Samen met het `PaceZone`-item beslissen: weg, of in gebruik nemen. Bij weg: `components/Icon.tsx` en `Icon.stories.tsx` verwijderen, de barrel bijwerken, `tsc --noEmit`.
+- **Check:** `grep -rln "from '@/components/Icon'\|<Icon " apps/rowtrack/app apps/rowtrack/components --include=*.tsx | grep -v stories` → leeg = nog steeds dood.
+- **Status:** open
+
+## 2026-09-14 — app.json dubbelt drie Android-BLE-permissies · [fix]
+- **Wat:** `apps/rowtrack/app.json` somt `android.permissions` op met zes entries en drie unieke waarden: `BLUETOOTH`, `BLUETOOTH_ADMIN` en `BLUETOOTH_CONNECT` staan er elk twee keer.
+- **Waarom niet nu:** Geen functioneel gevolg gemeten; het is opruimwerk in een configbestand, en configwijzigingen vragen bevestiging (CLAUDE.md-regel).
+- **Eerste zet:** De drie duplicaten weghalen en een Android-build draaien om te bevestigen dat de permissielijst ongewijzigd uitkomt.
+- **Check:** `grep -c BLUETOOTH apps/rowtrack/app.json` → 6 = nog gedubbeld.
+- **Status:** open

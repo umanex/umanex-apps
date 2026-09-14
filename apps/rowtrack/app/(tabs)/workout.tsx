@@ -55,8 +55,8 @@ export default function WorkoutScreen() {
   // --- Hooks ---
   const { state: metricsState, refs, resetAll, hasProfileWeight } = useWorkoutMetrics(phase, bleMetrics, hrBpm);
   const {
-    toastMsg, splits, goalReached, pulseAnim,
-    avgWatts, avgSpm, avgSplit, isCountdown, paceZone,
+    toastMsg, splits, goalReached,
+    avgWatts, avgSpm, avgSplit,
     dismissToast, fetchPRs, resetGameState, prBaseline,
   } = useGoalProgress(phase, goal, metricsState, refs, user?.id);
 
@@ -344,12 +344,9 @@ export default function WorkoutScreen() {
       bleError={bleError}
       startScan={startScan}
       goal={goal}
-      isCountdown={isCountdown}
-      paceZone={paceZone}
       toastMsg={toastMsg}
       splits={splits}
       prEntries={prEntries}
-      pulseAnim={pulseAnim}
       avgWatts={avgWatts}
       avgSpm={avgSpm}
       avgSplit={avgSplit}

@@ -70,24 +70,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+7035cb3 docs(rowtrack): brief the P3 list, with the re-triage measured against today's code
 be6eb13 ci(rowtrack): baseline the image axis on the runner, not on a Mac
 417ab79 feat(rowtrack): turn the image axis into a ratchet and run it in CI
 7f0de81 feat(rowtrack): give walker-blindvlekken a ratchet, a selftest and a stable overflow count
 25a7309 fix(rowtrack): apply the story mocks on the dev path too
-154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 ```
 
 ## Uncommitted wijzigingen
-   M apps/rowtrack/app/(tabs)/workout.tsx
-   M apps/rowtrack/app/dev-active.tsx
-  A  apps/rowtrack/briefings/2026-09-14-feature-ux-p3-verzamellijst.tcebc.md
-  M  apps/rowtrack/components/HealthConsentScreen.tsx
-  D  apps/rowtrack/components/KPI.stories.tsx
-  D  apps/rowtrack/components/KPI.tsx
-  D  apps/rowtrack/components/SectionHeader.stories.tsx
-  D  apps/rowtrack/components/SectionHeader.tsx
-  D  apps/rowtrack/components/SplitsList.stories.tsx
-  D  apps/rowtrack/components/SplitsList.tsx
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/app/dev-active.tsx
+  M  apps/rowtrack/components/index.ts
+  M  apps/rowtrack/components/workout/index.ts
+  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
+  M  apps/rowtrack/types/workout.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

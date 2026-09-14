@@ -13,7 +13,7 @@
 //   - of interactief: de switcher-balk onderaan.
 // Niet in een tab-group; in productie rendert het niets.
 import { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivePhase } from '@/components/workout/ActivePhase';
@@ -57,7 +57,6 @@ const VARIANTS: { key: string; label: string; goal: WorkoutGoal | null }[] = [
 
 export default function DevActivePreview() {
   const insets = useSafeAreaInsets();
-  const pulse = useRef(new Animated.Value(1)).current;
   const params = useLocalSearchParams<{ goal?: string; toast?: string; summary?: string; ble?: string; bare?: string }>();
 
   // Sta landscape toe in de harness (active-workout is landscape-capable), zodat de
@@ -97,12 +96,9 @@ export default function DevActivePreview() {
         bleError={bleStatus === 'error' ? 'Verbinding verloren. Probeer opnieuw.' : null}
         startScan={() => {}}
         goal={VARIANTS[i].goal}
-        isCountdown={false}
-        paceZone={null}
         toastMsg={toastMsg}
         splits={[]}
         prEntries={[]}
-        pulseAnim={pulse}
         avgWatts={142}
         avgSpm={38}
         avgSplit={140}

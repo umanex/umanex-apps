@@ -1,4 +1,13 @@
-import type { SplitEntry } from '@/components/workout';
+/**
+ * Eén split uit een rit. Woonde tot 2026-09-14 in `components/SplitsList.tsx` — een component
+ * dat nergens in de app gebruikt werd en met F18 verdween. Het type overleeft hem, want de
+ * ritdata draagt splits ongeacht of er ooit een lijstcomponent voor bestaat.
+ */
+export type SplitEntry = {
+  distance: number;
+  split: number;
+  watts?: number;
+};
 
 export type WorkoutBase = {
   id: string;

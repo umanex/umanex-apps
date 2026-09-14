@@ -13,8 +13,6 @@ export type { ErrorStateProps } from './ErrorState';
 export { Skeleton } from './Skeleton';
 export type { SkeletonProps } from './Skeleton';
 
-export { SectionHeader } from './SectionHeader';
-export type { SectionHeaderProps } from './SectionHeader';
 
 export { ErrorMessage } from './ErrorMessage';
 export type { ErrorMessageProps } from './ErrorMessage';
@@ -35,7 +33,6 @@ export { WorkoutCard } from './WorkoutCard';
 export type { WorkoutCardProps } from './WorkoutCard';
 export { BottomFade } from './BottomFade';
 
-export { KPI } from './KPI';
 export { KpiSingle } from './KpiSingle';
 
 export { GoalProgressCard } from './GoalProgressCard';

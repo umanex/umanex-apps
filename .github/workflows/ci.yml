@@ -309,6 +309,21 @@ jobs:
       # ratel op "stil" (instance blijft staan en toont de library-data) en "terugval". Niets
       # anders ziet die eerste klasse: de builder meldt alleen een slot dat er is, parity ziet
       # gelijke geometrie, figma:check toetst de library en niet de vulling.
+      # Een som en zijn teller horen per conventie bij elkaar, en die conventie is hier al
+      # eens gebroken: op 2026-08-17 deelden vijf call-sites door `tickCount` in plaats van
+      # door de teller die in dezelfde guard optelde, en het gemiddelde werd stelselmatig te
+      # laag. Per scherm onzichtbaar — er stond gewoon een plausibel getal.
+      #
+      # De zelftest ernaast toetst BEIDE takken: een verkeerde noemer die er direct staat, en
+      # een die achter een lokale hulpvariabele zit. Die tweede is niet overbodig — de eerste
+      # versie van deze guard las alleen directe noemers en zou drie van de tien delingen
+      # ongemeten hebben gelaten.
+      - name: Guard — rowtrack gemiddelden delen door hun eigen teller (met tegenproef)
+        id: guard-rowtrack-gemiddelden-eigen-teller-met-tegenproef
+        run: |
+          pnpm --filter rowtrack averages:selftest
+          pnpm --filter rowtrack averages
+
       - name: Guard — rowtrack instance-voorvlucht (met tegenproef)
         id: guard-rowtrack-instance-voorvlucht-met-tegenproef
         run: |

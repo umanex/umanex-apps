@@ -73,17 +73,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+25a7309 fix(rowtrack): apply the story mocks on the dev path too
 154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 b5ec3f9 fix(rowtrack): confirm the destructive decline, stop leaking raw English errors, unify units and terminology
 524753c docs(rowtrack): fix stale cross-references in the review header
 007816c docs(rowtrack): complete the review — screen surface, refuted claims and coverage gaps
-f9fad9a docs(rowtrack): add the code-kern findings, the deadline cluster and the dependency picture
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/.storybook/main.ts
-   M apps/rowtrack/package.json
-   M apps/rowtrack/scripts/walker-blindvlekken.mjs
+  M  apps/rowtrack/package.json
+  M  apps/rowtrack/scripts/walker-blindvlekken.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

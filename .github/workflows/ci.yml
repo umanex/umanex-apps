@@ -42,6 +42,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type-check, lint, build
+        id: type-check-lint-build
         run: pnpm turbo type-check lint build
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -60,6 +61,7 @@ jobs:
       # `pnpm storybook` op iemands machine. Eigen stap, zodat de fout in het log bij zijn
       # naam staat en niet ergens in de output van twintig andere builds.
       - name: Build — Storybook (packages/ui)
+        id: build-storybook-packages-ui
         run: pnpm turbo build-storybook
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -77,6 +79,7 @@ jobs:
       # geaccepteerde no-op; expliciet meegeven maakt de stap onafhankelijk van welke
       # 22.x de runner toevallig oplevert.
       - name: Guard — invarianten (node:test)
+        id: guard-invarianten-node-test
         run: |
           files=$(git ls-files '*.test.ts')
           if [ -z "$files" ]; then
@@ -92,6 +95,7 @@ jobs:
       # volgende Figma-push. De build hierboven heeft de outputs net herschreven —
       # als er iets verschilt, was de gecommitte versie stale.
       - name: Guard — gegenereerde tokens zijn in sync met tokens.json
+        id: guard-gegenereerde-tokens-zijn-in-sync-met-tokens-json
         run: |
           if ! git diff --exit-code -- packages/tokens/build; then
             echo "::error::De gecommitte token-output wijkt af van wat de build produceert. Draai 'pnpm --filter @umanex/tokens build' en commit het resultaat."
@@ -101,12 +105,14 @@ jobs:
       # ESLint ziet de SVG fill=/stroke=-attributen en de .css-bestanden niet, en
       # packages/ui heeft geen eslint-config. Deze guard dekt alles op schijf.
       - name: Guard — laag-discipline (geen primitives of rauwe kleuren in app-code)
+        id: guard-laag-discipline-geen-primitives-of-rauwe-kleuren-in-ap
         run: pnpm --filter @umanex/tokens guard
 
       # Toetst de rollaag zelf: elk vlak tegen zijn eigen tekstkleur, en elke vrije
       # tekstrol tegen elk oppervlak waar hij op kan landen. Superset — hij weet niet
       # welke combinaties de apps echt gebruiken, dus een treffer is altijd echt.
       - name: Guard — contrast van de rollaag (WCAG AA)
+        id: guard-contrast-van-de-rollaag-wcag-aa
         run: pnpm --filter @umanex/tokens contrast
 
       # rowtrack-web draait op RowTrack's eigen rollaag. Tailwind slaat een onbekende
@@ -114,6 +120,7 @@ jobs:
       # fout maar Tailwinds eigen kleur — een waarde die uit geen enkel token komt.
       # Deze guard vangt dat; @apply deed het al, een className niet.
       - name: Guard — rol-utilities bestaan echt (rowtrack-web)
+        id: guard-rol-utilities-bestaan-echt-rowtrack-web
         run: pnpm --filter @umanex/rowtrack-tokens guard
 
       # Twee tegenproeven, want een guard die draait is nog geen guard die meet.
@@ -139,6 +146,7 @@ jobs:
       # Wat hij NIET vangt: een nummer dat bestaat maar het verkeerde is. Daar helpt alleen
       # de volgorde — eerst de call, dan het nummer opschrijven. Zie .umanex-os/CLAUDE.md.
       - name: Guard — PR-verwijzingen gekwalificeerd en bestaand (met zelftest)
+        id: guard-pr-verwijzingen-gekwalificeerd-en-bestaand-met-zelftes
         run: |
           node scripts/refs-check.mjs --selftest
           node scripts/refs-check.mjs
@@ -146,9 +154,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Guard — design-systeem-bron per app (met tegenproef)
+        id: guard-design-systeem-bron-per-app-met-tegenproef
         run: pnpm ds:guard:selftest
 
       - name: Guard — tegenproef op de rol-utility-guard
+        id: guard-tegenproef-op-de-rol-utility-guard
         run: |
           pnpm --filter @umanex/rowtrack-tokens guard:selftest
           node packages/rowtrack-tokens/scripts/margin.mjs
@@ -187,6 +197,7 @@ jobs:
       # elke story tegen een gecommitteerde basislijn. Vereist de Storybook-build hierboven
       # en de Chromium uit de stap ervoor.
       - name: Guard — gerenderde maten van packages/ui tegen de basislijn
+        id: guard-gerenderde-maten-van-packages-ui-tegen-de-basislijn
         run: pnpm --filter @umanex/ui geometry
 
       # De maat-as tussen Figma en de browser, per variant-node. De join zijn de 68
@@ -195,9 +206,11 @@ jobs:
       # aanwezigheid van vulling/rand/effect. Breedte en verticale padding blijven er
       # bewust buiten — beide zijn niet vergelijkbaar tussen Figma en een browser.
       - name: Guard — Figma ↔ browser per variant (geometrie-parity)
+        id: guard-figma-browser-per-variant-geometrie-parity
         run: pnpm --filter @umanex/ui parity
 
       - name: Guard — contrast van de gerenderde DOM (WCAG AA)
+        id: guard-contrast-van-de-gerenderde-dom-wcag-aa
         run: pnpm --filter cashflow verify:visual
 
       # De rekenkern van cashflow rolt door: het eindsaldo van maand N is het beginsaldo van
@@ -205,6 +218,7 @@ jobs:
       # per keten fataal, dus de dekking zit in invarianten die over het hele model rekenen.
       # Twee suites, 594 checks; ze draaiden tot 2026-08-08 alleen met de hand.
       - name: Guard — invarianten op de rekenkern (buffer + anker)
+        id: guard-invarianten-op-de-rekenkern-buffer-anker
         run: pnpm --filter cashflow scenarios
 
       # De sleep tussen twee maandkolommen is het enige pad dat noch de sweep noch de
@@ -215,6 +229,7 @@ jobs:
       # nooit bouwen) en voegt de tegenproeven toe die hóren te falen. Lokaal bouwt de
       # harness zelf in `.next-harness`, zodat hij de `.next` van PM2 niet raakt.
       - name: Guard — flow (sleep tussen maandkolommen)
+        id: guard-flow-sleep-tussen-maandkolommen
         run: pnpm --filter cashflow flow:ci
         env:
           # Dezelfde placeholder als de build. De harness leest hem om te weten welke origin
@@ -228,6 +243,7 @@ jobs:
       # invarianten die over de dataset rekenen, geen verwachte uitkomst per geval. De suite
       # draait zijn eigen tegenproef vooraf en heeft netwerk noch database nodig.
       - name: Guard — invarianten op de scorekern (jobradar)
+        id: guard-invarianten-op-de-scorekern-jobradar
         run: pnpm --filter jobradar scenarios
 
       # Storybook en het Figma-bestand "Component library" moeten één op één blijven:
@@ -241,6 +257,7 @@ jobs:
       # en eist dat hij erop afgaat, plus een ongewijzigde kopie die groen moet blijven.
       # Zonder die twee kanten weet je niet of de guard meet of alleen draait.
       - name: Guard — Storybook ↔ Figma in sync (met tegenproef)
+        id: guard-storybook-figma-in-sync-met-tegenproef
         run: pnpm --filter @umanex/ui figma:check:selftest
 
       # --- rowtrack --------------------------------------------------------------------
@@ -260,6 +277,7 @@ jobs:
       # 42 van 44 mutaties, en de twee producent-mutaties expliciet overgeslagen in plaats
       # van stil groen. Dat verschil is het punt: overgeslagen is geen ok.
       - name: Guard — rowtrack Figma ↔ code (met tegenproef)
+        id: guard-rowtrack-figma-code-met-tegenproef
         run: |
           pnpm --filter rowtrack figma:check
           pnpm --filter rowtrack figma:check:selftest
@@ -269,6 +287,7 @@ jobs:
       # Figma-kant uit de spec en eist rood op een wortel, een binnennode, een schermframe,
       # een extra wrapper en een verdwenen node — plus groen zonder mutatie.
       - name: Guard — rowtrack Figma ↔ browser (geometrie-parity, met tegenproef)
+        id: guard-rowtrack-figma-browser-geometrie-parity-met-tegenproef
         run: |
           pnpm --filter rowtrack parity
           pnpm --filter rowtrack parity:selftest
@@ -277,7 +296,42 @@ jobs:
       # of met de hand gewijzigde pagina te legen), de laagnaam-ladder (elk feit verslaat de
       # gok eronder) en spec-diff (de per-snede-poort die de gerenderde DOM tegen HEAD legt).
       - name: Guard — rowtrack tegenproeven (poort, laagnamen, spec-diff)
+        id: guard-rowtrack-tegenproeven-poort-laagnamen-spec-diff
         run: |
           pnpm --filter rowtrack figma:poort:selftest
           pnpm --filter rowtrack laagnamen:selftest
           pnpm --filter rowtrack spec-diff:selftest
+
+
+      # Elke guard hierboven levert één bit (de exit-code) en een rijkdom aan tekst voor een
+      # lezer. Die tekst stond tot 2026-09-14 alleen in de log: 28 benoemde stappen, nul
+      # samenvattingen. Deze stap zet de uitkomst per metende stap op de run-pagina — daar
+      # waar iemand al kijkt — inclusief de noemer, zodat "alles groen" niet leest als succes
+      # wanneer de lijst leeg zou zijn. `if: always()`, want juist een rode run wil je lezen.
+      - name: Samenvatting — uitkomst per guard
+        if: always()
+        env:
+          STAPPEN: ${{ toJSON(steps) }}
+        run: |
+          set -uo pipefail
+          python3 - <<'PYEOF' >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+          import json, os
+          stappen = json.loads(os.environ.get("STAPPEN") or "{}")
+          teken = {"success": "OK", "failure": "GEFAALD", "cancelled": "AFGEBROKEN", "skipped": "OVERGESLAGEN"}
+          # Het label komt uit het id, niet uit een tweede lijst met namen: een aparte
+          # namen-map is een kopie die bij elke hernoeming stil uit de pas loopt.
+          rijen = [(sid, (v or {}).get("outcome", "?")) for sid, v in sorted(stappen.items())]
+          groen = sum(1 for _, o in rijen if o == "success")
+          print("### Guards")
+          print()
+          if not rijen:
+              print("_Geen enkele stap droeg een id — deze samenvatting meet niets._")
+          else:
+              print("**%d van %d geslaagd**" % (groen, len(rijen)))
+              print()
+              print("| stap | uitkomst |")
+              print("|---|---|")
+              for sid, o in rijen:
+                  label = sid.replace("-", " ")
+                  print("| %s | %s |" % (label, teken.get(o, o)))
+          PYEOF

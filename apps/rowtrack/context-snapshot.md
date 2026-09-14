@@ -70,15 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+cad97f7 docs(rowtrack): close four backlog items and open the one this round created
 37a5500 fix(rowtrack): the image ratchet also watches text, because a text change walked past it today
 97cef48 feat(rowtrack): give the three auth screens their error frame, without teaching the app about stories
 c783a3d fix(rowtrack): close the P3 list — the tappable row, Android back, the asterisk, the dead layers
 7035cb3 docs(rowtrack): brief the P3 list, with the re-triage measured against today's code
-be6eb13 ci(rowtrack): baseline the image axis on the runner, not on a Mac
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/briefings/2026-09-14-feature-ux-p3-verzamellijst.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

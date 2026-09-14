@@ -40,6 +40,12 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 <!-- De sessie-reflectie skill voegt hieronder de juiste laag-header toe bij de eerste entry. -->
 # Project — rowtrack
 
+## 2026-09-14 — De P0-bevestiging uit de reviewronde is door niets uitgevoerd · [risico]
+- **Bevinding:** `declineWithConfirm` in `app/(tabs)/_layout.tsx` (de fix op de destructieve weiger-knop, 2026-09-12) hangt aan `Alert.alert`, en niets raakt hem aan. Op het web-pad is `Alert` in react-native-web 0.21.2 letterlijk `class Alert { static alert() {} }` — gelezen in `node_modules/.pnpm/react-native-web@0.21.2_…/dist/exports/Alert/index.js` — dus daar vuurt geen enkele knop en zou de promise nooit resolven. Maar zelfs dát pad wordt niet gelopen: `HealthConsentScreen.stories.tsx` geeft eigen stubs mee (`onDecline: async () => true` / `=> false`), en `declineWithConfirm` zelf zit in een route zonder story. Gevolg: zowel de bevestiging als de `ok === null`-tak die er speciaal voor gebouwd is, heeft **nul dekking** — niet in de story, niet in `render:sweep`, niet in `node:test`, niet op een toestel. Alleen `tsc` raakt het, en die keurt `Promise<boolean>` gewoon goed tegen `Promise<boolean | null>`. Mijn eerste lezing hiervan was scherper dan de werkelijkheid ("Storybook hangt op die knop") en klopte niet — de story stubt hem weg.
+- **Check:** `grep -rn 'declineWithConfirm' apps/rowtrack --include='*.stories.tsx'` — leeg = geen enkele story raakt de bevestiging en dit item leeft nog. Aanvullend `grep -n 'onDecline' apps/rowtrack/components/HealthConsentScreen.stories.tsx`: zolang daar een eigen stub staat, dekt de bestaande story de tak niet.
+- **Volgende zet:** Meenemen in de toestel-ronde van `BACKLOG.md` (2026-09-09) — dat item bestaat al en dit is een zesde vraag ervoor, geen eigen ronde. Kan het niet wachten: een story op de ConsentGate met een `Alert`-mock die de destructieve knop indrukt, zodat de `null`-tak en de RPC-tak allebei gelopen worden. `toestel:schuld` staat vandaag op **73 commits, nog nooit een ronde** (was 70 op 2026-09-09); de reviewronde voegde eraan toe zonder er een te registreren.
+- **Status:** open
+
 ## 2026-09-10 — De resterende 56,18 van de beeld-as is nooit ontleed · [onzekerheid]
 - **Bevinding:** De beeld-as ging van 74,36 naar 56,18 grof verschil over 24 frames, maar niemand weet waaruit die 56,18 bestaat. Kandidaten: gemaskeerde Ionicons-glyphs (die bestaan niet in Figma), Figma's tekstengine die dezelfde tekst breder meet dan Chromium, kleurwaarden, en écht defect. Zonder die ontleding is "beter" een richting zonder vloer en is `--drempel` niet te kiezen — de as blijft dus een rapport in plaats van een poort. De enige gemeten vloer is `ResetPasswordScreen` op 0,02 %, en dat is het énige frame zonder instances.
 - **Check:** `node -e 'const b=require("./figma/beeld-verschillen.json"); console.log(b.drempel, b.rijen.map(r=>r.grof).reduce((a,c)=>a+c,0).toFixed(2))'` in `apps/rowtrack` — is `drempel` nog `null`, dan is de as nog geen poort. En `grep -c "maskeer\|gemaskeerd" scripts/beeld-parity.mjs` zegt of het masker al per categorie telt in plaats van alleen te maskeren.
@@ -234,6 +240,7 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 - **Volgende zet:** Bij een semantiek-wijziging: een migratie/script dat `best_2k_seconds` (en toekomstige 500m/1k/5k) uit `samples` herberekent voor alle rijen. Nu niet nodig.
 - **Check:** `git log --oneline 3b223b2.. -- apps/rowtrack/lib/bestDistanceTime.ts; git diff 3b223b2 HEAD -- apps/rowtrack/lib/hooks/useWorkoutMetrics.ts | grep -E '^[+-].*(samplesRef|initialElapsed|initialDistance|lastSampleSecond)'` — beide leeg = afleiding én sample-semantiek ongewijzigd, de bevroren best_2k_seconds-waarden kloppen nog; komt er uit één van beide een regel, dan is dat het startsein voor het herbereken-script over `workouts.samples`.
 - **Herformuleerd:** 2026-09-07 — De Check is leeg: bestDistanceTime.ts is sinds 3b223b2 (2026-07-14) niet gewijzigd, dus de bevroren waarden kloppen nog met de afleiding. Ook de sample-producent (samplesRef.push, baselines, lastSampleSecond in useWorkoutMetrics.ts) is in die periode…
+- **Check gedraaid 2026-09-14 — vuurt, maar vals.** Beide takken geven nu een treffer, en beide wijzen naar `b5ec3f9` (de redactie-/code-reviewronde): `bestDistanceTime.ts` staat in de log, en de sample-grep vindt één regelpaar dat enkel een commentaar van het Engels naar het Nederlands zet (`// produce a false-fast` → `// vals-snelle`). De afleiding en de sample-semantiek zijn ónveranderd, dus de bevroren waarden kloppen nog en het item blijft open zoals het stond. Let op de vorm van de valse treffer: een check op `git log -- <bestand>` kan een commentaarvertaling niet van een semantische wijziging onderscheiden, en de NL-commentaarronde van 2026-09-12 raakte 13 bestanden. Verwacht dit dus ook bij andere bestandsverankerde checks in rowtrack.
 - **Status:** open
 
 ## 2026-07-13 — Actions read/write-rechten voor tokens-sync workflow · [next-step]
@@ -780,6 +787,14 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
   onwaarschijnlijk — maar het is dezelfde soort verwachting die deze sessie twee keer fout bleek.
 - **Check:** `git log --oneline e854daa.. -- apps/rowtrack/.storybook/main.ts` — leeg = de vier
   ingrepen staan nog exact zoals ze gemeten zijn, dus de vraag hoe ze gemeten zijn leeft nog.
+- **Check gedraaid 2026-09-14 — vuurt: vijf commits, en de ankers zijn verschoven.** `main.ts` is
+  sinds `e854daa` vijf keer gewijzigd, waaronder `5588c4e` *"één babel-plugin in de optimizer in
+  plaats van vier compensaties"* (−109/+61). De reanimated-versiestub — juist de énige rail die
+  destijds mét de volle sweep is overgedaan — is daarmee vervangen; `exclude`, `disableSourceMaps`
+  en `optimizeDeps` staan er nog wél in. De entry beschrijft dus code die maar deels meer bestaat
+  en verdient een herformulering op een nieuw anker, niet een herhaling. Niet zelf gedaan: deze
+  vijf commits zijn niet van deze sessie en het oordeel over wat er nú ongemeten is, hoort bij wie
+  ze schreef.
 - **Volgende zet:** Bij de eerstvolgende aanraking van `.storybook/main.ts`: per ingreep één regel
   weghalen en `node scripts/dev-sweep.mjs` draaien in plaats van een probe. Koude cache
   (`rm -rf apps/rowtrack/node_modules/.cache/storybook` — let op de map, niet de repo-root) en

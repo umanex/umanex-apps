@@ -9,19 +9,19 @@
    "story": "componenten-activephase--doel-bereikt",
    "W": 430,
    "H": 932,
-   "zicht": 9.3,
-   "grof": 6.07,
-   "tekst": 2.38,
-   "overig": 3.69,
-   "heet": 126,
+   "zicht": 9.34,
+   "grof": 6.09,
+   "tekst": 2.35,
+   "overig": 3.74,
+   "heet": 131,
    "blokken": 1034,
    "plaatsen": [
     "20,0",
+    "100,0",
+    "140,0",
     "100,40",
     "120,40",
-    "140,100",
-    "120,200",
-    "200,200"
+    "20,60"
    ],
    "iconenGemaskeerd": 2
   },

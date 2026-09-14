@@ -31,6 +31,36 @@
     "ResetPasswordScreen__Met-Link": 0.02,
     "ResetPasswordScreen__Playground": 0.02
    }
+  },
+  "linux": {
+   "gemeten": "2026-09-14",
+   "bron": "CI-run 34818999551 (ubuntu-latest)",
+   "overig": {
+    "ActivePhase__Doel-Bereikt": 2.73,
+    "ForgotPasswordScreen__Playground": 2.05,
+    "RegisterScreen__Playground": 1.85,
+    "WorkoutDetailScreen__Playground": 0.45,
+    "HistoryScreen__Playground": 0.06,
+    "WorkoutDetailScreen__Zonder-Hartslag": 0.43,
+    "ActivePhase__Playground": 0.03,
+    "ActivePhase__Zonder-Hartslagband": 0.03,
+    "LoginScreen__Playground": 1.05,
+    "ActivePhase__Doel-Afstand": 0.07,
+    "ActivePhase__Landscape": 0.03,
+    "ProfileScreen__Playground": 0.2,
+    "ProfileScreen__Zonder-Gewicht": 0.2,
+    "ProfileScreen__Onvolledig": 0.2,
+    "IdlePhase__Doel-Afstand": 0.77,
+    "IdlePhase__Playground": 0.87,
+    "HistoryScreen__Een-Record": 0.03,
+    "IdlePhase__Niet-Verbonden": 0.87,
+    "HistoryScreen__Leeg": 0.0,
+    "ActivePhase__Samenvatting": 0.33,
+    "IdlePhase__Toestel-Keuze": 0.27,
+    "WorkoutDetailScreen__Niet-Gevonden": 0.0,
+    "ResetPasswordScreen__Met-Link": 0.02,
+    "ResetPasswordScreen__Playground": 0.02
+   }
   }
  }
 }

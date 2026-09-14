@@ -3,6 +3,7 @@ import type {
   BalanceOverride,
   CashflowData,
   MonthSnapshot,
+  MonthSubtotals,
   RecurringDefer,
   ReservationItem,
   ReservationSettlement,
@@ -92,20 +93,32 @@ export function normalizeData(input: unknown): CashflowData {
  * met `undefined`. Een snapshot mag verder niet aangepast worden — dat is precies wat
  * bevriezen betekent.
  */
+/**
+ * Vult de velden aan die een oudere bevroren maand nog niet kende. Eén functie voor álle
+ * ontbrekende velden, en niet een keten van losse `?`-checks: de vorige vorm dekte alleen
+ * `buffer` bij naam, en het veld dat er later bij kwam zou er stil langs zijn gelopen.
+ */
+function vulOntbrekendeVelden(snap: MonthSnapshot): MonthSnapshot {
+  const sub = snap.data?.subtotals;
+  if (!sub) return snap;
+  const aanvulling: Partial<MonthSubtotals> = {};
+  // Zie de toelichting hierboven: 0 is hier het juiste antwoord, niet undefined.
+  if (typeof sub.buffer !== 'number') aanvulling.buffer = 0;
+  // Een bevroren maand is per constructie met `calculateMonths(…, 1, …)` doorgerekend en dus
+  // index 0 — ankersemantiek (`useCashflow.ts`, `useAutoCloseMonth`). 'bank' is daarmee geen
+  // aanname maar de enige vorm die zo'n rij kán dragen.
+  if (sub.basis !== 'bank' && sub.basis !== 'vrij') aanvulling.basis = 'bank';
+  if (Object.keys(aanvulling).length === 0) return snap;
+  return { ...snap, data: { ...snap.data, subtotals: { ...sub, ...aanvulling } } };
+}
+
 export function normalizeSnapshots(
   rows: MonthSnapshot[],
   historyStartMonth: string,
 ): MonthSnapshot[] {
   return rows
     .filter((snap) => Boolean(snap) && snap.monthKey >= historyStartMonth)
-    .map((snap) =>
-      typeof snap.data?.subtotals?.buffer === 'number'
-        ? snap
-        : {
-            ...snap,
-            data: { ...snap.data, subtotals: { ...snap.data.subtotals, buffer: 0 } },
-          },
-    );
+    .map(vulOntbrekendeVelden);
 }
 
 /** De lege beginstand voor een gebruiker die nog geen document heeft. */

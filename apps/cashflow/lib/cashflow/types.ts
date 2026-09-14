@@ -107,7 +107,7 @@ export interface ReservationPotBalance {
    */
   autoContribution: number | null;
   /** Deel van het tekort dat de buffer níét kon dekken omdat de pot leeg raakte. */
-  deficitUncovered: number;
+
 }
 
 /**
@@ -138,6 +138,24 @@ export interface MonthSubtotals {
   buffer: number;
   /** Som van alle kostenposten, buffer inbegrepen. */
   costs: number;
+  /**
+   * Welke vraag deze koppen beantwoorden. Zonder dit veld is dat aan de getallen niet te zien,
+   * en dat heeft al twee keer gekost: `analysis.ts` las `costs` als maandburn (een maand
+   * meldde minder burn naarmate ze beter bijgehouden was, PR #189), en de waterfall op
+   * `/analyse` noemde een staande pot een mutatie (2026-09-14).
+   *
+   * `'bank'` — de ankervorm. `incoming` vertrekt van het échte banksaldo: de potten zitten
+   * er nog in en de afgevinkte betalingen zijn er al af. De koppen antwoorden op "wat moet er
+   * nog van dit saldo af", en zijn dus **standen**. Elke afgesloten maand draagt deze vorm ook:
+   * `useAutoCloseMonth` rekent er één maand door vanaf zijn eigen ankerstaat, dus index 0.
+   *
+   * `'vrij'` — elke latere maand. `incoming` vertrekt van een geprojecteerd vrij saldo waar
+   * de potten al uit zijn, en de koppen zijn **stromen**.
+   *
+   * Dat onderscheid is geen schuld maar de definitie van de ankermaand — zie het verworpen
+   * backlog-item van 2026-09-06. Dit veld maakt het alleen afleesbaar in plaats van te raden.
+   */
+  basis: 'bank' | 'vrij';
   /**
    * `incoming − costs` — hetzelfde getal als `MonthData.endBalance`, en het vrije saldo
    * dat doorrolt. Met een actieve buffer is dat €0, of negatief zodra de pot leeg is.

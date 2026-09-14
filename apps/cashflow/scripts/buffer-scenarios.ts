@@ -139,6 +139,11 @@ function bufferPot(m: MonthData) {
 
 function invariant(months: MonthData[], label: string) {
   months.forEach((m, i) => {
+    // De koppen dragen sinds 2026-09-14 zelf welke vraag ze beantwoorden. Deze check is de
+    // enige die dat veld bewaakt: staat het verkeerd, dan leest elke consument die erop
+    // vertrouwt het tegenovergestelde soort getal — en dat is precies hoe de waterfall een
+    // staande pot een mutatie ging noemen.
+    checkBool(`${label} · basis ${m.monthKey}`, m.subtotals.basis === (i === 0 ? 'bank' : 'vrij'), true);
     check(`${label} · eindsaldo-invariant ${m.monthKey}`, recomputeEindsaldo(m, i === 0), m.endBalance);
     // De kaart toont `subtotals`; die moet hetzelfde getal geven als de doorrol.
     check(`${label} · kaart == doorrol ${m.monthKey}`, m.subtotals.endBalance, m.endBalance);
@@ -244,7 +249,7 @@ console.log('\nS2 — tekort, pot ruim voldoende');
   // E(0) maand 0 = 3000 + 1000 − 1500 − (2800 + 0) = −300 → coverage −300
   check('S2 · coverage', p.autoContribution!, -300);
   check('S2 · eindsaldo', m0.endBalance, 0);
-  check('S2 · uncovered', p.deficitUncovered, 0);
+  check('S2 · uncovered', bufferSummary(m0).uncovered, 0);
   invariant(months, 'S2');
 }
 
@@ -265,7 +270,7 @@ console.log('\nS3 — tekort groter dan potsaldo');
   // E(0) = 1000 + 1000 − 2500 − 100 = −600, cap = −100 → coverage −100, eind = −500
   check('S3 · coverage begrensd tot potsaldo', p.autoContribution!, -100);
   check('S3 · eindsaldo blijft negatief', m0.endBalance, -500);
-  check('S3 · uncovered', p.deficitUncovered, 500);
+  check('S3 · uncovered', bufferSummary(m0).uncovered, 500);
   check('S3 · potsaldo landt op 0', p.provisionThisMonth + p.deferredFromPrevious, 0);
   invariant(months, 'S3');
 }
@@ -288,7 +293,7 @@ console.log('\nS4 — overschot wordt volledig opgenomen');
   check('S4 · eindsaldo landt op 0', m0.endBalance, 0);
   check('S4 · potstand', p.potBalance, 12000);
   check('S4 · buffer-delta', bufferSummary(m0).delta, 9200);
-  check('S4 · uncovered', p.deficitUncovered, 0);
+  check('S4 · uncovered', bufferSummary(m0).uncovered, 0);
   invariant(months, 'S4');
 }
 
@@ -317,7 +322,7 @@ console.log('\nS5 — meerdere tekortmaanden op rij');
   check('S5 · pot na maand 3', bufferPot(months[2]!)!.potBalance, 600);
   check('S5 · laatste maand put de pot leeg', bufferPot(months[3]!)!.potBalance, 0);
   check('S5 · restant blijft rood', months[3]!.endBalance, -200);
-  check('S5 · uncovered', bufferPot(months[3]!)!.deficitUncovered, 200);
+  check('S5 · uncovered', bufferSummary(months[3]!).uncovered, 200);
   invariant(months, 'S5');
 }
 
@@ -361,7 +366,7 @@ console.log('\nS7 — overschot kleiner dan het oude maandbedrag');
   // E(0) = 1000 + 1000 − 1950 = 50 → dat is de storting, niet de begrote 200.
   check('S7 · storting is het overschot', p.autoContribution!, 50);
   check('S7 · eindsaldo', m0.endBalance, 0);
-  check('S7 · uncovered', p.deficitUncovered, 0);
+  check('S7 · uncovered', bufferSummary(m0).uncovered, 0);
   invariant(months, 'S7');
 }
 
@@ -390,7 +395,7 @@ console.log('\nS8 — buffer naast een gewoon spaardoel');
   check('S8 · vakantie blijft in provisies', m0.subtotals.provisions, 100);
   check('S8 · buffer heeft eigen kop', m0.subtotals.buffer, 0);
   check('S8 · eindsaldo', m0.endBalance, -100);
-  check('S8 · uncovered', buf.deficitUncovered, 100);
+  check('S8 · uncovered', bufferSummary(m0).uncovered, 100);
   invariant(months, 'S8');
 }
 
@@ -708,7 +713,7 @@ console.log('\nS19 — cash-bijbetaling op de bufferpot');
     checkBool(`S19 · potsaldo niet negatief in ${m.monthKey}`, p.potBalance >= -0.005, true);
     checkBool(
       `S19 · tekort niet verzwegen in ${m.monthKey}`,
-      m.endBalance >= -0.005 || p.deficitUncovered > 0.005,
+      m.endBalance >= -0.005 || bufferSummary(m).uncovered > 0.005,
       true,
     );
   });
@@ -716,7 +721,7 @@ console.log('\nS19 — cash-bijbetaling op de bufferpot');
   // kostenkop aanrekent. Vóór de fix stond hier 0 met een kop van 12.000 ernaast.
   check('S19 · pot draagt de sweep', bufferPot(months[0]!)!.potBalance, 12000);
   check('S19 · april leent uit de pot', bufferPot(months[1]!)!.autoContribution!, -1000);
-  check('S19 · april heeft geen tekort meer', bufferPot(months[1]!)!.deficitUncovered, 0);
+  check('S19 · april heeft geen tekort meer', bufferSummary(months[1]!).uncovered, 0);
   // De tegenproef die het defect zelf draagt: dezelfde maand zonder cash-deel. Verschilt de
   // positie, dan weegt de betaalbron weer mee in een getal waar alleen het bedrag telt.
   {
@@ -1146,6 +1151,28 @@ console.log('\nS34 — opname uit de bufferpot telt mee in de maandstroom');
   check('S34 · beweging draagt ook een opname groter dan de pot',
     bufferSummary(groter[1]!).movement, -21000);
   invariant(groter, 'S34 groter dan de pot');
+}
+
+// ── S36: zonder bufferpot is er niets "niet gedekt" ───────────────────────────
+// `uncovered` wordt sinds 2026-09-14 afgeleid uit het eindsaldo in plaats van als veld op
+// elke pot bewaard. Die afleiding heeft één conditie — er moet een bufferpot zijn — en geen
+// enkel scenario toetste die: een maand zonder buffer las `uncovered` nergens. Zonder dit
+// blok is de conditie dus niet te onderscheiden van geen conditie.
+console.log('\nS36 — geen bufferpot, wel een tekort');
+{
+  const months = calculateMonths(
+    '2026-03', 500,
+    [{ id: 'e1', monthKey: '2026-03', label: 'kost', amount: 2000, paid: false }],
+    [], [], [], [], [], [], [], [], 1,
+  );
+  const m = months[0]!;
+  const b = bufferSummary(m);
+  checkBool('S36 · geen bufferpot aanwezig', b.present, false);
+  check('S36 · eindsaldo is wel degelijk negatief', m.endBalance, -1500);
+  // Het tekort staat er, maar er is geen buffer die het had moeten dekken. "Niet gedekt"
+  // is een uitspraak over de buffer, niet over het saldo.
+  check('S36 · niets niet-gedekt zonder buffer', b.uncovered, 0);
+  invariant(months, 'S36');
 }
 
 // Tegenproef. `scripts/scenarios.mjs` draait deze suite eerst mét deze vlag en eist dan een

@@ -346,7 +346,6 @@ function digestMonth(m: MonthData, index: number) {
         finalized: p.finalized,
         isDeficitBuffer: p.isDeficitBuffer,
         autoContribution: p.autoContribution === null ? null : r(p.autoContribution),
-        deficitUncovered: r(p.deficitUncovered),
       })),
     ui: {
       monthCard: (() => {

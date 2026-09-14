@@ -314,6 +314,24 @@ async function poortBezet() {
 }
 
 /**
+ * Weigert te draaien zolang er iets anders op de poort luistert. Zonder deze check test de
+ * harness wat er toevallig op de poort staat: `next start` valt om met EADDRINUSE terwijl de
+ * eerste fetch slaagt tegen de vréémde server, en de run rapporteert over een app die hij nooit
+ * gestart heeft.
+ *
+ * Twee aanroepen, bewust. De eerste staat vóór de build, want anders bouwt de harness ~16 s om
+ * daarna alsnog hier af te breken — een fout die met één fetch van 1,5 s vooraf bekend was. De
+ * tweede staat vlak vóór de spawn en vangt de race in dat bouwvenster.
+ */
+async function weigerBezettePoort() {
+  if (!(await poortBezet())) return;
+  throw new Error(
+    `Er luistert al iets op ${BASE}. De harness start zijn eigen server en weigert een vreemde te testen.\n` +
+      `Ruim hem op of geef een andere poort: --port=3105`,
+  );
+}
+
+/**
  * Bouwt de app in DIST. De uitvoer wordt opgevangen en alleen bij een fout getoond; bij
  * succes één regel met de duur. Geen eigen procesgroep: `next build` eindigt vanzelf.
  */
@@ -369,15 +387,9 @@ function controleerBuildAanwezig() {
 
 async function startServer() {
 
-  // Zonder deze check test de harness wat er tóevallig op de poort staat. `next start`
-  // valt dan om met EADDRINUSE terwijl de eerste fetch slaagt tegen de vréémde server —
-  // en de run rapporteert over een app die hij nooit gestart heeft.
-  if (await poortBezet()) {
-    throw new Error(
-      `Er luistert al iets op ${BASE}. De harness start zijn eigen server en weigert een vreemde te testen.\n` +
-        `Ruim hem op of geef een andere poort: --port=3105`,
-    );
-  }
+  // Tweede keer, en niet overbodig: tussen de check vóór de build en deze spawn zit de hele
+  // bouwtijd, en in dat venster kan iemand de poort alsnog innemen.
+  await weigerBezettePoort();
 
   const bin = require_.resolve('next/dist/bin/next');
   // Eigen procesgroep, zodat de teardown de hele boom kan afsluiten. Een SIGTERM naar
@@ -1258,6 +1270,10 @@ async function main() {
     schrijfpogingen: [],
     paginafouten: [],
   };
+
+  // Vóór de build, niet erna: een bezette poort maakt deze run hoe dan ook onmogelijk, en dat
+  // is in 1,5 s te weten in plaats van na een volledige build van ~16 s.
+  await weigerBezettePoort();
 
   if (BOUWEN) await bouw();
   controleerBuildAanwezig();

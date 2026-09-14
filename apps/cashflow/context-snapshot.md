@@ -49,15 +49,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ec29bfa docs(cashflow): relevance-check the seven open backlog items before any of them is built
 154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 25d3b8e chore(cashflow): upgrade to Next 15.5.25 and React 19
 ff20863 docs: briefing statuses onto the triad vocabulary
 2ca664b merge: main into feature/rowtrack-web-premium-redesign
-d84679f Merge remote-tracking branch 'origin/main' into fix/rowtrack-schermverschillen
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/BACKLOG.md
+   M apps/cashflow/package.json
+  M  apps/cashflow/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

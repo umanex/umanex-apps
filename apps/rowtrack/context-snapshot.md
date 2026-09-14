@@ -70,11 +70,11 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+280c508 Merge origin/main into chore/rowtrack-vite-en-expo-patches
+b976f9c chore(rowtrack): vite 8.3.0 and the three Expo patches that were within reach
+8a91851 docs(rowtrack): relevance-check the ten newly triaged items before any of them is built
 2a06ec0 ci(rowtrack): baseline the image axis on linux for all 28 frames, both buckets
 5f0e285 chore(rowtrack): refresh the image-diff report after the Figma round
-0f21cfd refactor(rowtrack): drop the three dead library pages and refresh the snapshot
-7130775 feat(rowtrack): build the five screen frames in Figma and re-baseline the image axis
-8ee8030 docs(rowtrack): tick the P3 acceptance on evidence, and leave the three that are not earned
 ```
 
 ## Uncommitted wijzigingen

@@ -70,16 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0f21cfd refactor(rowtrack): drop the three dead library pages and refresh the snapshot
 7130775 feat(rowtrack): build the five screen frames in Figma and re-baseline the image axis
 8ee8030 docs(rowtrack): tick the P3 acceptance on evidence, and leave the three that are not earned
 cad97f7 docs(rowtrack): close four backlog items and open the one this round created
 37a5500 fix(rowtrack): the image ratchet also watches text, because a text change walked past it today
-97cef48 feat(rowtrack): give the three auth screens their error frame, without teaching the app about stories
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/figma/manifest.json
-  M  apps/rowtrack/scripts/figma-sync-check.mjs
+  M  apps/rowtrack/figma/beeld-verschillen.json
 
 ## Bestanden met TODO/FIXME
   (geen)

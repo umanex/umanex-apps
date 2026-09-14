@@ -257,6 +257,94 @@ if [ -n "$status_af" ]; then
   echo "  niets over of de cyclus sloot. Zet in het metadata-blok: - **Status:** gebouwd"
 fi
 
+# 2d. Auditrapport-signaal — draagt een auditrapport zijn bestemmingen, bewijs en som?
+#     Waarschuwt, blokkeert niet. Vijf checks op een gestaged `audits/*-ux-audit-*.md`;
+#     de eerste draait ook op `*-security-audit-*.md`, want die skill draagt woordelijk
+#     dezelfde Bestemmingen-regel uit dezelfde commit (2026-09-07).
+#
+#     De faalvorm is gemeten op alle twaalf bestaande rapporten (2026-09-14):
+#       · §Bestemmingen in 0 van 12 — de regel bestaat sinds 2026-09-07, er is sindsdien
+#         geen rapport meer geschreven, dus hij heeft nooit gevuurd;
+#       · 5 van 12 dragen geen enkele bevinding-id, dus er is niets om naar te verwijzen;
+#       · 6 van 12 dragen nul `bewijs:`-regels;
+#       · één rapport telde 21+15+15 = 51 en schreef `52 / 85` — precies op de D-grens;
+#       · 5 van 12 printen een tweede schaal (`/100`) naast de grade-tabel op /85.
+#
+#     Nul bevindingen is een waarschuwing en geen stilte: nul is een noemer, geen groen.
+audit_geen_best=""; audit_telling=""; audit_geen_bewijs=""; audit_som=""; audit_honderd=""
+while IFS= read -r -d '' f; do
+  case "$f" in
+    # De klantversie is een projectie, geen rapport: `audit-klantversie.sh` rendert hem uit
+    # een allowlist van secties, dus §Bestemmingen ontbreekt er per ontwerp en zijn
+    # frontmatter draagt geen `totaal:`. Gemeten 2026-09-14 op de eerste echte audit: zonder
+    # deze uitsluiting vuurden drie van de vijf checks op een bestand dat exact deed wat het
+    # moest doen — en een guard die afgaat op correct werk, leer je wegklikken.
+    *audits/*-klant.md)            continue ;;
+    *audits/*-ux-audit-*.md)       soort=ux ;;
+    *audits/*-security-audit-*.md) soort=sec ;;
+    *) continue ;;
+  esac
+  [ -f "$f" ] || continue
+
+  grep -q '^## .*Bestemmingen' "$f" || audit_geen_best="$audit_geen_best $f"
+  [ "$soort" = ux ] || continue
+
+  # `grep -c` print zelf een 0 en geeft dan exit 1; een `|| echo 0` erachter levert twee
+  # regels op en maakt elke `[ ]`-vergelijking hieronder stuk (gemeten in test-guards).
+  n_f=$(grep -c '^#### F[0-9]' "$f"); n_f=${n_f:-0}
+  n_b=$(awk '/^## .*Bestemmingen/ { s = 1; next } /^## / { s = 0 } s && /^\| *F[0-9]+ *\|/ { n++ } END { print n + 0 }' "$f")
+  if [ "$n_f" -eq 0 ]; then
+    audit_telling="$audit_telling $f (geen bevinding-ids)"
+  elif [ "$n_f" -ne "$n_b" ]; then
+    audit_telling="$audit_telling $f ($n_f bevindingen, $n_b bestemmingen)"
+  fi
+
+  # Per `#### F<n> … P0|P1`-blok: staat er een `bewijs:`-regel vóór de volgende kop?
+  n_zb=$(awk '
+      function sluit() { if (open && !bw) n++ }
+      /^#### / { sluit(); open = ($0 ~ /^#### F[0-9]/ && $0 ~ /P[01]([^0-9]|$)/); bw = 0; next }
+      /^## /   { sluit(); open = 0; bw = 0; next }
+      /bewijs:/ { bw = 1 }
+      END { sluit(); print n + 0 }' "$f")
+  [ "${n_zb:-0}" -gt 0 ] && audit_geen_bewijs="$audit_geen_bewijs $f ($n_zb)"
+
+  # Scoresom: de som van de `n/5`-cellen tegenover `totaal:` in de frontmatter.
+  som=$(grep -oE '[0-9]+/5([^0-9]|$)' "$f" | grep -oE '^[0-9]+' | awk '{ s += $1 } END { print s + 0 }')
+  tot=$(awk -F': *' '/^totaal: *[0-9]+/ { print $2; exit }' "$f")
+  if [ -z "$tot" ]; then
+    audit_som="$audit_som $f (geen frontmatter — som niet te toetsen)"
+  elif [ "$som" -gt 0 ] && [ "$som" -ne "$tot" ]; then
+    audit_som="$audit_som $f (cellen $som ≠ totaal $tot)"
+  fi
+
+  grep -q '/ *100' "$f" && audit_honderd="$audit_honderd $f"
+done < <(staged_paths)
+
+if [ -n "$audit_geen_best" ]; then
+  echo "⚠ Auditrapport zonder §Bestemmingen:$audit_geen_best"
+  echo "  Zonder die sectie bestaan de bevindingen alleen in dit rapport. Eén rij per"
+  echo "  bevinding, met een BACKLOG-pad, een briefing-pad, 'gefixt in <commit/PR>' of"
+  echo "  'geen — advies (reden)'."
+fi
+if [ -n "$audit_telling" ]; then
+  echo "⚠ Bevindingen en bestemmingen tellen niet gelijk:$audit_telling"
+  echo "  Elke '#### F<n> · <titel> · P<n>' hoort exact één rij in §Bestemmingen te hebben."
+fi
+if [ -n "$audit_geen_bewijs" ]; then
+  echo "⚠ P0/P1-bevinding(en) zonder 'bewijs:'-regel in:$audit_geen_bewijs"
+  echo "  Een bevinding zonder bewijs is een aanname: niemand kan later nagaan of ze klopte,"
+  echo "  en de audit heeft geen kant waarop hij rood kan worden."
+fi
+if [ -n "$audit_som" ]; then
+  echo "⚠ Scoresom:$audit_som"
+  echo "  De som van de n/5-cellen ís het totaal. Gemeten 2026-08-25: 21+15+15 = 51 werd"
+  echo "  52/85 gerapporteerd, precies op de D-grens."
+fi
+if [ -n "$audit_honderd" ]; then
+  echo "⚠ Tweede schaal (/100) in:$audit_honderd"
+  echo "  Er is één schaal: totaal / (5 × gescoorde items), met de grade als percentage."
+fi
+
 # `D` hoort erbij. Een commit die alleen verwijdert raakt de app net zo goed, en juist een
 # delete maakt de context-snapshot ongeldig: die blijft anders een bestand als `gekoppeld`
 # vermelden dat niet meer bestaat. Zonder de D sloeg zo'n commit alle vier de app-blokken

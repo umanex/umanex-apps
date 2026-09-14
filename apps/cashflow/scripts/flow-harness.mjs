@@ -59,6 +59,13 @@ const SELFTEST = args.includes('--selftest');
 const HEADED = args.includes('--headed');
 // Gezet door de signaalhandler in main(): een onderbroken run eindigt met 130/143, niet met 1.
 let onderbroken = null;
+/**
+ * De gespawnde `next start`, vanaf het moment van spawnen — niet pas wanneer `startServer()`
+ * terugkeert. Tussen die twee ligt de readiness-lus (tot 60 s), en een signaal in dat venster
+ * moet dezelfde server kunnen opruimen als een signaal erna. Zonder deze variabele had de
+ * handler alleen de returnwaarde, die daar nog niet bestaat.
+ */
+let actieveServer = null;
 const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3100);
 const BASE = `http://127.0.0.1:${PORT}`;
 
@@ -402,6 +409,9 @@ async function startServer() {
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true,
   });
+  // Meteen, vóór de eerste await hieronder: vanaf hier bestaat er een detached proces dat een
+  // onderbreking zou overleven.
+  actieveServer = proc;
 
   let logs = '';
   proc.stdout.on('data', (d) => (logs += d));
@@ -422,7 +432,9 @@ async function startServer() {
   throw new Error(`next start werd niet bereikbaar op ${BASE} binnen 60s:\n${logs}`);
 }
 
-function stopServer(proc) {
+function stopServer(proc = actieveServer) {
+  // Een signaal kan vóór de spawn komen — dan is er niets op te ruimen, en dat is geen fout.
+  if (!proc) return;
   try {
     process.kill(-proc.pid, 'SIGTERM');
   } catch {
@@ -1287,22 +1299,28 @@ async function main() {
   const id = buildId();
   const teDraaien = [...scenarios(), ...(SELFTEST ? tegenproeven() : [])];
   const resultaten = [];
-  const server = await startServer();
 
   // Alles ná de spawn staat in de try: de server is detached en overleeft een exit(1),
   // dus een throw hier (manifest-check, browser die niet start) zou hem als wees op :3100
   // achterlaten en de volgende run laten weigeren. Ctrl+C bereikt hem om dezelfde reden
   // niet (eigen procesgroep) en Node's default-handler slaat de finally over — dus een
   // eigen signaalhandler, en Playwright's handlers uit zodat er maar één is.
+  //
+  // De registratie staat vóór `startServer()`, niet erna. Die functie spawnt detached en pollt
+  // daarna tot 60 s op readiness; een Ctrl+C in dát venster vond hier geen handler en liet de
+  // server als wees op :3100 achter — precies het geval dat PR #314 als gesloten rapporteerde.
+  // `stopServer()` zonder argument leest `actieveServer`, die al vanaf de spawn gevuld is.
   let browser;
   const bijSignaal = (signaal) => {
     onderbroken = signaal;
-    stopServer(server);
+    stopServer();
     const dicht = browser ? browser.close().catch(() => {}) : Promise.resolve();
     dicht.then(() => process.exit(signaal === 'SIGTERM' ? 143 : 130));
   };
   process.once('SIGINT', bijSignaal);
   process.once('SIGTERM', bijSignaal);
+
+  const server = await startServer();
   try {
     await controleerGeserveerdeBuild(id);
     console.log(`Flow-harness — serveert ${DIST} (BUILD_ID ${id}) op ${BASE}`);

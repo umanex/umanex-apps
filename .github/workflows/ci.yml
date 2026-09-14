@@ -55,12 +55,15 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
 
-      # De Storybook van packages/ui draait zijn eigen Vite/PostCSS-keten en zit dus niet
-      # in de build hierboven. Een story of docs-blok dat niet meer compileert (verwijderde
+      # De Storybook van packages/ui EN die van rowtrack draaien hun eigen Vite/PostCSS-keten
+      # en zitten dus niet in de build hierboven. `turbo build-storybook` pakt elke package met
+      # dat script (nagemeten met `--dry=json`: @umanex/ui en rowtrack), en `outputs` in
+      # turbo.json zet `storybook-static/**`, dus ook een cache-hit levert die map af — waar de
+      # rowtrack-render-stappen onderaan op leunen. Een story of docs-blok dat niet meer compileert (verwijderde
       # export, verplaatst component, kapotte MDX) zou anders pas opvallen bij de volgende
       # `pnpm storybook` op iemands machine. Eigen stap, zodat de fout in het log bij zijn
       # naam staat en niet ergens in de output van twintig andere builds.
-      - name: Build — Storybook (packages/ui)
+      - name: Build — Storybook (packages/ui + rowtrack)
         id: build-storybook-packages-ui
         run: pnpm turbo build-storybook
         env:
@@ -301,6 +304,89 @@ jobs:
           pnpm --filter rowtrack figma:poort:selftest
           pnpm --filter rowtrack laagnamen:selftest
           pnpm --filter rowtrack spec-diff:selftest
+
+      # Welke tekst een instance in Figma TOONT — offline op de bouwspec, met een tweezijdige
+      # ratel op "stil" (instance blijft staan en toont de library-data) en "terugval". Niets
+      # anders ziet die eerste klasse: de builder meldt alleen een slot dat er is, parity ziet
+      # gelijke geometrie, figma:check toetst de library en niet de vulling.
+      - name: Guard — rowtrack instance-voorvlucht (met tegenproef)
+        id: guard-rowtrack-instance-voorvlucht-met-tegenproef
+        run: |
+          pnpm --filter rowtrack figma:instance-tekst
+          pnpm --filter rowtrack figma:instance-tekst:selftest
+
+      # --- rowtrack, de render-assen ----------------------------------------------------
+      #
+      # Deze drie leunen op de Storybook-build en op Chromium, dus ze staan ná beide. Ze zijn
+      # duurder dan de zeven hierboven en meten iets anders: niet de gecommitte artefacten maar
+      # wat er werkelijk rendert.
+
+      # Een geslaagde `storybook build` is géén uitspraak over wat er rendert: gemeten
+      # 2026-09-07 gaf de build exit 0 terwijl 26 van de 197 stories leeg renderden (de
+      # worklet-transform ontbrak). Deze sweep telt console-fouten én lege renders.
+      - name: Guard — rowtrack rendert al zijn stories (build-pad)
+        id: guard-rowtrack-rendert-al-zijn-stories-build-pad
+        run: pnpm --filter rowtrack render:sweep
+
+      # En het build-pad is geen uitspraak over het DEV-pad. Twee assen lopen aantoonbaar
+      # uiteen: `__DEV__` (bibliotheken doen dan zelfcontroles die de build nooit uitvoert) en
+      # de dependency-optimizer, die alleen in dev bestaat. Gemeten 2026-09-08: 197/197 groen
+      # terwijl `storybook dev` niet eens startte. Gemeten 2026-09-14: 257/257 groen terwijl
+      # zes stories in dev leeg bleven, omdat de optimizer de échte expo-router pre-bundelde
+      # en de mock daar niet vuurt.
+      #
+      # De dep-cache is in CI koud per constructie (verse node_modules), dus er valt hier niets
+      # te wissen — een `rm -rf` op een pad dat niet bestaat geeft exit 0 en meet niets.
+      - name: Guard — rowtrack rendert al zijn stories (dev-pad)
+        id: guard-rowtrack-rendert-al-zijn-stories-dev-pad
+        run: |
+          set -uo pipefail
+          pnpm --filter rowtrack storybook > /tmp/rowtrack-storybook-dev.log 2>&1 &
+          for i in $(seq 1 120); do
+            curl -sf http://localhost:6007/index.json >/dev/null 2>&1 && break
+            sleep 1
+          done
+          if ! curl -sf http://localhost:6007/index.json >/dev/null 2>&1; then
+            echo "::error::storybook dev kwam niet op :6007 — de dev-as heeft dan niets gemeten, en dat is een fout en geen overslaan"
+            tail -40 /tmp/rowtrack-storybook-dev.log
+            exit 1
+          fi
+          out=$(pnpm --filter rowtrack dev-sweep 2>&1); rc=$?
+          echo "$out"
+          pkill -f 'storybook dev -p 6007' || true
+          exit $rc
+
+      # Wat de walker per constructie NIET meet, als getal in plaats van als vermoeden —
+      # asymmetrische randkleur, placeholder zonder waarde, gescrolde containers, overloop
+      # zonder clip, geneste inline tekst, center/right, en marge. Tweezijdige ratel op de
+      # basislijn, mét de noemer (42 schermstories) erbij: valt er een story weg, dan dalen
+      # alle tellers mee en dat leest als winst.
+      #
+      # De zelftest ernaast wekt elke as één keer op een synthetische pagina op en eist dat een
+      # pagina zonder die vormen overal nul geeft. Twee assen staan op nul (`randkleur`,
+      # `overloop`), en daar is een teller die niets meet niet te onderscheiden van een teller
+      # die niets vindt.
+      - name: Guard — rowtrack walker-blindvlekken (ratel, met tegenproef)
+        id: guard-rowtrack-walker-blindvlekken-ratel-met-tegenproef
+        run: |
+          pnpm --filter rowtrack blindvlekken:selftest
+          pnpm --filter rowtrack blindvlekken
+
+      # De beeld-as: de gecommitte Figma-export naast een verse browser-render, gedift in
+      # Chromium's canvas. Dit is de as die `parity` per constructie NIET heeft — kleurwaarde,
+      # icoonvorm, `text-transform` en BREEDTE. Juist daar leefde de drift: gemeten 2026-09-09
+      # stond elke formulier-instance 390 breed met inhoud van 224, met dertien guard-assen
+      # groen en nul parity-verschillen.
+      #
+      # De ratel staat op `overig` (het grove verschil buiten de tekstgebieden), per frame,
+      # tegen een basislijn die PER PLATFORM gemeten is: de getallen komen uit de fontrendering
+      # van de machine die meet, dus de linux-sectie is op deze runner geschreven en niet op een
+      # Mac. Eén frame staat bewust zonder ratel — zie het script.
+      - name: Guard — rowtrack Figma ↔ browser (beeld, met tegenproef)
+        id: guard-rowtrack-figma-browser-beeld-met-tegenproef
+        run: |
+          pnpm --filter rowtrack beeld:selftest
+          pnpm --filter rowtrack beeld
 
 
       # Elke guard hierboven levert één bit (de exit-code) en een rijkdom aan tekst voor een

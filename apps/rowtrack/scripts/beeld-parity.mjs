@@ -28,10 +28,30 @@
  * staat er al voor `render-sweep`. Een extra beeldbibliotheek zou een "eerst bevestigen"-
  * actie zijn voor iets dat de browser gratis kan.
  *
- *   node scripts/beeld-parity.mjs                 # alle beelden, alleen rapporteren
- *   node scripts/beeld-parity.mjs --drempel=1.5   # faalt boven 1,5% grof verschil
- *   node scripts/beeld-parity.mjs --schrijf       # 3-luik per frame naar figma/beeld-diff/
- *   node scripts/beeld-parity.mjs --selftest      # tegenproef: rood op een mutatie, groen zonder
+ * DE RATEL STAAT OP `overig`, PER FRAME. Een som van `grof` is een richting zonder vloer: 24
+ * frames delen één getal, dus een frame dat verdubbelt verdwijnt achter een frame dat daalt.
+ * En `grof` bevat de tekst-engine-ruis waar de bouw niets aan kan doen. De basislijn staat in
+ * `figma/beeld-basislijn.json`, één `overig` per frame, en is TWEEZIJDIG: erboven is een
+ * regressie, eronder is winst die je vastlegt. Het aantal frames telt mee als noemer.
+ *
+ * DE BASISLIJN IS PER PLATFORM GEMETEN, en dat is geen detail: de getallen komen uit de
+ * fontrendering van de machine die meet. Hij hoort dus geschreven te worden op het doelwit
+ * waar de guard draait (CI), niet op de Mac waar hij bedacht is — vandaar
+ * `--schrijf-basislijn` in plaats van een met de hand ingetypt getal.
+ *
+ * TOLERANTIE. 23 van de 24 frames gaven over drie runs exact hetzelfde getal; alleen
+ * `ActivePhase/Doel-Bereikt` beweegt (3,81 · 3,82 · 3,86), want de confetti van
+ * `MotivationalToast` is `6 + random * 8` en wordt bij elke render opnieuw gerandomiseerd.
+ * De tolerantie dekt die spreiding en niet meer. Het BACKLOG-item over het maskeren van
+ * niet-reproduceerbare nodes blijft daarnaast staan: een tolerantie is een omweg om een
+ * instabiel frame heen, geen oplossing ervoor.
+ *
+ *   node scripts/beeld-parity.mjs                      # rapport + ratel tegen de basislijn
+ *   node scripts/beeld-parity.mjs --geen-ratel         # alleen rapporteren
+ *   node scripts/beeld-parity.mjs --schrijf-basislijn  # de huidige meting als basislijn vastleggen
+ *   node scripts/beeld-parity.mjs --drempel=1.5        # daarnaast: faalt boven 1,5% overig, ongeacht de basislijn
+ *   node scripts/beeld-parity.mjs --schrijf            # 3-luik per frame naar figma/beeld-diff/
+ *   node scripts/beeld-parity.mjs --selftest           # tegenproef: rood op een mutatie, groen zonder
  */
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
@@ -47,6 +67,9 @@ const vlag = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('='
 const SCHAAL = Number(vlag('schaal') ?? 1);
 const DREMPEL = vlag('drempel') !== undefined ? Number(vlag('drempel')) : null;
 const SCHRIJF = process.argv.includes('--schrijf');
+const BASISLIJN_PAD = join(APP, 'figma/beeld-basislijn.json');
+const SCHRIJF_BASISLIJN = process.argv.includes('--schrijf-basislijn');
+const GEEN_RATEL = process.argv.includes('--geen-ratel');
 const SELFTEST = process.argv.includes('--selftest');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.map': 'application/json' };
@@ -216,19 +239,111 @@ console.log(`\nbeeld-parity — ${rijen.length} beeld(en), schaal ${SCHAAL}\n`);
 const breed = Math.max(...rijen.map((r) => r.bestand.length));
 for (const r of rijen.sort((a, b) => (b.grof ?? 0) - (a.grof ?? 0))) {
   if (r.fout) { console.log(`  ??  ${r.bestand.padEnd(breed)}  ${r.fout}`); continue; }
-  const vlag = DREMPEL !== null && r.grof > DREMPEL ? 'FAIL' : ' ok ';
+  const vlag = DREMPEL !== null && r.overig > DREMPEL ? 'FAIL' : ' ok ';
   console.log(`  ${vlag} ${r.bestand.padEnd(breed)}  grof ${String(r.grof).padStart(5)}%  zichtbaar ${String(r.zicht).padStart(5)}%`
     + `  waarvan tekst ${String(r.tekst).padStart(5)}%  overig ${String(r.overig).padStart(5)}%  ${String(r.heet).padStart(3)}/${r.blokken} blokken  ${r.iconenGemaskeerd} icoon(en) gemaskeerd`
     + (r.plaatsen.length ? `  @ ${r.plaatsen.slice(0, 3).join(' ')}` : ''));
 }
 const ergst = Math.max(0, ...rijen.filter((r) => !r.fout).map((r) => r.grof));
-console.log(`\nergste grof verschil: ${ergst}%` + (DREMPEL === null
-  ? '  — geen drempel opgegeven, dus dit is een rapport en geen poort. Geef --drempel=<pct> zodra de vloer bekend is.'
-  : `  (drempel ${DREMPEL}%)`));
+const ergstOverig = Math.max(0, ...rijen.filter((r) => !r.fout).map((r) => r.overig));
+console.log(`\nergste grof verschil: ${ergst}%   ergste overig: ${ergstOverig}%`);
 writeFileSync(join(APP, 'figma/beeld-verschillen.json'), JSON.stringify({
   $comment: 'GEGENEREERD door scripts/beeld-parity.mjs. De browser naast de Figma-export, per frame.',
   gegenereerd: new Date().toISOString().slice(0, 10), schaal: SCHAAL, drempel: DREMPEL, rijen,
 }, null, 1) + '\n');
 
+/**
+ * TOLERANTIE — de spreiding van het enige frame dat beweegt, plus lucht. Gemeten over drie
+ * runs op onveranderde invoer: 23 frames exact gelijk, `ActivePhase/Doel-Bereikt` 3,81-3,86.
+ * Een groter getal zou een echte regressie kunnen verbergen; een kleiner getal maakt dat ene
+ * frame één op de drie runs rood, en een wachter die dat doet leer je negeren.
+ */
+const TOLERANTIE = 0.1;
+
+/**
+ * FRAMES DIE GEEN BEWIJS KUNNEN DRAGEN. `MotivationalToast` tekent zijn confetti met
+ * `6 + Math.random() * 8` en randomiseert opnieuw bij elke render — aan beide kanten, want ook
+ * de Figma-export komt uit een bouw. Gemeten over vijf runs op ONVERANDERDE invoer: 3,63 ·
+ * 3,76 · 3,81 · 3,82 · 3,86, een spreiding van 0,23 tegen 0,00 op de 23 andere frames.
+ *
+ * Dat frame krijgt daarom geen ratel. Niet een RUIMERE tolerantie: een tolerantie om
+ * randomisering heen is een getal dat je niet kunt meten, en hij zou op de 23 stabiele frames
+ * meteen een echte regressie kunnen verbergen. Het frame blijft wél in het rapport staan, en
+ * de noemer noemt de uitsluiting bij naam — anders is "24 frames groen" niet te onderscheiden
+ * van "23 frames groen en één die niets zegt".
+ *
+ * Weg is dit zodra `beeld-parity` de niet-reproduceerbare nodes maskeert zoals
+ * `geometry-parity` dat doet (BACKLOG 2026-09-09, "De beeld-as sluit niet-reproduceerbare
+ * nodes niet uit"). Tot dan is dit de eerlijke vorm: een gat met een naam.
+ */
+const ZONDER_RATEL = { 'ActivePhase__Doel-Bereikt': 'confetti wordt per render gerandomiseerd (spreiding 0,23 over vijf runs)' };
+
+/**
+ * De basislijn is PER PLATFORM, want de getallen komen uit de fontrendering van de machine
+ * die meet. Eén lijst zou betekenen dat de guard op precies één machine bruikbaar is: rood in
+ * CI als je hem op een Mac schrijft, rood op de Mac als je hem in CI schrijft. Elk platform
+ * krijgt dus zijn eigen sectie, en een platform zonder sectie is een fout en geen overslaan.
+ */
+const leesBasislijn = () => (existsSync(BASISLIJN_PAD) ? JSON.parse(readFileSync(BASISLIJN_PAD, 'utf8')) : null);
+const gemetenOverig = () => Object.fromEntries(rijen.filter((r) => !r.fout).map((r) => [r.bestand.replace(/\.figma\.png$/, ''), r.overig]));
+
+if (SCHRIJF_BASISLIJN) {
+  const overig = gemetenOverig();
+  const bestaand = leesBasislijn();
+  const platformen = { ...(bestaand?.platformen ?? {}), [process.platform]: { gemeten: new Date().toISOString().slice(0, 10), overig } };
+  writeFileSync(BASISLIJN_PAD, JSON.stringify({
+    $comment: 'GESCHREVEN door `beeld-parity.mjs --schrijf-basislijn`. Per frame het `overig`-percentage: het grove '
+      + 'verschil buiten de tekstgebieden. PLATFORM-GEBONDEN, want de getallen komen uit de fontrendering van de '
+      + 'machine die meet — schrijf een sectie op elk doelwit waar de guard draait.',
+    schaal: SCHAAL, tolerantie: TOLERANTIE, platformen,
+  }, null, 1) + '\n');
+  console.log(`\nbasislijn geschreven: ${Object.keys(overig).length} frames onder "${process.platform}" -> figma/beeld-basislijn.json`);
+  await browser.close(); server.close();
+  process.exit(0);
+}
+
+let ratelFout = 0;
+if (GEEN_RATEL) {
+  console.log('\n  ratel overgeslagen (--geen-ratel): dit is een rapport en geen poort.');
+} else if (!leesBasislijn()?.platformen?.[process.platform]) {
+  console.error(`\n  GEEN BASISLIJN voor platform "${process.platform}" — deze run meet wel, maar toetst niets.`);
+  console.error('  Draai `beeld-parity.mjs --schrijf-basislijn` op dit platform; een run zonder basislijn is een fout en geen overslaan.');
+  ratelFout = 1;
+} else {
+  const basis = leesBasislijn().platformen[process.platform];
+  const gemeten = gemetenOverig();
+  const afwijkingen = [];
+  // De NOEMER eerst: een frame dat wegvalt haalt zijn getal uit de vergelijking en dat leest
+  // als winst. Een frame erbij is geen fout, maar wel een basislijn die hem niet kent.
+  const weg = Object.keys(basis.overig).filter((k) => !(k in gemeten));
+  const erbij = Object.keys(gemeten).filter((k) => !(k in basis.overig));
+  if (weg.length) afwijkingen.push(`${weg.length} frame(s) uit de basislijn niet gemeten: ${weg.join(', ')}`);
+  if (erbij.length) afwijkingen.push(`${erbij.length} nieuw frame(s) zonder basislijn: ${erbij.join(', ')} — draai --schrijf-basislijn`);
+  // De uitsluiting mag niet stil verrotten: staat er een naam in die niet meer bestaat, dan
+  // sluit de lijst iets uit dat er niet is en is dat een fout, geen stilte.
+  for (const naam of Object.keys(ZONDER_RATEL)) {
+    if (!(naam in gemeten)) afwijkingen.push(`${naam} staat in ZONDER_RATEL maar wordt niet gemeten — haal hem uit de lijst`);
+  }
+  for (const [naam, waarde] of Object.entries(gemeten)) {
+    if (naam in ZONDER_RATEL) continue;
+    const b = basis.overig[naam];
+    if (b === undefined) continue;
+    if (waarde > b + TOLERANTIE) afwijkingen.push(`${naam}: overig ${waarde}% tegen basislijn ${b}% — regressie`);
+    else if (waarde < b - TOLERANTIE) afwijkingen.push(`${naam}: overig ${waarde}% tegen basislijn ${b}% — winst, leg hem vast met --schrijf-basislijn`);
+  }
+  if (afwijkingen.length) {
+    console.error(`\n  RATEL — ${afwijkingen.length} afwijking(en) van figma/beeld-basislijn.json [${process.platform}, gemeten ${basis.gemeten}], tolerantie ${TOLERANTIE}:`);
+    afwijkingen.forEach((a) => console.error('    ' + a));
+    ratelFout = 1;
+  } else {
+    const uitgesloten = Object.keys(ZONDER_RATEL).filter((k) => k in gemeten);
+    console.log(`\n  ok — ${Object.keys(gemeten).length - uitgesloten.length} van ${Object.keys(gemeten).length} frames op de basislijn (tolerantie ${TOLERANTIE}).`);
+    uitgesloten.forEach((k) => console.log(`     zonder ratel: ${k} — ${ZONDER_RATEL[k]} (gemeten ${gemeten[k]}%)`));
+  }
+}
+
+const drempelFout = DREMPEL !== null && ergstOverig > DREMPEL;
+if (drempelFout) console.error(`\n  DREMPEL — ergste overig ${ergstOverig}% boven ${DREMPEL}%.`);
+
 await browser.close(); server.close();
-process.exit(DREMPEL !== null && ergst > DREMPEL ? 1 : 0);
+process.exit(ratelFout || drempelFout ? 1 : 0);

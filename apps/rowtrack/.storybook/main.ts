@@ -189,8 +189,30 @@ const config: StorybookConfig = {
     config.plugins ??= [];
     config.plugins.unshift(stubPlugin as any);
 
-    // Tweede registratie: de dependency-optimizer leest `config.plugins` niet.
+    /**
+     * De gemockte pakketten MOGEN NIET door de dependency-optimizer.
+     *
+     * `rowtrack-storybook-mocks` hieronder matcht op het OPGELOSTE pad. In dev geeft
+     * `this.resolve('expo-router')` niet het echte bestand terug maar de pre-bundle
+     * (`node_modules/.cache/storybook/…/sb-vite/deps/expo-router.js`), en die staart matcht
+     * op geen enkele MOCKS-sleutel — dus de mock vuurt niet en het scherm krijgt de échte
+     * expo-router. `useFocusEffect` roept daar `useNavigation` aan, dat zonder
+     * NavigationContainer gooit, en het scherm blijft leeg met één console-fout.
+     *
+     * Gemeten 2026-09-14 met `scripts/dev-sweep.mjs`, ook met een koude dep-cache: zes van
+     * 257 stories leeg in dev (HistoryScreen 3, ProfileScreen 3) terwijl `render:sweep` op
+     * dezelfde commit 257/257 groen gaf. Dezelfde dev/build-asymmetrie als bij de worklets
+     * hierboven, met een andere oorzaak: daar kent de optimizer geen babel, hier ziet hij
+     * onze resolver niet.
+     *
+     * `exclude` in plaats van de plugin een tweede keer registreren: de mock is een
+     * resolver, en een resolver die in de optimizer moet raden welke vorm van het pad hij
+     * krijgt, is dezelfde val nog een keer.
+     */
     config.optimizeDeps ??= {};
+    config.optimizeDeps.exclude = [...(config.optimizeDeps.exclude ?? []), 'expo-router'];
+
+    // Tweede registratie: de dependency-optimizer leest `config.plugins` niet.
     (config.optimizeDeps as any).rolldownOptions ??= {};
     (config.optimizeDeps as any).rolldownOptions.plugins ??= [];
     (config.optimizeDeps as any).rolldownOptions.plugins.push(stubPlugin);

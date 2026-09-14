@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-09-11_
+_Gegenereerd op 2026-09-14_
 
 ## Project
 - **App:** rowtrack
@@ -73,20 +73,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-2ca664b merge: main into feature/rowtrack-web-premium-redesign
-001432f docs(rowtrack): close two handoff items on measurement, sharpen the third
-3379d82 feat(rowtrack): the consumption gate, as the exemplar — two axes and a decomposed image
-1b3390f docs(rowtrack): session reflection — two items closed, three opened
-458c22f feat(rowtrack): update screen frames in place instead of replacing them
+417ab79 feat(rowtrack): turn the image axis into a ratchet and run it in CI
+7f0de81 feat(rowtrack): give walker-blindvlekken a ratchet, a selftest and a stable overflow count
+25a7309 fix(rowtrack): apply the story mocks on the dev path too
+154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
+b5ec3f9 fix(rowtrack): confirm the destructive decline, stop leaking raw English errors, unify units and terminology
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/briefings/2026-05-07-screen-dashboard.tcebc.md
-  M  apps/rowtrack/briefings/2026-05-11-feature-history.tcebc.md
-  M  apps/rowtrack/briefings/2026-05-11-screen-active-summary.tcebc.md
-  M  apps/rowtrack/briefings/2026-05-11-screen-home-figma-sync.tcebc.md
-  M  apps/rowtrack/briefings/2026-05-12-component-tabbar.tcebc.md
-  M  apps/rowtrack/briefings/2026-05-12-screen-home.tcebc.md
+  M  apps/rowtrack/figma/beeld-basislijn.json
+  M  apps/rowtrack/figma/beeld-verschillen.json
 
 ## Bestanden met TODO/FIXME
   (geen)

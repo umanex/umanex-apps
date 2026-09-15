@@ -230,6 +230,24 @@ mét story, en de app importeert hem. Alleen een app met een eigen tokenbron ver
 eigen componentlaag; de vorm is dan een eigen Storybook die als `ref` in de gedeelde hangt, niet
 een tweede losse installatie.
 
+**Elke klant heeft één Storybook als ingang, en de regel kent vier waarden.** De Storybook-regel
+is geen vrije tekst maar een keuze — anders kan geen enkele guard het verschil zien tussen "wij
+hebben er geen" en "wij hebben er geen, maar de klant wél". Gemeten 2026-09-15:
+`Luminus/apps/fleet-manager/CLAUDE.md` declareerde `Storybook: geen` terwijl de klant er een host
+op `storybook.luminus.be`, en de sectie las groen.
+
+| Waarde | Betekenis | Verplicht erbij |
+|---|---|---|
+| `gedeeld` | de Storybook van de klant-componentlaag — de default | het commando |
+| `ref` | eigen project-Storybook, gekoppeld in de gedeelde | de poort en waar de `refs`-entry staat |
+| `extern` | gehost en beheerd door de klant | de URL, plus wat hij wél en niet dekt |
+| `geen` | geen Storybook in beeld | de reden |
+
+Een externe Storybook is een échte bron, geen voetnoot. Spiegelt de app er tokens of iconen uit
+over — Luminus doet dat, in `globals.css` en `components/icons` — dan is dát de bovenstroomse
+kant en is onze kopie een afgeleide die stil kan verouderen. `extern` zonder URL is daarom
+hetzelfde gat als een lege regel, alleen slechter zichtbaar.
+
 **Acties die altijd eerst moeten worden bevestigd**
 
 1. Bestanden of folders verwijderen

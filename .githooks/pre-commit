@@ -583,7 +583,28 @@ fi
 #    Ook hier per item: het contract is drie benoemde regels, dus drie metingen. GEMETEN op
 #    de acht apps in umanex-apps: alle acht dragen alle drie de regels, dus deze vernauwing
 #    kost nul nieuwe ruis en vangt alleen de sectie die alleen uit haar kop bestaat.
-zonder_ds=""; ds_gaten=""
+#
+#    De Storybook-regel kent sinds 2026-09-15 vier waarden (gedeeld · ref · extern · geen).
+#    Die vernauwing wordt hier NIET afgedwongen: zes van de negen umanex-apps-apps schrijven
+#    vandaag een kaal commando zonder vocabulairewoord, en een guard die bij zes van de negen
+#    afgaat leert vooral aan hoe je `--no-verify` typt (LEARNINGS 2026-08-07). Wat hier wél
+#    getoetst wordt zijn de drie gevallen die een *tegenspraak* zijn en dus per definitie fout:
+#      a) 'extern' zonder URL — dan is de bron niet te vinden en is de regel zo leeg als een
+#         lege regel, alleen slechter zichtbaar;
+#      b) 'geen' én een URL in dezelfde regel — die twee kunnen niet allebei waar zijn;
+#      c) de klant declareert in de repo-root-CLAUDE.md een externe Storybook, en een app zegt
+#         'geen' zonder die URL te noemen. Dat is het gemeten geval: Luminus/fleet-manager
+#         declareerde `Storybook: geen` terwijl de klant er een host op storybook.luminus.be,
+#         en de sectie las groen omdat niets de twee lagen naast elkaar legde.
+zonder_ds=""; ds_gaten=""; sb_tegenspraak=""
+
+# Klant-ingang: declareert de repo-root-CLAUDE.md een externe Storybook? Eén URL volstaat.
+klant_sb_url=""
+if [ -f CLAUDE.md ]; then
+  klant_sb_url="$(awk '/^## Storybook/{f=1;next} /^## /{f=0} f' CLAUDE.md \
+    | grep -oE 'https?://[^ `)>]+' | head -1)"
+fi
+
 for app in $changed_apps; do
   [ -d "apps/$app" ] || continue
   md="apps/$app/CLAUDE.md"
@@ -598,6 +619,28 @@ for app in $changed_apps; do
   done
   [ -n "$mis" ] && ds_gaten="$ds_gaten
     $app: mist ${mis#, }"
+
+  sb="$(grep -E '^- \*\*Storybook:\*\*' <<<"$blok" | head -1)"
+  [ -n "$sb" ] || continue
+  sb_url="$(grep -oE 'https?://[^ `)>]+' <<<"$sb" | head -1)"
+  # De waarde staat op een PLAATS — het eerste woord na het prefix — en wordt daar gelezen,
+  # niet ergens in de regel. GEMETEN 2026-09-15: een zoektocht naar 'geen' over de hele regel
+  # las `extern — … visual design, geen wireframes` als de waarde 'geen' en sloeg vals aan.
+  # Een naam is een bewering over het ding: identificeer op positie, niet op voorkomen.
+  sb_kop="$(sed -E 's/^- \*\*Storybook:\*\*[[:space:]]*//' <<<"$sb" \
+    | grep -oiE '^`?\*{0,2}[a-z]+' | tr -d '`*' | tr '[:upper:]' '[:lower:]')"
+  sb_geen=0; [ "$sb_kop" = geen ] && sb_geen=1
+
+  if [ "$sb_kop" = extern ] && [ -z "$sb_url" ]; then
+    sb_tegenspraak="$sb_tegenspraak
+    $app: zegt 'extern' maar noemt geen URL — de bron is dan niet te vinden"
+  elif [ "$sb_geen" -eq 1 ] && [ -n "$sb_url" ]; then
+    sb_tegenspraak="$sb_tegenspraak
+    $app: zegt 'geen' en noemt tóch $sb_url — die twee kunnen niet allebei waar zijn"
+  elif [ -n "$klant_sb_url" ] && [ "$sb_geen" -eq 1 ] && ! grep -qF "$klant_sb_url" <<<"$sb"; then
+    sb_tegenspraak="$sb_tegenspraak
+    $app: zegt 'geen' terwijl de klant-CLAUDE.md $klant_sb_url declareert"
+  fi
 done
 
 if [ -n "$zonder_ds" ]; then
@@ -610,6 +653,11 @@ fi
 if [ -n "$ds_gaten" ]; then
   echo "⚠ Design-systeem-bron-sectie aanwezig maar onvolledig:$ds_gaten"
   echo "  Drie regels horen er te staan: - **Preset:** · - **Componentbron:** · - **Storybook:**"
+fi
+if [ -n "$sb_tegenspraak" ]; then
+  echo "⚠ Storybook-regel spreekt zichzelf of de klant-laag tegen:$sb_tegenspraak"
+  echo "  Vier waarden: gedeeld (commando) · ref (poort + refs-entry) · extern (URL + dekking) · geen (reden)."
+  echo "  Een externe Storybook is de bovenstroomse bron; wat wij lokaal spiegelen is de afgeleide."
 fi
 
 

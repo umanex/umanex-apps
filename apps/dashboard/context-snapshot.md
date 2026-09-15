@@ -1,5 +1,5 @@
 # Context Snapshot — dashboard
-_Gegenereerd op 2026-09-10_
+_Gegenereerd op 2026-09-15_
 
 ## Project
 - **App:** dashboard
@@ -30,24 +30,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
-e59eaa1 chore(config): remove the dead flat-config eslint files
+154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
+1221f12 chore(dashboard): upgrade to Next 15.5.25 and React 19
+2ca664b merge: main into feature/rowtrack-web-premium-redesign
+43e91cf Merge remote-tracking branch 'origin/main' into chore/sync-os-na-skillwijziging
+f7fffb7 fix(dashboard): type-check the route types that dev writes
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/dashboard/.eslintrc.js
-  A  apps/dashboard/.gitignore
-  A  apps/dashboard/BACKLOG.md
-  A  apps/dashboard/CLAUDE.md
-  A  apps/dashboard/HANDOFF.md
-  A  apps/dashboard/LEARNINGS.md
-  A  apps/dashboard/app/api/script/route.ts
-  A  apps/dashboard/app/api/start/route.ts
-  A  apps/dashboard/app/api/status/route.ts
-  A  apps/dashboard/app/api/stop/route.ts
+  A  apps/dashboard/briefings/2026-09-15-feature-cockpit.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

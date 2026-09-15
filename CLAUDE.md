@@ -153,6 +153,41 @@ tokenbron (vyvey's klantthema, rowtrack's mobile-DNA) verantwoordt een eigen com
 vorm is dan een eigen Storybook die als `ref` in die van `packages/ui` hangt, niet een tweede
 losse installatie.
 
+### De Storybook-MCP — prototypen mét de echte componenten
+
+`packages/ui` draait sinds 2026-09-15 `@storybook/addon-mcp`. Daarmee is de catalogus niet
+alleen te bekíjken maar ook te bevrágen: welke stories raakt dit bestand, welke props heeft dit
+component echt, geef me een preview-URL. Dat is het verschil tussen een component natekenen en
+hem gebruiken.
+
+**Hij bestaat alleen zolang Storybook draait.** De addon haakt in op de dev-server en publiceert
+op `http://localhost:6006/mcp` — er is géén losse server. Twee dingen volgen daaruit:
+
+1. Start eerst `pnpm --filter @umanex/ui storybook`, anders staat de MCP er niet. `.mcp.json` in
+   de repo-root draagt de verwijzing; Claude Code vraagt éénmalig goedkeuring.
+2. Dat proces is aan zijn branch geklonken — zie *Een server die jíj start* in de globale
+   `CLAUDE.md`. Stop hem bij het afsluiten, of noem de branch erbij als je de URL doorgeeft.
+
+**Zeven tools, gemeten 2026-09-15 tegen de draaiende server.** `docs-list` · `docs-show` ·
+`docs-show-story` lezen de catalogus; `stories-find-by-component` loopt de echte
+afhankelijkheidsgraaf (één wijziging in `components/ui/button.tsx` raakt **14 stories over 5
+componenten** — Card, DropdownMenu en Sheet gebruiken Button); `stories-changed` ziet wat er in
+de working tree veranderde; `stories-preview` geeft de URL; `get-storybook-story-instructions`
+levert de schrijfconventies.
+
+**`test.run` is er níet, en dat is een keuze.** Die toolset vraagt `@storybook/addon-vitest` —
+een optionele peer die vitest, `@vitest/browser` en playwright meesleept. Niet geïnstalleerd; de
+render-sweeps in CI dekken die as al.
+
+**Twee praktische valkuilen, allebei zelf ingelopen.** Paden zijn absoluut of relatief ten
+opzichte van de **Storybook-werkmap** (`packages/ui`), niet de repo-root — `packages/ui/...`
+doorgeven levert een dubbel prefix en "path does not exist". En `stories-preview` wil objecten
+(`{storyId: "..."}`), geen kale strings. De server weigert netjes met het verwachte schema
+erbij, dus lees die foutmelding in plaats van te gokken.
+
+**Contextkost:** ~6 500 tekens aan tool-definities (~1 600 tokens) plus een instructieblok van
+~1 900 tekens, per sessie waarin de server bereikbaar is.
+
 ## Briefings (TC-EBC)
 
 TC-EBC framework staat volledig in `.umanex-os/CLAUDE.md` — werkprincipe, niet hier herhaald.

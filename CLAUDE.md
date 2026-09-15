@@ -161,12 +161,30 @@ component echt, geef me een preview-URL. Dat is het verschil tussen een componen
 hem gebruiken.
 
 **Hij bestaat alleen zolang Storybook draait.** De addon haakt in op de dev-server en publiceert
-op `http://localhost:6006/mcp` — er is géén losse server. Twee dingen volgen daaruit:
+op `http://localhost:6006/mcp` — er is géén losse server. Daarom draait Storybook onder **PM2**,
+als derde proces naast cashflow en het dashboard:
 
-1. Start eerst `pnpm --filter @umanex/ui storybook`, anders staat de MCP er niet. `.mcp.json` in
-   de repo-root draagt de verwijzing; Claude Code vraagt éénmalig goedkeuring.
-2. Dat proces is aan zijn branch geklonken — zie *Een server die jíj start* in de globale
-   `CLAUDE.md`. Stop hem bij het afsluiten, of noem de branch erbij als je de URL doorgeeft.
+```bash
+pnpm --filter @umanex/ui pm2:start     # eenmalig; daarna pm2 save voor na een reboot
+pnpm --filter @umanex/ui pm2:restart   # na een wijziging in .storybook/main.ts
+pnpm --filter @umanex/ui pm2:logs
+```
+
+`.mcp.json` in de repo-root draagt de verwijzing; Claude Code vraagt éénmalig goedkeuring.
+
+**Waarom PM2 hier wél mag en bij het dashboard oppassen is.** De rail *een server die jíj start is
+aan zijn branch geklonken* (globale `CLAUDE.md`) draait om een map die op de ene branch bestaat en
+op de andere niet — `apps/dashboard` was daar het gemeten geval. `packages/ui` bestaat op **élke**
+branch (gemeten 2026-09-15: 61 bestanden op `main`, 52 op `feature/prospect-classificatie`), dus
+deze server kan niet verweesd raken. Wat hij wél doet is meebewegen: na een `checkout` serveert hij
+de stories van de branch waar je op staat. Dat is precies wat je wil van een catalogus.
+
+Eén uitzondering op dat meebewegen: **`.storybook/main.ts` wordt niet warm herladen.** Verandert de
+addon- of refs-configuratie tussen twee branches, dan draait de server door met de oude config tot
+je `pm2:restart` doet. De stories volgen wél vanzelf.
+
+**Geheugen:** ~390 MB vlak na het opstarten. `--max-memory-restart 1500M` staat in het start-script,
+zodat een lekkende vite-dev-server zichzelf opruimt in plaats van de machine vol te zetten.
 
 **Zeven tools, gemeten 2026-09-15 tegen de draaiende server.** `docs-list` · `docs-show` ·
 `docs-show-story` lezen de catalogus; `stories-find-by-component` loopt de echte

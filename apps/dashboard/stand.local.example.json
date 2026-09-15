@@ -1,0 +1,14 @@
+{
+  "_comment": "Machine-lokale registry voor de cockpit. Kopieer naar stand.local.json (gitignored) en vul de paden in. Dit voorbeeldbestand noemt bewust alleen umanex-apps: umanex/umanex-apps staat publiek op GitHub, dus klantnamen naast hun repo-pad horen hier niet in een getrackt bestand. Aansluiten van een nieuwe repo is één regel in klanten[]; de collector ontdekt de rest op conventie (.umanex-os/, apps/<app>/, de drie lussen, briefings/).",
+  "osRoot": "/pad/naar/umanex-os",
+  "klanten": [
+    {
+      "slug": "umanex",
+      "naam": "umanex",
+      "rol": "eigen",
+      "repo": "/pad/naar/umanex-apps"
+    }
+  ],
+  "_rollen": "eigen = je eigen producten · klant = klantwerk · systeem = umanex-os zelf. De rol bepaalt alleen de groepering op /cockpit, niet wat er gemeten wordt.",
+  "_slugs": "De slug is het URL-segment. `systeem`, `cockpit`, `api`, `_next`, `static` en `login` zijn gereserveerd; stand.sh weigert ze met exit 2."
+}

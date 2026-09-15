@@ -72,3 +72,24 @@ export function runtimeDir(): string {
 export const pidPath = (id: string) => join(runtimeDir(), `${id}.pid`);
 export const logPath = (id: string) => join(runtimeDir(), `${id}.log`);
 export const exitPath = (id: string) => join(runtimeDir(), `${id}.exit`);
+
+/**
+ * Waar de gemeten signalen staan, en waar de registry ze vandaan haalt.
+ *
+ * Allebei in de eigen tree en allebei gitignored — deze repo staat publiek op GitHub, dus
+ * gemeten klantdata mag hier nooit in een getrackt bestand belanden. Anders dan
+ * `runtimeDir()` maakt dit de map níet aan: een ontbrekende `.stand/` betekent "er is nog
+ * nooit gemeten", en dat is een uitkomst die de cockpit hoort te tonen in plaats van een
+ * lege map die als "alles nul" leest.
+ */
+export function standDir(): string {
+  return join(eigenRoot(), 'apps/dashboard/.stand');
+}
+
+export function standBestand(slug: string, naam: string): string {
+  return join(standDir(), slug, naam);
+}
+
+export function registryPad(): string {
+  return join(eigenRoot(), 'apps/dashboard/stand.local.json');
+}

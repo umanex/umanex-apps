@@ -1,5 +1,5 @@
 # Context Snapshot — dashboard
-_Gegenereerd op 2026-09-10_
+_Gegenereerd op 2026-09-15_
 
 ## Project
 - **App:** dashboard
@@ -23,6 +23,12 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | Component | Pad | Categorie | Figma-node | Snapshot | Status |
 |---|---|---|---|---|---|
 | AppCard | `apps/dashboard/components/AppCard.tsx` | components | — | — | — |
+| GeenMeting | `apps/dashboard/components/cockpit/GeenMeting.tsx` | cockpit | — | — | — |
+| KlantKaart | `apps/dashboard/components/cockpit/KlantKaart.tsx` | cockpit | — | — | — |
+| LusRegel | `apps/dashboard/components/cockpit/LusRegel.tsx` | cockpit | — | — | — |
+| Meetstempel | `apps/dashboard/components/cockpit/Meetstempel.tsx` | cockpit | — | — | — |
+| SchuldBalk | `apps/dashboard/components/cockpit/SchuldBalk.tsx` | cockpit | — | — | — |
+| Tegel | `apps/dashboard/components/cockpit/Tegel.tsx` | cockpit | — | — | — |
 | DashboardGrid | `apps/dashboard/components/DashboardGrid.tsx` | components | — | — | — |
 | RepoBar | `apps/dashboard/components/RepoBar.tsx` | components | — | — | — |
 | ScriptMenu | `apps/dashboard/components/ScriptMenu.tsx` | components | — | — | — |
@@ -30,24 +36,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
-e59eaa1 chore(config): remove the dead flat-config eslint files
+9c3104a feat(dashboard): the cockpit — four read-only routes over every client
+639ae44 docs(dashboard): TC-EBC for the cockpit overview
+154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
+1221f12 chore(dashboard): upgrade to Next 15.5.25 and React 19
+2ca664b merge: main into feature/rowtrack-web-premium-redesign
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/dashboard/.eslintrc.js
-  A  apps/dashboard/.gitignore
-  A  apps/dashboard/BACKLOG.md
-  A  apps/dashboard/CLAUDE.md
-  A  apps/dashboard/HANDOFF.md
-  A  apps/dashboard/LEARNINGS.md
-  A  apps/dashboard/app/api/script/route.ts
-  A  apps/dashboard/app/api/start/route.ts
-  A  apps/dashboard/app/api/status/route.ts
-  A  apps/dashboard/app/api/stop/route.ts
+  M  apps/dashboard/briefings/2026-09-15-feature-cockpit.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

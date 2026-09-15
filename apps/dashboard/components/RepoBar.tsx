@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { FolderTree, GitBranch } from 'lucide-react';
 import { ThemeToggle } from '@umanex/ui/components/ui/theme-toggle';
 import type { RepoStatus } from '@/lib/types';
@@ -36,6 +37,14 @@ export const RepoBar = ({ repo, gemetenOp }: Props) => (
       </p>
     </div>
     <div className="flex items-center gap-3">
+      {/* Het lezende oppervlak ernaast. Deze pagina start en stopt processen; de cockpit
+          meet alleen, en is het deel dat later een klant te zien krijgt. */}
+      <Link
+        href="/cockpit"
+        className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        Cockpit
+      </Link>
       {gemetenOp ? (
         <span className="text-xs text-muted-foreground">
           gemeten {new Date(gemetenOp).toLocaleTimeString('nl-BE')}

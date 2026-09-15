@@ -36,7 +36,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-9c3104a feat(dashboard): the cockpit — four read-only routes over every client
+a591372 feat(dashboard): the cockpit — four read-only routes over every client
 639ae44 docs(dashboard): TC-EBC for the cockpit overview
 154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 1221f12 chore(dashboard): upgrade to Next 15.5.25 and React 19
@@ -44,7 +44,8 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/dashboard/briefings/2026-09-15-feature-cockpit.tcebc.md
+  M  apps/dashboard/BACKLOG.md
+  M  apps/dashboard/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

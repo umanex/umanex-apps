@@ -23,6 +23,12 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | Component | Pad | Categorie | Figma-node | Snapshot | Status |
 |---|---|---|---|---|---|
 | AppCard | `apps/dashboard/components/AppCard.tsx` | components | — | — | — |
+| GeenMeting | `apps/dashboard/components/cockpit/GeenMeting.tsx` | cockpit | — | — | — |
+| KlantKaart | `apps/dashboard/components/cockpit/KlantKaart.tsx` | cockpit | — | — | — |
+| LusRegel | `apps/dashboard/components/cockpit/LusRegel.tsx` | cockpit | — | — | — |
+| Meetstempel | `apps/dashboard/components/cockpit/Meetstempel.tsx` | cockpit | — | — | — |
+| SchuldBalk | `apps/dashboard/components/cockpit/SchuldBalk.tsx` | cockpit | — | — | — |
+| Tegel | `apps/dashboard/components/cockpit/Tegel.tsx` | cockpit | — | — | — |
 | DashboardGrid | `apps/dashboard/components/DashboardGrid.tsx` | components | — | — | — |
 | RepoBar | `apps/dashboard/components/RepoBar.tsx` | components | — | — | — |
 | ScriptMenu | `apps/dashboard/components/ScriptMenu.tsx` | components | — | — | — |
@@ -30,15 +36,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+9c3104a feat(dashboard): the cockpit — four read-only routes over every client
+639ae44 docs(dashboard): TC-EBC for the cockpit overview
 154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 1221f12 chore(dashboard): upgrade to Next 15.5.25 and React 19
 2ca664b merge: main into feature/rowtrack-web-premium-redesign
-43e91cf Merge remote-tracking branch 'origin/main' into chore/sync-os-na-skillwijziging
-f7fffb7 fix(dashboard): type-check the route types that dev writes
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/dashboard/briefings/2026-09-15-feature-cockpit.tcebc.md
+  M  apps/dashboard/briefings/2026-09-15-feature-cockpit.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -75,6 +75,38 @@ startcommando zijn oordelen: rowtrack heeft geen `dev`-script maar moet
 `expo start --dev-client` draaien, en cashflow's `dev` claimt een poort die PM2 al
 bezit. Een lijst die dat uit `package.json` afleidt, zou die twee stil verkeerd hebben.
 
+## De cockpit — `/cockpit`, het lezende oppervlak ernaast
+
+`/` bedient processen; `/cockpit` leest een gemeten stand over álle repo's. Vier routes:
+de portfolio, een klant, een project, en de systeempagina. Hij meet zelf niets — dat doet
+`umanex-os/scripts/stand.sh`, die JSON schrijft naar `.stand/<slug>/`.
+
+| Laag | Bestand | Verantwoordelijkheid |
+|---|---|---|
+| Registry | `stand.local.json` | welke klanten, welke repo-paden — **gitignored** |
+| Lezen | `lib/stand/lezen.ts` | JSON van schijf naar `Gelezen<T>`; kent geen pad uit een request |
+| Regels | `lib/standRegels.mjs` | versheid, aggregaat-invariant, de drie cohorten — puur, dus testbaar zonder build |
+| Poort | `lib/cockpitCheckRules.mjs` | mag dit `Check`-commando draaien; allowlist per pijplijnsegment |
+| Views | `components/cockpit/**` | props in, JSX uit. **Nooit** fs, shell of de leeslaag — `purity` dwingt dat af |
+
+**Twee grenzen die geen afspraak zijn maar een guard.**
+
+`umanex/umanex-apps` staat **publiek** op GitHub (`gh repo view` → `"visibility":"PUBLIC"`).
+Gemeten klantdata mag hier dus nooit in een getrackt bestand landen: `.stand/` en
+`stand.local.json` staan in `.gitignore`, en die regels stonden er vóór de eerste
+collect-run. Klantnámen staan al publiek — de root-`CLAUDE.md` noemt ze — hun
+backlog-inhoud en metingen niet.
+
+En de views blijven schoon omdat ze moeten kunnen verhuizen. Fase 1 van
+`umanex-os/docs/de-stand.md` zet een klant-oppervlak neer dat op Vercel draait: geen shell,
+geen `lsof`, geen pid-bestanden. Zolang "de views raken dat niet aan" een goed voornemen is,
+is het waar tot de eerste keer dat iemand snel een getal nodig heeft.
+
+**De Check-runner voert shell uit uit een markdownbestand.** Drie sluizen, in deze volgorde:
+de loopback-guard als eerste regel van de route, dan de meting (de entry moet bestaan en een
+commando dragen), dan de poort. De request noemt klant, bestand en datum — **nooit het
+commando**. Zodra dat uit de request zou komen, is elke poort erachter cosmetisch.
+
 ## Wat het dashboard nooit doet
 
 - **Een proces stoppen dat het niet zelf startte.** De stop-knop verschijnt alleen bij
@@ -110,8 +142,11 @@ noemen geen app bij naam, zodat een tweede app onder PM2 er meteen door gedekt i
 | **State forceren** | De vier kaartstaten hangen aan gemeten feiten, dus je forceert ze door het feit te maken: `gestopt` = niets op de poort · `draait` = start vanuit het dashboard · `extern` = `pnpm --filter <app> dev` in een eigen terminal · `mislukt` = zet tijdelijk een onzinnig `startCommand` in `appsConfig.ts` |
 | **Guard tegenproeven** | Beide kanten van `blokkade()`: mét PM2 online moet cashflow's `dev` en `build` een reden teruggeven; met `pm2 stop cashflow` moeten ze `null` geven. Draai `pm2 start cashflow` daarna weer aan |
 | **Loopback-weigering** | `curl -s -o /dev/null -w '%{http_code}' -H 'Host: 10.0.0.5:3010' http://127.0.0.1:3010/api/status` → verwacht `403`; zonder de Host-header `200` |
-| **Flow aandrijven** | geen — er is nog geen flow-harness (`scripts/flow-harness.mjs`) zoals bij portfolio en jobradar. Eén scherm, geen navigatie; bouw hem als er routes bijkomen |
-| **Invariant draaien** | geen — deze app rekent niets uit, hij meet en spawnt |
+| **Flow aandrijven** | `pnpm --filter dashboard flow` — bouwt naar `.next-harness`, serveert op `:3110` en loopt de vier cockpit-routes af (18 beweringen). Raakt `:3010` en `:3011` niet. Draai eerst `cockpit:collect`: zonder meting toetst hij alleen lege schermen, en dat is geen groen — vandaar dat hij in dat geval met exit 2 stopt in plaats van door te gaan |
+| **Invariant draaien** | in de flow-harness, blok 2 en 3: elk aggregaat op `/cockpit` is de som van de regels waar het naartoe linkt, en een gerenderd getal komt uit de meting (tweezijdig — een verzonnen getal hoort er *niet* te staan). De pure kant staat in `lib/standRegels.mjs` (`aggregaatKlopt`) |
+| **Cockpit-purity** | `pnpm --filter dashboard purity` — geen enkele view onder `components/cockpit/` raakt een node-builtin, shell of de leeslaag. Tegenproef: `purity:selftest` (5 gevallen, waaronder een lege map → meting ongeldig) |
+| **Check-poort** | `pnpm --filter dashboard test` draait naast de twee start/build-regels nu ook de 28 gevallen van `lib/cockpitCheckRules.mjs`. De poort gemeten over de échte checks (2026-09-15): **104 van 144** doorgelaten, 40 geweigerd met reden. Is dat ooit 144 van 144, dan is de poort geen poort meer |
+| **Meting verversen** | `pnpm --filter dashboard cockpit:collect [slug]` — draait `umanex-os/scripts/stand.sh` per klant uit `stand.local.json` naar `.stand/<slug>/`. Faalt luid als die tree op een branch zonder de collector staat |
 
 **Let op bij verifiëren:** `pm2 stop cashflow` legt de draaiende productieserver op :3000
 plat. Doe dat alleen bewust en zet hem daarna terug aan — of toets de guard op de

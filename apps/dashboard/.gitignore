@@ -1,3 +1,14 @@
 # Draaiende processen: pid- en logbestanden van wat dit dashboard zelf startte.
 # Machine-lokaal per definitie — een pid uit een andere tree betekent hier niets.
 .runtime/
+
+# Gemeten klantdata. `umanex/umanex-apps` staat PUBLIEK op GitHub (geverifieerd met
+# `gh repo view` → "visibility":"PUBLIC"), de drie andere repo's privé. De namen van de
+# klanten staan al publiek — de root-CLAUDE.md noemt ze — maar hun backlog-inhoud,
+# briefingstatus en metingen niet. Deze twee regels zijn daarom geen opruimwerk maar de
+# grens zelf, en ze staan er vóór de eerste collect-run.
+.stand/
+stand.local.json
+
+# Build van de flow-harness: eigen distDir zodat hij de PM2-build op :3010 niet raakt.
+.next-harness/

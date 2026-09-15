@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** dashboard
 - **Klant:** umanex
-- **Status:** gepland
+- **Status:** gebouwd — 2026-09-15, branch `feature/cockpit`
 
 ---
 
@@ -59,51 +59,55 @@ Geen. De vier kritische items zijn beantwoord in de planronde van 2026-09-15.
 
 **Typologie**
 
-- [ ] `/cockpit` is een eigen route-boom, geen overlay of modal op `/` — bewijs: `ls apps/dashboard/app/cockpit/` toont de vier `page.tsx`-bestanden
-- [ ] Het bestaande bedieningspaneel op `/` is ongewijzigd — bewijs: `git diff origin/main -- apps/dashboard/app/page.tsx apps/dashboard/components/DashboardGrid.tsx` is leeg
-- [ ] De vier cockpit-routes renderen elk met status 200 — bewijs: `pnpm --filter dashboard flow` (harness op `:3110`) rapporteert 4/4
-- [ ] Het woord "dashboard" komt niet voor in een cockpit-URL of in zichtbare UI-tekst — bewijs: `grep -ri dashboard apps/dashboard/app/cockpit apps/dashboard/components/cockpit` → 0 treffers buiten importpaden
+- [x] `/cockpit` is een eigen route-boom, geen overlay of modal op `/` — bewijs: `ls apps/dashboard/app/cockpit/**/page.tsx` geeft vier bestanden (`page`, `[klant]`, `[klant]/[project]`, `systeem`)
+- [x] Het bestaande bedieningspaneel op `/` is ongewijzigd — bewijs: `git diff origin/main -- apps/dashboard/app/page.tsx apps/dashboard/components/DashboardGrid.tsx` → 0 regels
+- [x] De vier cockpit-routes renderen elk met status 200 — bewijs: `pnpm --filter dashboard flow` blok 1, 4/4 routes 200 én elk met eigen markertekst
+- [x] Het woord "dashboard" komt niet voor in een cockpit-URL of in zichtbare UI-tekst — bewijs: `grep -ri dashboard app/cockpit components/cockpit` buiten commando's en importpaden → 0 treffers
 
 **States**
 
-- [ ] Elk datablok toont een expliciete laadstatus vóór zijn data er is — bewijs: harness telt de laad-markers op de eerste render, gelijk aan het aantal blokken
-- [ ] Een klant zonder projecten toont een empty-state, geen lege lijst — bewijs: forceer met een klant-entry zonder `apps/` in `stand.local.json`
-- [ ] Een onleesbaar signaalbestand toont een error-state met de bestandsnaam — bewijs: schrijf ongeldige JSON in `.stand/<slug>/briefings.json`, herlaad
-- [ ] Een meting ouder dan `verouderd_na_dagen` toont de tegel gedempt mét het aantal dagen — bewijs: zet `measured_at` 40 dagen terug, lees de tegeltekst
-- [ ] Een ontbrekend signaalbestand toont "ontbreekt", nooit `0` — bewijs: verwijder `.stand/<slug>/design-debt.json`, lees de tegel
+- [ ] Elk datablok toont een expliciete laadstatus vóór zijn data er is — **niet gebouwd**: de pagina's zijn server-componenten die synchroon renderen met de data al gelezen, dus er is geen client-fetch om een laadstatus voor te tonen. Wat ontbreekt is een `app/cockpit/loading.tsx` voor de navigatie ertussen. Bewust open gelaten in plaats van zacht afgevinkt
+- [ ] Een klant zonder projecten toont een empty-state, geen lege lijst — **niet gemeten**: alle vier de geregistreerde klanten hebben projecten, dus dit geval is met de echte data niet op te wekken. Vraagt een fixture-klant in de harness
+- [x] Een onleesbaar signaalbestand toont een error-state met de bestandsnaam — bewijs: harness blok 5 schrijft `{ dit is geen json` in `index.json`, de pagina geeft 200 en noemt `index.json` in de reden
+- [x] Een meting ouder dan `verouderd_na_dagen` toont de tegel gedempt mét het aantal dagen — bewijs: harness blok 5 zet `measured_at` 40 dagen terug → "verouderd — 40 d"; positieve controle: bij de verse meting staat dat woord er níet
+- [x] Een ontbrekend signaalbestand toont "ontbreekt", nooit `0` — bewijs: harness blok 5, `index.json` weg → "Niet gemeten" mét het collect-commando; en een ontbrekend déélsignaal zegt "niet gemeten" en leent niet de verklaring van een repo zonder `.tsx`
 
 **Interactie**
 
-- [ ] Elk aggregaat op `/cockpit` navigeert naar de regels die het optellen — bewijs: harness volgt elke aggregaat-link en vergelijkt het getal met het aantal rijen op de bestemming
-- [ ] Elke aggregaat-link is met het toetsenbord bereikbaar en bedienbaar — bewijs: harness telt `tabIndex`-bereikbare links, gelijk aan het aantal aggregaten
-- [ ] Een Check draait pas na een klik op dát item — bewijs: harness laadt alle vier de routes en meet nul aanroepen van `/api/cockpit/check`
+- [x] Elk aggregaat op `/cockpit` telt op uit de regels waar het naartoe linkt — bewijs: harness blok 2, drie invarianten (`open_items` == rijen in werkvoorraad, som(handoff+backlog+learnings) == idem, `projecten` == rijen in index.data)
+- [ ] Elke aggregaat-link is met het toetsenbord bereikbaar en bedienbaar — **niet gemeten**: de tegels zijn `<Link>`-elementen en dus per constructie focusbaar, maar dat is een gevolgtrekking en geen waarneming. Vraagt een DOM-telling in de harness
+- [ ] Een Check draait pas na een klik op dát item — **niet gemeten**: structureel waar (de aanroep hangt aan `onClick`), maar de harness kan geen uitgaande calls tellen. Vraagt een teller op de route
 
 **Edge cases**
 
-- [ ] `apps/alpine` verschijnt als project ondanks het ontbreken van `package.json` — bewijs: `/cockpit/umanex` toont 9 projecten
-- [ ] Columba en Luminus zonder root-`briefings/` tonen 0, geen fout — bewijs: collect-run op beide geeft exit 0 en `briefings.json` met root-noemer 0
-- [ ] Een klant-slug gelijk aan een gereserveerd routesegment wordt geweigerd — bewijs: `stand.local.json` met slug `systeem` laat `stand.sh` exit 2 geven
-- [ ] De Check-poort weigert een deel van de echte commando's — bewijs: draai de poort over alle `Check`-commando's in de vier repo's, rapporteer geslaagd/totaal; is dat getal gelijk, dan is de poort geen poort
-- [ ] Een repo die niet op schijf staat toont "ontbreekt" met de reden, en de andere klanten renderen door — bewijs: verwijs in `stand.local.json` naar een niet-bestaand pad
+- [x] `apps/alpine` verschijnt als project ondanks het ontbreken van `package.json` — bewijs: `.stand/umanex/index.json` telt 10 projecten en bevat `alpine`
+- [x] Columba en Luminus zonder root-`briefings/` tonen 0, geen fout — bewijs: `briefings.json` geeft voor beide 0 rijen met project `(root)` naast 38 resp. 99 totaal, en de collect-run gaf exit 0
+- [x] Een klant-slug gelijk aan een gereserveerd routesegment wordt geweigerd — bewijs: tweezijdig, `slugGeldig()` weigert `systeem`, `cockpit`, `api`, leeg, `Umanex` en `a/b` en laat `umanex` en `luminus` door; `stand.sh` weigert dezelfde slugs met exit 2
+- [x] De Check-poort weigert een deel van de echte commando's — bewijs: over alle 144 gemeten checks in de vier repo's **104 doorgelaten, 40 geweigerd** met reden (12× `figma_execute`, 9× een scriptbestand, 6× een redirect). Was dit 144/144, dan was de poort geen poort
+- [ ] Een repo die niet op schijf staat toont "ontbreekt" met de reden, en de andere klanten renderen door — **niet gemeten**: alle vier de repo's staan op schijf. `collect.mjs` heeft het pad wél (`✗ <slug>: <pad> bestaat niet — overgeslagen`), maar dat is de schrijfkant, niet het scherm
 
 **Contract en isolatie**
 
-- [ ] Geen bestand onder `components/cockpit/` importeert `node:*`, `child_process`, `lib/launch` of `lib/processes` — bewijs: `node apps/dashboard/scripts/cockpit-purity.mjs`, tweezijdig getoetst met `--selftest`
-- [ ] Een collect-run laat geen enkel getrackt bestand achter — bewijs: `git status --porcelain -uall` is leeg ná `pnpm --filter dashboard cockpit:collect`
-- [ ] Een kanarie-string in een fixture-`LEARNINGS.md` komt niet voor in de klant-zichtbare uitvoer — bewijs: `test-stand.sh` grept de kanarie over `<outdir>/*.json` buiten `cockpit/`
-- [ ] Elk aggregaat is gelijk aan de som van zijn ontleding — bewijs: invariant-script over de gegenereerde JSON, op beide kanten getoetst met een gemanipuleerd aggregaat
-- [ ] De open-telling van `stand.sh` is per repo gelijk aan die van `templates/session-start-handoff.sh` — bewijs: `test-stand.sh` cross-check over de vier repo's
-- [ ] Elke tegel toont het `measured_at` uit de JSON en niet het moment van laden — bewijs: bevries de JSON, herlaad twee keer met een minuut ertussen, de tekst verandert niet
-- [ ] `POST /api/cockpit/check` weigert een niet-lokale Host-header — bewijs: `curl -H 'Host: 10.0.0.5:3010' … ` → 403
-- [ ] Er komt geen enkele nieuwe runtime-dependency bij — bewijs: `git diff origin/main -- apps/dashboard/package.json` raakt alleen het `scripts`-blok
+- [x] Geen bestand onder `components/cockpit/` importeert `node:*`, `child_process` of de leeslaag — bewijs: `pnpm --filter dashboard purity` → 6 views schoon; tegenproef `purity:selftest` 5/5, waaronder een lege map die als *meting ongeldig* leest in plaats van als groen
+- [x] Een collect-run laat geen enkel getrackt bestand achter — bewijs: na `cockpit:collect` over vier klanten geeft `git status --porcelain -uall` 0 regels voor `.stand/` en `stand.local.json`
+- [x] Elk aggregaat is gelijk aan de som van zijn ontleding — bewijs: harness blok 2 (drie assen) plus `test-stand.sh` in umanex-os (13 invarianten), beide tweezijdig getoetst met een gefabriceerd aggregaat
+- [x] De open-telling van de collector is gelijk aan die van een tweede parser — bewijs: `test-lus-entries.sh` vergelijkt met `loop-aging.sh` én met `templates/session-start-handoff.sh` over de vier repo's; twaalf vergelijkingen gelijk, en één item erbij beweegt beide kanten mee. *(Afwijking van het plan: de sessiestart-hook was pas bruikbaar als teller nadat `MAX_OPEN` injecteerbaar werd; dat is in dezelfde ronde gebeurd.)*
+- [x] Elke tegel toont het `measured_at` uit de JSON en niet het moment van laden — bewijs: harness blok 5, dezelfde pagina toont "verouderd — 40 d" ná het terugzetten van `measured_at` en niets ná het herstel, terwijl het laadmoment in beide gevallen nu is
+- [x] `POST /api/cockpit/check` weigert een niet-lokale Host-header — bewijs: harness blok 4 via `curl -H 'Host: 10.0.0.5:3110'` → 403; met loopback-Host geen 403. *Via curl en niet via fetch: `Host` is een forbidden header name, Node zet hem stil niet en de assertie meet dan iets anders (gemeten: 404 in plaats van 403).*
+- [x] Er komt geen enkele nieuwe runtime-dependency bij — bewijs: `git diff origin/main -- apps/dashboard/package.json` raakt alleen het `scripts`-blok (vier regels erbij, `clean` uitgebreid)
+- [x] Een kanarie-string uit een fixture-`LEARNINGS.md` komt niet voor in de klant-zichtbare uitvoer — bewijs: `test-stand.sh` in umanex-os, tweezijdig (afwezig buiten `cockpit/`, aanwezig erbinnen); tegenproef: LEARNINGS-rijen in `backlog.json` laten lekken maakt de as rood en noemt het bestand
 
 **Afgeschreven assen**
 
-- [ ] Figma-parity n.v.t. — de cockpit heeft geen Figma-bron; hij rendert gemeten data, geen ontworpen scherm
-- [ ] Design-snapshot-vergelijking n.v.t. — er bestaat geen basislijn voor een scherm dat nog niet bestaat; vanaf de tweede ronde wél
+- [x] Figma-parity n.v.t. — bewijs: `grep -rc '@figma' apps/dashboard/components/cockpit/` → 0 bestanden met een Figma-header; deze views renderen gemeten data, geen ontworpen scherm
+- [x] Design-snapshot-vergelijking n.v.t. — bewijs: `ls apps/dashboard/*.design-snapshot.md` → geen enkel bestand; er is geen basislijn voor een scherm dat vandaag ontstaat. Vanaf de tweede ronde is deze as wél van toepassing
+
+**Stand: 22 van 27 afgevinkt, alle 5 de open items met hun reden.** Status blijft daarom
+`gebouwd` en niet `gevalideerd`: dat woord vraagt dat élk item op bewijs staat.
 
 ## Beslissingsgeschiedenis
 
 - 2026-09-15: Landingsplaats van nieuwe app naar tweede route in `apps/dashboard` — de cockpit is lokaal en Jeroen-only, dus de loopback-sluis is geen belemmering maar precies goed. De verplaatsbaarheid naar de klant-app wordt in plaats daarvan door een purity-guard gedragen.
 - 2026-09-15: `zichtbaarheid` toegevoegd aan het signaalcontract van `de-stand.md`, als mappenstructuur (`<outdir>/cockpit/`) in plaats van een veld dat een filter moet lezen. Reden: de nooit-naar-de-klant-lijst mag niet afhangen van een if die iemand vergeet.
 - 2026-09-15: Verificatieschuld wordt per cohort van briefing-datum getoond in plaats van als één totaal. Reden: een deel van de 928 vinkjes zonder `bewijs:` dateert van vóór die conventie, en één beschuldigend getal dat niemand kan verkleinen is geen signaal.
+- 2026-09-15: Design-debt kreeg een derde uitkomst naast "een getal" en "geen .tsx": een ontbrekend signaalbestand zegt nu "niet gemeten". De eerste versie leende daar de verklaring van een repo zonder `.tsx`, wat `null ≠ 0` half toepast — geen nul, wél een verklaring die niet klopt. De harness vond het.

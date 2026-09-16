@@ -98,24 +98,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+c9b5f46 fix(cashflow): finish-review round — no € 0 without milestones, cash answer visible on a phone, one-line signals
 3c35c67 fix(cashflow): review round — cash table explanation outside the scroller, dense row buttons, clearer revenue line
 8f7db0a feat(cashflow): bureau overview — signals first, then six tiles with denominator, source and one link
 05386f0 feat(cashflow): signals — what needs attention, from the thresholds in the goals
 d5c7d02 feat(cashflow): invoices on the project, cash for 13 weeks, and client concentration pages
-804cb10 feat(cashflow): 13-week cash as a distribution of the monthly engine, client concentration, invoice state
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/app/bureau/page.tsx
-  M  apps/cashflow/app/bureau/projecten/[id]/page.tsx
-  M  apps/cashflow/briefings/2026-09-16-feature-bureau.tcebc.md
-  M  apps/cashflow/components/auth/SignOutButton.tsx
-  M  apps/cashflow/components/bureau/BureauSubnav.tsx
-  M  apps/cashflow/components/bureau/ExtensionList.tsx
-  M  apps/cashflow/components/bureau/ExternalCostList.tsx
-  M  apps/cashflow/components/bureau/MetricValue.tsx
-  M  apps/cashflow/components/bureau/MilestoneList.tsx
-  M  apps/cashflow/components/bureau/ProjectTable.tsx
+  M  apps/cashflow/scripts/render-charts.tsx
+  M  apps/cashflow/scripts/render-screens.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

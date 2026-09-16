@@ -1,23 +1,31 @@
 #!/usr/bin/env node
 /**
- * ELK GEMIDDELDE DEELT DOOR DE TELLER UIT ZIJN EIGEN GUARD.
+ * ELK GEMIDDELDE DEELT DOOR DE TELLER UIT ZIJN EIGEN ACCUMULATOR.
  *
- * WAAROM DIT BESTAAT. Een som en zijn teller horen per conventie bij elkaar, en conventie is
- * hier eerder gebroken: op 2026-08-17 deelden vijf call-sites door `tickCount` in plaats van
- * door de teller die in dezelfde guard optelde. `tickCount` telt élk binnengekomen pakket, ook
- * dat waarin het veld ontbrak, dus het gemiddelde werd stelselmatig te laag. Dat is per scherm
- * onzichtbaar: er staat gewoon een plausibel getal.
+ * WAAROM DIT BESTAAT. Een som en zijn teller horen bij elkaar, en die conventie is hier
+ * gebroken: op 2026-08-17 deelden vijf call-sites door `tickCount` in plaats van door de teller
+ * die in dezelfde guard optelde. `tickCount` telt élk binnengekomen pakket, ook dat waarin het
+ * veld ontbrak, dus het gemiddelde werd stelselmatig te laag. Per scherm onzichtbaar: er staat
+ * gewoon een plausibel getal.
  *
- * De fix van die dag corrigeerde de vijf plekken maar liet de conventie staan — een nieuwe som
- * die een teller vergeet, herhaalt de klasse. Deze guard maakt er een meting van.
+ * WAT ER OP 2026-09-16 VERANDERDE. De losse `<naam>Sum`/`<naam>Count`-refs zijn vervangen door
+ * één `Acc = { sum, count }` in `lib/sessionAccumulator.ts`, en het gemiddelde loopt via
+ * `mean(acc)`. Daarmee is de fout van 2026-08-17 structureel onmogelijk — je kúnt niet meer
+ * door een vreemde teller delen, want som en teller zijn hetzelfde object.
  *
- * WAT HIJ DOET. Hij zoekt élke `refs.<naam>Sum.current / <noemer>` in app-code en eist dat de
- * noemer de teller van díe som is. Staat er een lokale variabele (`const c = refs.wattsCount…`),
- * dan volgt hij die terug naar zijn toekenning — anders zou hij precies de drie plekken niet
- * meten waar de fout zich het makkelijkst verstopt.
+ * Deze guard mocht daarom niet blijven zoeken naar een vorm die niet meer bestaat: hij vond
+ * nul delingen, en nul is geen groene meting maar een wachter die niets ziet. Hij toetst nu de
+ * invariant die er wél is:
+ *
+ *   1. één implementatie van het gemiddelde — `acc.sum / acc.count` staat alleen in `mean()`;
+ *   2. elke andere plek gebruikt `mean(...)` en rekent er niet zelf een uit;
+ *   3. en gebeurt dat tóch, dan moeten teller en noemer uit dezelfde accumulator komen.
+ *
+ * Regel 2 is de strengste en dat is opzet: een handgerolde deling die vandaag toevallig klopt,
+ * is morgen de plek waar iemand de verkeerde teller intypt.
  *
  *   node scripts/check-averages.mjs             # de guard
- *   node scripts/check-averages.mjs --selftest  # tegenproef: rood op een foute noemer, stil zonder
+ *   node scripts/check-averages.mjs --selftest  # tegenproef, beide kanten
  */
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -27,14 +35,8 @@ import { fileURLToPath } from 'node:url';
 const APP = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SELFTEST = process.argv.includes('--selftest');
 
-/**
- * De teller die bij een som hoort. De regel is `<naam>Sum` -> `<naam>Count`; `splitSum` is de
- * enige uitzondering en staat daarom bij naam. Een uitzondering die je moet opschrijven is een
- * uitzondering die je kunt tellen — een regex die "Count of TickCount, allebei goed" toestaat,
- * zou de echte fout van 2026-08-17 hebben doorgelaten.
- */
-const UITZONDERING = { splitSum: 'splitTickCount' };
-const tellerVoor = (som) => UITZONDERING[som] ?? som.replace(/Sum$/, 'Count');
+/** De enige plek waar `sum / count` mag staan. */
+const BRON = 'lib/sessionAccumulator.ts';
 
 /** Bestanden waarin een gemiddelde kan staan. Uit git, zodat een nieuw bestand vanzelf meedoet. */
 function bronnen() {
@@ -43,16 +45,12 @@ function bronnen() {
 }
 
 /**
- * Zoekt de toekenning van een lokale variabele terug: `const c = refs.wattsCount.current || 1`.
- * Alleen naar BOVEN vanaf de deling, en alleen binnen de laatste 40 regels — verder weg is het
- * geen lokale hulpvariabele meer en hoort de guard te klagen in plaats van te raden.
+ * `a.b.sum / c.d.count` → de twee accumulator-uitdrukkingen, of null wanneer de regel geen
+ * handgerolde deling van een som door een teller is.
  */
-function herleid(regels, index, naam) {
-  for (let i = index; i >= Math.max(0, index - 40); i--) {
-    const m = regels[i].match(new RegExp(`\\b(?:const|let)\\s+${naam}\\s*=\\s*refs\\.(\\w+)\\.current`));
-    if (m) return m[1];
-  }
-  return null;
+function handgerold(regel) {
+  const m = regel.match(/([\w.$[\]]+)\.sum\s*\/\s*([\w.$[\]]+)\.count/);
+  return m ? { teller: m[1], noemer: m[2] } : null;
 }
 
 function analyse(bestanden, lees) {
@@ -60,21 +58,18 @@ function analyse(bestanden, lees) {
   for (const f of bestanden) {
     const regels = lees(f).split('\n');
     regels.forEach((regel, i) => {
-      const m = regel.match(/refs\.(\w+Sum)\.current\s*\/\s*([^;,)\s]+)/);
-      if (!m) return;
-      const [, som, ruweNoemer] = m;
-      const verwacht = tellerVoor(som);
-      let noemer = ruweNoemer.match(/refs\.(\w+)\.current/)?.[1] ?? null;
-      let via = 'direct';
-      if (!noemer) {
-        const lokaal = ruweNoemer.match(/^[A-Za-z_$][\w$]*$/)?.[0];
-        if (lokaal) { noemer = herleid(regels, i, lokaal); via = `via \`${lokaal}\``; }
-      }
-      gemeten.push(`${f}:${i + 1} ${som} / ${noemer ?? ruweNoemer} (${via})`);
-      if (!noemer) {
-        bevindingen.push(`${f}:${i + 1}: ${som} deelt door \`${ruweNoemer}\`, en dat is geen teller die hier te herleiden is`);
-      } else if (noemer !== verwacht) {
-        bevindingen.push(`${f}:${i + 1}: ${som} deelt door ${noemer}, verwacht ${verwacht}`);
+      // Elk gebruik van `mean(` telt als een gemeten gemiddelde — dat is de noemer van deze
+      // guard: gaat dit naar nul, dan meet hij niets meer en hoort hij te klagen.
+      for (const _ of regel.matchAll(/\bmean\s*\(/g)) gemeten.push(`${f}:${i + 1} mean(...)`);
+
+      const deling = handgerold(regel);
+      if (!deling) return;
+      gemeten.push(`${f}:${i + 1} ${deling.teller}.sum / ${deling.noemer}.count`);
+
+      if (deling.teller !== deling.noemer) {
+        bevindingen.push(`${f}:${i + 1}: ${deling.teller}.sum deelt door ${deling.noemer}.count — een vreemde teller`);
+      } else if (f !== BRON) {
+        bevindingen.push(`${f}:${i + 1}: handgerold gemiddelde (${deling.teller}) — gebruik mean() uit ${BRON}`);
       }
     });
   }
@@ -91,41 +86,44 @@ if (SELFTEST) {
   const bestanden = bronnen();
   const controle = analyse(bestanden, lees);
   eis('de echte code is stil', controle.bevindingen.length === 0, controle.bevindingen[0] ?? '');
-  eis('er is iets te meten', controle.gemeten.length > 0, `${controle.gemeten.length} deling(en)`);
+  eis('er is iets te meten', controle.gemeten.length > 0, `${controle.gemeten.length} gemiddelde(n)`);
+  eis(`${BRON} draagt de enige deling`,
+    controle.gemeten.some((g) => g.startsWith(`${BRON}:`) && g.includes('.sum /')),
+    'de bron zelf rekent het gemiddelde niet uit');
 
-  // MUTATIE 1 — een directe noemer vervangen door tickCount: exact de fout van 2026-08-17.
-  const doel = bestanden.find((f) => /refs\.\w+Sum\.current\s*\/\s*refs\.\w+\.current/.test(lees(f)));
-  eis('er is een directe deling om te muteren', !!doel, doel ?? '');
-  if (doel) {
-    const m1 = (f) => (f === doel
-      ? lees(f).replace(/refs\.(\w+Sum)\.current\s*\/\s*refs\.\w+\.current/, 'refs.$1.current / refs.tickCount.current')
-      : lees(f));
-    const r = analyse(bestanden, m1);
-    eis('tickCount als noemer -> rood', r.bevindingen.length === 1 && /verwacht/.test(r.bevindingen[0]), r.bevindingen[0] ?? 'stil');
+  // ZOEK HET OBJECT EERST. Muteren op een regel die geen `mean(`-aanroep draagt zou niets
+  // veranderen, de guard zou terecht zwijgen, en de zelftest zou naar de guard wijzen in
+  // plaats van naar zichzelf — precies de fout die de vorige versie van dit bestand maakte.
+  const doelEntry = controle.gemeten.find((g) => g.includes('mean(...)') && !g.startsWith(`${BRON}:`));
+  eis('er is een mean()-aanroep buiten de bron om te muteren', !!doelEntry, doelEntry ?? '');
+
+  if (doelEntry) {
+    const doel = doelEntry.split(':')[0];
+
+    // MUTATIE 1 — een vreemde teller: exact de klasse van 2026-08-17, in de nieuwe vorm.
+    const m1 = (f) => (f === doel ? lees(f).replace(/\bmean\s*\(([\w.$]+)\)/, 'x.sum / y.count') : lees(f));
+    eis('mutatie 1 raakte de code echt', m1(doel) !== lees(doel), doel);
+    const r1 = analyse(bestanden, m1);
+    eis('een vreemde teller -> rood', r1.bevindingen.some((b) => /vreemde teller/.test(b)), r1.bevindingen[0] ?? 'stil');
+
+    // MUTATIE 2 — een deling die ARITMETISCH KLOPT maar mean() omzeilt. Zonder deze zou de
+    // guard alleen de verkeerde noemer zien, en blijft "iedereen rekent zijn eigen gemiddelde"
+    // een stille gewoonte die de volgende fout mogelijk maakt.
+    const m2 = (f) => (f === doel ? lees(f).replace(/\bmean\s*\(([\w.$]+)\)/, '$1.sum / $1.count') : lees(f));
+    eis('mutatie 2 raakte de code echt', m2(doel) !== lees(doel), doel);
+    const r2 = analyse(bestanden, m2);
+    eis('een handgerold maar correct gemiddelde -> rood', r2.bevindingen.some((b) => /handgerold/.test(b)), r2.bevindingen[0] ?? 'stil');
   }
 
-  // MUTATIE 2 — de LOKALE tak. Zonder deze is "hij volgt een variabele terug" een aanname:
-  // een guard die alleen directe noemers leest, is stil op precies de plekken waar er een
-  // hulpvariabele tussen staat.
-  //
-  // ZOEK HET OBJECT EERST. De eerste versie van deze mutatie greep het eerste `const … =
-  // refs.<x>Count.current` in het bestand, en dat was `const avgW = refs.wattsCount.current > 0`
-  // — een ternary-conditie, geen noemer. Muteren veranderde daar niets aan een deling, de guard
-  // zweeg terecht, en de zelftest wees naar de guard in plaats van naar zichzelf. Kies de
-  // variabele dus uit wat de analyse WERKELIJK als noemer herleid heeft.
-  const viaEntry = controle.gemeten.find((g) => /\(via `[^`]+`\)/.test(g));
-  eis('er is een deling die via een variabele loopt', !!viaEntry, viaEntry ?? '');
-  if (viaEntry) {
-    const doel2 = viaEntry.split(':')[0];
-    const naam = viaEntry.match(/\(via `([^`]+)`\)/)[1];
-    const m2 = (f) => (f === doel2
-      ? lees(f).replace(new RegExp(`(const\\s+${naam}\\s*=\\s*refs\\.)\\w+(\\.current)`), '$1tickCount$2')
-      : lees(f));
-    const gemuteerd = m2(doel2);
-    eis('de mutatie raakte de toekenning echt', gemuteerd !== lees(doel2), `${doel2} / ${naam}`);
-    const r = analyse(bestanden, m2);
-    eis('een verkeerde teller ACHTER een variabele -> rood', r.bevindingen.length >= 1, r.bevindingen[0] ?? 'stil — de guard leest de variabele niet terug');
-  }
+  // NEGATIEVE CONTROLE — een wijziging die hier niets mee te maken heeft, hoort stil te
+  // blijven. Een guard die op álles rood wordt, meet niets.
+  const m3 = (f) => (f === doelEntry?.split(':')[0] ? `// een onschuldige regel\n${lees(f)}` : lees(f));
+  eis('een onschuldige wijziging -> stil', analyse(bestanden, m3).bevindingen.length === 0);
+
+  // NEGATIEVE CONTROLE 2 — de deling in de bron zelf is legitiem en mag niet rood worden.
+  eis('de deling in de bron blijft toegestaan',
+    !controle.bevindingen.some((b) => b.startsWith(BRON)));
+
   console.log(process.exitCode ? '\n  ZELFTEST GEFAALD' : '\n  zelftest ok');
   process.exit(process.exitCode ?? 0);
 }
@@ -134,12 +132,12 @@ const { bevindingen, gemeten } = analyse(bronnen(), lees);
 console.log(`\ncheck-averages — ${gemeten.length} gemiddelde(n) gemeten\n`);
 gemeten.forEach((g) => console.log('  ' + g));
 if (!gemeten.length) {
-  console.error('\n  NUL delingen gevonden. Dat is geen groene meting maar een guard die niets ziet.');
+  console.error('\n  NUL gemiddelden gevonden. Dat is geen groene meting maar een guard die niets ziet.');
   process.exit(2);
 }
 if (bevindingen.length) {
-  console.error(`\n  ${bevindingen.length} gemiddelde(n) delen door een vreemde teller:`);
+  console.error(`\n  ${bevindingen.length} gemiddelde(n) buiten de regel:`);
   bevindingen.forEach((b) => console.error('    ' + b));
   process.exit(1);
 }
-console.log('\n  ok — elk gemiddelde deelt door de teller uit zijn eigen guard.');
+console.log(`\n  ok — elk gemiddelde loopt via mean(); de enige deling staat in ${BRON}.`);

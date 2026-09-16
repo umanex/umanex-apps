@@ -12,6 +12,7 @@
  * een erg en een hartslagband erbij.
  */
 import { bestTimeForDistance, type Sample } from './bestDistanceTime.ts';
+import { mean, type Acc } from './sessionAccumulator.ts';
 import { buildPrEntries, type PrBaseline, type PrEntry } from './personalRecords.ts';
 import type { SplitEntry } from '../types/workout.ts';
 
@@ -23,9 +24,6 @@ import type { SplitEntry } from '../types/workout.ts';
  * zulke ritten al (34 m op 2026-07-16).
  */
 export const MIN_PR_TICKS = 10;
-
-/** Een som met de teller die in dezelfde guard optelde. Nooit delen door een vreemde teller. */
-export type Accumulator = { sum: number; count: number };
 
 /** Het doel van de rit — alleen wat de rij ervan nodig heeft. */
 export type RowGoal = { type: string; target: number };
@@ -40,10 +38,10 @@ export type WorkoutRowInput = {
   resistanceLevel: number | null;
   /** Aantal verwerkte BLE-ticks — enkel voor de PR-drempel. */
   ticks: number;
-  watts: Accumulator;
-  spm: Accumulator;
-  split: Accumulator;
-  heartRate: Accumulator;
+  watts: Acc;
+  spm: Acc;
+  split: Acc;
+  heartRate: Acc;
   maxWatts: number;
   maxSpm: number;
   maxHeartRate: number;
@@ -66,9 +64,16 @@ export type BuiltWorkoutRow = {
   prEntries: PrEntry[];
 };
 
-/** Het gemiddelde, of null wanneer er niets geteld is. Deelt altijd door zijn eigen teller. */
-function mean(acc: Accumulator): number | null {
-  return acc.count > 0 ? Math.round(acc.sum / acc.count) : null;
+/**
+ * Het afgeronde gemiddelde, of null wanneer er niets geteld is.
+ *
+ * `mean` komt uit `sessionAccumulator.ts` — één implementatie, want twee zouden binnen een
+ * maand in afronding of in hun nul-geval uit elkaar lopen. Het afronden gebeurt hier, want dat
+ * hoort bij de integer-kolom en niet bij het rekenen.
+ */
+function afgerondGemiddelde(acc: Acc): number | null {
+  const gemiddelde = mean(acc);
+  return gemiddelde != null ? Math.round(gemiddelde) : null;
 }
 
 /**
@@ -79,8 +84,8 @@ function mean(acc: Accumulator): number | null {
  * "invalid input syntax for type integer".
  */
 export function buildWorkoutRow(input: WorkoutRowInput): BuiltWorkoutRow {
-  const avgWatts = mean(input.watts);
-  const avgSplit = mean(input.split);
+  const avgWatts = afgerondGemiddelde(input.watts);
+  const avgSplit = afgerondGemiddelde(input.split);
   const distance = Math.round(input.distanceMeters);
 
   // Exacte beste 2000m uit de {tijd, afstand}-tijdreeks (two-pointer + interpolatie).
@@ -111,13 +116,13 @@ export function buildWorkoutRow(input: WorkoutRowInput): BuiltWorkoutRow {
     duration_seconds: Math.round(input.seconds),
     distance_meters: distance,
     avg_watts: avgWatts,
-    avg_spm: mean(input.spm),
+    avg_spm: afgerondGemiddelde(input.spm),
     avg_split_seconds: avgSplit,
     calories: Math.round(input.calories),
     max_watts: input.maxWatts > 0 ? Math.round(input.maxWatts) : null,
     max_spm: input.maxSpm > 0 ? Math.round(input.maxSpm) : null,
     best_split: Number.isFinite(input.bestSplit) ? Math.round(input.bestSplit) : null,
-    avg_heart_rate: input.healthGranted ? mean(input.heartRate) : null,
+    avg_heart_rate: input.healthGranted ? afgerondGemiddelde(input.heartRate) : null,
     max_heart_rate: input.healthGranted && input.maxHeartRate > 0
       ? Math.round(input.maxHeartRate)
       : null,

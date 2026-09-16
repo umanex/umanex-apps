@@ -81,10 +81,17 @@ export function conversions(opps: Opportunity[], period: Period, pairs = DEFAULT
   return pairs.map(([from, to]) => conversion(opps, period, from, to));
 }
 
-/** Van de voorstellen die in de periode beslist werden: gewonnen tegenover verloren. Geparkeerd telt niet als beslist. */
+/**
+ * Van de voorstellen die in de periode beslist werden: gewonnen tegenover verloren. Geparkeerd telt
+ * niet als beslist. Een kans die in de periode van gewonnen naar verloren ging (of omgekeerd) telt
+ * één keer, op haar laatste beslissing.
+ */
 export function winRate(opps: Opportunity[], period: Period): { won: number; lost: number; decided: number; rate: number | null } {
-  const won = opps.filter((o) => ooitBereikt(o, 'voorstel') && bereiktIn(o, 'gewonnen', period)).length;
-  const lost = opps.filter((o) => ooitBereikt(o, 'voorstel') && bereiktIn(o, 'verloren', period)).length;
+  const laatste = (o: Opportunity) =>
+    [...o.history].filter((h) => (h.stage === 'gewonnen' || h.stage === 'verloren') && h.on >= period.from && h.on <= period.to).sort((a, b) => a.on.localeCompare(b.on)).at(-1)?.stage ?? null;
+  const beslist = opps.filter((o) => ooitBereikt(o, 'voorstel')).map(laatste);
+  const won = beslist.filter((x) => x === 'gewonnen').length;
+  const lost = beslist.filter((x) => x === 'verloren').length;
   const decided = won + lost;
   return { won, lost, decided, rate: decided ? round2(won / decided) : null };
 }

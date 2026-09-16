@@ -76,3 +76,12 @@ test('een percentage pas vanaf vijf in de noemer; daaronder alleen de breuk', ()
   assert.equal(presentableRate({ rate: 0.4, denominator: 5 }), 0.4);
   assert.equal(presentableRate({ rate: null, denominator: 0 }), null);
 });
+
+test('win rate: een kans die in de periode gewonnen en daarna verloren werd, telt één keer, als verloren', () => {
+  const o = opportunity({ id: 'x', stage: 'verloren', history: [
+    { stage: 'voorstel', on: '2027-01-05', reason: null },
+    { stage: 'gewonnen', on: '2027-02-01', reason: null },
+    { stage: 'verloren', on: '2027-03-01', reason: 'Toch niet getekend' },
+  ] });
+  assert.deepEqual(winRate([o], Q1), { won: 0, lost: 1, decided: 1, rate: 0 });
+});

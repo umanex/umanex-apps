@@ -4,7 +4,7 @@
  * Geldbedragen tonen gaat via `formatCurrency` / `formatAmount` in `lib/cashflow/recurring.ts` —
  * één notatie voor euro's in de hele app. Hier staan de eenheden die de prognose niet kent.
  */
-import { format, parseISO } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { nlBE } from 'date-fns/locale';
 import type { MonthKey } from '../cashflow/types.ts';
 import type { IsoDate, WeekKey } from './types.ts';
@@ -61,12 +61,17 @@ export function weekLabel(w: WeekKey): string {
 
 /** "di 16 sep" */
 export function dayLabel(d: IsoDate): string {
-  return format(parseISO(d), 'EEEEEE d MMM', { locale: nlBE }).replace(/\./g, '');
+  const datum = parseISO(d);
+  if (!isValid(datum)) return d || '—';
+  return format(datum, 'EEEEEE d MMM', { locale: nlBE }).replace(/\./g, '');
 }
 
 /** "16 september 2026" */
 export function dateLabel(d: IsoDate): string {
-  return format(parseISO(d), 'd MMMM yyyy', { locale: nlBE });
+  // Een onleesbare datum in een opgeslagen document hoort geen pagina te laten crashen.
+  const datum = parseISO(d);
+  if (!isValid(datum)) return d || '—';
+  return format(datum, 'd MMMM yyyy', { locale: nlBE });
 }
 
 /** "sep 2026" */

@@ -3,16 +3,16 @@ import assert from 'node:assert/strict';
 import { emptyInvoiceDraft, invoiceFromDraft, invoiceStatus, ledgerState, projectCash } from './invoice-draft.ts';
 import { invoice, project } from './testing.ts';
 
-test('standaard: 30 dagen termijn, 21 % btw, meteen in de prognose', () => {
+test('standaard: 30 dagen termijn, 21 % btw, een nieuwe post in de prognose', () => {
   assert.deepEqual(emptyInvoiceDraft('2027-01-15'), {
-    label: '', kind: 'termijn', date: '2027-01-15', amountExVat: '', vatRate: '21', dueDate: '2027-02-14', expectedPaymentDate: '', toLedger: true,
+    label: '', kind: 'termijn', date: '2027-01-15', amountExVat: '', vatRate: '21', dueDate: '2027-02-14', expectedPaymentDate: '', ledger: 'nieuw',
   });
 });
 
 test('geldig: Belgische notatie, lege verwachte datum blijft onbekend', () => {
   const r = invoiceFromDraft({ ...emptyInvoiceDraft('2027-01-15'), label: '2027-004', amountExVat: '4.000' });
   assert.equal(r.ok, true);
-  if (r.ok) assert.deepEqual([r.invoice.amountExVat, r.invoice.vatRate, r.invoice.expectedPaymentDate, r.invoice.paidOn, r.toLedger], [4_000, 21, null, null, true]);
+  if (r.ok) assert.deepEqual([r.invoice.amountExVat, r.invoice.vatRate, r.invoice.expectedPaymentDate, r.invoice.paidOn, r.ledger], [4_000, 21, null, null, 'nieuw']);
 });
 
 test('geweigerd: geen omschrijving, bedrag 0, btw buiten 0–100, vervaldatum vóór de factuurdatum', () => {

@@ -22,22 +22,26 @@ export type InvoiceDraft = {
   vatRate: string;
   dueDate: string;
   expectedPaymentDate: string;
-  /** Maak meteen een inkomstenpost in de prognose. */
-  toLedger: boolean;
+  /**
+   * Waar de factuur in de prognose komt: `nieuw` maakt een post, `geen` laat haar erbuiten, en een
+   * post-id koppelt haar aan een post die er al stond — zo telt een met de hand ingevoerde
+   * verwachte inkomst niet dubbel.
+   */
+  ledger: string;
 };
 
 export type InvoiceDraftField = keyof InvoiceDraft;
 
-/** Standaard: vandaag gefactureerd, 30 dagen betaaltermijn, 21 % btw, meteen in de prognose. */
+/** Standaard: vandaag gefactureerd, 30 dagen betaaltermijn, 21 % btw, een nieuwe post in de prognose. */
 export function emptyInvoiceDraft(today: IsoDate): InvoiceDraft {
   return {
     label: '', kind: 'termijn', date: today, amountExVat: '', vatRate: '21',
-    dueDate: format(addDays(parseISO(today), 30), 'yyyy-MM-dd'), expectedPaymentDate: '', toLedger: true,
+    dueDate: format(addDays(parseISO(today), 30), 'yyyy-MM-dd'), expectedPaymentDate: '', ledger: 'nieuw',
   };
 }
 
 export type InvoiceDraftResult =
-  | { ok: true; invoice: Omit<Invoice, 'id' | 'incomeItemId'>; toLedger: boolean }
+  | { ok: true; invoice: Omit<Invoice, 'id' | 'incomeItemId'>; ledger: string }
   | { ok: false; errors: Partial<Record<InvoiceDraftField, string>> };
 
 export function invoiceFromDraft(d: InvoiceDraft): InvoiceDraftResult {
@@ -57,7 +61,7 @@ export function invoiceFromDraft(d: InvoiceDraft): InvoiceDraftResult {
   if (Object.keys(errors).length) return { ok: false, errors };
   return {
     ok: true,
-    toLedger: d.toLedger,
+    ledger: d.ledger,
     invoice: {
       label: d.label.trim(), kind: d.kind, date: d.date, amountExVat: bedrag!, vatRate: btw!, dueDate: d.dueDate,
       expectedPaymentDate: verwacht || null, paidOn: null, paidAmount: null,

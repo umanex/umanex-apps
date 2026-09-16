@@ -182,13 +182,13 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 - **Bevinding:** PR umanex-apps#510 staat op `main` en de hoofdtree is bijgetrokken, maar de PM2-build op `:3000` is niet herbouwd (BUILD_ID `EMR0rSSWzotAa6Cmn-0cg`, 14 sep 22:44). Alle verificatie van Bureau liep op `:3100` met fixtures. Het eerste gebruik op het echte document normaliseert naar store-versie 16 en schrijft bij de eerste wijziging de sleutel `bureau` mee weg.
 - **Check:** `cd apps/cashflow && find app components lib store -newer .next/BUILD_ID | head -1` — een pad = de build loopt achter op de bron.
 - **Volgende zet:** Eerst de dubbele server op `:3000` oplossen (volgend item), dan `pnpm --filter cashflow pm2:rebuild` op `main`, dan `/bureau` en `/` openen zonder iets te wijzigen: rendert Bureau zonder paginafout, en staan de kolomtotalen op `/` zoals gewend? Daarmee sluit het laatste acceptatie-item in `briefings/2026-09-16-feature-bureau.tcebc.md`.
-- **Status:** open
+- **Status:** resolved — 2026-09-16: herbouwd op `main` (BUILD_ID `ARS4gmRY…`), `/bureau` en `/bureau/cash` gezien op het echte document zonder paginafout of consolebericht. De controle vond dat het cash-kopgetal de weektabel volgde (−€ 22.997) in plaats van de maandeinden (nov −€ 7.614); opgelost als D1–D3 in de briefing.
 
 ## 2026-09-16 — Er luisteren twee cashflow-servers op :3000 · [risico]
 - **Bevinding:** Naast PM2 (`next-server` pid 63194, bindt `127.0.0.1:3000`) draait een losse `pnpm start` (pid 63202 → `next-server` 63212, bindt `*:3000` op IPv6), beide gestart op 16 sep 19:55 vanuit `apps/cashflow`. Een browser op `localhost:3000` kan via `::1` bij de losse server uitkomen. Die herstart niet mee met `pm2:rebuild`, dus na een herbouw serveert hij oude chunk-hashes tegen een nieuwe `.next`: witte pagina of `ChunkLoadError`. Niet door deze sessie gestart en niet gestopt.
 - **Check:** `lsof -nP -iTCP:3000 -sTCP:LISTEN | tail -n +2 | wc -l` — meer dan 1 = nog dubbel.
 - **Volgende zet:** Jeroen beslist of de losse `pnpm start` weg mag (hij hoort niet bij PM2, zie `apps/cashflow/CLAUDE.md` → "Niet manueel killen"); daarna pas herbouwen.
-- **Status:** open
+- **Status:** resolved — 2026-09-16: met akkoord van Jeroen de keten `bash -c "cd apps/cashflow && pnpm start"` (63200 → 63201 → 63202 → `next-server` 63212) gestopt; daarna één listener, PM2 op `127.0.0.1:3000`. Wie hem startte is niet vastgesteld.
 
 ## 2026-09-16 — De Storybook-index op :6006 kent Textarea en NativeSelect niet · [next-step]
 - **Bevinding:** De twee componenten staan op `main` met story (PR umanex-apps#505), maar de draaiende Storybook in de hoofdtree gaf een index van 47 entries zonder ze; `stories-find-by-component` antwoordde leeg. Vermoedelijk gestart vóór de pull.

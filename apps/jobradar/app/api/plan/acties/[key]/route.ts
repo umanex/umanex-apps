@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { leesActieDetail, leesPlan } from '@/lib/plan/lees'
-import { ACTIE_VELDEN, keurActieVelden, keurStatusInvoer, keurVersie } from '@/lib/plan/keuring'
+import {
+  ACTIE_VELDEN,
+  STATUS_PARAMETERS,
+  keurActieVelden,
+  keurStatusInvoer,
+  keurVersie,
+} from '@/lib/plan/keuring'
 import { leesInstellingen } from '@/lib/plan/instellingen'
 import { verwijderActie, wijzigActie, wijzigStatus, zetAfhankelijkheden } from '@/lib/plan/mutaties'
 import { antwoord, leesBody, nu, planDb, vandaag } from '@/lib/plan/server'
@@ -35,7 +41,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ke
 
   const heeftStatus = Object.hasOwn(body, 'status')
   const heeftAfhankelijkheden = Object.hasOwn(body, 'afhankelijkheden')
-  const heeftVelden = ACTIE_VELDEN.some((veld) => Object.hasOwn(body, veld))
+  // Bij een statuswissel tellen de velden die bij die wissel horen niet als een tweede
+  // soort wijziging — zie `STATUS_PARAMETERS`.
+  const heeftVelden = ACTIE_VELDEN.some(
+    (veld) =>
+      Object.hasOwn(body, veld) && !(heeftStatus && STATUS_PARAMETERS.includes(veld))
+  )
   if ([heeftStatus, heeftAfhankelijkheden, heeftVelden].filter(Boolean).length > 1) {
     return NextResponse.json(
       { ok: false, error: 'één soort wijziging per verzoek' },

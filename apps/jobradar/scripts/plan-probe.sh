@@ -102,6 +102,11 @@ V=$(versie A01)
 p "12. cirkel maken (verwacht 400)"                 "$(patch A01 '{"afhankelijkheden":["A02"],"versie":'"$V"'}')  reden=$(q error)"
 p "13. onbekende actie (verwacht 404)"              "$(patch A99 '{"status":"bezig","versie":1}')"
 p "14. status én velden mengen (verwacht 400)"      "$(patch A04 '{"status":"bezig","titel":"x","versie":1}')  reden=$(q error)"
+# De tegenhanger: wachtreden hóórt bij een statuswissel en mag wél mee. Zonder dit geval
+# weigerde de meng-controle "zet op wacht op input, met deze reden" — precies wat de UI stuurt.
+CODE14B=$(patch A15 '{"status":"wacht_op_input","wachtreden":"wacht op de cashflow-prompt","versie":1}')
+STATUS14B=$(tel "SELECT status || ' / ' || substr(wachtreden,1,16) FROM plan_actions WHERE key = 'A15';")
+p "14b. status mét zijn eigen wachtreden (verwacht 200)" "$CODE14B  $STATUS14B"
 p "15. seed-actie verwijderen (verwacht 409)"       "$(curl -s -o /tmp/planbody -w '%{http_code}' -X DELETE "$B/api/plan/acties/A01")  reden=$(q error)"
 p "16. idee toevoegen"                              "$(curl -s -o /tmp/planbody -w '%{http_code}' -X POST "$B/api/plan/ideeen" -H 'content-type: application/json' -d '{"titel":"Nieuwsbrief"}')  telt niet mee: $(tel 'SELECT count(*) FROM plan_actions;') acties"
 p "17. idee opnemen zonder prioriteit (400)"        "$(curl -s -o /tmp/planbody -w '%{http_code}' -X PATCH "$B/api/plan/ideeen/1" -H 'content-type: application/json' -d '{"status":"opgenomen"}')  reden=$(q error)"

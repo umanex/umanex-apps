@@ -5,8 +5,13 @@ import { Badge } from '@umanex/ui/components/ui/badge'
 import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
-import { PlanStatusPill } from './PlanStatusPill'
-import { ACTIE_STATUSSEN, STATUS_LABEL, type ActieStatus, type ActieWeergave } from '@/lib/plan/types'
+import {
+  ACTIE_STATUSSEN,
+  STATUS_KLEUR,
+  STATUS_LABEL,
+  type ActieStatus,
+  type ActieWeergave,
+} from '@/lib/plan/types'
 
 type ActieRijProps = {
   actie: ActieWeergave
@@ -61,7 +66,6 @@ export function ActieRij({
             >
               {actie.titel}
             </button>
-            <PlanStatusPill status={actie.status as ActieStatus} />
             {actie.signalen.map((s) => (
               <Badge
                 key={`${s.soort}-${s.key}`}
@@ -155,13 +159,17 @@ export function ActieRij({
           <span className="tabular-nums">
             {actie.inzet.uren === null ? 'inzet onbekend' : actie.inzet.tekst}
           </span>
+          {/* De select ís de statusweergave, met de rol als kleur — zelfde vorm als
+              `StatusDropdown` op het dashboard. Een pil ernaast toonde hetzelfde woord twee
+              keer; dat stond er even en viel op in de eerste opname. */}
           <select
             aria-label={`Status van ${actie.key}`}
             value={actie.status}
             disabled={bezig}
             onChange={(e) => onStatus(actie.key, e.target.value as ActieStatus)}
             className={cn(
-              'cursor-pointer rounded-sm border-none bg-transparent text-xs disabled:opacity-50',
+              'cursor-pointer rounded-sm border-none bg-transparent text-xs font-medium disabled:opacity-50',
+              STATUS_KLEUR[actie.status as ActieStatus],
               focusRing
             )}
           >

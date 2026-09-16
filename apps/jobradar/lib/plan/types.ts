@@ -41,6 +41,22 @@ export const STATUS_LABEL_INLINE: Record<ActieStatus, string> = {
   vervallen: 'vervallen',
 }
 
+/**
+ * De kleur van een status in een `select`.
+ *
+ * Zelfde vorm als `StatusDropdown` op het dashboard: de select ís de statusweergave, met de
+ * rol als kleur. Een pil ernaast zou hetzelfde woord een tweede keer tonen — en dat stond er
+ * even, tot de eerste opname het liet zien.
+ */
+export const STATUS_KLEUR: Record<ActieStatus, string> = {
+  niet_gestart: 'text-muted-foreground',
+  bezig: 'text-primary',
+  wacht_op_input: 'text-warning',
+  gereed: 'text-success',
+  uitgesteld: 'text-muted-foreground',
+  vervallen: 'text-muted-foreground opacity-60',
+}
+
 export const PRIORITEITEN: readonly Prioriteit[] = [1, 2, 3, 4] as const
 
 /**

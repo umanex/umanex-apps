@@ -351,6 +351,23 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
                   onStatus={wijzigStatus}
                 />
 
+                {/* Wacht op input hoort hier, tussen beschikbaar en geblokkeerd. Zonder deze
+                    groep valt een actie in die status uit élke overzichtslijst — niet bezig,
+                    niet beschikbaar, niet geblokkeerd, niet uitgesteld — en verdwijnt hij
+                    stil uit het scherm dat zegt wat er te doen is. Gemeten in de eerste
+                    opname: A09 was nergens te zien. */}
+                <ActieGroep
+                  titel="Wacht op input"
+                  telling={String(plan.overzicht.wacht.length)}
+                  acties={lijst(plan.overzicht.wacht)}
+                  variant="uitgesteld"
+                  leeg="Niets wacht op input van iemand anders."
+                  vandaag={vandaag}
+                  bezig={bezig}
+                  onOpen={setOpenActie}
+                  onStatus={wijzigStatus}
+                />
+
                 <ActieGroep
                   titel="Geblokkeerd"
                   telling={String(plan.overzicht.geblokkeerd.length)}

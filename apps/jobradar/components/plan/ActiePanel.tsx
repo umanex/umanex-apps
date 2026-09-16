@@ -15,11 +15,11 @@ import { Button } from '@umanex/ui/components/ui/button'
 import { Label } from '@umanex/ui/components/ui/label'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
-import { PlanStatusPill } from './PlanStatusPill'
 import { formatteerInzet } from '@/lib/plan/inzet'
 import { PRIORITEIT_LABEL } from '@/lib/plan/seed-inhoud'
 import {
   ACTIE_STATUSSEN,
+  STATUS_KLEUR,
   STATUS_LABEL,
   type ActieDetail,
   type ActieStatus,
@@ -194,7 +194,6 @@ export function ActiePanel({
         <section className="space-y-2">
           <h3 className="text-sm font-semibold">Status</h3>
           <div className="flex flex-wrap items-center gap-2">
-            <PlanStatusPill status={actie.status as ActieStatus} />
             <select
               aria-label="Status wijzigen"
               value={actie.status}
@@ -209,7 +208,12 @@ export function ActiePanel({
                   zetStatus(s)
                 }
               }}
-              className={cn('cursor-pointer', INVOER, 'cursor-pointer', focusRing)}
+              className={cn(
+                'cursor-pointer font-medium',
+                INVOER,
+                STATUS_KLEUR[actie.status as ActieStatus],
+                focusRing
+              )}
             >
               {ACTIE_STATUSSEN.filter((s) => s !== 'gereed' || actie.status === 'gereed').map((s) => (
                 <option key={s} value={s}>
@@ -377,7 +381,7 @@ export function ActiePanel({
         <section className="space-y-2 border-t pt-4">
           <h3 className="text-sm font-semibold">Inzet en planning</h3>
           <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label htmlFor="plan-inschatting" className="text-2xs">
                 Inschatting (uren)
               </Label>
@@ -395,7 +399,7 @@ export function ActiePanel({
             <span className="pb-1 text-sm tabular-nums text-muted-foreground">
               {dagen(inschatting)}
             </span>
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label htmlFor="plan-resterend" className="text-2xs">
                 Nog te gaan (uren)
               </Label>
@@ -418,7 +422,7 @@ export function ActiePanel({
             Leeg is onbekend — beter dan een gok. Nul uren bestaat niet en wordt geweigerd.
           </p>
           <div className="flex flex-wrap gap-3">
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label htmlFor="plan-eigenaar" className="text-2xs">
                 Eigenaar
               </Label>
@@ -432,7 +436,7 @@ export function ActiePanel({
                 className={cn('w-40', INVOER, focusRing)}
               />
             </div>
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label htmlFor="plan-streefdatum" className="text-2xs">
                 Streefdatum (optioneel)
               </Label>
@@ -445,7 +449,7 @@ export function ActiePanel({
                 className={cn(INVOER, DATUM_RING, focusRing)}
               />
             </div>
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label htmlFor="plan-herbekijk" className="text-2xs">
                 Herbekijken op (optioneel)
               </Label>

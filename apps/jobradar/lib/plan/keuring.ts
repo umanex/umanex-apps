@@ -40,6 +40,20 @@ export const ACTIE_VELDEN = [
 ] as const
 export type ActieVeld = (typeof ACTIE_VELDEN)[number]
 
+/**
+ * Velden die bij een statuswissel hóren en dus géén aparte bewerking zijn.
+ *
+ * `wachtreden` en `herbekijkOp` staan óók in `ACTIE_VELDEN` — je kan ze los bewerken — maar
+ * bij "uitstellen" zijn ze deel van diezelfde handeling: uitstellen zonder aanleiding wordt
+ * geweigerd, dus hem in een tweede verzoek sturen kán niet. `links` idem bij het afronden:
+ * de link naar het bewijs komt mee met het bewijs.
+ *
+ * Zonder deze lijst weigerde de meng-controle "zet op wacht op input, met deze reden" als
+ * twee soorten wijziging — en dat is precies wat de UI stuurt. Gemeten in de eerste opname:
+ * A09 bleef stil op "niet gestart" staan.
+ */
+export const STATUS_PARAMETERS: readonly string[] = ['wachtreden', 'herbekijkOp', 'links']
+
 export type ActieVelden = {
   titel: string
   beschrijving: string | null

@@ -30,23 +30,35 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | BureauSubnav | `apps/cashflow/components/bureau/BureauSubnav.tsx` | bureau | — | — | — |
 | CapacityBar | `apps/cashflow/components/bureau/CapacityBar.tsx` | bureau | — | — | — |
 | CapacitySummary | `apps/cashflow/components/bureau/CapacitySummary.tsx` | bureau | — | — | — |
+| ConversionPanel | `apps/cashflow/components/bureau/ConversionPanel.tsx` | bureau | — | — | — |
 | ExtensionList | `apps/cashflow/components/bureau/ExtensionList.tsx` | bureau | — | — | — |
 | ExternalCostList | `apps/cashflow/components/bureau/ExternalCostList.tsx` | bureau | — | — | — |
 | NumberField | `apps/cashflow/components/bureau/fields/NumberField.tsx` | fields | — | — | — |
 | SelectField | `apps/cashflow/components/bureau/fields/SelectField.tsx` | fields | — | — | — |
 | TextareaField | `apps/cashflow/components/bureau/fields/TextareaField.tsx` | fields | — | — | — |
 | TextField | `apps/cashflow/components/bureau/fields/TextField.tsx` | fields | — | — | — |
+| FollowUpList | `apps/cashflow/components/bureau/FollowUpList.tsx` | bureau | — | — | — |
 | FormSection | `apps/cashflow/components/bureau/FormSection.tsx` | bureau | — | — | — |
 | GoalsForm | `apps/cashflow/components/bureau/GoalsForm.tsx` | bureau | — | — | — |
 | MetricValue | `apps/cashflow/components/bureau/MetricValue.tsx` | bureau | — | — | — |
 | MilestoneList | `apps/cashflow/components/bureau/MilestoneList.tsx` | bureau | — | — | — |
 | MilestoneRow | `apps/cashflow/components/bureau/MilestoneRow.tsx` | bureau | — | — | — |
+| OpportunityDetail | `apps/cashflow/components/bureau/OpportunityDetail.tsx` | bureau | — | — | — |
+| OpportunityForm | `apps/cashflow/components/bureau/OpportunityForm.tsx` | bureau | — | — | — |
+| OpportunityList | `apps/cashflow/components/bureau/OpportunityList.tsx` | bureau | — | — | — |
+| OpportunityRow | `apps/cashflow/components/bureau/OpportunityRow.tsx` | bureau | — | — | — |
+| OpportunitySheet | `apps/cashflow/components/bureau/OpportunitySheet.tsx` | bureau | — | — | — |
+| PipelineLine | `apps/cashflow/components/bureau/PipelineLine.tsx` | bureau | — | — | — |
 | PlanningPanel | `apps/cashflow/components/bureau/PlanningPanel.tsx` | bureau | — | — | — |
 | ProjectForm | `apps/cashflow/components/bureau/ProjectForm.tsx` | bureau | — | — | — |
 | ProjectSheet | `apps/cashflow/components/bureau/ProjectSheet.tsx` | bureau | — | — | — |
 | ProjectStatusBadge | `apps/cashflow/components/bureau/ProjectStatusBadge.tsx` | bureau | — | — | — |
 | ProjectTable | `apps/cashflow/components/bureau/ProjectTable.tsx` | bureau | — | — | — |
+| QualificationChecklist | `apps/cashflow/components/bureau/QualificationChecklist.tsx` | bureau | — | — | — |
 | QuickTimeEntry | `apps/cashflow/components/bureau/QuickTimeEntry.tsx` | bureau | — | — | — |
+| SalesFunnel | `apps/cashflow/components/bureau/SalesFunnel.tsx` | bureau | — | — | — |
+| StageChangeForm | `apps/cashflow/components/bureau/StageChangeForm.tsx` | bureau | — | — | — |
+| StageHistory | `apps/cashflow/components/bureau/StageHistory.tsx` | bureau | — | — | — |
 | SumLine | `apps/cashflow/components/bureau/SumLine.tsx` | bureau | — | — | — |
 | TimeEntryRow | `apps/cashflow/components/bureau/TimeEntryRow.tsx` | bureau | — | — | — |
 | WeekList | `apps/cashflow/components/bureau/WeekList.tsx` | bureau | — | — | — |
@@ -77,16 +89,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+96d3086 test(cashflow): harness coverage for projects and time, and a keyboard pass that sees past a date field
 7a4070c feat(cashflow): time — quick entry, capacity per year and week, and planning of remaining work
 056bfa5 feat(cashflow): projects — list, sheet and detail with milestones, extensions and external costs
 40d19f9 Merge remote-tracking branch 'origin/feature/ui-textarea-native-select' into feature/cashflow-bureau-ui
 e994db9 feat(cashflow): revenue per fiscal year from milestones, and project yield A and B
-7552a2e feat(cashflow): the bureau shell and the goals page
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/scripts/a11y-passes.mjs
-  M  apps/cashflow/scripts/flow-harness.mjs
+   M apps/cashflow/components/bureau/fields/TextareaField.tsx
+  A  apps/cashflow/lib/bureau/opportunity-draft.test.ts
+  A  apps/cashflow/lib/bureau/opportunity-draft.ts
+  A  apps/cashflow/lib/bureau/pipeline.test.ts
+  A  apps/cashflow/lib/bureau/pipeline.ts
+   M apps/cashflow/scripts/flow-harness.mjs
+  ?? apps/cashflow/app/bureau/verkoop/
+  ?? apps/cashflow/components/bureau/ConversionPanel.tsx
+  ?? apps/cashflow/components/bureau/FollowUpList.tsx
+  ?? apps/cashflow/components/bureau/OpportunityDetail.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

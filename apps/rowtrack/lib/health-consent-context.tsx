@@ -3,6 +3,7 @@ import { useAuth } from './auth-context';
 import { supabase } from './supabase';
 import { reportError } from './monitoring';
 import { stripHealthDataFromQueue } from './pendingWorkout';
+import { stripHealthDataFromCheckpoint } from './activeWorkoutStore';
 
 /**
  * Toestemming voor gezondheidsgegevens (AVG art. 9.2.a) — hartslag, gewicht,
@@ -109,6 +110,9 @@ export function HealthConsentProvider({ children }: { children: React.ReactNode 
     // review F4). Pas ná een geslaagde RPC, zodat een mislukte intrekking geen data wist die
     // server-side gewoon blijft staan.
     await stripHealthDataFromQueue();
+    // Ook het herstelpunt van een lopende of onderbroken rit: dat draagt de hartslag per
+    // seconde, en het staat onversleuteld op het toestel.
+    await stripHealthDataFromCheckpoint();
     setConsent('declined');
     return true;
   }, [user]);

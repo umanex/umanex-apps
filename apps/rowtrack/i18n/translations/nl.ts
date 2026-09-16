@@ -163,6 +163,14 @@ export const nl = {
     // Alleen wanneer de rit NERGENS staat — niet op de server en niet op het toestel. Een rit
     // die netjes in de wachtrij staat is geen fout maar gewoon offline zijn, en die krijgt
     // geen melding. Vandaar ook de belofte in de tweede zin: hij is echt niet bewaard.
+    // De vraag na een crash of een geforceerde afsluiting. Geen "herstellen": je roeit niet
+    // verder, je rondt af wat er al stond. De afstand en duur staan in de tekst zodat je kunt
+    // zien of het de rit is die je bedoelt.
+    recoverTitle: 'Onderbroken training gevonden',
+    recoverBody: (afstand: string, duur: string) =>
+      `Er stond nog een training van ${afstand} in ${duur} open. Wil je die bewaren?`,
+    recoverSave: 'Bewaren',
+    recoverDiscard: 'Weggooien',
     saveFailedTitle: 'Training niet bewaard',
     saveFailedBody:
       'Je training kon niet opgeslagen worden, ook niet op dit toestel. Probeer het opnieuw — sluit de app niet af.',

@@ -19,9 +19,17 @@ import { useGoalProgress } from '@/lib/hooks/useGoalProgress';
 import { isWorthSaving } from '@/lib/storableWorkout';
 import { buildWorkoutRow } from '@/lib/workoutRow';
 import { mean } from '@/lib/sessionAccumulator';
+import { saveCheckpoint, loadCheckpoint, clearCheckpoint } from '@/lib/activeWorkoutStore';
+import {
+  checkpointSummary,
+  checkpointToRowInput,
+  isWorthRecovering,
+  shouldWriteCheckpoint,
+} from '@/lib/workoutCheckpoint';
 import { type PrEntry } from '@/lib/personalRecords';
 import { IdlePhase } from '@/components/workout/IdlePhase';
 import { ActivePhase } from '@/components/workout/ActivePhase';
+import { formatDistanceDynamic, formatTimer } from '@/lib/formatters';
 import { t } from '@/i18n';
 
 if (Platform.OS === 'android') {
@@ -67,6 +75,10 @@ export default function WorkoutScreen() {
   // Einde-van-rit guards: rit exact één keer opslaan, doel-einde exact één keer afhandelen.
   const savedRef = useRef(false);
   const goalEndedRef = useRef(false);
+  /** De toestelseconde waarop het laatste herstelpunt geschreven is; -1 = nog geen. */
+  const lastCheckpointRef = useRef(-1);
+  /** Eén herstelvraag per keer — een tweede focus mag er geen tweede alert bovenop zetten. */
+  const recoveryAskedRef = useRef(false);
 
   // Hier stond een effect dat `goal` terugschreef naar de vier idle-velden. Het was een
   // no-op-lus: `handleStart` bouwt `goal` uit exact die velden, dus het effect schreef er
@@ -105,6 +117,34 @@ export default function WorkoutScreen() {
     // Already connected — no startScan needed
     setPhase('active');
   }, [status, fetchPRs, resetAll, resetGameState, idleGoalType, idleDurMin, idleDurSec, idleGoalInput]);
+
+  /**
+   * Schrijft periodiek een herstelpunt weg tijdens de rit.
+   *
+   * Zonder dit leefden de fase, de metingen en de tijdreeks uitsluitend in het geheugen: na een
+   * crash of een geforceerde afsluiting begon de app weer in idle en was er niets — geen rit,
+   * geen vraag, geen spoor (functionele review F5).
+   *
+   * Op TOESTELseconden en niet op de wandklok: de erg bevriest zijn klok bij een pauze, dus
+   * tijdens een pauze verandert er niets en hoeft er niets geschreven te worden. De cadans
+   * bepaalt wat je bij een crash hoogstens kwijt bent.
+   */
+  useEffect(() => {
+    if (phase !== 'active' || !user) return;
+    const s = session.current;
+    if (!shouldWriteCheckpoint(lastCheckpointRef.current, s.seconds)) return;
+    lastCheckpointRef.current = s.seconds;
+    void saveCheckpoint({
+      userId: user.id,
+      startedAt: s.startedAt?.toISOString() ?? new Date().toISOString(),
+      session: s,
+      goal,
+      goalReached,
+      splits,
+      healthGranted,
+      prBaseline: prBaseline.current,
+    });
+  }, [phase, user, metricsState.seconds, session, goal, goalReached, splits, healthGranted, prBaseline]);
 
   /**
    * Legt de rit lokaal vast en probeert hem daarna naar Supabase te schrijven — in die
@@ -179,6 +219,8 @@ export default function WorkoutScreen() {
     if (!isWorthSaving(metricsState.distanceMeters, metricsState.seconds)) {
       // savedRef tóch zetten: de beslissing is genomen, en een retry zou hem herhalen.
       savedRef.current = true;
+      // En het herstelpunt weg: er valt niets te herstellen wat niet bewaard mag worden.
+      void clearCheckpoint();
       return;
     }
     savedRef.current = true;
@@ -218,8 +260,62 @@ export default function WorkoutScreen() {
     });
 
     setPrEntries(entries);
+    // Het herstelpunt heeft zijn werk gedaan zodra de rit in de wachtrij staat: vanaf dat
+    // moment is de wachtrij de plek die hem bewaart, en twee bronnen voor één rit zouden hem
+    // twee keer kunnen aanbieden.
     await syncWorkout(row);
+    await clearCheckpoint();
   }, [user, metricsState, goal, goalReached, splits, session, prBaseline, healthGranted, syncWorkout]);
+
+  /**
+   * Biedt een onderbroken rit aan zodra het trainingsscherm in idle staat.
+   *
+   * Bewaren loopt langs exact hetzelfde pad als een gewone afronding — dezelfde rij-bouwer,
+   * dezelfde wachtrij, dezelfde unieke index — dus een herstelde rit kan niet anders in de
+   * database landen dan een rit die gewoon is afgerond. Stond hij er al, dan geeft de insert
+   * een unique violation en is dat precies het signaal dat hij klaar is.
+   *
+   * Een native `Alert` en geen ontworpen scherm: dit is een vraag met twee antwoorden op een
+   * moment dat er niets te tonen valt, en hij valt daarmee buiten de Figma-keten.
+   */
+  useEffect(() => {
+    if (phase !== 'idle' || !user || recoveryAskedRef.current) return;
+    recoveryAskedRef.current = true;
+
+    void (async () => {
+      const cp = await loadCheckpoint();
+      if (!isWorthRecovering(cp, user.id)) {
+        // Niets bruikbaars — en dan ook geen restje laten staan dat elke start opnieuw
+        // bekeken wordt.
+        if (cp) await clearCheckpoint();
+        return;
+      }
+
+      const { distanceMeters, seconds } = checkpointSummary(cp);
+      const afstand = formatDistanceDynamic(distanceMeters);
+      Alert.alert(
+        t.workout.recoverTitle,
+        t.workout.recoverBody(`${afstand.value} ${afstand.unit}`, formatTimer(seconds)),
+        [
+          {
+            text: t.workout.recoverDiscard,
+            style: 'destructive',
+            onPress: () => { void clearCheckpoint(); },
+          },
+          {
+            text: t.workout.recoverSave,
+            onPress: () => {
+              void (async () => {
+                const { row } = buildWorkoutRow(checkpointToRowInput(cp));
+                await syncWorkout(row);
+                await clearCheckpoint();
+              })();
+            },
+          },
+        ],
+      );
+    })();
+  }, [phase, user, syncWorkout]);
 
   // Bij het openen van dit scherm verbinden met de toestellen van vorige keer.
   // Alleen in de idle-fase: tijdens een rit staat er al een verbinding, en op de

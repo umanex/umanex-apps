@@ -70,21 +70,20 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+df9f602 refactor(rowtrack): one session accumulator, and counter resets survive a reconnect
 bfc2509 fix(rowtrack): gate heart rate on consent at the source
 148a5b1 fix(rowtrack): store a finished ride locally before sending it
 1c4b71d refactor(rowtrack): one builder for the workout row, testable on its own
 b83872a chore(rowtrack): move the blind-spot baseline to 47 stories
-5753de4 fix(rowtrack): personal records over the full history, not the last hundred rides
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
-  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
-  A  apps/rowtrack/lib/sessionAccumulator.test.ts
-  A  apps/rowtrack/lib/sessionAccumulator.ts
-  M  apps/rowtrack/lib/workoutRow.ts
-  M  apps/rowtrack/scripts/check-averages.mjs
+  M  apps/rowtrack/i18n/translations/nl.ts
+  A  apps/rowtrack/lib/activeWorkoutStore.ts
+  M  apps/rowtrack/lib/health-consent-context.tsx
+  A  apps/rowtrack/lib/workoutCheckpoint.test.ts
+  A  apps/rowtrack/lib/workoutCheckpoint.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

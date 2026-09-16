@@ -70,16 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+d674a6f docs: close the session after the /doctor pass — triage eight stale handoff items, record the follow-ups
 4584f68 docs: trim derivable and duplicated CLAUDE.md content, move the Storybook-MCP notes to packages/ui
 b52c768 docs(rowtrack): close what series A finished, record what the review leaves open
 26b3433 fix(rowtrack): a pace or power goal is an intensity, not a finish line
 3612c3b feat(rowtrack): save an interrupted ride from its checkpoint
-df9f602 refactor(rowtrack): one session accumulator, and counter resets survive a reconnect
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/LEARNINGS.md
 
 ## Bestanden met TODO/FIXME
   (geen)

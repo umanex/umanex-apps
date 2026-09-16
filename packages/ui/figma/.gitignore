@@ -1,0 +1,5 @@
+# De ongesnoeide meting van scripts/figma/build-spec.mjs: invoer van build-prune.mjs, niet van
+# de builder of de guards. Die lezen build-spec.min.json, dat wél gecommit wordt.
+build-spec.json
+# Het verslag van figma/toets-batch.js per bouwronde — een meting van dat moment, geen artefact.
+toets-*.json

@@ -1,0 +1,15 @@
+{
+ "$comment": "GEGENEREERD door scripts/figma/build-prune.mjs. Herkomst van elke laagnaam in de gesnoeide boom. `heuristiek` = een element zonder data-slot; hoort op 0.",
+ "nodes": 19,
+ "perBron": {
+  "component": 5,
+  "slot": 11,
+  "label": 2,
+  "icon": 1,
+  "spacer": 0,
+  "heuristiek": 0
+ },
+ "heuristiek": [],
+ "indexNamen": 0,
+ "copyNamen": 0
+}

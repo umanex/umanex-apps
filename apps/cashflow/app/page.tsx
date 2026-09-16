@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { useMonths, useEarliestDataMonth, useCashflowActions, useAutoCloseMonth } from '../hooks/useCashflow';
+import { useMonths, useEarliestDataMonth, useCashflowActions } from '../hooks/useCashflow';
 import { useCashflowStore } from '../store/cashflow';
 import { getCurrentMonthKey } from '../lib/cashflow/recurring';
 import { buildSnapshot } from '../lib/cashflow/snapshot';
@@ -14,8 +13,7 @@ import { ReservationSidepanel } from '../components/cashflow/ReservationSidepane
 import { ReservationPaymentModal } from '../components/cashflow/ReservationPaymentModal';
 import { RepeatMonthModal } from '../components/cashflow/RepeatMonthModal';
 import { MonthNavigator } from '../components/cashflow/MonthNavigator';
-import { SyncStatus } from '../components/feedback/SyncStatus';
-import { SignOutButton } from '../components/auth/SignOutButton';
+import { AppHeader } from '../components/layout/AppHeader';
 import type { MonthKey, ReservationPotType } from '../lib/cashflow/types';
 
 export default function Page() {
@@ -25,7 +23,8 @@ export default function Page() {
   const anchorMonth = useCashflowStore((s) => s.anchorMonth);
   const { setAnchorMonth, closeMonth, reopenMonth } = useCashflowActions();
   const monthSnapshots = useCashflowStore((s) => s.monthSnapshots);
-  useAutoCloseMonth();
+  // De automatische maandafsluiting draait sinds de uitbreiding met het bureau in
+  // `SessionEffects` (via DataGate), zodat ze ook loopt als je op een andere route binnenkomt.
   const earliestMonth = useEarliestDataMonth();
   // Een voorbije maand is nog geen historie: zolang er geen snapshot is, wordt hij
   // opnieuw doorgerekend uit de huidige gegevens. Dat moet zichtbaar zijn.
@@ -40,38 +39,27 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Cashflow prognose</h1>
-        <div className="flex items-center gap-2 flex-wrap">
-          <SyncStatus />
-          <MonthNavigator
-            anchorMonth={anchorMonth}
-            earliestMonth={earliestMonth}
-            currentMonth={currentMonth}
-            monthCount={3}
-            onNavigate={setAnchorMonth}
-          />
-          <button
-            onClick={() => setRecurringOpen(true)}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
-          >
-            Vaste uitgaven
-          </button>
-          <button
-            onClick={() => setReservationOpen(true)}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
-          >
-            Spaarpotten
-          </button>
-          <Link
-            href="/analyse"
-            className="inline-flex items-center h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
-          >
-            Analyse
-          </Link>
-          <SignOutButton />
-        </div>
-      </header>
+      <AppHeader title="Cashflow prognose">
+        <MonthNavigator
+          anchorMonth={anchorMonth}
+          earliestMonth={earliestMonth}
+          currentMonth={currentMonth}
+          monthCount={3}
+          onNavigate={setAnchorMonth}
+        />
+        <button
+          onClick={() => setRecurringOpen(true)}
+          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
+        >
+          Vaste uitgaven
+        </button>
+        <button
+          onClick={() => setReservationOpen(true)}
+          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
+        >
+          Spaarpotten
+        </button>
+      </AppHeader>
 
       {/* Vaste hoogte: elke kolom scrollt binnen zichzelf, zodat de drie saldo-footers
           op één horizontale lijn blijven staan. */}

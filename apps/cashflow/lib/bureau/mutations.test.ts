@@ -9,6 +9,7 @@ import {
   addMonthlyMilestones,
   addTimeEntry,
   convertOpportunity,
+  linkInvoiceToExistingIncome,
   linkInvoiceToLedger,
   markInvoicePaid,
   moveOpportunityStage,
@@ -171,8 +172,47 @@ test('een uitbreiding intrekken neemt haar mijlpalen mee, de andere niet', () =>
       { id: 'm2', label: 'Extra', plannedMonth: '2027-05', amount: 3_000, realizedOn: null, realizedAmount: null, extensionId: 'x1' },
     ],
   }));
-  removeExtension(d, 'p1', 'x1');
+  assert.equal(removeExtension(d, 'p1', 'x1'), 'ok');
   assert.deepEqual(d.bureau.projects[0]?.milestones.map((m) => m.id), ['m1']);
+});
+
+test('een uitbreiding met een gerealiseerde mijlpaal intrekken wordt geweigerd — geleverde omzet blijft', () => {
+  const d = draft();
+  d.bureau.projects.push(project({
+    id: 'p1',
+    extensions: [{ id: 'x1', label: 'Extra', approvedOn: '2027-01-10', amount: 5_000, extraBudgetedHours: null }],
+    milestones: [{ id: 'm2', label: 'Extra', plannedMonth: '2027-04', amount: 5_000, realizedOn: '2027-04-20', realizedAmount: null, extensionId: 'x1' }],
+  }));
+  assert.equal(removeExtension(d, 'p1', 'x1'), 'heeft-gerealiseerd');
+  assert.equal(d.bureau.projects[0]?.extensions.length, 1);
+  assert.equal(d.bureau.projects[0]?.milestones.length, 1);
+});
+
+test('een post komt nooit in een voorbije maand: een datum in het verleden zet hem in de huidige', () => {
+  const d = withProject();
+  addInvoice(d, 'p1', invoice({ id: 'f1', date: '2027-01-05', dueDate: '2027-02-04' }), { incomeItemId: 'i1', label: 'F', notBefore: '2027-03' });
+  assert.equal(d.incomeItems[0]?.monthKey, '2027-03');
+  updateInvoice(d, 'p1', 'f1', { expectedPaymentDate: '2027-01-15' }, '2027-03');
+  assert.equal(d.incomeItems[0]?.monthKey, '2027-03', 'een verwachte datum in het verleden verplaatst de post niet naar januari');
+  updateInvoice(d, 'p1', 'f1', { expectedPaymentDate: '2027-05-15' }, '2027-03');
+  assert.equal(d.incomeItems[0]?.monthKey, '2027-05');
+  markInvoicePaid(d, 'p1', 'f1', '2027-03-10', 4_840);
+  unmarkInvoicePaid(d, 'p1', 'f1', { incomeItemId: 'i2', label: 'F', notBefore: '2027-06' });
+  assert.equal(d.incomeItems.find((i) => i.id === 'i2')?.monthKey, '2027-06');
+});
+
+test('koppelen aan een bestaande post: geen tweede post, en een post hangt aan hoogstens één factuur', () => {
+  const d = withProject();
+  d.incomeItems.push({ id: 'hand', monthKey: '2027-04', label: 'Vonk termijn (met de hand)', amount: 1_210, received: false });
+  addInvoice(d, 'p1', invoice({ id: 'f1', amountExVat: 1_000 }), null);
+  addInvoice(d, 'p1', invoice({ id: 'f2', amountExVat: 1_000 }), null);
+  assert.equal(linkInvoiceToExistingIncome(d, 'p1', 'f1', 'hand'), 'ok');
+  assert.equal(d.incomeItems.length, 1);
+  assert.equal(linkInvoiceToExistingIncome(d, 'p1', 'f2', 'hand'), 'post-bezet');
+  assert.equal(linkInvoiceToExistingIncome(d, 'p1', 'f1', 'hand'), 'al-gekoppeld');
+  assert.equal(linkInvoiceToExistingIncome(d, 'p1', 'f2', 'bestaat-niet'), 'geen-post');
+  assert.equal(markInvoicePaid(d, 'p1', 'f1', '2027-04-10', 1_210), 'verwijderd');
+  assert.equal(d.incomeItems.length, 0, 'betaald haalt de gekoppelde post weg, zoals bij een aangemaakte');
 });
 
 test('een project met uren kan niet weg; zonder uren gaat het weg mét planning en posten, en de kans verliest zijn verwijzing', () => {

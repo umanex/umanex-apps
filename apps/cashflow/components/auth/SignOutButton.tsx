@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@umanex/ui/lib/utils';
+import { focusRing } from '@umanex/ui/lib/focus';
 import { supabase } from '../../lib/supabase/client';
 import { flushSync } from '../../lib/cashflow/sync';
 
@@ -21,7 +23,10 @@ export function SignOutButton() {
     <button
       onClick={onClick}
       disabled={busy}
-      className="inline-flex items-center h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60"
+      className={cn(
+        'inline-flex items-center h-9 px-3 sm:px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60',
+        focusRing,
+      )}
     >
       {busy ? 'Bezig…' : 'Uitloggen'}
     </button>

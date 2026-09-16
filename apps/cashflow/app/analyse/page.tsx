@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useMonths } from '../../hooks/useCashflow';
+import { AppHeader } from '../../components/layout/AppHeader';
 import { useCashflowStore } from '../../store/cashflow';
 import { getCurrentMonthKey } from '../../lib/cashflow/recurring';
 import { bufferSeries, computeRunway } from '../../lib/cashflow/analysis';
@@ -23,15 +23,7 @@ export default function AnalysePage() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Analyse</h1>
-        <Link
-          href="/"
-          className="inline-flex items-center h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors"
-        >
-          Naar de prognose
-        </Link>
-      </header>
+      <AppHeader title="Analyse" />
 
       <div className="space-y-5">
         <RunwayCard runway={runway} />

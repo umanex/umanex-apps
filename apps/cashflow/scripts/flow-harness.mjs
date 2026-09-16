@@ -41,14 +41,16 @@
  * (`--dist=.next`, wat CI doet met de build van de stap ervoor).
  */
 import { chromium } from 'playwright';
+import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { beoordeel, beschrijfFout, meetInPagina, STIL_CSS } from './contrast.mjs';
 import { kiesDist } from './harness-dist.mjs';
+import { horizontaleOverflow, kopstructuur, toetsenbord } from './a11y-passes.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = resolve(HERE, '..');
@@ -56,6 +58,8 @@ const require_ = createRequire(import.meta.url);
 
 const args = process.argv.slice(2);
 const SELFTEST = args.includes('--selftest');
+/** `--screenshots=<map>`: geen scenario's, maar schermafbeeldingen van elke bureau-route in drie standen. */
+const SCREENSHOTS = args.find((a) => a.startsWith('--screenshots='))?.slice('--screenshots='.length) ?? null;
 const HEADED = args.includes('--headed');
 // Gezet door de signaalhandler in main(): een onderbroken run eindigt met 130/143, niet met 1.
 let onderbroken = null;
@@ -108,7 +112,201 @@ const DOEL = monthKey(1);
  * mislukte fetch, en het hoort ook iets anders te tonen: lege staten per sectie in
  * plaats van een foutscherm.
  */
-function fixtureData({ leeg = false, buffer = false } = {}) {
+/**
+ * Het bureau-deel van de fixture. Zonder variant ontbreekt de sleutel helemaal — dat is een
+ * document van vóór store-versie 16, en precies het geval dat `normalizeBureau` moet dragen.
+ */
+const JAAR = Number(BRON.slice(0, 4));
+
+function bureauFixture(variant) {
+  if (!variant) return undefined;
+  const doelen = {
+    [String(JAAR)]: {
+      year: JAAR, revenueTarget: 120000, quarterTargets: [30000, 30000, 30000, 30000],
+      days: { total: 200, buffer: 10, perCategory: { klantwerk: 128, verkoop: 40, 'umanex-os': 12, administratie: 10 } },
+      hoursPerDay: 8, daysPerWeek: 5, maxClientShare: 0.3, monthlyCashNeed: 11000,
+      targetRevenuePerDay: null, targetMarginPerDay: null,
+      signals: {
+        negativeCash: { enabled: true, floor: 0 }, overbooking: { enabled: true, toleranceDays: 0 },
+        projectOverrun: { enabled: true, ratio: 1 }, clientConcentration: { enabled: true },
+        overdueSalesAction: { enabled: true, graceDays: 0 }, revenueGap: { enabled: true },
+      },
+    },
+  };
+  if (variant === 'doelen') {
+    return { goals: doelen, clients: [], clientGroups: [], projects: [], opportunities: [], timeEntries: [], plannedWork: [] };
+  }
+
+  // 'projecten': twee projecten met een bekende uitkomst. Zonder raming → onvoldoende gegevens;
+  // met 48 u besteed (8 u/dag) en 16 u resterend → 8 dagen → A = 9000 ÷ 8 = € 1.125/dag.
+  const project = (id, over) => ({
+    id, clientId: 'harnas-klant', offerType: 'workflowtraject', status: 'lopend', scope: '',
+    contractDate: `${BRON}-01`, plannedStart: BRON, plannedEnd: BRON, extensions: [],
+    budgetedOwnHours: null, expectedRemainingOwnHours: null, externalCosts: [], milestones: [], invoices: [],
+    nextMilestoneNote: '', blockers: '', opportunityId: null, createdAt: `${BRON}-01`, ...over,
+  });
+  if (variant === 'klanten') return klantenFixture(doelen, project);
+  if (variant === 'vol') return volFixture(doelen, project);
+  const projects = [
+    project('harnas-zonder', { name: 'Harnasproject zonder raming', fixedPriceExVat: 12000,
+      milestones: [{ id: 'harnas-m1', label: 'Harnasmijlpaal', plannedMonth: BRON, amount: 4000, realizedOn: null, realizedAmount: null, extensionId: null }] }),
+    project('harnas-met', { name: 'Harnasproject met raming', fixedPriceExVat: 9000, budgetedOwnHours: 64, expectedRemainingOwnHours: 16 }),
+  ];
+  // 'verkoop-dubbel': een document waarin al twee projecten naar de gewonnen kans verwijzen —
+  // een half mislukte eerdere omzetting. De tegenproef van "één project" draait erop.
+  if (variant.startsWith('cash')) {
+    const met = projects.find((p) => p.id === 'harnas-met');
+    met.invoices = cashFacturen(variant);
+  }
+  if (variant === 'verkoop-dubbel') {
+    projects.push(project('harnas-dubbel-1', { name: 'Eerste omzetting', fixedPriceExVat: 15000, opportunityId: 'harnas-gewonnen' }));
+    projects.push(project('harnas-dubbel-2', { name: 'Tweede omzetting', fixedPriceExVat: 15000, opportunityId: 'harnas-gewonnen' }));
+  }
+  return {
+    goals: doelen,
+    clients: [{ id: 'harnas-klant', name: 'Harnasklant', groupId: null }],
+    clientGroups: [],
+    projects,
+    opportunities: variant.startsWith('verkoop') ? verkoopKansen() : [],
+    timeEntries: [
+      { id: 'harnas-t1', date: `${BRON}-01`, category: 'klantwerk', projectId: 'harnas-met', hours: 24, hoursPerDayAtEntry: 8, label: null, note: '' },
+      { id: 'harnas-t2', date: `${BRON}-01`, category: 'klantwerk', projectId: 'harnas-met', hours: 24, hoursPerDayAtEntry: 8, label: null, note: '' },
+    ],
+    plannedWork: [],
+  };
+}
+
+/**
+ * Vier kansen met een uitkomst die met de hand na te rekenen is, voor "heel dit jaar":
+ * gesprek → voorstel 2 van 3 (voorstel, gesprek, gewonnen bereikten een gesprek; voorstel en
+ * gewonnen kregen een voorstel) · voorstel → gewonnen 1 van 3 · beslist 1 gewonnen van 2 ·
+ * open nu 2 kansen, 1 voorstel, € 20.000 ongewogen, 1 zonder waarde, 1 gekwalificeerd.
+ * Elke datum ligt in dit jaar en niet na vandaag, ook in de eerste dagen van januari.
+ */
+function verkoopKansen() {
+  const vandaag = new Date().toISOString().slice(0, 10);
+  const d = (mmdd) => { const x = `${JAAR}-${mmdd}`; return x <= vandaag ? x : vandaag; };
+  const negenDagenGeleden = new Date(Date.now() - 9 * 86_400_000).toISOString().slice(0, 10);
+  const kans = (id, over) => ({
+    id, company: `Bedrijf ${id}`, contact: '', clientId: null, trigger: { description: '', source: '', date: null }, need: '',
+    offerType: null, budget: { status: 'onbekend', amount: null }, expectedValue: null, decisionMakerInvolved: false,
+    expectedDecisionDate: null, expectedExecution: null, nextAction: null, outcomeReason: null, projectId: null, createdAt: d('01-02'), ...over,
+  });
+  const h = (stage, on, reason = null) => ({ stage, on, reason });
+  return [
+    kans('harnas-voorstel', {
+      company: 'Harnasvoorstel', stage: 'voorstel', expectedValue: 20000, need: 'Twee productteams zonder gedeelde componenten',
+      budget: { status: 'besproken', amount: 20000 }, decisionMakerInvolved: true, expectedDecisionDate: d('12-31'),
+      nextAction: { text: 'Harnasopvolging', date: negenDagenGeleden },
+      history: [h('contact', d('01-05')), h('gesprek', d('01-10')), h('voorstel', d('02-01'))],
+    }),
+    kans('harnas-gesprek', { company: 'Harnasgesprek', stage: 'gesprek', history: [h('gesprek', d('02-10'))] }),
+    kans('harnas-gewonnen', {
+      company: 'Harnasklant', stage: 'gewonnen', expectedValue: 15000, offerType: 'productdiagnose', expectedExecution: { start: BRON, end: BRON },
+      history: [h('gesprek', d('01-12')), h('voorstel', d('01-20')), h('gewonnen', d('03-01'))],
+    }),
+    kans('harnas-verloren', {
+      company: 'Harnasverloren', stage: 'verloren', outcomeReason: 'Geen budget',
+      history: [h('voorstel', d('01-15')), h('verloren', d('02-15'), 'Geen budget')],
+    }),
+  ];
+}
+
+/** Een lokale kalenderdatum `n` dagen vanaf vandaag — dezelfde klok als de browser van de harness. */
+function dagVanaf(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Twee facturen op "Harnasproject met raming", elk met een post in de prognose en een uniek
+ * bedrag: 604,27 ex btw → 731,17, vervallen sinds tien dagen zonder verwachte betaaldatum; en
+ * 1.020,30 → 1.234,56, verwacht over veertien dagen. `cash-gedateerd` geeft de eerste alsnog een
+ * verwachte datum (vandaag) — de tegenproef van "staat apart".
+ */
+function cashFacturen(variant) {
+  return [
+    { id: 'harnas-factuur-oud', label: 'Harnasslot', kind: 'slot', date: dagVanaf(-40), amountExVat: 604.27, vatRate: 21, dueDate: dagVanaf(-10),
+      expectedPaymentDate: variant === 'cash-gedateerd' ? dagVanaf(0) : null, paidOn: null, paidAmount: null, incomeItemId: 'harnas-post-oud' },
+    { id: 'harnas-factuur-later', label: 'Harnastermijn', kind: 'termijn', date: dagVanaf(0), amountExVat: 1020.3, vatRate: 21, dueDate: dagVanaf(30),
+      expectedPaymentDate: dagVanaf(14), paidOn: null, paidAmount: null, incomeItemId: 'harnas-post-later' },
+  ];
+}
+
+function cashPosten() {
+  return [
+    { id: 'harnas-post-oud', monthKey: BRON, label: 'Harnasproject met raming — Harnasslot', amount: 731.17, received: false },
+    { id: 'harnas-post-later', monthKey: dagVanaf(14).slice(0, 7), label: 'Harnasproject met raming — Harnastermijn', amount: 1234.56, received: false },
+    // Een met de hand ingevoerde verwachte inkomst, aan geen factuur gekoppeld.
+    { id: 'harnas-post-los', monthKey: DOEL, label: 'Harnas losse post', amount: 555.55, received: false },
+  ];
+}
+
+/**
+ * Drie klanten, twee in één groep. Gerealiseerd dit jaar: C 50.000 · A 30.000 · B 20.000 →
+ * noemer 100.000, C 50 % boven de limiet van 30 %, A precies 30 % en dus níét erboven.
+ * Vooruitblik (met resterend in december): C 140.000 · A 40.000 · B 20.000 → noemer 200.000.
+ */
+function klantenFixture(doelen, project) {
+  const vandaag = dagVanaf(0);
+  const d = (mmdd) => { const x = `${JAAR}-${mmdd}`; return x <= vandaag ? x : vandaag; };
+  const m = (id, amount, over) => ({ id, label: id, plannedMonth: `${JAAR}-12`, amount, realizedOn: null, realizedAmount: null, extensionId: null, ...over });
+  return {
+    goals: doelen,
+    clients: [
+      { id: 'harnas-klant-a', name: 'Harnasklant A', groupId: 'harnas-groep' },
+      { id: 'harnas-klant-b', name: 'Harnasklant B', groupId: 'harnas-groep' },
+      { id: 'harnas-klant-c', name: 'Harnasklant C', groupId: null },
+    ],
+    clientGroups: [{ id: 'harnas-groep', name: 'Harnasgroep' }],
+    projects: [
+      project('harnas-k1', { clientId: 'harnas-klant-a', name: 'K1', fixedPriceExVat: 40000, milestones: [m('k1-1', 30000, { realizedOn: d('01-15') }), m('k1-2', 10000)] }),
+      project('harnas-k2', { clientId: 'harnas-klant-b', name: 'K2', fixedPriceExVat: 20000, milestones: [m('k2-1', 20000, { realizedOn: d('02-15') })] }),
+      project('harnas-k3', { clientId: 'harnas-klant-c', name: 'K3', fixedPriceExVat: 140000, milestones: [m('k3-1', 50000, { realizedOn: d('03-01') }), m('k3-2', 90000)] }),
+    ],
+    opportunities: [],
+    timeEntries: [],
+    plannedWork: [],
+  };
+}
+
+/** Alles tegelijk, voor de review-screenshots: klanten, projecten met facturen, kansen, tijd en planning. */
+function volFixture(doelen, project) {
+  const klanten = klantenFixture(doelen, project);
+  const vandaag = dagVanaf(0);
+  const projecten = [
+    project('harnas-zonder', { name: 'Harnasproject zonder raming', fixedPriceExVat: 12000,
+      milestones: [{ id: 'harnas-m1', label: 'Harnasmijlpaal', plannedMonth: BRON, amount: 4000, realizedOn: null, realizedAmount: null, extensionId: null }] }),
+    project('harnas-met', { name: 'Harnasproject met raming', fixedPriceExVat: 9000, budgetedOwnHours: 64, expectedRemainingOwnHours: 16, invoices: cashFacturen('cash'),
+      externalCosts: [{ id: 'harnas-kost', label: 'Freelancer research', expected: 1200, actual: null }] }),
+    ...klanten.projects,
+  ];
+  const t = (id, date, category, projectId, hours, label = null) => ({ id, date, category, projectId, hours, hoursPerDayAtEntry: 8, label, note: '' });
+  return {
+    ...klanten,
+    clients: [{ id: 'harnas-klant', name: 'Harnasklant', groupId: null }, ...klanten.clients],
+    projects: projecten,
+    opportunities: verkoopKansen(),
+    timeEntries: [
+      t('harnas-t1', `${BRON}-01`, 'klantwerk', 'harnas-met', 24), t('harnas-t2', `${BRON}-01`, 'klantwerk', 'harnas-met', 24),
+      t('harnas-t3', vandaag, 'verkoop', null, 3), t('harnas-t4', vandaag, 'administratie', null, 1.5), t('harnas-t5', vandaag, 'klantwerk', 'harnas-zonder', 4, 'revisie'),
+    ],
+    plannedWork: [
+      { id: 'harnas-plan-1', periodKind: 'week', periodKey: `${getISOWeekYear(new Date())}-W${String(getISOWeek(new Date())).padStart(2, '0')}`, category: 'klantwerk', projectId: 'harnas-zonder', days: 3 },
+      { id: 'harnas-plan-2', periodKind: 'month', periodKey: dagVanaf(35).slice(0, 7), category: 'verkoop', projectId: null, days: 4 },
+    ],
+  };
+}
+
+function fixtureData({ leeg = false, buffer = false, bureau = null } = {}) {
+  const b = bureauFixture(bureau);
+  const doc = prognoseFixture({ leeg, buffer });
+  if (bureau?.startsWith('cash') || bureau === 'vol') doc.incomeItems = [...doc.incomeItems, ...cashPosten()];
+  return b ? { ...doc, bureau: b } : doc;
+}
+
+function prognoseFixture({ leeg = false, buffer = false } = {}) {
   // De buffer-variant zet één bufferpot en één kost die de pot ver overstijgt, zodat de
   // maandfooter alle drie zijn standen laat zien: opbouw, stilstand, en een stand die
   // negatief staat. Zonder die derde stand kan geen enkele check onderscheiden of de
@@ -266,7 +464,7 @@ function controleerBuildOrigin(origin) {
  * drie andere schermen (skeleton, lege staat, foutscherm) zag nooit een guard.
  */
 function maakRouteHandler(state, gedrag = {}) {
-  const { leeg = false, buffer = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
+  const { leeg = false, buffer = false, bureau = null, conflict = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
 
   return async (route) => {
     const req = route.request();
@@ -288,11 +486,15 @@ function maakRouteHandler(state, gedrag = {}) {
         if (documentStatus !== 200) {
           return json({ message: 'harness: opzettelijke serverfout' }, documentStatus);
         }
-        return json({ data: fixtureData({ leeg, buffer }), revision: state.revision }, 200);
+        return json({ data: fixtureData({ leeg, buffer, bureau }), revision: state.revision }, 200);
       }
       // Elke schrijfpoging wordt geteld en beantwoord alsof ze lukte: de app moet
       // verder kunnen, en het bewijs dat er niets weglekte is juist dat we hier staan.
       state.schrijfpogingen.push(`${req.method()} ${pad}`);
+      state.documenten.push(req.postDataJSON()?.data ?? null);
+      // `conflict`: de revisie op de server is intussen verschoven. Nul rijen terug is precies wat
+      // `saveState` als revisieconflict leest — dezelfde weg als een tweede browser.
+      if (conflict) return json([], 200);
       state.revision += 1;
       return json([{ revision: state.revision }], 200);
     }
@@ -454,7 +656,7 @@ const KOLOM = '.grid.grid-cols-3 > div';
  * `'niets'` geeft de pagina meteen terug, want een scenario dat juist de laad- of
  * foutstaat meet mag niet wachten op een scherm dat er nooit komt.
  */
-async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen' } = {}) {
+async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen', pad = '/' } = {}) {
   const page = await context.newPage();
   page.on('pageerror', (err) => state.paginafouten.push(String(err).slice(0, 200)));
 
@@ -474,7 +676,7 @@ async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen' } = {
 
   // Laag 2 — de origin die de app hoort te gebruiken, uit de fixture bediend.
   await page.route(`${state.origin}/**`, maakRouteHandler(state, gedrag));
-  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}${pad}`, { waitUntil: 'domcontentloaded' });
 
   // Elke wachtstap meldt wat er wél op het scherm stond. Een kale "Timeout waiting for
   // #email" laat je raden of de app niet hydrateerde, of al ingelogd was, of viel.
@@ -506,6 +708,12 @@ async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen' } = {
   if (wachtOp === 'kolommen') {
     await wacht(KOLOM, 'de maandkolommen');
     if (!gedrag.leeg) await wacht(`text=${LABEL}`, `de fixture-post "${LABEL}"`);
+  }
+  if (wachtOp === 'bureau') {
+    await wacht('[data-bureau-page] > *', 'een bureau-pagina');
+    // Voorbij de 800 ms debounce van sync.ts: een schrijfactie die het laden zelf uitlokt,
+    // hoort niet mee te tellen in het venster van het scenario.
+    await page.waitForTimeout(1_200);
   }
   return page;
 }
@@ -783,11 +991,12 @@ function kortBericht(bericht) {
 }
 
 async function draaiScenario(browser, state, scenario) {
-  const { naam, gedrag = {}, wachtOp = 'kolommen', actie } = scenario;
-  const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  const { naam, gedrag = {}, wachtOp = 'kolommen', pad = '/', viewport = { width: 1600, height: 1000 }, actie } = scenario;
+  const context = await browser.newContext({ viewport });
   try {
-    const page = await openApp(context, state, { gedrag, wachtOp });
-    const uitkomst = await actie(page, { state, schrijfVoor: state.schrijfpogingen.length });
+    const foutenVoor = state.paginafouten.length;
+    const page = await openApp(context, state, { gedrag, wachtOp, pad });
+    const uitkomst = await actie(page, { state, schrijfVoor: state.schrijfpogingen.length, foutenVoor });
     return { naam, ...uitkomst };
   } catch (err) {
     return { naam, ok: false, bewijs: kortBericht(err.message ?? err) };
@@ -1120,6 +1329,1425 @@ function scenarios() {
  * "geen fouten" even overtuigend als een die werkt. Deze horen dus te FALEN; de runner
  * keert hun oordeel om.
  */
+// ── Bureau ───────────────────────────────────────────────────────────────────
+//
+// Dezelfde onderschepping, andere routes. Elke schrijftelling wacht voorbij de 800 ms debounce
+// van sync.ts, net als `verhuisd()`: korter en de teller staat gegarandeerd op nul, ongeacht de
+// code — een meting die niet kán falen.
+
+const DOELEN = '/bureau/doelen';
+const nieuweSchrijfacties = async (page, state, basis) => {
+  await page.waitForTimeout(1_200);
+  return state.schrijfpogingen.length - basis;
+};
+
+/** Contrast, kopstructuur en toetsenbord op één pagina; alle drie moeten schoon zijn. */
+async function a11yOp(page, waar) {
+  const contrast = await sweep(page, waar);
+  const koppen = await kopstructuur(page);
+  const toetsen = await toetsenbord(page);
+  const problemen = [
+    ...contrast.fouten.map((f) => `contrast: ${beschrijfFout(f)}`),
+    ...koppen.problemen.map((p) => `koppen: ${p}`),
+    ...toetsen.problemen.map((p) => `toetsenbord: ${p}`),
+  ];
+  return { problemen, gemeten: contrast.gemeten, koppen: koppen.aantal, stops: toetsen.stops, segmenten: toetsen.segmenten };
+}
+
+const VERKOOP = '/bureau/verkoop';
+
+/** Opent de sheet van één kans via zijn rij; een afgesloten kans staat achter "Toon afgesloten". */
+async function openKans(page, id) {
+  if ((await page.locator(`[data-opportunity-row="${id}"]`).count()) === 0) await page.locator('#kansen-gesloten').click();
+  await page.locator(`[data-opportunity-row="${id}"] button`, { hasText: 'Openen' }).click();
+  await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+}
+
+/** Het weggeschreven document: precies één project verwijst naar de kans, en de kans terug naar dat project. */
+function eenProjectVoorKans(doc, kansId) {
+  const verwijzend = (doc?.bureau?.projects ?? []).filter((p) => p.opportunityId === kansId);
+  const kans = (doc?.bureau?.opportunities ?? []).find((o) => o.id === kansId);
+  if (verwijzend.length !== 1) return `${verwijzend.length} projecten verwijzen naar de kans in het weggeschreven document`;
+  if (kans?.projectId !== verwijzend[0].id) return 'de kans verwijst niet naar het nieuwe project';
+  return null;
+}
+
+/**
+ * Gewonnen → project: één schrijfactie, en in dat document precies één project dat naar de kans
+ * verwijst. `vervals` krijgt het weggeschreven document vóór de controle — alleen de tegenproef
+ * gebruikt dat, om te tonen dat de controle een dubbele omzetting ziet.
+ */
+async function omzettingEenmaal(page, state, { vervals } = {}) {
+  await openKans(page, 'harnas-gewonnen');
+  const basis = state.schrijfpogingen.length;
+  await page.fill('#omzetting-naam', 'Harnasdiagnose');
+  await page.locator('[role=dialog] button', { hasText: 'Project aanmaken' }).click();
+  await page.waitForSelector('[role=dialog] [data-converted]', { timeout: 5_000 });
+  const extra = await nieuweSchrijfacties(page, state, basis);
+  const knoppen = await page.locator('[role=dialog] button', { hasText: 'Project aanmaken' }).count();
+  const doc = structuredClone(state.documenten.at(-1));
+  vervals?.(doc);
+  if (extra !== 1) throw new Error(`omzetten gaf ${extra} schrijfacties in plaats van één`);
+  const fout = eenProjectVoorKans(doc, 'harnas-gewonnen');
+  if (fout) throw new Error(fout);
+  if (doc.bureau.clients.length !== 1) throw new Error(`${doc.bureau.clients.length} klanten — de bestaande klant had hergebruikt moeten worden`);
+  if (knoppen !== 0) throw new Error(`"Project aanmaken" staat er na de omzetting nog ${knoppen} keer`);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+  await openKans(page, 'harnas-gewonnen');
+  const opnieuw = await page.locator('[role=dialog] button', { hasText: 'Project aanmaken' }).count();
+  const link = await page.locator('[role=dialog] [data-converted] a').innerText();
+  if (opnieuw !== 0) throw new Error('na heropenen staat "Project aanmaken" er weer');
+  if (link !== 'Harnasdiagnose') throw new Error(`heropende sheet linkt naar "${link}"`);
+  return { ok: true, bewijs: `1 schrijfactie; document: 1 project met opportunityId, kans.projectId gezet, 1 klant; knop 0× ook na heropenen, link "${link}"` };
+}
+
+/** De trechter: breuken met noemer, geen percentage onder vijf, en de open stand nu. */
+async function trechterKlopt(page) {
+  const tekst = async (sel) => (await page.locator(sel).innerText()).replace(/\s+/g, ' ');
+  const gv = await tekst('[data-conversion="gesprek-voorstel"] dd');
+  const vg = await tekst('[data-conversion="voorstel-gewonnen"] dd');
+  const beslist = await tekst('[data-conversion="beslist"] dd');
+  const lijn = await tekst('[data-pipeline-line]');
+  const trechter = await tekst('section[aria-labelledby="trechter-titel"]');
+  const fouten = [];
+  if (!gv.startsWith('2 van 3')) fouten.push(`gesprek → voorstel "${gv}"`);
+  if (!vg.startsWith('1 van 3')) fouten.push(`voorstel → gewonnen "${vg}"`);
+  if (!beslist.startsWith('1 van 2')) fouten.push(`beslist "${beslist}"`);
+  if (/%/.test(trechter)) fouten.push('een percentage bij noemers onder vijf');
+  if (!/te weinig voor een percentage/.test(gv)) fouten.push('geen melding dat de noemer te klein is');
+  if (!lijn.includes('Open nu 2 kansen') || !lijn.includes('€ 20.000') || !lijn.includes('1 zonder waarde') || !lijn.includes('1 van 2 gekwalificeerd')) fouten.push(`open-lijn "${lijn}"`);
+  if (fouten.length) throw new Error(fouten.join(' · '));
+  return { ok: true, bewijs: `"${gv}" · "${vg}" · "${beslist}" · "${lijn}"` };
+}
+
+/** Verloren zonder reden: melding, niets weg. Met reden: één overgang mét die reden in het document. */
+async function verlorenVraagtReden(page, state, { redenVooraf = false } = {}) {
+  await openKans(page, 'harnas-voorstel');
+  await page.selectOption('#stadium-nieuw', 'verloren');
+  if (redenVooraf) await page.fill('#stadium-reden', 'Harnasreden');
+  const basis = state.schrijfpogingen.length;
+  await page.locator('[role=dialog] button', { hasText: 'Stadium wijzigen' }).click();
+  const melding = await page.locator('#stadium-reden-fout').count();
+  const zonder = await nieuweSchrijfacties(page, state, basis);
+  if (melding !== 1 || zonder !== 0) throw new Error(`verloren zonder reden: ${melding} melding(en), ${zonder} schrijfactie(s)`);
+  await page.fill('#stadium-reden', 'Harnasreden');
+  await page.locator('[role=dialog] button', { hasText: 'Stadium wijzigen' }).click();
+  await page.waitForSelector('[role=dialog] [data-stage-now="verloren"]', { timeout: 5_000 });
+  const met = await nieuweSchrijfacties(page, state, basis);
+  const kans = state.documenten.at(-1)?.bureau?.opportunities?.find((o) => o.id === 'harnas-voorstel');
+  const laatste = kans?.history?.at(-1);
+  if (met !== 1) throw new Error(`met reden ${met} schrijfacties`);
+  if (kans?.history?.length !== 4 || laatste?.stage !== 'verloren' || laatste?.reason !== 'Harnasreden') throw new Error(`historie in het document: ${JSON.stringify(kans?.history)}`);
+  // De rij staat nu achter "Toon afgesloten": de knop die opende bestaat niet meer.
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+  await page.waitForFunction(() => document.activeElement && document.activeElement !== document.body, null, { timeout: 2_000 }).catch(() => {});
+  const terug = await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName);
+  if (terug !== 'kans-nieuw') throw new Error(`focus na sluiten op "${terug}" in plaats van "Nieuwe kans"`);
+  return { ok: true, bewijs: 'zonder reden: melding + 0 schrijfacties; met reden: 1 schrijfactie, sheet bleef open, historie 3 → 4 met stadium en reden; focus terug op "Nieuwe kans"' };
+}
+
+const CASH = '/bureau/cash';
+const KLANTEN = '/bureau/klanten';
+
+/** Klapt de regels van elke week open en geeft alle regelteksten terug. */
+async function alleCashRegels(page) {
+  const knoppen = page.locator('[data-cash-week] button[aria-expanded="false"]');
+  for (let i = await knoppen.count(); i > 0; i--) await knoppen.first().click();
+  return page.locator('[data-cash-line]').evaluateAll((els) => els.map((e) => e.textContent.replace(/\s+/g, ' ')));
+}
+
+/** De vervallen factuur zonder datum staat apart en in geen enkele week; de gedateerde precies één keer, in haar week. */
+async function vervallenStaatApart(page) {
+  const apart = page.locator('[data-unplaced-reason="achterstallig-zonder-datum"] [data-unplaced="harnas-factuur-oud"]');
+  if ((await apart.count()) !== 1) throw new Error('de vervallen factuur zonder datum staat niet in de aparte lijst');
+  const tekst = (await apart.innerText()).replace(/\s+/g, ' ');
+  if (!tekst.includes('731,17')) throw new Error(`aparte regel zonder bedrag 731,17: "${tekst}"`);
+  const regels = await alleCashRegels(page);
+  const inWeek = regels.filter((r) => r.includes('731,17'));
+  if (inWeek.length) throw new Error(`731,17 staat tóch in een week: "${inWeek[0]}"`);
+  const later = regels.filter((r) => r.includes('1.234,56'));
+  if (later.length !== 1) throw new Error(`de gedateerde factuur staat ${later.length} keer in de weken`);
+  const verwacht = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 14); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+  const rij = await page.locator('[data-cash-line]', { hasText: '1.234,56' }).evaluate((el) => {
+    const detail = el.closest('tr');
+    const week = detail?.previousElementSibling;
+    return { from: week?.getAttribute('data-from'), to: week?.getAttribute('data-to') };
+  });
+  if (!(rij.from <= verwacht && verwacht <= rij.to)) throw new Error(`gedateerde factuur in week ${rij.from}–${rij.to}, verwacht ${verwacht}`);
+  const alarm = await page.locator('[role=alert]', { hasText: 'sluiten niet aan' }).count();
+  if (alarm) throw new Error('de pagina meldt dat de weken niet aansluiten op de maandprognose');
+  return { ok: true, bewijs: `731,17 apart ("${tekst.slice(0, 70)}…"), 0× in ${regels.length} weekregels; 1.234,56 één keer, in week ${rij.from}–${rij.to}; geen reconciliatie-alarm` };
+}
+
+/**
+ * Betaald afvinken: één schrijfactie, de post weg uit de prognose, de factuur betaald — en
+ * uitvinken zet een post terug. `vervals` krijgt het document vóór de controle (tegenproef).
+ */
+async function betaaldHaaltPostWeg(page, state, { vervals } = {}) {
+  const rij = page.locator('[data-invoice-row="harnas-factuur-later"]');
+  const basis = state.schrijfpogingen.length;
+  await rij.locator('button[role=checkbox]').click();
+  await rij.locator('[data-ledger="betaald-uit-prognose"]').waitFor({ timeout: 5_000 });
+  const extra = await nieuweSchrijfacties(page, state, basis);
+  const doc = structuredClone(state.documenten.at(-1));
+  vervals?.(doc);
+  const post = (doc?.incomeItems ?? []).filter((i) => i.id === 'harnas-post-later');
+  const factuur = doc?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.id === 'harnas-factuur-later');
+  if (extra !== 1) throw new Error(`betaald afvinken gaf ${extra} schrijfacties`);
+  if (post.length) throw new Error('de post staat na betaling nog in de prognose');
+  if (!factuur?.paidOn || factuur.incomeItemId !== null) throw new Error(`factuur na betaling: ${JSON.stringify({ paidOn: factuur?.paidOn, incomeItemId: factuur?.incomeItemId })}`);
+  const basisTerug = state.schrijfpogingen.length;
+  await rij.locator('button[role=checkbox]').click();
+  await rij.locator('[data-ledger="niet-in-prognose"]').waitFor({ timeout: 5_000 });
+  // De schrijfactie volgt na de debounce van sync.ts; zonder wachten leest dit het vorige document.
+  const terugSchrijf = await nieuweSchrijfacties(page, state, basisTerug);
+  const open = state.documenten.at(-1);
+  const factuurOpen = open?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.id === 'harnas-factuur-later');
+  if (terugSchrijf !== 1) throw new Error(`uitvinken gaf ${terugSchrijf} schrijfacties`);
+  if (factuurOpen?.paidOn !== null || factuurOpen?.incomeItemId !== null) throw new Error(`uitvinken: factuur ${JSON.stringify({ paidOn: factuurOpen?.paidOn, incomeItemId: factuurOpen?.incomeItemId })}`);
+  if ((open?.incomeItems ?? []).some((i) => i.amount === 1234.56)) throw new Error('uitvinken zette tóch een post terug — naast een eventuele handmatige post is dat dubbel');
+  const basisPrognose = state.schrijfpogingen.length;
+  await rij.locator('button', { hasText: 'Zet in prognose' }).click();
+  await rij.locator('[data-ledger="in-prognose"]').waitFor({ timeout: 5_000 });
+  const prognoseSchrijf = await nieuweSchrijfacties(page, state, basisPrognose);
+  const terug = state.documenten.at(-1);
+  const nieuweId = terug?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.id === 'harnas-factuur-later')?.incomeItemId;
+  const nieuwePost = (terug?.incomeItems ?? []).find((i) => i.id === nieuweId);
+  if (prognoseSchrijf !== 1 || !nieuwePost || nieuwePost.amount !== 1234.56) throw new Error(`"Zet in prognose": ${prognoseSchrijf} schrijfacties, post ${JSON.stringify(nieuwePost)}`);
+  return { ok: true, bewijs: `1 schrijfactie; post weg, factuur betaald; uitvinken: open zonder post (1 schrijfactie); "Zet in prognose": post € 1.234,56 in ${nieuwePost.monthKey}` };
+}
+
+/** De twee bases, elk met eigen noemer; "boven limiet" als woord; per groep telt de groep samen. */
+async function concentratieKlopt(page) {
+  const tekst = async (sel) => (await page.locator(sel).innerText()).replace(/\s+/g, ' ');
+  const fouten = [];
+  const gerNoemer = await page.locator('[data-concentration="gerealiseerd"] caption').getAttribute('data-denominator');
+  const progNoemer = await page.locator('[data-concentration="prognose"] caption').getAttribute('data-denominator');
+  if (gerNoemer !== '100000') fouten.push(`noemer gerealiseerd ${gerNoemer}`);
+  if (progNoemer !== '200000') fouten.push(`noemer vooruitblik ${progNoemer}`);
+  const c = await tekst('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-klant-c"]');
+  const a = await tekst('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-klant-a"]');
+  if (!/50 %.*boven limiet/.test(c)) fouten.push(`klant C "${c}"`);
+  if (/boven limiet/.test(a) || !a.includes('30 %')) fouten.push(`klant A op precies de limiet "${a}"`);
+  const pc = await tekst('[data-concentration="prognose"] [data-concentration-row="harnas-klant-c"]');
+  if (!pc.includes('70 %')) fouten.push(`vooruitblik C "${pc}"`);
+  await page.locator('#klanten-per-groep').click();
+  await page.locator('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-groep"]').waitFor({ timeout: 5_000 });
+  const groep = await tekst('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-groep"]');
+  if (!/Harnasgroep.*2 klanten.*50 %.*boven limiet/.test(groep)) fouten.push(`groep "${groep}"`);
+  if (fouten.length) throw new Error(fouten.join(' · '));
+  return { ok: true, bewijs: `noemers 100.000 / 200.000; C "${c}"; A "${a}"; vooruitblik C 70 %; groep "${groep}"` };
+}
+
+const OVERZICHT = '/bureau';
+const TEGELS = ['omzet', 'getekend', 'kansen', 'capaciteit', 'rendement', 'cash'];
+
+/** Het klantconcentratiesignaal staat vóór de tegels, met "Let op" als woord en een link naar klanten. */
+async function signaalMetWoord(page) {
+  const signaal = page.locator('[data-signal="klantconcentratie:harnas-klant-c"]');
+  if ((await signaal.count()) !== 1) throw new Error('geen concentratiesignaal voor klant C');
+  const woord = (await signaal.locator('[class*="rounded-full"]').innerText()).trim();
+  const href = await signaal.locator('a').getAttribute('href');
+  const eerst = await page.evaluate(() => {
+    const lijst = document.querySelector('[data-signal-list]');
+    const tegel = document.querySelector('[data-kpi]');
+    return Boolean(lijst && tegel && lijst.compareDocumentPosition(tegel) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  if (woord !== 'Let op') throw new Error(`niveau als woord "${woord}"`);
+  if (href !== '/bureau/klanten') throw new Error(`link ${href}`);
+  if (!eerst) throw new Error('de signalen staan niet vóór de tegels');
+  return { ok: true, bewijs: `"Let op" · ${(await signaal.innerText()).replace(/\s+/g, ' ').slice(0, 90)} · link ${href} · vóór de tegels` };
+}
+
+/** Zes tegels, elk "Onvoldoende gegevens", en nergens een bedrag van nul. */
+async function leegNooitNul(page) {
+  const tegels = await page.locator('[data-kpi]').evaluateAll((els) => els.map((e) => ({ kpi: e.getAttribute('data-kpi'), onvoldoende: e.querySelectorAll('[data-onvoldoende]').length, tekst: e.textContent.replace(/\s+/g, ' ') })));
+  if (JSON.stringify(tegels.map((t) => t.kpi)) !== JSON.stringify(TEGELS)) throw new Error(`tegels ${JSON.stringify(tegels.map((t) => t.kpi))}`);
+  const zonder = tegels.filter((t) => t.onvoldoende !== 1).map((t) => t.kpi);
+  if (zonder.length) throw new Error(`zonder "Onvoldoende gegevens": ${zonder.join(', ')}`);
+  const nul = tegels.filter((t) => /€\s?0(?![\d.,])/.test(t.tekst));
+  if (nul.length) throw new Error(`€ 0 in ${nul.map((t) => `${t.kpi}: "${t.tekst.match(/.{0,30}€\s?0(?![\d.,]).{0,10}/)?.[0]}"`).join(' · ')}`);
+  return { ok: true, bewijs: `6 tegels in briefvolgorde, elk 1× "Onvoldoende gegevens", 0× € 0` };
+}
+
+function bureauScenarios() {
+  return [
+    {
+      naam: 'bureau — document zonder bureau-sleutel',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      actie: async (page, { state, foutenVoor }) => {
+        const leeg = page.locator('[data-empty-state]');
+        if ((await leeg.count()) !== 1) throw new Error(`${await leeg.count()} lege staten in plaats van één`);
+        const tekst = await leeg.innerText();
+        if (!tekst.includes('Nog geen doelen')) throw new Error(`lege staat zonder uitleg: "${tekst.slice(0, 80)}"`);
+        const fouten = state.paginafouten.length - foutenVoor;
+        if (fouten) throw new Error(`${fouten} paginafout(en): ${state.paginafouten.slice(-fouten).join(' | ')}`);
+        return { ok: true, bewijs: 'v15-document zonder bureau: één lege staat "Nog geen doelen", geen paginafout' };
+      },
+    },
+    {
+      naam: 'doelen — startwaarden schrijven niets tot opslaan',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.locator('button', { hasText: 'Startwaarden invullen' }).click();
+        await page.waitForSelector('#doel-omzet', { timeout: 5_000, state: 'visible' });
+        const waarde = await page.inputValue('#doel-omzet');
+        if (waarde !== '200000') throw new Error(`omzetdoel toont "${waarde}", niet de startwaarde 200000`);
+        const zonderOpslaan = await nieuweSchrijfacties(page, state, basis);
+        if (zonderOpslaan) throw new Error(`startwaarden invullen schreef ${zonderOpslaan} keer weg zonder opslaan`);
+        await page.locator('button[type=submit]', { hasText: 'opslaan' }).click();
+        const naOpslaan = await nieuweSchrijfacties(page, state, basis);
+        if (naOpslaan !== 1) throw new Error(`opslaan gaf ${naOpslaan} schrijfacties in plaats van één`);
+        const status = await page.locator('button[type=submit]').innerText();
+        return { ok: true, bewijs: `0 schrijfacties na "Startwaarden invullen", 1 na opslaan; knop daarna "${status}"` };
+      },
+    },
+    {
+      naam: 'doelen — somregel toont het verschil, corrigeert niets',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.fill('#doel-dagen-klantwerk', '130');
+        const regel = await page.locator('[data-sum-line]', { hasText: 'Som categorieën' }).innerText();
+        if (!/verschil \+2 d/.test(regel)) throw new Error(`somregel meldt geen verschil +2 d: "${regel}"`);
+        const totaal = await page.inputValue('#doel-dagen-totaal');
+        if (totaal !== '200') throw new Error(`het totaal veranderde mee naar "${totaal}"`);
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (extra) throw new Error(`typen in het formulier schreef ${extra} keer weg`);
+        return { ok: true, bewijs: `"${regel.replace(/\s+/g, ' ')}", totaal blijft 200, 0 schrijfacties` };
+      },
+    },
+    {
+      naam: 'doelen — onleesbare invoer blokkeert opslaan',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.fill('#doel-omzet', 'veel');
+        await page.locator('button[type=submit]').click();
+        await page.waitForSelector('#doel-omzet[aria-invalid="true"]', { timeout: 5_000 });
+        // De focus volgt één frame na de melding (requestAnimationFrame): wacht erop, lees niet ervóór.
+        await page.waitForFunction(() => document.activeElement?.id === 'doel-omzet', null, { timeout: 2_000 }).catch(() => {});
+        const focus = await page.evaluate(() => document.activeElement?.id);
+        if (focus !== 'doel-omzet') throw new Error(`focus staat op "${focus}", niet op het ongeldige veld`);
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (extra) throw new Error(`een ongeldig formulier schreef ${extra} keer weg`);
+        return { ok: true, bewijs: 'aria-invalid op het omzetveld, focus erop, 0 schrijfacties' };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op doelen',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        const r = await a11yOp(page, 'doelen');
+        if (r.problemen.length) throw new Error(r.problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `${r.gemeten} tekstelementen boven AA, ${r.koppen} koppen zonder sprong, ${r.stops} tabstops met zichtbare focus` };
+      },
+    },
+    {
+      naam: 'tijd — snelle invoer: Enter registreert, focus terug op uren, context blijft',
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        const voor = await page.locator('[data-time-entry]').count();
+        await page.selectOption('#tijd-project', 'harnas-met');
+        await page.fill('#tijd-uren', '1,5');
+        await page.press('#tijd-uren', 'Enter');
+        await page.waitForFunction((n) => document.querySelectorAll('[data-time-entry]').length === n + 1, voor, { timeout: 5_000 });
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        const focus = await page.evaluate(() => document.activeElement?.id);
+        const [cat, proj, uren] = await Promise.all([page.inputValue('#tijd-categorie'), page.inputValue('#tijd-project'), page.inputValue('#tijd-uren')]);
+        const nieuw = await page.locator('[data-time-entry]').last().innerText();
+        if (extra !== 1) throw new Error(`registreren gaf ${extra} schrijfacties in plaats van één`);
+        if (focus !== 'tijd-uren') throw new Error(`focus staat op "${focus}", niet op het urenveld`);
+        if (cat !== 'klantwerk' || proj !== 'harnas-met') throw new Error(`categorie/project niet behouden: ${cat} / ${proj}`);
+        if (uren !== '') throw new Error(`urenveld niet leeg na registreren: "${uren}"`);
+        if (!/1,5 u/.test(nieuw)) throw new Error(`nieuwe regel toont geen 1,5 u: "${nieuw.replace(/\s+/g, ' ')}"`);
+        return { ok: true, bewijs: `1 regel erbij ("${nieuw.replace(/\s+/g, ' ').slice(0, 40)}…"), 1 schrijfactie, focus op #tijd-uren, klantwerk + project behouden, uren leeg` };
+      },
+    },
+    {
+      naam: 'tijd — klantwerk zonder project wordt geweigerd',
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.fill('#tijd-uren', '2');
+        await page.press('#tijd-uren', 'Enter');
+        await page.waitForSelector('#tijd-fout', { timeout: 5_000 });
+        const melding = await page.locator('#tijd-fout').innerText();
+        const invalid = await page.getAttribute('#tijd-project', 'aria-invalid');
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (!melding.includes('Kies een project')) throw new Error(`melding: "${melding}"`);
+        if (invalid !== 'true') throw new Error('projectveld niet als ongeldig gemarkeerd');
+        if (extra) throw new Error(`${extra} schrijfactie(s) bij een geweigerde registratie`);
+        return { ok: true, bewijs: `"${melding}", aria-invalid op #tijd-project, 0 schrijfacties` };
+      },
+    },
+    {
+      naam: 'tijd — capaciteit: registraties als besteed, planning als resterend, zonder overlap',
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const lijn = () => page.locator('[data-capacity-line]').innerText();
+        const voor = (await lijn()).replace(/\s+/g, ' ');
+        if (!/besteed 6 d · gepland 0 d/.test(voor)) throw new Error(`vooraf verwacht besteed 6 d, gepland 0 d: "${voor}"`);
+        await page.getByRole('tab', { name: 'Planning' }).click();
+        await page.selectOption('#plan-project', 'harnas-met');
+        await page.fill('#plan-dagen', '2');
+        await page.locator('button', { hasText: 'Inplannen' }).click();
+        await page.waitForFunction(() => /gepland 2 d/.test(document.querySelector('[data-capacity-line]')?.textContent ?? ''), null, { timeout: 5_000 });
+        const na = (await lijn()).replace(/\s+/g, ' ');
+        if (!/besteed 6 d · gepland 2 d/.test(na)) throw new Error(`na inplannen verwacht besteed 6 d, gepland 2 d: "${na}"`);
+        return { ok: true, bewijs: `"${voor.slice(0, 30)}…" → "${na.slice(0, 30)}…" — besteed onveranderd` };
+      },
+    },
+    {
+      naam: 'tijd — revisieconflict zet registreren uit, met hint',
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten', conflict: true },
+      actie: async (page) => {
+        await page.selectOption('#tijd-project', 'harnas-met');
+        await page.fill('#tijd-uren', '1');
+        await page.press('#tijd-uren', 'Enter');
+        await page.waitForSelector('#tijd-registreren:disabled', { timeout: 10_000 });
+        const hint = await page.locator('#tijd-conflict').innerText();
+        const alarm = await page.locator('[role=alert]', { hasText: 'Elders gewijzigd' }).count();
+        if (!hint.includes('herladen')) throw new Error(`geen hint bij de uitgeschakelde knop: "${hint}"`);
+        if (!alarm) throw new Error('SyncStatus meldt het conflict niet');
+        return { ok: true, bewijs: `na een geweigerde schrijfactie: Registreren uit, "${hint}", SyncStatus-alert zichtbaar` };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op tijd (beide tabs)',
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const registratie = await a11yOp(page, 'tijd');
+        await page.getByRole('tab', { name: 'Planning' }).click();
+        await page.waitForSelector('#plan-dagen', { timeout: 5_000 });
+        const planning = await a11yOp(page, 'tijd-planning');
+        const problemen = [...registratie.problemen, ...planning.problemen];
+        if (problemen.length) throw new Error(problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `registratie ${registratie.gemeten} + planning ${planning.gemeten} tekstelementen boven AA; ${registratie.stops}/${planning.stops} tabstops (+${registratie.segmenten}/${planning.segmenten} datumsegmenten) met zichtbare focus` };
+      },
+    },
+    ...[OVERZICHT, '/bureau/doelen', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/tijd', VERKOOP, CASH, KLANTEN].map((pad) => ({
+      naam: `bureau — 390 px zonder horizontale overflow · ${pad === OVERZICHT ? 'overzicht' : pad.replace('/bureau/', '')}`,
+      pad,
+      wachtOp: 'bureau',
+      gedrag: { bureau: { [OVERZICHT]: 'verkoop', [DOELEN]: 'doelen', [VERKOOP]: 'verkoop', [CASH]: 'cash', [KLANTEN]: 'klanten', '/bureau/projecten/harnas-met': 'cash' }[pad] ?? 'projecten' },
+      viewport: { width: 390, height: 844 },
+      actie: async (page) => {
+        const r = await horizontaleOverflow(page);
+        if (r.scroll > r.breedte) throw new Error(`pagina scrollt ${r.scroll - r.breedte} px horizontaal: ${r.boosdoeners.join(', ')}`);
+        return { ok: true, bewijs: `scrollbreedte ${r.scroll} ≤ ${r.breedte}` };
+      },
+    })),
+    {
+      naam: 'projecten — zonder urenraming geen rendement, met raming A = € 1.125',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const rij = (id) => page.locator(`[data-project-row="${id}"]`);
+        if ((await rij('harnas-zonder').count()) !== 1 || (await rij('harnas-met').count()) !== 1) throw new Error('de twee fixture-projecten staan niet elk één keer in de tabel');
+        const zonder = await rij('harnas-zonder').innerText();
+        const onvoldoende = await rij('harnas-zonder').locator('[data-onvoldoende]').count();
+        if (onvoldoende !== 2) throw new Error(`project zonder raming toont ${onvoldoende} keer "Onvoldoende gegevens" in plaats van twee (A en B)`);
+        if (/\/dag/.test(zonder)) throw new Error(`project zonder raming toont tóch een bedrag per dag: "${zonder.replace(/\s+/g, ' ')}"`);
+        const met = (await rij('harnas-met').innerText()).replace(/\s+/g, ' ');
+        if (!met.includes('€ 1.125/dag')) throw new Error(`project met raming toont niet € 1.125/dag: "${met}"`);
+        return { ok: true, bewijs: 'zonder raming: 2× "Onvoldoende gegevens", geen bedrag; met raming: € 1.125/dag (9.000 ÷ 8 d)' };
+      },
+    },
+    {
+      naam: 'projecten — sheet: focus blijft binnen, Escape sluit en geeft hem terug',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const knop = page.locator('button', { hasText: 'Nieuw project' });
+        await knop.click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        for (let i = 0; i < 40; i++) {
+          await page.keyboard.press('Tab');
+          const binnen = await page.evaluate(() => Boolean(document.activeElement?.closest('[role=dialog]')));
+          if (!binnen) throw new Error(`na ${i + 1}× Tab staat de focus buiten de sheet`);
+        }
+        await page.keyboard.press('Escape');
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+        const terug = await page.evaluate(() => document.activeElement?.textContent?.trim());
+        if (terug !== 'Nieuw project') throw new Error(`na Escape staat de focus op "${terug}", niet op de knop die de sheet opende`);
+        return { ok: true, bewijs: '40× Tab binnen [role=dialog], Escape sluit, focus terug op "Nieuw project"' };
+      },
+    },
+    {
+      naam: 'projecten — nieuw project: één schrijfactie, nieuwe klant, naar de detailpagina',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.locator('button', { hasText: 'Nieuw project' }).click();
+        await page.fill('#project-klant', 'Nieuwe harnasklant');
+        await page.fill('#project-naam', 'Harnasscan');
+        await page.selectOption('#project-aanbod', 'productdiagnose');
+        await page.fill('#project-prijs', '3.550');
+        const hint = await page.locator('#project-klant-hint').innerText();
+        if (!hint.includes('wordt aangemaakt')) throw new Error(`geen melding dat de klant nieuw is: "${hint}"`);
+        const zonderOpslaan = await nieuweSchrijfacties(page, state, basis);
+        if (zonderOpslaan) throw new Error(`invullen schreef ${zonderOpslaan} keer weg`);
+        await page.locator('[role=dialog] button[type=submit]').click();
+        await page.waitForURL(/\/bureau\/projecten\/[0-9a-f-]{36}$/, { timeout: 10_000 });
+        await page.waitForSelector('#project-titel', { timeout: 10_000 });
+        const titel = await page.locator('#project-titel').innerText();
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (titel !== 'Harnasscan') throw new Error(`detailpagina toont "${titel}"`);
+        if (extra !== 1) throw new Error(`aanmaken gaf ${extra} schrijfacties in plaats van één (klant en project samen)`);
+        return { ok: true, bewijs: '0 schrijfacties tijdens invullen, 1 bij aanmaken (klant + project), detailpagina "Harnasscan"' };
+      },
+    },
+    {
+      naam: 'projecten — mijlpaal afvinken verplaatst omzet van resterend naar gerealiseerd',
+      pad: '/bureau/projecten/harnas-zonder',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const omzet = () => page.locator('dl').first().locator('div', { hasText: 'Omzet in' }).innerText();
+        const voor = (await omzet()).replace(/\s+/g, ' ');
+        if (!/€ 0 .*€ 4\.000 getekend resterend/.test(voor)) throw new Error(`vooraf verwacht € 0 gerealiseerd en € 4.000 resterend: "${voor}"`);
+        const basis = state.schrijfpogingen.length;
+        await page.locator('[data-milestone-row="harnas-m1"] button[role=checkbox]').click();
+        const na = (await omzet()).replace(/\s+/g, ' ');
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (!/€ 4\.000 .*€ 0 getekend resterend/.test(na)) throw new Error(`na afvinken verwacht € 4.000 gerealiseerd en € 0 resterend: "${na}"`);
+        if (extra !== 1) throw new Error(`afvinken gaf ${extra} schrijfacties`);
+        const verwijder = await page.locator('button[aria-label="Verwijder mijlpaal Harnasmijlpaal"]').isDisabled();
+        if (!verwijder) throw new Error('een gerealiseerde mijlpaal is nog te verwijderen');
+        return { ok: true, bewijs: `"${voor}" → "${na}", 1 schrijfactie, verwijderen uitgeschakeld` };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op projecten',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const lijst = await a11yOp(page, 'projecten');
+        await page.locator('button', { hasText: 'Nieuw project' }).click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        const sheet = await sweep(page, 'projectsheet');
+        await page.keyboard.press('Escape');
+        await page.goto(`${BASE}/bureau/projecten/harnas-met`);
+        await page.waitForSelector('#project-titel', { timeout: 20_000 });
+        const detail = await a11yOp(page, 'projectdetail');
+        const problemen = [...lijst.problemen, ...sheet.fouten.map((f) => `sheet contrast: ${beschrijfFout(f)}`), ...detail.problemen];
+        if (problemen.length) throw new Error(problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `lijst ${lijst.gemeten} + sheet ${sheet.gemeten} + detail ${detail.gemeten} tekstelementen boven AA; koppen ${lijst.koppen}/${detail.koppen}; ${lijst.stops}/${detail.stops} tabstops met zichtbare focus (detail: ${detail.segmenten} extra datumsegmenten)` };
+      },
+    },
+    {
+      naam: 'verkoop — aantallen en conversies dragen hun noemer, geen percentage onder vijf',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => trechterKlopt(page),
+    },
+    {
+      naam: 'verkoop — gewonnen maakt één project, en de knop komt niet terug',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) => omzettingEenmaal(page, state),
+    },
+    {
+      naam: 'verkoop — omzetting geweigerd als er al projecten naar de kans verwijzen',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop-dubbel' },
+      actie: async (page, { state }) => {
+        await openKans(page, 'harnas-gewonnen');
+        const basis = state.schrijfpogingen.length;
+        await page.fill('#omzetting-naam', 'Harnasdiagnose');
+        await page.locator('[role=dialog] button', { hasText: 'Project aanmaken' }).click();
+        const melding = await page.locator('[role=dialog] [role=alert]').innerText({ timeout: 5_000 });
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (melding !== 'Deze kans is al een project.') throw new Error(`melding "${melding}"`);
+        if (extra !== 0) throw new Error(`geweigerde omzetting schreef ${extra} keer weg`);
+        return { ok: true, bewijs: `melding "${melding}", 0 schrijfacties` };
+      },
+    },
+    {
+      naam: 'verkoop — verloren vraagt een reden; de overgang komt in de historie',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) => verlorenVraagtReden(page, state),
+    },
+    {
+      naam: 'verkoop — opvolgen: verlopen actie en open kans zonder actie, afgesloten niet',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => {
+        const items = await page.locator('[data-follow-up]').evaluateAll((els) => els.map((e) => [e.getAttribute('data-follow-up'), e.textContent.replace(/\s+/g, ' ')]));
+        const ids = items.map(([id]) => id);
+        if (JSON.stringify(ids) !== JSON.stringify(['harnas-voorstel', 'harnas-gesprek'])) throw new Error(`opvolgen toont ${JSON.stringify(ids)}`);
+        if (!/Harnasopvolging.*over tijd/.test(items[0][1])) throw new Error(`verlopen actie zonder "over tijd": "${items[0][1]}"`);
+        if (!items[1][1].includes('geen volgende actie')) throw new Error(`kans zonder actie niet benoemd: "${items[1][1]}"`);
+        return { ok: true, bewijs: `2 items in volgorde (verlopen eerst): "${items[0][1].trim()}" · "${items[1][1].trim()}"` };
+      },
+    },
+    {
+      naam: 'verkoop — nieuwe kans: halve actie geweigerd, daarna één schrijfactie en focus terug',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.locator('#kans-nieuw').click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        await page.fill('#kans-bedrijf', 'Harnasnieuw');
+        await page.fill('#kans-actie', 'Harnasbellen');
+        await page.locator('[role=dialog] button[type=submit]', { hasText: 'Kans toevoegen' }).click();
+        const fout = await page.locator('#kans-actie-datum-fout').count();
+        await page.waitForFunction(() => document.activeElement?.id === 'kans-actie-datum', null, { timeout: 2_000 }).catch(() => {});
+        const focus = await page.evaluate(() => document.activeElement?.id);
+        const zonder = await nieuweSchrijfacties(page, state, basis);
+        if (fout !== 1 || zonder !== 0) throw new Error(`actie zonder datum: ${fout} melding(en), ${zonder} schrijfactie(s)`);
+        if (focus !== 'kans-actie-datum') throw new Error(`focus na weigering op "${focus}", niet op het datumveld`);
+        await page.fill('#kans-actie-datum', new Date().toISOString().slice(0, 10));
+        await page.locator('[role=dialog] button[type=submit]', { hasText: 'Kans toevoegen' }).click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+        const terug = await page.evaluate(() => document.activeElement?.id);
+        const met = await nieuweSchrijfacties(page, state, basis);
+        const inContact = await page.locator('[data-stage-group="contact"] [data-opportunity-row]', { hasText: 'Harnasnieuw' }).count();
+        if (met !== 1) throw new Error(`toevoegen gaf ${met} schrijfacties`);
+        if (terug !== 'kans-nieuw') throw new Error(`focus na sluiten op "${terug}"`);
+        if (inContact !== 1) throw new Error('de nieuwe kans staat niet onder Contact');
+        return { ok: true, bewijs: 'weigering: melding + focus op datum + 0 schrijfacties; daarna 1 schrijfactie, focus terug op "Nieuwe kans", rij onder Contact' };
+      },
+    },
+    {
+      naam: 'verkoop — lege staat zonder kansen, geen trechter',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        const leeg = await page.locator('[data-empty-state]').count();
+        const trechter = await page.locator('section[aria-labelledby="trechter-titel"]').count();
+        if (leeg !== 1 || trechter !== 0) throw new Error(`${leeg} lege staten, ${trechter} trechters`);
+        return { ok: true, bewijs: '1 lege staat, 0 trechters' };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op verkoop (+ beide sheets)',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => {
+        await page.locator('#kansen-gesloten').click();
+        const lijst = await a11yOp(page, 'verkoop');
+        await openKans(page, 'harnas-gewonnen');
+        const detail = await sweep(page, 'kanssheet');
+        const koppenDetail = await kopstructuur(page);
+        await page.keyboard.press('Escape');
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+        await page.locator('#kans-nieuw').click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        const nieuw = await sweep(page, 'nieuwe-kans');
+        const problemen = [
+          ...lijst.problemen,
+          ...detail.fouten.map((f) => `kanssheet contrast: ${beschrijfFout(f)}`),
+          ...koppenDetail.problemen.map((p) => `kanssheet koppen: ${p}`),
+          ...nieuw.fouten.map((f) => `nieuwe kans contrast: ${beschrijfFout(f)}`),
+        ];
+        if (problemen.length) throw new Error(problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `pagina ${lijst.gemeten} + kanssheet ${detail.gemeten} + nieuwe kans ${nieuw.gemeten} tekstelementen boven AA; koppen ${lijst.koppen}/${koppenDetail.aantal}; ${lijst.stops} tabstops met zichtbare focus` };
+      },
+    },
+    {
+      naam: 'cash — vervallen factuur zonder datum staat apart, de gedateerde in haar week',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => vervallenStaatApart(page),
+    },
+    {
+      naam: 'cash — lege prognose: lege staat in plaats van dertien nulrijen',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen', leeg: true },
+      actie: async (page) => {
+        const leeg = await page.locator('[data-empty-state]').count();
+        const weken = await page.locator('[data-cash-week]').count();
+        if (leeg !== 1 || weken !== 0) throw new Error(`${leeg} lege staten, ${weken} weekrijen`);
+        return { ok: true, bewijs: '1 lege staat, 0 weekrijen' };
+      },
+    },
+    {
+      naam: 'facturen — betaald haalt de post uit de prognose; uitvinken zet haar open zonder post, "Zet in prognose" zet hem terug',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page, { state }) => betaaldHaaltPostWeg(page, state),
+    },
+    {
+      naam: 'facturen — nieuwe factuur: één schrijfactie, post incl. btw in de maand van de vervaldatum',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        const f = 'factuur-nieuw-harnas-met';
+        await page.fill(`#${f}-label`, 'Harnasvoorschot');
+        await page.selectOption(`#${f}-soort`, 'voorschot');
+        await page.fill(`#${f}-bedrag`, '2.000');
+        const verval = await page.inputValue(`#${f}-verval`);
+        const zonder = await nieuweSchrijfacties(page, state, basis);
+        if (zonder) throw new Error(`invullen schreef ${zonder} keer weg`);
+        await page.locator(`form[data-form="${f}"] button[type=submit]`).click();
+        await page.locator('[data-invoice-row]', { hasText: 'Harnasvoorschot' }).waitFor({ timeout: 5_000 });
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        const doc = state.documenten.at(-1);
+        const factuur = doc?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.label === 'Harnasvoorschot');
+        const post = (doc?.incomeItems ?? []).find((i) => i.id === factuur?.incomeItemId);
+        const mijlpalen = doc?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.milestones?.length;
+        if (extra !== 1) throw new Error(`toevoegen gaf ${extra} schrijfacties`);
+        if (!post || post.amount !== 2420 || post.monthKey !== verval.slice(0, 7)) throw new Error(`post ${JSON.stringify(post)} bij vervaldatum ${verval}`);
+        if (mijlpalen !== 0) throw new Error('een voorschot maakte een mijlpaal — een factuur is geen omzet');
+        return { ok: true, bewijs: `0 schrijfacties tijdens invullen, 1 bij toevoegen; post € 2.420 (2.000 + 21 %) in ${post.monthKey}; 0 mijlpalen` };
+      },
+    },
+    {
+      naam: 'klanten — twee bases met eigen noemer, limiet als woord, groep telt samen',
+      pad: KLANTEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => concentratieKlopt(page),
+    },
+    {
+      naam: 'klanten — lege staat zonder klanten',
+      pad: KLANTEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        const leeg = await page.locator('[data-empty-state]').count();
+        const tabellen = await page.locator('[data-concentration]').count();
+        if (leeg !== 1 || tabellen !== 0) throw new Error(`${leeg} lege staten, ${tabellen} concentratietabellen`);
+        return { ok: true, bewijs: '1 lege staat, 0 tabellen' };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op cash, klanten en facturen',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => {
+        await alleCashRegels(page);
+        const cash = await a11yOp(page, 'cash');
+        await page.goto(`${BASE}/bureau/projecten/harnas-met`);
+        await page.waitForSelector('[data-invoice-row]', { timeout: 20_000 });
+        const facturen = await a11yOp(page, 'facturen');
+        const problemen = [...cash.problemen, ...facturen.problemen];
+        if (problemen.length) throw new Error(problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `cash ${cash.gemeten} + projectdetail met facturen ${facturen.gemeten} tekstelementen boven AA; koppen ${cash.koppen}/${facturen.koppen}; ${cash.stops}/${facturen.stops} tabstops met zichtbare focus` };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op klanten',
+      pad: KLANTEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        const r = await a11yOp(page, 'klanten');
+        if (r.problemen.length) throw new Error(r.problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `${r.gemeten} tekstelementen boven AA; ${r.koppen} koppen; ${r.stops} tabstops met zichtbare focus` };
+      },
+    },
+    {
+      naam: 'bureau — leeg (document zonder bureau-sleutel): onvoldoende gegevens, nooit nul',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { leeg: true },
+      actie: async (page, { state, foutenVoor }) => {
+        const leeg = await page.locator('[data-empty-state]').count();
+        if (leeg !== 1) throw new Error(`${leeg} lege staten`);
+        const r = await leegNooitNul(page);
+        const fouten = state.paginafouten.length - foutenVoor;
+        if (fouten) throw new Error(`${fouten} paginafout(en): ${state.paginafouten.slice(-fouten).join(' | ')}`);
+        return { ...r, bewijs: `${r.bewijs}; 1 lege staat met actie; 0 paginafouten` };
+      },
+    },
+    {
+      naam: 'bureau — vol: noemer, bron en precies één link per tegel',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => {
+        const tegels = await page.locator('[data-kpi]').evaluateAll((els) => els.map((e) => ({
+          kpi: e.getAttribute('data-kpi'),
+          noemer: e.querySelector('[data-kpi-noemer]')?.textContent?.trim() ?? '',
+          bron: e.querySelector('[data-kpi-bron]')?.textContent?.trim() ?? '',
+          links: [...e.querySelectorAll('a')].map((a) => a.getAttribute('href')),
+        })));
+        const fouten = tegels.filter((t) => !t.noemer || !t.bron || t.links.length !== 1 || !t.links[0].startsWith('/')).map((t) => `${t.kpi} (noemer "${t.noemer}", bron "${t.bron}", links ${JSON.stringify(t.links)})`);
+        if (tegels.length !== 6) throw new Error(`${tegels.length} tegels`);
+        if (fouten.length) throw new Error(fouten.join(' · '));
+        return { ok: true, bewijs: tegels.map((t) => `${t.kpi} → ${t.links[0]}`).join(' · ') };
+      },
+    },
+    {
+      naam: 'bureau — omzettegel is de som van de gerealiseerde omzet op de projectenpagina',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        const tegel = (await page.locator('[data-kpi="omzet"] p.text-3xl').innerText()).replace(/\s+/g, ' ');
+        await page.locator('nav[aria-label="Bureau"] a', { hasText: 'Projecten' }).click();
+        await page.waitForSelector('[data-project-row]', { timeout: 10_000 });
+        const som = (await page.locator('[data-realized]').evaluateAll((els) => els.map((e) => Number(e.getAttribute('data-realized'))))).reduce((a, b) => a + b, 0);
+        if (tegel !== '€ 100.000' || som !== 100000) throw new Error(`tegel "${tegel}", som op de bestemming ${som}`);
+        return { ok: true, bewijs: `tegel "${tegel}" = Σ gerealiseerd over de projectrijen (${som})` };
+      },
+    },
+    {
+      naam: 'bureau — jaarkeuze filtert de tegels en blijft staan na navigatie',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        const omzet = () => page.locator('[data-kpi="omzet"]').innerText().then((t) => t.replace(/\s+/g, ' '));
+        const voor = await omzet();
+        await page.locator('button[aria-label="Een jaar vooruit"]').click();
+        await page.waitForFunction((j) => document.querySelector('#overzicht-titel')?.textContent?.includes(String(j)), JAAR + 1, { timeout: 5_000 });
+        const na = await omzet();
+        if (!voor.includes('€ 100.000') || !na.includes('Onvoldoende gegevens')) throw new Error(`vóór "${voor.slice(0, 60)}", na "${na.slice(0, 60)}"`);
+        await page.locator('nav[aria-label="Bureau"] a', { hasText: 'Projecten' }).click();
+        await page.waitForSelector('#projecten-titel', { timeout: 10_000 });
+        await page.locator('nav[aria-label="Bureau"] a', { hasText: 'Overzicht' }).click();
+        await page.waitForSelector('#overzicht-titel', { timeout: 10_000 });
+        const titel = await page.locator('#overzicht-titel').innerText();
+        if (!titel.includes(String(JAAR + 1))) throw new Error(`na navigatie terug op "${titel}"`);
+        return { ok: true, bewijs: `${JAAR}: "€ 100.000"; ${JAAR + 1}: "Onvoldoende gegevens"; na Projecten → Overzicht nog "${titel}"` };
+      },
+    },
+    {
+      naam: 'bureau — signalen eerst, met niveau als woord en een link',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => signaalMetWoord(page),
+    },
+    {
+      naam: 'state — laden op het overzicht',
+      pad: OVERZICHT,
+      gedrag: { vertragingMs: 2_500 },
+      wachtOp: 'niets',
+      actie: async (page) => {
+        await page.waitForSelector('[aria-busy="true"]', { timeout: 10_000, state: 'visible' });
+        await page.waitForSelector('[data-kpi]', { timeout: 20_000, state: 'visible' });
+        return { ok: true, bewijs: 'skeleton met aria-busy, daarna de tegels' };
+      },
+    },
+    {
+      naam: 'state — fout op het overzicht',
+      pad: OVERZICHT,
+      gedrag: { documentStatus: 500 },
+      wachtOp: 'niets',
+      actie: async (page) => {
+        await page.waitForSelector('text=Gegevens niet geladen', { timeout: 20_000, state: 'visible' });
+        const herkansing = await page.locator('button', { hasText: 'Opnieuw proberen' }).count();
+        const tegels = await page.locator('[data-kpi]').count();
+        if (!herkansing || tegels) throw new Error(`herkansing ${herkansing}, tegels ${tegels}`);
+        return { ok: true, bewijs: 'foutscherm met "Opnieuw proberen", 0 tegels' };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op het overzicht',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        const r = await a11yOp(page, 'overzicht');
+        if (r.problemen.length) throw new Error(r.problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `${r.gemeten} tekstelementen boven AA; ${r.koppen} koppen; ${r.stops} tabstops met zichtbare focus` };
+      },
+    },
+  ];
+}
+
+/**
+ * Schermafbeeldingen voor een visuele review: elke bureau-route vol op 1440 en 390, leeg op 1440,
+ * en een gedeeltelijke stand. Geen oordeel — dat doet wie kijkt; de run faalt alleen als een
+ * pagina niet laadt of een paginafout gooit.
+ */
+function screenshotScenarios(map) {
+  mkdirSync(map, { recursive: true });
+  const routes = ['/bureau', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/verkoop', '/bureau/tijd', '/bureau/klanten', '/bureau/cash', '/bureau/doelen'];
+  const standen = { vol: { bureau: 'vol' }, leeg: { leeg: true }, deels: { bureau: 'projecten' } };
+  const shots = [
+    ...routes.flatMap((pad) => [['vol', pad, 1440], ['vol', pad, 390]]),
+    ...routes.filter((p) => p !== '/bureau/projecten/harnas-met').map((pad) => ['leeg', pad, 1440]),
+    ['leeg', '/bureau', 390],
+    ['deels', '/bureau', 1440],
+    ['deels', '/bureau/projecten/harnas-zonder', 1440],
+    ['deels', '/bureau/tijd', 1440],
+  ];
+  return shots.map(([stand, pad, breedte]) => {
+    const slug = pad === '/bureau' ? 'overzicht' : pad.replace('/bureau/', '').replace(/\//g, '-');
+    const bestand = join(map, `${stand}-${breedte}-${slug}.png`);
+    return {
+      naam: `screenshot — ${stand} ${breedte} ${slug}`,
+      pad,
+      wachtOp: 'bureau',
+      gedrag: standen[stand],
+      viewport: { width: breedte, height: breedte === 390 ? 844 : 900 },
+      actie: async (page, { state, foutenVoor }) => {
+        await page.screenshot({ path: bestand, fullPage: true });
+        const fouten = state.paginafouten.length - foutenVoor;
+        if (fouten) throw new Error(`${fouten} paginafout(en)`);
+        const hoogte = await page.evaluate(() => document.documentElement.scrollHeight);
+        return { ok: true, bewijs: `${bestand.split('/').pop()} (${breedte}×${hoogte})` };
+      },
+    };
+  });
+}
+
+function reviewScenarios() {
+  return [
+    {
+      naam: 'facturen — nieuwe factuur gekoppeld aan een bestaande post: geen tweede post',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page, { state }) => {
+        const f = 'factuur-nieuw-harnas-met';
+        await page.fill(`#${f}-label`, 'Harnaskoppeling');
+        await page.fill(`#${f}-bedrag`, '459,13');
+        await page.selectOption(`#${f}-prognose`, 'harnas-post-los');
+        const basis = state.schrijfpogingen.length;
+        await page.locator(`form[data-form="${f}"] button[type=submit]`).click();
+        await page.locator('[data-invoice-row]', { hasText: 'Harnaskoppeling' }).waitFor({ timeout: 5_000 });
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        const doc = state.documenten.at(-1);
+        const factuur = doc?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.label === 'Harnaskoppeling');
+        const posten = (doc?.incomeItems ?? []).filter((i) => Math.abs(i.amount - 555.55) < 0.005);
+        if (extra !== 1) throw new Error(`${extra} schrijfacties`);
+        if (factuur?.incomeItemId !== 'harnas-post-los') throw new Error(`factuur gekoppeld aan ${factuur?.incomeItemId}`);
+        if (posten.length !== 1 || doc.incomeItems.length !== 3) throw new Error(`${posten.length} posten van 555,55, ${doc.incomeItems.length} posten in totaal (verwacht 1 en 3)`);
+        return { ok: true, bewijs: '1 schrijfactie; factuur.incomeItemId = harnas-post-los; 1 post van € 555,55, 3 posten in totaal' };
+      },
+    },
+    {
+      naam: 'projecten — mijlpaal bewerken vertrekt van de opgeslagen waarden',
+      pad: '/bureau/projecten/harnas-k1',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page, { state, oudeDatum = false }) => {
+        const vandaag = await page.evaluate(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+        const rij = () => page.locator('[data-milestone-row="k1-1"]');
+        await rij().locator('button[role=checkbox]').click();
+        await page.waitForFunction(() => document.querySelector('[data-milestone-row="k1-1"] button[role=checkbox]')?.getAttribute('data-state') === 'unchecked', null, { timeout: 5_000 });
+        await rij().locator('button[role=checkbox]').click();
+        await page.waitForFunction(() => document.querySelector('[data-milestone-row="k1-1"] button[role=checkbox]')?.getAttribute('data-state') === 'checked', null, { timeout: 5_000 });
+        await rij().locator('button', { hasText: 'Bewerken' }).click();
+        await page.fill('input[aria-label="Omschrijving"]', 'k1-1 hernoemd');
+        // Tegenproef: de oude realisatiedatum staat nog in het formulier — precies wat de bevroren invoer deed.
+        if (oudeDatum) await page.fill('input[aria-label="Realisatiedatum"]', `${JAAR - 1}-12-31`);
+        const basis = state.schrijfpogingen.length;
+        await page.locator('button', { hasText: /^OK$/ }).first().click();
+        await page.locator('[data-milestone-row="k1-1"]', { hasText: 'k1-1 hernoemd' }).waitFor({ timeout: 5_000 });
+        await nieuweSchrijfacties(page, state, basis);
+        const m = state.documenten.at(-1)?.bureau?.projects?.find((p) => p.id === 'harnas-k1')?.milestones?.find((x) => x.id === 'k1-1');
+        if (m?.label !== 'k1-1 hernoemd' || m?.realizedOn !== vandaag || m?.realizedAmount !== null) throw new Error(`na bewerken: ${JSON.stringify({ label: m?.label, realizedOn: m?.realizedOn, realizedAmount: m?.realizedAmount })}, verwacht realizedOn ${vandaag}`);
+        return { ok: true, bewijs: `afvinken → terugzetten → bewerken: label hernoemd, realizedOn ${m.realizedOn} (vandaag), realizedAmount null` };
+      },
+    },
+    {
+      naam: 'conflict — Enter in een rij schrijft niets',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'vol', conflict: true },
+      actie: async (page, { zonderConflict = false }) => {
+        // Eerst een geweigerde schrijfactie: dat maakt het conflict. De tegenproef slaat dat over en
+        // toont dat dezelfde Enter zonder conflict de kosten wél verandert — dus dat de meting het ziet.
+        await page.locator('[data-invoice-row="harnas-factuur-later"] button[role=checkbox]').click();
+        if (!zonderConflict) await page.locator('[role=alert]', { hasText: 'Elders gewijzigd' }).waitFor({ timeout: 10_000 });
+        const kosten = () => page.locator('section', { hasText: 'Directe externe kosten' }).locator('p', { hasText: 'werkelijk bekend voor' }).innerText();
+        const voor = await kosten();
+        await page.fill('#kost-werkelijk-harnas-kost', '999');
+        await page.press('#kost-werkelijk-harnas-kost', 'Enter');
+        await page.waitForTimeout(300);
+        const na = await kosten();
+        if (voor !== na) throw new Error(`Enter tijdens conflict veranderde de kosten: "${voor}" → "${na}"`);
+        return { ok: true, bewijs: `conflict actief; Enter in "werkelijk": "${na.replace(/\s+/g, ' ')}" onveranderd` };
+      },
+    },
+    {
+      naam: 'bureau — focus blijft in de rij bij bewerken en verwijderen',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'vol' },
+      actie: async (page, { verstoor = false }) => {
+        // Tegenproef: na elke klik valt de focus op body — de toestand van vóór de fix.
+        if (verstoor) await page.evaluate(() => document.addEventListener('click', () => setTimeout(() => document.activeElement?.blur(), 0), true));
+        const focus = () => page.evaluate(() => ({ label: document.activeElement?.getAttribute('aria-label') ?? '', tekst: document.activeElement?.textContent?.trim() ?? '', tag: document.activeElement?.tagName }));
+        await page.locator('button[aria-label="Verwijder factuur Harnasslot"]').click();
+        const bevestig = await focus();
+        await page.locator('[data-invoice-row="harnas-factuur-oud"] button', { hasText: 'Niet verwijderen' }).click();
+        await page.waitForTimeout(100);
+        const terug = await focus();
+        await page.goto(`${BASE}/bureau/projecten/harnas-zonder`);
+        await page.waitForSelector('[data-milestone-row="harnas-m1"]', { timeout: 20_000 });
+        await page.locator('button[aria-label="Bewerk mijlpaal Harnasmijlpaal"]').click();
+        const bewerk = await focus();
+        await page.locator('button', { hasText: 'Annuleren' }).first().click();
+        await page.waitForTimeout(100);
+        const naAnnuleren = await focus();
+        const fouten = [];
+        if (bevestig.tekst !== 'Niet verwijderen') fouten.push(`na Verwijderen op "${bevestig.tekst || bevestig.tag}"`);
+        if (terug.label !== 'Verwijder factuur Harnasslot') fouten.push(`na Niet verwijderen op "${terug.label || terug.tag}"`);
+        if (bewerk.label !== 'Omschrijving') fouten.push(`na Bewerken op "${bewerk.label || bewerk.tag}"`);
+        if (naAnnuleren.label !== 'Bewerk mijlpaal Harnasmijlpaal') fouten.push(`na Annuleren op "${naAnnuleren.label || naAnnuleren.tag}"`);
+        if (fouten.length) throw new Error(fouten.join(' · '));
+        return { ok: true, bewijs: 'Verwijderen → "Niet verwijderen" → terug op "Verwijder factuur"; Bewerken → Omschrijving → Annuleren → terug op "Bewerk mijlpaal"' };
+      },
+    },
+    {
+      naam: 'bureau — lege staat per route (leeg document)',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { leeg: true },
+      actie: async (page) => {
+        const routes = [OVERZICHT, '/bureau/projecten', VERKOOP, '/bureau/tijd', KLANTEN, CASH, DOELEN];
+        const uit = [];
+        for (const pad of routes) {
+          if (pad !== OVERZICHT) {
+            await page.locator('nav[aria-label="Bureau"] a', { hasText: { [OVERZICHT]: 'Overzicht', '/bureau/projecten': 'Projecten', [VERKOOP]: 'Verkoop', '/bureau/tijd': 'Tijd', [KLANTEN]: 'Klanten', [CASH]: 'Cash', [DOELEN]: 'Doelen' }[pad] }).click();
+            await page.waitForURL(`${BASE}${pad}`, { timeout: 10_000 });
+            await page.waitForSelector('[data-bureau-page] h2', { timeout: 10_000 });
+          }
+          const r = await page.evaluate(() => {
+            const leeg = [...document.querySelectorAll('[data-empty-state]')];
+            const knoppen = [...document.querySelectorAll('[data-bureau-page] button, [data-bureau-page] a')].filter((el) => !el.closest('nav'));
+            return { leeg: leeg.length, actieInLeeg: leeg.reduce((n, el) => n + el.querySelectorAll('a, button').length, 0), actiesOpPagina: knoppen.length };
+          });
+          uit.push({ pad, ...r });
+        }
+        const fout = uit.filter((x) => x.leeg !== 1);
+        if (fout.length) throw new Error(fout.map((x) => `${x.pad}: ${x.leeg} lege staten`).join(' · '));
+        return { ok: true, bewijs: uit.map((x) => `${x.pad.replace('/bureau', '') || '/'} 1 (actie erin ${x.actieInLeeg})`).join(' · ') };
+      },
+    },
+    {
+      naam: 'projecten — zonder mijlpalen geen € 0, in de tabel en op de detailpagina',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const rij = page.locator('[data-project-row="harnas-met"]');
+        const cellen = await rij.locator('td[data-onvoldoende]').count();
+        const rijTekst = (await rij.innerText()).replace(/\s+/g, ' ');
+        if (cellen !== 2 || /€\s?0(?![\d.,])/.test(rijTekst)) throw new Error(`tabelrij: ${cellen} onvoldoende-cellen, "${rijTekst}"`);
+        await page.goto(`${BASE}/bureau/projecten/harnas-met`);
+        await page.waitForSelector('#project-titel', { timeout: 20_000 });
+        const omzet = (await page.locator('dl').first().locator('div', { hasText: 'Omzet in' }).innerText()).replace(/\s+/g, ' ');
+        if (!omzet.includes('Onvoldoende gegevens') || /€\s?0(?![\d.,])/.test(omzet)) throw new Error(`detail: "${omzet}"`);
+        return { ok: true, bewijs: `tabel: 2 cellen "Onvoldoende gegevens", geen € 0; detail: "${omzet.slice(0, 80)}"` };
+      },
+    },
+    {
+      naam: 'projecten — datums in Nederlandse notatie, geen yyyy-MM',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const tabel = (await page.locator('[data-project-row]').allInnerTexts()).join(' ');
+        await page.goto(`${BASE}/bureau/projecten/harnas-met`);
+        await page.waitForSelector('#project-titel', { timeout: 20_000 });
+        const kop = (await page.locator('article header').innerText()).replace(/\s+/g, ' ');
+        const iso = /\b\d{4}-\d{2}(-\d{2})?\b/;
+        if (iso.test(tabel) || iso.test(kop)) throw new Error(`ISO-datum in ${iso.test(tabel) ? `tabel "${tabel.match(iso)[0]}"` : `kop "${kop}"`}`);
+        if (!/uitvoering [a-z]{3} \d{4} · getekend \d{1,2} [a-z]+ \d{4}/.test(kop)) throw new Error(`kop "${kop}"`);
+        return { ok: true, bewijs: `kop "${kop.match(/uitvoering.*/)?.[0]}"; 0 ISO-datums in tabel en kop` };
+      },
+    },
+    {
+      naam: 'projecten — hoogstens één primaire knop per sectie op de detailpagina',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => {
+        const secties = await page.locator('article section').evaluateAll((els) => els.map((el) => ({
+          titel: el.querySelector('h3')?.textContent ?? '?',
+          // Het klassetoken zelf: een Checkbox draagt `data-[state=checked]:bg-primary`, wat een
+          // substringtoets als primaire knop telde (gemeten: "Facturen en betalingen: 4").
+          primair: [...el.querySelectorAll('button')].filter((b) => b.classList.contains('bg-primary')).length,
+        })));
+        const teVeel = secties.filter((x) => x.primair > 1);
+        if (teVeel.length) throw new Error(teVeel.map((x) => `${x.titel}: ${x.primair}`).join(' · '));
+        const totaal = secties.reduce((a, x) => a + x.primair, 0);
+        return { ok: true, bewijs: `${secties.length} secties, ${totaal} primaire knop(pen) in totaal, nergens meer dan één` };
+      },
+    },
+    {
+      naam: 'cash — rijen even hoog, regelknop heet "N regels"',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => {
+        const hoogtes = await page.locator('[data-cash-week]').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+        const uniek = [...new Set(hoogtes)];
+        const knoppen = await page.locator('[data-cash-week] button').allInnerTexts();
+        if (uniek.length !== 1) throw new Error(`rijhoogtes ${JSON.stringify(uniek)}`);
+        if (!knoppen.length || knoppen.some((t) => !/^\d+ regels?$/.test(t.trim()))) throw new Error(`knopteksten ${JSON.stringify(knoppen)}`);
+        return { ok: true, bewijs: `${hoogtes.length} rijen van ${uniek[0]} px; knoppen ${JSON.stringify(knoppen)}` };
+      },
+    },
+    {
+      naam: 'cash — 390: einde vrij per week in beeld zonder te scrollen',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      viewport: { width: 390, height: 844 },
+      actie: async (page) => {
+        const r = await page.locator('[data-cash-week]').evaluateAll((els) => els.map((e) => {
+          const eind = e.querySelector('[data-closing-mobile]');
+          const rect = eind?.getBoundingClientRect();
+          return { tekst: eind?.textContent ?? '', zichtbaar: Boolean(rect && rect.width > 0 && rect.left >= 0 && rect.right <= window.innerWidth), waarde: e.querySelector('[data-closing-free]')?.getAttribute('data-closing-free') };
+        }));
+        const fout = r.filter((x) => !x.zichtbaar || !x.tekst.startsWith('einde'));
+        if (r.length !== 13 || fout.length) throw new Error(`${r.length} weken, ${fout.length} zonder zichtbaar einde: ${JSON.stringify(fout[0])}`);
+        return { ok: true, bewijs: `13 weken, elk "${r[0].tekst}"-vorm binnen 390 px` };
+      },
+    },
+    {
+      naam: 'bureau — signalen op één regel op 1440',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'vol' },
+      actie: async (page) => {
+        const r = await page.locator('[data-signal]').evaluateAll((els) => els.map((li) => {
+          const tekst = li.querySelector('span.min-w-0');
+          const regel = parseFloat(getComputedStyle(tekst).lineHeight);
+          return { id: li.getAttribute('data-signal'), regels: Math.round(tekst.getBoundingClientRect().height / regel) };
+        }));
+        const meer = r.filter((x) => x.regels !== 1);
+        if (!r.length || meer.length) throw new Error(`${r.length} signalen, meer dan één regel: ${JSON.stringify(meer)}`);
+        return { ok: true, bewijs: `${r.length} signalen, elk 1 regel` };
+      },
+    },
+    {
+      naam: 'bureau — 390: header en subnav',
+      pad: '/bureau/doelen',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      viewport: { width: 390, height: 844 },
+      actie: async (page) => {
+        const r = await page.evaluate(() => {
+          const uit = [...document.querySelectorAll('header button')].find((b) => b.textContent.includes('Uitloggen'));
+          const nav = document.querySelector('nav[aria-label="Hoofdnavigatie"] a');
+          const sub = [...document.querySelectorAll('nav[aria-label="Bureau"] a')].map((a) => {
+            const rect = a.getBoundingClientRect();
+            return { label: a.textContent, binnen: rect.left >= 0 && rect.right <= window.innerWidth };
+          });
+          return { uitTop: Math.round(uit.getBoundingClientRect().top), navTop: Math.round(nav.getBoundingClientRect().top), sub };
+        });
+        const buiten = r.sub.filter((x) => !x.binnen).map((x) => x.label);
+        if (r.uitTop !== r.navTop) throw new Error(`Uitloggen op y=${r.uitTop}, navigatie op y=${r.navTop}`);
+        if (r.sub.length !== 7 || buiten.length) throw new Error(`subnav ${r.sub.length} items, buiten beeld: ${buiten.join(', ')}`);
+        return { ok: true, bewijs: `Uitloggen en navigatie op y=${r.navTop}; 7/7 subnav-items binnen 390 px` };
+      },
+    },
+  ];
+}
+
+/**
+ * Elke review-meting met het defect teruggezet in de DOM, vóór de meting: de scenario's hierboven
+ * horen dan te falen. Zonder dit is "groen na de fix" niet te onderscheiden van "meet niets".
+ */
+function reviewTegenproeven() {
+  const defect = {
+    'facturen — nieuwe factuur gekoppeld aan een bestaande post: geen tweede post': () => {
+      // Het defect: de keuze voor een bestaande post gaat verloren en er komt een nieuwe.
+      const select = document.querySelector('[id$="-prognose"]');
+      select.addEventListener('change', () => { select.value = 'nieuw'; select.dispatchEvent(new Event('change', { bubbles: true })); }, { once: true });
+    },
+    'bureau — lege staat per route (leeg document)': () => { document.querySelector('[data-empty-state]').remove(); },
+    'projecten — zonder mijlpalen geen € 0, in de tabel en op de detailpagina': () => { document.querySelector('[data-project-row="harnas-met"] td[data-onvoldoende]').textContent = '€ 0'; },
+    'projecten — datums in Nederlandse notatie, geen yyyy-MM': () => { document.querySelector('[data-project-row]').insertAdjacentText('beforeend', ' 2026-09'); },
+    'projecten — hoogstens één primaire knop per sectie op de detailpagina': () => { document.querySelectorAll('article section button').forEach((b) => b.classList.add('bg-primary')); },
+    'cash — rijen even hoog, regelknop heet "N regels"': () => { document.querySelector('[data-cash-week] th').style.paddingBlock = '1.25rem'; },
+    'cash — 390: einde vrij per week in beeld zonder te scrollen': () => { document.querySelectorAll('[data-closing-mobile]').forEach((el) => { el.style.display = 'none'; }); },
+    'bureau — signalen op één regel op 1440': () => { document.querySelectorAll('[data-signal] span.min-w-0 > span:last-child').forEach((el) => { el.style.display = 'block'; }); },
+    'bureau — 390: header en subnav': () => { const ul = document.querySelector('nav[aria-label="Bureau"] ul'); ul.style.flexWrap = 'nowrap'; ul.style.width = 'max-content'; },
+  };
+  // Gedrag dat niet in de DOM terug te zetten is, krijgt het defect als optie van zijn scenario.
+  const optie = {
+    'projecten — mijlpaal bewerken vertrekt van de opgeslagen waarden': { oudeDatum: true },
+    'conflict — Enter in een rij schrijft niets': { zonderConflict: true },
+    'bureau — focus blijft in de rij bij bewerken en verwijderen': { verstoor: true },
+  };
+  return reviewScenarios().map((sc) => {
+    if (!defect[sc.naam] && !optie[sc.naam]) throw new Error(`reviewscenario zonder tegenproef: ${sc.naam}`);
+    return {
+      ...sc,
+      naam: `tegenproef — ${sc.naam}`,
+      moetFalen: true,
+      gedrag: sc.naam === 'conflict — Enter in een rij schrijft niets' ? { bureau: 'vol' } : sc.gedrag,
+      actie: async (page, ctx) => {
+        if (defect[sc.naam]) await page.evaluate(defect[sc.naam]);
+        return sc.actie(page, { ...ctx, ...(optie[sc.naam] ?? {}) });
+      },
+    };
+  });
+}
+
+function bureauTegenproeven() {
+  return [
+    {
+      naam: 'tegenproef — een nul in een lege tegel',
+      moetFalen: true,
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { leeg: true },
+      actie: async (page) => {
+        await page.locator('[data-kpi="omzet"] [data-onvoldoende]').evaluate((el) => { el.insertAdjacentHTML('beforeend', '<p>€ 0</p>'); });
+        return leegNooitNul(page);
+      },
+    },
+    {
+      naam: 'tegenproef — signaal met alleen een kleur',
+      moetFalen: true,
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        await page.locator('[data-signal] [class*="rounded-full"]').evaluateAll((els) => els.forEach((el) => { el.textContent = ''; }));
+        return signaalMetWoord(page);
+      },
+    },
+    {
+      naam: 'tegenproef — vervallen factuur mét datum staat niet apart',
+      moetFalen: true,
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash-gedateerd' },
+      actie: async (page) => vervallenStaatApart(page),
+    },
+    {
+      naam: 'tegenproef — de post blijft na betaling in het document',
+      moetFalen: true,
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page, { state }) =>
+        betaaldHaaltPostWeg(page, state, {
+          vervals: (doc) => doc.incomeItems.push({ id: 'harnas-post-later', monthKey: BRON, label: 'blijft staan', amount: 1234.56, received: false }),
+        }),
+    },
+    {
+      naam: 'tegenproef — klant op precies de limiet telt als erboven',
+      moetFalen: true,
+      pad: KLANTEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        await page.locator('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-klant-a"] td').nth(1).evaluate((el) => { el.innerHTML += '<span class="block text-xs">boven limiet</span>'; });
+        return concentratieKlopt(page);
+      },
+    },
+    {
+      naam: 'tegenproef — dubbele omzetting in het weggeschreven document',
+      moetFalen: true,
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) =>
+        omzettingEenmaal(page, state, {
+          vervals: (doc) => {
+            const eerste = doc.bureau.projects.find((p) => p.opportunityId === 'harnas-gewonnen');
+            doc.bureau.projects.push({ ...eerste, id: 'harnas-tweede-omzetting' });
+          },
+        }),
+    },
+    {
+      naam: 'tegenproef — percentage bij een noemer onder vijf',
+      moetFalen: true,
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => {
+        await page.locator('[data-conversion="gesprek-voorstel"] dd').evaluate((el) => { el.textContent = '2 van 3 · 67 %'; });
+        return trechterKlopt(page);
+      },
+    },
+    {
+      naam: 'tegenproef — verloren met een reden die er al stond',
+      moetFalen: true,
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) => verlorenVraagtReden(page, state, { redenVooraf: true }),
+    },
+    {
+      naam: 'tegenproef — startwaarden schrijven meteen weg',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.locator('button', { hasText: 'Startwaarden invullen' }).click();
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        return extra > 0
+          ? { ok: true, bewijs: `${extra} schrijfactie(s) zonder opslaan` }
+          : { ok: false, bewijs: 'geen schrijfactie zonder opslaan, zoals het hoort' };
+      },
+    },
+    {
+      naam: 'tegenproef — somregel past het totaal aan',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        await page.fill('#doel-dagen-klantwerk', '130');
+        const totaal = await page.inputValue('#doel-dagen-totaal');
+        return totaal === '202'
+          ? { ok: true, bewijs: 'totaal volgde de som' }
+          : { ok: false, bewijs: `totaal bleef ${totaal}, zoals het hoort` };
+      },
+    },
+    {
+      naam: 'tegenproef — kop overgeslagen',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        await page.evaluate(() => document.querySelector('h1')?.insertAdjacentHTML('afterend', '<h5>Ingeschoven kop</h5>'));
+        const r = await kopstructuur(page);
+        return r.problemen.length === 0
+          ? { ok: true, bewijs: 'geen sprong gezien' }
+          : { ok: false, bewijs: r.problemen[0] };
+      },
+    },
+    {
+      naam: 'tegenproef — horizontale overflow op 390 px',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      viewport: { width: 390, height: 844 },
+      actie: async (page) => {
+        await page.evaluate(() => document.querySelector('[data-bureau-page]')?.insertAdjacentHTML('beforeend', '<div style="width:600px;height:4px"></div>'));
+        const r = await horizontaleOverflow(page);
+        return r.scroll <= r.breedte
+          ? { ok: true, bewijs: 'geen overflow gezien' }
+          : { ok: false, bewijs: `scrollbreedte ${r.scroll} > ${r.breedte}` };
+      },
+    },
+    {
+      naam: 'tegenproef — registratie zonder wegschrijf-call',
+      moetFalen: true,
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.selectOption('#tijd-project', 'harnas-met');
+        await page.fill('#tijd-uren', '1');
+        await page.press('#tijd-uren', 'Enter');
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        return extra === 0
+          ? { ok: true, bewijs: 'geen schrijfactie na registreren' }
+          : { ok: false, bewijs: `${extra} schrijfactie na registreren, zoals het hoort` };
+      },
+    },
+    {
+      naam: 'tegenproef — toetsenbordpass stopt op een datumveld',
+      moetFalen: true,
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        // Het veld Datum staat vroeg in de volgorde; de knoppen erna (Vandaag, Gisteren, Registreren)
+        // horen gezien te worden. Zonder segmentherkenning stopt de pass op het datumveld.
+        // Zonder segmentherkenning — de vorige versie. Bereikt die Registreren tóch, dan kon het
+        // defect op deze pagina niet optreden en bewijst de herstelling niets.
+        const r = await toetsenbord(page, 120, { herkenSegmenten: false });
+        const gezien = r.volgorde.some((s) => s.naam === 'Registreren');
+        return gezien
+          ? { ok: true, bewijs: `oude pass liep tóch door tot Registreren (${r.stops} stops)` }
+          : { ok: false, bewijs: `oude pass stopte na ${r.stops} stops vóór Registreren, zoals het defect voorspelt` };
+      },
+    },
+    {
+      naam: 'tegenproef — rendement uit een halve noemer',
+      moetFalen: true,
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const zonder = await page.locator('[data-project-row="harnas-zonder"]').innerText();
+        return /\/dag/.test(zonder)
+          ? { ok: true, bewijs: 'bedrag per dag zonder raming' }
+          : { ok: false, bewijs: 'geen bedrag per dag zonder raming, zoals het hoort' };
+      },
+    },
+    {
+      naam: 'tegenproef — sheet laat de focus ontsnappen',
+      moetFalen: true,
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        await page.locator('button', { hasText: 'Nieuw project' }).click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        for (let i = 0; i < 40; i++) {
+          await page.keyboard.press('Tab');
+          if (!(await page.evaluate(() => Boolean(document.activeElement?.closest('[role=dialog]'))))) {
+            return { ok: true, bewijs: `focus buiten de sheet na ${i + 1}× Tab` };
+          }
+        }
+        return { ok: false, bewijs: 'focus bleef 40× Tab binnen de sheet, zoals het hoort' };
+      },
+    },
+    {
+      naam: 'tegenproef — focus zonder zichtbare ring',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        await page.addStyleTag({ content: '*:focus, *:focus-visible { outline: none !important; box-shadow: none !important; }' });
+        const r = await toetsenbord(page);
+        return r.problemen.length === 0
+          ? { ok: true, bewijs: `${r.stops} tabstops, allemaal zichtbaar` }
+          : { ok: false, bewijs: `${r.problemen.length} tabstop(s) zonder zichtbare focus` };
+      },
+    },
+  ];
+}
+
 function tegenproeven() {
   return [
     {
@@ -1280,6 +2908,8 @@ async function main() {
     revision: 1,
     lekken: [],
     schrijfpogingen: [],
+    /** De `data` van elke schrijfpoging op het document — wat de app echt zou opslaan. */
+    documenten: [],
     paginafouten: [],
   };
 
@@ -1297,7 +2927,9 @@ async function main() {
   console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin} (ook in de build)`);
 
   const id = buildId();
-  const teDraaien = [...scenarios(), ...(SELFTEST ? tegenproeven() : [])];
+  const teDraaien = SCREENSHOTS
+    ? screenshotScenarios(resolve(process.cwd(), SCREENSHOTS))
+    : [...scenarios(), ...bureauScenarios(), ...reviewScenarios(), ...(SELFTEST ? [...tegenproeven(), ...bureauTegenproeven(), ...reviewTegenproeven()] : [])];
   const resultaten = [];
 
   // Alles ná de spawn staat in de try: de server is detached en overleeft een exit(1),

@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gebouwd — 2026-09-16; open: build in CI, unit-tests in CI, screenshots niet elk geopend, doelwit-controle na de merge
+- **Status:** gebouwd — gemerged 2026-09-16 (PR umanex-apps#510); open: screenshots niet elk geopend, doelwit-controle op het echte document (wacht op een herbouw van :3000)
 
 ---
 
@@ -197,8 +197,8 @@ _Procedureel (eigen instrument, eigen regel):_
 
 - [x] Types — instrument: `pnpm --filter cashflow type-check` — bewijs: `pnpm --filter cashflow type-check` exit 0 na de review-ronde
 - [x] Lint — instrument: `pnpm --filter cashflow lint` — bewijs: `pnpm --filter cashflow lint` — No ESLint warnings or errors
-- [ ] Build — instrument: CI-stap "Type-check, lint, build"
-- [ ] Unit-tests — instrument: `pnpm --filter cashflow test` + CI-stap "invarianten (node:test)"
+- [x] Build — instrument: CI-stap "Type-check, lint, build" — bewijs: PR umanex-apps#510, run 35140492211 op commit 1a35da3, job "Type-check, lint, build" pass (20m48s)
+- [x] Unit-tests — instrument: `pnpm --filter cashflow test` + CI-stap "invarianten (node:test)" — bewijs: lokaal 152/152; CI: dezelfde job op 1a35da3 pass, met de stap "Guard — invarianten (node:test)"
 - [x] Geen `any` in aangeraakte bestanden — instrument: grep `: any|as any|<any>` = 0 — bewijs: `grep -rn ': any\|as any\|<any>' app/bureau components/bureau lib/bureau` = 0
 - [ ] Review-screenshots leeg/gedeeltelijk/vol op 1440 en 390 bestaan en zijn elk één keer geopend — instrument: de screenshotstand van `scripts/flow-harness.mjs` (`--screenshots=<map>`, in de scratchpad i.p.v. `.impeccable/review`, zodat er geen `.gitignore`-regel nodig was) en visuele controle — stand: twee reeksen van 27 PNG's gemaakt, 13 zelf geopend (overzicht vol/leeg/deels, verkoop, cash 1440 en 390 twee keer, projectdetail, klanten, tijd), de finish-reviewer las er meer; niet elk één keer geopend
 - [x] Impeccable finish-review met disposition `ship` — instrument: `impeccable-finish-reviewer` — bewijs: impeccable-finish-reviewer ronde 1 'fix' (F1–F8), ronde 2 op de verse captures 'ship', niets materieels open

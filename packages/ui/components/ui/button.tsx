@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 import { focusRing } from '../../lib/focus';
@@ -38,10 +39,18 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
+/**
+ * `asChild` rendert het enige kind met de knopklassen in plaats van een eigen `<button>` —
+ * een link die eruitziet als een knop (`<Button asChild><a href="…" /></Button>`). Tot
+ * 2026-09-16 stond de prop in het type zonder Slot, waardoor hij als onbekend attribuut op de
+ * `<button>` belandde en het kind gewoon ín de knop renderde.
+ */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'button';
     return (
-      <button
+      <Comp
+        data-slot="button"
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}

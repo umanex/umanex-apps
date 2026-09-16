@@ -1,8 +1,9 @@
 {
-  "$comment": "Neergeslagen Figma-staat van het Component library-bestand. NIET met de hand bewerken: ververs via het figma_execute-commando in packages/ui/CLAUDE.md (## Verify-pad). scripts/figma-sync-check.mjs toetst dit bestand tegen de code.",
+  "$comment": "Neergeslagen Figma-staat. NIET met de hand bewerken — ververs via packages/ui/CLAUDE.md.",
+  "schemaVersie": 2,
   "fileKey": "ko2OuasYxyY2YRD69MYhWX",
   "fileName": "Component library",
-  "gegenereerd": "2026-09-09",
+  "gegenereerd": "2026-09-16",
   "collections": {
     "Theme": {
       "modes": [
@@ -254,7 +255,8 @@
         "spacing-11": 44,
         "border-1": 1,
         "border-2": 2,
-        "icon-stroke": 2
+        "icon-stroke": 2,
+        "spacing-20": 80
       }
     }
   },
@@ -321,7 +323,8 @@
           "name": "Overzicht",
           "id": "27:480",
           "type": "FRAME",
-          "variantProperties": null
+          "variantProperties": null,
+          "varianten": null
         }
       ]
     },
@@ -841,7 +844,56 @@
         ]
       },
       "extra": []
+    },
+    "Textarea": {
+      "pageId": "95:5",
+      "primary": {
+        "name": "Textarea",
+        "id": "95:10",
+        "type": "COMPONENT_SET",
+        "variantProperties": {
+          "disabled": [
+            "false",
+            "true"
+          ]
+        },
+        "varianten": [
+          {
+            "name": "disabled=false",
+            "id": "95:6"
+          },
+          {
+            "name": "disabled=true",
+            "id": "95:8"
+          }
+        ]
+      },
+      "extra": []
+    },
+    "NativeSelect": {
+      "pageId": "95:11",
+      "primary": {
+        "name": "NativeSelect",
+        "id": "95:20",
+        "type": "COMPONENT_SET",
+        "variantProperties": {
+          "disabled": [
+            "false",
+            "true"
+          ]
+        },
+        "varianten": [
+          {
+            "name": "disabled=false",
+            "id": "95:12"
+          },
+          {
+            "name": "disabled=true",
+            "id": "95:16"
+          }
+        ]
+      },
+      "extra": []
     }
-  },
-  "schemaVersie": 2
+  }
 }

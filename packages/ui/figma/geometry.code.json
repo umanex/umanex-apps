@@ -1,7 +1,7 @@
 {
   "$comment": "Gemeten code-kant. Herschrijf met `pnpm --filter @umanex/ui geometry --write` na een BEDOELDE wijziging.",
-  "stories": 30,
-  "gegenereerd": "2026-09-09",
+  "stories": 36,
+  "gegenereerd": "2026-09-16",
   "gemeten": {
     "componenten-badge--playground": {
       "aantal": 2,
@@ -1228,6 +1228,264 @@
         }
       ]
     },
+    "componenten-nativeselect--playground": {
+      "aantal": 4,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 88,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "relative w-80",
+          "h": 40,
+          "w": 320,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "select",
+          "klassen": "appearance-none bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-10 peer pl-3 pr-9 py-2 ring-offset-background rounded-md text-sm w-full",
+          "h": 40,
+          "w": 320,
+          "padding": "8/36/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "svg",
+          "klassen": "",
+          "h": 16,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        }
+      ]
+    },
+    "componenten-nativeselect--states": {
+      "aantal": 11,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 192,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "flex flex-col gap-3 w-80",
+          "h": 144,
+          "w": 320,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "12px",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "relative w-full",
+          "h": 40,
+          "w": 320,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "select",
+          "klassen": "appearance-none bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-10 peer pl-3 pr-9 py-2 ring-offset-background rounded-md text-sm w-full",
+          "h": 40,
+          "w": 320,
+          "padding": "8/36/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "svg",
+          "klassen": "",
+          "h": 16,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "relative w-full",
+          "h": 40,
+          "w": 320,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "select",
+          "klassen": "appearance-none bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-10 peer pl-3 pr-9 py-2 ring-offset-background rounded-md text-sm w-full",
+          "h": 40,
+          "w": 320,
+          "padding": "8/36/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "svg",
+          "klassen": "",
+          "h": 16,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "relative w-full",
+          "h": 40,
+          "w": 320,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "select",
+          "klassen": "appearance-none bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-10 peer pl-3 pr-9 py-2 ring-offset-background rounded-md text-sm w-full",
+          "h": 40,
+          "w": 320,
+          "padding": "8/36/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "0.5"
+        },
+        {
+          "tag": "svg",
+          "klassen": "",
+          "h": 16,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "0.5"
+        }
+      ]
+    },
+    "componenten-nativeselect--with-label": {
+      "aantal": 6,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 110,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "flex flex-col gap-2 w-80",
+          "h": 62,
+          "w": 320,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "8px",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "label",
+          "klassen": "font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm",
+          "h": 14,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "14/14 500",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "relative w-full",
+          "h": 40,
+          "w": 320,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "select",
+          "klassen": "appearance-none bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-10 peer pl-3 pr-9 py-2 ring-offset-background rounded-md text-sm w-full",
+          "h": 40,
+          "w": 320,
+          "padding": "8/36/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "svg",
+          "klassen": "",
+          "h": 16,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        }
+      ]
+    },
     "componenten-separator--horizontal": {
       "aantal": 6,
       "elementen": [
@@ -1782,6 +2040,149 @@
           "padding": "0/0/0/0",
           "radius": "0px/0px/0px/0px",
           "border": 0,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        }
+      ]
+    },
+    "componenten-textarea--playground": {
+      "aantal": 2,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 128,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "textarea",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring min-h-20 placeholder:text-muted-foreground px-3 py-2 ring-offset-background rounded-md text-sm w-80",
+          "h": 80,
+          "w": 320,
+          "padding": "8/12/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        }
+      ]
+    },
+    "componenten-textarea--states": {
+      "aantal": 5,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 312,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "flex flex-col gap-3 w-80",
+          "h": 264,
+          "w": 320,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "12px",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "textarea",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring min-h-20 placeholder:text-muted-foreground px-3 py-2 ring-offset-background rounded-md text-sm w-full",
+          "h": 80,
+          "w": 320,
+          "padding": "8/12/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "textarea",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring min-h-20 placeholder:text-muted-foreground px-3 py-2 ring-offset-background rounded-md text-sm w-full",
+          "h": 80,
+          "w": 320,
+          "padding": "8/12/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "textarea",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring min-h-20 placeholder:text-muted-foreground px-3 py-2 ring-offset-background rounded-md text-sm w-full",
+          "h": 80,
+          "w": 320,
+          "padding": "8/12/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "0.5"
+        }
+      ]
+    },
+    "componenten-textarea--with-label": {
+      "aantal": 4,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 150,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "flex flex-col gap-2 w-80",
+          "h": 102,
+          "w": 320,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "8px",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "label",
+          "klassen": "font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm",
+          "h": 14,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "14/14 500",
+          "opacity": "1"
+        },
+        {
+          "tag": "textarea",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring min-h-20 placeholder:text-muted-foreground px-3 py-2 ring-offset-background rounded-md text-sm w-full",
+          "h": 80,
+          "w": 320,
+          "padding": "8/12/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
           "gap": "",
           "font": "14/20 400",
           "opacity": "1"

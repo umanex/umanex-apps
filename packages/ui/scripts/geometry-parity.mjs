@@ -53,6 +53,10 @@ const STORY = {
   Button:      { id: 'componenten-button--playground',     sel: 'button' },
   Checkbox:    { id: 'componenten-checkbox--playground',   sel: 'button[role="checkbox"]' },
   Input:       { id: 'componenten-input--playground',      sel: 'input' },
+  // De select zelf, niet de omhulling: die draagt de rand, de padding (pl-3 pr-9) en de
+  // hoogte. Het pijltje staat absoluut en telt niet mee in de doos — zo ook in Figma.
+  NativeSelect: { id: 'componenten-nativeselect--playground', sel: 'select' },
+  Textarea:    { id: 'componenten-textarea--playground',   sel: 'textarea' },
   // De story volgt de variant: één vaste story zou de verticale variant tegen de
   // horizontale render leggen (gemeten: Figma 80 tegen code 1 — mijn harnas, geen drift).
   Separator:   { perVariant: v => ({

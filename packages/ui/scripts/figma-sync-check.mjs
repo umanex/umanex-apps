@@ -262,7 +262,7 @@ else ok('schaal', `${Object.keys(B).filter(n => n.startsWith('spacing-')).length
 const BEKENDE_GATEN = new Set([
   'radius-lg', 'radius-md', 'radius-sm', 'radius-full',
   'spacing-0_5', 'spacing-1', 'spacing-1_5', 'spacing-2', 'spacing-2_5', 'spacing-3',
-  'spacing-4', 'spacing-5', 'spacing-6', 'spacing-8', 'spacing-9', 'spacing-10', 'spacing-11',
+  'spacing-4', 'spacing-5', 'spacing-6', 'spacing-8', 'spacing-9', 'spacing-10', 'spacing-11', 'spacing-20',
   'border-1', 'border-2', 'icon-stroke',
 ]);
 const tokensPad = join(root, '../tokens/tokens.json');

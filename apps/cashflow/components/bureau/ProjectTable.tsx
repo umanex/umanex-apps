@@ -7,7 +7,7 @@ import { formatCurrency } from '../../lib/cashflow/recurring';
 import type { Client, Project } from '../../lib/bureau/types';
 import type { ProjectProfitability } from '../../lib/bureau/profitability';
 import { OFFER_LABEL } from '../../lib/bureau/labels';
-import { formatHours } from '../../lib/bureau/format';
+import { formatHours, monthRangeLabel } from '../../lib/bureau/format';
 import { ProjectStatusBadge } from './ProjectStatusBadge';
 import { MetricValue } from './MetricValue';
 
@@ -60,7 +60,7 @@ export function ProjectTable({ rows, year, caption }: ProjectTableProps) {
                 <ProjectStatusBadge status={p.status} />
               </td>
               <td className={cn(td, 'whitespace-nowrap tabular-nums')}>
-                {p.plannedStart} – {p.plannedEnd}
+                {monthRangeLabel(p.plannedStart, p.plannedEnd)}
               </td>
               <td className={cn(td, 'text-right tabular-nums')}>
                 {formatCurrency(approved)}
@@ -70,8 +70,17 @@ export function ProjectTable({ rows, year, caption }: ProjectTableProps) {
                   <p className="text-xs text-finance-deferred">{formatCurrency(Math.abs(coverageDelta))} {coverageDelta > 0 ? 'niet ingepland' : 'te veel ingepland'}</p>
                 ) : null}
               </td>
-              <td className={cn(td, 'text-right tabular-nums')} data-realized={realizedInYear}>{formatCurrency(realizedInYear)}</td>
-              <td className={cn(td, 'text-right tabular-nums')}>{formatCurrency(remainingInYear)}</td>
+              {p.milestones.length === 0 ? (
+                <>
+                  <td className={cn(td, 'text-right text-muted-foreground')} data-realized={0} data-onvoldoende>Onvoldoende gegevens</td>
+                  <td className={cn(td, 'text-right text-muted-foreground')} data-onvoldoende>Onvoldoende gegevens</td>
+                </>
+              ) : (
+                <>
+                  <td className={cn(td, 'text-right tabular-nums')} data-realized={realizedInYear}>{formatCurrency(realizedInYear)}</td>
+                  <td className={cn(td, 'text-right tabular-nums')}>{formatCurrency(remainingInYear)}</td>
+                </>
+              )}
               <td className={cn(td, 'whitespace-nowrap text-right tabular-nums')}>
                 {formatHours(r.spentHours)}
                 <p className="text-xs text-muted-foreground">{r.hours.budgeted === null ? 'niet begroot' : `van ${formatHours(r.hours.budgeted)}`}</p>

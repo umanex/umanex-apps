@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dayLabel, formatDays, formatHours, formatPercent, parseNumber, toInputValue, weekLabel } from './format.ts';
+import { dayLabel, formatDays, formatHours, formatPercent, monthLabel, monthRangeLabel, parseNumber, toInputValue, weekLabel } from './format.ts';
 
 test('parseNumber leest Belgische invoer', () => {
   const gevallen: Array<[string, number | null]> = [
@@ -40,4 +40,12 @@ test('week- en daglabels', () => {
   assert.equal(weekLabel('2026-W38'), 'Week 38 · 14–20 sep');
   assert.equal(weekLabel('2026-W40'), 'Week 40 · 28 sep–4 okt');
   assert.equal(dayLabel('2026-09-16'), 'wo 16 sep');
+});
+
+test('maandlabels: één maand, binnen een jaar, over een jaarwissel — en onleesbaar blijft zichtbaar', () => {
+  assert.equal(monthLabel('2026-09'), 'sep 2026');
+  assert.equal(monthRangeLabel('2026-09', '2026-09'), 'sep 2026');
+  assert.equal(monthRangeLabel('2026-09', '2026-12'), 'sep – dec 2026');
+  assert.equal(monthRangeLabel('2026-11', '2027-02'), 'nov 2026 – feb 2027');
+  assert.equal(monthRangeLabel('', '2027-02'), ' – 2027-02');
 });

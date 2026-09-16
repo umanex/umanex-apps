@@ -10,7 +10,7 @@ type MetricValueProps = {
 /** Een bedrag per dag, of "Onvoldoende gegevens" — nooit een getal dat uit een ontbrekende noemer komt. */
 export function MetricValue({ metric, showReason = false }: MetricValueProps) {
   if (metric.kind === 'ok') {
-    return <span className="tabular-nums">{formatCurrency(metric.value)} /dag</span>;
+    return <span className="tabular-nums">{formatCurrency(metric.value)}/dag</span>;
   }
   return (
     <span className="text-muted-foreground" data-onvoldoende>

@@ -112,7 +112,7 @@ export function ExternalCostList({ project: p }: { project: Project }) {
           <Label htmlFor={`kost-verwacht-${p.id}`}>Verwacht</Label>
           <Input id={`kost-verwacht-${p.id}`} inputMode="decimal" className="text-right tabular-nums" value={verwacht} onChange={(e) => setVerwacht(e.target.value)} />
         </div>
-        <Button type="submit" disabled={conflict}>Toevoegen</Button>
+        <Button type="submit" variant="outline" disabled={conflict}>Toevoegen</Button>
         {fout && <p className="text-xs text-destructive sm:col-span-3" role="alert">{fout}</p>}
       </form>
     </section>

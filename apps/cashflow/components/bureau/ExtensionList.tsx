@@ -95,7 +95,7 @@ export function ExtensionList({ project: p }: { project: Project }) {
           <Label htmlFor={`uitbreiding-uren-${p.id}`}>Extra uren</Label>
           <Input id={`uitbreiding-uren-${p.id}`} inputMode="decimal" className="text-right tabular-nums" value={uren} onChange={(e) => setUren(e.target.value)} />
         </div>
-        <Button type="submit" disabled={conflict}>Toevoegen</Button>
+        <Button type="submit" variant="outline" disabled={conflict}>Toevoegen</Button>
         {fout && <p className="text-xs text-destructive sm:col-span-2 lg:col-span-5" role="alert">{fout}</p>}
       </form>
     </section>

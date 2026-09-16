@@ -24,7 +24,7 @@ export function SignOutButton() {
       onClick={onClick}
       disabled={busy}
       className={cn(
-        'inline-flex items-center h-9 px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60',
+        'inline-flex items-center h-9 px-3 sm:px-4 rounded-md border border-input bg-background text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60',
         focusRing,
       )}
     >

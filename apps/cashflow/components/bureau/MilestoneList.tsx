@@ -135,7 +135,7 @@ export function MilestoneList({ project: p }: { project: Project }) {
           <Label htmlFor={`mijlpaal-nieuw-bedrag-${p.id}`}>Bedrag</Label>
           <Input id={`mijlpaal-nieuw-bedrag-${p.id}`} inputMode="decimal" className="text-right tabular-nums" value={bedrag} onChange={(e) => setBedrag(e.target.value)} />
         </div>
-        <Button type="submit" disabled={conflict}>Toevoegen</Button>
+        <Button type="submit" variant="outline" disabled={conflict}>Toevoegen</Button>
         {p.extensions.length > 0 && (
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor={`mijlpaal-nieuw-uitbreiding-${p.id}`}>Hoort bij</Label>

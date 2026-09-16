@@ -1763,8 +1763,8 @@ function bureauScenarios() {
         if (onvoldoende !== 2) throw new Error(`project zonder raming toont ${onvoldoende} keer "Onvoldoende gegevens" in plaats van twee (A en B)`);
         if (/\/dag/.test(zonder)) throw new Error(`project zonder raming toont tóch een bedrag per dag: "${zonder.replace(/\s+/g, ' ')}"`);
         const met = (await rij('harnas-met').innerText()).replace(/\s+/g, ' ');
-        if (!met.includes('€ 1.125 /dag')) throw new Error(`project met raming toont niet € 1.125 /dag: "${met}"`);
-        return { ok: true, bewijs: 'zonder raming: 2× "Onvoldoende gegevens", geen bedrag; met raming: € 1.125 /dag (9.000 ÷ 8 d)' };
+        if (!met.includes('€ 1.125/dag')) throw new Error(`project met raming toont niet € 1.125/dag: "${met}"`);
+        return { ok: true, bewijs: 'zonder raming: 2× "Onvoldoende gegevens", geen bedrag; met raming: € 1.125/dag (9.000 ÷ 8 d)' };
       },
     },
     {
@@ -2221,6 +2221,156 @@ function screenshotScenarios(map) {
   });
 }
 
+function reviewScenarios() {
+  return [
+    {
+      naam: 'projecten — zonder mijlpalen geen € 0, in de tabel en op de detailpagina',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const rij = page.locator('[data-project-row="harnas-met"]');
+        const cellen = await rij.locator('td[data-onvoldoende]').count();
+        const rijTekst = (await rij.innerText()).replace(/\s+/g, ' ');
+        if (cellen !== 2 || /€\s?0(?![\d.,])/.test(rijTekst)) throw new Error(`tabelrij: ${cellen} onvoldoende-cellen, "${rijTekst}"`);
+        await page.goto(`${BASE}/bureau/projecten/harnas-met`);
+        await page.waitForSelector('#project-titel', { timeout: 20_000 });
+        const omzet = (await page.locator('dl').first().locator('div', { hasText: 'Omzet in' }).innerText()).replace(/\s+/g, ' ');
+        if (!omzet.includes('Onvoldoende gegevens') || /€\s?0(?![\d.,])/.test(omzet)) throw new Error(`detail: "${omzet}"`);
+        return { ok: true, bewijs: `tabel: 2 cellen "Onvoldoende gegevens", geen € 0; detail: "${omzet.slice(0, 80)}"` };
+      },
+    },
+    {
+      naam: 'projecten — datums in Nederlandse notatie, geen yyyy-MM',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const tabel = (await page.locator('[data-project-row]').allInnerTexts()).join(' ');
+        await page.goto(`${BASE}/bureau/projecten/harnas-met`);
+        await page.waitForSelector('#project-titel', { timeout: 20_000 });
+        const kop = (await page.locator('article header').innerText()).replace(/\s+/g, ' ');
+        const iso = /\b\d{4}-\d{2}(-\d{2})?\b/;
+        if (iso.test(tabel) || iso.test(kop)) throw new Error(`ISO-datum in ${iso.test(tabel) ? `tabel "${tabel.match(iso)[0]}"` : `kop "${kop}"`}`);
+        if (!/uitvoering [a-z]{3} \d{4} · getekend \d{1,2} [a-z]+ \d{4}/.test(kop)) throw new Error(`kop "${kop}"`);
+        return { ok: true, bewijs: `kop "${kop.match(/uitvoering.*/)?.[0]}"; 0 ISO-datums in tabel en kop` };
+      },
+    },
+    {
+      naam: 'projecten — hoogstens één primaire knop per sectie op de detailpagina',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => {
+        const secties = await page.locator('article section').evaluateAll((els) => els.map((el) => ({
+          titel: el.querySelector('h3')?.textContent ?? '?',
+          // Het klassetoken zelf: een Checkbox draagt `data-[state=checked]:bg-primary`, wat een
+          // substringtoets als primaire knop telde (gemeten: "Facturen en betalingen: 4").
+          primair: [...el.querySelectorAll('button')].filter((b) => b.classList.contains('bg-primary')).length,
+        })));
+        const teVeel = secties.filter((x) => x.primair > 1);
+        if (teVeel.length) throw new Error(teVeel.map((x) => `${x.titel}: ${x.primair}`).join(' · '));
+        const totaal = secties.reduce((a, x) => a + x.primair, 0);
+        return { ok: true, bewijs: `${secties.length} secties, ${totaal} primaire knop(pen) in totaal, nergens meer dan één` };
+      },
+    },
+    {
+      naam: 'cash — rijen even hoog, regelknop heet "N regels"',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => {
+        const hoogtes = await page.locator('[data-cash-week]').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+        const uniek = [...new Set(hoogtes)];
+        const knoppen = await page.locator('[data-cash-week] button').allInnerTexts();
+        if (uniek.length !== 1) throw new Error(`rijhoogtes ${JSON.stringify(uniek)}`);
+        if (!knoppen.length || knoppen.some((t) => !/^\d+ regels?$/.test(t.trim()))) throw new Error(`knopteksten ${JSON.stringify(knoppen)}`);
+        return { ok: true, bewijs: `${hoogtes.length} rijen van ${uniek[0]} px; knoppen ${JSON.stringify(knoppen)}` };
+      },
+    },
+    {
+      naam: 'cash — 390: einde vrij per week in beeld zonder te scrollen',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      viewport: { width: 390, height: 844 },
+      actie: async (page) => {
+        const r = await page.locator('[data-cash-week]').evaluateAll((els) => els.map((e) => {
+          const eind = e.querySelector('[data-closing-mobile]');
+          const rect = eind?.getBoundingClientRect();
+          return { tekst: eind?.textContent ?? '', zichtbaar: Boolean(rect && rect.width > 0 && rect.left >= 0 && rect.right <= window.innerWidth), waarde: e.querySelector('[data-closing-free]')?.getAttribute('data-closing-free') };
+        }));
+        const fout = r.filter((x) => !x.zichtbaar || !x.tekst.startsWith('einde'));
+        if (r.length !== 13 || fout.length) throw new Error(`${r.length} weken, ${fout.length} zonder zichtbaar einde: ${JSON.stringify(fout[0])}`);
+        return { ok: true, bewijs: `13 weken, elk "${r[0].tekst}"-vorm binnen 390 px` };
+      },
+    },
+    {
+      naam: 'bureau — signalen op één regel op 1440',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'vol' },
+      actie: async (page) => {
+        const r = await page.locator('[data-signal]').evaluateAll((els) => els.map((li) => {
+          const tekst = li.querySelector('span.min-w-0');
+          const regel = parseFloat(getComputedStyle(tekst).lineHeight);
+          return { id: li.getAttribute('data-signal'), regels: Math.round(tekst.getBoundingClientRect().height / regel) };
+        }));
+        const meer = r.filter((x) => x.regels !== 1);
+        if (!r.length || meer.length) throw new Error(`${r.length} signalen, meer dan één regel: ${JSON.stringify(meer)}`);
+        return { ok: true, bewijs: `${r.length} signalen, elk 1 regel` };
+      },
+    },
+    {
+      naam: 'bureau — 390: header en subnav',
+      pad: '/bureau/doelen',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      viewport: { width: 390, height: 844 },
+      actie: async (page) => {
+        const r = await page.evaluate(() => {
+          const uit = [...document.querySelectorAll('header button')].find((b) => b.textContent.includes('Uitloggen'));
+          const nav = document.querySelector('nav[aria-label="Hoofdnavigatie"] a');
+          const sub = [...document.querySelectorAll('nav[aria-label="Bureau"] a')].map((a) => {
+            const rect = a.getBoundingClientRect();
+            return { label: a.textContent, binnen: rect.left >= 0 && rect.right <= window.innerWidth };
+          });
+          return { uitTop: Math.round(uit.getBoundingClientRect().top), navTop: Math.round(nav.getBoundingClientRect().top), sub };
+        });
+        const buiten = r.sub.filter((x) => !x.binnen).map((x) => x.label);
+        if (r.uitTop !== r.navTop) throw new Error(`Uitloggen op y=${r.uitTop}, navigatie op y=${r.navTop}`);
+        if (r.sub.length !== 7 || buiten.length) throw new Error(`subnav ${r.sub.length} items, buiten beeld: ${buiten.join(', ')}`);
+        return { ok: true, bewijs: `Uitloggen en navigatie op y=${r.navTop}; 7/7 subnav-items binnen 390 px` };
+      },
+    },
+  ];
+}
+
+/**
+ * Elke review-meting met het defect teruggezet in de DOM, vóór de meting: de scenario's hierboven
+ * horen dan te falen. Zonder dit is "groen na de fix" niet te onderscheiden van "meet niets".
+ */
+function reviewTegenproeven() {
+  const defect = {
+    'projecten — zonder mijlpalen geen € 0, in de tabel en op de detailpagina': () => { document.querySelector('[data-project-row="harnas-met"] td[data-onvoldoende]').textContent = '€ 0'; },
+    'projecten — datums in Nederlandse notatie, geen yyyy-MM': () => { document.querySelector('[data-project-row]').insertAdjacentText('beforeend', ' 2026-09'); },
+    'projecten — hoogstens één primaire knop per sectie op de detailpagina': () => { document.querySelectorAll('article section button').forEach((b) => b.classList.add('bg-primary')); },
+    'cash — rijen even hoog, regelknop heet "N regels"': () => { document.querySelector('[data-cash-week] th').style.paddingBlock = '1.25rem'; },
+    'cash — 390: einde vrij per week in beeld zonder te scrollen': () => { document.querySelectorAll('[data-closing-mobile]').forEach((el) => { el.style.display = 'none'; }); },
+    'bureau — signalen op één regel op 1440': () => { document.querySelectorAll('[data-signal] span.min-w-0 > span:last-child').forEach((el) => { el.style.display = 'block'; }); },
+    'bureau — 390: header en subnav': () => { const ul = document.querySelector('nav[aria-label="Bureau"] ul'); ul.style.flexWrap = 'nowrap'; ul.style.width = 'max-content'; },
+  };
+  return reviewScenarios().map((sc) => ({
+    ...sc,
+    naam: `tegenproef — ${sc.naam}`,
+    moetFalen: true,
+    actie: async (page, ctx) => {
+      await page.evaluate(defect[sc.naam]);
+      return sc.actie(page, ctx);
+    },
+  }));
+}
+
 function bureauTegenproeven() {
   return [
     {
@@ -2629,7 +2779,7 @@ async function main() {
   const id = buildId();
   const teDraaien = SCREENSHOTS
     ? screenshotScenarios(resolve(process.cwd(), SCREENSHOTS))
-    : [...scenarios(), ...bureauScenarios(), ...(SELFTEST ? [...tegenproeven(), ...bureauTegenproeven()] : [])];
+    : [...scenarios(), ...bureauScenarios(), ...reviewScenarios(), ...(SELFTEST ? [...tegenproeven(), ...bureauTegenproeven(), ...reviewTegenproeven()] : [])];
   const resultaten = [];
 
   // Alles ná de spawn staat in de try: de server is detached en overleeft een exit(1),

@@ -13,7 +13,7 @@ import { goalsFor, hoursPerDayFor, revenuePerDayTarget } from '../../../../lib/b
 import { projectProfitability } from '../../../../lib/bureau/profitability';
 import { bucketMilestones } from '../../../../lib/bureau/revenue';
 import { OFFER_LABEL } from '../../../../lib/bureau/labels';
-import { formatHours } from '../../../../lib/bureau/format';
+import { dateLabel, formatHours, monthRangeLabel } from '../../../../lib/bureau/format';
 import { EmptyState } from '../../../../components/feedback/EmptyState';
 import { ProjectSheet } from '../../../../components/bureau/ProjectSheet';
 import { ProjectStatusBadge } from '../../../../components/bureau/ProjectStatusBadge';
@@ -73,7 +73,7 @@ export default function ProjectDetailPage() {
             <Badge variant="outline">{OFFER_LABEL[p.offerType]}</Badge>
             <ProjectStatusBadge status={p.status} />
             <span className="tabular-nums">
-              uitvoering {p.plannedStart} – {p.plannedEnd} · getekend {p.contractDate}
+              uitvoering {monthRangeLabel(p.plannedStart, p.plannedEnd)} · getekend {/^\d{4}-\d{2}-\d{2}$/.test(p.contractDate) ? dateLabel(p.contractDate) : p.contractDate}
             </span>
           </div>
         </div>
@@ -90,8 +90,19 @@ export default function ProjectDetailPage() {
         </div>
         <div>
           <dt className="text-muted-foreground">Omzet in {year}</dt>
-          <dd className="mt-1 text-lg font-semibold tabular-nums">{formatCurrency(cijfers.gerealiseerd)}</dd>
-          <dd className="text-xs text-muted-foreground">gerealiseerd · nog {formatCurrency(cijfers.resterend)} getekend resterend</dd>
+          {p.milestones.length === 0 ? (
+            <>
+              <dd className="mt-1 text-lg font-semibold text-muted-foreground" data-onvoldoende>
+                Onvoldoende gegevens
+              </dd>
+              <dd className="text-xs text-muted-foreground">geen mijlpalen — de prijs telt pas als omzet wanneer ze in mijlpalen staat</dd>
+            </>
+          ) : (
+            <>
+              <dd className="mt-1 text-lg font-semibold tabular-nums">{formatCurrency(cijfers.gerealiseerd)}</dd>
+              <dd className="text-xs text-muted-foreground">gerealiseerd · nog {formatCurrency(cijfers.resterend)} getekend resterend</dd>
+            </>
+          )}
         </div>
         <div>
           <dt className="text-muted-foreground">Eigen uren</dt>

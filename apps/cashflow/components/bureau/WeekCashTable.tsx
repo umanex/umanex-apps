@@ -63,7 +63,13 @@ export function WeekCashTable({ weeks }: { weeks: WeekRow[] }) {
               return (
                 <Fragment key={w.weekKey}>
                   <tr data-cash-week={w.weekKey} data-from={w.from} data-to={w.to} className={cn('border-b border-border', i % 2 === 1 && 'bg-muted')}>
-                    <th scope="row" className="px-3 py-1.5 text-left font-normal">{weekLabel(w.weekKey)}</th>
+                    {/* Kleeft links en draagt op smalle schermen het einde-vrij-bedrag: dat is het antwoord, en het mag niet achter een scroll verdwijnen. */}
+                  <th scope="row" className={cn('sticky left-0 z-10 px-3 py-1.5 text-left font-normal', i % 2 === 1 ? 'bg-muted' : 'bg-card')}>
+                    {weekLabel(w.weekKey)}
+                    <span className={cn('block text-xs tabular-nums sm:hidden', w.closingFree < 0 ? 'font-medium text-finance-negative' : 'text-muted-foreground')} data-closing-mobile>
+                      einde {formatAmount(w.closingFree)}{w.closingFree < 0 ? ' · tekort' : ''}
+                    </span>
+                  </th>
                     <td className="px-3 py-1.5 text-right tabular-nums">{formatAmount(w.openingFree)}</td>
                     <td className="px-3 py-1.5 text-right tabular-nums">{formatAmount(w.receipts)}</td>
                     <td className="px-3 py-1.5 text-right tabular-nums">{formatAmount(w.outflows)}</td>
@@ -73,9 +79,10 @@ export function WeekCashTable({ weeks }: { weeks: WeekRow[] }) {
                       {w.closingFree < 0 && <span className="block text-xs font-normal">tekort</span>}
                     </td>
                     <td className="px-3 py-1.5 text-right">
-                      {w.lines.length > 0 ? (
-                        <Button size="sm" variant="ghost" className="h-7 px-2" aria-expanded={isOpen} aria-controls={detailId} onClick={() => wissel(w.weekKey)} aria-label={`${isOpen ? 'Verberg' : 'Toon'} ${w.lines.length} regels van ${weekLabel(w.weekKey)}`}>
-                          {isOpen ? 'Verberg' : `${w.lines.length} tonen`}
+                      {/* `leading-4`: de knop draagt `text-sm` (20 px regel) en maakte zijn rij 2 px hoger dan de rest; `text-dense` haalt dat niet weg, tailwind-merge kent die maat niet. */}
+                    {w.lines.length > 0 ? (
+                        <Button size="sm" variant="ghost" className="h-auto px-2 py-0 leading-4" aria-expanded={isOpen} aria-controls={detailId} onClick={() => wissel(w.weekKey)} aria-label={`${isOpen ? 'Verberg' : 'Toon'} ${w.lines.length} regels van ${weekLabel(w.weekKey)}`}>
+                          {isOpen ? 'Verberg' : `${w.lines.length} ${w.lines.length === 1 ? 'regel' : 'regels'}`}
                         </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">geen</span>

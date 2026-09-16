@@ -6,6 +6,7 @@
  */
 import { format, parseISO } from 'date-fns';
 import { nlBE } from 'date-fns/locale';
+import type { MonthKey } from '../cashflow/types.ts';
 import type { IsoDate, WeekKey } from './types.ts';
 import { weekRange } from './periods.ts';
 
@@ -66,4 +67,20 @@ export function dayLabel(d: IsoDate): string {
 /** "16 september 2026" */
 export function dateLabel(d: IsoDate): string {
   return format(parseISO(d), 'd MMMM yyyy', { locale: nlBE });
+}
+
+/** "sep 2026" */
+export function monthLabel(m: MonthKey): string {
+  return format(parseISO(`${m}-01`), 'MMM yyyy', { locale: nlBE }).replace(/\./g, '');
+}
+
+/** "sep 2026" · "sep – dec 2026" · "nov 2026 – feb 2027". Onleesbare invoer blijft zoals ze is. */
+export function monthRangeLabel(start: MonthKey, end: MonthKey): string {
+  const geldig = (m: string) => /^\d{4}-\d{2}$/.test(m);
+  if (!geldig(start) || !geldig(end)) return `${start} – ${end}`;
+  if (start === end) return monthLabel(start);
+  if (start.slice(0, 4) === end.slice(0, 4)) {
+    return `${format(parseISO(`${start}-01`), 'MMM', { locale: nlBE }).replace(/\./g, '')} – ${monthLabel(end)}`;
+  }
+  return `${monthLabel(start)} – ${monthLabel(end)}`;
 }

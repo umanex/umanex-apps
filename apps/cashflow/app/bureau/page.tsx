@@ -157,10 +157,10 @@ export default function OverzichtPage() {
         <KpiTile
           kpi="rendement"
           title="Projectopbrengst per eigen dag"
-          value={d.yield.A.kind === 'ok' ? `${formatCurrency(d.yield.A.value)} /dag` : null}
+          value={d.yield.A.kind === 'ok' ? `${formatCurrency(d.yield.A.value)}/dag` : null}
           insufficient={{ reason: d.yield.A.kind === 'ok' ? '' : `A: ${d.yield.A.reason}.`, fix: { href: '/bureau/projecten', label: 'Urenramingen invullen' } }}
-          secondary={`B ${d.yield.B.kind === 'ok' ? `${formatCurrency(d.yield.B.value)} /dag` : 'onvoldoende gegevens'} na externe kosten — geen nettowinst · verwacht ${formatCurrency(d.verwacht)}, gerealiseerd ${formatCurrency(d.gerealiseerdOoit)}`}
-          denominator={d.projectCount ? `${d.yield.included} van ${d.projectCount} projecten met uren en raming${doelA !== null ? ` · doel A ${formatCurrency(doelA)} /dag` : ''}` : 'geen projecten'}
+          secondary={`B ${d.yield.B.kind === 'ok' ? `${formatCurrency(d.yield.B.value)}/dag` : 'onvoldoende gegevens'} na externe kosten — geen nettowinst · verwacht ${formatCurrency(d.verwacht)}, gerealiseerd ${formatCurrency(d.gerealiseerdOoit)}`}
+          denominator={d.projectCount ? `${d.yield.included} van ${d.projectCount} projecten met uren en raming${doelA !== null ? ` · doel A ${formatCurrency(doelA)}/dag` : ''}` : 'geen projecten'}
           source="Goedgekeurde prijs ÷ eigen dagen (besteed + verwacht resterend), gewogen naar dagen"
           link={{ href: '/bureau/projecten', label: 'Naar projecten' }}
           chips={d.yield.insufficient.length && d.yield.included ? [`${d.yield.insufficient.length} zonder raming niet meegeteld`] : []}

@@ -204,6 +204,21 @@ _Procedureel (eigen instrument, eigen regel):_
 - [ ] Impeccable finish-review met disposition `ship` — instrument: `impeccable-finish-reviewer`
 - [ ] Doelwit-controle op Jeroens echte document na de merge (alleen lezen): `/bureau` rendert zonder paginafout — instrument: `:3000` na `pm2:rebuild` op `main`
 
+_Finish-review 2026-09-16 (impeccable-finish-reviewer, disposition fix — F1–F8, één bevinding met twee wijzigingen = twee items):_
+
+- [ ] **F1a** Projectdetail: een project zonder mijlpalen toont bij "Omzet in {jaar}" "Onvoldoende gegevens", geen € 0 — instrument: harness `projecten — zonder mijlpalen geen € 0`
+- [ ] **F1b** Projecttabel: gerealiseerd- en resterend-cel van een project zonder mijlpalen tonen "Onvoldoende gegevens", geen € 0 — instrument: harness `projecten — zonder mijlpalen geen € 0`
+- [ ] **F2** Cash op 390 px: het einde-vrij-bedrag van elke week staat binnen het viewport zonder horizontaal scrollen — instrument: harness `cash — 390: einde vrij per week in beeld`
+- [ ] **F3** Signaallijst vanaf `sm`: titel en detail op één regel per signaal — instrument: harness `bureau — signalen op één regel` (rijhoogte per signaal op 1440)
+- [ ] **F4a** Cashtabel: rijen met en zonder regelknop zijn even hoog — instrument: harness `cash — rijen even hoog` (set van rijhoogtes heeft één waarde)
+- [ ] **F4b** Cashtabel: de regelknop heet "N regels", niet "N tonen" — instrument: harness `cash — rijen even hoog` (knoptekst)
+- [ ] **F5** Projectdetail: de toevoeg-rijen van mijlpalen, uitbreidingen en externe kosten gebruiken `outline`; hoogstens één primaire knop per sectie — instrument: harness `projecten — hoogstens één primaire knop per sectie`
+- [ ] **F6a** Projectdetail-kop: uitvoeringsperiode en contractdatum in Nederlandse notatie, geen `yyyy-MM` — instrument: harness `projecten — datums in Nederlandse notatie`
+- [ ] **F6b** Projecttabel: uitvoeringsperiode in Nederlandse notatie, één maand als start en einde gelijk zijn — instrument: `lib/bureau/format.test.ts` (`monthRangeLabel`) + harness `projecten — datums in Nederlandse notatie`
+- [ ] **F7** Geen spatie vóór "/dag" in bedragen per dag — instrument: `grep -rn ' /dag' app/bureau components/bureau` = 0
+- [ ] **F8a** Header op 390 px: "Uitloggen" staat niet alleen op een eigen rij — instrument: harness `bureau — 390: header en subnav` (top van Uitloggen = top van de navigatie)
+- [ ] **F8b** Bureau-subnav op 390 px: alle zeven onderdelen staan binnen het viewport — instrument: harness `bureau — 390: header en subnav`
+
 ## Beslissingsgeschiedenis
 
 - 2026-09-16: Opslag in het bestaande document onder `bureau` (v16) i.p.v. eigen tabellen — keuze

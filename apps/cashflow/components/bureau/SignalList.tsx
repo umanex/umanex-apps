@@ -36,13 +36,14 @@ export function SignalList({ result }: { result: SignalResult }) {
       ) : (
         <ul className="divide-y divide-border">
           {signals.map((s) => (
-            <li key={s.id} data-signal={s.id} data-level={s.level} className="grid gap-x-3 gap-y-1 py-2 sm:grid-cols-[5.5rem_1fr_auto] sm:items-baseline">
+            <li key={s.id} data-signal={s.id} data-level={s.level} className="grid gap-x-3 gap-y-1 py-1.5 sm:grid-cols-[5.5rem_1fr_auto] sm:items-baseline">
               <span>
                 <Badge variant={NIVEAU[s.level].variant}>{NIVEAU[s.level].woord}</Badge>
               </span>
               <span className="min-w-0 text-sm">
                 <span className="font-medium">{s.title}</span>
-                <span className="block text-muted-foreground">{s.detail}</span>
+                <span className="hidden text-muted-foreground sm:inline"> · </span>
+                <span className="block text-muted-foreground sm:inline">{s.detail}</span>
               </span>
               <Link href={s.href} aria-label={`${s.title} — bekijk`} className={cn('rounded-sm text-sm font-medium underline underline-offset-2', focusRing)}>
                 Bekijk

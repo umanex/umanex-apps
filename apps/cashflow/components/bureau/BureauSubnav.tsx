@@ -6,13 +6,17 @@ import { cn } from '@umanex/ui/lib/utils';
 import { focusRing } from '@umanex/ui/lib/focus';
 import { BUREAU_NAV, activeHref } from '../../lib/bureau/routes';
 
-/** De zeven bureau-pagina's. Routes, geen tabpanelen — elke pagina heeft een eigen adres. */
+/**
+ * De zeven bureau-pagina's. Routes, geen tabpanelen — elke pagina heeft een eigen adres. Op een
+ * smal scherm loopt de lijst over twee regels in plaats van horizontaal te scrollen: een scroll
+ * verborg Cash en Doelen zonder dat iets liet zien dat ze bestonden.
+ */
 export function BureauSubnav() {
   const active = activeHref(usePathname(), BUREAU_NAV);
 
   return (
-    <nav aria-label="Bureau" className="max-w-full overflow-x-auto">
-      <ul className="inline-flex h-10 items-center gap-1 rounded-md bg-muted p-1">
+    <nav aria-label="Bureau" className="max-w-full">
+      <ul className="flex flex-wrap items-center gap-1 rounded-md bg-muted p-1 sm:inline-flex sm:h-10 sm:flex-nowrap">
         {BUREAU_NAV.map((item) => (
           <li key={item.href}>
             <Link

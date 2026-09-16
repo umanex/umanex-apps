@@ -35,7 +35,7 @@ export function AppHeader({ title, children }: AppHeaderProps) {
               href={item.href}
               aria-current={active === item.href ? 'page' : undefined}
               className={cn(
-                'inline-flex h-9 items-center rounded-md border border-input px-4 text-sm font-medium transition-colors hover:bg-muted',
+                'inline-flex h-9 items-center rounded-md border border-input px-3 text-sm font-medium transition-colors hover:bg-muted sm:px-4',
                 active === item.href ? 'bg-muted text-foreground' : 'bg-background',
                 focusRing,
               )}

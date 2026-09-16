@@ -58,21 +58,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+14e1486 fix(jobradar): keep own actions out of the seed's key space, and stop the finish path losing its evidence link
 3b72ed4 fix(jobradar): make plan:probe able to fail — it printed, it did not test
 a7373f2 fix(jobradar): roll back a refused mutation instead of committing its traces
 02b8329 docs: close the handoff loop backwards — run the checks, act on what they say
 3dfe382 fix(jobradar): stop the verification instruments from dirtying the tree they measure
-5af6924 Merge pull request #507 from umanex/feature/jobradar-bedrijfsplan
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/components/plan/ActiePanel.tsx
-  M  apps/jobradar/lib/db/schema.ts
-  M  apps/jobradar/lib/plan/mutaties.ts
-  M  apps/jobradar/lib/plan/seed-inhoud.ts
-  M  apps/jobradar/lib/plan/seed.ts
-  M  apps/jobradar/scripts/plan-probe.sh
-  M  apps/jobradar/scripts/plan-scenarios.ts
+  M  apps/jobradar/BACKLOG.md
+  M  apps/jobradar/briefings/2026-09-16-feature-bedrijfsplan-2027.tcebc.md
+  M  apps/jobradar/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

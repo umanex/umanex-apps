@@ -52,6 +52,13 @@ const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3103)
 // desktop-triagescherm), maar één beeld om te kunnen kíjken is iets anders dan een as
 // die rood kan worden.
 const SMAL = Number(args.find((a) => a.startsWith('--smal='))?.slice(7) ?? 0);
+// Waar de smalle breedte een ÉIS is en niet alleen een beeld. Het dashboard is een vastgelegd
+// desktop-doelwit (`BACKLOG.md`: "mobiel is voor jobradar geen doelwit") en loopt met echte
+// vacaturedata over op 400 px — gemeten 2026-09-16: 756 px, opgeteld uit de titels in `JobCard`,
+// die `truncate` dragen zonder `min-w-0` en dus niet krimpen. Dat rood laten staan zou de harness
+// elke run rood maken om een reden die allang aanvaard is, en dan leert iedereen rood te lezen als
+// ruis. De andere routes krijgen hun opname en een notitie; alleen `/plan` faalt erop.
+const SMAL_ROUTES = ['/plan'];
 const BASE = `http://127.0.0.1:${PORT}`;
 
 /** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
@@ -338,8 +345,11 @@ async function main() {
           scroll: document.documentElement.scrollWidth,
           client: document.documentElement.clientWidth,
         }));
-        if (breed.scroll > breed.client + 1) {
+        const teBreed = breed.scroll > breed.client + 1;
+        if (teBreed && SMAL_ROUTES.includes(route)) {
           fail(`${route} op ${SMAL}px: scrollWidth ${breed.scroll} > ${breed.client} — horizontale scrollbalk`);
+        } else if (teBreed) {
+          notes.push(`${route} op ${SMAL}px: ${breed.scroll} > ${breed.client} — loopt over, maar deze route is geen smal doelwit`);
         } else {
           ok(`${route} op ${SMAL}px: geen horizontale overloop (${breed.scroll} ≤ ${breed.client})`);
         }

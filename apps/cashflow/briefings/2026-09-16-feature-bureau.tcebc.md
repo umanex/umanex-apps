@@ -200,7 +200,7 @@ _Procedureel (eigen instrument, eigen regel):_
 - [ ] Build — instrument: CI-stap "Type-check, lint, build"
 - [ ] Unit-tests — instrument: `pnpm --filter cashflow test` + CI-stap "invarianten (node:test)"
 - [x] Geen `any` in aangeraakte bestanden — instrument: grep `: any|as any|<any>` = 0 — bewijs: `grep -rn ': any\|as any\|<any>' app/bureau components/bureau lib/bureau` = 0
-- [ ] Review-screenshots leeg/gedeeltelijk/vol op 1440 en 390 bestaan en zijn elk één keer geopend — instrument: `node scripts/flow-harness.mjs --no-build --screenshots=<map>` (in de scratchpad i.p.v. `.impeccable/review`, zodat er geen `.gitignore`-regel nodig was) + visuele controle — stand: 27 + 27 PNG's gemaakt, 13 zelf geopend (overzicht vol/leeg/deels, verkoop, cash 1440 en 390 twee keer, projectdetail, klanten, tijd), de finish-reviewer las er meer; niet elk één keer geopend
+- [ ] Review-screenshots leeg/gedeeltelijk/vol op 1440 en 390 bestaan en zijn elk één keer geopend — instrument: de screenshotstand van `scripts/flow-harness.mjs` (`--screenshots=<map>`, in de scratchpad i.p.v. `.impeccable/review`, zodat er geen `.gitignore`-regel nodig was) en visuele controle — stand: twee reeksen van 27 PNG's gemaakt, 13 zelf geopend (overzicht vol/leeg/deels, verkoop, cash 1440 en 390 twee keer, projectdetail, klanten, tijd), de finish-reviewer las er meer; niet elk één keer geopend
 - [x] Impeccable finish-review met disposition `ship` — instrument: `impeccable-finish-reviewer` — bewijs: impeccable-finish-reviewer ronde 1 'fix' (F1–F8), ronde 2 op de verse captures 'ship', niets materieels open
 - [ ] Doelwit-controle op Jeroens echte document na de merge (alleen lezen): `/bureau` rendert zonder paginafout — instrument: `:3000` na `pm2:rebuild` op `main`
 

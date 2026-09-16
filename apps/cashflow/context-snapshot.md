@@ -98,16 +98,14 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+37c58e4 docs(cashflow): verify path and design-system source for Bureau, acceptance evidence, three backlog items
 ca1dc00 test(cashflow): empty state on every bureau route, and a one-cent reconciliation counter-test
 575d8b1 test(cashflow): static render covers the presentational bureau components
 c9b5f46 fix(cashflow): finish-review round — no € 0 without milestones, cash answer visible on a phone, one-line signals
 3c35c67 fix(cashflow): review round — cash table explanation outside the scroller, dense row buttons, clearer revenue line
-8f7db0a feat(cashflow): bureau overview — signals first, then six tiles with denominator, source and one link
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/BACKLOG.md
-  M  apps/cashflow/CLAUDE.md
   M  apps/cashflow/briefings/2026-09-16-feature-bureau.tcebc.md
 
 ## Bestanden met TODO/FIXME

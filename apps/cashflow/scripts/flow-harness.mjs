@@ -1499,6 +1499,37 @@ async function concentratieKlopt(page) {
   return { ok: true, bewijs: `noemers 100.000 / 200.000; C "${c}"; A "${a}"; vooruitblik C 70 %; groep "${groep}"` };
 }
 
+const OVERZICHT = '/bureau';
+const TEGELS = ['omzet', 'getekend', 'kansen', 'capaciteit', 'rendement', 'cash'];
+
+/** Het klantconcentratiesignaal staat vóór de tegels, met "Let op" als woord en een link naar klanten. */
+async function signaalMetWoord(page) {
+  const signaal = page.locator('[data-signal="klantconcentratie:harnas-klant-c"]');
+  if ((await signaal.count()) !== 1) throw new Error('geen concentratiesignaal voor klant C');
+  const woord = (await signaal.locator('[class*="rounded-full"]').innerText()).trim();
+  const href = await signaal.locator('a').getAttribute('href');
+  const eerst = await page.evaluate(() => {
+    const lijst = document.querySelector('[data-signal-list]');
+    const tegel = document.querySelector('[data-kpi]');
+    return Boolean(lijst && tegel && lijst.compareDocumentPosition(tegel) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  if (woord !== 'Let op') throw new Error(`niveau als woord "${woord}"`);
+  if (href !== '/bureau/klanten') throw new Error(`link ${href}`);
+  if (!eerst) throw new Error('de signalen staan niet vóór de tegels');
+  return { ok: true, bewijs: `"Let op" · ${(await signaal.innerText()).replace(/\s+/g, ' ').slice(0, 90)} · link ${href} · vóór de tegels` };
+}
+
+/** Zes tegels, elk "Onvoldoende gegevens", en nergens een bedrag van nul. */
+async function leegNooitNul(page) {
+  const tegels = await page.locator('[data-kpi]').evaluateAll((els) => els.map((e) => ({ kpi: e.getAttribute('data-kpi'), onvoldoende: e.querySelectorAll('[data-onvoldoende]').length, tekst: e.textContent.replace(/\s+/g, ' ') })));
+  if (JSON.stringify(tegels.map((t) => t.kpi)) !== JSON.stringify(TEGELS)) throw new Error(`tegels ${JSON.stringify(tegels.map((t) => t.kpi))}`);
+  const zonder = tegels.filter((t) => t.onvoldoende !== 1).map((t) => t.kpi);
+  if (zonder.length) throw new Error(`zonder "Onvoldoende gegevens": ${zonder.join(', ')}`);
+  const nul = tegels.filter((t) => /€\s?0(?![\d.,])/.test(t.tekst));
+  if (nul.length) throw new Error(`€ 0 in ${nul.map((t) => `${t.kpi}: "${t.tekst.match(/.{0,30}€\s?0(?![\d.,]).{0,10}/)?.[0]}"`).join(' · ')}`);
+  return { ok: true, bewijs: `6 tegels in briefvolgorde, elk 1× "Onvoldoende gegevens", 0× € 0` };
+}
+
 function bureauScenarios() {
   return [
     {
@@ -1675,11 +1706,11 @@ function bureauScenarios() {
         return { ok: true, bewijs: `registratie ${registratie.gemeten} + planning ${planning.gemeten} tekstelementen boven AA; ${registratie.stops}/${planning.stops} tabstops (+${registratie.segmenten}/${planning.segmenten} datumsegmenten) met zichtbare focus` };
       },
     },
-    ...['/bureau/doelen', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/tijd', VERKOOP, CASH, KLANTEN].map((pad) => ({
-      naam: `bureau — 390 px zonder horizontale overflow · ${pad.replace('/bureau/', '')}`,
+    ...[OVERZICHT, '/bureau/doelen', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/tijd', VERKOOP, CASH, KLANTEN].map((pad) => ({
+      naam: `bureau — 390 px zonder horizontale overflow · ${pad === OVERZICHT ? 'overzicht' : pad.replace('/bureau/', '')}`,
       pad,
       wachtOp: 'bureau',
-      gedrag: { bureau: { [DOELEN]: 'doelen', [VERKOOP]: 'verkoop', [CASH]: 'cash', [KLANTEN]: 'klanten', '/bureau/projecten/harnas-met': 'cash' }[pad] ?? 'projecten' },
+      gedrag: { bureau: { [OVERZICHT]: 'verkoop', [DOELEN]: 'doelen', [VERKOOP]: 'verkoop', [CASH]: 'cash', [KLANTEN]: 'klanten', '/bureau/projecten/harnas-met': 'cash' }[pad] ?? 'projecten' },
       viewport: { width: 390, height: 844 },
       actie: async (page) => {
         const r = await horizontaleOverflow(page);
@@ -2009,11 +2040,142 @@ function bureauScenarios() {
         return { ok: true, bewijs: `${r.gemeten} tekstelementen boven AA; ${r.koppen} koppen; ${r.stops} tabstops met zichtbare focus` };
       },
     },
+    {
+      naam: 'bureau — leeg (document zonder bureau-sleutel): onvoldoende gegevens, nooit nul',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { leeg: true },
+      actie: async (page, { state, foutenVoor }) => {
+        const leeg = await page.locator('[data-empty-state]').count();
+        if (leeg !== 1) throw new Error(`${leeg} lege staten`);
+        const r = await leegNooitNul(page);
+        const fouten = state.paginafouten.length - foutenVoor;
+        if (fouten) throw new Error(`${fouten} paginafout(en): ${state.paginafouten.slice(-fouten).join(' | ')}`);
+        return { ...r, bewijs: `${r.bewijs}; 1 lege staat met actie; 0 paginafouten` };
+      },
+    },
+    {
+      naam: 'bureau — vol: noemer, bron en precies één link per tegel',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => {
+        const tegels = await page.locator('[data-kpi]').evaluateAll((els) => els.map((e) => ({
+          kpi: e.getAttribute('data-kpi'),
+          noemer: e.querySelector('[data-kpi-noemer]')?.textContent?.trim() ?? '',
+          bron: e.querySelector('[data-kpi-bron]')?.textContent?.trim() ?? '',
+          links: [...e.querySelectorAll('a')].map((a) => a.getAttribute('href')),
+        })));
+        const fouten = tegels.filter((t) => !t.noemer || !t.bron || t.links.length !== 1 || !t.links[0].startsWith('/')).map((t) => `${t.kpi} (noemer "${t.noemer}", bron "${t.bron}", links ${JSON.stringify(t.links)})`);
+        if (tegels.length !== 6) throw new Error(`${tegels.length} tegels`);
+        if (fouten.length) throw new Error(fouten.join(' · '));
+        return { ok: true, bewijs: tegels.map((t) => `${t.kpi} → ${t.links[0]}`).join(' · ') };
+      },
+    },
+    {
+      naam: 'bureau — omzettegel is de som van de gerealiseerde omzet op de projectenpagina',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        const tegel = (await page.locator('[data-kpi="omzet"] p.text-3xl').innerText()).replace(/\s+/g, ' ');
+        await page.locator('nav[aria-label="Bureau"] a', { hasText: 'Projecten' }).click();
+        await page.waitForSelector('[data-project-row]', { timeout: 10_000 });
+        const som = (await page.locator('[data-realized]').evaluateAll((els) => els.map((e) => Number(e.getAttribute('data-realized'))))).reduce((a, b) => a + b, 0);
+        if (tegel !== '€ 100.000' || som !== 100000) throw new Error(`tegel "${tegel}", som op de bestemming ${som}`);
+        return { ok: true, bewijs: `tegel "${tegel}" = Σ gerealiseerd over de projectrijen (${som})` };
+      },
+    },
+    {
+      naam: 'bureau — jaarkeuze filtert de tegels en blijft staan na navigatie',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        const omzet = () => page.locator('[data-kpi="omzet"]').innerText().then((t) => t.replace(/\s+/g, ' '));
+        const voor = await omzet();
+        await page.locator('button[aria-label="Een jaar vooruit"]').click();
+        await page.waitForFunction((j) => document.querySelector('#overzicht-titel')?.textContent?.includes(String(j)), JAAR + 1, { timeout: 5_000 });
+        const na = await omzet();
+        if (!voor.includes('€ 100.000') || !na.includes('Onvoldoende gegevens')) throw new Error(`vóór "${voor.slice(0, 60)}", na "${na.slice(0, 60)}"`);
+        await page.locator('nav[aria-label="Bureau"] a', { hasText: 'Projecten' }).click();
+        await page.waitForSelector('#projecten-titel', { timeout: 10_000 });
+        await page.locator('nav[aria-label="Bureau"] a', { hasText: 'Overzicht' }).click();
+        await page.waitForSelector('#overzicht-titel', { timeout: 10_000 });
+        const titel = await page.locator('#overzicht-titel').innerText();
+        if (!titel.includes(String(JAAR + 1))) throw new Error(`na navigatie terug op "${titel}"`);
+        return { ok: true, bewijs: `${JAAR}: "€ 100.000"; ${JAAR + 1}: "Onvoldoende gegevens"; na Projecten → Overzicht nog "${titel}"` };
+      },
+    },
+    {
+      naam: 'bureau — signalen eerst, met niveau als woord en een link',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => signaalMetWoord(page),
+    },
+    {
+      naam: 'state — laden op het overzicht',
+      pad: OVERZICHT,
+      gedrag: { vertragingMs: 2_500 },
+      wachtOp: 'niets',
+      actie: async (page) => {
+        await page.waitForSelector('[aria-busy="true"]', { timeout: 10_000, state: 'visible' });
+        await page.waitForSelector('[data-kpi]', { timeout: 20_000, state: 'visible' });
+        return { ok: true, bewijs: 'skeleton met aria-busy, daarna de tegels' };
+      },
+    },
+    {
+      naam: 'state — fout op het overzicht',
+      pad: OVERZICHT,
+      gedrag: { documentStatus: 500 },
+      wachtOp: 'niets',
+      actie: async (page) => {
+        await page.waitForSelector('text=Gegevens niet geladen', { timeout: 20_000, state: 'visible' });
+        const herkansing = await page.locator('button', { hasText: 'Opnieuw proberen' }).count();
+        const tegels = await page.locator('[data-kpi]').count();
+        if (!herkansing || tegels) throw new Error(`herkansing ${herkansing}, tegels ${tegels}`);
+        return { ok: true, bewijs: 'foutscherm met "Opnieuw proberen", 0 tegels' };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op het overzicht',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        const r = await a11yOp(page, 'overzicht');
+        if (r.problemen.length) throw new Error(r.problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `${r.gemeten} tekstelementen boven AA; ${r.koppen} koppen; ${r.stops} tabstops met zichtbare focus` };
+      },
+    },
   ];
 }
 
 function bureauTegenproeven() {
   return [
+    {
+      naam: 'tegenproef — een nul in een lege tegel',
+      moetFalen: true,
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { leeg: true },
+      actie: async (page) => {
+        await page.locator('[data-kpi="omzet"] [data-onvoldoende]').evaluate((el) => { el.insertAdjacentHTML('beforeend', '<p>€ 0</p>'); });
+        return leegNooitNul(page);
+      },
+    },
+    {
+      naam: 'tegenproef — signaal met alleen een kleur',
+      moetFalen: true,
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        await page.locator('[data-signal] [class*="rounded-full"]').evaluateAll((els) => els.forEach((el) => { el.textContent = ''; }));
+        return signaalMetWoord(page);
+      },
+    },
     {
       naam: 'tegenproef — vervallen factuur mét datum staat niet apart',
       moetFalen: true,

@@ -70,7 +70,7 @@ export function ProjectTable({ rows, year, caption }: ProjectTableProps) {
                   <p className="text-xs text-finance-deferred">{formatCurrency(Math.abs(coverageDelta))} {coverageDelta > 0 ? 'niet ingepland' : 'te veel ingepland'}</p>
                 ) : null}
               </td>
-              <td className={cn(td, 'text-right tabular-nums')}>{formatCurrency(realizedInYear)}</td>
+              <td className={cn(td, 'text-right tabular-nums')} data-realized={realizedInYear}>{formatCurrency(realizedInYear)}</td>
               <td className={cn(td, 'text-right tabular-nums')}>{formatCurrency(remainingInYear)}</td>
               <td className={cn(td, 'whitespace-nowrap text-right tabular-nums')}>
                 {formatHours(r.spentHours)}

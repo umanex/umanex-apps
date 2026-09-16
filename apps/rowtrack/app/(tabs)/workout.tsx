@@ -8,19 +8,17 @@ import { useHealthConsent } from '@/lib/health-consent-context';
 import { useWorkoutPhase } from '@/lib/workout-phase-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
-import { savePendingWorkout, clearPendingWorkout, UNIQUE_VIOLATION } from '@/lib/pendingWorkout';
+import { enqueueWorkout, removeQueued, UNIQUE_VIOLATION, type PendingWorkout } from '@/lib/pendingWorkout';
 import { markPrMetricsMissing } from '@/lib/prColumn';
-/** Postgres: kolom bestaat niet. Zie de fallback in saveWorkout. */
+/** Postgres: kolom bestaat niet. Zie de fallback in syncWorkout. */
 const UNDEFINED_COLUMN = '42703';
-/** Minimum aantal BLE-ticks voordat een rit een record mág zijn. */
-const MIN_PR_TICKS = 10;
 import type { GoalType, WorkoutGoal } from '@/lib/workout-goals';
 import { userInputToTarget } from '@/lib/workout-goals';
 import { useWorkoutMetrics } from '@/lib/hooks/useWorkoutMetrics';
 import { useGoalProgress } from '@/lib/hooks/useGoalProgress';
-import { bestTimeForDistance } from '@/lib/bestDistanceTime';
 import { isWorthSaving } from '@/lib/storableWorkout';
-import { buildPrEntries, type PrEntry } from '@/lib/personalRecords';
+import { buildWorkoutRow } from '@/lib/workoutRow';
+import { type PrEntry } from '@/lib/personalRecords';
 import { IdlePhase } from '@/components/workout/IdlePhase';
 import { ActivePhase } from '@/components/workout/ActivePhase';
 import { t } from '@/i18n';
@@ -110,106 +108,23 @@ export default function WorkoutScreen() {
     setPhase('active');
   }, [status, fetchPRs, resetAll, resetGameState, idleGoalType, idleDurMin, idleDurSec, idleGoalInput]);
 
-  // Slaat de rit op de achtergrond op — exact één keer (savedRef). Een lege rit wordt
-  // overgeslagen. Bij netwerkfout vangt de pendingWorkout-backstop + home-focus-retry het op
-  // (security-audit P2-4); géén alert, want dit draait op de achtergrond terwijl de gebruiker
-  // al richting de samenvatting is.
-  //
-  // TWEE GUARDS, want de eerste meet niet wat hij lijkt te meten. `tickCount` telt ELK
-  // binnengekomen pakket, ook een dat alleen hartslag draagt — en een hartslagband stuurt
-  // door terwijl er niet geroeid wordt. Gemeten: de rit van 2026-08-22 12:40:57 stond met
-  // 0 m, 0 s en één sample in de historiek, mét `avg_heart_rate` 90. Die kwam dus langs de
-  // tick-guard heen. De tweede guard toetst waar een rit werkelijk uit bestaat: afstand én
-  // duur. Geen van beide is een verzonnen drempel — bij nul is er letterlijk niets te tonen,
-  // elke KPI op zo'n rit leest 0 of "—" en hij telt wél mee in de periodetotalen.
-  const saveWorkout = useCallback(async () => {
-    if (!user) return;
-    if (savedRef.current) return;
-    if (refs.tickCount.current === 0) return;
-    if (!isWorthSaving(metricsState.distanceMeters, metricsState.seconds)) {
-      // savedRef tóch zetten: de beslissing is genomen, en een retry zou hem herhalen.
-      savedRef.current = true;
-      return;
-    }
-    savedRef.current = true;
-
-    // Elk gemiddelde deelt door de teller die in dezelfde guard optelt als zijn som —
-    // niet door tickCount. Die telt ook packets waarin het veld ontbrak (idle-nulling,
-    // losse hr-update) en drukt het gemiddelde dan met de duty-cycle omlaag.
-    const avgW = refs.wattsCount.current > 0
-      ? Math.round(refs.wattsSum.current / refs.wattsCount.current)
-      : null;
-
-    // Exacte beste 2000m uit de {tijd, afstand}-tijdreeks (two-pointer + interpolatie).
-    // null wanneer de sessie < 2000m was. Samples compact als [t, d]-tuples opgeslagen.
-    const samples = refs.samplesRef.current;
-    const best2k = bestTimeForDistance(samples, 2000);
-    // Zonder toestemming voor gezondheidsgegevens gaat de hartslag er hier uit —
-    // aan de bron, niet pas bij het tonen. Anders zou hij alsnog in de database
-    // belanden en is de toestemming een schermpje zonder gevolg.
-    const sampleTuples = samples.length > 0
-      ? samples.map((s) => (healthGranted && s.hr != null ? [s.t, s.d, s.hr] : [s.t, s.d]))
-      : null;
-
-    const avgSplitFinal = refs.splitTickCount.current > 0
-      ? Math.round(refs.splitSum.current / refs.splitTickCount.current)
-      : null;
-    const distanceFinal = Math.round(metricsState.distanceMeters);
-
-    // Eén beoordeling, op de eindwaarden die de gebruiker ook in de samenvatting ziet.
-    // `prBaseline` is de stand van vóór deze rit (opgehaald bij de start), dus een record
-    // meet zich nooit tegen zichzelf.
-    //
-    // De tick-drempel komt van de vroegere live-check: een sprintje van een paar seconden
-    // heeft een hoog gemiddeld vermogen en zou anders een onverslaanbaar record neerzetten
-    // (de historiek bevat zulke ritten al — 34 m op 2026-07-16).
-    const entries = refs.tickCount.current < MIN_PR_TICKS ? [] : buildPrEntries(
-      {
-        avg_watts: avgW,
-        avg_split_seconds: avgSplitFinal,
-        distance_meters: distanceFinal,
-        best_2k_seconds: best2k,
-      },
-      prBaseline.current,
-    );
-    setPrEntries(entries);
-
-    const row = {
-      user_id: user.id,
-      started_at: refs.startedAtRef.current?.toISOString() ?? new Date().toISOString(),
-      // Alle waardes die in integer-kolommen landen worden afgerond — de rauwe
-      // BLE-/max-waardes kunnen floats zijn (bv. max_spm 45.5) en Postgres weigert
-      // die anders ("invalid input syntax for type integer").
-      duration_seconds: Math.round(metricsState.seconds),
-      distance_meters: distanceFinal,
-      avg_watts: avgW,
-      avg_spm: refs.spmCount.current > 0
-        ? Math.round(refs.spmSum.current / refs.spmCount.current)
-        : null,
-      avg_split_seconds: avgSplitFinal,
-      calories: Math.round(metricsState.calories),
-      max_watts: refs.maxWattsRef.current > 0 ? Math.round(refs.maxWattsRef.current) : null,
-      max_spm: refs.maxSpmRef.current > 0 ? Math.round(refs.maxSpmRef.current) : null,
-      best_split: refs.bestSplitRef.current < Infinity ? Math.round(refs.bestSplitRef.current) : null,
-      avg_heart_rate: healthGranted && refs.heartRateCount.current > 0
-        ? Math.round(refs.heartRateSum.current / refs.heartRateCount.current)
-        : null,
-      max_heart_rate: healthGranted && refs.maxHeartRateRef.current > 0
-        ? Math.round(refs.maxHeartRateRef.current)
-        : null,
-      resistance_level: metricsState.resistanceLevel != null ? Math.round(metricsState.resistanceLevel) : null,
-      goal_type: goal?.type ?? null,
-      goal_target: goal?.target ?? null,
-      goal_reached: goal ? goalReached : null,
-      splits: splits.length > 0 ? splits : null,
-      // `is_pr` blijft de goedkope filter; `pr_metrics` draagt de reden. Ze komen uit
-      // dezelfde lijst, dus ze kunnen niet uit elkaar lopen.
-      is_pr: entries.length > 0 || null,
-      pr_metrics: entries.length > 0 ? entries : null,
-      samples: sampleTuples,
-      best_2k_seconds: best2k,
-      total_strokes: refs.totalStrokesRef.current > 0 ? refs.totalStrokesRef.current : null,
-    };
+  /**
+   * Legt de rit lokaal vast en probeert hem daarna naar Supabase te schrijven — in die
+   * volgorde, en dat is de hele fix van F1.
+   *
+   * Tot 2026-09-16 ging de insert eerst en werd er pas lokaal bewaard nádat die had gefaald.
+   * Tussen "de gebruiker stopt" en "de server antwoordt" bestond er dus geen enkele kopie:
+   * sluit de app in dat venster af en de rit is weg. Nu staat hij lokaal vóór er één byte de
+   * deur uitgaat.
+   *
+   * Drie uitkomsten, en alleen de laatste is een probleem voor de gebruiker:
+   *  - de insert slaagt (of geeft 23505: hij stond er al) → uit de wachtrij, klaar;
+   *  - de insert faalt maar de rit staat lokaal → stil; de volgende home-focus druint hem af;
+   *  - de rit staat nérgens → dan pas een melding, want alleen dan is er iets te verliezen
+   *    en kan de gebruiker er iets aan doen.
+   */
+  const syncWorkout = useCallback(async (row: PendingWorkout): Promise<void> => {
+    const bewaard = await enqueueWorkout(row);
 
     let { error } = await supabase.from('workouts').insert(row);
 
@@ -230,15 +145,82 @@ export default function WorkoutScreen() {
       }
     }
 
-    if (error && error.code !== UNIQUE_VIOLATION) {
-      await savePendingWorkout(row);
-      reportError(error, { where: 'workout.save' });
-    } else {
-      // Identiteits-gebonden: raakt de slot alleen als hij déze rit bevat, zodat
-      // een andere rit die nog op een nieuwe poging wacht blijft staan.
-      await clearPendingWorkout(row);
+    if (!error || error.code === UNIQUE_VIOLATION) {
+      // Identiteits-gebonden: raakt alleen de sleutel van déze rit, zodat een andere rit die
+      // nog op een nieuwe poging wacht blijft staan.
+      await removeQueued(row);
+      return;
     }
-  }, [user, metricsState, goal, goalReached, splits, refs, prBaseline, healthGranted]);
+
+    reportError(error, { where: 'workout.save' });
+    if (bewaard) return;
+
+    // Niets op de server én niets op het toestel. Dit is de enige uitkomst waar een melding
+    // op zijn plaats is; een rit die netjes in de wachtrij staat is geen fout maar gewoon
+    // offline zijn, en daar hoort geen alarm bij.
+    Alert.alert(t.workout.saveFailedTitle, t.workout.saveFailedBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      { text: t.common.retry, onPress: () => { void syncWorkout(row); } },
+    ]);
+  }, []);
+
+  // Slaat de rit op de achtergrond op — exact één keer (savedRef). Een lege rit wordt
+  // overgeslagen.
+  //
+  // TWEE GUARDS, want de eerste meet niet wat hij lijkt te meten. `tickCount` telt ELK
+  // binnengekomen pakket, ook een dat alleen hartslag draagt — en een hartslagband stuurt
+  // door terwijl er niet geroeid wordt. Gemeten: de rit van 2026-08-22 12:40:57 stond met
+  // 0 m, 0 s en één sample in de historiek, mét `avg_heart_rate` 90. Die kwam dus langs de
+  // tick-guard heen. De tweede guard toetst waar een rit werkelijk uit bestaat: afstand én
+  // duur. Geen van beide is een verzonnen drempel — bij nul is er letterlijk niets te tonen,
+  // elke KPI op zo'n rit leest 0 of "—" en hij telt wél mee in de periodetotalen.
+  const saveWorkout = useCallback(async () => {
+    if (!user) return;
+    if (savedRef.current) return;
+    if (refs.tickCount.current === 0) return;
+    if (!isWorthSaving(metricsState.distanceMeters, metricsState.seconds)) {
+      // savedRef tóch zetten: de beslissing is genomen, en een retry zou hem herhalen.
+      savedRef.current = true;
+      return;
+    }
+    savedRef.current = true;
+
+    // De rij wordt ÉÉN keer gebouwd en vastgehouden. Dat is geen optimalisatie: `started_at`
+    // valt terug op `new Date()` wanneer de starttijd ontbreekt, en die terugval per poging
+    // opnieuw uitvoeren zou de identiteit van de rit elke keer veranderen — precies de sleutel
+    // waarop de wachtrij hem bewaart en waarop de unieke index een dubbele insert herkent.
+    const { row, prEntries: entries } = buildWorkoutRow({
+      userId: user.id,
+      startedAt: refs.startedAtRef.current?.toISOString() ?? new Date().toISOString(),
+      seconds: metricsState.seconds,
+      distanceMeters: metricsState.distanceMeters,
+      calories: metricsState.calories,
+      resistanceLevel: metricsState.resistanceLevel,
+      ticks: refs.tickCount.current,
+      // Elke som met de teller die in dezelfde guard optelde — nooit met `tickCount`, die
+      // telt ook packets waarin het veld ontbrak en drukt het gemiddelde met de duty-cycle.
+      watts: { sum: refs.wattsSum.current, count: refs.wattsCount.current },
+      spm: { sum: refs.spmSum.current, count: refs.spmCount.current },
+      split: { sum: refs.splitSum.current, count: refs.splitTickCount.current },
+      heartRate: { sum: refs.heartRateSum.current, count: refs.heartRateCount.current },
+      maxWatts: refs.maxWattsRef.current,
+      maxSpm: refs.maxSpmRef.current,
+      maxHeartRate: refs.maxHeartRateRef.current,
+      bestSplit: refs.bestSplitRef.current,
+      totalStrokes: refs.totalStrokesRef.current,
+      samples: refs.samplesRef.current,
+      goal,
+      goalReached,
+      splits,
+      healthGranted,
+      // De stand van vóór deze rit (opgehaald bij de start), dus een record meet zich nooit
+      // tegen zichzelf.
+      prBaseline: prBaseline.current,
+    });
+
+    setPrEntries(entries);
+    await syncWorkout(row);
+  }, [user, metricsState, goal, goalReached, splits, refs, prBaseline, healthGranted, syncWorkout]);
 
   // Bij het openen van dit scherm verbinden met de toestellen van vorige keer.
   // Alleen in de idle-fase: tijdens een rit staat er al een verbinding, en op de

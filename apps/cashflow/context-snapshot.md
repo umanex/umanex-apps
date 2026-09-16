@@ -49,20 +49,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0e63bf9 test(cashflow): pin the month engine to a digest hash before the bureau lands
 ff4238f docs(cashflow): brief the bureau extension and record what the exploration left out of scope
 fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
 8f8756a feat(ui): wire the Storybook MCP into packages/ui
 d5e47d7 docs(cashflow): close the reflection loop — one handoff item moved, three findings filed
-a8491c1 refactor(cashflow): a buffer pot does not finalize, and now something checks that
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/CLAUDE.md
-  M  apps/cashflow/package.json
-  M  apps/cashflow/scripts/calc-baseline.ts
-  A  apps/cashflow/scripts/calc-regression.ts
-  A  apps/cashflow/scripts/calc-scenarios.ts
-  M  apps/cashflow/scripts/scenarios.mjs
+  M  apps/cashflow/briefings/2026-09-16-feature-bureau.tcebc.md
+  A  apps/cashflow/lib/bureau/goals.test.ts
+  A  apps/cashflow/lib/bureau/goals.ts
+  A  apps/cashflow/lib/bureau/money.ts
+  A  apps/cashflow/lib/bureau/mutations.test.ts
+  A  apps/cashflow/lib/bureau/mutations.ts
+  A  apps/cashflow/lib/bureau/normalize.ts
+  A  apps/cashflow/lib/bureau/periods.test.ts
+  A  apps/cashflow/lib/bureau/periods.ts
+  A  apps/cashflow/lib/bureau/testing.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

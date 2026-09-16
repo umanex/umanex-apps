@@ -1,3 +1,6 @@
+import type { BureauData } from '../bureau/types.ts';
+import type { BureauDraft } from '../bureau/mutations.ts';
+
 export type MonthKey = string;
 
 export interface IncomeItem {
@@ -269,6 +272,8 @@ export interface CashflowData {
    * historie, precies wat een snapshot moet voorkomen.
    */
   lastSeenMonth: MonthKey;
+  /** Doelen, klanten, projecten, tijd en verkoop — zie `lib/bureau/types.ts`. Sinds store-versie 16. */
+  bureau: BureauData;
 }
 
 export interface CashflowStore extends CashflowData {
@@ -344,4 +349,11 @@ export interface CashflowStore extends CashflowData {
     actualAmount: number,
   ) => void;
   removeRecurringSettlement: (recurringId: string, monthKey: MonthKey) => void;
+
+  /**
+   * Eén ingang voor elke bureau-schrijfactie: `fn` is een mutatie uit `lib/bureau/mutations.ts`,
+   * uitgevoerd op de immer-draft, en haar uitkomst komt terug. Zo bestaat elke overgang één keer
+   * en is ze met `node:test` te toetsen zonder zustand.
+   */
+  mutateBureau: <R>(fn: (draft: BureauDraft) => R) => R;
 }

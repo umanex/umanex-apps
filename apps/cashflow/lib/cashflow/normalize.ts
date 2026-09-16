@@ -1,4 +1,6 @@
 import { format } from 'date-fns';
+// Met extensie: `node --test` laadt deze module rechtstreeks, en Node eist de extensie.
+import { normalizeBureau } from '../bureau/normalize.ts';
 import type {
   BalanceOverride,
   CashflowData,
@@ -14,7 +16,7 @@ import type {
  * Wordt meegeschreven naar `cashflow_state.store_version`, zodat een verouderde client
  * zichtbaar is zonder het document te parsen.
  */
-export const STORE_VERSION = 15;
+export const STORE_VERSION = 16;
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
@@ -80,6 +82,10 @@ export function normalizeData(input: unknown): CashflowData {
     // antwoord: de app staat op dit moment open, en over eerdere maanden weten we niets —
     // die worden dus niet automatisch als historie vastgelegd.
     lastSeenMonth: typeof s.lastSeenMonth === 'string' ? s.lastSeenMonth : currentMonth(),
+    // v16: het bureau-domein. Een ouder document kent de sleutel niet; de lege vorm is dan het
+    // antwoord. Ontbreekt hij hier, dan leidt `sync.ts` hem niet af uit `emptyData()` en wordt
+    // geen enkele bureau-wijziging ooit opgeslagen.
+    bureau: normalizeBureau(s.bureau),
   };
 }
 

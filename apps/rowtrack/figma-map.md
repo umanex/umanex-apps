@@ -1,4 +1,23 @@
-# RowTrack — Figma ↔ Code mapping
+# RowTrack — Figma ↔ Code mapping · HISTORIEK, NIET DE BRON
+
+> **Dit bestand is geen bron van waarheid meer** (vastgesteld 2026-09-16). Het is voor het laatst
+> met de hand gesynct op 2026-07-15, de node-ids hieronder wijzen naar de oude *Screens*-pagina,
+> een deel van de codepaden bestaat niet meer, en **geen enkel script leest hem**. Hij blijft staan
+> omdat hij laat zien hoe de koppeling er vóór de gegenereerde keten uitzag.
+>
+> Waar je het antwoord wél vindt:
+>
+> | wat je zoekt | bron |
+> |---|---|
+> | een library-pagina en zijn primary node | `figma/manifest.json` → `pages[<naam>].primary.id` |
+> | de key en de slots van een component | `figma/library-component-keys.json` |
+> | welke schermframes er zijn en hoe ze heten | `scripts/schermen.mjs` |
+>
+> Die drie worden gegenereerd uit Figma respectievelijk uit de code, en `pnpm --filter rowtrack
+> figma:check` toetst ze. Een tabel die iemand moet bijwerken, veroudert stil — dit bestand is
+> daar het bewijs van.
+
+Hieronder de oorspronkelijke inhoud, ongewijzigd.
 
 Single source of truth voor welke code-eenheid bij welk Figma frame hoort.
 Bijwerken bij elke Figma re-organisatie of nieuwe screen/component.

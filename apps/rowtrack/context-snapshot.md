@@ -70,15 +70,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-26b3433 fix(rowtrack): a pace or power goal is an intensity, not a finish line
-3612c3b feat(rowtrack): save an interrupted ride from its checkpoint
-df9f602 refactor(rowtrack): one session accumulator, and counter resets survive a reconnect
-bfc2509 fix(rowtrack): gate heart rate on consent at the source
-148a5b1 fix(rowtrack): store a finished ride locally before sending it
+2fa4e27 feat(rowtrack): build the blocked-consent frame in Figma, and put every frame back on its slot
+8e313f7 chore(rowtrack): refresh the Figma manifest so the publication axis can measure again
+68b09e6 feat(rowtrack): add the blocked-consent state as a screen frame
+3591668 docs(rowtrack): point the Figma mapping at the generated sources, and record the design study
+18fd998 chore(rowtrack): re-derive the Figma artefacts and prove nothing moved
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/figma/beeld-basislijn.json
+   M packages/ui/CLAUDE.md
 
 ## Bestanden met TODO/FIXME
   (geen)

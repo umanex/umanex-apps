@@ -353,7 +353,12 @@
      "error"
     ]
    },
-   "uitgesloten": {},
+   "uitgesloten": {
+    "healthGranted": [
+     true,
+     false
+    ]
+   },
    "variantNodes": 160
   },
   "DeviceSelectionModal": {

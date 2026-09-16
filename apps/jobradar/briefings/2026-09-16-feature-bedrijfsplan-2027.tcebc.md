@@ -5,7 +5,7 @@ Datum:   2026-09-16
 Type:    feature
 Project: jobradar
 Klant:   umanex
-Status:  gevalideerd
+Status:  gebouwd
 ---
 
 ---
@@ -150,6 +150,12 @@ CONSTRAINTS: - Desktop-first, zoals de rest van jobradar; niet breken op 768 px,
 - [x] `pnpm --filter jobradar plan:probe` draait alle HTTP-gevallen groen — bewijs: 31 genummerde gevallen, `PROBE KLAAR`, met de positieve controle vooraan (22 gezaaide acties, 0 geschiedenisregels) en als slot 23 acties met 23 unieke keys
 - [x] Bestaande functionaliteit blijft intact — bewijs: `opvolging:probe` draait zijn twaalf gevallen ongewijzigd af, en `flow --selftest` laat alle drie de ingespoten defecten afgaan
 - [x] Geen nieuwe dependency in `apps/jobradar/package.json` — bewijs: `git diff origin/main` op dat bestand toont één toegevoegde regel, het script `plan:probe`
+
+**Waarom de status `gebouwd` is en niet `gevalideerd`.** 39 van de 40 items zijn afgevinkt op een
+meting die rood kón worden. Het veertigste — de laadtoestand — is hier niet op te wekken: jobradar
+heeft geen fixture-laag en geen mock-route, en dat staat zo in `## Verify-pad` → "State forceren".
+Het item blijft dus open met zijn reden, en de status volgt die uitkomst in plaats van hem te
+verbergen. `gevalideerd` zou hier betekenen dat ik een as afvink die ik niet gemeten heb.
 
 ### Na de finish-review (2026-09-16)
 

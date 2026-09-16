@@ -168,7 +168,7 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 
 ## 2026-09-14 — `normalize.ts` vult een ontbrekende `basis` met `'bank'` · [aanname]
 - **Bevinding:** Oude snapshots kennen `subtotals.basis` niet; `vulOntbrekendeVelden` zet er `'bank'` in. Dat klopt zolang élke bevroren maand met `calculateMonths(…, 1, …)` op index 0 doorgerekend wordt — vandaag doet `useAutoCloseMonth` dat, en het is de enige schrijver van snapshots. Komt er een tweede pad dat een látere maand bevriest, dan liegt die aanvulling stil, en de enige controle erop staat in de scenario-suite die op verse data draait.
-- **Check:** `grep -rn "closeMonth\|buildSnapshot" apps/cashflow --include="*.ts" --include="*.tsx" | grep -v scripts/` — meer dan één schrijver van snapshots = de aanname is niet langer vanzelfsprekend. Gemeten 2026-09-14: één (`useAutoCloseMonth`).
+- **Check:** `grep -rn "closeMonth\|buildSnapshot" apps/cashflow --include="*.ts" --include="*.tsx" | grep -v scripts/` — meer dan één schrijver van snapshots = de aanname is niet langer vanzelfsprekend. Gemeten 2026-09-14: één (`useAutoCloseMonth`). **Hermeten 2026-09-16: twee** — `hooks/useCashflow.ts:197` (auto-close, altijd index 0) én `app/page.tsx:91` (knop "Afsluiten" op élke kolom `< currentMonth`, dus ook index 1 of 2 met `basis: 'vrij'`). De meting van 2026-09-14 telde de call in `page.tsx` niet mee; de aanname vuurt dus al. Nieuwe snapshots dragen hun `basis` via `buildSnapshot` (die kopieert `data.subtotals`); het risico zit alleen in oude snapshots zonder veld die handmatig uit een latere kolom bevroren werden.
 - **Volgende zet:** Bij een tweede snapshot-schrijver: `basis` meeschrijven in `buildSnapshot` in plaats van hem in `normalize` te raden.
 - **Status:** open
 

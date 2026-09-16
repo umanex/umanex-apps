@@ -194,3 +194,24 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** Er is geen exacte ankerbeweging beschikbaar: een saldoverschil op de ankerbasis (`startBalance − Σ andere potten`) is fout zodra er iets afgevinkt staat, met precies dat bedrag (gemeten: −200 waar de maand −600 bewoog). De stroom is dus het enige getal dat klopt over de maand zelf; wat niet klopt is de suggestie dat de kolom optelt. Buiten de scope van "toon een negatieve bufferstand".
 - **Eerste zet:** Kiezen tussen drie: (a) laten staan met de `title` die er nu op zit, (b) in een half verstreken maand géén bedrag tonen (em-dash + uitleg, footers blijven even hoog), (c) de regel in de ankerkolom een eigen label geven. Hangt samen met de ankermaand-asymmetrie in `subtotals` hierboven — dezelfde oorzaak.
 - **Status:** gebouwd — 2026-09-06, optie (b), PR #364. De regel toont een em-streepje in een half verstreken maand (anker of afgesloten) en houdt zo zijn hoogte. Vastgelegd in het harness-scenario `buffer — negatieve stand in de footer` mét tegenproef, en in de suite-check `anker: zichtbaar == bufferstand` die aantoont dat de bufferstand daar wél klopt. De onderliggende asymmetrie in `subtotals` blijft open (item hierboven).
+
+## 2026-09-16 — Bureau: betaling registreert altijd vandaag en het volle bedrag · [feature]
+- **Wat:** Het vinkje "Betaald" in `components/bureau/InvoiceRow.tsx` zet `paidOn` op vandaag en `paidAmount` op het bruto factuurbedrag. Een betaling van gisteren, een deelbetaling of een betaling met aftrek (bankkosten, korting) is niet in te voeren; de mutatie `markInvoicePaid` kan het wel.
+- **Waarom niet nu:** Buiten de opdracht voor de eerste versie; "ontvangen in het jaar" telt `paidAmount`, dus de afwijking raakt alleen die cash-kant, nooit de omzet.
+- **Eerste zet:** Datum en bedrag als twee velden naast het vinkje, vooringevuld met vandaag en het bruto bedrag, met expliciet "OK" — zoals de verwachte betaaldatum ernaast.
+- **Check:** `grep -n "markInvoicePaid(d, p.id, inv.id, today, bruto)" apps/cashflow/components/bureau/InvoiceRow.tsx` — treffer = nog altijd vast op vandaag en bruto.
+- **Status:** open
+
+## 2026-09-16 — Bureau: een project is in de UI niet te verwijderen · [feature]
+- **Wat:** `removeProject` bestaat (weigert bij geregistreerde uren, neemt planning en posten mee) en is getest, maar geen scherm roept hem aan. Een verkeerd aangemaakt project blijft staan, of moet op "geannuleerd" — en dan telt zijn gerealiseerde deel nog mee.
+- **Waarom niet nu:** Kansen kregen wel een verwijderknop (met bevestiging); projecten raken omzet, facturen en posten, dus de bevestiging moet tonen wat er meegaat. Niet gevraagd in de opdracht.
+- **Eerste zet:** Een sectie "Verwijderen" op de projectpagina in de vorm van `OpportunityDetail.tsx`, met de weigering "heeft uren" als zichtbare tekst.
+- **Check:** `grep -rn "removeProject" apps/cashflow/app apps/cashflow/components | wc -l` — 0 = nog geen UI.
+- **Status:** open
+
+## 2026-09-16 — Bureau: het concentratiesignaal gaat af bij één enkele klant · [ux]
+- **Wat:** Met één klant in de vooruitblik is zijn aandeel 100 % en meldt het overzicht "boven de klantlimiet" (gezien in de review-screenshot `deels-1440-overzicht`, noemer € 4.000). Feitelijk juist, maar bij een beginnend jaar is het ruis die de echte signalen verdunt.
+- **Waarom niet nu:** Een drempel op de noemer (bv. pas vanaf twee klanten of vanaf een deel van het omzetdoel) is een inhoudelijke keuze over wanneer afhankelijkheid telt — die hoort bij Jeroen, niet bij een default.
+- **Eerste zet:** Jeroen laten kiezen: minimum aantal klanten, minimum noemer als fractie van het doel, of zo laten. Dan een drempel in `SignalThresholds.clientConcentration` en een test in `signals.test.ts`.
+- **Check:** `grep -n "clientConcentration: { enabled: boolean }" apps/cashflow/lib/bureau/types.ts` — treffer = nog zonder drempel.
+- **Status:** open

@@ -28,11 +28,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | SessionEffects | `apps/cashflow/components/auth/SessionEffects.tsx` | auth | — | — | — |
 | SignOutButton | `apps/cashflow/components/auth/SignOutButton.tsx` | auth | — | — | — |
 | BureauSubnav | `apps/cashflow/components/bureau/BureauSubnav.tsx` | bureau | — | — | — |
+| ExtensionList | `apps/cashflow/components/bureau/ExtensionList.tsx` | bureau | — | — | — |
+| ExternalCostList | `apps/cashflow/components/bureau/ExternalCostList.tsx` | bureau | — | — | — |
 | NumberField | `apps/cashflow/components/bureau/fields/NumberField.tsx` | fields | — | — | — |
+| SelectField | `apps/cashflow/components/bureau/fields/SelectField.tsx` | fields | — | — | — |
+| TextareaField | `apps/cashflow/components/bureau/fields/TextareaField.tsx` | fields | — | — | — |
+| TextField | `apps/cashflow/components/bureau/fields/TextField.tsx` | fields | — | — | — |
 | FormSection | `apps/cashflow/components/bureau/FormSection.tsx` | bureau | — | — | — |
 | GoalsForm | `apps/cashflow/components/bureau/GoalsForm.tsx` | bureau | — | — | — |
+| MetricValue | `apps/cashflow/components/bureau/MetricValue.tsx` | bureau | — | — | — |
+| MilestoneList | `apps/cashflow/components/bureau/MilestoneList.tsx` | bureau | — | — | — |
+| MilestoneRow | `apps/cashflow/components/bureau/MilestoneRow.tsx` | bureau | — | — | — |
+| ProjectForm | `apps/cashflow/components/bureau/ProjectForm.tsx` | bureau | — | — | — |
+| ProjectSheet | `apps/cashflow/components/bureau/ProjectSheet.tsx` | bureau | — | — | — |
+| ProjectStatusBadge | `apps/cashflow/components/bureau/ProjectStatusBadge.tsx` | bureau | — | — | — |
+| ProjectTable | `apps/cashflow/components/bureau/ProjectTable.tsx` | bureau | — | — | — |
 | SumLine | `apps/cashflow/components/bureau/SumLine.tsx` | bureau | — | — | — |
 | YearSelector | `apps/cashflow/components/bureau/YearSelector.tsx` | bureau | — | — | — |
+| YieldBreakdown | `apps/cashflow/components/bureau/YieldBreakdown.tsx` | bureau | — | — | — |
 | BalanceFooter | `apps/cashflow/components/cashflow/BalanceFooter.tsx` | cashflow | — | — | — |
 | BufferChart | `apps/cashflow/components/cashflow/BufferChart.tsx` | cashflow | — | — | — |
 | CashflowDndContext | `apps/cashflow/components/cashflow/CashflowDndContext.tsx` | cashflow | — | — | — |
@@ -58,18 +71,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+40d19f9 Merge remote-tracking branch 'origin/feature/ui-textarea-native-select' into feature/cashflow-bureau-ui
+e994db9 feat(cashflow): revenue per fiscal year from milestones, and project yield A and B
 7552a2e feat(cashflow): the bureau shell and the goals page
+360eb23 feat(ui): Textarea and NativeSelect, with their Figma pages and a manifest recipe that matches the guard
 98c01c0 feat(cashflow): the bureau document key, its transitions and their tests (store version 16)
-0e63bf9 test(cashflow): pin the month engine to a digest hash before the bureau lands
-ff4238f docs(cashflow): brief the bureau extension and record what the exploration left out of scope
-fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/cashflow/lib/bureau/profitability.test.ts
-  A  apps/cashflow/lib/bureau/profitability.ts
-  A  apps/cashflow/lib/bureau/revenue.test.ts
-  A  apps/cashflow/lib/bureau/revenue.ts
+  A  apps/cashflow/app/bureau/projecten/[id]/page.tsx
+  A  apps/cashflow/app/bureau/projecten/page.tsx
+  A  apps/cashflow/components/bureau/ExtensionList.tsx
+  A  apps/cashflow/components/bureau/ExternalCostList.tsx
+  A  apps/cashflow/components/bureau/MetricValue.tsx
+  A  apps/cashflow/components/bureau/MilestoneList.tsx
+  A  apps/cashflow/components/bureau/MilestoneRow.tsx
+  A  apps/cashflow/components/bureau/ProjectForm.tsx
+  A  apps/cashflow/components/bureau/ProjectSheet.tsx
+  A  apps/cashflow/components/bureau/ProjectStatusBadge.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -46,6 +46,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | GoalsForm | `apps/cashflow/components/bureau/GoalsForm.tsx` | bureau | — | — | — |
 | InvoiceList | `apps/cashflow/components/bureau/InvoiceList.tsx` | bureau | — | — | — |
 | InvoiceRow | `apps/cashflow/components/bureau/InvoiceRow.tsx` | bureau | — | — | — |
+| KpiTile | `apps/cashflow/components/bureau/KpiTile.tsx` | bureau | — | — | — |
 | MetricValue | `apps/cashflow/components/bureau/MetricValue.tsx` | bureau | — | — | — |
 | MilestoneList | `apps/cashflow/components/bureau/MilestoneList.tsx` | bureau | — | — | — |
 | MilestoneRow | `apps/cashflow/components/bureau/MilestoneRow.tsx` | bureau | — | — | — |
@@ -63,6 +64,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | QualificationChecklist | `apps/cashflow/components/bureau/QualificationChecklist.tsx` | bureau | — | — | — |
 | QuickTimeEntry | `apps/cashflow/components/bureau/QuickTimeEntry.tsx` | bureau | — | — | — |
 | SalesFunnel | `apps/cashflow/components/bureau/SalesFunnel.tsx` | bureau | — | — | — |
+| SignalList | `apps/cashflow/components/bureau/SignalList.tsx` | bureau | — | — | — |
 | StageChangeForm | `apps/cashflow/components/bureau/StageChangeForm.tsx` | bureau | — | — | — |
 | StageHistory | `apps/cashflow/components/bureau/StageHistory.tsx` | bureau | — | — | — |
 | SumLine | `apps/cashflow/components/bureau/SumLine.tsx` | bureau | — | — | — |
@@ -96,24 +98,21 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+d5c7d02 feat(cashflow): invoices on the project, cash for 13 weeks, and client concentration pages
 804cb10 feat(cashflow): 13-week cash as a distribution of the monthly engine, client concentration, invoice state
 129a307 feat(cashflow): sales page — follow-up, funnel with denominators, and a won opportunity that becomes one project
 23dbfda feat(cashflow): sales pipeline — qualification, counts and conversions with their denominators
 96d3086 test(cashflow): harness coverage for projects and time, and a keyboard pass that sees past a date field
-7a4070c feat(cashflow): time — quick entry, capacity per year and week, and planning of remaining work
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/cashflow/app/bureau/cash/page.tsx
-  A  apps/cashflow/app/bureau/klanten/page.tsx
-  M  apps/cashflow/app/bureau/projecten/[id]/page.tsx
-  A  apps/cashflow/components/bureau/CashAttentionList.tsx
-  A  apps/cashflow/components/bureau/CashPositionLine.tsx
-  A  apps/cashflow/components/bureau/ClientGroupsPanel.tsx
-  A  apps/cashflow/components/bureau/ConcentrationTable.tsx
-  A  apps/cashflow/components/bureau/InvoiceList.tsx
-  A  apps/cashflow/components/bureau/InvoiceRow.tsx
-  A  apps/cashflow/components/bureau/WeekCashTable.tsx
+   M apps/cashflow/components/bureau/ProjectTable.tsx
+  A  apps/cashflow/lib/bureau/signals.test.ts
+  A  apps/cashflow/lib/bureau/signals.ts
+   M apps/cashflow/scripts/flow-harness.mjs
+  ?? apps/cashflow/app/bureau/page.tsx
+  ?? apps/cashflow/components/bureau/KpiTile.tsx
+  ?? apps/cashflow/components/bureau/SignalList.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

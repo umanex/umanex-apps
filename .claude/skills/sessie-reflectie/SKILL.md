@@ -113,9 +113,20 @@ Voeg elke vooruitkijkende bevinding toe onder de juiste laag-header. Entry-forma
     - **Bevinding:** {1-2 zinnen}
     - **Check:** {hoe je in één handeling vaststelt of dit nog openstaat}
     - **Volgende zet:** {concreet actiepunt of "-"}
+    - **Deadline:** YYYY-MM-DD   ← optioneel, alleen bij een échte externe datum
     - **Status:** open
 
 `{type}` ∈ `onzekerheid` · `aanname` · `risico` · `next-step` · `idee` · `debt`.
+
+**`Deadline` is optioneel en zeldzaam.** Zet hem alleen wanneer er een **externe** datum op
+het item zit — een offerte die vervalt, een contract dat afloopt, een migratie met een
+afsluitdatum. Niet bij werk dat "eigenlijk snel moet": dan is de deadline een wens en
+degradeer je het signaal voor de items waar wél een datum op staat.
+
+Staat er een datum in de bevinding, dan hóórt hij in dit veld. De hook en de wekelijkse
+veroudering rangschikken op ouderdom, en een datum die alleen in proza staat verdwijnt
+daarmee achter nieuwere items. Gemeten 2026-09-15: een offerte met vervaldag 26/09 stond
+in de sessiestart-uitvoer onder *"… en 4 oudere open item(s)"*.
 
 **`Check` is verplicht, en hij is het punt van de entry.** `Bevinding` legt een waarneming van nú vast; die wordt onwaar zodra de code eronder verandert, en niets merkt dat — het item blijft elke ochtend terugkomen als openstaand werk. De check zegt hoe je vaststelt of het nog leeft: een commando bij voorkeur (`grep -q 'periodType' apps/rowtrack/lib/period.ts`), anders een vraag met een eenduidig antwoord. Kun je er geen formuleren, dan is de bevinding te vaag — herformuleer haar.
 

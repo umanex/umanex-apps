@@ -142,6 +142,7 @@ function bureauFixture(variant) {
     budgetedOwnHours: null, expectedRemainingOwnHours: null, externalCosts: [], milestones: [], invoices: [],
     nextMilestoneNote: '', blockers: '', opportunityId: null, createdAt: `${BRON}-01`, ...over,
   });
+  if (variant === 'klanten') return klantenFixture(doelen, project);
   const projects = [
     project('harnas-zonder', { name: 'Harnasproject zonder raming', fixedPriceExVat: 12000,
       milestones: [{ id: 'harnas-m1', label: 'Harnasmijlpaal', plannedMonth: BRON, amount: 4000, realizedOn: null, realizedAmount: null, extensionId: null }] }),
@@ -149,6 +150,10 @@ function bureauFixture(variant) {
   ];
   // 'verkoop-dubbel': een document waarin al twee projecten naar de gewonnen kans verwijzen —
   // een half mislukte eerdere omzetting. De tegenproef van "één project" draait erop.
+  if (variant.startsWith('cash')) {
+    const met = projects.find((p) => p.id === 'harnas-met');
+    met.invoices = cashFacturen(variant);
+  }
   if (variant === 'verkoop-dubbel') {
     projects.push(project('harnas-dubbel-1', { name: 'Eerste omzetting', fixedPriceExVat: 15000, opportunityId: 'harnas-gewonnen' }));
     projects.push(project('harnas-dubbel-2', { name: 'Tweede omzetting', fixedPriceExVat: 15000, opportunityId: 'harnas-gewonnen' }));
@@ -203,10 +208,68 @@ function verkoopKansen() {
   ];
 }
 
+/** Een lokale kalenderdatum `n` dagen vanaf vandaag — dezelfde klok als de browser van de harness. */
+function dagVanaf(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Twee facturen op "Harnasproject met raming", elk met een post in de prognose en een uniek
+ * bedrag: 604,27 ex btw → 731,17, vervallen sinds tien dagen zonder verwachte betaaldatum; en
+ * 1.020,30 → 1.234,56, verwacht over veertien dagen. `cash-gedateerd` geeft de eerste alsnog een
+ * verwachte datum (vandaag) — de tegenproef van "staat apart".
+ */
+function cashFacturen(variant) {
+  return [
+    { id: 'harnas-factuur-oud', label: 'Harnasslot', kind: 'slot', date: dagVanaf(-40), amountExVat: 604.27, vatRate: 21, dueDate: dagVanaf(-10),
+      expectedPaymentDate: variant === 'cash-gedateerd' ? dagVanaf(0) : null, paidOn: null, paidAmount: null, incomeItemId: 'harnas-post-oud' },
+    { id: 'harnas-factuur-later', label: 'Harnastermijn', kind: 'termijn', date: dagVanaf(0), amountExVat: 1020.3, vatRate: 21, dueDate: dagVanaf(30),
+      expectedPaymentDate: dagVanaf(14), paidOn: null, paidAmount: null, incomeItemId: 'harnas-post-later' },
+  ];
+}
+
+function cashPosten() {
+  return [
+    { id: 'harnas-post-oud', monthKey: BRON, label: 'Harnasproject met raming — Harnasslot', amount: 731.17, received: false },
+    { id: 'harnas-post-later', monthKey: dagVanaf(14).slice(0, 7), label: 'Harnasproject met raming — Harnastermijn', amount: 1234.56, received: false },
+  ];
+}
+
+/**
+ * Drie klanten, twee in één groep. Gerealiseerd dit jaar: C 50.000 · A 30.000 · B 20.000 →
+ * noemer 100.000, C 50 % boven de limiet van 30 %, A precies 30 % en dus níét erboven.
+ * Vooruitblik (met resterend in december): C 140.000 · A 40.000 · B 20.000 → noemer 200.000.
+ */
+function klantenFixture(doelen, project) {
+  const vandaag = dagVanaf(0);
+  const d = (mmdd) => { const x = `${JAAR}-${mmdd}`; return x <= vandaag ? x : vandaag; };
+  const m = (id, amount, over) => ({ id, label: id, plannedMonth: `${JAAR}-12`, amount, realizedOn: null, realizedAmount: null, extensionId: null, ...over });
+  return {
+    goals: doelen,
+    clients: [
+      { id: 'harnas-klant-a', name: 'Harnasklant A', groupId: 'harnas-groep' },
+      { id: 'harnas-klant-b', name: 'Harnasklant B', groupId: 'harnas-groep' },
+      { id: 'harnas-klant-c', name: 'Harnasklant C', groupId: null },
+    ],
+    clientGroups: [{ id: 'harnas-groep', name: 'Harnasgroep' }],
+    projects: [
+      project('harnas-k1', { clientId: 'harnas-klant-a', name: 'K1', fixedPriceExVat: 40000, milestones: [m('k1-1', 30000, { realizedOn: d('01-15') }), m('k1-2', 10000)] }),
+      project('harnas-k2', { clientId: 'harnas-klant-b', name: 'K2', fixedPriceExVat: 20000, milestones: [m('k2-1', 20000, { realizedOn: d('02-15') })] }),
+      project('harnas-k3', { clientId: 'harnas-klant-c', name: 'K3', fixedPriceExVat: 140000, milestones: [m('k3-1', 50000, { realizedOn: d('03-01') }), m('k3-2', 90000)] }),
+    ],
+    opportunities: [],
+    timeEntries: [],
+    plannedWork: [],
+  };
+}
+
 function fixtureData({ leeg = false, buffer = false, bureau = null } = {}) {
   const b = bureauFixture(bureau);
-  const metBureau = (doc) => (b ? { ...doc, bureau: b } : doc);
-  return metBureau(prognoseFixture({ leeg, buffer }));
+  const doc = prognoseFixture({ leeg, buffer });
+  if (bureau?.startsWith('cash')) doc.incomeItems = [...doc.incomeItems, ...cashPosten()];
+  return b ? { ...doc, bureau: b } : doc;
 }
 
 function prognoseFixture({ leeg = false, buffer = false } = {}) {
@@ -1351,6 +1414,91 @@ async function verlorenVraagtReden(page, state, { redenVooraf = false } = {}) {
   return { ok: true, bewijs: 'zonder reden: melding + 0 schrijfacties; met reden: 1 schrijfactie, sheet bleef open, historie 3 → 4 met stadium en reden; focus terug op "Nieuwe kans"' };
 }
 
+const CASH = '/bureau/cash';
+const KLANTEN = '/bureau/klanten';
+
+/** Klapt de regels van elke week open en geeft alle regelteksten terug. */
+async function alleCashRegels(page) {
+  const knoppen = page.locator('[data-cash-week] button[aria-expanded="false"]');
+  for (let i = await knoppen.count(); i > 0; i--) await knoppen.first().click();
+  return page.locator('[data-cash-line]').evaluateAll((els) => els.map((e) => e.textContent.replace(/\s+/g, ' ')));
+}
+
+/** De vervallen factuur zonder datum staat apart en in geen enkele week; de gedateerde precies één keer, in haar week. */
+async function vervallenStaatApart(page) {
+  const apart = page.locator('[data-unplaced-reason="achterstallig-zonder-datum"] [data-unplaced="harnas-factuur-oud"]');
+  if ((await apart.count()) !== 1) throw new Error('de vervallen factuur zonder datum staat niet in de aparte lijst');
+  const tekst = (await apart.innerText()).replace(/\s+/g, ' ');
+  if (!tekst.includes('731,17')) throw new Error(`aparte regel zonder bedrag 731,17: "${tekst}"`);
+  const regels = await alleCashRegels(page);
+  const inWeek = regels.filter((r) => r.includes('731,17'));
+  if (inWeek.length) throw new Error(`731,17 staat tóch in een week: "${inWeek[0]}"`);
+  const later = regels.filter((r) => r.includes('1.234,56'));
+  if (later.length !== 1) throw new Error(`de gedateerde factuur staat ${later.length} keer in de weken`);
+  const verwacht = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 14); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+  const rij = await page.locator('[data-cash-line]', { hasText: '1.234,56' }).evaluate((el) => {
+    const detail = el.closest('tr');
+    const week = detail?.previousElementSibling;
+    return { from: week?.getAttribute('data-from'), to: week?.getAttribute('data-to') };
+  });
+  if (!(rij.from <= verwacht && verwacht <= rij.to)) throw new Error(`gedateerde factuur in week ${rij.from}–${rij.to}, verwacht ${verwacht}`);
+  const alarm = await page.locator('[role=alert]', { hasText: 'sluiten niet aan' }).count();
+  if (alarm) throw new Error('de pagina meldt dat de weken niet aansluiten op de maandprognose');
+  return { ok: true, bewijs: `731,17 apart ("${tekst.slice(0, 70)}…"), 0× in ${regels.length} weekregels; 1.234,56 één keer, in week ${rij.from}–${rij.to}; geen reconciliatie-alarm` };
+}
+
+/**
+ * Betaald afvinken: één schrijfactie, de post weg uit de prognose, de factuur betaald — en
+ * uitvinken zet een post terug. `vervals` krijgt het document vóór de controle (tegenproef).
+ */
+async function betaaldHaaltPostWeg(page, state, { vervals } = {}) {
+  const rij = page.locator('[data-invoice-row="harnas-factuur-later"]');
+  const basis = state.schrijfpogingen.length;
+  await rij.locator('button[role=checkbox]').click();
+  await rij.locator('[data-ledger="betaald-uit-prognose"]').waitFor({ timeout: 5_000 });
+  const extra = await nieuweSchrijfacties(page, state, basis);
+  const doc = structuredClone(state.documenten.at(-1));
+  vervals?.(doc);
+  const post = (doc?.incomeItems ?? []).filter((i) => i.id === 'harnas-post-later');
+  const factuur = doc?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.id === 'harnas-factuur-later');
+  if (extra !== 1) throw new Error(`betaald afvinken gaf ${extra} schrijfacties`);
+  if (post.length) throw new Error('de post staat na betaling nog in de prognose');
+  if (!factuur?.paidOn || factuur.incomeItemId !== null) throw new Error(`factuur na betaling: ${JSON.stringify({ paidOn: factuur?.paidOn, incomeItemId: factuur?.incomeItemId })}`);
+  const basisTerug = state.schrijfpogingen.length;
+  await rij.locator('button[role=checkbox]').click();
+  await rij.locator('[data-ledger="in-prognose"]').waitFor({ timeout: 5_000 });
+  // De schrijfactie volgt na de debounce van sync.ts; zonder wachten leest dit het vorige document.
+  const terugSchrijf = await nieuweSchrijfacties(page, state, basisTerug);
+  if (terugSchrijf !== 1) throw new Error(`uitvinken gaf ${terugSchrijf} schrijfacties`);
+  const terug = state.documenten.at(-1);
+  const nieuweId = terug?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.id === 'harnas-factuur-later')?.incomeItemId;
+  const nieuwePost = (terug?.incomeItems ?? []).find((i) => i.id === nieuweId);
+  if (!nieuwePost || nieuwePost.amount !== 1234.56) throw new Error(`uitvinken: post ${JSON.stringify(nieuwePost)}`);
+  return { ok: true, bewijs: `1 schrijfactie; post weg, factuur betaald; uitvinken: nieuwe post van € 1.234,56 in ${nieuwePost.monthKey}` };
+}
+
+/** De twee bases, elk met eigen noemer; "boven limiet" als woord; per groep telt de groep samen. */
+async function concentratieKlopt(page) {
+  const tekst = async (sel) => (await page.locator(sel).innerText()).replace(/\s+/g, ' ');
+  const fouten = [];
+  const gerNoemer = await page.locator('[data-concentration="gerealiseerd"] caption').getAttribute('data-denominator');
+  const progNoemer = await page.locator('[data-concentration="prognose"] caption').getAttribute('data-denominator');
+  if (gerNoemer !== '100000') fouten.push(`noemer gerealiseerd ${gerNoemer}`);
+  if (progNoemer !== '200000') fouten.push(`noemer vooruitblik ${progNoemer}`);
+  const c = await tekst('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-klant-c"]');
+  const a = await tekst('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-klant-a"]');
+  if (!/50 %.*boven limiet/.test(c)) fouten.push(`klant C "${c}"`);
+  if (/boven limiet/.test(a) || !a.includes('30 %')) fouten.push(`klant A op precies de limiet "${a}"`);
+  const pc = await tekst('[data-concentration="prognose"] [data-concentration-row="harnas-klant-c"]');
+  if (!pc.includes('70 %')) fouten.push(`vooruitblik C "${pc}"`);
+  await page.locator('#klanten-per-groep').click();
+  await page.locator('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-groep"]').waitFor({ timeout: 5_000 });
+  const groep = await tekst('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-groep"]');
+  if (!/Harnasgroep.*2 klanten.*50 %.*boven limiet/.test(groep)) fouten.push(`groep "${groep}"`);
+  if (fouten.length) throw new Error(fouten.join(' · '));
+  return { ok: true, bewijs: `noemers 100.000 / 200.000; C "${c}"; A "${a}"; vooruitblik C 70 %; groep "${groep}"` };
+}
+
 function bureauScenarios() {
   return [
     {
@@ -1527,11 +1675,11 @@ function bureauScenarios() {
         return { ok: true, bewijs: `registratie ${registratie.gemeten} + planning ${planning.gemeten} tekstelementen boven AA; ${registratie.stops}/${planning.stops} tabstops (+${registratie.segmenten}/${planning.segmenten} datumsegmenten) met zichtbare focus` };
       },
     },
-    ...['/bureau/doelen', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/tijd', VERKOOP].map((pad) => ({
+    ...['/bureau/doelen', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/tijd', VERKOOP, CASH, KLANTEN].map((pad) => ({
       naam: `bureau — 390 px zonder horizontale overflow · ${pad.replace('/bureau/', '')}`,
       pad,
       wachtOp: 'bureau',
-      gedrag: { bureau: pad === DOELEN ? 'doelen' : pad === VERKOOP ? 'verkoop' : 'projecten' },
+      gedrag: { bureau: { [DOELEN]: 'doelen', [VERKOOP]: 'verkoop', [CASH]: 'cash', [KLANTEN]: 'klanten', '/bureau/projecten/harnas-met': 'cash' }[pad] ?? 'projecten' },
       viewport: { width: 390, height: 844 },
       actie: async (page) => {
         const r = await horizontaleOverflow(page);
@@ -1762,11 +1910,140 @@ function bureauScenarios() {
         return { ok: true, bewijs: `pagina ${lijst.gemeten} + kanssheet ${detail.gemeten} + nieuwe kans ${nieuw.gemeten} tekstelementen boven AA; koppen ${lijst.koppen}/${koppenDetail.aantal}; ${lijst.stops} tabstops met zichtbare focus` };
       },
     },
+    {
+      naam: 'cash — vervallen factuur zonder datum staat apart, de gedateerde in haar week',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => vervallenStaatApart(page),
+    },
+    {
+      naam: 'cash — lege prognose: lege staat in plaats van dertien nulrijen',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen', leeg: true },
+      actie: async (page) => {
+        const leeg = await page.locator('[data-empty-state]').count();
+        const weken = await page.locator('[data-cash-week]').count();
+        if (leeg !== 1 || weken !== 0) throw new Error(`${leeg} lege staten, ${weken} weekrijen`);
+        return { ok: true, bewijs: '1 lege staat, 0 weekrijen' };
+      },
+    },
+    {
+      naam: 'facturen — betaald haalt de post uit de prognose, uitvinken zet hem terug',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page, { state }) => betaaldHaaltPostWeg(page, state),
+    },
+    {
+      naam: 'facturen — nieuwe factuur: één schrijfactie, post incl. btw in de maand van de vervaldatum',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        const f = 'factuur-nieuw-harnas-met';
+        await page.fill(`#${f}-label`, 'Harnasvoorschot');
+        await page.selectOption(`#${f}-soort`, 'voorschot');
+        await page.fill(`#${f}-bedrag`, '2.000');
+        const verval = await page.inputValue(`#${f}-verval`);
+        const zonder = await nieuweSchrijfacties(page, state, basis);
+        if (zonder) throw new Error(`invullen schreef ${zonder} keer weg`);
+        await page.locator(`form[data-form="${f}"] button[type=submit]`).click();
+        await page.locator('[data-invoice-row]', { hasText: 'Harnasvoorschot' }).waitFor({ timeout: 5_000 });
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        const doc = state.documenten.at(-1);
+        const factuur = doc?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.label === 'Harnasvoorschot');
+        const post = (doc?.incomeItems ?? []).find((i) => i.id === factuur?.incomeItemId);
+        const mijlpalen = doc?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.milestones?.length;
+        if (extra !== 1) throw new Error(`toevoegen gaf ${extra} schrijfacties`);
+        if (!post || post.amount !== 2420 || post.monthKey !== verval.slice(0, 7)) throw new Error(`post ${JSON.stringify(post)} bij vervaldatum ${verval}`);
+        if (mijlpalen !== 0) throw new Error('een voorschot maakte een mijlpaal — een factuur is geen omzet');
+        return { ok: true, bewijs: `0 schrijfacties tijdens invullen, 1 bij toevoegen; post € 2.420 (2.000 + 21 %) in ${post.monthKey}; 0 mijlpalen` };
+      },
+    },
+    {
+      naam: 'klanten — twee bases met eigen noemer, limiet als woord, groep telt samen',
+      pad: KLANTEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => concentratieKlopt(page),
+    },
+    {
+      naam: 'klanten — lege staat zonder klanten',
+      pad: KLANTEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        const leeg = await page.locator('[data-empty-state]').count();
+        const tabellen = await page.locator('[data-concentration]').count();
+        if (leeg !== 1 || tabellen !== 0) throw new Error(`${leeg} lege staten, ${tabellen} concentratietabellen`);
+        return { ok: true, bewijs: '1 lege staat, 0 tabellen' };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op cash, klanten en facturen',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => {
+        await alleCashRegels(page);
+        const cash = await a11yOp(page, 'cash');
+        await page.goto(`${BASE}/bureau/projecten/harnas-met`);
+        await page.waitForSelector('[data-invoice-row]', { timeout: 20_000 });
+        const facturen = await a11yOp(page, 'facturen');
+        const problemen = [...cash.problemen, ...facturen.problemen];
+        if (problemen.length) throw new Error(problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `cash ${cash.gemeten} + projectdetail met facturen ${facturen.gemeten} tekstelementen boven AA; koppen ${cash.koppen}/${facturen.koppen}; ${cash.stops}/${facturen.stops} tabstops met zichtbare focus` };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op klanten',
+      pad: KLANTEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        const r = await a11yOp(page, 'klanten');
+        if (r.problemen.length) throw new Error(r.problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `${r.gemeten} tekstelementen boven AA; ${r.koppen} koppen; ${r.stops} tabstops met zichtbare focus` };
+      },
+    },
   ];
 }
 
 function bureauTegenproeven() {
   return [
+    {
+      naam: 'tegenproef — vervallen factuur mét datum staat niet apart',
+      moetFalen: true,
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash-gedateerd' },
+      actie: async (page) => vervallenStaatApart(page),
+    },
+    {
+      naam: 'tegenproef — de post blijft na betaling in het document',
+      moetFalen: true,
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page, { state }) =>
+        betaaldHaaltPostWeg(page, state, {
+          vervals: (doc) => doc.incomeItems.push({ id: 'harnas-post-later', monthKey: BRON, label: 'blijft staan', amount: 1234.56, received: false }),
+        }),
+    },
+    {
+      naam: 'tegenproef — klant op precies de limiet telt als erboven',
+      moetFalen: true,
+      pad: KLANTEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page) => {
+        await page.locator('[data-concentration="gerealiseerd"] [data-concentration-row="harnas-klant-a"] td').nth(1).evaluate((el) => { el.innerHTML += '<span class="block text-xs">boven limiet</span>'; });
+        return concentratieKlopt(page);
+      },
+    },
     {
       naam: 'tegenproef — dubbele omzetting in het weggeschreven document',
       moetFalen: true,

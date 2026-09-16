@@ -96,24 +96,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+804cb10 feat(cashflow): 13-week cash as a distribution of the monthly engine, client concentration, invoice state
 129a307 feat(cashflow): sales page — follow-up, funnel with denominators, and a won opportunity that becomes one project
 23dbfda feat(cashflow): sales pipeline — qualification, counts and conversions with their denominators
 96d3086 test(cashflow): harness coverage for projects and time, and a keyboard pass that sees past a date field
 7a4070c feat(cashflow): time — quick entry, capacity per year and week, and planning of remaining work
-056bfa5 feat(cashflow): projects — list, sheet and detail with milestones, extensions and external costs
 ```
 
 ## Uncommitted wijzigingen
-   M apps/cashflow/app/bureau/projecten/[id]/page.tsx
-   M apps/cashflow/hooks/useBureau.ts
-  A  apps/cashflow/lib/bureau/concentration.test.ts
-  A  apps/cashflow/lib/bureau/concentration.ts
-  A  apps/cashflow/lib/bureau/invoice-draft.test.ts
-  A  apps/cashflow/lib/bureau/invoice-draft.ts
-  A  apps/cashflow/lib/bureau/weekly-cash.test.ts
-  A  apps/cashflow/lib/bureau/weekly-cash.ts
-   M apps/cashflow/scripts/a11y-passes.mjs
-   M apps/cashflow/scripts/flow-harness.mjs
+  A  apps/cashflow/app/bureau/cash/page.tsx
+  A  apps/cashflow/app/bureau/klanten/page.tsx
+  M  apps/cashflow/app/bureau/projecten/[id]/page.tsx
+  A  apps/cashflow/components/bureau/CashAttentionList.tsx
+  A  apps/cashflow/components/bureau/CashPositionLine.tsx
+  A  apps/cashflow/components/bureau/ClientGroupsPanel.tsx
+  A  apps/cashflow/components/bureau/ConcentrationTable.tsx
+  A  apps/cashflow/components/bureau/InvoiceList.tsx
+  A  apps/cashflow/components/bureau/InvoiceRow.tsx
+  A  apps/cashflow/components/bureau/WeekCashTable.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

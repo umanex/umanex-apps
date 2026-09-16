@@ -21,6 +21,7 @@ import { YieldBreakdown } from '../../../../components/bureau/YieldBreakdown';
 import { MilestoneList } from '../../../../components/bureau/MilestoneList';
 import { ExtensionList } from '../../../../components/bureau/ExtensionList';
 import { ExternalCostList } from '../../../../components/bureau/ExternalCostList';
+import { InvoiceList } from '../../../../components/bureau/InvoiceList';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -120,6 +121,7 @@ export default function ProjectDetailPage() {
 
       <YieldBreakdown row={r} hoursPerDay={uurPerDag} targetA={goals ? revenuePerDayTarget(goals) : null} targetB={goals?.targetMarginPerDay ?? null} status={p.status === 'afgerond' ? 'afgerond' : 'anders'} />
       <MilestoneList project={p} />
+      <InvoiceList project={p} />
       <ExtensionList project={p} />
       <ExternalCostList project={p} />
     </article>

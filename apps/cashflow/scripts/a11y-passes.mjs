@@ -94,6 +94,15 @@ export async function horizontaleOverflow(page) {
       ? [...document.querySelectorAll('body *')]
           .filter((el) => el.getBoundingClientRect().right > breedte + 0.5)
           .filter((el) => !el.closest('[data-scroll-x]'))
+          // Binnen een eigen scroller die zelf in beeld past (de subnav) is overlopen de bedoeling —
+          // zonder deze filter wees de melding naar de subnav terwijl een tabelkaart de pagina oprekte.
+          .filter((el) => {
+            for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+              const ox = getComputedStyle(a).overflowX;
+              if ((ox === 'auto' || ox === 'scroll' || ox === 'hidden') && a.getBoundingClientRect().right <= breedte + 0.5) return false;
+            }
+            return true;
+          })
           .slice(0, 3)
           .map((el) => `<${el.tagName.toLowerCase()} class="${(el.className?.toString?.() ?? '').slice(0, 60)}">`)
       : [];

@@ -70,21 +70,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ad06a51 fix(rowtrack): one goal value for picker, chips and start
 6858892 fix(rowtrack): put a deadline on every Supabase round-trip
 bb37855 docs(rowtrack): add the functional review of 2026-09-15
 fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
 8f8756a feat(ui): wire the Storybook MCP into packages/ui
-f6f8439 docs(rowtrack): validate the route-guard task on a revert measurement
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/app/(tabs)/workout.tsx
-  M  apps/rowtrack/components/workout/IdlePhase.stories.tsx
-  M  apps/rowtrack/components/workout/IdlePhase.tsx
-   M apps/rowtrack/lib/hooks/useGoalProgress.ts
-   M apps/rowtrack/lib/hooks/usePeriodGoal.ts
-   M apps/rowtrack/lib/personalRecords.ts
-  ?? apps/rowtrack/lib/personalRecordsQuery.ts
+  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
+  M  apps/rowtrack/lib/hooks/usePeriodGoal.ts
+  M  apps/rowtrack/lib/personalRecords.ts
+  A  apps/rowtrack/lib/personalRecordsQuery.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

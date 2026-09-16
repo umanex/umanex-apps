@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { supabase } from '@/lib/supabase';
-import { reportError } from '@/lib/monitoring';
 import { calculateProgress } from '@/lib/workout-goals';
 import type { WorkoutGoal } from '@/lib/workout-goals';
 import { formatDistanceDynamic, formatSplit } from '@/lib/formatters';
 import { t } from '@/i18n';
-import { EMPTY_BASELINE, extendBaseline, type PrBaseline } from '@/lib/personalRecords';
+import { EMPTY_BASELINE, type PrBaseline } from '@/lib/personalRecords';
+import { fetchPrBaseline } from '@/lib/personalRecordsQuery';
 import type { SplitEntry } from '@/types/workout';
 import type { WorkoutMetricsState, AccumulatorRefs } from './useWorkoutMetrics';
 
@@ -95,29 +94,11 @@ export function useGoalProgress(
   // --- Fetch personal records ---
   const fetchPRs = useCallback(async () => {
     if (!userId) return;
-    // `started_at` komt mee zodat een gebroken record kan zeggen wélke rit het hield;
-    // `best_2k_seconds` omdat de 2000m sinds 2026-08-22 een vierde PR-metric is.
-    const { data, error } = await supabase
-      .from('workouts')
-      .select('started_at, avg_watts, avg_split_seconds, distance_meters, best_2k_seconds')
-      .eq('user_id', userId)
-      .order('started_at', { ascending: false })
-      .limit(100);
-
-    if (error) {
-      // Bij een leesfout de baseline leegmaken in plaats van die van de vórige rit laten
-      // staan: een lege baseline levert géén records op (elke metric mist zijn voorganger),
-      // en dat is de veilige kant. Een oude baseline zou records claimen tegen waarden van
-      // een andere sessie.
-      reportError(error, { where: 'useGoalProgress.fetchPRs' });
-      prBaseline.current = EMPTY_BASELINE;
-      return;
-    }
-    // De query sorteert aflopend; oplopend opbouwen zodat bij een gedeeld record de
-    // vroegste rit als houder geldt ("je staat op 142 W sinds …"), niet de laatste.
-    prBaseline.current = [...(data ?? [])]
-      .reverse()
-      .reduce<PrBaseline>((acc, w) => extendBaseline(acc, w, w.started_at), EMPTY_BASELINE);
+    // Over de VOLLEDIGE historiek, niet over de laatste honderd ritten: zie
+    // `lib/personalRecordsQuery.ts` voor waarom dat verschil pas bij rit 101 bijt en dan
+    // onzichtbaar is. Bij een leesfout komt daar een lege baseline uit — de veilige kant,
+    // want die levert géén records op in plaats van records tegen de verkeerde waarden.
+    prBaseline.current = await fetchPrBaseline(userId);
   }, [userId]);
 
   // --- Goal progress + milestones + countdown haptics ---

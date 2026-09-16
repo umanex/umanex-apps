@@ -118,7 +118,7 @@ _Financiële semantiek (brief §12):_
 - [ ] Betaling verandert ontvangen en openstaand, niet de omzet — instrument: `revenue.test.ts`
 - [ ] Project over twee boekjaren: een mijlpaal gepland in december en gerealiseerd in januari telt één keer, in het realisatiejaar — instrument: `revenue.test.ts`
 - [ ] Gedeeltelijk gerealiseerde opdracht (4k van 12k) splitst in 4k gerealiseerd en 8k resterend — instrument: `revenue.test.ts`
-- [ ] Maandmijlpalen aanmaken voor een capaciteitsproject maakt precies één mijlpaal per maand van de geplande periode, met som gelijk aan de goedgekeurde prijs — instrument: `revenue.test.ts` (`monthlyMilestones`)
+- [ ] Maandmijlpalen aanmaken voor een capaciteitsproject maakt precies één mijlpaal per maand van de geplande periode, met som gelijk aan de goedgekeurde prijs — instrument: `mutations.test.ts` (`addMonthlyMilestones`)
 - [ ] Goedgekeurde uitbreiding verhoogt resterend getekend en de goedgekeurde prijs met hetzelfde bedrag — instrument: `revenue.test.ts`
 - [ ] Een voorstel van € 20.000 komt in geen enkele getekende, gerealiseerde of cash-som voor — instrument: `revenue.test.ts`
 - [ ] Omzet boven doel toont "boven doel" en nog-te-verkopen 0, nooit een negatief bedrag — instrument: `revenue.test.ts`
@@ -128,7 +128,7 @@ _Financiële semantiek (brief §12):_
 - [ ] Externe kosten verlagen B en niet A, en tellen nooit als eigen capaciteit — instrument: `profitability.test.ts` + `capacity.test.ts`
 - [ ] Een gewijzigde uur-per-daginstelling verandert de dagen van eerdere registraties niet — instrument: `profitability.test.ts`
 - [ ] Overschrijding binnen de buffer is geen overbelasting; daarboven wel, met het verschil als getal — instrument: `capacity.test.ts`
-- [ ] Gewonnen kans tweemaal omzetten geeft de tweede keer `al-omgezet` en geen tweede project — instrument: `lib/bureau/pipeline.test.ts`
+- [ ] Gewonnen kans tweemaal omzetten geeft de tweede keer `al-omgezet` en geen tweede project — instrument: `lib/bureau/mutations.test.ts`
 - [ ] Conversiecijfers dragen periode en noemer; bij noemer 0 is de ratio `null` — instrument: `pipeline.test.ts`
 - [ ] Achterstallige factuur zonder verwachte betaaldatum staat in `unplaced`, in geen enkele week — instrument: `weekly-cash.test.ts`
 - [ ] Factuur mét gekoppelde inkomstenpost geeft één ontvangstregel, niet twee — instrument: `weekly-cash.test.ts`
@@ -139,10 +139,10 @@ _Financiële semantiek (brief §12):_
 
 _Store-overgangen:_
 
-- [ ] "Betaald" verwijdert de gekoppelde inkomstenpost in een open maand — instrument: store-test in `lib/bureau/invoice-ledger.test.ts`
-- [ ] "Betaald" laat de post staan in een afgesloten maand en meldt dat — instrument: `invoice-ledger.test.ts`
-- [ ] "Betaald ongedaan maken" zet de post terug in de maand van de verwachte betaaldatum — instrument: `invoice-ledger.test.ts`
-- [ ] Een inkomstenpost verwijderen op `/` ontkoppelt de factuur (`incomeItemId` null) — instrument: `invoice-ledger.test.ts`
+- [ ] "Betaald" verwijdert de gekoppelde inkomstenpost in een open maand — instrument: `lib/bureau/mutations.test.ts`
+- [ ] "Betaald" laat de post staan in een afgesloten maand en meldt dat — instrument: `mutations.test.ts`
+- [ ] "Betaald ongedaan maken" zet de post terug in de maand van de verwachte betaaldatum — instrument: `mutations.test.ts`
+- [ ] Een inkomstenpost verwijderen op `/` ontkoppelt de factuur (`incomeItemId` null) — instrument: `mutations.test.ts`
 
 _States (per pagina aanwezig tenzij afgeschreven):_
 

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { format } from 'date-fns';
 import { emptyData } from '../lib/cashflow/normalize';
+import { onIncomeItemRemoved } from '../lib/bureau/mutations';
 import type { CashflowData, CashflowStore, MonthSnapshot } from '../lib/cashflow/types';
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
@@ -28,6 +29,7 @@ export function selectCashflowData(state: CashflowStore): CashflowData {
     historyStartMonth: state.historyStartMonth,
     reopenedMonths: state.reopenedMonths,
     lastSeenMonth: state.lastSeenMonth,
+    bureau: state.bureau,
   };
 }
 
@@ -116,7 +118,11 @@ export const useCashflowStore = create<CashflowStore>()(
       }),
 
     removeIncomeItem: (id) =>
-      set((state) => { state.incomeItems = state.incomeItems.filter((i) => i.id !== id); }),
+      set((state) => {
+        state.incomeItems = state.incomeItems.filter((i) => i.id !== id);
+        // Was de post de prognose-kant van een factuur, dan wijst die factuur er niet meer naar.
+        onIncomeItemRemoved(state, id);
+      }),
 
     addRecurringItem: (item) =>
       set((state) => { state.recurringItems.push(item); }),
@@ -279,5 +285,13 @@ export const useCashflowStore = create<CashflowStore>()(
           (s) => !(s.recurringId === recurringId && s.monthKey === monthKey),
         );
       }),
+
+    mutateBureau: <R,>(fn: (draft: CashflowStore) => R): R => {
+      let result!: R;
+      set((state) => {
+        result = fn(state);
+      });
+      return result;
+    },
   })),
 );

@@ -70,15 +70,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+8e313f7 chore(rowtrack): refresh the Figma manifest so the publication axis can measure again
 68b09e6 feat(rowtrack): add the blocked-consent state as a screen frame
 3591668 docs(rowtrack): point the Figma mapping at the generated sources, and record the design study
 18fd998 chore(rowtrack): re-derive the Figma artefacts and prove nothing moved
 b52c768 docs(rowtrack): close what series A finished, record what the review leaves open
-26b3433 fix(rowtrack): a pace or power goal is an intensity, not a finish line
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/figma/manifest.json
+  M  apps/rowtrack/figma/beeld-basislijn.json
+  M  apps/rowtrack/figma/beeld-verschillen.json
+  A  apps/rowtrack/figma/beelden/ActivePhase__Zonder-Toestemming.figma.png
+  M  apps/rowtrack/figma/geometry.schermen.json
 
 ## Bestanden met TODO/FIXME
   (geen)

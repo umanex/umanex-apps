@@ -181,3 +181,49 @@ test('de beste 2000m komt uit de tijdreeks, niet uit een gemiddelde', () => {
   const kort = maak({ samples: samples.slice(0, 100), distanceMeters: 495 }).row;
   assert.equal(kort.best_2k_seconds, null);
 });
+
+test('een intensiteitsdoel wordt op de eindwaarden beoordeeld, niet op één haal', () => {
+  // F3: tempo en vermogen beëindigen de rit niet meer, dus "gehaald" bestaat pas aan het
+  // eind. Eén harde haal maakt een training van twintig minuten niet geslaagd.
+  const sterkeStart = { watts: { sum: 400 + 100 * 19, count: 20 } }; // gemiddeld 115 W
+  const onder = maak({ ...sterkeStart, goal: { type: 'watts', target: 180 }, goalReached: true });
+  assert.equal(onder.row.goal_reached, false, 'de piek telt niet, het gemiddelde wel');
+
+  const boven = maak({
+    watts: { sum: 200 * 20, count: 20 },
+    goal: { type: 'watts', target: 180 },
+    goalReached: false,
+  });
+  assert.equal(boven.row.goal_reached, true, 'gemiddeld 200 W haalt een doel van 180');
+});
+
+test('bij een tempodoel is lager beter', () => {
+  const sneller = maak({
+    split: { sum: 115 * 10, count: 10 },
+    goal: { type: 'split', target: 120 },
+    goalReached: false,
+  });
+  assert.equal(sneller.row.goal_reached, true, '1:55 gemiddeld haalt een doel van 2:00');
+
+  const trager = maak({
+    split: { sum: 125 * 10, count: 10 },
+    goal: { type: 'split', target: 120 },
+    goalReached: true,
+  });
+  assert.equal(trager.row.goal_reached, false);
+});
+
+test('zonder meting is een intensiteitsdoel niet gehaald', () => {
+  const geen = maak({ goal: { type: 'watts', target: 180 }, goalReached: true });
+  assert.equal(geen.row.goal_reached, false, 'geen watt gemeten is geen geslaagd wattdoel');
+});
+
+test('een eindpuntdoel houdt het feit van tijdens de rit', () => {
+  // Duur en afstand worden wél tijdens de rit vastgesteld: de klok liep af, of de meters waren
+  // gevaren, en op dat moment eindigde de training.
+  const gehaald = maak({ goal: { type: 'distance', target: 5000 }, goalReached: true });
+  assert.equal(gehaald.row.goal_reached, true);
+
+  const gestopt = maak({ goal: { type: 'duration', target: 1200 }, goalReached: false });
+  assert.equal(gestopt.row.goal_reached, false);
+});

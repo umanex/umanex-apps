@@ -24,6 +24,24 @@ export interface GoalProgress {
 export const GOAL_TYPE_ORDER: GoalType[] = ['duration', 'distance', 'split', 'watts'];
 
 /**
+ * Beëindigt dit doeltype de rit zodra het bereikt is?
+ *
+ * Duur en afstand zijn EINDPUNTEN: twintig minuten zijn om, of tien kilometer zijn gevaren.
+ * Tempo en vermogen zijn INTENSITEITEN — iets wat je volhoudt, geen streep waar je overheen
+ * gaat. Toch behandelde de app ze hetzelfde: bij een tempodoel van 2:00/500 m volstond één
+ * ruwe meting van 1:59 om de rit op te slaan en de verbinding te verbreken, na een paar
+ * seconden roeien (functionele review F3). Bij een vermogensdoel kon de eerste harde haal het
+ * gemiddelde al over de drempel tillen.
+ *
+ * Een intensiteitsdoel eindigt dus niets meer. Of je het gehaald hebt, wordt bij het opslaan
+ * beoordeeld op de eindwaarden van de hele rit — dezelfde getallen die de samenvatting toont.
+ * Het volledige model (een streefzone bínnen een tijd- of afstandsdoel) is een eigen briefing.
+ */
+export function goalEndsRide(type: GoalType): boolean {
+  return type === 'duration' || type === 'distance';
+}
+
+/**
  * Min/max grenzen per doeltype in user-input-eenheden
  * (duration: minuten, distance: meter, split: sec/500m, watts: watt).
  * Eén bron van waarheid: de GoalSetupModal-clamp én de WheelPicker

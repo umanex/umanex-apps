@@ -34,9 +34,16 @@ export const Playground: Story = {};
 /** `null` sluit de Modal: de story rendert bewust niets, dat is de rust-toestand. */
 export const Verborgen: Story = { args: { message: null } };
 
-/** Split-doel gehaald — het bericht is langer en breekt over meerdere regels. */
-export const SplitDoel: Story = {
-  args: { message: t.workout.celebration.split('1:52.4') },
+/**
+ * Afstandsdoel gehaald — de variant met een waarde én een eenheid erin.
+ *
+ * Stond hier als `SplitDoel` tot 2026-09-16. Een tempodoel beëindigt de rit sinds F3 niet meer
+ * (het is een intensiteit, geen eindpunt), dus die viering bestaat niet meer en zijn copy is
+ * weg. Het afbreken over meerdere regels — waarvoor die story er eigenlijk stond — wordt door
+ * `LangBericht` hieronder gedekt.
+ */
+export const AfstandDoel: Story = {
+  args: { message: t.workout.celebration.distance('21,1', 'km') },
 };
 
 /** Duur-doel: de kortste variant van het bericht, één regel. */

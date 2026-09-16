@@ -70,15 +70,21 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+b52c768 docs(rowtrack): close what series A finished, record what the review leaves open
 26b3433 fix(rowtrack): a pace or power goal is an intensity, not a finish line
 3612c3b feat(rowtrack): save an interrupted ride from its checkpoint
 df9f602 refactor(rowtrack): one session accumulator, and counter resets survive a reconnect
 bfc2509 fix(rowtrack): gate heart rate on consent at the source
-148a5b1 fix(rowtrack): store a finished ride locally before sending it
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
+   M apps/rowtrack/BACKLOG.md
+   M apps/rowtrack/CLAUDE.md
+   M apps/rowtrack/HANDOFF.md
+   M apps/rowtrack/figma-map.md
+  M  apps/rowtrack/figma/beeld-verschillen.json
+  M  apps/rowtrack/figma/story-axes.json
+  ?? apps/rowtrack/briefings/2026-09-16-feature-datavisualisatie-detail.tcebc.md
 
 ## Bestanden met TODO/FIXME
   (geen)

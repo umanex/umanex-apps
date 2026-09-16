@@ -58,15 +58,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+02b8329 docs: close the handoff loop backwards — run the checks, act on what they say
 3dfe382 fix(jobradar): stop the verification instruments from dirtying the tree they measure
 5af6924 Merge pull request #507 from umanex/feature/jobradar-bedrijfsplan
 726f28a docs(jobradar): the plan briefing is built, not validated — one axis cannot be measured here
 661f728 docs(jobradar): record the plan in the project context and close its briefing
-76a29ff fix(jobradar): stop the plan from writing reasons Jeroen never gave
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/HANDOFF.md
+  M  apps/jobradar/lib/plan/mutaties.ts
+  M  apps/jobradar/scripts/plan-scenarios.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

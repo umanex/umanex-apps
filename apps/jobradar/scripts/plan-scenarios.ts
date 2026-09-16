@@ -1027,6 +1027,60 @@ function versie2(db: JobradarDb, key: string): number {
   rauw.close()
 }
 
+// ── 22. Een weigering laat de database ongemoeid ─────────────────────────────
+// De generieke invariant, en de enige die deze klasse afdekt. `db.transaction` van
+// better-sqlite3 rolt alleen terug wanneer de callback WERPT; een teruggegeven foutobject is
+// voor de driver een geslaagde callback, dus alles wat er vóór dat `return` geschreven is,
+// commit gewoon. Gemeten 2026-09-16: een start met een vastgelegde uitzondering die daarna op
+// de focuslimiet strandde gaf netjes 409 — en liet een geschiedenisregel `start_uitzondering`
+// achter voor een actie waarvan de kolom leeg bleef. Erger dan een ontbrekende regel: hij is
+// niet van een echte te onderscheiden.
+//
+// Elke check hieronder eist eerst dat de mutatie ook werkelijk geweigerd wordt. Een geval dat
+// stilletjes slaagt meet niets, en zou hier als groen doorgaan.
+{
+  const { db, rauw } = gezaaid()
+  const snapshot = () =>
+    JSON.stringify([
+      rauw.prepare('SELECT * FROM plan_actions ORDER BY key').all(),
+      rauw.prepare('SELECT * FROM plan_history ORDER BY id').all(),
+      rauw.prepare('SELECT * FROM plan_dependencies ORDER BY action_key, depends_on_key').all(),
+      rauw.prepare('SELECT * FROM plan_decisions ORDER BY key').all(),
+      rauw.prepare('SELECT * FROM plan_links ORDER BY action_key, subject_type, subject_key').all(),
+      rauw.prepare('SELECT * FROM plan_ideas ORDER BY id').all(),
+    ])
+
+  for (const k of ['A01', 'A07', 'A09']) start(db, k)
+
+  const gevallen: [string, () => { ok: boolean }][] = [
+    // Het gemeten geval: de uitzondering wordt weggeschreven vóór de focuscontrole valt.
+    ['start met uitzondering, maar de focuslimiet is vol', () =>
+      start(db, 'A02', { startUitzondering: 'ik begin toch' })],
+    ['afronden zonder bewijs', () =>
+      wijzigStatus(db, 'A04', versie(db, 'A04'), statusInvoer({ status: 'gereed' }), INSTELLINGEN, VANDAAG, NU)],
+    ['uitstellen zonder aanleiding', () =>
+      wijzigStatus(db, 'A04', versie(db, 'A04'), statusInvoer({ status: 'uitgesteld' }), INSTELLINGEN, VANDAAG, NU)],
+    ['vervallen zonder reden', () =>
+      wijzigStatus(db, 'A04', versie(db, 'A04'), statusInvoer({ status: 'vervallen' }), INSTELLINGEN, VANDAAG, NU)],
+    ['een verouderde versie', () =>
+      wijzigStatus(db, 'A04', versie(db, 'A04') + 7, statusInvoer({ status: 'bezig' }), INSTELLINGEN, VANDAAG, NU)],
+    ['een afhankelijkheid die een cirkel sluit', () =>
+      zetAfhankelijkheden(db, 'A01', versie(db, 'A01'), ['A02'], NU)],
+    ['een seed-actie verwijderen', () => verwijderActie(db, 'A01')],
+    ['koppelen aan een onbekend bedrijf', () => koppelBedrijf(db, 'A07', 'lead', '999', NU)],
+    ['een beslissing met een onbekende actie', () =>
+      legBeslissingVast(db, 'B01', 1, { acties: ['A99'] }, NU)],
+  ]
+
+  for (const [naam, fn] of gevallen) {
+    const voor = snapshot()
+    const uitkomst = fn()
+    check(`${naam}: wordt geweigerd`, uitkomst.ok === false, 'werd aanvaard — dit geval meet niets')
+    check(`${naam}: laat de database ongemoeid`, snapshot() === voor)
+  }
+  rauw.close()
+}
+
 // ── Tegenproef ───────────────────────────────────────────────────────────────
 // Zonder deze regel kan een kapotte `check()` voor altijd groen melden. De runner draait
 // deze suite eerst mét de vlag; die run hoort niet-nul te eindigen.

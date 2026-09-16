@@ -66,7 +66,11 @@ const GAP_FACTOR = 4;
  * stuk aflegt.
  */
 export function bestTimeForDistance(
-  samples: Sample[],
+  // `readonly`: deze functie leest de reeks en schrijft er niet in. Dat zegt niet alleen wat
+  // hij doet, het laat ook een aanroeper toe die zijn samples als `readonly` doorgeeft —
+  // `buildWorkoutRow` doet dat, zodat de rij-opbouw de tijdreeks van de lopende rit niet kán
+  // muteren.
+  samples: readonly Sample[],
   targetMeters: number,
   options: BestTimeOptions = {},
 ): number | null {
@@ -108,7 +112,7 @@ export function timeAtDistance(samples: Sample[], dMeters: number): number | nul
  * (een BLE-hikje kan een punt sturen dat teruggaat) en vouwt exacte duplicaten
  * samen. Het resultaat is monotoon op beide assen.
  */
-function sanitize(samples: Sample[]): Sample[] {
+function sanitize(samples: readonly Sample[]): Sample[] {
   const clean: Sample[] = [];
   for (const s of samples) {
     if (!Number.isFinite(s.t) || !Number.isFinite(s.d)) continue;

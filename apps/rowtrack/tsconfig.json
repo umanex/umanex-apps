@@ -2,6 +2,17 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // Staat `import … from './module.ts'` toe. Nodig omdat een pure module die een ándere
+    // pure module importeert anders niet tegelijk te draaien én te typechecken is: Node eist
+    // de extensie (gemeten — zonder extensie én met `.js` geeft hij ERR_MODULE_NOT_FOUND),
+    // TypeScript verbiedt hem zonder deze vlag. Elke bestaande `node --test`-module was een
+    // blad zonder imports, dus die botsing bestond hier nog niet; `lib/workoutRow.ts` is de
+    // eerste die wél importeert.
+    //
+    // Puur een typecheck-permissie, geen runtime-effect, en de vlag vereist `noEmit` — die
+    // staat al in expo/tsconfig.base. Dat Metro een expliciete `.ts` in een import-pad
+    // resolvet is nagemeten met een echte bundel-export, niet aangenomen.
+    "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]

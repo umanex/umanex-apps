@@ -30,6 +30,10 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | BureauSubnav | `apps/cashflow/components/bureau/BureauSubnav.tsx` | bureau | — | — | — |
 | CapacityBar | `apps/cashflow/components/bureau/CapacityBar.tsx` | bureau | — | — | — |
 | CapacitySummary | `apps/cashflow/components/bureau/CapacitySummary.tsx` | bureau | — | — | — |
+| CashAttentionList | `apps/cashflow/components/bureau/CashAttentionList.tsx` | bureau | — | — | — |
+| CashPositionLine | `apps/cashflow/components/bureau/CashPositionLine.tsx` | bureau | — | — | — |
+| ClientGroupsPanel | `apps/cashflow/components/bureau/ClientGroupsPanel.tsx` | bureau | — | — | — |
+| ConcentrationTable | `apps/cashflow/components/bureau/ConcentrationTable.tsx` | bureau | — | — | — |
 | ConversionPanel | `apps/cashflow/components/bureau/ConversionPanel.tsx` | bureau | — | — | — |
 | ExtensionList | `apps/cashflow/components/bureau/ExtensionList.tsx` | bureau | — | — | — |
 | ExternalCostList | `apps/cashflow/components/bureau/ExternalCostList.tsx` | bureau | — | — | — |
@@ -40,6 +44,8 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | FollowUpList | `apps/cashflow/components/bureau/FollowUpList.tsx` | bureau | — | — | — |
 | FormSection | `apps/cashflow/components/bureau/FormSection.tsx` | bureau | — | — | — |
 | GoalsForm | `apps/cashflow/components/bureau/GoalsForm.tsx` | bureau | — | — | — |
+| InvoiceList | `apps/cashflow/components/bureau/InvoiceList.tsx` | bureau | — | — | — |
+| InvoiceRow | `apps/cashflow/components/bureau/InvoiceRow.tsx` | bureau | — | — | — |
 | MetricValue | `apps/cashflow/components/bureau/MetricValue.tsx` | bureau | — | — | — |
 | MilestoneList | `apps/cashflow/components/bureau/MilestoneList.tsx` | bureau | — | — | — |
 | MilestoneRow | `apps/cashflow/components/bureau/MilestoneRow.tsx` | bureau | — | — | — |
@@ -61,6 +67,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | StageHistory | `apps/cashflow/components/bureau/StageHistory.tsx` | bureau | — | — | — |
 | SumLine | `apps/cashflow/components/bureau/SumLine.tsx` | bureau | — | — | — |
 | TimeEntryRow | `apps/cashflow/components/bureau/TimeEntryRow.tsx` | bureau | — | — | — |
+| WeekCashTable | `apps/cashflow/components/bureau/WeekCashTable.tsx` | bureau | — | — | — |
 | WeekList | `apps/cashflow/components/bureau/WeekList.tsx` | bureau | — | — | — |
 | YearSelector | `apps/cashflow/components/bureau/YearSelector.tsx` | bureau | — | — | — |
 | YieldBreakdown | `apps/cashflow/components/bureau/YieldBreakdown.tsx` | bureau | — | — | — |
@@ -89,24 +96,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+129a307 feat(cashflow): sales page — follow-up, funnel with denominators, and a won opportunity that becomes one project
 23dbfda feat(cashflow): sales pipeline — qualification, counts and conversions with their denominators
 96d3086 test(cashflow): harness coverage for projects and time, and a keyboard pass that sees past a date field
 7a4070c feat(cashflow): time — quick entry, capacity per year and week, and planning of remaining work
 056bfa5 feat(cashflow): projects — list, sheet and detail with milestones, extensions and external costs
-40d19f9 Merge remote-tracking branch 'origin/feature/ui-textarea-native-select' into feature/cashflow-bureau-ui
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/cashflow/app/bureau/verkoop/page.tsx
-  A  apps/cashflow/components/bureau/ConversionPanel.tsx
-  A  apps/cashflow/components/bureau/FollowUpList.tsx
-  A  apps/cashflow/components/bureau/OpportunityDetail.tsx
-  A  apps/cashflow/components/bureau/OpportunityForm.tsx
-  A  apps/cashflow/components/bureau/OpportunityList.tsx
-  A  apps/cashflow/components/bureau/OpportunityRow.tsx
-  A  apps/cashflow/components/bureau/OpportunitySheet.tsx
-  A  apps/cashflow/components/bureau/PipelineLine.tsx
-  A  apps/cashflow/components/bureau/QualificationChecklist.tsx
+   M apps/cashflow/app/bureau/projecten/[id]/page.tsx
+   M apps/cashflow/hooks/useBureau.ts
+  A  apps/cashflow/lib/bureau/concentration.test.ts
+  A  apps/cashflow/lib/bureau/concentration.ts
+  A  apps/cashflow/lib/bureau/invoice-draft.test.ts
+  A  apps/cashflow/lib/bureau/invoice-draft.ts
+  A  apps/cashflow/lib/bureau/weekly-cash.test.ts
+  A  apps/cashflow/lib/bureau/weekly-cash.ts
+   M apps/cashflow/scripts/a11y-passes.mjs
+   M apps/cashflow/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

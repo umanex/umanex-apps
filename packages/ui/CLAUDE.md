@@ -89,6 +89,14 @@ const collections = {}, waardenPerCollectie = {};
 for (const c of cols) {
   const modeNaam = Object.fromEntries(c.modes.map(m => [m.modeId, m.name]));
   const vars = await Promise.all(c.variableIds.map(id => figma.variables.getVariableByIdAsync(id)));
+  if (c.name === "Base") {
+    // Base als naam → waarde, niet als lijst: de [schaal]-as rekent met de WAARDEN (radius-regel,
+    // n × 4px, icon-stroke = 2). Tot 2026-09-16 schreef dit recept een lijst namen en gaf het
+    // gecommitte manifest een object — een manifest uit het recept liet de guard op `B['radius']`
+    // = undefined vallen, weer met de verkeerde oorzaak (zelfde klasse als LEARNINGS 2026-09-09).
+    collections[c.name] = { modes: c.modes.map(m => m.name), variables: Object.fromEntries(vars.map(v => [v.name, Object.values(v.valuesByMode)[0]])) };
+    continue;
+  }
   collections[c.name] = { modes: c.modes.map(m => m.name), variables: vars.map(v => v.name) };
   if (c.name === "Theme") {
     const w = {};
@@ -141,16 +149,21 @@ const platteAssen = (n) => {
 const pages = {};
 for (const p of figma.root.children) {
   const kinderen = p.children;
+  // Alleen componenten komen in aanmerking als primary. Zonder deze filter wint het FRAME
+  // "Overzicht" op zijn eigen pagina de naam-match, terwijl het gecommitte manifest daar `null`
+  // draagt (gemeten 2026-09-16). De guard slaat die pagina over, maar een recept dat een andere
+  // vorm schrijft dan wat er staat, maakt elke diff onleesbaar.
+  const comps = kinderen.filter(c => c.type === "COMPONENT_SET" || c.type === "COMPONENT");
   // Welke node is "primary"? Niet simpelweg de eerste component set — op de Tabs-pagina
   // staan `Tabs` (COMPONENT) en `TabsTrigger` (COMPONENT_SET) naast elkaar, en de deep-link
   // in tabs.stories.tsx wijst naar `Tabs`. De naam is hier de sleutel: exacte match op de
   // paginanaam wint, dan een prefix (pagina "Tooltip" ↔ node "TooltipContent"), en pas
   // daarna de eerste set. Zonder die volgorde kiest het recept TabsTrigger en faalt de
   // [link]-as op een verschil dat er niet is.
-  const hoofd = kinderen.find(c => c.name === p.name)
-    ?? kinderen.find(c => c.name.startsWith(p.name))
-    ?? kinderen.find(c => c.type === "COMPONENT_SET")
-    ?? kinderen.find(c => c.type === "COMPONENT") ?? null;
+  const hoofd = comps.find(c => c.name === p.name)
+    ?? comps.find(c => c.name.startsWith(p.name))
+    ?? comps.find(c => c.type === "COMPONENT_SET")
+    ?? comps.find(c => c.type === "COMPONENT") ?? null;
   pages[p.name] = {
     pageId: p.id,
     primary: hoofd ? {
@@ -184,7 +197,47 @@ return {
 };
 ```
 
-Werk daarna `figma/manifest.json` bij en draai `figma:check`. Lees een node die in deze sessie
+Werk daarna `figma/manifest.json` bij en draai `figma:check`.
+
+**Laat de uitkomst niet door je context lopen.** Het manifest is ~21 KB. De plugin mag
+`http://localhost:9223–9232` bereiken (`networkAccess` in `~/.figma-console-mcp/plugin/manifest.json`);
+start een kleine ontvanger op een vrije poort uit die band die de POST-body naar een bestand
+schrijft, toets hem eerst met `curl -X POST`, en eindig het recept met
+`await fetch("http://localhost:<poort>/manifest.json", { method: "POST", body: JSON.stringify(manifest, null, 2) })`
+in plaats van `return`. Diff het resultaat daarna **veld per veld** tegen het gecommitte bestand
+vóór je het overschrijft: alles buiten `gegenereerd` en je eigen wijziging is drift in Figma of in
+dit recept, en dat zeg je, je overschrijft het niet.
+
+### Figma-geometrie verversen (`figma/geometry.figma.json`)
+
+De Figma-kant van `pnpm --filter @umanex/ui parity`. Nodig na elke component(set) die bijkomt of van
+maat verandert. Tot 2026-09-16 verwees het bestand hiernaar zonder dat het recept ergens stond; het
+recept hieronder is toen gereconstrueerd en gaf voor alle **68** bestaande varianten exact de
+gecommitte waarden — dat is het bewijs dat het dezelfde meting is, geen gelijkende.
+
+```js
+// figma_execute (Figma Console MCP) — meet élke component-set, per variant-node
+if (figma.fileKey !== "ko2OuasYxyY2YRD69MYhWX") return { fout: "verkeerde file: " + figma.fileKey };
+await figma.loadAllPagesAsync();
+const tel = arr => Array.isArray(arr) ? arr.filter(p => p.visible !== false).length : 0;
+const gemeten = {};
+for (const s of figma.root.findAll(n => n.type === "COMPONENT_SET")) {
+  gemeten[s.name] = {};
+  for (const v of s.children) gemeten[s.name][v.name] = {
+    h: Math.round(v.height * 100) / 100, lay: v.layoutMode,
+    pad: [v.paddingTop, v.paddingRight, v.paddingBottom, v.paddingLeft], gap: v.itemSpacing,
+    r: typeof v.cornerRadius === "number" ? v.cornerRadius : v.topLeftRadius,
+    bw: typeof v.strokeWeight === "number" ? v.strokeWeight : v.strokeTopWeight,
+    fills: tel(v.fills), strokes: tel(v.strokes), eff: tel(v.effects), op: v.opacity,
+  };
+}
+// POST `{ gemeten }` naar de ontvanger; schrijf daarna het bestand met de kop
+// { $comment, fileKey, gegenereerd, sets, varianten, gemeten } en toets eerst dat élke
+// bestaande variant ongewijzigd is — een verschil daar is drift, geen verversing.
+```
+
+Een set zonder playground-koppeling in `STORY` van `scripts/geometry-parity.mjs` wordt daar als
+"overgeslagen" gemeld, niet als fout (vandaag `SheetContent`). Lees een node die in deze sessie
 bewerkt is **altijd** via de runtime (`figma_execute`, `figma_capture_screenshot`) — de REST-tools
 (`figma_take_screenshot`, `figma_get_component_for_development`) geven de laatst opgeslagen
 cloud-staat en zijn na een verse edit per definitie stale.

@@ -23,6 +23,8 @@
     "./globals.css": "./globals.css",
     "./components/ui/button": "./components/ui/button.tsx",
     "./components/ui/input": "./components/ui/input.tsx",
+    "./components/ui/native-select": "./components/ui/native-select.tsx",
+    "./components/ui/textarea": "./components/ui/textarea.tsx",
     "./components/ui/checkbox": "./components/ui/checkbox.tsx",
     "./components/ui/dropdown-menu": "./components/ui/dropdown-menu.tsx",
     "./components/ui/card": "./components/ui/card.tsx",

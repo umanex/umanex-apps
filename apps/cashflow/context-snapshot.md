@@ -58,24 +58,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+7552a2e feat(cashflow): the bureau shell and the goals page
 98c01c0 feat(cashflow): the bureau document key, its transitions and their tests (store version 16)
 0e63bf9 test(cashflow): pin the month engine to a digest hash before the bureau lands
 ff4238f docs(cashflow): brief the bureau extension and record what the exploration left out of scope
 fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
-8f8756a feat(ui): wire the Storybook MCP into packages/ui
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/app/analyse/page.tsx
-  A  apps/cashflow/app/bureau/doelen/page.tsx
-  A  apps/cashflow/app/bureau/layout.tsx
-  M  apps/cashflow/app/page.tsx
-  M  apps/cashflow/components/auth/DataGate.tsx
-  A  apps/cashflow/components/auth/SessionEffects.tsx
-  M  apps/cashflow/components/auth/SignOutButton.tsx
-  A  apps/cashflow/components/bureau/BureauSubnav.tsx
-  A  apps/cashflow/components/bureau/FormSection.tsx
-  A  apps/cashflow/components/bureau/GoalsForm.tsx
+  A  apps/cashflow/lib/bureau/profitability.test.ts
+  A  apps/cashflow/lib/bureau/profitability.ts
+  A  apps/cashflow/lib/bureau/revenue.test.ts
+  A  apps/cashflow/lib/bureau/revenue.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -115,15 +115,29 @@ function schrijfHistorie(
     .run()
 }
 
-/** Volgende vrije `A`-key. `A22` → `A23`; tweecijferig tot 99, daarna gewoon langer. */
+/**
+ * De volgende vrije key voor een eigen actie: `E01`, `E02`, …
+ *
+ * Een eigen prefix, en niet doortellen in de `A`-reeks. De eerste versie deed dat wel — na de
+ * 22 gezaaide acties werd de eerstvolgende eigen actie `A23` — en dat botst met de enige
+ * gedocumenteerde manier om het plan inhoudelijk uit te breiden: `SEED_VERSIE` verhogen om
+ * nieuwe keys toe te voegen. Zo'n nieuwe seed-actie `A23` wordt dan stil overgeslagen
+ * (`onConflictDoNothing`), de poort springt tóch naar de nieuwe versie, en de bijbehorende
+ * afhankelijkheden en startvoorwaarden landen op een eigen actie van Jeroen — een kant tussen
+ * twee inhoudelijk niet-verwante acties, en een startvoorwaarde die iets anders meet dan
+ * bedoeld. Geen foutmelding, geen ontbrekende rij die opvalt.
+ *
+ * `E` voor eigen. Het scheelt bovendien bij het lezen: aan de key zie je nu waar een actie
+ * vandaan komt.
+ */
 export function volgendeVrijeKey(keys: readonly string[]): string {
   let hoogste = 0
   for (const k of keys) {
-    const m = /^A(\d+)$/.exec(k)
+    const m = /^E(\d+)$/.exec(k)
     if (m) hoogste = Math.max(hoogste, Number(m[1]))
   }
   const n = hoogste + 1
-  return `A${n < 10 ? `0${n}` : String(n)}`
+  return `E${n < 10 ? `0${n}` : String(n)}`
 }
 
 function volgendeVolgorde(tx: Tx, prioriteit: number): number {

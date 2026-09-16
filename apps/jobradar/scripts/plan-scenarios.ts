@@ -817,19 +817,22 @@ function versie2(db: JobradarDb, key: string): number {
   const id = idee.ok ? idee.waarde.id : 0
   const opgenomen = neemIdeeOp(db, id, 2, NU)
   check('opnemen in het plan lukt', opgenomen.ok === true)
-  check('de nieuwe actie heet A23', opgenomen.ok === true && opgenomen.waarde.actie.key === 'A23')
+  check('de nieuwe actie krijgt een eigen key', opgenomen.ok === true && opgenomen.waarde.actie.key === 'E01')
   check('met de gekozen prioriteit', opgenomen.ok === true && opgenomen.waarde.actie.prioriteit === 2)
   check('en herkenbare herkomst', opgenomen.ok === true && opgenomen.waarde.actie.bron === 'idee')
   check('het idee is nu opgenomen', opgenomen.ok === true && opgenomen.waarde.idee.status === 'opgenomen')
-  check('met een verwijzing naar de actie', opgenomen.ok === true && opgenomen.waarde.idee.opgenomenAls === 'A23')
+  check('met een verwijzing naar de actie', opgenomen.ok === true && opgenomen.waarde.idee.opgenomenAls === 'E01')
   check('het plan telt nu 23 acties', leesPlan(db, NU).acties.length === 23)
 
   const nogmaals = neemIdeeOp(db, id, 3, NU)
   check('een tweede keer opnemen wordt geweigerd', nogmaals.ok === false)
 
-  check('volgendeVrijeKey telt door na A23', volgendeVrijeKey(['A01', 'A22', 'A23']) === 'A24')
-  check('en begint bij A01 op een lege lijst', volgendeVrijeKey([]) === 'A01')
-  check('en negeert niet-A-keys', volgendeVrijeKey(['B01', 'START']) === 'A01')
+  // De E-reeks staat los van de A-reeks: een eigen actie kan nooit een seed-key bezetten, ook
+  // niet wanneer `SEED_VERSIE` er later bijkomen. Dat is de hele reden dat hij bestaat.
+  check('eigen acties tellen in hun eigen reeks', volgendeVrijeKey(['A01', 'A22', 'E01']) === 'E02')
+  check('en negeren de seed-reeks volledig', volgendeVrijeKey(['A01', 'A22', 'A23']) === 'E01')
+  check('en begint bij E01 op een lege lijst', volgendeVrijeKey([]) === 'E01')
+  check('en negeert beslissings-keys', volgendeVrijeKey(['B01', 'START']) === 'E01')
   rauw.close()
 }
 

@@ -183,7 +183,7 @@ v "25. instellingen: 0 uur per dag" "400" "$(curl -s -o /tmp/planbody -w '%{http
 v "26. instellingen: geldige wijziging" "200" "$(curl -s -o /tmp/planbody -w '%{http_code}' -X PUT "$B/api/plan" -H 'content-type: application/json' -d '{"instellingen":{"lancering":"2027-03","urenPerDag":6,"focusLimiet":3}}')"
 v "   en de lancering staat erin" "2027-03" "$(q instellingen.lancering)"
 v "27. export json" "200" "$(curl -s -o /tmp/planbody -w '%{http_code}' "$B/api/plan/export?formaat=json")"
-v "   met alle acties erin" "23" "$(q acties.length)"
+v "   met alle acties erin" "23" "$(q acties.length)" "22 gezaaid + 1 uit een idee"
 v "28. export md" "200" "$(curl -s -o /tmp/planbody -w '%{http_code}' -D /tmp/planhdr "$B/api/plan/export?formaat=md")"
 vbevat "   als markdown" "text/markdown" "$(grep -i '^content-type' /tmp/planhdr | tr -d '\r' | cut -d' ' -f2)"
 v "29. export xml" "400" "$(curl -s -o /tmp/planbody -w '%{http_code}' "$B/api/plan/export?formaat=xml")"

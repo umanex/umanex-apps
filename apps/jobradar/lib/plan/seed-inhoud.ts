@@ -9,6 +9,11 @@
  * Vandaar `SEED_VERSIE`. Een latere versie mag uitsluitend **nieuwe** keys toevoegen; een
  * bestaande key of een bestaande kant aanpassen zou een bewerking van Jeroen overschrijven,
  * en dat is precies wat de opdracht verbiedt.
+ *
+ * Die nieuwe keys blijven in de `A`-reeks, en dat kan veilig omdat eigen acties in de `E`-reeks
+ * leven (`volgendeVrijeKey`). Tot 2026-09-16 was dat niet zo: eigen acties telden door na `A22`,
+ * dus een seed-versie 2 met een actie `A23` zou stil zijn overgeslagen terwijl zijn
+ * afhankelijkheden op Jeroens eigen actie landden. `zaaiPlan` draagt daar nu ook een rem voor.
  */
 
 /** Verhogen mag alleen bij het toevoegen van nieuwe keys. Zie de kop van dit bestand. */

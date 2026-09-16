@@ -58,18 +58,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+3dfe382 fix(jobradar): stop the verification instruments from dirtying the tree they measure
 5af6924 Merge pull request #507 from umanex/feature/jobradar-bedrijfsplan
 726f28a docs(jobradar): the plan briefing is built, not validated — one axis cannot be measured here
 661f728 docs(jobradar): record the plan in the project context and close its briefing
 76a29ff fix(jobradar): stop the plan from writing reasons Jeroen never gave
-360eb23 feat(ui): Textarea and NativeSelect, with their Figma pages and a manifest recipe that matches the guard
 ```
 
 ## Uncommitted wijzigingen
   M  apps/jobradar/HANDOFF.md
-  M  apps/jobradar/scripts/flow-harness.mjs
-  M  apps/jobradar/scripts/opvolging-probe.sh
-  M  apps/jobradar/scripts/plan-probe.sh
 
 ## Bestanden met TODO/FIXME
   (geen)

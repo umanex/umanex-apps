@@ -41,6 +41,33 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-09-16 — Twee calorieformules die elkaar kruisen: vier productvragen, analyse af · [feature]
+- **Wat:** De app rekent calorieën zelf uit (`lib/calories.ts`, via VO2 → `kcal/h = 4,114·W + 2·gewicht`)
+  en gooit het kcal-veld weg dat de erg meestuurt (`lib/ble/ftms-parser.ts:115`, `offset += 5`). De
+  erg volgt de Concept2-curve `kcal/h = 3,442·W + 300`, op drie onafhankelijke sessies bevestigd
+  (mediane afwijking 1,2 kcal/h over 1135 slagen; twee losse punten uit een Metro-log met Δ 1,5 en
+  Δ 0,03). De twee snijden elkaar bij 86 kg op 189 W, met een tekenwissel: daaronder leest de app te
+  laag, daarboven te hoog. Het kruispunt schuift hard met gewicht (70 kg → 238 W · 110 kg → 119 W).
+- **Waarom niet nu:** de analyse ís af — dit zijn vier productvragen die Jeroen moet beantwoorden,
+  geen implementatie die wacht. (1) Welk getal is leidend voor een waterroeier: de C2-curve van de
+  erg of een VO2-model, wetende dat de erg-formule gewichtsonafhankelijk is en dus per definitie
+  fout voor lichte of zware roeiers? (2) Is de VO2-formule correct toegepast — hij gebruikt het
+  gemiddelde vermogen over een interval, terwijl VO2 niet lineair in vermogen hoeft te zijn?
+  (3) Hoort er een `erg_calories`-kolom naast de eigen waarde, zodat de eigen formule ijkbaar wordt
+  in plaats van onvergelijkbaar? (4) Wat toont de app als het profielgewicht ontbreekt — de default
+  is 75 kg en dat verschuift het kruispunt naar 238 W.
+- **Eerste zet:** vraag (3) beantwoorden, want die maakt de rest meetbaar: een kolom naast de eigen
+  waarde kost een migratie en één parserregel, en verandert niets aan wat de app toont. De erg-teller
+  is cumulatief sinds erg-reset, niet sinds workoutstart — overnemen vraagt dus eind-min-start.
+- **Check:** `grep -n "offset += 5" apps/rowtrack/lib/ble/ftms-parser.ts` (treffer = het energieveld
+  wordt nog steeds overgeslagen) en `grep -rn "erg_calories" apps/rowtrack/lib apps/rowtrack/supabase`
+  — let op het bereik: de oorspronkelijke check greppde heel `apps/rowtrack` en telde daarmee zijn
+  eigen HANDOFF-entry mee, dus hij kon per constructie nooit leeg zijn.
+- **Herkomst:** `apps/rowtrack/HANDOFF.md`, entry 2026-08-16, na 31 dagen open verplaatst bij de
+  sessie-reflectie van 2026-09-16. De volledige meetgegevens (twee sessietabellen, de derde meting
+  op de wire, en de verdachte in `useWorkoutMetrics` die ná narekenen afviel) staan in die entry.
+- **Status:** open
+
 ## 2026-09-16 — De IdlePhase-picker is in Storybook inert geworden · [ux]
 - **Wat:** Sinds F2 (PR umanex-apps#493) is de picker gecontroleerd: de wielindex wordt afgeleid uit de waarde die de ouder vasthoudt. De stories geven `() => {}` als setters mee, dus in Storybook komt die waarde nooit terug en beweegt een chip-tik of een wielbeweging niets meer. Statisch rendert alles gelijk — dat is wat de 28 schermframes meten, en `beeld` staat op de basislijn — maar wie in de Playground klikt, ziet een dode picker.
 - **Waarom niet nu:** gevonden tijdens de Figma-sync-ronde van 2026-09-16, niet de gevraagde taak. Het raakt geen enkel frame en geen enkele guard; het kost alleen een verkeerde indruk bij wie de catalogus doorklikt.

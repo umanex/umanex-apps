@@ -130,7 +130,14 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
   energieveld wordt nog steeds overgeslagen en de vraag staat nog open; geen treffer = de parser
   leest het en er is een besluit gevallen. Aanvullend `grep -rn "erg_calories" apps/rowtrack` —
   treffer = de erg-waarde wordt naast de eigen bewaard en de formules zijn vergelijkbaar geworden.
-- **Status:** open
+- **Afgesloten (2026-09-16):** 31 dagen open, en de vorm is veranderd. De check is gedraaid —
+  `offset += 5` staat er nog, en `erg_calories` bestaat nergens in code of schema — maar wat
+  overblijft zijn vier productvragen plus eventueel een kolom, en dat is werk dat blijft liggen in
+  plaats van sessie-context. Verplaatst naar `apps/rowtrack/BACKLOG.md` (entry 2026-09-16), mét een
+  check die zijn eigen bereik niet meetelt: de oorspronkelijke `grep -rn "erg_calories" apps/rowtrack`
+  vond deze entry zelf, dus hij kon per constructie nooit leeg zijn. De meetgegevens blijven hier
+  staan; het backlog-item verwijst ernaar.
+- **Status:** resolved
 
 ## 2026-08-11 — Subtitle-action vuurt niet op synthetische taps; ALLE's a11y-frame staat scheef · [risico]
 - **Bevinding:** Bij de sim-verify van #257-261: de `Subtitle`-action (WIJZIG op Home én Profiel)

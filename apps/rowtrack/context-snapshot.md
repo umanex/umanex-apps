@@ -70,19 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+68b09e6 feat(rowtrack): add the blocked-consent state as a screen frame
 3591668 docs(rowtrack): point the Figma mapping at the generated sources, and record the design study
 18fd998 chore(rowtrack): re-derive the Figma artefacts and prove nothing moved
 b52c768 docs(rowtrack): close what series A finished, record what the review leaves open
 26b3433 fix(rowtrack): a pace or power goal is an intensity, not a finish line
-3612c3b feat(rowtrack): save an interrupted ride from its checkpoint
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/figma/build-spec.min.json
-  M  apps/rowtrack/figma/laagnamen.json
-  M  apps/rowtrack/figma/ongebonden.json
-  M  apps/rowtrack/scripts/figma-sync-check.mjs
-  M  apps/rowtrack/scripts/schermen.mjs
+  M  apps/rowtrack/figma/manifest.json
 
 ## Bestanden met TODO/FIXME
   (geen)

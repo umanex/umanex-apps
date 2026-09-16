@@ -222,3 +222,10 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** Eén BarChart-story importeren, tellen hoeveel paden en welke fills er binnenkomen, en daarop beslissen of binden per kleur haalbaar is.
 - **Check:** `grep -c 'createNodeFromSvg' packages/ui/figma/builder.js` — 1 = alleen de lucide-iconentak; 2+ = de chart-tak bestaat.
 - **Status:** open
+
+## 2026-09-16 — Iconstreep in Figma dikker dan in de browser · [design-system]
+- **Wat:** Elk lucide-icoon in de Component library draagt `strokeWeight` 2, gebonden aan `Base:icon-stroke` — ook op iconen van 16 en 20 px. Lucide schaalt zijn streep mee met de viewBox (`absoluteStrokeWidth` staat uit), dus de browser tekent 2 × 16/24 ≈ 1,33 px op 16 px. Gemeten 2026-09-16 op Sheet, Checkbox, NativeSelect, ThemeToggle (handgebouwd) en Dialog (keten): alle vijf 2 px, in beeld zichtbaar dikker dan de render.
+- **Waarom niet nu:** Het is de huisconventie van de hele library, niet een fout van één component; de nieuwe keten volgt hem bewust zodat er geen twee diktes naast elkaar staan. Oplossen raakt elk icoon tegelijk.
+- **Eerste zet:** Kiezen tussen (a) `icon-stroke` per icoonmaat (`icon-stroke-16` = 1,33, `-20` = 1,67) als Base-variabelen, of (b) `absoluteStrokeWidth` in de code aanzetten zodat de browser óók 2 px tekent. (b) verandert het beeld van elke app; (a) alleen Figma.
+- **Check:** in Figma `findAll(n => n.type === 'VECTOR')` op de pagina's met iconen, `strokeWeight` lezen naast de maat van het ouderframe — 2 op een 16-frame = dit item leeft.
+- **Status:** open

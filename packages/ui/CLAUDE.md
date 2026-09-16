@@ -9,7 +9,8 @@ De gedeelde UI-laag van de monorepo: shadcn-achtige primitives op de rollaag van
 - `components/ui/` — 1 component = 1 file, named exports, elk met een `*.stories.tsx` ernaast
 - `docs/` — Storybook-only: `blocks/` (docs-blokken), `lib/` (token-catalogus), `tokens/` (MDX-pagina's)
 - `figma/manifest.json` — de neergeslagen Figma-staat. **Niet met de hand bewerken**; zie Verify-pad.
-- `scripts/` — de sync-guard en zijn tegenproef
+- `scripts/` — de sync-guard en zijn tegenproef; `scripts/figma/` — de code→Figma-keten
+- `figma/` — de artefacten van de keten (`build-spec.min.json`, `check0.json`, `ongebonden.json`, `laagnamen.json`) en de plugin-scripts (`builder.js`, `bouw-batch.js`, `toets-batch.js`, `lees-manifest.js`, `lees-geometrie.js`)
 
 Componenten raken uitsluitend de **rollaag** aan via een utility uit `@umanex/config/tailwind/preset`.
 Geen primitive, geen rauwe paletklasse, geen hardcoded hex of arbitrary radius. `pnpm --filter
@@ -55,192 +56,69 @@ preset ze definieert); de guard rekent die regel terug. `spacing-*` volgt Tailwi
 | **Flow aandrijven** | geen — deze package heeft geen flows, alleen presentational primitives |
 | **State forceren** | via Storybook-args (`argTypes`); dark mode via de Theme-toolbar (`.dark`-class) |
 | **Invariant draaien** | de sync-invarianten zitten in `figma:check`; er is geen aparte rekenkern |
+| **Figma ↔ browser (maten)** | `pnpm --filter @umanex/ui parity` — legacy per variant-wortel tegen de browser, keten-pagina's recursief tegen `figma/build-spec.min.json`. Tegenproef: `node scripts/geometry-parity.mjs --selftest` |
+| **Bouwspec verversen** | `pnpm --filter @umanex/ui figma:spec` — na elke component- of storywijziging aan een keten-component |
+| **Leesscripts tegenproeven** | `pnpm --filter @umanex/ui figma:recept:selftest` — `lees-manifest.js` en `lees-geometrie.js` op een stub uit de gecommitte bestanden |
+| **Builder-poort tegenproeven** | `pnpm --filter @umanex/ui figma:poort:selftest` — `poort`, `bouwhash` en de meldingen-basislijn, letterlijk uit `figma/builder.js` |
+| **Deep-links actueel** | `node scripts/figma/links.mjs --check` — exit 1 als een keten-story een andere url zou krijgen |
 
-### Figma-manifest verversen
+### De Figma-keten — een component in Figma bouwen
 
-Nodig na **elke** wijziging aan het Figma-bestand (nieuwe component, hernoemde variant, node-ids
-na een herbouw). Vereist een actieve Desktop Bridge — en het **juiste bestand als actief doel**. De Bridge is
-multi-client: meerdere bestanden kunnen tegelijk verbonden zijn, elk met een eigen verbinding.
-Staat de Component library niet actief, dan schakel je, je stopt niet:
+Sinds 2026-09-16 bouwt `scripts/figma/` + `figma/` een component uit zijn Storybook-render, in plaats
+van met de hand via losse `figma_execute`-aanroepen. Het is de keten van rowtrack met een
+`dom-tailwind`-adapter; de koppen van de scripts zeggen per plek wat er anders is en waarom. De
+vijftien handgebouwde componenten (`LEGACY` in `scripts/figma/doel.mjs`) worden niet herbouwd: hun
+node-ids staan als deep-link in de stories, en de poort van de builder weigert een component zonder
+bouwhash.
 
-1. `figma_get_status` — draait de Bridge?
-2. `figma_list_open_files` — welke bestanden zijn verbonden, en welk is actief?
-3. `figma_navigate` met `https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/...` — schakelt het
-   actieve doel om zodra dat bestand verbonden is.
-4. Antwoordt hij `websocket_file_not_connected`, dan is de plugin daar niet open. Vraag de
-   gebruiker de Desktop Bridge plugin in **dat** bestand te openen; hij verbindt vanzelf.
+**Wat een nieuw component moet dragen**, anders meet de keten niets (de guard toetst de eerste twee):
 
-De fileKey-assert hieronder blijft nodig náást die schakelstap, niet in plaats daarvan: het
-actieve doel kan bij een reconnect stil terugwisselen. Assert op de **fileKey**,
-niet op de bestandsnaam — die is een bewering die verandert zodra iemand het bestand hernoemt:
+- `data-slot="<kebab-export>"` op elk element dat hij rendert — de primaire slot is `kebab(<pagina>)`,
+  of wat `PRIMAIR` in `doel.mjs` zegt (een overlay: `DialogContent` → `dialog-content`). De laagnaam in
+  Figma komt eruit.
+- geen `dark:`-klassen: de keten meet light en bindt aan Theme-variabelen met modes.
+- een `Playground`-story die de primaire export precies één keer rendert, met `argTypes` alleen voor
+  de visuele assen (`control: 'boolean'` of `'select'`/`'radio'` + `options`, plat geschreven). Een
+  overlay staat open (`defaultOpen`). Tekst die per gebruiksplek verschilt als string-arg — die wordt
+  een tekst-property op de Figma-component.
+- de eerste `variants: {` in het bronbestand zijn de assen van de primary — de guard leest alleen die.
 
-```js
-// figma_execute (Figma Console MCP) — schema 2
-// Levert precies de vorm die figma-sync-check.mjs leest: pages[naam].primary, niet .nodes.
-// Tot 2026-09-07 stond hier `nodes: p.children.map(...)`; een manifest uit dát recept gaf
-// 18 verschillen met de melding "fix de code, of werk Figma bij" — de verkeerde oorzaak.
-if (figma.fileKey !== "ko2OuasYxyY2YRD69MYhWX") return { fout: "verkeerde file: " + figma.fileKey };
-await figma.loadAllPagesAsync();
+**De volgorde per batch** (Desktop Bridge in de Component library; elke stub begint met een
+`figma.fileKey`-guard):
 
-// Theme-waarden per mode: de [themawaarde]-as vergelijkt hiermee tegen theme.css. Zonder
-// dit blok toetst de guard alleen NAMEN en blijft een kleurwijziging in Figma eeuwig groen.
-const cols = await figma.variables.getLocalVariableCollectionsAsync();
-const collections = {}, waardenPerCollectie = {};
-for (const c of cols) {
-  const modeNaam = Object.fromEntries(c.modes.map(m => [m.modeId, m.name]));
-  const vars = await Promise.all(c.variableIds.map(id => figma.variables.getVariableByIdAsync(id)));
-  if (c.name === "Base") {
-    // Base als naam → waarde, niet als lijst: de [schaal]-as rekent met de WAARDEN (radius-regel,
-    // n × 4px, icon-stroke = 2). Tot 2026-09-16 schreef dit recept een lijst namen en gaf het
-    // gecommitte manifest een object — een manifest uit het recept liet de guard op `B['radius']`
-    // = undefined vallen, weer met de verkeerde oorzaak (zelfde klasse als LEARNINGS 2026-09-09).
-    collections[c.name] = { modes: c.modes.map(m => m.name), variables: Object.fromEntries(vars.map(v => [v.name, Object.values(v.valuesByMode)[0]])) };
-    continue;
-  }
-  collections[c.name] = { modes: c.modes.map(m => m.name), variables: vars.map(v => v.name) };
-  if (c.name === "Theme") {
-    const w = {};
-    for (const v of vars) {
-      w[v.name] = {};
-      for (const [modeId, val] of Object.entries(v.valuesByMode)) {
-        // De rollaag staat in theme.css als HSL-triplet zonder functie: "0 0% 100%".
-        // theme.css draagt de rollaag als HSL-triplet, behalve waar een alpha nodig is —
-        // `overlay-scrim` staat er als rgba(). Stuur dus dezelfde vorm uit als de bron,
-        // anders vergelijkt de guard een triplet met een rgba en valt hij om op het formaat.
-        w[v.name][modeNaam[modeId]] = (typeof val === "object" && val.r !== undefined)
-          ? (val.a < 0.999
-              ? `rgba(${Math.round(val.r * 255)}, ${Math.round(val.g * 255)}, ${Math.round(val.b * 255)}, ${Math.round(val.a * 100) / 100})`
-              : rgbNaarHslTriplet(val))
-          : val;
-      }
-    }
-    collections[c.name].waarden = w;
-  }
-}
-function rgbNaarHslTriplet({ r, g, b }) {
-  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
-  let hu = 0, sa = 0;
-  if (mx !== mn) {
-    const d = mx - mn;
-    sa = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-    hu = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
-    hu *= 60;
-  }
-  const rond = (n, d = 1) => Math.round(n * 10 ** d) / 10 ** d;
-  return `${rond(hu)} ${rond(sa * 100)}% ${rond(l * 100)}%`;
-}
-
-// `variantGroupProperties` geeft { as: { values: [...] } }; het manifest en
-// figma-sync-check.mjs lezen de PLATTE vorm { as: [...] }. Deze helper vlakt af, en hij
-// geldt voor primary én extra — tot 2026-09-09 stond hij alleen bij `extra` genoemd en
-// nergens gedefinieerd, en schreef `primary` de geneste vorm rechtstreeks weg. Een manifest
-// daaruit gaf voor elk component met varianten een vals verschil, met de melding "fix de
-// code, of werk Figma bij" — opnieuw de verkeerde oorzaak.
-const platteAssen = (n) => {
-  if (!n || n.type !== "COMPONENT_SET" || !n.variantGroupProperties) return null;
-  return Object.fromEntries(
-    Object.entries(n.variantGroupProperties).map(([as, v]) => [as, v.values])
-  );
-};
-
-// Pagina's: primary is de component(set) waarop de guard ankert. `varianten` legt de
-// individuele variant-nodes vast — de join-sleutel die een maat-as later nodig heeft om
-// een padding in Figma aan een padding in de browser te koppelen.
-const pages = {};
-for (const p of figma.root.children) {
-  const kinderen = p.children;
-  // Alleen componenten komen in aanmerking als primary. Zonder deze filter wint het FRAME
-  // "Overzicht" op zijn eigen pagina de naam-match, terwijl het gecommitte manifest daar `null`
-  // draagt (gemeten 2026-09-16). De guard slaat die pagina over, maar een recept dat een andere
-  // vorm schrijft dan wat er staat, maakt elke diff onleesbaar.
-  const comps = kinderen.filter(c => c.type === "COMPONENT_SET" || c.type === "COMPONENT");
-  // Welke node is "primary"? Niet simpelweg de eerste component set — op de Tabs-pagina
-  // staan `Tabs` (COMPONENT) en `TabsTrigger` (COMPONENT_SET) naast elkaar, en de deep-link
-  // in tabs.stories.tsx wijst naar `Tabs`. De naam is hier de sleutel: exacte match op de
-  // paginanaam wint, dan een prefix (pagina "Tooltip" ↔ node "TooltipContent"), en pas
-  // daarna de eerste set. Zonder die volgorde kiest het recept TabsTrigger en faalt de
-  // [link]-as op een verschil dat er niet is.
-  const hoofd = comps.find(c => c.name === p.name)
-    ?? comps.find(c => c.name.startsWith(p.name))
-    ?? comps.find(c => c.type === "COMPONENT_SET")
-    ?? comps.find(c => c.type === "COMPONENT") ?? null;
-  pages[p.name] = {
-    pageId: p.id,
-    primary: hoofd ? {
-      name: hoofd.name, id: hoofd.id, type: hoofd.type,
-      variantProperties: platteAssen(hoofd),
-      varianten: hoofd.type === "COMPONENT_SET"
-        ? hoofd.children.map(v => ({ name: v.name, id: v.id })) : null,
-    } : null,
-    // Ook `extra` houdt zijn variant-assen. Op de Tabs-pagina draagt TabsTrigger de assen
-    // terwijl Tabs de primary is; laat je ze hier weg, dan is die informatie weg uit de
-    // manifest en kan geen enkele as hem ooit nog toetsen.
-    extra: kinderen.filter(c => c !== hoofd).map(c => ({
-      name: c.name, id: c.id, type: c.type, variantProperties: platteAssen(c),
-      varianten: c.type === "COMPONENT_SET" ? c.children.map(v => ({ name: v.name, id: v.id })) : null })),
-  };
-}
-
-return {
-  $comment: "Neergeslagen Figma-staat. NIET met de hand bewerken — ververs via packages/ui/CLAUDE.md.",
-  schemaVersie: 2,
-  fileKey: figma.fileKey, fileName: figma.root.name,
-  gegenereerd: new Date().toISOString().slice(0, 10),
-  collections,
-  textStyles: (await figma.getLocalTextStylesAsync()).map(t => ({
-    name: t.name, family: t.fontName.family, style: t.fontName.style,
-    fontSize: t.fontSize,
-    lineHeight: t.lineHeight.unit === "PIXELS" ? t.lineHeight.value : t.lineHeight.unit,
-    letterSpacing: t.letterSpacing.value ?? 0 })),
-  effectStyles: (await figma.getLocalEffectStylesAsync()).map(e => e.name),
-  pages,
-};
+```bash
+pnpm --filter @umanex/ui build-storybook
+pnpm --filter @umanex/ui figma:spec            # story-axes -> build-spec -> build-prune -> check0
+node scripts/figma/build-spec.mjs --slots-uit  # negatieve controle: exit 2, spec ongewijzigd
+pnpm --filter @umanex/ui figma:serve           # eigen terminal; lees de poort uit de log
 ```
 
-Werk daarna `figma/manifest.json` bij en draai `figma:check`.
-
-**Laat de uitkomst niet door je context lopen.** Het manifest is ~21 KB. De plugin mag
-`http://localhost:9223–9232` bereiken (`networkAccess` in `~/.figma-console-mcp/plugin/manifest.json`);
-start een kleine ontvanger op een vrije poort uit die band die de POST-body naar een bestand
-schrijft, toets hem eerst met `curl -X POST`, en eindig het recept met
-`await fetch("http://localhost:<poort>/manifest.json", { method: "POST", body: JSON.stringify(manifest, null, 2) })`
-in plaats van `return`. Diff het resultaat daarna **veld per veld** tegen het gecommitte bestand
-vóór je het overschrijft: alles buiten `gegenereerd` en je eigen wijziging is drift in Figma of in
-dit recept, en dat zeg je, je overschrijft het niet.
-
-### Figma-geometrie verversen (`figma/geometry.figma.json`)
-
-De Figma-kant van `pnpm --filter @umanex/ui parity`. Nodig na elke component(set) die bijkomt of van
-maat verandert. Tot 2026-09-16 verwees het bestand hiernaar zonder dat het recept ergens stond; het
-recept hieronder is toen gereconstrueerd en gaf voor alle **68** bestaande varianten exact de
-gecommitte waarden — dat is het bewijs dat het dezelfde meting is, geen gelijkende.
-
 ```js
-// figma_execute (Figma Console MCP) — meet élke component-set, per variant-node
-if (figma.fileKey !== "ko2OuasYxyY2YRD69MYhWX") return { fout: "verkeerde file: " + figma.fileKey };
-await figma.loadAllPagesAsync();
-const tel = arr => Array.isArray(arr) ? arr.filter(p => p.visible !== false).length : 0;
-const gemeten = {};
-for (const s of figma.root.findAll(n => n.type === "COMPONENT_SET")) {
-  gemeten[s.name] = {};
-  for (const v of s.children) gemeten[s.name][v.name] = {
-    h: Math.round(v.height * 100) / 100, lay: v.layoutMode,
-    pad: [v.paddingTop, v.paddingRight, v.paddingBottom, v.paddingLeft], gap: v.itemSpacing,
-    r: typeof v.cornerRadius === "number" ? v.cornerRadius : v.topLeftRadius,
-    bw: typeof v.strokeWeight === "number" ? v.strokeWeight : v.strokeTopWeight,
-    fills: tel(v.fills), strokes: tel(v.strokes), eff: tel(v.effects), op: v.opacity,
-  };
-}
-// POST `{ gemeten }` naar de ontvanger; schrijf daarna het bestand met de kop
-// { $comment, fileKey, gegenereerd, sets, varianten, gemeten } en toets eerst dat élke
-// bestaande variant ongewijzigd is — een verschil daar is drift, geen verversing.
+// figma_execute — bouwen. Bij een timeout NIET opnieuw sturen: poll figma.root.getPluginData('bouwbezig').
+const BATCH = ['Switch'], STAMP = '<datum>', FORCE = false, TOEGESTAAN = { effectStyles: [] }, POORT = <poort>;
+const bron = await (await fetch(`http://localhost:${POORT}/bouw-batch.js`)).text();
+const F = Object.getPrototypeOf(async function () {}).constructor;
+return await (new F('BATCH', 'STAMP', 'FORCE', 'TOEGESTAAN', 'POORT', 'figma', bron))(BATCH, STAMP, FORCE, TOEGESTAAN, POORT, figma);
 ```
 
-Een set zonder playground-koppeling in `STORY` van `scripts/geometry-parity.mjs` wordt daar als
-"overgeslagen" gemeld, niet als fout (vandaag `SheetContent`). Lees een node die in deze sessie
-bewerkt is **altijd** via de runtime (`figma_execute`, `figma_capture_screenshot`) — de REST-tools
-(`figma_take_screenshot`, `figma_get_component_for_development`) geven de laatst opgeslagen
-cloud-staat en zijn na een verse edit per definitie stale.
+Daarna, in deze volgorde: `figma/toets-batch.js` (zelfde stub-vorm, parameters `BATCH, STAMP, POORT`)
+→ `figma/lees-manifest.js` en `figma/lees-geometrie.js` (parameter `figma`; POST de uitkomst naar
+`/manifest.json` en `/geometry.figma.json` op de server) → `pnpm --filter @umanex/ui figma:links` →
+`figma:check:selftest` → `parity`. **Eerst het manifest, dan de links**: omgekeerd schrijft `links`
+de ids van de vorige bouw. Diff het ververste manifest veld per veld tegen de commit: alles buiten
+`gegenereerd` en de gebouwde pagina's is drift in Figma, en die overschrijf je niet.
+
+`TOEGESTAAN.effectStyles` noemt de effect styles die de builder mag aanmaken. Een schaduw heeft geen
+tokenbron (BACKLOG 2026-08-25), dus dat is een vraag aan Jeroen, geen default.
+
+### Bekende gaten van de keten, telbaar
+
+- `figma/ongebonden.json` — waarden zonder variabele of text style; `[binding]` ratelt er tweezijdig op
+  (`BEKENDE_ONGEBONDEN` in de guard, met reden per waarde).
+- `figma/laagnamen.json` — `heuristiek` hoort 0 te zijn; `[laagnaam]` is rood op één.
+- Iconstreep: 2 px in Figma tegen ±1,33 px in de browser — huisconventie, zie BACKLOG 2026-09-16.
+- Geportalde content (DialogContent) staat niet in `geometry.code.json` — `parity` meet hem wel,
+  recursief tegen de spec. Zie BACKLOG 2026-09-16.
 
 ## Wat hier NIET hoort
 

@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** packages/ui + packages/config (monorepo-niveau)
 - **Klant:** umanex
-- **Status:** gepland
+- **Status:** gepland — batch 0 gevalideerd 2026-09-16, batches 1–6 open
 
 ---
 
@@ -72,40 +72,55 @@ CONSTRAINTS: Tokens-first (bg-black/80 → overlay-scrim, rounded-[2px] → roun
 
 ### Batch 0 — tooling + Switch + Dialog
 
-- [ ] `figma:spec` eindigt met exit 0 op Switch en Dialog
-- [ ] `build-spec.mjs --slots-uit` eindigt met exit 2
-- [ ] `build-spec.mjs --slots-uit` laat `build-spec.min.json` ongewijzigd (`git diff --quiet`)
-- [ ] `ongebonden.json`: `aantalUniek ≤ 1`
-- [ ] `build-spec`: 0 `klasse-waarde-mismatch`-fouten
-- [ ] `laagnamen.json`: `heuristiek = 0`
-- [ ] `laagnamen.json`: `indexNamen = 0` en `copyNamen = 0`
-- [ ] `bouwresultaat.geweigerd = []`
-- [ ] `bouwresultaat.onbekend = []`
-- [ ] `bouwresultaat.perSoort` bevat geen `icoon-placeholder` en geen `tekst-zonder-text-style`
-- [ ] Check 0: afstammelingen en tekstinhoud gelijk aan `check0.json` voor alle 5 varianten
-- [ ] VOCAB-toets: `buitenVocabAantal`, `numeriek`, `naarInhoudVernoemd`, `groepen` alle 0
-- [ ] `zonderAutoLayout = []` en `tekstZonderStyle = []`
-- [ ] `description` gevuld met het bronpad op beide primaries
-- [ ] Rauwe-waardenscan: 0 fills/strokes/padding/gap/radius/effects zonder binding
-- [ ] 7b-read-back: padding, gap, radius, fills.length, strokes.length gelijk aan de spec
-- [ ] Manifest-diff = `gegenereerd` + precies 2 nieuwe pagina's
-- [ ] `figma:check:selftest` groen, inclusief recept-selftest
-- [ ] `figma:poort:selftest` groen, inclusief de case "set zonder bouwhash → weigeren"
-- [ ] `figma:links` wijzigt precies 2 stories
-- [ ] `parity`: 0 verschillen op de recursieve boom van Switch en Dialog
-- [ ] `geometry.figma.json`: de 76 bestaande variant-metingen byte-gelijk
-- [ ] `geometry`: 0 diff op de 15 bestaande stories vóór `geometry:write`
-- [ ] Tweede bouw met dezelfde spec: `hergebruikt = 6`
-- [ ] Tweede bouw: node-ids van beide primaries gelijk aan de eerste bouw
-- [ ] Parity-tegenproef: padding +4 op één variant geeft exact één rode regel
-- [ ] Parity-tegenproef: na terugdraaien opnieuw groen
-- [ ] Dark-capture van beide sets bekeken (`figma_capture_screenshot`)
-- [ ] `type-check` (ui + turbo) groen
-- [ ] tokens guard groen
-- [ ] `ds:guard:selftest` groen
-- [ ] `build-storybook` exit 0
-- [ ] Button `asChild` rendert het kind (Slot) — story `AsChild` toont een `<a>`
-- [ ] HANDOFF 2026-08-25 "variant-modellering": de uitsluitingen doorgelopen in `assen-uitsluitingen.mjs`
+Spec en meting:
+
+- [x] `figma:spec` eindigt met exit 0 op Switch en Dialog — bewijs: build-spec rc=0 (2 componenten, 5 variant-nodes, 0 fouten), build-prune rc=0, check0 rc=0
+- [x] `build-spec.mjs --slots-uit` eindigt met exit 2 — bewijs: rc=2, "0 element(en) met data-slot=… verwacht precies 1" op alle 5 varianten
+- [x] `build-spec.mjs --slots-uit` laat `build-spec.json` ongewijzigd — bewijs: shasum `67c4eae71b62` vóór en na
+- [x] `ongebonden.json`: 3 unieke gaten, elk met reden in `BEKENDE_ONGEBONDEN` (opacity 0,5 · opacity 0,7 · DialogTitle leading-none) — bewijs: `figma:check` `[binding] 3 bekende ongebonden waarden over 4 voorkomens, geen nieuwe`
+- [x] `build-spec`: 0 `klasse-waarde-mismatch`-fouten — bewijs: `fouten: 0` in de run van 2026-09-16
+- [x] `laagnamen.json`: `heuristiek = 0` — bewijs: `perBron.heuristiek 0` over 19 nodes (component 5, slot 11, label 2, icon 1)
+- [x] `laagnamen.json`: `indexNamen = 0` en `copyNamen = 0` — bewijs: "0 cijfernamen, 0 copy-namen" (build-prune)
+
+Bouw:
+
+- [x] `bouwresultaat.geweigerd = []` — bewijs: bouw 1 en bouw 2 (`figma_execute`, bouw-batch.js)
+- [x] `bouwresultaat.onbekend = []` — bewijs: bouw 1 en bouw 2
+- [x] `bouwresultaat.perSoort` bevat geen `icoon-placeholder` — bewijs: bouw 2 `perSoort: { tekst-zonder-text-style: 1 }`
+- [x] `tekst-zonder-text-style` alleen op DialogTitle (leading-none, geen style op de tokenschaal) — bewijs: melding `Dialog[default]>header>title: tekst zonder text style (18/18 600)`, toets-batch `tekstZonderStyle: 1 (verwacht: title)`
+- [x] Check 0: afstammelingen en tekstinhoud gelijk aan `check0.json` voor alle 5 varianten — bewijs: toets-batch `check0Gelijk` Switch 4/4, Dialog 1/1 (tekst, iconen én verfdozen)
+- [x] Check 0 kan rood worden — bewijs: verfdozen-telling toegevoegd nadat Switch op tekst+iconen alleen 0 tegen 0 kon scoren; Switch 2, Dialog 3
+- [x] VOCAB-toets: `buitenVocabAantal`, `numeriek`, `naarInhoudVernoemd`, `groepen` alle 0 — bewijs: toets-batch, beide componenten
+- [x] VOCAB- en rauwe-waardentoets kunnen rood worden — bewijs: thumb hernoemd naar `Frame 1` + rauwe vulling → `buitenVocab 1`, `rauw 1` op precies die node; teruggezet, binding `VariableID:27:3` (background) op alle 4 thumbs, bouwhash `d2a23z:9` gelijk
+- [x] `zonderAutoLayout = []` — bewijs: toets-batch, beide componenten
+- [x] `description` gevuld met het bronpad op beide primaries — bewijs: toets-batch `description: true`
+- [x] Rauwe-waardenscan: 0 fills/strokes/padding/gap/radius/effects zonder binding — bewijs: toets-batch `rauw: 0`, beide componenten
+- [x] 7b-read-back: hoogte, layoutMode, padding, gap, radius, vullingen, randen, opacity gelijk aan de spec — bewijs: toets-batch `readbackVerschillen: 0` over 5 varianten
+- [x] Tweede bouw: `hergebruikt = 5` (4 varianten + DialogContent; de set zelf telt de builder niet) — bewijs: bouw 2 `hergebruikt: 5`
+- [x] Tweede bouw: node-ids én keys gelijk aan de eerste bouw — bewijs: set `107:31` id+key, varianten `107:23/25/27/29`, DialogContent `107:33` id+key, properties `title#107:0`/`description#107:1` — alle vijf vergelijkingen `true`
+- [x] Dark-capture van beide sets bekeken — bewijs: `figma_capture_screenshot` 107:31 en 107:33 met explicit mode Dark; elke kleur volgt de modus; modus teruggezet, `explicitVariableModes` `{}` op beide
+- [x] Beeld naast de browser gelegd — bewijs: Playwright-render van Dialog en Switch uit storybook-static naast de captures; zelfde opbouw, één verschil: iconstreep 2 px tegen 1,33 px (huisconventie van alle 5 legacy-iconen, BACKLOG 2026-09-16)
+
+Neerslag en guards:
+
+- [x] Manifest-diff = `effectStyles` (+`shadow/lg`) + precies 2 nieuwe pagina's — bewijs: veld-diff tegen HEAD: `.effectStyles.2`, `.pages.Switch`, `.pages.Dialog`, verder niets
+- [x] `geometry.figma.json`: de 76 bestaande variant-metingen byte-gelijk — bewijs: `JSON.stringify(gemeten)` gelijk aan HEAD, sets 11 = 11, varianten 76 = 76
+- [x] `figma:links` wijzigt precies 2 stories — bewijs: `--check` rc=1 op dialog + switch vóór, schrijven, `--check` rc=0 erna ("2 al juist")
+- [x] `figma:check:selftest` groen — bewijs: sync-selftest 25/25, recept-selftest 8/8, poort-selftest 25/25, guard 31 checks
+- [x] `figma:recept:selftest` reproduceert manifest en legacy-geometrie en wordt rood op beide defecten van LEARNINGS 2026-09-09 — bewijs: 8/8, incl. geneste assen en Base als lijst
+- [x] `figma:poort:selftest` groen, inclusief "set zonder bouwhash → weigeren" — bewijs: 25/25
+- [x] `parity`: 0 verschillen op de recursieve boom van Switch en Dialog — bewijs: "keten-pagina's: 5 varianten, 19 nodes recursief gelijk"
+- [x] `geometry`: 0 diff op de 15 bestaande stories vóór `geometry:write` — bewijs: eerste run rood op alleen de 6 nieuwe story-ids
+- [x] Parity-tegenproef: padding +4 diep in de boom geeft exact één rode regel — bewijs: `--selftest` "footer>button padding-links", 1 verschil
+- [x] Parity-tegenproef in Figma zelf: opacity 0,7 → 0,8 op de sluitknop is rood — bewijs: na de tolerantiefix `Dialog/default>close opacity: Figma 0.8 tegen spec 0.7`, rc=1 (vóór de fix groen — de vondst)
+- [x] Parity na terugdraaien groen — bewijs: schone lezing rc=0, 68 legacy + 5 keten-varianten
+- [x] `type-check` (ui + vijf consumerende apps) groen — bewijs: turbo 6/6 successful
+- [x] tokens guard groen — bewijs: "306 bestanden schoon (0 baseline-uitzonderingen)"
+- [x] `ds:guard:selftest` groen — bewijs: 11/11, 9/9 apps
+- [x] `build-storybook` exit 0 — bewijs: rc=0 (worktree, na de Slider-fix)
+- [x] Button `asChild` rendert het kind — bewijs: story `AsChild` → `A`, 0 buttons, knopklassen aanwezig; Playground → `BUTTON` (Playwright, storybook-static)
+- [x] HANDOFF 2026-08-25 "variant-modellering": de uitsluitingen doorgelopen — bewijs: HANDOFF-entry bijgewerkt, drie beweringen nagelezen in doel.mjs, input.tsx, ThemeToggle.tsx; status blijft open (besluit Jeroen)
+- [ ] Stories-preview via de Storybook-MCP — [NIET TE VERIFIËREN — de PM2-Storybook op :6006 serveert de hoofdtree op een andere branch, niet deze worktree; herstart hoort na de merge]
 
 ### Batches 1–6
 
@@ -120,3 +135,6 @@ Worden per batch aan deze lijst toegevoegd vóór de bouw van die batch, met dez
 - 2026-09-16: Field `responsive` 1-op-1 via `@tailwindcss/container-queries` in de gedeelde preset i.p.v. een `md:`-port — besluit Jeroen.
 - 2026-09-16: de 15 handgebouwde componenten worden niet herbouwd (deep-links); ze krijgen alleen `data-slot`-attributen.
 - 2026-09-16: briefing in de root `briefings/` i.p.v. `packages/ui/briefings/` (plan) — de wijziging raakt de gedeelde preset en daarmee alle apps.
+- 2026-09-16: drie batch-0-items herschreven na meting, niet afgezwakt: `ongebonden ≤ 1` was een schatting uit het plan (gemeten 3, elk met reden in de guard), `hergebruikt = 6` telde de set mee die de builder niet telt (5 + gelijke set-id/key apart bewezen), en "geen tekst-zonder-text-style" sloot DialogTitle niet uit terwijl die per ontwerp geen style kan hebben.
+- 2026-09-16: de parity-tolerantie van 0,51 gold ook voor opacity — een tegenproef in Figma bleef groen. Tolerantie per veld (0,01 voor opacity); daarna kwam `Slider disabled` boven (Figma 0,5, browser 1). De oorzaak zat in `slider.tsx` (`disabled:opacity-50` op een span) en is daar gerepareerd, niet in de guard uitgezonderd. Faalklasse in umanex-os/LEARNINGS (Globaal); rowtrack draagt dezelfde tolerantie (apps/rowtrack/BACKLOG.md).
+- 2026-09-16: batch 0 in de worktree `.claude/worktrees/ui-batch-0` op verzoek van Jeroen, nadat een parallelle sessie de hoofdtree naar `main` zette.

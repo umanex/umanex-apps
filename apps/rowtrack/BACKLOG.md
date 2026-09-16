@@ -795,3 +795,10 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** De drie duplicaten weghalen en een Android-build draaien om te bevestigen dat de permissielijst ongewijzigd uitkomt.
 - **Check:** `grep -c BLUETOOTH apps/rowtrack/app.json` → 6 = nog gedubbeld.
 - **Status:** open
+
+## 2026-09-16 — De parity-as ziet een opacity-verschil onder een halve dekking niet · [fix]
+- **Wat:** `apps/rowtrack/scripts/geometry-parity.mjs:103-104` vergelijkt elk veld met `TOL = 0.5`, ook `opacity` (`:176`) — een fractie tussen 0 en 1. Een variant die in Figma op 0,6 staat terwijl de browser 1 rendert, blijft groen. Gevonden in `packages/ui/scripts/geometry-parity.mjs`, dat dezelfde vorm had: een tegenproef in Figma (0,7 -> 0,8) bleef groen, en na de fix kwam daar een echt verborgen verschil boven (Slider disabled, 0,5 tegen 1). Faalklasse vastgelegd in `umanex-os/LEARNINGS.md` (Globaal, 2026-09-16).
+- **Waarom niet nu:** Buiten de scope van de shadcn-bibliotheek (`briefings/2026-09-16-feature-shadcn-volledige-bibliotheek.tcebc.md`), die rowtrack bewust onaangeroerd laat; en een strakkere tolerantie kan in rowtrack echte verschillen blootleggen die eerst een eigen oordeel vragen.
+- **Eerste zet:** Een tolerantie per veld (0,5 voor pixels, 0,01 voor opacity), de `--selftest` een opacity-mutatie laten eisen, en de eerste rode run lezen vóór er iets aan de basislijn verandert — zoals in packages/ui gebeurde.
+- **Check:** `grep -n "TOL = 0.5" apps/rowtrack/scripts/geometry-parity.mjs && grep -c "opacity" apps/rowtrack/scripts/geometry-parity.mjs` — een treffer op de eerste en geen aparte opacity-tolerantie = dit item leeft.
+- **Status:** open

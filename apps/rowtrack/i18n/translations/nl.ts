@@ -160,6 +160,12 @@ export const nl = {
   workout: {
     notConnectedTitle: 'Niet verbonden',
     notConnectedBody: 'Verbind eerst de roeitrainer via de knop bovenaan.',
+    // Alleen wanneer de rit NERGENS staat — niet op de server en niet op het toestel. Een rit
+    // die netjes in de wachtrij staat is geen fout maar gewoon offline zijn, en die krijgt
+    // geen melding. Vandaar ook de belofte in de tweede zin: hij is echt niet bewaard.
+    saveFailedTitle: 'Training niet bewaard',
+    saveFailedBody:
+      'Je training kon niet opgeslagen worden, ook niet op dit toestel. Probeer het opnieuw — sluit de app niet af.',
     splitsListHeader: 'SPLITS',
     idle: {
       title: 'Nieuwe training',

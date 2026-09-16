@@ -14,7 +14,8 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
-import { drainPendingWorkout } from '@/lib/pendingWorkout';
+import { drainPendingWorkouts } from '@/lib/pendingWorkout';
+import { useHealthConsent } from '@/lib/health-consent-context';
 import { EmptyState, ErrorState, KpiSingle, Button, WorkoutCard, GoalSheet, GoalCardSkeleton, Skeleton } from '@/components';
 import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { Subtitle } from '@/components/Subtitle';
@@ -86,6 +87,9 @@ const GOAL_SKELETON_PROGRESS: PeriodGoalProgress = {
 export default function HomeScreen() {
   const { user } = useAuth();
   const { entriesFor, refresh: refreshPrHistory } = usePrHistory(user?.id);
+  // De drain moet weten of hij hartslag mag insturen: een rit die vóór het intrekken in de
+  // wachtrij belandde, hoort er zonder doorheen te komen (F4).
+  const { granted: healthGranted } = useHealthConsent();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -103,18 +107,26 @@ export default function HomeScreen() {
     loading: goalLoading,
     error: goalError,
     refetch: refetchGoal,
-  } = usePeriodGoal(user?.id);
+    // Deze hook haalt hier NIET zelf op bij focus. Home druint eerst de wachtrij af en
+    // ververst daarna alles tegelijk — zie `fetchData`.
+  } = usePeriodGoal(user?.id, { fetchOnFocus: false });
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
 
-    // Eerder mislukte (offline) workout-opslag alsnog wegschrijven vóór we lezen,
-    // zodat een gedrainede rit meteen in de lijst verschijnt (security-audit P2-4).
-    // De drain zit in pendingWorkout.ts omdat hij tegen zichzelf beschermd moet
-    // zijn: fetchData kan meerdere keren tegelijk lopen (focus + pull-to-refresh,
-    // of een auth-event dat een nieuw user-object oplevert).
-    await drainPendingWorkout(user.id);
+    // EERST afdruinen, DAN álles lezen. Ritten die offline bleven staan gaan alsnog naar de
+    // server, en pas daarna vragen de lijst, de doel-kaart en de PR-historiek hun cijfers op.
+    //
+    // Dat "álles" is de fix van F8. De doel-kaart had zijn eigen focus-fetch die hier
+    // parallel naast liep, dus hij kon vóór de insert lezen terwijl de lijst erna las: één
+    // scherm toonde dan een rit die in zijn eigen periodetotaal nog niet meetelde. Nu hangt
+    // elke lezer aan deze ene volgorde, ook bij pull-to-refresh.
+    //
+    // De drain zit in pendingWorkout.ts omdat hij tegen zichzelf beschermd moet zijn:
+    // fetchData kan meerdere keren tegelijk lopen (focus + pull-to-refresh, of een
+    // auth-event dat een nieuw user-object oplevert).
+    await drainPendingWorkouts(user.id, { healthGranted });
 
     // `retryOnClockSkew`: beide queries delen één token, en dat token kan bij het
     // openen van de app net te vers zijn voor PostgREST — zie `authClockSkew.ts`.
@@ -144,6 +156,10 @@ export default function HomeScreen() {
           }),
         (e) => reportError(e, { where: 'home.fetchWorkouts', transient: true }),
       ),
+      // Mee in dezelfde ronde, ná de drain: de doel-kaart en de PR-historiek lezen dus
+      // dezelfde database-stand als de rittenlijst ernaast.
+      refetchGoal(),
+      refreshPrHistory(),
     ]);
 
     if (profileRes.error) reportError(profileRes.error, { where: 'home.fetchProfile' });
@@ -160,20 +176,22 @@ export default function HomeScreen() {
       setWorkouts((workoutsRes.data ?? []) as HomeWorkout[]);
     }
     setLoading(false);
-  }, [user]);
+  }, [user, healthGranted, refetchGoal, refreshPrHistory]);
 
+  // Eén ingang voor élke lezer op dit scherm. Focus en pull-to-refresh riepen tot 2026-09-16
+  // twee paden aan die naast elkaar liepen; de doel-kaart had er zelfs een derde (zijn eigen
+  // focus-effect in `usePeriodGoal`). Drie lezers, drie momenten, één scherm.
   useFocusEffect(
     useCallback(() => {
-      fetchData();
-      void refreshPrHistory();
-    }, [fetchData, refreshPrHistory]),
+      void fetchData();
+    }, [fetchData]),
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchData(), refetchGoal()]);
+    await fetchData();
     setRefreshing(false);
-  }, [fetchData, refetchGoal]);
+  }, [fetchData]);
 
   const handleWorkoutPress = useCallback((id: string) => {
     router.push(`/(tabs)/history/${id}`);

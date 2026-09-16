@@ -41,6 +41,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-09-16 — Uitloggen wist de wachtrij zonder hem eerst af te druinen · [fix]
+- **Wat:** `signOut` roept `clearLocalUserData()` aan (`apps/rowtrack/lib/auth.ts:21-24`), en die wist de hele wachtrij. Wie offline uitlogt vlak na een rit, verliest die rit. Dat was vóór lokaal-eerst ook al zo — de wachtrij hield toen alleen ritten waarvan de insert al gefaald was — maar sinds elke rit door de wachtrij gaat, verdient het een expliciete keuze: eerst afdruinen, en bij restanten waarschuwen ("er wacht nog 1 training op synchronisatie") zonder het uitloggen te blokkeren.
+- **Waarom niet nu:** buiten de scope van de F1-PR gehouden. `clearLocalUserData` kent de user-id noch de toestemmingsstatus, dus het vraagt een andere knip tussen `lib/auth.ts` en het profielscherm — en de waarschuwing zelf is een ontwerpvraagje (blokkeren mag niet, negeren is stil).
+- **Eerste zet:** `countQueued(userId)` bestaat al in `lib/pendingWorkout.ts`. Roep hem aan op het profielscherm vóór `signOut`, druin één keer af, en toon de rest in de bevestiging.
+- **Check:** `grep -n -A4 "async function clearLocalUserData" apps/rowtrack/lib/auth.ts` — staat er alleen `purgePendingWorkout()` zonder drain ervoor, dan leeft dit item.
+- **Status:** open
+
 ## 2026-09-14 — De uitsluitingslijst sluit 292 nodes uit die weer stabiel zijn · [refactor]
 - **Wat:** `figma/niet-reproduceerbaar.json` telt 296 paden, maar sinds de spinner-normalisatie van
   2026-09-14 zijn er nog maar **4** nodes werkelijk instabiel (de confetti-items). De overige 292 —

@@ -42,7 +42,15 @@ function getPeriodStart(period: PeriodGoalPeriod): string {
   return periodStart(period)!.toISOString();
 }
 
-export function usePeriodGoal(userId: string | undefined) {
+/**
+ * @param fetchOnFocus Haalt de hook zelf op bij elke focus?
+ *
+ * Home zet dit op `false` en roept `refetch` zelf aan — ná het afdruinen van de wachtrij.
+ * Anders leest de doel-kaart vóór de insert en de rittenlijst erna, en toont hetzelfde scherm
+ * een rit die nog niet in zijn eigen periodetotaal meetelt (functionele review F8). Profiel
+ * heeft geen wachtrij te druinen en houdt de focus-fetch.
+ */
+export function usePeriodGoal(userId: string | undefined, { fetchOnFocus = true } = {}) {
   const [goalProgress, setGoalProgress] = useState<PeriodGoalProgress | null>(null);
   const [records, setRecords] = useState<PersonalRecords>({
     longestDistance: null,
@@ -142,8 +150,8 @@ export function usePeriodGoal(userId: string | undefined) {
 
   useFocusEffect(
     useCallback(() => {
-      fetchAll();
-    }, [fetchAll]),
+      if (fetchOnFocus) fetchAll();
+    }, [fetchAll, fetchOnFocus]),
   );
 
   return { goalProgress, records, loading, error, refetch: fetchAll };

@@ -142,22 +142,65 @@ function bureauFixture(variant) {
     budgetedOwnHours: null, expectedRemainingOwnHours: null, externalCosts: [], milestones: [], invoices: [],
     nextMilestoneNote: '', blockers: '', opportunityId: null, createdAt: `${BRON}-01`, ...over,
   });
+  const projects = [
+    project('harnas-zonder', { name: 'Harnasproject zonder raming', fixedPriceExVat: 12000,
+      milestones: [{ id: 'harnas-m1', label: 'Harnasmijlpaal', plannedMonth: BRON, amount: 4000, realizedOn: null, realizedAmount: null, extensionId: null }] }),
+    project('harnas-met', { name: 'Harnasproject met raming', fixedPriceExVat: 9000, budgetedOwnHours: 64, expectedRemainingOwnHours: 16 }),
+  ];
+  // 'verkoop-dubbel': een document waarin al twee projecten naar de gewonnen kans verwijzen —
+  // een half mislukte eerdere omzetting. De tegenproef van "één project" draait erop.
+  if (variant === 'verkoop-dubbel') {
+    projects.push(project('harnas-dubbel-1', { name: 'Eerste omzetting', fixedPriceExVat: 15000, opportunityId: 'harnas-gewonnen' }));
+    projects.push(project('harnas-dubbel-2', { name: 'Tweede omzetting', fixedPriceExVat: 15000, opportunityId: 'harnas-gewonnen' }));
+  }
   return {
     goals: doelen,
     clients: [{ id: 'harnas-klant', name: 'Harnasklant', groupId: null }],
     clientGroups: [],
-    projects: [
-      project('harnas-zonder', { name: 'Harnasproject zonder raming', fixedPriceExVat: 12000,
-        milestones: [{ id: 'harnas-m1', label: 'Harnasmijlpaal', plannedMonth: BRON, amount: 4000, realizedOn: null, realizedAmount: null, extensionId: null }] }),
-      project('harnas-met', { name: 'Harnasproject met raming', fixedPriceExVat: 9000, budgetedOwnHours: 64, expectedRemainingOwnHours: 16 }),
-    ],
-    opportunities: [],
+    projects,
+    opportunities: variant.startsWith('verkoop') ? verkoopKansen() : [],
     timeEntries: [
       { id: 'harnas-t1', date: `${BRON}-01`, category: 'klantwerk', projectId: 'harnas-met', hours: 24, hoursPerDayAtEntry: 8, label: null, note: '' },
       { id: 'harnas-t2', date: `${BRON}-01`, category: 'klantwerk', projectId: 'harnas-met', hours: 24, hoursPerDayAtEntry: 8, label: null, note: '' },
     ],
     plannedWork: [],
   };
+}
+
+/**
+ * Vier kansen met een uitkomst die met de hand na te rekenen is, voor "heel dit jaar":
+ * gesprek → voorstel 2 van 3 (voorstel, gesprek, gewonnen bereikten een gesprek; voorstel en
+ * gewonnen kregen een voorstel) · voorstel → gewonnen 1 van 3 · beslist 1 gewonnen van 2 ·
+ * open nu 2 kansen, 1 voorstel, € 20.000 ongewogen, 1 zonder waarde, 1 gekwalificeerd.
+ * Elke datum ligt in dit jaar en niet na vandaag, ook in de eerste dagen van januari.
+ */
+function verkoopKansen() {
+  const vandaag = new Date().toISOString().slice(0, 10);
+  const d = (mmdd) => { const x = `${JAAR}-${mmdd}`; return x <= vandaag ? x : vandaag; };
+  const negenDagenGeleden = new Date(Date.now() - 9 * 86_400_000).toISOString().slice(0, 10);
+  const kans = (id, over) => ({
+    id, company: `Bedrijf ${id}`, contact: '', clientId: null, trigger: { description: '', source: '', date: null }, need: '',
+    offerType: null, budget: { status: 'onbekend', amount: null }, expectedValue: null, decisionMakerInvolved: false,
+    expectedDecisionDate: null, expectedExecution: null, nextAction: null, outcomeReason: null, projectId: null, createdAt: d('01-02'), ...over,
+  });
+  const h = (stage, on, reason = null) => ({ stage, on, reason });
+  return [
+    kans('harnas-voorstel', {
+      company: 'Harnasvoorstel', stage: 'voorstel', expectedValue: 20000, need: 'Twee productteams zonder gedeelde componenten',
+      budget: { status: 'besproken', amount: 20000 }, decisionMakerInvolved: true, expectedDecisionDate: d('12-31'),
+      nextAction: { text: 'Harnasopvolging', date: negenDagenGeleden },
+      history: [h('contact', d('01-05')), h('gesprek', d('01-10')), h('voorstel', d('02-01'))],
+    }),
+    kans('harnas-gesprek', { company: 'Harnasgesprek', stage: 'gesprek', history: [h('gesprek', d('02-10'))] }),
+    kans('harnas-gewonnen', {
+      company: 'Harnasklant', stage: 'gewonnen', expectedValue: 15000, offerType: 'productdiagnose', expectedExecution: { start: BRON, end: BRON },
+      history: [h('gesprek', d('01-12')), h('voorstel', d('01-20')), h('gewonnen', d('03-01'))],
+    }),
+    kans('harnas-verloren', {
+      company: 'Harnasverloren', stage: 'verloren', outcomeReason: 'Geen budget',
+      history: [h('voorstel', d('01-15')), h('verloren', d('02-15'), 'Geen budget')],
+    }),
+  ];
 }
 
 function fixtureData({ leeg = false, buffer = false, bureau = null } = {}) {
@@ -351,6 +394,7 @@ function maakRouteHandler(state, gedrag = {}) {
       // Elke schrijfpoging wordt geteld en beantwoord alsof ze lukte: de app moet
       // verder kunnen, en het bewijs dat er niets weglekte is juist dat we hier staan.
       state.schrijfpogingen.push(`${req.method()} ${pad}`);
+      state.documenten.push(req.postDataJSON()?.data ?? null);
       // `conflict`: de revisie op de server is intussen verschoven. Nul rijen terug is precies wat
       // `saveState` als revisieconflict leest — dezelfde weg als een tweede browser.
       if (conflict) return json([], 200);
@@ -1213,6 +1257,100 @@ async function a11yOp(page, waar) {
   return { problemen, gemeten: contrast.gemeten, koppen: koppen.aantal, stops: toetsen.stops, segmenten: toetsen.segmenten };
 }
 
+const VERKOOP = '/bureau/verkoop';
+
+/** Opent de sheet van één kans via zijn rij; een afgesloten kans staat achter "Toon afgesloten". */
+async function openKans(page, id) {
+  if ((await page.locator(`[data-opportunity-row="${id}"]`).count()) === 0) await page.locator('#kansen-gesloten').click();
+  await page.locator(`[data-opportunity-row="${id}"] button`, { hasText: 'Openen' }).click();
+  await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+}
+
+/** Het weggeschreven document: precies één project verwijst naar de kans, en de kans terug naar dat project. */
+function eenProjectVoorKans(doc, kansId) {
+  const verwijzend = (doc?.bureau?.projects ?? []).filter((p) => p.opportunityId === kansId);
+  const kans = (doc?.bureau?.opportunities ?? []).find((o) => o.id === kansId);
+  if (verwijzend.length !== 1) return `${verwijzend.length} projecten verwijzen naar de kans in het weggeschreven document`;
+  if (kans?.projectId !== verwijzend[0].id) return 'de kans verwijst niet naar het nieuwe project';
+  return null;
+}
+
+/**
+ * Gewonnen → project: één schrijfactie, en in dat document precies één project dat naar de kans
+ * verwijst. `vervals` krijgt het weggeschreven document vóór de controle — alleen de tegenproef
+ * gebruikt dat, om te tonen dat de controle een dubbele omzetting ziet.
+ */
+async function omzettingEenmaal(page, state, { vervals } = {}) {
+  await openKans(page, 'harnas-gewonnen');
+  const basis = state.schrijfpogingen.length;
+  await page.fill('#omzetting-naam', 'Harnasdiagnose');
+  await page.locator('[role=dialog] button', { hasText: 'Project aanmaken' }).click();
+  await page.waitForSelector('[role=dialog] [data-converted]', { timeout: 5_000 });
+  const extra = await nieuweSchrijfacties(page, state, basis);
+  const knoppen = await page.locator('[role=dialog] button', { hasText: 'Project aanmaken' }).count();
+  const doc = structuredClone(state.documenten.at(-1));
+  vervals?.(doc);
+  if (extra !== 1) throw new Error(`omzetten gaf ${extra} schrijfacties in plaats van één`);
+  const fout = eenProjectVoorKans(doc, 'harnas-gewonnen');
+  if (fout) throw new Error(fout);
+  if (doc.bureau.clients.length !== 1) throw new Error(`${doc.bureau.clients.length} klanten — de bestaande klant had hergebruikt moeten worden`);
+  if (knoppen !== 0) throw new Error(`"Project aanmaken" staat er na de omzetting nog ${knoppen} keer`);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+  await openKans(page, 'harnas-gewonnen');
+  const opnieuw = await page.locator('[role=dialog] button', { hasText: 'Project aanmaken' }).count();
+  const link = await page.locator('[role=dialog] [data-converted] a').innerText();
+  if (opnieuw !== 0) throw new Error('na heropenen staat "Project aanmaken" er weer');
+  if (link !== 'Harnasdiagnose') throw new Error(`heropende sheet linkt naar "${link}"`);
+  return { ok: true, bewijs: `1 schrijfactie; document: 1 project met opportunityId, kans.projectId gezet, 1 klant; knop 0× ook na heropenen, link "${link}"` };
+}
+
+/** De trechter: breuken met noemer, geen percentage onder vijf, en de open stand nu. */
+async function trechterKlopt(page) {
+  const tekst = async (sel) => (await page.locator(sel).innerText()).replace(/\s+/g, ' ');
+  const gv = await tekst('[data-conversion="gesprek-voorstel"] dd');
+  const vg = await tekst('[data-conversion="voorstel-gewonnen"] dd');
+  const beslist = await tekst('[data-conversion="beslist"] dd');
+  const lijn = await tekst('[data-pipeline-line]');
+  const trechter = await tekst('section[aria-labelledby="trechter-titel"]');
+  const fouten = [];
+  if (!gv.startsWith('2 van 3')) fouten.push(`gesprek → voorstel "${gv}"`);
+  if (!vg.startsWith('1 van 3')) fouten.push(`voorstel → gewonnen "${vg}"`);
+  if (!beslist.startsWith('1 van 2')) fouten.push(`beslist "${beslist}"`);
+  if (/%/.test(trechter)) fouten.push('een percentage bij noemers onder vijf');
+  if (!/te weinig voor een percentage/.test(gv)) fouten.push('geen melding dat de noemer te klein is');
+  if (!lijn.includes('Open nu 2 kansen') || !lijn.includes('€ 20.000') || !lijn.includes('1 zonder waarde') || !lijn.includes('1 van 2 gekwalificeerd')) fouten.push(`open-lijn "${lijn}"`);
+  if (fouten.length) throw new Error(fouten.join(' · '));
+  return { ok: true, bewijs: `"${gv}" · "${vg}" · "${beslist}" · "${lijn}"` };
+}
+
+/** Verloren zonder reden: melding, niets weg. Met reden: één overgang mét die reden in het document. */
+async function verlorenVraagtReden(page, state, { redenVooraf = false } = {}) {
+  await openKans(page, 'harnas-voorstel');
+  await page.selectOption('#stadium-nieuw', 'verloren');
+  if (redenVooraf) await page.fill('#stadium-reden', 'Harnasreden');
+  const basis = state.schrijfpogingen.length;
+  await page.locator('[role=dialog] button', { hasText: 'Stadium wijzigen' }).click();
+  const melding = await page.locator('#stadium-reden-fout').count();
+  const zonder = await nieuweSchrijfacties(page, state, basis);
+  if (melding !== 1 || zonder !== 0) throw new Error(`verloren zonder reden: ${melding} melding(en), ${zonder} schrijfactie(s)`);
+  await page.fill('#stadium-reden', 'Harnasreden');
+  await page.locator('[role=dialog] button', { hasText: 'Stadium wijzigen' }).click();
+  await page.waitForSelector('[role=dialog] [data-stage-now="verloren"]', { timeout: 5_000 });
+  const met = await nieuweSchrijfacties(page, state, basis);
+  const kans = state.documenten.at(-1)?.bureau?.opportunities?.find((o) => o.id === 'harnas-voorstel');
+  const laatste = kans?.history?.at(-1);
+  if (met !== 1) throw new Error(`met reden ${met} schrijfacties`);
+  if (kans?.history?.length !== 4 || laatste?.stage !== 'verloren' || laatste?.reason !== 'Harnasreden') throw new Error(`historie in het document: ${JSON.stringify(kans?.history)}`);
+  // De rij staat nu achter "Toon afgesloten": de knop die opende bestaat niet meer.
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+  await page.waitForFunction(() => document.activeElement && document.activeElement !== document.body, null, { timeout: 2_000 }).catch(() => {});
+  const terug = await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName);
+  if (terug !== 'kans-nieuw') throw new Error(`focus na sluiten op "${terug}" in plaats van "Nieuwe kans"`);
+  return { ok: true, bewijs: 'zonder reden: melding + 0 schrijfacties; met reden: 1 schrijfactie, sheet bleef open, historie 3 → 4 met stadium en reden; focus terug op "Nieuwe kans"' };
+}
+
 function bureauScenarios() {
   return [
     {
@@ -1275,6 +1413,8 @@ function bureauScenarios() {
         await page.fill('#doel-omzet', 'veel');
         await page.locator('button[type=submit]').click();
         await page.waitForSelector('#doel-omzet[aria-invalid="true"]', { timeout: 5_000 });
+        // De focus volgt één frame na de melding (requestAnimationFrame): wacht erop, lees niet ervóór.
+        await page.waitForFunction(() => document.activeElement?.id === 'doel-omzet', null, { timeout: 2_000 }).catch(() => {});
         const focus = await page.evaluate(() => document.activeElement?.id);
         if (focus !== 'doel-omzet') throw new Error(`focus staat op "${focus}", niet op het ongeldige veld`);
         const extra = await nieuweSchrijfacties(page, state, basis);
@@ -1387,11 +1527,11 @@ function bureauScenarios() {
         return { ok: true, bewijs: `registratie ${registratie.gemeten} + planning ${planning.gemeten} tekstelementen boven AA; ${registratie.stops}/${planning.stops} tabstops (+${registratie.segmenten}/${planning.segmenten} datumsegmenten) met zichtbare focus` };
       },
     },
-    ...['/bureau/doelen', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/tijd'].map((pad) => ({
+    ...['/bureau/doelen', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/tijd', VERKOOP].map((pad) => ({
       naam: `bureau — 390 px zonder horizontale overflow · ${pad.replace('/bureau/', '')}`,
       pad,
       wachtOp: 'bureau',
-      gedrag: { bureau: pad === DOELEN ? 'doelen' : 'projecten' },
+      gedrag: { bureau: pad === DOELEN ? 'doelen' : pad === VERKOOP ? 'verkoop' : 'projecten' },
       viewport: { width: 390, height: 844 },
       actie: async (page) => {
         const r = await horizontaleOverflow(page);
@@ -1502,11 +1642,164 @@ function bureauScenarios() {
         return { ok: true, bewijs: `lijst ${lijst.gemeten} + sheet ${sheet.gemeten} + detail ${detail.gemeten} tekstelementen boven AA; koppen ${lijst.koppen}/${detail.koppen}; ${lijst.stops}/${detail.stops} tabstops met zichtbare focus (detail: ${detail.segmenten} extra datumsegmenten)` };
       },
     },
+    {
+      naam: 'verkoop — aantallen en conversies dragen hun noemer, geen percentage onder vijf',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => trechterKlopt(page),
+    },
+    {
+      naam: 'verkoop — gewonnen maakt één project, en de knop komt niet terug',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) => omzettingEenmaal(page, state),
+    },
+    {
+      naam: 'verkoop — omzetting geweigerd als er al projecten naar de kans verwijzen',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop-dubbel' },
+      actie: async (page, { state }) => {
+        await openKans(page, 'harnas-gewonnen');
+        const basis = state.schrijfpogingen.length;
+        await page.fill('#omzetting-naam', 'Harnasdiagnose');
+        await page.locator('[role=dialog] button', { hasText: 'Project aanmaken' }).click();
+        const melding = await page.locator('[role=dialog] [role=alert]').innerText({ timeout: 5_000 });
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (melding !== 'Deze kans is al een project.') throw new Error(`melding "${melding}"`);
+        if (extra !== 0) throw new Error(`geweigerde omzetting schreef ${extra} keer weg`);
+        return { ok: true, bewijs: `melding "${melding}", 0 schrijfacties` };
+      },
+    },
+    {
+      naam: 'verkoop — verloren vraagt een reden; de overgang komt in de historie',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) => verlorenVraagtReden(page, state),
+    },
+    {
+      naam: 'verkoop — opvolgen: verlopen actie en open kans zonder actie, afgesloten niet',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => {
+        const items = await page.locator('[data-follow-up]').evaluateAll((els) => els.map((e) => [e.getAttribute('data-follow-up'), e.textContent.replace(/\s+/g, ' ')]));
+        const ids = items.map(([id]) => id);
+        if (JSON.stringify(ids) !== JSON.stringify(['harnas-voorstel', 'harnas-gesprek'])) throw new Error(`opvolgen toont ${JSON.stringify(ids)}`);
+        if (!/Harnasopvolging.*over tijd/.test(items[0][1])) throw new Error(`verlopen actie zonder "over tijd": "${items[0][1]}"`);
+        if (!items[1][1].includes('geen volgende actie')) throw new Error(`kans zonder actie niet benoemd: "${items[1][1]}"`);
+        return { ok: true, bewijs: `2 items in volgorde (verlopen eerst): "${items[0][1].trim()}" · "${items[1][1].trim()}"` };
+      },
+    },
+    {
+      naam: 'verkoop — nieuwe kans: halve actie geweigerd, daarna één schrijfactie en focus terug',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.locator('#kans-nieuw').click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        await page.fill('#kans-bedrijf', 'Harnasnieuw');
+        await page.fill('#kans-actie', 'Harnasbellen');
+        await page.locator('[role=dialog] button[type=submit]', { hasText: 'Kans toevoegen' }).click();
+        const fout = await page.locator('#kans-actie-datum-fout').count();
+        await page.waitForFunction(() => document.activeElement?.id === 'kans-actie-datum', null, { timeout: 2_000 }).catch(() => {});
+        const focus = await page.evaluate(() => document.activeElement?.id);
+        const zonder = await nieuweSchrijfacties(page, state, basis);
+        if (fout !== 1 || zonder !== 0) throw new Error(`actie zonder datum: ${fout} melding(en), ${zonder} schrijfactie(s)`);
+        if (focus !== 'kans-actie-datum') throw new Error(`focus na weigering op "${focus}", niet op het datumveld`);
+        await page.fill('#kans-actie-datum', new Date().toISOString().slice(0, 10));
+        await page.locator('[role=dialog] button[type=submit]', { hasText: 'Kans toevoegen' }).click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+        const terug = await page.evaluate(() => document.activeElement?.id);
+        const met = await nieuweSchrijfacties(page, state, basis);
+        const inContact = await page.locator('[data-stage-group="contact"] [data-opportunity-row]', { hasText: 'Harnasnieuw' }).count();
+        if (met !== 1) throw new Error(`toevoegen gaf ${met} schrijfacties`);
+        if (terug !== 'kans-nieuw') throw new Error(`focus na sluiten op "${terug}"`);
+        if (inContact !== 1) throw new Error('de nieuwe kans staat niet onder Contact');
+        return { ok: true, bewijs: 'weigering: melding + focus op datum + 0 schrijfacties; daarna 1 schrijfactie, focus terug op "Nieuwe kans", rij onder Contact' };
+      },
+    },
+    {
+      naam: 'verkoop — lege staat zonder kansen, geen trechter',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        const leeg = await page.locator('[data-empty-state]').count();
+        const trechter = await page.locator('section[aria-labelledby="trechter-titel"]').count();
+        if (leeg !== 1 || trechter !== 0) throw new Error(`${leeg} lege staten, ${trechter} trechters`);
+        return { ok: true, bewijs: '1 lege staat, 0 trechters' };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op verkoop (+ beide sheets)',
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => {
+        await page.locator('#kansen-gesloten').click();
+        const lijst = await a11yOp(page, 'verkoop');
+        await openKans(page, 'harnas-gewonnen');
+        const detail = await sweep(page, 'kanssheet');
+        const koppenDetail = await kopstructuur(page);
+        await page.keyboard.press('Escape');
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+        await page.locator('#kans-nieuw').click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        const nieuw = await sweep(page, 'nieuwe-kans');
+        const problemen = [
+          ...lijst.problemen,
+          ...detail.fouten.map((f) => `kanssheet contrast: ${beschrijfFout(f)}`),
+          ...koppenDetail.problemen.map((p) => `kanssheet koppen: ${p}`),
+          ...nieuw.fouten.map((f) => `nieuwe kans contrast: ${beschrijfFout(f)}`),
+        ];
+        if (problemen.length) throw new Error(problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `pagina ${lijst.gemeten} + kanssheet ${detail.gemeten} + nieuwe kans ${nieuw.gemeten} tekstelementen boven AA; koppen ${lijst.koppen}/${koppenDetail.aantal}; ${lijst.stops} tabstops met zichtbare focus` };
+      },
+    },
   ];
 }
 
 function bureauTegenproeven() {
   return [
+    {
+      naam: 'tegenproef — dubbele omzetting in het weggeschreven document',
+      moetFalen: true,
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) =>
+        omzettingEenmaal(page, state, {
+          vervals: (doc) => {
+            const eerste = doc.bureau.projects.find((p) => p.opportunityId === 'harnas-gewonnen');
+            doc.bureau.projects.push({ ...eerste, id: 'harnas-tweede-omzetting' });
+          },
+        }),
+    },
+    {
+      naam: 'tegenproef — percentage bij een noemer onder vijf',
+      moetFalen: true,
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page) => {
+        await page.locator('[data-conversion="gesprek-voorstel"] dd').evaluate((el) => { el.textContent = '2 van 3 · 67 %'; });
+        return trechterKlopt(page);
+      },
+    },
+    {
+      naam: 'tegenproef — verloren met een reden die er al stond',
+      moetFalen: true,
+      pad: VERKOOP,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'verkoop' },
+      actie: async (page, { state }) => verlorenVraagtReden(page, state, { redenVooraf: true }),
+    },
     {
       naam: 'tegenproef — startwaarden schrijven meteen weg',
       moetFalen: true,
@@ -1807,6 +2100,8 @@ async function main() {
     revision: 1,
     lekken: [],
     schrijfpogingen: [],
+    /** De `data` van elke schrijfpoging op het document — wat de app echt zou opslaan. */
+    documenten: [],
     paginafouten: [],
   };
 

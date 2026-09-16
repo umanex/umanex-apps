@@ -89,24 +89,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+23dbfda feat(cashflow): sales pipeline — qualification, counts and conversions with their denominators
 96d3086 test(cashflow): harness coverage for projects and time, and a keyboard pass that sees past a date field
 7a4070c feat(cashflow): time — quick entry, capacity per year and week, and planning of remaining work
 056bfa5 feat(cashflow): projects — list, sheet and detail with milestones, extensions and external costs
 40d19f9 Merge remote-tracking branch 'origin/feature/ui-textarea-native-select' into feature/cashflow-bureau-ui
-e994db9 feat(cashflow): revenue per fiscal year from milestones, and project yield A and B
 ```
 
 ## Uncommitted wijzigingen
-   M apps/cashflow/components/bureau/fields/TextareaField.tsx
-  A  apps/cashflow/lib/bureau/opportunity-draft.test.ts
-  A  apps/cashflow/lib/bureau/opportunity-draft.ts
-  A  apps/cashflow/lib/bureau/pipeline.test.ts
-  A  apps/cashflow/lib/bureau/pipeline.ts
-   M apps/cashflow/scripts/flow-harness.mjs
-  ?? apps/cashflow/app/bureau/verkoop/
-  ?? apps/cashflow/components/bureau/ConversionPanel.tsx
-  ?? apps/cashflow/components/bureau/FollowUpList.tsx
-  ?? apps/cashflow/components/bureau/OpportunityDetail.tsx
+  A  apps/cashflow/app/bureau/verkoop/page.tsx
+  A  apps/cashflow/components/bureau/ConversionPanel.tsx
+  A  apps/cashflow/components/bureau/FollowUpList.tsx
+  A  apps/cashflow/components/bureau/OpportunityDetail.tsx
+  A  apps/cashflow/components/bureau/OpportunityForm.tsx
+  A  apps/cashflow/components/bureau/OpportunityList.tsx
+  A  apps/cashflow/components/bureau/OpportunityRow.tsx
+  A  apps/cashflow/components/bureau/OpportunitySheet.tsx
+  A  apps/cashflow/components/bureau/PipelineLine.tsx
+  A  apps/cashflow/components/bureau/QualificationChecklist.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

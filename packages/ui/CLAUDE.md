@@ -4,12 +4,7 @@ De gedeelde UI-laag van de monorepo: shadcn-achtige primitives op de rollaag van
 `@umanex/tokens`, gedocumenteerd in Storybook, gespiegeld in het Figma-bestand
 **Component library** (`ko2OuasYxyY2YRD69MYhWX`).
 
-## Structuur
-
-- `components/ui/` — 1 component = 1 file, named exports, elk met een `*.stories.tsx` ernaast
-- `docs/` — Storybook-only: `blocks/` (docs-blokken), `lib/` (token-catalogus), `tokens/` (MDX-pagina's)
-- `figma/manifest.json` — de neergeslagen Figma-staat. **Niet met de hand bewerken**; zie Verify-pad.
-- `scripts/` — de sync-guard en zijn tegenproef
+`figma/manifest.json` is de neergeslagen Figma-staat. **Niet met de hand bewerken**; zie Verify-pad.
 
 Componenten raken uitsluitend de **rollaag** aan via een utility uit `@umanex/config/tailwind/preset`.
 Geen primitive, geen rauwe paletklasse, geen hardcoded hex of arbitrary radius. `pnpm --filter
@@ -188,6 +183,56 @@ Werk daarna `figma/manifest.json` bij en draai `figma:check`. Lees een node die 
 bewerkt is **altijd** via de runtime (`figma_execute`, `figma_capture_screenshot`) — de REST-tools
 (`figma_take_screenshot`, `figma_get_component_for_development`) geven de laatst opgeslagen
 cloud-staat en zijn na een verse edit per definitie stale.
+
+## De Storybook-MCP — prototypen mét de echte componenten
+
+Deze package draait sinds 2026-09-15 `@storybook/addon-mcp`. Daarmee is de catalogus niet
+alleen te bekíjken maar ook te bevrágen: welke stories raakt dit bestand, welke props heeft dit
+component echt, geef me een preview-URL. Dat is het verschil tussen een component natekenen en
+hem gebruiken.
+
+**Hij bestaat alleen zolang Storybook draait.** De addon haakt in op de dev-server en publiceert
+op `http://localhost:6006/mcp` — er is géén losse server. Daarom draait Storybook onder **PM2**,
+als derde proces naast cashflow en het dashboard:
+
+```bash
+pnpm --filter @umanex/ui pm2:start     # eenmalig; daarna pm2 save voor na een reboot
+pnpm --filter @umanex/ui pm2:restart   # na een wijziging in .storybook/main.ts
+pnpm --filter @umanex/ui pm2:logs
+```
+
+`.mcp.json` in de repo-root draagt de verwijzing; Claude Code vraagt éénmalig goedkeuring.
+
+**Waarom PM2 hier wél mag en bij het dashboard oppassen is.** De rail *een server die jíj start is
+aan zijn branch geklonken* (globale `CLAUDE.md`) draait om een map die op de ene branch bestaat en
+op de andere niet — `apps/dashboard` was daar het gemeten geval. `packages/ui` bestaat op **élke**
+branch (gemeten 2026-09-15: 61 bestanden op `main`, 52 op `feature/prospect-classificatie`), dus
+deze server kan niet verweesd raken. Wat hij wél doet is meebewegen: na een `checkout` serveert hij
+de stories van de branch waar je op staat. Dat is precies wat je wil van een catalogus.
+
+Eén uitzondering op dat meebewegen: **`.storybook/main.ts` wordt niet warm herladen.** Verandert de
+addon- of refs-configuratie tussen twee branches, dan draait de server door met de oude config tot
+je `pm2:restart` doet. De stories volgen wél vanzelf.
+
+**Geheugen:** ~390 MB vlak na het opstarten. `--max-memory-restart 1500M` staat in het start-script,
+zodat een lekkende vite-dev-server zichzelf opruimt in plaats van de machine vol te zetten.
+
+**Zeven tools, gemeten 2026-09-15 tegen de draaiende server.** `docs-list` · `docs-show` ·
+`docs-show-story` lezen de catalogus; `stories-find-by-component` loopt de echte
+afhankelijkheidsgraaf (één wijziging in `components/ui/button.tsx` raakt **14 stories over 5
+componenten** — Card, DropdownMenu en Sheet gebruiken Button); `stories-changed` ziet wat er in
+de working tree veranderde; `stories-preview` geeft de URL; `get-storybook-story-instructions`
+levert de schrijfconventies.
+
+**`test.run` is er níet, en dat is een keuze.** Die toolset vraagt `@storybook/addon-vitest` —
+een optionele peer die vitest, `@vitest/browser` en playwright meesleept. Niet geïnstalleerd; de
+render-sweeps in CI dekken die as al.
+
+**Twee praktische valkuilen, allebei zelf ingelopen.** Paden zijn absoluut of relatief ten
+opzichte van de **Storybook-werkmap** (`packages/ui`), niet de repo-root — `packages/ui/...`
+doorgeven levert een dubbel prefix en "path does not exist". En `stories-preview` wil objecten
+(`{storyId: "..."}`), geen kale strings. De server weigert netjes met het verwachte schema
+erbij, dus lees die foutmelding in plaats van te gokken.
 
 ## Wat hier NIET hoort
 

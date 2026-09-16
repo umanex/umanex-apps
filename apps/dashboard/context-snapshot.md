@@ -1,5 +1,5 @@
 # Context Snapshot — dashboard
-_Gegenereerd op 2026-09-15_
+_Gegenereerd op 2026-09-16_
 
 ## Project
 - **App:** dashboard
@@ -36,16 +36,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+022531b Merge pull request #489 from umanex/feature/storybook-mcp
+b5d4378 docs(dashboard): close the cockpit session — three handoff items, one backlog entry
+fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
+8f8756a feat(ui): wire the Storybook MCP into packages/ui
 a591372 feat(dashboard): the cockpit — four read-only routes over every client
-639ae44 docs(dashboard): TC-EBC for the cockpit overview
-154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
-1221f12 chore(dashboard): upgrade to Next 15.5.25 and React 19
-2ca664b merge: main into feature/rowtrack-web-premium-redesign
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/dashboard/BACKLOG.md
-  M  apps/dashboard/HANDOFF.md
+  M  apps/dashboard/CLAUDE.md
+  M  packages/ui/CLAUDE.md
 
 ## Bestanden met TODO/FIXME
   (geen)

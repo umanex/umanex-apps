@@ -1,5 +1,5 @@
 # Context Snapshot — soda-plus
-_Gegenereerd op 2026-09-10_
+_Gegenereerd op 2026-09-16_
 
 ## Project
 - **App:** soda-plus
@@ -26,24 +26,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-6590199 feat(rowtrack-tokens): guard op rol-utilities die niet bestaan
-3397a2d chore(tokens): neem rowtrack-web op in de laag-discipline-guard
-899abd9 feat(rowtrack-tokens): lever RowTrack's rollaag als CSS-variabelen en Tailwind-preset
-62ab13d chore: prune four orphans, and declare the binary the render scripts need
-e59eaa1 chore(config): remove the dead flat-config eslint files
+fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
+8f8756a feat(ui): wire the Storybook MCP into packages/ui
+154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
+157befe chore(soda-plus): upgrade to Next 15.5.25 and React 19
+2ca664b merge: main into feature/rowtrack-web-premium-redesign
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/soda-plus/.eslintrc.js
-  A  apps/soda-plus/BACKLOG.md
-  A  apps/soda-plus/CLAUDE.md
-  A  apps/soda-plus/HANDOFF.md
-  A  apps/soda-plus/LEARNINGS.md
-  A  apps/soda-plus/app/layout.tsx
-  A  apps/soda-plus/app/page.tsx
-  A  apps/soda-plus/audits/2026-08-25-analyse-gedane-werk.md
-  A  apps/soda-plus/audits/2026-08-25-ux-audit-wireframes.md
-  A  apps/soda-plus/briefings/2026-08-25-flow-attituderapport-revisie.tcebc.md
+  M  apps/soda-plus/CLAUDE.md
+  M  packages/ui/CLAUDE.md
 
 ## Bestanden met TODO/FIXME
   (geen)

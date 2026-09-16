@@ -4,7 +4,6 @@
 React Native (Expo) rowing workout tracker app met BLE connectiviteit,
 gamificatie en Supabase backend.
 
-**Stack:** React Native · Expo SDK · Expo Router · TypeScript · Supabase  
 **Figma bestand:** T1bGrvIzSNeLyh5CbarATZ  
 **Design MCP:** Figma Console MCP (figma-console-mcp van southleft) via Desktop Bridge  
 
@@ -45,7 +44,6 @@ Voor de beschikbare exports (kleuren, `fontFamily`, `typeStyles`, `space`, `radi
 - `StyleSheet.create()` — nooit inline styles
 - `TouchableOpacity` voor interactieve elementen, `activeOpacity={0.8}`
 - Iconen via `@expo/vector-icons` (Ionicons) — **nooit** `lucide-react-native`
-- Import alias: `@/components/...`, `@/lib/...`
 - 1 component = 1 bestand, PascalCase bestandsnaam
 
 ### Figma workflow
@@ -57,12 +55,10 @@ Voor de beschikbare exports (kleuren, `fontFamily`, `typeStyles`, `space`, `radi
 - Screens pagina: `node-id=0-1`
 
 ### BLE
-- Rower: FTMS service `00001826`, characteristic `00002ad1`
-- HR: Heart Rate service `0x180D`, characteristic `0x2A37`
+- Service- en characteristic-UUID's staan in `lib/ble/constants.ts` en `lib/ble/hr-service.ts`, mét fallback en control point — niet hier dupliceren
 - Twee notification types: distance/elapsed packet en spm/watts/split packet
 
 ### Supabase
-- Tabellen: `profiles`, `workouts`, `period_goals`
 - Lees het schema live via de `supabase-rowtrack` MCP-server (`list_tables`) — kolomnamen niet
   hier dupliceren, die drift (een gekopieerd schema stond hier maanden verkeerd)
 - Let op de servernaam: `supabase-cashflow` wijst naar een ánder project

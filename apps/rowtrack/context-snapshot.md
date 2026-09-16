@@ -70,20 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+26b3433 fix(rowtrack): a pace or power goal is an intensity, not a finish line
 3612c3b feat(rowtrack): save an interrupted ride from its checkpoint
 df9f602 refactor(rowtrack): one session accumulator, and counter resets survive a reconnect
 bfc2509 fix(rowtrack): gate heart rate on consent at the source
 148a5b1 fix(rowtrack): store a finished ride locally before sending it
-1c4b71d refactor(rowtrack): one builder for the workout row, testable on its own
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/components/MotivationalToast.stories.tsx
-  M  apps/rowtrack/i18n/translations/nl.ts
-  M  apps/rowtrack/lib/hooks/useGoalProgress.ts
-  M  apps/rowtrack/lib/workout-goals.ts
-  M  apps/rowtrack/lib/workoutRow.test.ts
-  M  apps/rowtrack/lib/workoutRow.ts
+  M  apps/rowtrack/BACKLOG.md
 
 ## Bestanden met TODO/FIXME
   (geen)

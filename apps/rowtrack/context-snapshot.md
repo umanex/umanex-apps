@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-09-14_
+_Gegenereerd op 2026-09-16_
 
 ## Project
 - **App:** rowtrack
@@ -70,15 +70,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
+8f8756a feat(ui): wire the Storybook MCP into packages/ui
+f6f8439 docs(rowtrack): validate the route-guard task on a revert measurement
 4eaa1c0 fix(rowtrack): close three holes the route guard could not see
 61b9675 fix(rowtrack): stories are not routes, and every tab is declared
-3fc9b12 docs(rowtrack): plan the design review into four briefings and eleven backlog items
-692f835 Merge origin/main into ci/rowtrack-edge-function-en-stabiele-spec
-61f34d6 fix(rowtrack): give the Edge Functions their own Deno config so the typecheck can resolve
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/briefings/2026-09-14-taakcontract-routelek-stories.md
+  A  apps/rowtrack/audits/2026-09-15-functionele-review.md
+   M apps/rowtrack/lib/supabase.ts
+  ?? apps/rowtrack/lib/supabaseFetch.test.ts
+  ?? apps/rowtrack/lib/supabaseFetch.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

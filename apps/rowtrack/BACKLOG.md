@@ -41,6 +41,36 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-09-16 — De functionele review van 2026-09-15: F3 vraagt nog een doelmodel, F6 en de losse eindjes staan open · [feature]
+- **Wat:** Van de tien bevindingen in `audits/2026-09-15-functionele-review.md` is Reeks A gebouwd (F1, F2, F4, F5, F6, F7, F8, F9, F10 en het deel van F3 dat geen ontwerp vraagt). Wat overblijft:
+  1. **F3, het volledige model** — een streefzone (tempo of vermogen) bínnen een tijd- of afstandsdoel, zoals Jeroen op 2026-09-16 koos. Vraagt een eigen TC-EBC, ontwerp in Figma (`QkRgMc7Quqtbow71DiYa1n`) en een migratie op `workouts`: `goal_zone_type`, `goal_zone_target`, `seconds_in_zone`, plus de bestaande `CHECK (goal_type IN …)` en `workouts_goal_consistency` aanpassen. Losse `split`/`watts`-doelen verdwijnen dan uit de picker; oude ritten blijven leesbaar.
+  2. **De opslagstatus op de samenvatting** — "Opgeslagen op dit toestel" · "Synchroniseren…" · "Gesynchroniseerd" · "Opslaan mislukt". De wachtrij weet dit sinds PR umanex-apps#494 allemaal al; alleen het tonen ontbreekt. Eén nieuwe tekstnode in een *Screens v2*-frame, dus Figma eerst (`parity` telt kinderen).
+  3. **De losse eindjes uit §"Overige"** van de review: `hrError` tijdens een rit (staat al als eigen item van 2026-08-28), Sentry (idem, 2026-09-07), de DDL die niet opnieuw uitvoerbaar is (README), en dat Maestro geen BLE kan aandrijven — daar is de accumulator-suite van PR umanex-apps#497 het haalbare alternatief voor.
+  4. **Productvoorstellen** uit de review, geen defects: "Herhaal deze training", vergelijking met de vorige vergelijkbare rit, een expliciete pauze/hervat-keuze, en data-export.
+- **Waarom niet nu:** 1 en 2 zijn ontwerpwerk en Jeroen tekent eerst in Figma — dat is zijn keuze van 2026-09-16, en de code-kant volgt via de scoped `figma-naar-code` skill. 3 en 4 hebben elk hun eigen afweging.
+- **Eerste zet:** de TC-EBC voor de streefzone, in de main agent (kritische items: typologie van de tweede as in `IdlePhase`, states in-zone/onder/boven, viering zonder einde, en wat een zone zonder eindpunt betekent).
+- **Check:** `grep -n "goal_zone_type" apps/rowtrack/supabase/migrations/*.sql` — geen treffer = het zone-model bestaat nog niet.
+- **Status:** open
+
+## 2026-09-16 — Eén toestel-ronde sluit zeven open metingen uit de functionele review · [test]
+- **Wat:** Reeks A van het plan bij `audits/2026-09-15-functionele-review.md` is gebouwd en gemerged (PR umanex-apps#492 t/m #499). Zeven uitspraken zijn alleen op de iPhone met de Apollo XL vast te stellen, en ze delen één opstelling:
+
+  | # | wat | hoe |
+  |---|---|---|
+  | 1 | **F1** — twee offline ritten blijven allebei bestaan | vliegtuigmodus, twee ritten, app herstarten, weer online: elk precies één keer in de historiek |
+  | 2 | **F2** — de onthouden doelkeuze | 10 km rijden, terug naar Training: de picker toont 10 km en Start rijdt 10 km |
+  | 3 | **F4** — hartslag geblokkeerd zonder toestemming | BPM-rij tikken midden in een rit doet niets; een offline rit van vóór het intrekken brengt later geen hartslag terug (alleen op `rowtrack-test@umanex.be`) |
+  | 4 | **F5** — herstel na een crash | halverwege force-quitten, app openen: de vraag verschijnt, de rit komt terug met hoogstens tien seconden verlies |
+  | 5 | **F9** — herstart de erg zijn tellers? | tijdens een rit de Apollo XL uit en aan, in de `[BLE]`-log lezen of `elapsedTime` en `totalDistance` op nul beginnen, en of de afstand op het scherm blijft oplopen |
+  | 6 | **F10** — een hangende verbinding | Network Link Conditioner op "100% loss" zetten met een open socket: Home komt binnen twintig seconden uit zijn laadtoestand |
+  | 7 | **F3** — een tempodoel eindigt de rit niet meer | doel 2:00/500 m, kort onder de 2:00 duiken: de training loopt door |
+
+- **Waarom niet nu:** geen van deze zeven is zonder hardware te meten. Ze staan hier bij elkaar omdat je ze in één ronde afhandelt — los waren het zeven redenen om de dev-client te booten, en dan wordt hij niet geboot.
+- **Eerste zet:** `pnpm dev:rowtrack`, bundeldatum controleren (zie het Verify-pad), dan 2 en 7 — die hebben geen erg-trucje nodig. Registreer de ronde met een `Toestel-ronde:`-trailer in de commit, óók als je niets vond: dat is het verschil tussen "nog nooit gekeken" en "gekeken, niets gezien".
+- **Check:** `cd apps/rowtrack && node scripts/toestel-schuld.mjs --kort` — staat de teller nog op "nog nooit een ronde", dan leeft dit item.
+- **Verwant:** `apps/rowtrack/BACKLOG.md` 2026-09-09 *Eén toestel-ronde beantwoordt vijf vragen* — dezelfde opstelling, doe ze samen.
+- **Status:** open
+
 ## 2026-09-16 — Uitloggen wist de wachtrij zonder hem eerst af te druinen · [fix]
 - **Wat:** `signOut` roept `clearLocalUserData()` aan (`apps/rowtrack/lib/auth.ts:21-24`), en die wist de hele wachtrij. Wie offline uitlogt vlak na een rit, verliest die rit. Dat was vóór lokaal-eerst ook al zo — de wachtrij hield toen alleen ritten waarvan de insert al gefaald was — maar sinds elke rit door de wachtrij gaat, verdient het een expliciete keuze: eerst afdruinen, en bij restanten waarschuwen ("er wacht nog 1 training op synchronisatie") zonder het uitloggen te blokkeren.
 - **Waarom niet nu:** buiten de scope van de F1-PR gehouden. `clearLocalUserData` kent de user-id noch de toestemmingsstatus, dus het vraagt een andere knip tussen `lib/auth.ts` en het profielscherm — en de waarschuwing zelf is een ontwerpvraagje (blokkeren mag niet, negeren is stil).
@@ -104,7 +134,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** `wattsSum`/`wattsCount`, `spmSum`/`spmCount`, `splitSum`/`splitTickCount`, `heartRateSum`/`heartRateCount` zijn vier losse ref-paren die per conventie bij elkaar horen. Vervang ze door één type — `{ sum, count }` met `add(acc, v)` en `mean(acc)` — zodat een gemiddelde structureel niet meer door een vreemde teller kán delen.
 - **Waarom niet nu:** De fix van vandaag corrigeert alle vijf de foute call-sites en is met een enumererende sweep geverifieerd, maar houdt de conventie in stand: een nieuwe som die een teller vergeet, herhaalt de klasse. Dat is een refactor over alle accumulatoren, breder dan de gemelde bug.
 - **Eerste zet:** `lib/accumulator.ts` met `type Accumulator = { sum: number; count: number }`, `add`, `mean`; eerst watts en spm omzetten, daarna split en hartslag.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-16, PR umanex-apps#497. `Acc = { sum, count }` met `add` en `mean` in `lib/sessionAccumulator.ts`; de twintig losse refs in `useWorkoutMetrics` zijn één sessie-object geworden. Delen door een vreemde teller is niet meer uit te drukken. De guard `check-averages` is meegegaan: die zocht naar een vorm die niet meer bestaat en vond nul delingen — nul is geen groene meting maar een wachter die niets ziet. Hij toetst nu dat `sum / count` alléén in `mean()` staat.
 
 ## 2026-08-17 — Guard: elk gemiddelde deelt door de teller uit zijn eigen guard · [test]
 - **Wat:** Een check die alle `*Sum.current /`-delingen enumereert en faalt zodra de noemer niet de bijhorende `*Count`/`*TickCount` is. Vandaag met de hand gedraaid; dat vond één call-site méér (`useGoalProgress.ts:94`) dan de analyse had gemeld.
@@ -138,7 +168,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** `apps/rowtrack/lib/hooks/useGoalProgress.ts:126` haalt de PR-baseline op met `.order('started_at', desc).limit(100)`. Zodra rit 101 er is, valt de oudste rit uit de vergelijking en kan een verbroken record stil terugkeren als "nieuw record". Fix: aggregeren in de query (`max(avg_watts)`, `min(avg_split_seconds)`, `max(distance_meters)`, `min(best_2k_seconds)`) of een `personal_records`-view, in plaats van 100 rijen ophalen en client-side scannen.
 - **Waarom niet nu:** Buiten scope gehouden bij de PR-detail-briefing van 2026-08-22 (Jeroen koos "2K erbij" zonder de baseline-verbreding). Bij 19 ritten is het gat nog niet bereikbaar — het bijt pas rond rit 101, en dan onzichtbaar.
 - **Eerste zet:** De aggregatie in `fetchPRs` vervangen door één `select` met Postgres-aggregaten; de `derivePrMetrics()` uit de PR-detail-briefing kan daar de tegenproef voor leveren (dezelfde records over de volledige historiek).
-- **Status:** open
+- **Status:** gebouwd — 2026-09-16, PR umanex-apps#493. `lib/personalRecordsQuery.ts` haalt per metric één rij op over de volledige historiek, en Home én de rit-baseline lezen nu uit diezelfde bron — zo kunnen die twee elkaar ook niet meer tegenspreken. `.gt(kolom, 0)` is de `isUsable`-regel in de query én houdt NULL buiten: gemeten op het live schema zijn `avg_watts` en `avg_split_seconds` nullable, en Postgres sorteert NULLS FIRST bij DESC. Tegenproef read-only tegen productie: op de 22 echte ritten geven oud en nieuw hetzelfde antwoord (148 W), synthetisch met het record op rit 1 van 101 zegt oud 150 W en nieuw 300 W.
 
 ## 2026-08-22 — Ritten van 0 m / 0 s belanden in het archief · [ux]
 - **Wat:** Een sessie die start en meteen gestopt wordt, wordt bewaard als volwaardige rit. In de historiek staat er zo één (2026-08-22 12:40:57: 0 m, 0 s, 1 sample, wel `avg_heart_rate` 90 uit de FTMS-fallback). Die rijen vervuilen de lijst en tellen mee in de periodetotalen. Voorstel: bij het opslaan een ondergrens (bv. `distance_meters > 0 && duration_seconds > 0`, of een minimum van ~30 s) en anders stil weggooien — of de gebruiker vragen.
@@ -221,7 +251,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** Eerst meten of het nodig is: op de Apollo XL tijdens een rit Bluetooth uit/aan zetten om een reconnect te forceren en in de `[BLE]`-log lezen of elapsedTime/totalDistance na de reconnect op 0 herstarten. Herstarten ze niet, dan is dit item met die meting als bewijs te sluiten.
 - **Check:** `grep -rn reconnect apps/rowtrack/lib/hooks/useWorkoutMetrics.ts` — geen treffer = het meetpad kent geen reconnect en zet de baseline dus niet opnieuw.
 - **Relevantie 2026-09-14:** LEEFT. Check gedraaid: `grep -rn reconnect apps/rowtrack/lib/hooks/useWorkoutMetrics.ts` geeft nul treffers (rc=1) — het meetpad kent nog steeds geen reconnect.
-- **Status:** open
+- **Status:** gebouwd — 2026-09-16, PR umanex-apps#497 (F9 uit de functionele review). `readCounter` in `lib/sessionAccumulator.ts` herkent een teller die opnieuw begint en telt de nieuwe reeks op bij wat er al stond; afstand, tijd en slagen zijn daarmee per constructie niet-dalend, en de `{t,d}`-reeks blijft monotoon. **De meting staat nog open**: of de Apollo XL na uit/aan werkelijk op nul herstart, is alleen op het toestel vast te stellen en staat in de toestel-ronde. Herstart hij niet, dan is de code onschadelijk en sluit die meting dit item definitief.
 
 ## 2026-09-07 — Segment-breedte snapt (Fabric layout-animatie taboe) · [ux]
 

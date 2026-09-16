@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { periodStart } from '@/lib/period';
+import { fetchPrBaseline } from '@/lib/personalRecordsQuery';
 
 export type PeriodGoalPeriod = 'week' | 'month';
 export type PeriodGoalMetric = 'distance' | 'duration' | 'workouts';
@@ -22,8 +23,14 @@ export interface PeriodGoalProgress {
 export interface PersonalRecords {
   longestDistance: number | null;   // meters
   best2k: number | null;           // fastest 2000m in seconds
-  fastestSplit: number | null;     // seconds per 500m
 }
+
+// Hier stond een derde veld, `fastestSplit`, gevuld uit `best_split` (de snelste 500m ván een
+// rit). Het werd nergens gelezen — gemeten 2026-09-16 over `app/`, `components/` en `lib/`:
+// Home toont afstand en 2000m, Profiel leest alleen `goalProgress`. Het kostte dus een query
+// per focus zonder lezer, en het droeg een tweede betekenis van het woord "split" naast de
+// `avg_split_seconds` van de PR-baseline. Weg; komt hij terug, dan hoort hij bij het scherm
+// dat hem toont.
 
 /**
  * Grenzen komen uit `lib/period.ts`, dezelfde bron als de historiek-filter — zo kan
@@ -40,7 +47,6 @@ export function usePeriodGoal(userId: string | undefined) {
   const [records, setRecords] = useState<PersonalRecords>({
     longestDistance: null,
     best2k: null,
-    fastestSplit: null,
   });
   const [loading, setLoading] = useState(true);
   // `error` dekt bewust alléén de doel-reads (profiel + de workouts van de periode).
@@ -58,40 +64,24 @@ export function usePeriodGoal(userId: string | undefined) {
     // Per run resetten, anders blijft een gelukte retry op een oude fout hangen.
     setError(false);
 
-    // Fetch goal from profile + PRs from workouts in parallel
-    const [profileRes, prDistRes, prBest2kRes, prSplitRes] = await Promise.all([
+    // Fetch goal from profile + PRs from workouts in parallel.
+    // De records komen uit dezelfde bron als de baseline waartegen een lopende rit zich meet
+    // (`lib/personalRecordsQuery.ts`). Dat is het tweede deel van F6: stonden hier eigen
+    // queries, dan konden Home en het trainingsscherm een ander record tonen — en die twee
+    // spraken elkaar dan tegen zonder dat één van beide fout leek.
+    const [profileRes, baseline] = await Promise.all([
       supabase
         .from('profiles')
         .select('period_goal_period, period_goal_metric, period_goal_target')
         .eq('id', userId)
         .single(),
-      supabase
-        .from('workouts')
-        .select('distance_meters')
-        .eq('user_id', userId)
-        .order('distance_meters', { ascending: false })
-        .limit(1),
-      supabase
-        .from('workouts')
-        .select('best_2k_seconds')
-        .eq('user_id', userId)
-        .not('best_2k_seconds', 'is', null)
-        .order('best_2k_seconds', { ascending: true })
-        .limit(1),
-      supabase
-        .from('workouts')
-        .select('best_split')
-        .eq('user_id', userId)
-        .not('best_split', 'is', null)
-        .order('best_split', { ascending: true })
-        .limit(1),
+      fetchPrBaseline(userId),
     ]);
 
     // Leesfouten niet stil inslikken — melden voor observability (security-audit P2-2).
-    for (const res of [profileRes, prDistRes, prBest2kRes, prSplitRes]) {
-      if (res.error && res.error.code !== 'PGRST116') {
-        reportError(res.error, { where: 'usePeriodGoal.fetchAll' });
-      }
+    // De PR-kant meldt zijn eigen fouten en geeft dan een lege baseline terug.
+    if (profileRes.error && profileRes.error.code !== 'PGRST116') {
+      reportError(profileRes.error, { where: 'usePeriodGoal.fetchAll' });
     }
 
     // Het profiel draagt het doel zélf. Faalt die read, dan is "geen doel" een gok en
@@ -100,9 +90,8 @@ export function usePeriodGoal(userId: string | undefined) {
 
     // Personal records
     setRecords({
-      longestDistance: prDistRes.data?.[0]?.distance_meters ?? null,
-      best2k: prBest2kRes.data?.[0]?.best_2k_seconds ?? null,
-      fastestSplit: prSplitRes.data?.[0]?.best_split ?? null,
+      longestDistance: baseline.distance?.value ?? null,
+      best2k: baseline.best2k?.value ?? null,
     });
 
     // Period goal progress

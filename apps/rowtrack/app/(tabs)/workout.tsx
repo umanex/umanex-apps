@@ -15,7 +15,7 @@ const UNDEFINED_COLUMN = '42703';
 /** Minimum aantal BLE-ticks voordat een rit een record mág zijn. */
 const MIN_PR_TICKS = 10;
 import type { GoalType, WorkoutGoal } from '@/lib/workout-goals';
-import { userInputToTarget, targetToUserInput } from '@/lib/workout-goals';
+import { userInputToTarget } from '@/lib/workout-goals';
 import { useWorkoutMetrics } from '@/lib/hooks/useWorkoutMetrics';
 import { useGoalProgress } from '@/lib/hooks/useGoalProgress';
 import { bestTimeForDistance } from '@/lib/bestDistanceTime';
@@ -72,18 +72,11 @@ export default function WorkoutScreen() {
   const savedRef = useRef(false);
   const goalEndedRef = useRef(false);
 
-  // --- Sync idle goal inputs from goal state ---
-  useEffect(() => {
-    if (goal) {
-      setIdleGoalType(goal.type);
-      if (goal.type === 'duration') {
-        setIdleDurMin(String(Math.floor(goal.target / 60)));
-        setIdleDurSec(String(goal.target % 60));
-      } else {
-        setIdleGoalInput(String(targetToUserInput(goal.type, goal.target)));
-      }
-    }
-  }, [goal]);
+  // Hier stond een effect dat `goal` terugschreef naar de vier idle-velden. Het was een
+  // no-op-lus: `handleStart` bouwt `goal` uit exact die velden, dus het effect schreef er
+  // altijd dezelfde waarden in terug. Wél was het een dérde schrijver op de staat waarvan
+  // F2 vraagt dat er precies één bron is — picker, chips en Start lezen nu alle drie deze
+  // vier velden, en alleen de gebruiker verandert ze.
 
   // --- Handlers ---
 
@@ -340,8 +333,11 @@ export default function WorkoutScreen() {
         onCancelSelection={cancelSelection}
         idleGoalType={idleGoalType}
         setIdleGoalType={setIdleGoalType}
+        idleGoalInput={idleGoalInput}
         setIdleGoalInput={setIdleGoalInput}
+        idleDurMin={idleDurMin}
         setIdleDurMin={setIdleDurMin}
+        idleDurSec={idleDurSec}
         setIdleDurSec={setIdleDurSec}
         onStart={handleStart}
         insets={insets}

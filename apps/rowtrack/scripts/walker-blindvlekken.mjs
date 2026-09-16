@@ -90,8 +90,16 @@ const SELFTEST = process.argv.includes('--selftest');
 // kregen een `Met Fout` en ActivePhase een `Samenvatting Zonder Gewicht`. Geen enkele teller
 // hieronder is een NIEUWE klasse; het zijn dezelfde klassen over meer stories (metRand +19,
 // inline +3 — één per foutmelding, centerRight +13, marge +7).
-const BEKEND = { stories: 46, randkleur: 0, metRand: 245, placeholder: 4, gescrold: 11,
-  overloop: 0, inline: 6, centerRight: 45, marge: 47 };
+//
+// Bijgesteld 2026-09-16: 46 -> 47 door `IdlePhase/Doel Afstand Onthouden`, de renderkant van
+// F2 (de picker toont het onthouden doel van de vorige training). Opnieuw geen nieuwe klasse
+// maar dezelfde over één story meer, en het aantal volgt uit wat een IdlePhase-story is:
+// metRand +8 (de twee toestelrijen, de segmenten en de chips dragen randen), gescrold +1 (zijn
+// ScrollView), marge +1 (de `[0,0,0,-20]`-breakout van GoalHeader, die élke IdlePhase-story
+// al meldt — zie de voorbeeldenlijst in de uitvoer). De overige vijf tellers bewogen niet.
+// Twee CI-runs op dezelfde commit gaven identiek 47/253/12/48; één run zou hier geen meting zijn.
+const BEKEND = { stories: 47, randkleur: 0, metRand: 253, placeholder: 4, gescrold: 12,
+  overloop: 0, inline: 6, centerRight: 45, marge: 48 };
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.map': 'application/json' };
 

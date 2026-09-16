@@ -70,17 +70,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+5753de4 fix(rowtrack): personal records over the full history, not the last hundred rides
+ad06a51 fix(rowtrack): one goal value for picker, chips and start
+6858892 fix(rowtrack): put a deadline on every Supabase round-trip
 bb37855 docs(rowtrack): add the functional review of 2026-09-15
 fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
-8f8756a feat(ui): wire the Storybook MCP into packages/ui
-f6f8439 docs(rowtrack): validate the route-guard task on a revert measurement
-4eaa1c0 fix(rowtrack): close three holes the route guard could not see
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/lib/supabase.ts
-  A  apps/rowtrack/lib/supabaseFetch.test.ts
-  A  apps/rowtrack/lib/supabaseFetch.ts
+  M  apps/rowtrack/scripts/walker-blindvlekken.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

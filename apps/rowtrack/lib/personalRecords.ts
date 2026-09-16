@@ -27,8 +27,14 @@ export const PR_METRICS: readonly PrMetric[] = ['distance', 'best2k', 'watts', '
  */
 export const LEGACY_PR_METRICS: readonly PrMetric[] = ['distance', 'watts', 'split'];
 
-/** Tijd-metrics winnen door te dalen, de andere door te stijgen. */
-const LOWER_IS_BETTER: Record<PrMetric, boolean> = {
+/**
+ * Tijd-metrics winnen door te dalen, de andere door te stijgen.
+ *
+ * Geëxporteerd omdat `lib/personalRecordsQuery.ts` dezelfde richting nodig heeft om zijn
+ * `order()` te kiezen. Die daar een tweede keer opschrijven zou twee bronnen maken voor één
+ * feit, en een omgekeerde richting levert stil het slechtste record op in plaats van het beste.
+ */
+export const LOWER_IS_BETTER: Record<PrMetric, boolean> = {
   distance: false,
   best2k: true,
   watts: false,

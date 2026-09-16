@@ -68,3 +68,21 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   bestand. `SEED_VERSIE` verhogen mag alleen om nieuwe keys toe te voegen; dat staat in de kop van
   `seed-inhoud.ts`.
 - **Status:** open
+
+## 2026-09-16 — Het plan is gebouwd, beoordeeld en nog nooit gebruikt · [next-step]
+- **Bevinding:** `/plan` is af, door 1315 invarianten, 61 HTTP-asserties en een onafhankelijke
+  finish-review gehaald, en draagt nul echt werk. De database van deze machine heeft de
+  `plan_*`-tabellen nog niet eens: ze ontstaan pas bij het eerste bezoek. Alles wat er nu over het
+  scherm te zeggen valt, komt van instrumenten en van geforceerde toestanden — niet van iemand die
+  er een ochtend mee gewerkt heeft. De drie ernstigste defecten van vandaag kwamen ook niet uit de
+  suite maar uit een lezer die het geheel beoordeelde; de instrumenten dekken de API en de
+  afleiding, niet de weg die een mens door het scherm neemt.
+- **Check:** `sqlite3 apps/jobradar/.data/jobradar.db "SELECT count(*) FROM plan_actions WHERE
+  status != 'niet_gestart' AND status != 'uitgesteld';" 2>&1` — *"no such table"* of `0` betekent
+  dat het plan nog nooit echt gebruikt is en dit item nog leeft. Een getal boven nul betekent dat
+  het eerste gebruik geweest is.
+- **Volgende zet:** open `/plan`, zet A01 op bezig en schrijf er een volgende stap bij. Dat is de
+  goedkoopste manier om te zien wat een review per definitie niet kan zien: of de volgorde van de
+  secties klopt wanneer je iets wílt doen in plaats van iets beoordeelt, en of de eerstvolgende
+  actie bovenaan werkelijk de actie is waar je aan denkt.
+- **Status:** open

@@ -83,6 +83,12 @@ test('reconciliatie-tegenproef: een weggevallen regel wordt gezien', () => {
   assert.deepEqual(verifyReconciliation(kapot).map((r) => r.monthKey), ['2027-03'], 'W13 draagt de losse post van maart; april valt in W17');
 });
 
+test('reconciliatie-tegenproef: één cent in één week is al een verschil', () => {
+  const { plan } = scenario();
+  const kapot: WeeklyCashPlan = { ...plan, reconciliation: plan.reconciliation.map((r, i) => (i === 1 ? { ...r, placed: r.placed + 0.01, delta: r.delta - 0.01 } : r)) };
+  assert.deepEqual(verifyReconciliation(kapot).map((r) => r.monthKey), ['2027-04']);
+});
+
 test('reserveringen gaan in de ankermaand één keer af: vrij bij de start = bank − potstand', () => {
   const { plan } = scenario();
   assert.deepEqual(plan.position, { bank: 10_000, reserved: 4_000, free: 6_000 });

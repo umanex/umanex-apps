@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { cn } from '@umanex/ui/lib/utils';
+import { focusRing } from '@umanex/ui/lib/focus';
 import { Checkbox } from '@umanex/ui/components/ui/checkbox';
 import { Label } from '@umanex/ui/components/ui/label';
 import { useBureau, useBureauYear } from '../../../hooks/useBureau';
@@ -42,7 +45,14 @@ export default function KlantenPage() {
       </div>
 
       {bureau.clients.length === 0 ? (
-        <EmptyState title="Nog geen klanten">
+        <EmptyState
+          title="Nog geen klanten"
+          action={
+            <Link href="/bureau/projecten" className={cn('rounded-sm text-sm font-medium underline underline-offset-2', focusRing)}>
+              Naar projecten
+            </Link>
+          }
+        >
           Een klant ontstaat wanneer je een project aanmaakt of een gewonnen kans omzet. Daarna zie je hier welk deel van je jaaromzet van wie komt, tegenover de limiet uit je doelen.
         </EmptyState>
       ) : (

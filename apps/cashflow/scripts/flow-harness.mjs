@@ -2224,6 +2224,32 @@ function screenshotScenarios(map) {
 function reviewScenarios() {
   return [
     {
+      naam: 'bureau — lege staat per route (leeg document)',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { leeg: true },
+      actie: async (page) => {
+        const routes = [OVERZICHT, '/bureau/projecten', VERKOOP, '/bureau/tijd', KLANTEN, CASH, DOELEN];
+        const uit = [];
+        for (const pad of routes) {
+          if (pad !== OVERZICHT) {
+            await page.locator('nav[aria-label="Bureau"] a', { hasText: { [OVERZICHT]: 'Overzicht', '/bureau/projecten': 'Projecten', [VERKOOP]: 'Verkoop', '/bureau/tijd': 'Tijd', [KLANTEN]: 'Klanten', [CASH]: 'Cash', [DOELEN]: 'Doelen' }[pad] }).click();
+            await page.waitForURL(`${BASE}${pad}`, { timeout: 10_000 });
+            await page.waitForSelector('[data-bureau-page] h2', { timeout: 10_000 });
+          }
+          const r = await page.evaluate(() => {
+            const leeg = [...document.querySelectorAll('[data-empty-state]')];
+            const knoppen = [...document.querySelectorAll('[data-bureau-page] button, [data-bureau-page] a')].filter((el) => !el.closest('nav'));
+            return { leeg: leeg.length, actieInLeeg: leeg.reduce((n, el) => n + el.querySelectorAll('a, button').length, 0), actiesOpPagina: knoppen.length };
+          });
+          uit.push({ pad, ...r });
+        }
+        const fout = uit.filter((x) => x.leeg !== 1);
+        if (fout.length) throw new Error(fout.map((x) => `${x.pad}: ${x.leeg} lege staten`).join(' · '));
+        return { ok: true, bewijs: uit.map((x) => `${x.pad.replace('/bureau', '') || '/'} 1 (actie erin ${x.actieInLeeg})`).join(' · ') };
+      },
+    },
+    {
       naam: 'projecten — zonder mijlpalen geen € 0, in de tabel en op de detailpagina',
       pad: '/bureau/projecten',
       wachtOp: 'bureau',
@@ -2352,6 +2378,7 @@ function reviewScenarios() {
  */
 function reviewTegenproeven() {
   const defect = {
+    'bureau — lege staat per route (leeg document)': () => { document.querySelector('[data-empty-state]').remove(); },
     'projecten — zonder mijlpalen geen € 0, in de tabel en op de detailpagina': () => { document.querySelector('[data-project-row="harnas-met"] td[data-onvoldoende]').textContent = '€ 0'; },
     'projecten — datums in Nederlandse notatie, geen yyyy-MM': () => { document.querySelector('[data-project-row]').insertAdjacentText('beforeend', ' 2026-09'); },
     'projecten — hoogstens één primaire knop per sectie op de detailpagina': () => { document.querySelectorAll('article section button').forEach((b) => b.classList.add('bg-primary')); },

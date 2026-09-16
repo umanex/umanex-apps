@@ -51,6 +51,13 @@ const meta = {
     },
     hrStatus: { control: 'select', options: ['idle', 'scanning', 'waiting', 'connected', 'error'] },
     idleGoalType: { control: 'select', options: ['duration', 'distance', 'split', 'watts'] },
+    // De streefwaarde die de ouder vasthoudt. Bewust een tekst-control en géén `options`: dan
+    // zou `scripts/story-axes.mjs` er een variant-as van maken en zou `figma:check` een
+    // component-set met vier assen verwachten waar er twee horen. Een lege waarde betekent
+    // "nog niets gekozen" en laat de picker op zijn standaardstand staan.
+    idleGoalInput: { control: 'text' },
+    idleDurMin: { control: 'text' },
+    idleDurSec: { control: 'text' },
     picking: { control: 'select', options: ['rower', 'hr'] },
     devices: { control: 'object' },
     insets: { control: 'object' },
@@ -82,7 +89,10 @@ const meta = {
     onCancelSelection: () => {},
     idleGoalType: 'duration',
     setIdleGoalType: () => {},
+    idleGoalInput: '',
     setIdleGoalInput: () => {},
+    idleDurMin: '',
+    idleDurSec: '',
     setIdleDurMin: () => {},
     setIdleDurSec: () => {},
     onStart: () => {},
@@ -111,6 +121,18 @@ export const ZonderDoel: Story = {
 /** Afstandsdoel: chips op 2, 5 en 10 km, wielpicker in meters. */
 export const DoelAfstand: Story = {
   args: { idleGoalType: 'distance' },
+};
+
+/**
+ * Het doel van de vorige training, onthouden. De wielpicker staat op 10 km omdat de ouder die
+ * waarde vasthoudt — niet op de standaard 5 km — en de bijbehorende chip licht op.
+ *
+ * Dit is de renderkant van F2: tot 2026-09-16 hield dit component zijn eigen index bij, dus
+ * bij een remount toonde het scherm 5 km terwijl Start 10 km reed. Met een gecontroleerde
+ * picker kan die twee niet meer uit elkaar lopen; deze story is wat dat zichtbaar maakt.
+ */
+export const DoelAfstandOnthouden: Story = {
+  args: { idleGoalType: 'distance', idleGoalInput: '10000' },
 };
 
 /** Splitdoel: chips op 2:00, 2:10 en 2:20 per 500 m. */

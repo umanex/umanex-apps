@@ -6,6 +6,7 @@ import { Badge } from '@umanex/ui/components/ui/badge'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
 import { StatusDropdown } from './StatusDropdown'
+import { PlanBadge } from './plan/PlanBadge'
 import { NextActionBadge } from './NextActionBadge'
 import { NACE_LABEL, leeftijdInJaren } from '@/lib/kbo/universum'
 import type { ItemStatus } from '@/lib/db/schema'
@@ -41,6 +42,8 @@ type ProspectCardProps = {
   onStatusChange: (status: ItemStatus) => void
   /** Opent de contacthistoriek van dit bedrijf. */
   onOpvolging: () => void
+  /** De voorbereidingsacties waaraan dit bedrijf hangt. Leeg = geen merkteken. */
+  planKeys: string[]
 }
 
 /**
@@ -77,6 +80,7 @@ export function ProspectCard({
   vandaag,
   onStatusChange,
   onOpvolging,
+  planKeys,
 }: ProspectCardProps) {
   const codes = (prospect.codes ?? '').split(',').filter(Boolean)
   const jaren = leeftijdInJaren(prospect.opgericht, vandaag)
@@ -175,6 +179,7 @@ export function ProspectCard({
             onStatusChange={onStatusChange}
           />
           <span className="flex items-center gap-2">
+            <PlanBadge keys={planKeys} />
             <NextActionBadge
               datum={prospect.actieDatum}
               omschrijving={prospect.actieOmschrijving}

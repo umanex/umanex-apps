@@ -158,6 +158,125 @@ export const SCHEMA_DDL = `
     leads_updated INTEGER NOT NULL DEFAULT 0,
     source_statuses TEXT NOT NULL DEFAULT '{}'
   );
+
+  -- Het bedrijfsplan 2027. De sleutel is de code uit de opdracht (A01, B01, START) en geen
+  -- autoincrement: de opdracht, de export en de gebruiker spreken in die codes, en een
+  -- herstart of een tweede seed-run mag er nooit een tweede A01 naast zetten.
+  --
+  -- Geen FOREIGN KEY, net als de rest van dit schema: de :memory:-suites zetten geen
+  -- PRAGMA foreign_keys, dus een gedrag dat alleen in productie bestaat zou ongetoetst
+  -- blijven. 'verwijderActie' ruimt de kanten en de koppelingen zelf op.
+  --
+  -- 'versie' is de enige optimistic lock in deze app. Reden: dit is het eerste model waar
+  -- twee schermen (het plan en een geopend paneel) dezelfde rij bewerken, en een stille
+  -- overschrijving kost hier bewijs in plaats van een statusje.
+  CREATE TABLE IF NOT EXISTS plan_actions (
+    key TEXT PRIMARY KEY,
+    titel TEXT NOT NULL,
+    prioriteit INTEGER NOT NULL,
+    volgorde INTEGER NOT NULL,
+    beschrijving TEXT,
+    resultaat TEXT,
+    status TEXT NOT NULL DEFAULT 'niet_gestart',
+    volgende_stap TEXT,
+    gereedcriterium TEXT,
+    bewijs TEXT,
+    afgerond_op TEXT,
+    -- NULL is onbekend, nooit 0: een inschatting van nul uren bestaat niet, en 0 zou in
+    -- elke som meetellen alsof het gemeten was.
+    inschatting_uren REAL,
+    resterend_uren REAL,
+    eigenaar TEXT NOT NULL DEFAULT 'Jeroen',
+    streefdatum TEXT,
+    wachtreden TEXT,
+    herbekijk_op TEXT,
+    links TEXT NOT NULL DEFAULT '[]',
+    -- Wat er al bestaat buiten de app om: "er is een conceptaanbod". Bewust niet hetzelfde
+    -- als bewijs -- context zegt waar je vertrekt, bewijs zegt dat je klaar bent.
+    context TEXT,
+    focus_uitzondering TEXT,
+    start_uitzondering TEXT,
+    bron TEXT NOT NULL DEFAULT 'eigen',
+    versie INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS plan_actions_prioriteit_idx ON plan_actions (prioriteit, volgorde);
+
+  -- Afhankelijkheden als kanten, niet als lijst in een kolom. "Geblokkeerd" wordt hieruit
+  -- afgeleid en nergens opgeslagen: een opgeslagen blokkade veroudert stil zodra de andere
+  -- actie van status wisselt.
+  CREATE TABLE IF NOT EXISTS plan_dependencies (
+    action_key TEXT NOT NULL,
+    depends_on_key TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (action_key, depends_on_key)
+  );
+
+  CREATE INDEX IF NOT EXISTS plan_dependencies_depends_idx ON plan_dependencies (depends_on_key);
+
+  -- Beslismomenten B01-B03 en het startbesluit (soort 'start'). "Klaar voor beoordeling" is
+  -- afgeleid uit de gekoppelde acties; beslissing en beslist_op worden uitsluitend door de
+  -- gebruiker geschreven. Alle acties gereed betekent dat er iets te beoordelen valt, niet
+  -- dat het goedgekeurd is.
+  CREATE TABLE IF NOT EXISTS plan_decisions (
+    key TEXT PRIMARY KEY,
+    soort TEXT NOT NULL,
+    volgorde INTEGER NOT NULL,
+    titel TEXT NOT NULL,
+    vraag TEXT,
+    acties TEXT NOT NULL DEFAULT '[]',
+    beslissing TEXT,
+    beslist_op TEXT,
+    onderbouwing TEXT,
+    vervolgacties TEXT,
+    versie INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  -- Ideeen staan buiten het plan tot je ze opneemt. Daarom een eigen tabel en geen actie met
+  -- een status erbij: een idee dat als actie bestaat, telt mee in elke telling.
+  CREATE TABLE IF NOT EXISTS plan_ideas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titel TEXT NOT NULL,
+    notitie TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    opgenomen_als TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  -- Koppeling naar bedrijven via dezelfde polymorfe sleutel als contact_moments, om dezelfde
+  -- reden: companies draagt geen ondernemingsnummer. Geen kopie van bedrijfsgegevens -- de
+  -- naam wordt bij het lezen opgezocht, zodat er geen tweede registratie ontstaat.
+  CREATE TABLE IF NOT EXISTS plan_links (
+    action_key TEXT NOT NULL,
+    subject_type TEXT NOT NULL,
+    subject_key TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (action_key, subject_type, subject_key)
+  );
+
+  CREATE INDEX IF NOT EXISTS plan_links_subject_idx ON plan_links (subject_type, subject_key);
+
+  -- De wijzigingen die ertoe doen: status, afhankelijkheden, gereedcriterium, bewijs,
+  -- beslissingen en de uitzonderingen op de focusregel. Geen cascade bij verwijderen: een
+  -- verwijderde eigen actie laat zijn spoor na, anders verdwijnt juist de uitleg.
+  CREATE TABLE IF NOT EXISTS plan_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    onderwerp_type TEXT NOT NULL,
+    onderwerp_key TEXT NOT NULL,
+    veld TEXT NOT NULL,
+    oud TEXT,
+    nieuw TEXT,
+    reden TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS plan_history_onderwerp_idx
+    ON plan_history (onderwerp_type, onderwerp_key, id);
 `
 
 type ColInfo = { name: string }

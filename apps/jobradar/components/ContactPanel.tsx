@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -26,6 +26,13 @@ type ContactPanelProps = {
   vandaag: string
   /** De lijst mag zijn eigen status bijwerken zodra een contactmoment die verzet. */
   onStatusChange?: (status: string) => void
+  /**
+   * De koppeling met het voorbereidingsplan, als slot.
+   *
+   * Een slot en geen import: dit paneel weet niets van het plan, en zou er anders van gaan
+   * afhangen voor een sectie die er los naast staat.
+   */
+  planSectie?: ReactNode
 }
 
 const KANAAL_LABEL: Record<string, string> = {
@@ -53,6 +60,7 @@ export function ContactPanel({
   naam,
   vandaag,
   onStatusChange,
+  planSectie,
 }: ContactPanelProps) {
   const [momenten, setMomenten] = useState<ContactMoment[]>([])
   const [actie, setActie] = useState<NextAction | null>(null)
@@ -318,6 +326,13 @@ export function ContactPanel({
             {actie ? 'Bijwerken' : 'Bewaren'}
           </Button>
         </section>
+
+        {planSectie && (
+          <section className="space-y-2 border-t pt-4">
+            <h3 className="text-sm font-semibold">Voorbereidingsplan</h3>
+            {planSectie}
+          </section>
+        )}
       </SheetContent>
     </Sheet>
   )

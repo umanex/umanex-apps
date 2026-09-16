@@ -7,6 +7,35 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
 
 ## Open
 
+- [ ] `feature`: **Bewijs met een bestand in plaats van alleen tekst en een link.** Het
+      bedrijfsplan bewaart bij het afronden een tekst en optioneel een URL. De opdracht van
+      2026-09-16 noemde bestandsupload expliciet niet verplicht "als dat nog niet bestaat", en
+      het bestaat niet: deze app heeft geen auth en geen uploadroute, en die twee horen bij
+      elkaar (zie de kop van `scripts/prospects-import.mjs`). Pas relevant wanneer bewijs
+      vaker een document dan een verwijzing is. (bedrijfsplan 2026-09-16)
+- [ ] `feature`: **Een herinnering wanneer een herbekijkdatum verstrijkt.** Een uitgestelde
+      actie met een verstreken `herbekijk_op` krijgt nu een badge in de lijst, en verder
+      niets. Er is geen serverproces en geen mailkanaal in deze app, en de opdracht verbood
+      achtergrondautomatisering zonder concrete noodzaak. Zichtbaar-bij-openen is bewust het
+      niveau; als dat te laat blijkt, is dít het item. (bedrijfsplan 2026-09-16)
+- [ ] `ui`: **Een volgende-actie-badge op de leadkaart.** `ProspectCard` toont
+      `NextActionBadge`, `LeadCard` niet — de `Company`-rijen dragen geen `actieDatum`, want
+      die komt uit een aparte query die alleen voor prospects draait. Sinds leads een
+      Opvolging-knop hebben, is het verschil zichtbaar geworden. Vraagt een join op
+      `next_actions` in `app/page.tsx`. (bedrijfsplan 2026-09-16)
+- [ ] `ui`: **De naam van een gekoppelde prospect die alleen in de KBO-spiegel bestaat.**
+      `leesKoppelingenPerBedrijf` zoekt namen op in `companies` en `csv_prospects`; een
+      prospect die enkel uit de spiegel komt, toont zijn ondernemingsnummer. Bewust: de
+      spiegel is een apart databasebestand dat kan ontbreken, en een naam uit een cache die
+      er morgen niet meer is, is erger dan een zichtbaar nummer. Oplosbaar door de opzoeking
+      in `app/plan/page.tsx` te laten lopen, waar `koppelBedrijven` al gebruikt wordt.
+      (bedrijfsplan 2026-09-16)
+- [ ] `feature`: **Een bord- of tijdlijnweergave voor het plan.** De opdracht liet dit toe
+      "als die duidelijk helpt en bij de bestaande app past". Op 22 acties met vier
+      prioriteitsgroepen helpt een lijst met filters meer dan een bord, en jobradar heeft
+      nergens drag-and-drop. Pas overwegen wanneer het plan structureel groter wordt.
+      (bedrijfsplan 2026-09-16)
+
 - [ ] `ui`: **Segmented control naar `packages/ui`.** `components/HerkomstFilter.tsx` is een
       lokale primitive in app-code, tegen de regel in `CLAUDE.md` → Design-systeem-bron. De
       reden is gemeten en klopt — `packages/ui/scripts/figma-sync-check.mjs:136` faalt op een

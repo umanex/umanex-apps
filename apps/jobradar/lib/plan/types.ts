@@ -19,7 +19,7 @@ import type {
 import { ACTIE_STATUSSEN } from '../db/schema'
 import type { Prioriteit } from './seed-inhoud'
 
-export type { ActieBron, ActieStatus, BeslissingSoort, IdeeStatus, Prioriteit }
+export type { ActieBron, ActieStatus, BeslissingSoort, IdeeStatus, PlanIdee, Prioriteit }
 export { ACTIE_STATUSSEN }
 
 export const STATUS_LABEL: Record<ActieStatus, string> = {

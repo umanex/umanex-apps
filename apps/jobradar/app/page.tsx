@@ -4,6 +4,7 @@ import * as schema from '@/lib/db/schema'
 import { DashboardClient } from '@/components/DashboardClient'
 import { berekenDekking } from '@/lib/coverage'
 import { koppelBedrijven } from '@/lib/kbo/spiegel'
+import { leesKoppelingenPerBedrijf } from '@/lib/plan/lees'
 import type { RegionCode } from '@/lib/regions'
 
 export const dynamic = 'force-dynamic'
@@ -33,6 +34,10 @@ export default async function HomePage() {
     koppelBedrijven(companies.map((c) => ({ naam: c.companyName, regio: c.region as RegionCode })))
   )
 
+  // Welke bedrijven aan een voorbereidingsactie hangen. Eén kleine query; de kaart toont er
+  // een merkteken mee en hoeft er niets voor op te halen.
+  const koppelingen = leesKoppelingenPerBedrijf(db)
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <DashboardClient
@@ -41,6 +46,7 @@ export default async function HomePage() {
         previousSyncAt={previousSyncAt}
         dekking={dekking}
         vermoedens={vermoedens}
+        koppelingen={koppelingen}
       />
     </main>
   )

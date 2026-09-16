@@ -12,6 +12,7 @@ import {
 } from '@umanex/ui/components/ui/tooltip'
 import { ScoreBadge } from './ScoreBadge'
 import { StatusDropdown } from './StatusDropdown'
+import { PlanBadge } from './plan/PlanBadge'
 import type { Company, ItemStatus } from '@/lib/db/schema'
 import type { KboVermoeden } from '@/lib/kbo/spiegel'
 
@@ -29,9 +30,21 @@ type LeadCardProps = {
   onStatusChange: (status: ItemStatus) => void
   /** Springt naar het Vacatures-tabblad met dit bedrijf als zoekterm. */
   onToonVacatures: (bedrijf: string) => void
+  /** Opent het opvolgingspaneel. De API kende leads al; de kaart had de knop niet. */
+  onOpvolging: () => void
+  /** De voorbereidingsacties waaraan dit bedrijf hangt. Leeg = geen merkteken. */
+  planKeys: string[]
 }
 
-export function LeadCard({ company, vermoeden, isNew, onStatusChange, onToonVacatures }: LeadCardProps) {
+export function LeadCard({
+  company,
+  vermoeden,
+  isNew,
+  onStatusChange,
+  onToonVacatures,
+  onOpvolging,
+  planKeys,
+}: LeadCardProps) {
   const signals = JSON.parse(company.signals) as string[]
   const breakdown = JSON.parse(company.scoreBreakdown) as Record<string, number>
   const hasBreakdown = Object.keys(breakdown).length > 0
@@ -137,12 +150,22 @@ export function LeadCard({ company, vermoeden, isNew, onStatusChange, onToonVaca
             </a>
           )}
         </div>
-        <div className="mt-2 border-t pt-2">
+        <div className="mt-2 flex items-center justify-between gap-2 border-t pt-2">
           <StatusDropdown
             endpoint={`/api/leads/${company.id}`}
             status={company.leadStatus as ItemStatus}
             onStatusChange={onStatusChange}
           />
+          <span className="flex items-center gap-2">
+            <PlanBadge keys={planKeys} />
+            <button
+              type="button"
+              onClick={onOpvolging}
+              className={cn('rounded-md border px-2 py-1 text-2xs', focusRing)}
+            >
+              Opvolging
+            </button>
+          </span>
         </div>
       </CardContent>
     </Card>

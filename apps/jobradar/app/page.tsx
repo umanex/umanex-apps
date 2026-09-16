@@ -4,11 +4,23 @@ import * as schema from '@/lib/db/schema'
 import { DashboardClient } from '@/components/DashboardClient'
 import { berekenDekking } from '@/lib/coverage'
 import { koppelBedrijven } from '@/lib/kbo/spiegel'
+import { leesKoppelingenPerBedrijf } from '@/lib/plan/lees'
 import type { RegionCode } from '@/lib/regions'
 
 export const dynamic = 'force-dynamic'
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  /**
+   * `?tab=leads&zoek=Acme` — de sprong vanuit een gekoppeld bedrijf in het bedrijfsplan.
+   *
+   * Server-side gelezen en als beginwaarde doorgegeven, niet via `useSearchParams`: dat zou
+   * een Suspense-grens vragen rond een client-component die al de hele pagina is.
+   */
+  searchParams: Promise<{ tab?: string; zoek?: string }>
+}) {
+  const { tab, zoek } = await searchParams
   const db = getDb()
   const [jobs, companies, syncRuns] = await Promise.all([
     db.query.jobs.findMany({ orderBy: (j, { desc: d }) => [d(j.score)] }),
@@ -33,6 +45,10 @@ export default async function HomePage() {
     koppelBedrijven(companies.map((c) => ({ naam: c.companyName, regio: c.region as RegionCode })))
   )
 
+  // Welke bedrijven aan een voorbereidingsactie hangen. Eén kleine query; de kaart toont er
+  // een merkteken mee en hoeft er niets voor op te halen.
+  const koppelingen = leesKoppelingenPerBedrijf(db)
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <DashboardClient
@@ -41,6 +57,9 @@ export default async function HomePage() {
         previousSyncAt={previousSyncAt}
         dekking={dekking}
         vermoedens={vermoedens}
+        koppelingen={koppelingen}
+        initialTab={tab ?? null}
+        initialZoek={zoek ?? null}
       />
     </main>
   )

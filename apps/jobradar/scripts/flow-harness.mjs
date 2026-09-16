@@ -35,7 +35,7 @@
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -47,10 +47,22 @@ const SELFTEST = args.includes('--selftest');
 const HEADED = args.includes('--headed');
 const SHOT = args.find((a) => a.startsWith('--shot='))?.slice(7) ?? null;
 const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3103);
+// Eén extra opname op een smallere breedte, alleen bij --shot. Bewust géén tweede
+// meetronde: de BACKLOG verwierp meten op meerdere viewports (jobradar is een
+// desktop-triagescherm), maar één beeld om te kunnen kíjken is iets anders dan een as
+// die rood kan worden.
+const SMAL = Number(args.find((a) => a.startsWith('--smal='))?.slice(7) ?? 0);
+// Waar de smalle breedte een ÉIS is en niet alleen een beeld. Het dashboard is een vastgelegd
+// desktop-doelwit (`BACKLOG.md`: "mobiel is voor jobradar geen doelwit") en loopt met echte
+// vacaturedata over op 400 px — gemeten 2026-09-16: 756 px, opgeteld uit de titels in `JobCard`,
+// die `truncate` dragen zonder `min-w-0` en dus niet krimpen. Dat rood laten staan zou de harness
+// elke run rood maken om een reden die allang aanvaard is, en dan leert iedereen rood te lezen als
+// ruis. De andere routes krijgen hun opname en een notitie; alleen `/plan` faalt erop.
+const SMAL_ROUTES = ['/plan'];
 const BASE = `http://127.0.0.1:${PORT}`;
 
 /** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
-const ROUTES = ['/', '/instellingen'];
+const ROUTES = ['/', '/instellingen', '/plan'];
 
 const fails = [];
 const notes = [];
@@ -217,6 +229,34 @@ async function main() {
   };
   const gedeeldVoor = buildId(gedeeld);
 
+  // `next build` met een eigen NEXT_DIST_DIR herschrijft twee GETRACKTE bestanden zodat ze
+  // naar díe build-map wijzen: `next-env.d.ts` en `tsconfig.json`. Deze harness is een
+  // meetinstrument, en een instrument dat de bron muteert waaruit je commit, legt die
+  // mutatie vast in je volgende commit. Gemeten 2026-09-16: twee probe-runs lieten
+  // `next-env.d.ts` naar `.next-planprobe` wijzen in een verder schone tree.
+  //
+  // Inhoud bewaren en terugzetten, niet `git checkout`: dat laatste zou een échte
+  // openstaande wijziging aan tsconfig.json weggooien.
+  const BRONBESTANDEN = ['next-env.d.ts', 'tsconfig.json'];
+  const bewaard = new Map();
+  for (const naam of BRONBESTANDEN) {
+    try {
+      bewaard.set(naam, readFileSync(join(APP, naam), 'utf8'));
+    } catch {
+      /* bestaat niet — dan valt er ook niets te herstellen */
+    }
+  }
+  const herstelBronbestanden = () => {
+    for (const [naam, inhoud] of bewaard) {
+      try {
+        if (readFileSync(join(APP, naam), 'utf8') !== inhoud) writeFileSync(join(APP, naam), inhoud);
+      } catch {
+        /* onleesbaar of weg; niets te doen */
+      }
+    }
+  };
+  process.on('exit', herstelBronbestanden);
+
   console.log(`→ Verse build in ${DIST}`);
   await run('npx', ['next', 'build'], { env });
 
@@ -293,6 +333,29 @@ async function main() {
       const file = resolve(process.cwd(), `${SHOT}/${name}.png`);
       await page.screenshot({ path: file, fullPage: true });
       ok(`render vastgelegd: ${file}`);
+
+      if (SMAL) {
+        await page.setViewportSize({ width: SMAL, height: 900 });
+        await page.waitForTimeout(300);
+        const smalFile = resolve(process.cwd(), `${SHOT}/${name}-${SMAL}.png`);
+        await page.screenshot({ path: smalFile, fullPage: true });
+        // Horizontaal scrollen is het defect dat een smalle opname hoort te vangen, en het
+        // is meetbaar — dus meten we het in plaats van er alleen naar te kijken.
+        const breed = await page.evaluate(() => ({
+          scroll: document.documentElement.scrollWidth,
+          client: document.documentElement.clientWidth,
+        }));
+        const teBreed = breed.scroll > breed.client + 1;
+        if (teBreed && SMAL_ROUTES.includes(route)) {
+          fail(`${route} op ${SMAL}px: scrollWidth ${breed.scroll} > ${breed.client} — horizontale scrollbalk`);
+        } else if (teBreed) {
+          notes.push(`${route} op ${SMAL}px: ${breed.scroll} > ${breed.client} — loopt over, maar deze route is geen smal doelwit`);
+        } else {
+          ok(`${route} op ${SMAL}px: geen horizontale overloop (${breed.scroll} ≤ ${breed.client})`);
+        }
+        await page.setViewportSize({ width: 1280, height: 720 });
+        await page.waitForTimeout(300);
+      }
     }
   }
 
@@ -756,6 +819,86 @@ async function main() {
             }
           }
         }
+      }
+    }
+  }
+
+  console.log('→ Bedrijfsplan');
+  {
+    await page.goto(BASE + '/plan', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+
+    // Het tabblad Acties: eigen kopstructuur en eigen tab-volgorde. Radix ontkoppelt de
+    // inactieve panelen, dus dit is echt een ander DOM-oppervlak dan het overzicht.
+    const actiesTab = page.locator('[role="tab"]', { hasText: 'Acties' }).first();
+    if (!(await actiesTab.count())) {
+      fail('plan: geen tabblad Acties gevonden');
+    } else {
+      await actiesTab.click();
+      await page.waitForTimeout(400);
+
+      // Ankeren op wat een actierij ís — een `li` met een status-select — en niet op elke
+      // `li`: de blokkade-chips zitten óók in lijstitems, en die telling gaf 40 waar er 22
+      // acties zijn. Een getal dat toevallig boven de grens uitkomt, meet niets.
+      const rijen = await page.locator('[role="tabpanel"]:visible li:has(select)').count();
+      if (rijen !== 22) fail(`plan: ${rijen} actierijen in de DOM, precies 22 verwacht`);
+      else ok(`plan: ${rijen} actierijen in de DOM`);
+
+      const koppen = await kopstructuur(page);
+      if (koppen.problemen.length) for (const p of koppen.problemen) fail(`plan/acties kopstructuur: ${p}`);
+      else ok(`plan/acties kopstructuur: ${koppen.aantal} koppen, niveaus ${koppen.niveaus.map((n) => 'h' + n).join(' → ')}`);
+
+      const tb = await toetsenbord(page);
+      if (tb.problemen.length) for (const p of tb.problemen) fail(`plan/acties toetsenbord: ${p}`);
+      else ok(`plan/acties toetsenbord: ${tb.stops} stops, elk met zichtbare focus`);
+
+      // Het paneel. Twee dingen die alleen hier te meten zijn: het is een dialog (en dus
+      // geen inline uitklapping die de lijst uit elkaar duwt), en de lijst blijft staan.
+      const voor = await page.locator('[role="tabpanel"]:visible li:has(select)').count();
+      const titel = page.locator('[role="tabpanel"]:visible li button').first();
+      if (!(await titel.count())) {
+        fail('plan: geen actietitel om aan te klikken');
+      } else {
+        await titel.click();
+        await page.waitForTimeout(600);
+
+        const dialogen = await page.locator('[role="dialog"]').count();
+        if (dialogen !== 1) fail(`plan: ${dialogen} dialog(s) na het openen van een actie, verwacht 1`);
+        else ok('plan: het actiepaneel opent als dialog');
+
+        const na = await page.locator('[role="tabpanel"]:visible li:has(select)').count();
+        if (na !== voor) fail(`plan: de actielijst veranderde van ${voor} naar ${na} rijen bij het openen`);
+        else ok(`plan: de actielijst blijft staan (${voor} → ${na})`);
+
+        const tbPaneel = await toetsenbord(page, 40);
+        if (tbPaneel.problemen.length) for (const p of tbPaneel.problemen) fail(`plan-paneel toetsenbord: ${p}`);
+        else ok(`plan-paneel toetsenbord: ${tbPaneel.stops} stops, elk met zichtbare focus`);
+
+        // De focusval apart, en NIET als vervolg op de pass hierboven: die begint en eindigt
+        // op `document.body` om het vertrekpunt te resetten, dus `activeElement` erna zegt
+        // iets over de opruiming van de harness en niets over het paneel. Gemeten 2026-09-16:
+        // die vorm meldde "de focus liep het paneel uit" terwijl de val gewoon werkte.
+        // Hier focussen we het láátste element in het paneel en tabben één keer: blijft de
+        // focus dan binnen, dan is de val echt.
+        const stops = page.locator('[role="dialog"] button, [role="dialog"] input, [role="dialog"] select, [role="dialog"] textarea, [role="dialog"] summary');
+        const aantal = await stops.count();
+        if (aantal === 0) {
+          fail('plan-paneel: geen enkel bedienbaar element in het paneel');
+        } else {
+          await stops.nth(aantal - 1).focus();
+          await page.keyboard.press('Tab');
+          const binnen = await page.evaluate(() =>
+            document.querySelector('[role="dialog"]')?.contains(document.activeElement) ?? false
+          );
+          if (!binnen) fail('plan-paneel: na de laatste stop loopt de focus het paneel uit');
+          else ok(`plan-paneel: de focus blijft binnen het paneel (${aantal} bedienbare elementen)`);
+        }
+
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(400);
+        const dicht = await page.locator('[role="dialog"]').count();
+        if (dicht !== 0) fail('plan-paneel: Escape sluit het paneel niet');
+        else ok('plan-paneel: Escape sluit het paneel');
       }
     }
   }

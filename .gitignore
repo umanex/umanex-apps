@@ -5,6 +5,10 @@ node_modules
 .next
 .next-harness
 .next-dev
+# Wegwerp-builds van de HTTP-probes. Stonden hier niet, en `next build` schrijft ze in de
+# app-map — één `git add -A` en de hele build zat in een commit.
+.next-apiprobe
+.next-planprobe
 .turbo
 dist
 storybook-static

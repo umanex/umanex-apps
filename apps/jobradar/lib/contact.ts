@@ -35,6 +35,17 @@ function echteDatum(s: string): boolean {
 }
 
 /**
+ * Patroon én kalender in één controle, voor wie een datum keurt buiten deze module.
+ *
+ * Bestaat omdat `lib/plan/keuring.ts` dezelfde vraag stelt over streefdatum, herbekijkdatum
+ * en afrondingsdatum. Een tweede kalendercontrole ernaast zou stil uiteen kunnen lopen met
+ * deze; dat is precies hoe `2026-02-30` er ergens tóch in komt.
+ */
+export function isEchteIsoDatum(s: string): boolean {
+  return ISO_DATUM.test(s) && echteDatum(s)
+}
+
+/**
  * Keurt de invoer voor één contactmoment.
  *
  * Een datum in het verleden mag: je legt achteraf vast wat je vorige week deed. Een datum

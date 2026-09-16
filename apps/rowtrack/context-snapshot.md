@@ -70,16 +70,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+360eb23 feat(ui): Textarea and NativeSelect, with their Figma pages and a manifest recipe that matches the guard
+0b5c062 ci(rowtrack): baseline the new frame on linux, where the guard actually runs
 2fa4e27 feat(rowtrack): build the blocked-consent frame in Figma, and put every frame back on its slot
 8e313f7 chore(rowtrack): refresh the Figma manifest so the publication axis can measure again
 68b09e6 feat(rowtrack): add the blocked-consent state as a screen frame
-3591668 docs(rowtrack): point the Figma mapping at the generated sources, and record the design study
-18fd998 chore(rowtrack): re-derive the Figma artefacts and prove nothing moved
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/figma/beeld-basislijn.json
-   M packages/ui/CLAUDE.md
+  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

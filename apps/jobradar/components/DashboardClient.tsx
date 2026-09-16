@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
 import { cn } from '@umanex/ui/lib/utils'
@@ -15,6 +16,7 @@ import { ProspectCard, type Prospect } from './ProspectCard'
 import { HerkomstFilter } from './HerkomstFilter'
 import { ProspectMap } from './ProspectMap'
 import { ContactPanel } from './ContactPanel'
+import { PlanKoppeling } from './plan/PlanKoppeling'
 import { Button } from '@umanex/ui/components/ui/button'
 import { Checkbox } from '@umanex/ui/components/ui/checkbox'
 import { Label } from '@umanex/ui/components/ui/label'
@@ -26,7 +28,7 @@ import {
   type Sortering,
   type UiFilter,
 } from '@/lib/kbo/universum'
-import type { Job, Company, ItemStatus } from '@/lib/db/schema'
+import type { Job, Company, ItemStatus, SubjectType } from '@/lib/db/schema'
 import { normaliseerBedrijf } from '@/lib/matching'
 import type { RegionCode } from '@/lib/regions'
 import type { Dekking } from '@/lib/coverage'
@@ -38,6 +40,17 @@ type DashboardClientProps = {
   dekking: Dekking
   /** Bedrijfsnaam → wat KBO er vermoedelijk over zegt. Leeg zonder spiegel. */
   vermoedens: Record<string, KboVermoeden>
+  /**
+   * `lead:12` of `prospect:0747501103` → de voorbereidingsacties waaraan dat bedrijf hangt.
+   *
+   * Server-side geladen en als prop doorgegeven, niet in state: na een koppeling doet het
+   * paneel `router.refresh()` en komt deze map vanzelf bijgewerkt terug. Een kopie in state
+   * zou daarna de oude waarde tonen.
+   */
+  koppelingen: Record<string, string[]>
+  /** Beginwaarden uit de querystring, voor de sprong vanuit het bedrijfsplan. */
+  initialTab: string | null
+  initialZoek: string | null
 }
 
 const ALL_REGIONS: RegionCode[] = ['WVL', 'OVL', 'BRU']
@@ -48,15 +61,21 @@ export function DashboardClient({
   previousSyncAt,
   dekking,
   vermoedens,
+  koppelingen,
+  initialTab,
+  initialZoek,
 }: DashboardClientProps) {
   const [jobs, setJobs] = useState(initialJobs)
   const [companies, setCompanies] = useState(initialCompanies)
   const [regions, setRegions] = useState<RegionCode[]>(ALL_REGIONS)
+  const router = useRouter()
   const [minScore, setMinScore] = useState(0)
   const [statusFilter, setStatusFilter] = useState<ItemStatus | ''>('')
-  const [zoek, setZoek] = useState('')
+  const [zoek, setZoek] = useState(initialZoek ?? '')
   // Controlled, want de doorklik vanaf een lead moet het tabblad kunnen zetten.
-  const [tab, setTab] = useState('jobs')
+  const [tab, setTab] = useState(
+    initialTab === 'leads' || initialTab === 'prospects' ? initialTab : 'jobs'
+  )
   // Onthouden of de huidige zoekterm van een doorklik komt: dan verdient een lege lijst
   // een andere uitleg dan een gewone mistreffer.
   const [viaLead, setViaLead] = useState(false)
@@ -83,7 +102,15 @@ export function DashboardClient({
   // filter erboven er niet voor gelden.
   const [weergave, setWeergave] = useState<'lijst' | 'kaart'>('lijst')
   // Welk bedrijf staat open in het opvolgingspaneel. Null = dicht.
-  const [opvolging, setOpvolging] = useState<{ nummer: string; naam: string } | null>(null)
+  //
+  // Draagt sinds het bedrijfsplan ook het sóórt bedrijf. De opvolging-API kende `lead` al
+  // volledig; alleen de kaartlijst gaf hem nooit door, waardoor de historiek van een lead
+  // onbereikbaar was vanaf het scherm dat hem toont.
+  const [opvolging, setOpvolging] = useState<{
+    type: SubjectType
+    key: string
+    naam: string
+  } | null>(null)
   // CSV-rijen zonder KBO-tegenhanger. Ze kunnen niet in de lijst staan; ze worden gemeld.
   const [zonderKbo, setZonderKbo] = useState(0)
   // Ongefilterd rijaantal in csv_prospects: onderscheidt "nog niets geïmporteerd" van
@@ -223,6 +250,15 @@ export function DashboardClient({
           <h1 className="text-xl font-semibold tracking-tight">JobRadar</h1>
           <div className="flex items-center gap-4">
             <Link
+              href="/plan"
+              className={cn(
+                'rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground',
+                focusRing
+              )}
+            >
+              Bedrijfsplan
+            </Link>
+            <Link
               href="/instellingen"
               className={cn(
                 'rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground',
@@ -332,7 +368,15 @@ export function DashboardClient({
                     vermoeden={vermoedens[company.companyName] ?? null}
                     isNew={company.firstSeenAt >= previousSyncAt}
                     onStatusChange={(status) => handleLeadStatusChange(company.id, status)}
-                onToonVacatures={toonVacaturesVan}
+                    onToonVacatures={toonVacaturesVan}
+                    onOpvolging={() =>
+                      setOpvolging({
+                        type: 'lead',
+                        key: String(company.id),
+                        naam: company.companyName,
+                      })
+                    }
+                    planKeys={koppelingen[`lead:${company.id}`] ?? []}
                   />
                 ))}
               </div>
@@ -482,7 +526,10 @@ export function DashboardClient({
                     heeftVacatures={leadNummers.has(p.nummer)}
                     vandaag={vandaag}
                     onStatusChange={(status) => handleProspectStatusChange(p.nummer, status)}
-                    onOpvolging={() => setOpvolging({ nummer: p.nummer, naam: p.naam })}
+                    onOpvolging={() =>
+                      setOpvolging({ type: 'prospect', key: p.nummer, naam: p.naam })
+                    }
+                    planKeys={koppelingen[`prospect:${p.nummer}`] ?? []}
                   />
                 ))}
               </div>
@@ -520,12 +567,23 @@ export function DashboardClient({
           <ContactPanel
             open
             onOpenChange={(o) => !o && setOpvolging(null)}
-            type="prospect"
-            subjectKey={opvolging.nummer}
+            type={opvolging.type}
+            subjectKey={opvolging.key}
             naam={opvolging.naam}
             vandaag={vandaag}
-            onStatusChange={(status) =>
-              handleProspectStatusChange(opvolging.nummer, status as ItemStatus)
+            onStatusChange={(status) => {
+              if (opvolging.type === 'prospect') {
+                handleProspectStatusChange(opvolging.key, status as ItemStatus)
+              } else {
+                handleLeadStatusChange(Number(opvolging.key), status as ItemStatus)
+              }
+            }}
+            planSectie={
+              <PlanKoppeling
+                type={opvolging.type}
+                subjectKey={opvolging.key}
+                onChange={() => router.refresh()}
+              />
             }
           />
         )}

@@ -7,6 +7,111 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
 
 ## Open
 
+- [ ] `ui`: **Het dashboard loopt over op 400 px, en de oorzaak is één ontbrekende klasse.**
+      Gemeten 2026-09-16 met `flow --shot --smal=400` op de echte database: `scrollWidth` 756 tegen
+      400 beschikbaar. De bron is de vacaturetitel in `JobCard.tsx` — `h3.truncate` als flex-item
+      zonder `min-w-0`, dus `min-width: auto` houdt hem op zijn volle tekstbreedte en `truncate`
+      treedt nooit in werking. Dezelfde klasse is op 2026-09-16 in `components/plan/Startvoorwaarden.tsx`
+      opgelost. **Waarom niet nu:** mobiel is een vastgelegd niet-doelwit voor jobradar (zie Verworpen
+      hieronder), dus dit is een aanvaarde toestand en geen regressie; de harness meldt hem nu als
+      notitie in plaats van als fout, zodat rood rood blijft betekenen. **Eerste zet:** `min-w-0` op
+      de `h3` in `JobCard.tsx`, en `/` toevoegen aan `SMAL_ROUTES` in de harness zodat het gemeten
+      blijft. (harness-meting 2026-09-16)
+
+- [ ] `fix`: **Een verwijderde actie blijft als dode key in een beslismoment staan.**
+      `verwijderActie` ruimt kanten en koppelingen op, maar niet de JSON-lijst in
+      `plan_decisions.acties`. `beslismomentStatus` telt die key dan als "niet gereed", dus het
+      beslismoment blijft permanent op *Wacht op acties* staan zonder dat iets aanwijst waarom.
+      Alleen eigen acties zijn verwijderbaar, dus het raakt B01–B03 pas zodra Jeroen er een eigen
+      actie aan koppelt. (finish-review 2026-09-16, P2)
+- [ ] `fix`: **Een hergebruikte key erft de geschiedenis van de verwijderde actie.**
+      `verwijderActie` laat `plan_history` bewust staan — het spoor mag niet verdwijnen met het
+      ding — maar `volgendeVrijeKey` kan diezelfde key opnieuw uitdelen zodra de hoogste eronder
+      ligt, en dan hangt de oude geschiedenis onder een nieuwe actie. Sinds de `E`-reeks bestaat is
+      dit alleen nog mogelijk binnen die reeks. Kleinste fix: de geschiedenis markeren als van een
+      verwijderde actie, of de teller nooit laten dalen. (finish-review 2026-09-16, P2)
+- [ ] `fix`: **Een startuitzondering is permanent en nergens in te trekken.** `start_uitzondering`
+      blijft staan zodra hij gezet is, en `uitvoerbaarheidVan` gebruikt hem voor élke latere zachte
+      blokkade — ook eentje die niets met de oorspronkelijke reden te maken heeft. Een uitzondering
+      die je nam voor A01, machtigt dus stilzwijgend het starten ondanks A09. Er is ook geen knop om
+      hem in te trekken. Overweging: hem wissen zodra de blokkade waarvoor hij gold verdwijnt, of
+      de key waarvoor hij geldt erin opslaan. (finish-review 2026-09-16, P2 + P3)
+- [ ] `fix`: **De harde blokkade geldt alleen bij starten, niet bij afronden.** Een actie die al
+      `bezig` is en waarvan een afhankelijkheid daarna op `vervallen` gaat, kan gewoon op `gereed`
+      gezet worden — `blokkadeVan` wordt alleen geraadpleegd op het pad naar `bezig`. De rij toont
+      het signaal wel. (finish-review 2026-09-16, P2)
+- [ ] `ui`: **Een actie op vervallen zetten blokkeert haar afhankelijken hard, zonder melding op dat
+      moment.** Het paneel vraagt een reden en zet de status; dat de vier acties die eraan hangen
+      daarmee hard geblokkeerd raken tot je elke kant verwijdert of vervangt, staat pas in hun eigen
+      rij. Toon de gevolgen bij de beslissing, niet erna. (finish-review 2026-09-16, P2)
+- [ ] `fix`: **De client herkent een versieconflict aan een regex op de Nederlandse foutzin.**
+      `ActiePanel` en `BeslissingPanel` doen `/intussen elders gewijzigd/.test(fout)` om de
+      Herlaad-knop te tonen, terwijl het antwoord al `conflict: 'versie'` draagt. Eén herformulering
+      van die melding en de knop verdwijnt stil. (finish-review 2026-09-16, P2)
+- [ ] `fix`: **Status-parameters die niet bij de doelstatus horen worden stil weggegooid, mét 200.**
+      Een PATCH met `status: 'bezig'` én `wachtreden` levert 200 terwijl de wachtreden nergens
+      landt — `wijzigStatus` leest hem alleen op de uitgesteld/wacht-takken. Weiger het verzoek of
+      benoem wat er niet is toegepast. (finish-review 2026-09-16, P3)
+- [ ] `fix`: **"Elke PATCH draagt de versie" geldt niet voor de ideeën-route.** `/api/plan/ideeen/[id]`
+      vraagt geen `versie`, anders dan de acties- en beslissingen-routes. Voor een idee is de inzet
+      klein, maar de belofte in de briefing is algemeen. (finish-review 2026-09-16, P3)
+- [ ] `refactor`: **De startvoorwaarden staan in code, het startbesluit draagt zijn lijst in de
+      database.** `HARDE_STARTVOORWAARDEN` in `seed-inhoud.ts` en `plan_decisions.acties` van `START`
+      beginnen gelijk, maar de tweede is bewerkbaar en de eerste niet. Wijzig je de een, dan meet de
+      voetnoot iets anders dan de lijst erboven. (finish-review 2026-09-16, P2)
+- [ ] `ui`: **De koppeling op een bedrijfskaart draagt geen status en vergaat nooit.** `PlanBadge`
+      toont elke gekoppelde actie, ook een afgeronde of vervallen. Na een jaar draagt een kaart
+      merktekens van werk dat allang klaar is. (finish-review 2026-09-16, P2)
+- [ ] `ui`: **Streefdatum en herbekijkdatum zijn invoerbaar maar nergens zichtbaar buiten het
+      paneel.** `ActieRij` toont ze niet, dus een streefdatum die je invult verdwijnt uit beeld —
+      en het acceptatie-item "zonder streefdatum staat er geen datum in een rij" is daarmee
+      tautologisch waar. Of tonen, of het veld weghalen. (finish-review 2026-09-16, P2)
+- [ ] `ui`: **`Overzicht.signalen` en `resterend` worden berekend, meegestuurd en nergens getoond.**
+      Het overzicht krijgt een vlakke lijst signalen die alleen per rij gerenderd wordt, en de
+      resterende inzet staat alleen in het paneel. Of gebruiken, of niet berekenen. (finish-review
+      2026-09-16, P3)
+- [ ] `test`: **De geschiedenis van een beslismoment wordt geschreven en nooit gelezen.**
+      `legBeslissingVast` logt naar `plan_history` met `onderwerp_type: 'beslissing'`, maar
+      `leesActieDetail` filtert op `'actie'` en er is geen leespad voor de andere. (finish-review
+      2026-09-16, P3)
+- [ ] `perf`: **Groei bijt eerst in het scherm, niet in de database.** Elk detailverzoek draait
+      `leidAf` over het hele plan, en `/plan` rendert alle acties in elke groep zonder paginering.
+      Bij 22 acties onmerkbaar; bij 200 acties en duizenden geschiedenisregels niet meer.
+      (finish-review 2026-09-16, P3)
+- [ ] `feature`: **Eén eigenaar zit in de regels, niet alleen in de data.** `eigenaar` is vrije tekst
+      met default "Jeroen", maar de focusregel telt over het hele plan en niet per eigenaar. Zodra
+      er een tweede naam in staat, telt die mee voor Jeroens limiet van drie. (finish-review
+      2026-09-16, P3)
+
+- [ ] `feature`: **Bewijs met een bestand in plaats van alleen tekst en een link.** Het
+      bedrijfsplan bewaart bij het afronden een tekst en optioneel een URL. De opdracht van
+      2026-09-16 noemde bestandsupload expliciet niet verplicht "als dat nog niet bestaat", en
+      het bestaat niet: deze app heeft geen auth en geen uploadroute, en die twee horen bij
+      elkaar (zie de kop van `scripts/prospects-import.mjs`). Pas relevant wanneer bewijs
+      vaker een document dan een verwijzing is. (bedrijfsplan 2026-09-16)
+- [ ] `feature`: **Een herinnering wanneer een herbekijkdatum verstrijkt.** Een uitgestelde
+      actie met een verstreken `herbekijk_op` krijgt nu een badge in de lijst, en verder
+      niets. Er is geen serverproces en geen mailkanaal in deze app, en de opdracht verbood
+      achtergrondautomatisering zonder concrete noodzaak. Zichtbaar-bij-openen is bewust het
+      niveau; als dat te laat blijkt, is dít het item. (bedrijfsplan 2026-09-16)
+- [ ] `ui`: **Een volgende-actie-badge op de leadkaart.** `ProspectCard` toont
+      `NextActionBadge`, `LeadCard` niet — de `Company`-rijen dragen geen `actieDatum`, want
+      die komt uit een aparte query die alleen voor prospects draait. Sinds leads een
+      Opvolging-knop hebben, is het verschil zichtbaar geworden. Vraagt een join op
+      `next_actions` in `app/page.tsx`. (bedrijfsplan 2026-09-16)
+- [ ] `ui`: **De naam van een gekoppelde prospect die alleen in de KBO-spiegel bestaat.**
+      `leesKoppelingenPerBedrijf` zoekt namen op in `companies` en `csv_prospects`; een
+      prospect die enkel uit de spiegel komt, toont zijn ondernemingsnummer. Bewust: de
+      spiegel is een apart databasebestand dat kan ontbreken, en een naam uit een cache die
+      er morgen niet meer is, is erger dan een zichtbaar nummer. Oplosbaar door de opzoeking
+      in `app/plan/page.tsx` te laten lopen, waar `koppelBedrijven` al gebruikt wordt.
+      (bedrijfsplan 2026-09-16)
+- [ ] `feature`: **Een bord- of tijdlijnweergave voor het plan.** De opdracht liet dit toe
+      "als die duidelijk helpt en bij de bestaande app past". Op 22 acties met vier
+      prioriteitsgroepen helpt een lijst met filters meer dan een bord, en jobradar heeft
+      nergens drag-and-drop. Pas overwegen wanneer het plan structureel groter wordt.
+      (bedrijfsplan 2026-09-16)
+
 - [ ] `ui`: **Segmented control naar `packages/ui`.** `components/HerkomstFilter.tsx` is een
       lokale primitive in app-code, tegen de regel in `CLAUDE.md` → Design-systeem-bron. De
       reden is gemeten en klopt — `packages/ui/scripts/figma-sync-check.mjs:136` faalt op een

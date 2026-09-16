@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-09-11_
+_Gegenereerd op 2026-09-16_
 
 ## Project
 - **App:** jobradar
@@ -31,6 +31,22 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | JobCard | `apps/jobradar/components/JobCard.tsx` | components | — | — | — |
 | LeadCard | `apps/jobradar/components/LeadCard.tsx` | components | — | — | — |
 | NextActionBadge | `apps/jobradar/components/NextActionBadge.tsx` | components | — | — | — |
+| Aannames | `apps/jobradar/components/plan/Aannames.tsx` | plan | — | — | — |
+| ActieGroep | `apps/jobradar/components/plan/ActieGroep.tsx` | plan | — | — | — |
+| ActieLijst | `apps/jobradar/components/plan/ActieLijst.tsx` | plan | — | — | — |
+| ActiePanel | `apps/jobradar/components/plan/ActiePanel.tsx` | plan | — | — | — |
+| ActieRij | `apps/jobradar/components/plan/ActieRij.tsx` | plan | — | — | — |
+| Beslismomenten | `apps/jobradar/components/plan/Beslismomenten.tsx` | plan | — | — | — |
+| BeslissingPanel | `apps/jobradar/components/plan/BeslissingPanel.tsx` | plan | — | — | — |
+| Ideeen | `apps/jobradar/components/plan/Ideeen.tsx` | plan | — | — | — |
+| PlanBadge | `apps/jobradar/components/plan/PlanBadge.tsx` | plan | — | — | — |
+| PlanClient | `apps/jobradar/components/plan/PlanClient.tsx` | plan | — | — | — |
+| PlanFilters | `apps/jobradar/components/plan/PlanFilters.tsx` | plan | — | — | — |
+| PlanInstellingenForm | `apps/jobradar/components/plan/PlanInstellingenForm.tsx` | plan | — | — | — |
+| PlanKoppeling | `apps/jobradar/components/plan/PlanKoppeling.tsx` | plan | — | — | — |
+| PlanStatusPill | `apps/jobradar/components/plan/PlanStatusPill.tsx` | plan | — | — | — |
+| Startvoorwaarden | `apps/jobradar/components/plan/Startvoorwaarden.tsx` | plan | — | — | — |
+| VoortgangPerPrioriteit | `apps/jobradar/components/plan/VoortgangPerPrioriteit.tsx` | plan | — | — | — |
 | ProspectCard | `apps/jobradar/components/ProspectCard.tsx` | components | — | — | — |
 | ProspectMap | `apps/jobradar/components/ProspectMap.tsx` | components | — | — | — |
 | RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
@@ -42,15 +58,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-802754f docs(jobradar): prospect classification goes to the backlog instead of merging #327
-2ca664b merge: main into feature/rowtrack-web-premium-redesign
-c0e407d fix(jobradar): the map now draws the active filter, not a fixed set
-d84679f Merge remote-tracking branch 'origin/main' into fix/rowtrack-schermverschillen
-2c970c9 test(ui): add Sheet to the rendered-size baseline
+14e1486 fix(jobradar): keep own actions out of the seed's key space, and stop the finish path losing its evidence link
+3b72ed4 fix(jobradar): make plan:probe able to fail — it printed, it did not test
+a7373f2 fix(jobradar): roll back a refused mutation instead of committing its traces
+02b8329 docs: close the handoff loop backwards — run the checks, act on what they say
+3dfe382 fix(jobradar): stop the verification instruments from dirtying the tree they measure
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/briefings/2026-06-02-feature-status-tracking.tcebc.md
+  M  apps/jobradar/BACKLOG.md
+  M  apps/jobradar/briefings/2026-09-16-feature-bedrijfsplan-2027.tcebc.md
+  M  apps/jobradar/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

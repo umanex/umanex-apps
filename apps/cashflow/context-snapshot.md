@@ -98,24 +98,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4d0112b fix(cashflow): code-review round — realized revenue survives withdrawing an extension, posts never land in a past month
 2e84887 docs(cashflow): word the screenshot item without a build flag
 37c58e4 docs(cashflow): verify path and design-system source for Bureau, acceptance evidence, three backlog items
 ca1dc00 test(cashflow): empty state on every bureau route, and a one-cent reconciliation counter-test
 575d8b1 test(cashflow): static render covers the presentational bureau components
-c9b5f46 fix(cashflow): finish-review round — no € 0 without milestones, cash answer visible on a phone, one-line signals
 ```
 
 ## Uncommitted wijzigingen
    M apps/cashflow/BACKLOG.md
    M apps/cashflow/briefings/2026-09-16-feature-bureau.tcebc.md
-   M apps/cashflow/components/bureau/ExtensionList.tsx
-   M apps/cashflow/components/bureau/ExternalCostList.tsx
-   M apps/cashflow/components/bureau/InvoiceList.tsx
-   M apps/cashflow/components/bureau/InvoiceRow.tsx
-   M apps/cashflow/components/bureau/MilestoneRow.tsx
-   M apps/cashflow/components/bureau/OpportunityDetail.tsx
-   M apps/cashflow/components/bureau/TimeEntryRow.tsx
-  M  apps/cashflow/lib/bureau/format.test.ts
+  M  apps/cashflow/components/bureau/ExtensionList.tsx
+  M  apps/cashflow/components/bureau/ExternalCostList.tsx
+  M  apps/cashflow/components/bureau/InvoiceList.tsx
+  M  apps/cashflow/components/bureau/InvoiceRow.tsx
+  M  apps/cashflow/components/bureau/MilestoneRow.tsx
+  M  apps/cashflow/components/bureau/OpportunityDetail.tsx
+  M  apps/cashflow/components/bureau/TimeEntryRow.tsx
+  M  apps/cashflow/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

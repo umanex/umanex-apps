@@ -114,7 +114,7 @@ export function OpportunityDetail({ opportunityId, onRemoved }: OpportunityDetai
             >
               Ja, {o.company} verwijderen
             </Button>
-            <Button variant="outline" onClick={() => setBevestig(false)}>
+            <Button variant="outline" autoFocus onClick={() => setBevestig(false)}>
               Niet verwijderen
             </Button>
           </div>

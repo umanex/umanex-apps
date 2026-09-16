@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@umanex/ui/components/ui/button';
 import { Checkbox } from '@umanex/ui/components/ui/checkbox';
 import { Input } from '@umanex/ui/components/ui/input';
@@ -29,6 +29,25 @@ export function MilestoneRow({ milestone: m, extension, striped, today, disabled
   const [op, setOp] = useState(m.realizedOn ?? today);
   const [werkelijk, setWerkelijk] = useState(toInputValue(m.realizedAmount));
   const [fout, setFout] = useState<string | null>(null);
+  const bewerkKnop = useRef<HTMLButtonElement>(null);
+  const wasBewerk = useRef(false);
+
+  useEffect(() => {
+    if (wasBewerk.current && !bewerk) bewerkKnop.current?.focus();
+    wasBewerk.current = bewerk;
+  }, [bewerk]);
+
+  // Elke bewerking vertrekt van wat nu opgeslagen staat. Eenmalig bij het monteren vullen liet een
+  // afgevinkte en teruggezette mijlpaal zijn oude realisatiedatum en bedrag terugschrijven.
+  const openBewerk = () => {
+    setLabel(m.label);
+    setMaand(m.plannedMonth);
+    setBedrag(toInputValue(m.amount));
+    setOp(m.realizedOn ?? today);
+    setWerkelijk(toInputValue(m.realizedAmount));
+    setFout(null);
+    setBewerk(true);
+  };
 
   const td = 'px-3 py-2 align-middle';
   const idBasis = `mijlpaal-${m.id}`;
@@ -50,7 +69,7 @@ export function MilestoneRow({ milestone: m, extension, striped, today, disabled
       <tr className={cn('border-b border-border', striped && 'bg-muted')}>
         <td className={td} colSpan={5}>
           <div className="grid gap-3 sm:grid-cols-[1fr_9rem_8rem]">
-            <Input aria-label="Omschrijving" value={label} onChange={(e) => setLabel(e.target.value)} />
+            <Input aria-label="Omschrijving" autoFocus value={label} onChange={(e) => setLabel(e.target.value)} />
             <Input aria-label="Geplande maand" type="month" value={maand} onChange={(e) => setMaand(e.target.value)} />
             <Input aria-label="Gepland bedrag ex btw" inputMode="decimal" className="text-right tabular-nums" value={bedrag} onChange={(e) => setBedrag(e.target.value)} />
             {m.realizedOn !== null && (
@@ -96,7 +115,7 @@ export function MilestoneRow({ milestone: m, extension, striped, today, disabled
         </div>
       </td>
       <td className={cn(td, 'whitespace-nowrap text-right')}>
-        <Button size="sm" variant="ghost" onClick={() => setBewerk(true)} disabled={disabled} aria-label={`Bewerk mijlpaal ${m.label}`}>
+        <Button ref={bewerkKnop} size="sm" variant="ghost" onClick={openBewerk} disabled={disabled} aria-label={`Bewerk mijlpaal ${m.label}`}>
           Bewerken
         </Button>
         <Button

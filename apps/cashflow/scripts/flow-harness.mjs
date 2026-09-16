@@ -238,6 +238,8 @@ function cashPosten() {
   return [
     { id: 'harnas-post-oud', monthKey: BRON, label: 'Harnasproject met raming — Harnasslot', amount: 731.17, received: false },
     { id: 'harnas-post-later', monthKey: dagVanaf(14).slice(0, 7), label: 'Harnasproject met raming — Harnastermijn', amount: 1234.56, received: false },
+    // Een met de hand ingevoerde verwachte inkomst, aan geen factuur gekoppeld.
+    { id: 'harnas-post-los', monthKey: DOEL, label: 'Harnas losse post', amount: 555.55, received: false },
   ];
 }
 
@@ -1498,15 +1500,23 @@ async function betaaldHaaltPostWeg(page, state, { vervals } = {}) {
   if (!factuur?.paidOn || factuur.incomeItemId !== null) throw new Error(`factuur na betaling: ${JSON.stringify({ paidOn: factuur?.paidOn, incomeItemId: factuur?.incomeItemId })}`);
   const basisTerug = state.schrijfpogingen.length;
   await rij.locator('button[role=checkbox]').click();
-  await rij.locator('[data-ledger="in-prognose"]').waitFor({ timeout: 5_000 });
+  await rij.locator('[data-ledger="niet-in-prognose"]').waitFor({ timeout: 5_000 });
   // De schrijfactie volgt na de debounce van sync.ts; zonder wachten leest dit het vorige document.
   const terugSchrijf = await nieuweSchrijfacties(page, state, basisTerug);
+  const open = state.documenten.at(-1);
+  const factuurOpen = open?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.id === 'harnas-factuur-later');
   if (terugSchrijf !== 1) throw new Error(`uitvinken gaf ${terugSchrijf} schrijfacties`);
+  if (factuurOpen?.paidOn !== null || factuurOpen?.incomeItemId !== null) throw new Error(`uitvinken: factuur ${JSON.stringify({ paidOn: factuurOpen?.paidOn, incomeItemId: factuurOpen?.incomeItemId })}`);
+  if ((open?.incomeItems ?? []).some((i) => i.amount === 1234.56)) throw new Error('uitvinken zette tóch een post terug — naast een eventuele handmatige post is dat dubbel');
+  const basisPrognose = state.schrijfpogingen.length;
+  await rij.locator('button', { hasText: 'Zet in prognose' }).click();
+  await rij.locator('[data-ledger="in-prognose"]').waitFor({ timeout: 5_000 });
+  const prognoseSchrijf = await nieuweSchrijfacties(page, state, basisPrognose);
   const terug = state.documenten.at(-1);
   const nieuweId = terug?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.id === 'harnas-factuur-later')?.incomeItemId;
   const nieuwePost = (terug?.incomeItems ?? []).find((i) => i.id === nieuweId);
-  if (!nieuwePost || nieuwePost.amount !== 1234.56) throw new Error(`uitvinken: post ${JSON.stringify(nieuwePost)}`);
-  return { ok: true, bewijs: `1 schrijfactie; post weg, factuur betaald; uitvinken: nieuwe post van € 1.234,56 in ${nieuwePost.monthKey}` };
+  if (prognoseSchrijf !== 1 || !nieuwePost || nieuwePost.amount !== 1234.56) throw new Error(`"Zet in prognose": ${prognoseSchrijf} schrijfacties, post ${JSON.stringify(nieuwePost)}`);
+  return { ok: true, bewijs: `1 schrijfactie; post weg, factuur betaald; uitvinken: open zonder post (1 schrijfactie); "Zet in prognose": post € 1.234,56 in ${nieuwePost.monthKey}` };
 }
 
 /** De twee bases, elk met eigen noemer; "boven limiet" als woord; per groep telt de groep samen. */
@@ -1993,7 +2003,7 @@ function bureauScenarios() {
       },
     },
     {
-      naam: 'facturen — betaald haalt de post uit de prognose, uitvinken zet hem terug',
+      naam: 'facturen — betaald haalt de post uit de prognose; uitvinken zet haar open zonder post, "Zet in prognose" zet hem terug',
       pad: '/bureau/projecten/harnas-met',
       wachtOp: 'bureau',
       gedrag: { bureau: 'cash' },
@@ -2224,6 +2234,104 @@ function screenshotScenarios(map) {
 function reviewScenarios() {
   return [
     {
+      naam: 'facturen — nieuwe factuur gekoppeld aan een bestaande post: geen tweede post',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page, { state }) => {
+        const f = 'factuur-nieuw-harnas-met';
+        await page.fill(`#${f}-label`, 'Harnaskoppeling');
+        await page.fill(`#${f}-bedrag`, '459,13');
+        await page.selectOption(`#${f}-prognose`, 'harnas-post-los');
+        const basis = state.schrijfpogingen.length;
+        await page.locator(`form[data-form="${f}"] button[type=submit]`).click();
+        await page.locator('[data-invoice-row]', { hasText: 'Harnaskoppeling' }).waitFor({ timeout: 5_000 });
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        const doc = state.documenten.at(-1);
+        const factuur = doc?.bureau?.projects?.find((p) => p.id === 'harnas-met')?.invoices?.find((i) => i.label === 'Harnaskoppeling');
+        const posten = (doc?.incomeItems ?? []).filter((i) => Math.abs(i.amount - 555.55) < 0.005);
+        if (extra !== 1) throw new Error(`${extra} schrijfacties`);
+        if (factuur?.incomeItemId !== 'harnas-post-los') throw new Error(`factuur gekoppeld aan ${factuur?.incomeItemId}`);
+        if (posten.length !== 1 || doc.incomeItems.length !== 3) throw new Error(`${posten.length} posten van 555,55, ${doc.incomeItems.length} posten in totaal (verwacht 1 en 3)`);
+        return { ok: true, bewijs: '1 schrijfactie; factuur.incomeItemId = harnas-post-los; 1 post van € 555,55, 3 posten in totaal' };
+      },
+    },
+    {
+      naam: 'projecten — mijlpaal bewerken vertrekt van de opgeslagen waarden',
+      pad: '/bureau/projecten/harnas-k1',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'klanten' },
+      actie: async (page, { state, oudeDatum = false }) => {
+        const vandaag = await page.evaluate(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+        const rij = () => page.locator('[data-milestone-row="k1-1"]');
+        await rij().locator('button[role=checkbox]').click();
+        await page.waitForFunction(() => document.querySelector('[data-milestone-row="k1-1"] button[role=checkbox]')?.getAttribute('data-state') === 'unchecked', null, { timeout: 5_000 });
+        await rij().locator('button[role=checkbox]').click();
+        await page.waitForFunction(() => document.querySelector('[data-milestone-row="k1-1"] button[role=checkbox]')?.getAttribute('data-state') === 'checked', null, { timeout: 5_000 });
+        await rij().locator('button', { hasText: 'Bewerken' }).click();
+        await page.fill('input[aria-label="Omschrijving"]', 'k1-1 hernoemd');
+        // Tegenproef: de oude realisatiedatum staat nog in het formulier — precies wat de bevroren invoer deed.
+        if (oudeDatum) await page.fill('input[aria-label="Realisatiedatum"]', `${JAAR - 1}-12-31`);
+        const basis = state.schrijfpogingen.length;
+        await page.locator('button', { hasText: /^OK$/ }).first().click();
+        await page.locator('[data-milestone-row="k1-1"]', { hasText: 'k1-1 hernoemd' }).waitFor({ timeout: 5_000 });
+        await nieuweSchrijfacties(page, state, basis);
+        const m = state.documenten.at(-1)?.bureau?.projects?.find((p) => p.id === 'harnas-k1')?.milestones?.find((x) => x.id === 'k1-1');
+        if (m?.label !== 'k1-1 hernoemd' || m?.realizedOn !== vandaag || m?.realizedAmount !== null) throw new Error(`na bewerken: ${JSON.stringify({ label: m?.label, realizedOn: m?.realizedOn, realizedAmount: m?.realizedAmount })}, verwacht realizedOn ${vandaag}`);
+        return { ok: true, bewijs: `afvinken → terugzetten → bewerken: label hernoemd, realizedOn ${m.realizedOn} (vandaag), realizedAmount null` };
+      },
+    },
+    {
+      naam: 'conflict — Enter in een rij schrijft niets',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'vol', conflict: true },
+      actie: async (page, { zonderConflict = false }) => {
+        // Eerst een geweigerde schrijfactie: dat maakt het conflict. De tegenproef slaat dat over en
+        // toont dat dezelfde Enter zonder conflict de kosten wél verandert — dus dat de meting het ziet.
+        await page.locator('[data-invoice-row="harnas-factuur-later"] button[role=checkbox]').click();
+        if (!zonderConflict) await page.locator('[role=alert]', { hasText: 'Elders gewijzigd' }).waitFor({ timeout: 10_000 });
+        const kosten = () => page.locator('section', { hasText: 'Directe externe kosten' }).locator('p', { hasText: 'werkelijk bekend voor' }).innerText();
+        const voor = await kosten();
+        await page.fill('#kost-werkelijk-harnas-kost', '999');
+        await page.press('#kost-werkelijk-harnas-kost', 'Enter');
+        await page.waitForTimeout(300);
+        const na = await kosten();
+        if (voor !== na) throw new Error(`Enter tijdens conflict veranderde de kosten: "${voor}" → "${na}"`);
+        return { ok: true, bewijs: `conflict actief; Enter in "werkelijk": "${na.replace(/\s+/g, ' ')}" onveranderd` };
+      },
+    },
+    {
+      naam: 'bureau — focus blijft in de rij bij bewerken en verwijderen',
+      pad: '/bureau/projecten/harnas-met',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'vol' },
+      actie: async (page, { verstoor = false }) => {
+        // Tegenproef: na elke klik valt de focus op body — de toestand van vóór de fix.
+        if (verstoor) await page.evaluate(() => document.addEventListener('click', () => setTimeout(() => document.activeElement?.blur(), 0), true));
+        const focus = () => page.evaluate(() => ({ label: document.activeElement?.getAttribute('aria-label') ?? '', tekst: document.activeElement?.textContent?.trim() ?? '', tag: document.activeElement?.tagName }));
+        await page.locator('button[aria-label="Verwijder factuur Harnasslot"]').click();
+        const bevestig = await focus();
+        await page.locator('[data-invoice-row="harnas-factuur-oud"] button', { hasText: 'Niet verwijderen' }).click();
+        await page.waitForTimeout(100);
+        const terug = await focus();
+        await page.goto(`${BASE}/bureau/projecten/harnas-zonder`);
+        await page.waitForSelector('[data-milestone-row="harnas-m1"]', { timeout: 20_000 });
+        await page.locator('button[aria-label="Bewerk mijlpaal Harnasmijlpaal"]').click();
+        const bewerk = await focus();
+        await page.locator('button', { hasText: 'Annuleren' }).first().click();
+        await page.waitForTimeout(100);
+        const naAnnuleren = await focus();
+        const fouten = [];
+        if (bevestig.tekst !== 'Niet verwijderen') fouten.push(`na Verwijderen op "${bevestig.tekst || bevestig.tag}"`);
+        if (terug.label !== 'Verwijder factuur Harnasslot') fouten.push(`na Niet verwijderen op "${terug.label || terug.tag}"`);
+        if (bewerk.label !== 'Omschrijving') fouten.push(`na Bewerken op "${bewerk.label || bewerk.tag}"`);
+        if (naAnnuleren.label !== 'Bewerk mijlpaal Harnasmijlpaal') fouten.push(`na Annuleren op "${naAnnuleren.label || naAnnuleren.tag}"`);
+        if (fouten.length) throw new Error(fouten.join(' · '));
+        return { ok: true, bewijs: 'Verwijderen → "Niet verwijderen" → terug op "Verwijder factuur"; Bewerken → Omschrijving → Annuleren → terug op "Bewerk mijlpaal"' };
+      },
+    },
+    {
       naam: 'bureau — lege staat per route (leeg document)',
       pad: OVERZICHT,
       wachtOp: 'bureau',
@@ -2378,6 +2486,11 @@ function reviewScenarios() {
  */
 function reviewTegenproeven() {
   const defect = {
+    'facturen — nieuwe factuur gekoppeld aan een bestaande post: geen tweede post': () => {
+      // Het defect: de keuze voor een bestaande post gaat verloren en er komt een nieuwe.
+      const select = document.querySelector('[id$="-prognose"]');
+      select.addEventListener('change', () => { select.value = 'nieuw'; select.dispatchEvent(new Event('change', { bubbles: true })); }, { once: true });
+    },
     'bureau — lege staat per route (leeg document)': () => { document.querySelector('[data-empty-state]').remove(); },
     'projecten — zonder mijlpalen geen € 0, in de tabel en op de detailpagina': () => { document.querySelector('[data-project-row="harnas-met"] td[data-onvoldoende]').textContent = '€ 0'; },
     'projecten — datums in Nederlandse notatie, geen yyyy-MM': () => { document.querySelector('[data-project-row]').insertAdjacentText('beforeend', ' 2026-09'); },
@@ -2387,15 +2500,25 @@ function reviewTegenproeven() {
     'bureau — signalen op één regel op 1440': () => { document.querySelectorAll('[data-signal] span.min-w-0 > span:last-child').forEach((el) => { el.style.display = 'block'; }); },
     'bureau — 390: header en subnav': () => { const ul = document.querySelector('nav[aria-label="Bureau"] ul'); ul.style.flexWrap = 'nowrap'; ul.style.width = 'max-content'; },
   };
-  return reviewScenarios().map((sc) => ({
-    ...sc,
-    naam: `tegenproef — ${sc.naam}`,
-    moetFalen: true,
-    actie: async (page, ctx) => {
-      await page.evaluate(defect[sc.naam]);
-      return sc.actie(page, ctx);
-    },
-  }));
+  // Gedrag dat niet in de DOM terug te zetten is, krijgt het defect als optie van zijn scenario.
+  const optie = {
+    'projecten — mijlpaal bewerken vertrekt van de opgeslagen waarden': { oudeDatum: true },
+    'conflict — Enter in een rij schrijft niets': { zonderConflict: true },
+    'bureau — focus blijft in de rij bij bewerken en verwijderen': { verstoor: true },
+  };
+  return reviewScenarios().map((sc) => {
+    if (!defect[sc.naam] && !optie[sc.naam]) throw new Error(`reviewscenario zonder tegenproef: ${sc.naam}`);
+    return {
+      ...sc,
+      naam: `tegenproef — ${sc.naam}`,
+      moetFalen: true,
+      gedrag: sc.naam === 'conflict — Enter in een rij schrijft niets' ? { bureau: 'vol' } : sc.gedrag,
+      actie: async (page, ctx) => {
+        if (defect[sc.naam]) await page.evaluate(defect[sc.naam]);
+        return sc.actie(page, { ...ctx, ...(optie[sc.naam] ?? {}) });
+      },
+    };
+  });
 }
 
 function bureauTegenproeven() {

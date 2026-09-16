@@ -2,14 +2,12 @@
 
 import { useState, type FormEvent } from 'react';
 import { Button } from '@umanex/ui/components/ui/button';
-import { Checkbox } from '@umanex/ui/components/ui/checkbox';
-import { Label } from '@umanex/ui/components/ui/label';
-import { formatAmount } from '../../lib/cashflow/recurring';
-import { useAnnounce, useMutateBureau, useToday } from '../../hooks/useBureau';
+import { formatAmount, getMonthLabel } from '../../lib/cashflow/recurring';
+import { useAnnounce, useBureau, useIncomeItems, useMutateBureau, useToday } from '../../hooks/useBureau';
 import { useSyncStatus } from '../../lib/cashflow/sync-status';
 import { INVOICE_KINDS, type Project } from '../../lib/bureau/types';
 import { INVOICE_KIND_LABEL } from '../../lib/bureau/labels';
-import { addInvoice } from '../../lib/bureau/mutations';
+import { addInvoice, linkInvoiceToExistingIncome } from '../../lib/bureau/mutations';
 import { emptyInvoiceDraft, invoiceFromDraft, projectCash, type InvoiceDraft, type InvoiceDraftField } from '../../lib/bureau/invoice-draft';
 import { TextField } from './fields/TextField';
 import { SelectField } from './fields/SelectField';
@@ -29,7 +27,13 @@ export function InvoiceList({ project: p }: { project: Project }) {
   const [errors, setErrors] = useState<Partial<Record<InvoiceDraftField, string>>>({});
   const [melding, setMelding] = useState<string | null>(null);
   const zet = <K extends keyof InvoiceDraft>(key: K, value: InvoiceDraft[K]) => setDraft((d) => ({ ...d, [key]: value }));
+  const bureau = useBureau();
+  const incomeItems = useIncomeItems();
+  const huidigeMaand = today.slice(0, 7);
   const cash = projectCash(p);
+  // Losse posten vanaf deze maand die nog aan geen factuur hangen: daar kan de nieuwe factuur aan vast.
+  const gekoppeld = new Set(bureau.projects.flatMap((x) => x.invoices.map((i) => i.incomeItemId)).filter(Boolean));
+  const losPosten = incomeItems.filter((i) => i.monthKey >= huidigeMaand && !gekoppeld.has(i.id)).sort((a, b) => a.monthKey.localeCompare(b.monthKey) || a.label.localeCompare(b.label));
   const idBasis = `factuur-nieuw-${p.id}`;
 
   const toevoegen = (e: FormEvent) => {
@@ -41,12 +45,21 @@ export function InvoiceList({ project: p }: { project: Project }) {
       return;
     }
     const label = r.invoice.label;
-    const uitkomst = mutate((d) =>
-      addInvoice(d, p.id, { id: crypto.randomUUID(), ...r.invoice }, r.toLedger ? { incomeItemId: crypto.randomUUID(), label: `${p.name} — ${label}` } : null),
-    );
+    const factuurId = crypto.randomUUID();
+    const bestaand = r.ledger !== 'nieuw' && r.ledger !== 'geen' ? r.ledger : null;
+    const uitkomst = mutate((d) => {
+      const toegevoegd = addInvoice(d, p.id, { id: factuurId, ...r.invoice }, r.ledger === 'nieuw' ? { incomeItemId: crypto.randomUUID(), label: `${p.name} — ${label}`, notBefore: huidigeMaand } : null);
+      return bestaand && toegevoegd === 'ok' ? linkInvoiceToExistingIncome(d, p.id, factuurId, bestaand) : toegevoegd;
+    });
     setErrors({});
-    setMelding(uitkomst === 'afgesloten-maand' ? `${label} toegevoegd, maar niet in de prognose: die maand is afgesloten.` : null);
-    announce(r.toLedger && uitkomst === 'ok' ? `Factuur ${label} toegevoegd en in de prognose gezet.` : `Factuur ${label} toegevoegd.`);
+    setMelding(
+      uitkomst === 'afgesloten-maand'
+        ? `${label} toegevoegd, maar niet in de prognose: die maand is afgesloten.`
+        : uitkomst === 'post-bezet' || uitkomst === 'geen-post'
+          ? `${label} toegevoegd, maar niet gekoppeld: die post hangt al aan een factuur of bestaat niet meer.`
+          : null,
+    );
+    announce(uitkomst === 'ok' && r.ledger !== 'geen' ? `Factuur ${label} toegevoegd en in de prognose ${bestaand ? 'gekoppeld aan een bestaande post' : 'gezet'}.` : `Factuur ${label} toegevoegd.`);
     setDraft(emptyInvoiceDraft(today));
   };
 
@@ -90,17 +103,25 @@ export function InvoiceList({ project: p }: { project: Project }) {
           <TextField id={`${idBasis}-verval`} type="date" label="Vervaldatum" value={draft.dueDate} onChange={(v) => zet('dueDate', v)} error={errors.dueDate} />
           <TextField id={`${idBasis}-verwacht`} type="date" label="Verwachte betaling (optioneel)" value={draft.expectedPaymentDate} onChange={(v) => zet('expectedPaymentDate', v)} error={errors.expectedPaymentDate} />
         </div>
-        <div className="flex items-start gap-3">
-          <Checkbox id={`${idBasis}-prognose`} checked={draft.toLedger} onCheckedChange={(v) => zet('toLedger', v === true)} aria-describedby={`${idBasis}-prognose-hint`} />
-          <div className="space-y-1">
-            <Label htmlFor={`${idBasis}-prognose`} className="leading-5">
-              Zet in de prognose
-            </Label>
-            <p id={`${idBasis}-prognose-hint`} className="text-xs text-muted-foreground">
-              Als inkomstenpost incl. btw, in de maand van de verwachte betaling — of anders van de vervaldatum.
-            </p>
-          </div>
-        </div>
+        <SelectField
+          id={`${idBasis}-prognose`}
+          label="In de prognose"
+          value={draft.ledger}
+          onChange={(v) => zet('ledger', v)}
+          options={[
+            { value: 'nieuw', label: 'Nieuwe post aanmaken' },
+            ...losPosten.map((i) => ({ value: i.id, label: `Koppel aan: ${i.label} · ${formatAmount(i.amount)} · ${getMonthLabel(i.monthKey)}` })),
+            { value: 'geen', label: 'Niet in de prognose' },
+          ]}
+          hint={
+            draft.ledger === 'nieuw'
+              ? 'Een post incl. btw in de maand van de verwachte betaling, anders van de vervaldatum — nooit vóór deze maand. Staat de inkomst er al met de hand in? Koppel dan aan die post.'
+              : draft.ledger === 'geen'
+                ? 'De factuur telt dan niet mee in de maandprognose en de weken.'
+                : 'Er komt geen tweede post; de factuur neemt de bestaande over.'
+          }
+          className="max-w-xl"
+        />
         <div className="flex flex-wrap items-center justify-end gap-3">
           {melding && <p className="text-sm" role="status">{melding}</p>}
           {conflict && <p id={`${idBasis}-conflict`} className="text-sm text-destructive">Eerst herladen — elders gewijzigd.</p>}

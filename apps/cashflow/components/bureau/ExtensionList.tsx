@@ -50,10 +50,12 @@ export function ExtensionList({ project: p }: { project: Project }) {
         <ul className="divide-y divide-border text-sm">
           {p.extensions.map((x) => {
             const gekoppeld = p.milestones.filter((m) => m.extensionId === x.id).length;
+            const gerealiseerd = p.milestones.some((m) => m.extensionId === x.id && m.realizedOn !== null);
             return (
               <li key={x.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
                 <div>
                   <p className="font-medium">{x.label}</p>
+                  {gerealiseerd && <p className="text-xs text-muted-foreground">Een mijlpaal ervan is gerealiseerd — intrekken kan niet meer.</p>}
                   <p className="text-xs text-muted-foreground">
                     goedgekeurd {x.approvedOn} · {x.extraBudgetedHours === null ? 'geen extra uren' : `+${formatHours(x.extraBudgetedHours)} begroot`} · {gekoppeld === 0 ? 'nog niet als mijlpaal ingepland' : `${gekoppeld} mijlpaal${gekoppeld === 1 ? '' : 'en'}`}
                   </p>
@@ -63,10 +65,11 @@ export function ExtensionList({ project: p }: { project: Project }) {
                   <Button
                     size="sm"
                     variant="ghost"
-                    disabled={conflict}
+                    disabled={conflict || gerealiseerd}
                     aria-label={`Trek uitbreiding ${x.label} in`}
                     onClick={() => {
-                      mutate((d) => removeExtension(d, p.id, x.id));
+                      const r = mutate((d) => removeExtension(d, p.id, x.id));
+                      if (r !== 'ok') return;
                       announce(`Uitbreiding ${x.label} ingetrokken${gekoppeld ? `, samen met ${gekoppeld} mijlpaal${gekoppeld === 1 ? '' : 'en'}` : ''}.`);
                     }}
                   >

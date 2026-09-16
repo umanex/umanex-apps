@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@umanex/ui/components/ui/button';
 import { Input } from '@umanex/ui/components/ui/input';
 import { cn } from '@umanex/ui/lib/utils';
@@ -23,8 +23,24 @@ export function TimeEntryRow({ entry: e, project, striped, disabled, onSaveHours
   const [uren, setUren] = useState(toInputValue(e.hours));
   const [notitie, setNotitie] = useState(e.note);
   const [fout, setFout] = useState<string | null>(null);
+  const bewerkKnop = useRef<HTMLButtonElement>(null);
+  const wasBewerk = useRef(false);
+
+  // Na OK of Annuleren verdwijnt het veld dat de focus had; terug naar "Bewerken" in plaats van naar body.
+  useEffect(() => {
+    if (wasBewerk.current && !bewerk) bewerkKnop.current?.focus();
+    wasBewerk.current = bewerk;
+  }, [bewerk]);
+
+  const openBewerk = () => {
+    setUren(toInputValue(e.hours));
+    setNotitie(e.note);
+    setFout(null);
+    setBewerk(true);
+  };
 
   const opslaan = () => {
+    if (disabled) return;
     const n = parseNumber(uren);
     if (n === null) return setFout('Geen getal — bv. 1,5.');
     const r = onSaveHours(n, notitie.trim());
@@ -45,6 +61,7 @@ export function TimeEntryRow({ entry: e, project, striped, disabled, onSaveHours
           <Input aria-label="Notitie" className="h-8 w-48" value={notitie} onChange={(ev) => setNotitie(ev.target.value)} />
           <Input
             aria-label="Uren"
+            autoFocus
             inputMode="decimal"
             className="h-8 w-20 text-right tabular-nums"
             value={uren}
@@ -61,7 +78,7 @@ export function TimeEntryRow({ entry: e, project, striped, disabled, onSaveHours
       ) : (
         <span className="flex items-center gap-1">
           <span className="w-16 text-right font-semibold tabular-nums">{formatHours(e.hours)}</span>
-          <Button size="sm" variant="ghost" onClick={() => setBewerk(true)} disabled={disabled} aria-label={`Bewerk registratie van ${formatHours(e.hours)}`}>
+          <Button ref={bewerkKnop} size="sm" variant="ghost" onClick={openBewerk} disabled={disabled} aria-label={`Bewerk registratie van ${formatHours(e.hours)}`}>
             Bewerken
           </Button>
           <Button size="sm" variant="ghost" onClick={onRemove} disabled={disabled} aria-label={`Verwijder registratie van ${formatHours(e.hours)}`}>

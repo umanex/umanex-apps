@@ -37,6 +37,8 @@ export function ExternalCostList({ project: p }: { project: Project }) {
   };
 
   const zetWerkelijk = (c: ExternalCost) => {
+    // Enter omzeilt de uitgeschakelde OK-knop; tijdens een conflict zou de wijziging lokaal blijven en bij herladen verdwijnen.
+    if (conflict) return;
     const tekst = werkelijk[c.id] ?? toInputValue(c.actual);
     const n = tekst.trim() === '' ? null : parseNumber(tekst);
     if (tekst.trim() !== '' && (n === null || n < 0)) return setFout(`Werkelijk bedrag voor ${c.label} is geen getal van 0 of meer.`);

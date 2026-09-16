@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@umanex/ui/components/ui/badge';
 import { Button } from '@umanex/ui/components/ui/button';
 import { Checkbox } from '@umanex/ui/components/ui/checkbox';
@@ -33,6 +33,14 @@ export function InvoiceRow({ project: p, invoice: inv, striped }: InvoiceRowProp
   const [verwacht, setVerwacht] = useState(inv.expectedPaymentDate ?? '');
   const [melding, setMelding] = useState<string | null>(null);
   const [bevestig, setBevestig] = useState(false);
+  const verwijderKnop = useRef<HTMLButtonElement>(null);
+  const wasBevestig = useRef(false);
+  const huidigeMaand = today.slice(0, 7);
+
+  useEffect(() => {
+    if (wasBevestig.current && !bevestig) verwijderKnop.current?.focus();
+    wasBevestig.current = bevestig;
+  }, [bevestig]);
 
   const status = invoiceStatus(inv, today);
   const ledger = ledgerState(inv, incomeItems, frozen);
@@ -41,27 +49,30 @@ export function InvoiceRow({ project: p, invoice: inv, striped }: InvoiceRowProp
   const id = `factuur-${inv.id}`;
 
   const betaald = (aan: boolean) => {
+    if (conflict) return;
     setMelding(null);
     if (aan) {
       const r = mutate((d) => markInvoicePaid(d, p.id, inv.id, today, bruto));
       if (r === 'afgesloten-maand') setMelding('Betaald. De post staat in een afgesloten maand en blijft daar staan.');
       announce(r === 'verwijderd' ? `${inv.label} betaald; de post is uit de prognose gehaald.` : `${inv.label} betaald.`);
     } else {
-      const r = mutate((d) => unmarkInvoicePaid(d, p.id, inv.id, { incomeItemId: crypto.randomUUID(), label: postLabel }));
-      if (r === 'afgesloten-maand') setMelding('Weer open. De maand van de betaaldatum is afgesloten, dus er kwam geen post bij.');
-      announce(r === 'ok' ? `${inv.label} weer open; de post staat terug in de prognose.` : `${inv.label} weer open.`);
+      // Geen post terugzetten: of er ooit een was, weet de factuur niet — een automatische post kon
+      // naast een met de hand ingevoerde komen te staan. "Zet in prognose" is de expliciete weg terug.
+      mutate((d) => unmarkInvoicePaid(d, p.id, inv.id, null));
+      announce(`${inv.label} weer open, niet in de prognose.`);
     }
   };
 
   const zetVerwacht = () => {
+    if (conflict) return;
     if (verwacht && !/^\d{4}-\d{2}-\d{2}$/.test(verwacht)) return setMelding('De verwachte betaaldatum is geen datum.');
-    mutate((d) => updateInvoice(d, p.id, inv.id, { expectedPaymentDate: verwacht || null }));
+    mutate((d) => updateInvoice(d, p.id, inv.id, { expectedPaymentDate: verwacht || null }, huidigeMaand));
     setMelding(null);
     announce(verwacht ? `${inv.label}: verwacht op ${dateLabel(verwacht)}.` : `${inv.label}: geen verwachte betaaldatum meer.`);
   };
 
   const inPrognose = () => {
-    const r = mutate((d) => linkInvoiceToLedger(d, p.id, inv.id, crypto.randomUUID(), postLabel));
+    const r = mutate((d) => linkInvoiceToLedger(d, p.id, inv.id, crypto.randomUUID(), postLabel, huidigeMaand));
     if (r === 'afgesloten-maand') setMelding('De maand van de betaaldatum is afgesloten; zet eerst een latere verwachte betaaldatum.');
     else if (r === 'ok') announce(`${inv.label} staat in de prognose.`);
   };
@@ -105,7 +116,7 @@ export function InvoiceRow({ project: p, invoice: inv, striped }: InvoiceRowProp
           <Checkbox id={`${id}-betaald`} checked={inv.paidOn !== null} disabled={conflict} onCheckedChange={(v) => betaald(v === true)} aria-describedby={`${id}-betaald-hint`} />
           <Label htmlFor={`${id}-betaald`}>Betaald</Label>
           <span id={`${id}-betaald-hint`} className="text-xs text-muted-foreground">
-            {inv.paidOn ? 'uitvinken zet de post terug' : 'haalt de post uit de prognose'}
+            {inv.paidOn ? 'uitvinken zet haar weer open, zonder post' : 'haalt de post uit de prognose'}
           </span>
         </div>
         {!inv.paidOn && (
@@ -147,12 +158,12 @@ export function InvoiceRow({ project: p, invoice: inv, striped }: InvoiceRowProp
               >
                 Ja, verwijderen
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setBevestig(false)}>
+              <Button size="sm" variant="ghost" autoFocus onClick={() => setBevestig(false)}>
                 Niet verwijderen
               </Button>
             </>
           ) : (
-            <Button size="sm" variant="ghost" disabled={conflict} onClick={() => setBevestig(true)} aria-label={`Verwijder factuur ${inv.label}`}>
+            <Button ref={verwijderKnop} size="sm" variant="ghost" disabled={conflict} onClick={() => setBevestig(true)} aria-label={`Verwijder factuur ${inv.label}`}>
               Verwijderen
             </Button>
           )}

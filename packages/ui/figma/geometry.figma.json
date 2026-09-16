@@ -1,9 +1,9 @@
 {
   "$comment": "Gemeten Figma-kant per variant-node. NIET met de hand bewerken — ververs via packages/ui/CLAUDE.md. Breedte staat er bewust NIET in: die is tekstgedreven en niet vergelijkbaar met een browser.",
   "fileKey": "ko2OuasYxyY2YRD69MYhWX",
-  "gegenereerd": "2026-09-07",
-  "sets": 8,
-  "varianten": 68,
+  "gegenereerd": "2026-09-16",
+  "sets": 11,
+  "varianten": 76,
   "gemeten": {
     "Badge": {
       "variant=default": {
@@ -1175,6 +1175,148 @@
         "strokes": 0,
         "eff": 0,
         "op": 1
+      }
+    },
+    "SheetContent": {
+      "side=right": {
+        "h": 520,
+        "lay": "VERTICAL",
+        "pad": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "gap": 8,
+        "r": 0,
+        "bw": 0,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
+      "side=left": {
+        "h": 520,
+        "lay": "VERTICAL",
+        "pad": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "gap": 8,
+        "r": 0,
+        "bw": 0,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
+      "side=top": {
+        "h": 220,
+        "lay": "VERTICAL",
+        "pad": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "gap": 8,
+        "r": 0,
+        "bw": 0,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
+      "side=bottom": {
+        "h": 220,
+        "lay": "VERTICAL",
+        "pad": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "gap": 8,
+        "r": 0,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      }
+    },
+    "Textarea": {
+      "disabled=false": {
+        "h": 80,
+        "lay": "VERTICAL",
+        "pad": [
+          8,
+          12,
+          8,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
+      "disabled=true": {
+        "h": 80,
+        "lay": "VERTICAL",
+        "pad": [
+          8,
+          12,
+          8,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 0.5
+      }
+    },
+    "NativeSelect": {
+      "disabled=false": {
+        "h": 40,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          36,
+          0,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
+      "disabled=true": {
+        "h": 40,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          36,
+          0,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 0.5
       }
     }
   }

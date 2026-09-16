@@ -46,13 +46,21 @@ export function VoortgangPerPrioriteit({ groepen }: VoortgangProps) {
                 )}
                 {rest > 0 && <span style={{ flexGrow: rest }} />}
               </div>
+              {/* Alleen wat er ís. Een rij "0 gereed · 0 bezig · 0 geblokkeerd · 0
+                  beschikbaar · 5 uitgesteld" laat je vier nullen lezen om bij het enige
+                  getal te komen dat iets zegt. */}
               <p className="text-xs tabular-nums text-muted-foreground">
-                {g.perStatus.gereed} gereed · {g.perStatus.bezig} bezig
-                {g.perStatus.wacht_op_input > 0 && ` · ${g.perStatus.wacht_op_input} wacht op input`}
-                {' · '}
-                {g.geblokkeerd} geblokkeerd · {g.beschikbaar} beschikbaar
-                {g.perStatus.uitgesteld > 0 && ` · ${g.perStatus.uitgesteld} uitgesteld`}
-                {g.perStatus.vervallen > 0 && ` · ${g.perStatus.vervallen} vervallen`}
+                {[
+                  g.perStatus.gereed > 0 && `${g.perStatus.gereed} gereed`,
+                  g.perStatus.bezig > 0 && `${g.perStatus.bezig} bezig`,
+                  g.perStatus.wacht_op_input > 0 && `${g.perStatus.wacht_op_input} wacht op input`,
+                  g.geblokkeerd > 0 && `${g.geblokkeerd} geblokkeerd`,
+                  g.beschikbaar > 0 && `${g.beschikbaar} beschikbaar`,
+                  g.perStatus.uitgesteld > 0 && `${g.perStatus.uitgesteld} uitgesteld`,
+                  g.perStatus.vervallen > 0 && `${g.perStatus.vervallen} vervallen`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
                 {' — inzet '}
                 {g.inzet.bekendUren} u bekend, {g.inzet.aantalOnbekend} onbekend
               </p>

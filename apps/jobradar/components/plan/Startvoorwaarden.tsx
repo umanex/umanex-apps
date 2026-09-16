@@ -21,7 +21,7 @@ function Rij({ v, onOpen }: { v: Startvoorwaarde; onOpen: (key: string) => void 
     // in de browser met de kandidaten ernaast — `min-width: 0` op de knop of op de span
     // hielp níét, afbreken wél. De pil zakt dan naar een tweede regel in plaats van de titel
     // tot een paar tekens te knippen.
-    <li className="flex flex-wrap items-center justify-between gap-2 text-sm">
+    <li className="flex flex-wrap items-center justify-between gap-2 text-sm lg:flex-nowrap">
       <span className="flex min-w-0 items-center gap-2">
         <span className="tabular-nums text-muted-foreground">{v.key}</span>
         <button

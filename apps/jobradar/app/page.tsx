@@ -9,7 +9,18 @@ import type { RegionCode } from '@/lib/regions'
 
 export const dynamic = 'force-dynamic'
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  /**
+   * `?tab=leads&zoek=Acme` — de sprong vanuit een gekoppeld bedrijf in het bedrijfsplan.
+   *
+   * Server-side gelezen en als beginwaarde doorgegeven, niet via `useSearchParams`: dat zou
+   * een Suspense-grens vragen rond een client-component die al de hele pagina is.
+   */
+  searchParams: Promise<{ tab?: string; zoek?: string }>
+}) {
+  const { tab, zoek } = await searchParams
   const db = getDb()
   const [jobs, companies, syncRuns] = await Promise.all([
     db.query.jobs.findMany({ orderBy: (j, { desc: d }) => [d(j.score)] }),
@@ -47,6 +58,8 @@ export default async function HomePage() {
         dekking={dekking}
         vermoedens={vermoedens}
         koppelingen={koppelingen}
+        initialTab={tab ?? null}
+        initialZoek={zoek ?? null}
       />
     </main>
   )

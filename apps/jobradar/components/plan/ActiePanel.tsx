@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ExternalLink, Trash2, X } from 'lucide-react'
 import {
@@ -41,6 +41,15 @@ type ActiePanelProps = {
   urenPerDag: number
   /** Opent het paneel direct op de afrond-sectie, met focus op het bewijsveld. */
   opAfronden: boolean
+  /**
+   * De status die vanaf een rij gekozen is en hier om een reden vraagt.
+   *
+   * De rij stuurt hem niet zelf: uitstellen, wachten en vervallen vragen elk een toelichting,
+   * en die vul je niet in een dropdown in. Zonder dit veld zou de app de reden verzinnen om
+   * de wissel te laten slagen — en dan staat er tekst in een veld van Jeroen die hij nooit
+   * geschreven heeft.
+   */
+  voorstel: ActieStatus | null
   focusConflict: FocusConflict | null
   bezig: boolean
   fout: string | null
@@ -50,6 +59,15 @@ type ActiePanelProps = {
 }
 
 const INVOER = 'rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50'
+
+/** Statussen die niet gezet worden zonder dat Jeroen erbij schrijft waarom. */
+const VRAAGT_REDEN: ActieStatus[] = ['uitgesteld', 'wacht_op_input', 'vervallen']
+
+const REDEN_VRAAG: Record<string, string> = {
+  uitgesteld: 'Waarom stel je dit uit, en wanneer bekijk je het opnieuw?',
+  wacht_op_input: 'Waarop wacht deze actie?',
+  vervallen: 'Waarom vervalt deze actie?',
+}
 // Chromium matcht `:focus-visible` niet op de host wanneer je een datumsegment binnentabt;
 // zonder de focus-within-kopie is zo'n veld een stop zonder zichtbare focus. Gemeten door de
 // flow-harness op ContactPanel (2026-09-09), en hier om dezelfde reden.
@@ -73,6 +91,7 @@ export function ActiePanel({
   vandaag,
   urenPerDag,
   opAfronden,
+  voorstel,
   focusConflict,
   bezig,
   fout,
@@ -105,6 +124,14 @@ export function ActiePanel({
   const [nieuweAfhankelijkheid, setNieuweAfhankelijkheid] = useState('')
   const [wachtreden, setWachtreden] = useState(actie.wachtreden ?? '')
   const [teVerwijderen, setTeVerwijderen] = useState(false)
+  const [nieuweStatus, setNieuweStatus] = useState<ActieStatus | null>(voorstel)
+
+  // Zodra de wissel geland is, is het formulier klaar: de status ís nu wat je voorstelde.
+  // Zonder dit blijft het invulblok open staan met de reden die je net bewaarde, alsof er
+  // nog iets moet gebeuren.
+  useEffect(() => {
+    if (nieuweStatus && actie.status === nieuweStatus) setNieuweStatus(null)
+  }, [actie.status, nieuweStatus])
 
   const gewijzigd =
     titel !== actie.titel ||
@@ -153,6 +180,111 @@ export function ActiePanel({
     return Number.isFinite(n) && n > 0 ? formatteerInzet(n, urenPerDag) : 'onbekend'
   }
 
+  /**
+   * Het afrond- of heropenblok.
+   *
+   * Als variabele en niet op één vaste plek, omdat de leesvolgorde met de status meebeweegt:
+   * bij een lopende actie is dit de laatste stap en staat het onderaan; bij een afgeronde
+   * actie is het bewijs juist het enige wat telt en staat het bovenaan.
+   */
+  const afrondBlok = (
+          <section className="space-y-2 border-t pt-4">
+            <h3 className="text-sm font-semibold">
+              {actie.status === 'gereed' ? 'Afgerond' : 'Afronden'}
+            </h3>
+            {actie.status === 'gereed' ? (
+              <>
+                <p className="rounded-md border border-border bg-muted p-3 text-sm">
+                  {actie.bewijs}
+                </p>
+                <p className="text-2xs tabular-nums text-muted-foreground">
+                  Afgerond op {actie.afgerondOp ?? 'onbekende datum'}
+                </p>
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <Label htmlFor="plan-heropen" className="text-2xs">
+                      Reden om te heropenen
+                    </Label>
+                    <input
+                      id="plan-heropen"
+                      type="text"
+                      value={heropenReden}
+                      maxLength={300}
+                      disabled={bezig}
+                      onChange={(e) => setHeropenReden(e.target.value)}
+                      className={cn('w-full', INVOER, focusRing)}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={bezig}
+                    onClick={() => zetStatus('niet_gestart', { reden: heropenReden || null })}
+                  >
+                    Heropen
+                  </Button>
+                </div>
+                <p className="text-2xs text-muted-foreground">
+                  Het bewijs en de datum blijven staan; de heropening komt in de geschiedenis.
+                </p>
+              </>
+            ) : (
+              <>
+                {actie.gereedcriterium ? (
+                  <p className="rounded-md border border-border bg-muted p-3 text-sm">
+                    {actie.gereedcriterium}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Geen gereedcriterium ingevuld — vul het hierboven in, anders is er niets om
+                    tegen af te ronden.
+                  </p>
+                )}
+                <div className="space-y-1">
+                  <Label htmlFor="plan-bewijs" className="text-2xs">
+                    Bewijs — wat toont dat het klaar is?
+                  </Label>
+                  <textarea
+                    id="plan-bewijs"
+                    rows={3}
+                    value={bewijs}
+                    maxLength={4000}
+                    disabled={bezig}
+                    onChange={(e) => setBewijs(e.target.value)}
+                    className={cn('w-full', INVOER, focusRing)}
+                  />
+                </div>
+                <input
+                  type="url"
+                  aria-label="Link naar het bewijs (optioneel)"
+                  value={bewijsLink}
+                  disabled={bezig}
+                  placeholder="https://… (optioneel)"
+                  onChange={(e) => setBewijsLink(e.target.value)}
+                  className={cn('w-full', INVOER, focusRing)}
+                />
+                <p className="text-2xs tabular-nums text-muted-foreground">
+                  Wordt vastgelegd met datum {vandaag}.
+                </p>
+                <Button
+                  size="sm"
+                  disabled={bezig || bewijs.trim() === ''}
+                  onClick={() =>
+                    zetStatus('gereed', {
+                      bewijs,
+                      links: /^https?:\/\/\S+$/i.test(bewijsLink)
+                        ? [...links, { label: 'Bewijs', url: bewijsLink.trim() }]
+                        : undefined,
+                    })
+                  }
+                >
+                  Markeer gereed
+                </Button>
+              </>
+            )}
+          </section>
+  )
+
   return (
     <Sheet open onOpenChange={onOpenChange}>
       <SheetContent
@@ -196,22 +328,20 @@ export function ActiePanel({
           <div className="flex flex-wrap items-center gap-2">
             <select
               aria-label="Status wijzigen"
-              value={actie.status}
+              value={nieuweStatus ?? actie.status}
               disabled={bezig}
               onChange={(e) => {
                 const s = e.target.value as ActieStatus
-                if (s === 'uitgesteld' || s === 'wacht_op_input') {
-                  zetStatus(s, { wachtreden: wachtreden || actie.wachtreden || '' })
-                } else if (s === 'vervallen') {
-                  zetStatus(s, { reden: wachtreden || 'niet meer aan de orde' })
-                } else {
+                if (VRAAGT_REDEN.includes(s)) setNieuweStatus(s)
+                else {
+                  setNieuweStatus(null)
                   zetStatus(s)
                 }
               }}
               className={cn(
                 'cursor-pointer font-medium',
                 INVOER,
-                STATUS_KLEUR[actie.status as ActieStatus],
+                STATUS_KLEUR[(nieuweStatus ?? actie.status) as ActieStatus],
                 focusRing
               )}
             >
@@ -223,22 +353,69 @@ export function ActiePanel({
             </select>
           </div>
 
-          {(actie.status === 'uitgesteld' || actie.status === 'wacht_op_input') && (
-            <div className="space-y-1">
+          {/* Uitstellen, wachten en vervallen vragen elk een reden, en die vraagt de app —
+              hij vult hem nooit zelf in. De laag eronder weigert een lege reden met opzet;
+              dit is dezelfde regel, één scherm eerder, zodat je hem ziet in plaats van
+              tegenkomt als foutmelding. */}
+          {nieuweStatus && (
+            <div className="space-y-2 rounded-md border border-warning p-3">
               <Label htmlFor="plan-wachtreden" className="text-2xs">
-                {actie.status === 'uitgesteld' ? 'Aanleiding om te herbekijken' : 'Waarop wacht deze actie?'}
+                {REDEN_VRAAG[nieuweStatus]}
               </Label>
               <input
                 id="plan-wachtreden"
                 type="text"
                 value={wachtreden}
                 maxLength={300}
+                autoFocus
                 disabled={bezig}
                 onChange={(e) => setWachtreden(e.target.value)}
                 className={cn('w-full', INVOER, focusRing)}
               />
+              {nieuweStatus === 'uitgesteld' && (
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="plan-herbekijk-nu" className="text-2xs">
+                    Herbekijken op (optioneel)
+                  </Label>
+                  <input
+                    id="plan-herbekijk-nu"
+                    type="date"
+                    value={herbekijkOp}
+                    disabled={bezig}
+                    onChange={(e) => setHerbekijkOp(e.target.value)}
+                    className={cn(INVOER, DATUM_RING, focusRing)}
+                  />
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  disabled={bezig || wachtreden.trim() === ''}
+                  onClick={() =>
+                    zetStatus(nieuweStatus, {
+                      wachtreden,
+                      reden: wachtreden,
+                      ...(nieuweStatus === 'uitgesteld' && herbekijkOp ? { herbekijkOp } : {}),
+                    })
+                  }
+                >
+                  Zet op {STATUS_LABEL[nieuweStatus].toLowerCase()}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setNieuweStatus(null)}>
+                  Annuleer
+                </Button>
+              </div>
             </div>
           )}
+
+          {!nieuweStatus &&
+            (actie.status === 'uitgesteld' || actie.status === 'wacht_op_input') &&
+            actie.wachtreden && (
+              <p className="text-sm text-muted-foreground">
+                {actie.status === 'uitgesteld' ? 'Aanleiding: ' : 'Wacht op: '}
+                {actie.wachtreden}
+              </p>
+            )}
 
           {actie.focusUitzondering && (
             <p className="rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
@@ -301,24 +478,36 @@ export function ActiePanel({
           )}
         </section>
 
+        {/* Bij een afgeronde actie staat het bewijs hier, meteen onder de status: dat is
+            het enige wat op een afgeronde actie telt. Bij de rest staat het onderaan, waar
+            je het pas nodig hebt. */}
+        {actie.status === 'gereed' && afrondBlok}
+
         {/* Volgende stap en inhoud */}
         <section className="space-y-2 border-t pt-4">
-          <h3 className="text-sm font-semibold">Wat je gaat doen</h3>
-          <div className="space-y-1">
-            <Label htmlFor="plan-stap" className="text-2xs">
-              Eerstvolgende concrete handeling
-            </Label>
-            <input
-              id="plan-stap"
-              type="text"
-              value={volgendeStap}
-              maxLength={300}
-              disabled={bezig}
-              onChange={(e) => setVolgendeStap(e.target.value)}
-              placeholder="Wat is de eerste zet?"
-              className={cn('w-full', INVOER, focusRing)}
-            />
-          </div>
+          <h3 className="text-sm font-semibold">
+            {actie.status === 'gereed' ? 'Wat er gedaan is' : 'Wat je gaat doen'}
+          </h3>
+          {/* Een afgeronde of vervallen actie heeft geen eerste zet meer; ernaar vragen
+              zet een leeg veld met "Wat is de eerste zet?" bovenaan het scherm van iets dat
+              klaar is. */}
+          {actie.status !== 'gereed' && actie.status !== 'vervallen' && (
+            <div className="space-y-1">
+              <Label htmlFor="plan-stap" className="text-2xs">
+                Eerstvolgende concrete handeling
+              </Label>
+              <input
+                id="plan-stap"
+                type="text"
+                value={volgendeStap}
+                maxLength={300}
+                disabled={bezig}
+                onChange={(e) => setVolgendeStap(e.target.value)}
+                placeholder="Wat is de eerste zet?"
+                className={cn('w-full', INVOER, focusRing)}
+              />
+            </div>
+          )}
           <div className="space-y-1">
             <Label htmlFor="plan-titel" className="text-2xs">
               Titel
@@ -691,102 +880,9 @@ export function ActiePanel({
           )}
         </section>
 
-        {/* Afronden of heropenen */}
-        <section className="space-y-2 border-t pt-4">
-          <h3 className="text-sm font-semibold">
-            {actie.status === 'gereed' ? 'Afgerond' : 'Afronden'}
-          </h3>
-          {actie.status === 'gereed' ? (
-            <>
-              <p className="rounded-md border border-border bg-muted p-3 text-sm">
-                {actie.bewijs}
-              </p>
-              <p className="text-2xs tabular-nums text-muted-foreground">
-                Afgerond op {actie.afgerondOp ?? 'onbekende datum'}
-              </p>
-              <div className="flex flex-wrap items-end gap-2">
-                <div className="min-w-0 flex-1 space-y-1">
-                  <Label htmlFor="plan-heropen" className="text-2xs">
-                    Reden om te heropenen
-                  </Label>
-                  <input
-                    id="plan-heropen"
-                    type="text"
-                    value={heropenReden}
-                    maxLength={300}
-                    disabled={bezig}
-                    onChange={(e) => setHeropenReden(e.target.value)}
-                    className={cn('w-full', INVOER, focusRing)}
-                  />
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={bezig}
-                  onClick={() => zetStatus('niet_gestart', { reden: heropenReden || null })}
-                >
-                  Heropen
-                </Button>
-              </div>
-              <p className="text-2xs text-muted-foreground">
-                Het bewijs en de datum blijven staan; de heropening komt in de geschiedenis.
-              </p>
-            </>
-          ) : (
-            <>
-              {actie.gereedcriterium ? (
-                <p className="rounded-md border border-border bg-muted p-3 text-sm">
-                  {actie.gereedcriterium}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Geen gereedcriterium ingevuld — vul het hierboven in, anders is er niets om
-                  tegen af te ronden.
-                </p>
-              )}
-              <div className="space-y-1">
-                <Label htmlFor="plan-bewijs" className="text-2xs">
-                  Bewijs — wat toont dat het klaar is?
-                </Label>
-                <textarea
-                  id="plan-bewijs"
-                  rows={3}
-                  value={bewijs}
-                  maxLength={4000}
-                  disabled={bezig}
-                  onChange={(e) => setBewijs(e.target.value)}
-                  className={cn('w-full', INVOER, focusRing)}
-                />
-              </div>
-              <input
-                type="url"
-                aria-label="Link naar het bewijs (optioneel)"
-                value={bewijsLink}
-                disabled={bezig}
-                placeholder="https://… (optioneel)"
-                onChange={(e) => setBewijsLink(e.target.value)}
-                className={cn('w-full', INVOER, focusRing)}
-              />
-              <p className="text-2xs tabular-nums text-muted-foreground">
-                Wordt vastgelegd met datum {vandaag}.
-              </p>
-              <Button
-                size="sm"
-                disabled={bezig || bewijs.trim() === ''}
-                onClick={() =>
-                  zetStatus('gereed', {
-                    bewijs,
-                    links: /^https?:\/\/\S+$/i.test(bewijsLink)
-                      ? [...links, { label: 'Bewijs', url: bewijsLink.trim() }]
-                      : undefined,
-                  })
-                }
-              >
-                Markeer gereed
-              </Button>
-            </>
-          )}
-        </section>
+        {/* Bij alles behalve gereed staat dit onderaan: het is de laatste stap, niet de
+            eerste. Voor een afgeronde actie staat hetzelfde blok bovenaan. */}
+        {actie.status !== 'gereed' && afrondBlok}
 
         {/* Geschiedenis */}
         <details className="border-t pt-4">

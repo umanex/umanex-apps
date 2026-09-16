@@ -48,6 +48,9 @@ type DashboardClientProps = {
    * zou daarna de oude waarde tonen.
    */
   koppelingen: Record<string, string[]>
+  /** Beginwaarden uit de querystring, voor de sprong vanuit het bedrijfsplan. */
+  initialTab: string | null
+  initialZoek: string | null
 }
 
 const ALL_REGIONS: RegionCode[] = ['WVL', 'OVL', 'BRU']
@@ -59,6 +62,8 @@ export function DashboardClient({
   dekking,
   vermoedens,
   koppelingen,
+  initialTab,
+  initialZoek,
 }: DashboardClientProps) {
   const [jobs, setJobs] = useState(initialJobs)
   const [companies, setCompanies] = useState(initialCompanies)
@@ -66,9 +71,11 @@ export function DashboardClient({
   const router = useRouter()
   const [minScore, setMinScore] = useState(0)
   const [statusFilter, setStatusFilter] = useState<ItemStatus | ''>('')
-  const [zoek, setZoek] = useState('')
+  const [zoek, setZoek] = useState(initialZoek ?? '')
   // Controlled, want de doorklik vanaf een lead moet het tabblad kunnen zetten.
-  const [tab, setTab] = useState('jobs')
+  const [tab, setTab] = useState(
+    initialTab === 'leads' || initialTab === 'prospects' ? initialTab : 'jobs'
+  )
   // Onthouden of de huidige zoekterm van een doorklik komt: dan verdient een lege lijst
   // een andere uitleg dan een gewone mistreffer.
   const [viaLead, setViaLead] = useState(false)

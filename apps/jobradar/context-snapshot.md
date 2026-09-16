@@ -58,22 +58,23 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+ca98e0c fix(jobradar): let a status carry its own reason, and stop showing it twice
 68c0e4f feat(jobradar): build the plan screen and hang it off the existing dashboard
 171145f feat(jobradar): expose the business plan over HTTP, with a probe that drives it
 0a7fda3 feat(jobradar): add the 2027 business plan model with derived blocking
 fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
-8f8756a feat(ui): wire the Storybook MCP into packages/ui
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/app/api/plan/acties/[key]/route.ts
+  M  apps/jobradar/app/page.tsx
+   M apps/jobradar/briefings/2026-09-16-feature-bedrijfsplan-2027.tcebc.md
+  M  apps/jobradar/components/DashboardClient.tsx
   M  apps/jobradar/components/plan/ActiePanel.tsx
   M  apps/jobradar/components/plan/ActieRij.tsx
   M  apps/jobradar/components/plan/PlanClient.tsx
-  M  apps/jobradar/lib/plan/keuring.ts
-  M  apps/jobradar/lib/plan/types.ts
+  M  apps/jobradar/components/plan/Startvoorwaarden.tsx
+  M  apps/jobradar/components/plan/VoortgangPerPrioriteit.tsx
    M apps/jobradar/next-env.d.ts
-  M  apps/jobradar/scripts/plan-probe.sh
    M apps/jobradar/tsconfig.json
 
 ## Bestanden met TODO/FIXME

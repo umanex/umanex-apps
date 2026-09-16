@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
@@ -35,6 +35,14 @@ type PlanClientProps = {
   initieleActie: string | null
 }
 
+/**
+ * Statussen die niet zonder toelichting gezet kunnen worden.
+ *
+ * `gereed` vraagt bewijs; de andere drie vragen een reden. Alle vier openen ze het paneel in
+ * plaats van meteen te versturen — de app vult nooit zelf een veld in dat van Jeroen is.
+ */
+const VRAAGT_TOELICHTING: ActieStatus[] = ['gereed', 'uitgesteld', 'wacht_op_input', 'vervallen']
+
 const LEEG_FILTER: PlanFilterStand = {
   prioriteit: '',
   status: '',
@@ -58,10 +66,22 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
   const [openBeslissing, setOpenBeslissing] = useState<string | null>(null)
   const [detail, setDetail] = useState<ActieDetail | null>(null)
   const [opAfronden, setOpAfronden] = useState(false)
+  /** De status die de gebruiker vanaf een rij koos en die in het paneel om een reden vraagt. */
+  const [voorstel, setVoorstel] = useState<ActieStatus | null>(null)
   const [conflict, setConflict] = useState<FocusConflict | null>(null)
   const [bezig, setBezig] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
   const [filters, setFilters] = useState<PlanFilterStand>(LEEG_FILTER)
+  /**
+   * De actie die als laatste van status wisselde, om de focus terug te zetten.
+   *
+   * Nodig omdat de groepen aparte lijsten zijn: een rij die van "Beschikbaar" naar "Nu bezig"
+   * gaat, verdwijnt uit de ene `ol` en verschijnt in de andere. React ontkoppelt het element
+   * dus, de focus valt terug op `document.body`, en wie met het toetsenbord werkt begint
+   * opnieuw bovenaan een pagina van 22 rijen. De flow-harness ziet dit niet: die tabt een
+   * stilstaande pagina.
+   */
+  const laatstGewijzigd = useRef<string | null>(null)
 
   const perKey = new Map(plan.acties.map((a) => [a.key, a]))
   const lijst = (keys: string[]): ActieWeergave[] =>
@@ -125,30 +145,31 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
   /**
    * Status wijzigen vanaf een rij.
    *
-   * `gereed` gaat niet over de lijn: afronden vraagt bewijs, en dat vraag je niet in een
-   * dropdown. Het paneel opent op de afrond-sectie met focus op het bewijsveld.
+   * Vier statussen gaan niet rechtstreeks over de lijn, omdat ze elk iets van Jeroen vragen
+   * dat een dropdown niet kan opnemen: `gereed` vraagt bewijs, en `uitgesteld`,
+   * `wacht_op_input` en `vervallen` vragen een reden. Die opent het paneel, met het veld
+   * klaar.
+   *
+   * De eerste versie vulde die reden zelf in — "nog te bepalen", "niet meer aan de orde" —
+   * zodat de statuswissel doorging. Dat is precies verkeerd: die tekst landt in een veld dat
+   * Jeroen geschreven hoort te hebben, staat daarna als "Aanleiding: nog te bepalen" in de
+   * lijst, en is niet te onderscheiden van een zin die hij écht typte. De laag eronder
+   * weigert een lege reden juist met opzet; de rij omzeilde zijn eigen rem.
    */
   const wijzigStatus = async (key: string, status: ActieStatus) => {
-    if (status === 'gereed') {
-      setOpAfronden(true)
+    if (VRAAGT_TOELICHTING.includes(status)) {
+      setOpAfronden(status === 'gereed')
+      setVoorstel(status === 'gereed' ? null : status)
       setOpenActie(key)
       return
     }
-    const actie = perKey.get(key)
-    const extra: Record<string, unknown> = {}
-    if (status === 'uitgesteld' || status === 'wacht_op_input') {
-      extra.wachtreden = actie?.wachtreden ?? 'nog te bepalen'
-    }
-    if (status === 'vervallen') extra.reden = 'niet meer aan de orde'
 
+    laatstGewijzigd.current = key
     const { ok, data } = await verstuur(`/api/plan/acties/${key}`, {
       method: 'PATCH',
-      body: JSON.stringify({ status, versie: versieVan(key), ...extra }),
+      body: JSON.stringify({ status, versie: versieVan(key) }),
     })
-    if (!ok && data?.conflict === 'focus') {
-      setOpenActie(key)
-    }
-    if (!ok && data?.conflict === 'afhankelijkheid') {
+    if (!ok && (data?.conflict === 'focus' || data?.conflict === 'afhankelijkheid')) {
       setOpenActie(key)
     }
   }
@@ -175,6 +196,14 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
     })
   }
 
+  useEffect(() => {
+    const key = laatstGewijzigd.current
+    if (!key || openActie) return
+    laatstGewijzigd.current = null
+    const rij = document.querySelector<HTMLElement>(`[data-actie="${key}"] button`)
+    rij?.focus()
+  }, [plan, openActie])
+
   const zichtbaar = plan.acties.filter((a) => {
     if (filters.prioriteit && String(a.prioriteit) !== filters.prioriteit) return false
     if (filters.status && a.status !== filters.status) return false
@@ -186,7 +215,6 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
   const eigenaars = [...new Set(plan.acties.map((a) => a.eigenaar))].sort()
   const volgende = plan.overzicht.volgendeActie
   const volgendeActie = volgende ? perKey.get(volgende.key) : null
-  const openIdeeen = plan.ideeen.filter((i) => i.status === 'open').length
   const actiesVoorPanel = plan.acties.map((a) => ({ key: a.key, titel: a.titel, status: a.status }))
 
   return (
@@ -207,9 +235,11 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
             <h1 className="text-xl font-semibold tracking-tight">Bedrijfsplan 2027</h1>
             <p className="text-sm text-muted-foreground">
               Voorbereiding op de start in {maandLabel(plan.instellingen.lancering)} —{' '}
-              <span className="tabular-nums">{plan.acties.length}</span> acties en{' '}
-              <span className="tabular-nums">{plan.beslissingen.length}</span> beslismomenten. Een
-              werklijst, geen planning met deadlines.
+              <span className="tabular-nums">{plan.acties.length}</span> acties,{' '}
+              <span className="tabular-nums">
+                {plan.beslissingen.filter((b) => b.soort !== 'start').length}
+              </span>{' '}
+              beslismomenten en het startbesluit. Een werklijst, geen planning met deadlines.
             </p>
           </div>
           <div className="flex items-center gap-4 pt-6">
@@ -274,7 +304,7 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
             <TabsTrigger value="ideeen">
               Ideeën
               <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-                {openIdeeen}
+                {plan.ideeen.length}
               </span>
             </TabsTrigger>
           </TabsList>
@@ -401,8 +431,12 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
                   onOpenActie={setOpenActie}
                   onOpenBeslissing={setOpenBeslissing}
                 />
+                {/* Zonder deze filter staat het startbesluit twee keer op één schermhoogte:
+                    hierboven als handeling ("Leg vast") en hier als afgeleide stand ("Wacht
+                    op acties"). Het hoort bij de startvoorwaarden, niet tussen de drie echte
+                    beslismomenten. */}
                 <Beslismomenten
-                  beslissingen={plan.beslissingen}
+                  beslissingen={plan.beslissingen.filter((b) => b.soort !== 'start')}
                   compact
                   onOpen={setOpenBeslissing}
                 />
@@ -494,6 +528,7 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
             vandaag={vandaag}
             urenPerDag={plan.instellingen.urenPerDag}
             opAfronden={opAfronden}
+            voorstel={voorstel}
             focusConflict={conflict}
             bezig={bezig}
             fout={fout}
@@ -501,6 +536,7 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
               if (!o) {
                 setOpenActie(null)
                 setOpAfronden(false)
+                setVoorstel(null)
                 setConflict(null)
                 setFout(null)
               }

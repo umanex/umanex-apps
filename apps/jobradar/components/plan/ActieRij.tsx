@@ -51,7 +51,7 @@ export function ActieRij({
     actie.status === 'uitgesteld' && actie.herbekijkOp !== null && actie.herbekijkOp <= vandaag
 
   return (
-    <li className="rounded-md border p-3">
+    <li data-actie={actie.key} className="rounded-md border p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -178,8 +178,26 @@ export function ActieRij({
                 {STATUS_LABEL[s]}
               </option>
             ))}
-            {actie.status !== 'gereed' && <option value="gereed">Gereed — met bewijs…</option>}
           </select>
+          {/* Afronden is een aparte knop en geen optie in de select.
+              Twee redenen, allebei zichtbaar in de opname: een select-optie hoort een wáárde
+              te zijn en deze was een opdracht (hij opent een paneel, hij zet geen status), en
+              een native select is zo breed als zijn langste optie — "Gereed — met bewijs…"
+              maakte er honderd lege pixels van op alle 22 rijen, met een chevron hard tegen
+              de rand die leest als "klap deze rij open". */}
+          {actie.status !== 'gereed' && (
+            <button
+              type="button"
+              disabled={bezig}
+              onClick={() => onStatus(actie.key, 'gereed')}
+              className={cn(
+                'rounded-sm underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50',
+                focusRing
+              )}
+            >
+              Afronden…
+            </button>
+          )}
         </div>
       </div>
     </li>

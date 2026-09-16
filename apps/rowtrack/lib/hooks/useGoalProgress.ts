@@ -7,7 +7,8 @@ import { t } from '@/i18n';
 import { EMPTY_BASELINE, type PrBaseline } from '@/lib/personalRecords';
 import { fetchPrBaseline } from '@/lib/personalRecordsQuery';
 import type { SplitEntry } from '@/types/workout';
-import type { WorkoutMetricsState, AccumulatorRefs } from './useWorkoutMetrics';
+import type { WorkoutMetricsState, SessionRef } from './useWorkoutMetrics';
+import { mean, takeSplitInterval } from '@/lib/sessionAccumulator';
 
 // --- Goal-reached celebration message (dynamisch per doeltype) ---
 
@@ -38,7 +39,7 @@ export function useGoalProgress(
   phase: Phase,
   goal: WorkoutGoal | null,
   metricsState: WorkoutMetricsState,
-  refs: AccumulatorRefs,
+  session: SessionRef,
   userId: string | undefined,
 ) {
   const { seconds, distanceMeters, splitSeconds } = metricsState;
@@ -62,22 +63,22 @@ export function useGoalProgress(
 
   // --- Computed (useMemo) ---
 
-  // Deel door de teller die in dezelfde guard optelt als de som, niet door tickCount:
-  // die telt ook de packets waarin het veld ontbrak en drukt het gemiddelde omlaag.
-  const avgWatts = useMemo(() => {
-    const c = refs.wattsCount.current || 1;
-    return Math.round(refs.wattsSum.current / c);
-  }, [seconds, refs]);
+  // `mean` deelt altijd door de teller die in dezelfde stap optelde. Een vreemde noemer kan
+  // sinds de accumulator niet meer: som en teller zijn één object.
+  const avgWatts = useMemo(
+    () => Math.round(mean(session.current.watts) ?? 0),
+    [seconds, session],
+  );
 
-  const avgSpm = useMemo(() => {
-    const c = refs.spmCount.current || 1;
-    return Math.round(refs.spmSum.current / c);
-  }, [seconds, refs]);
+  const avgSpm = useMemo(
+    () => Math.round(mean(session.current.spm) ?? 0),
+    [seconds, session],
+  );
 
-  const avgSplit = useMemo(() => {
-    const tc = refs.splitTickCount.current || 1;
-    return Math.round(refs.splitSum.current / tc);
-  }, [seconds, refs]);
+  const avgSplit = useMemo(
+    () => Math.round(mean(session.current.split) ?? 0),
+    [seconds, session],
+  );
 
   const goalProgress = useMemo(() => {
     if (!goal) return null;
@@ -85,11 +86,9 @@ export function useGoalProgress(
       seconds,
       distanceMeters,
       splitSeconds,
-      avgWatts: refs.wattsCount.current > 0
-        ? Math.round(refs.wattsSum.current / refs.wattsCount.current)
-        : 0,
+      avgWatts: Math.round(mean(session.current.watts) ?? 0),
     });
-  }, [goal, seconds, distanceMeters, splitSeconds, refs]);
+  }, [goal, seconds, distanceMeters, splitSeconds, session]);
 
   // --- Fetch personal records ---
   const fetchPRs = useCallback(async () => {
@@ -132,17 +131,15 @@ export function useGoalProgress(
     const nextMilestone = lastSplitDistance.current + 500;
     if (distanceMeters >= nextMilestone) {
       const splitTime = seconds - splitStartSeconds.current;
-      const avgSplitWatts = refs.splitIntervalWattsCount.current > 0
-        ? Math.round(refs.splitIntervalWattsSum.current / refs.splitIntervalWattsCount.current)
-        : undefined;
-      refs.splitIntervalWattsSum.current = 0;
-      refs.splitIntervalWattsCount.current = 0;
+      // Lezen én legen in één handeling — anders is "vergeten te legen" een stille bug waarin
+      // elk volgend segment het vorige meesleept.
+      const avgSplitWatts = takeSplitInterval(session.current);
       setSplits((prev) => [...prev, { distance: nextMilestone, split: splitTime, watts: avgSplitWatts }]);
 
       lastSplitDistance.current = nextMilestone;
       splitStartSeconds.current = seconds;
     }
-  }, [phase, distanceMeters, seconds]);
+  }, [phase, distanceMeters, seconds, session]);
 
   // Géén live PR-check meer. Die vergeleek het lópende gemiddelde en kon dus van true
   // naar false terugvallen; wat bij het stoppen toevallig de laatste stand was, belandde

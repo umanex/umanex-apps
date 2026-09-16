@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import type { RowerMetrics } from '@/lib/ble/types';
-import type { Sample } from '@/lib/bestDistanceTime';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { calculateCalories } from '@/lib/calories';
-import { ema, SMOOTHING } from '@/lib/smoothing';
-
-/** Zoveel opeenvolgende idle-packets vóór de live-waarden naar 0 zakken. */
-const IDLE_PACKETS_BEFORE_ZERO = 2;
+import { createSession, step, type Session } from '@/lib/sessionAccumulator';
 
 const log: (...args: unknown[]) => void = __DEV__
   ? (...args: unknown[]) => console.log('[kcal]', ...args)
@@ -58,91 +53,55 @@ function metricsReducer(state: WorkoutMetricsState, action: MetricsAction): Work
   }
 }
 
-// --- Accumulator Refs ---
-
-export interface AccumulatorRefs {
-  wattsSum: React.MutableRefObject<number>;
-  wattsCount: React.MutableRefObject<number>;
-  spmSum: React.MutableRefObject<number>;
-  spmCount: React.MutableRefObject<number>;
-  splitSum: React.MutableRefObject<number>;
-  tickCount: React.MutableRefObject<number>;
-  splitTickCount: React.MutableRefObject<number>;
-  maxWattsRef: React.MutableRefObject<number>;
-  maxSpmRef: React.MutableRefObject<number>;
-  bestSplitRef: React.MutableRefObject<number>;
-  heartRateSum: React.MutableRefObject<number>;
-  heartRateCount: React.MutableRefObject<number>;
-  maxHeartRateRef: React.MutableRefObject<number>;
-  startedAtRef: React.MutableRefObject<Date | null>;
-  splitIntervalWattsSum: React.MutableRefObject<number>;
-  splitIntervalWattsCount: React.MutableRefObject<number>;
-  /** Totaal aantal slagen (FTMS stroke-count, gebaselined bij start). */
-  totalStrokesRef: React.MutableRefObject<number>;
-  /** {t, d, hr}-tijdreeks (~1 Hz) voor beste-2000m + per-segment afgeleiden. */
-  samplesRef: React.MutableRefObject<Sample[]>;
-}
+/** Wat de consumenten van deze hook uitlezen: het optel-werk van de lopende rit. */
+export type SessionRef = React.MutableRefObject<Session>;
 
 // --- Hook ---
 
 type Phase = 'idle' | 'active' | 'summary';
 
+/**
+ * De live metingen van een rit.
+ *
+ * Het rekenwerk zit sinds 2026-09-16 in `lib/sessionAccumulator.ts` en niet meer hier. Deze
+ * hook doet nog drie dingen: hij haalt het profielgewicht op, hij beslist wélke pakketten de
+ * accumulator in gaan, en hij duwt de live-waarden naar de reducer.
+ *
+ * Die tweede is de kern van F7. Dit effect draait óók op een hartslag-update — `hrBpm` zit in
+ * de dependency-array omdat de hartslag bemonsterd moet worden — en dan is `bleMetrics`
+ * dezelfde gemergede referentie als daarvoor. Alleen de EMA was daartegen beschermd; de sommen
+ * telden het laatste roeipakket opnieuw mee. De referentievergelijking staat nu vóór álle
+ * accumulatie, dus een pakket telt precies één keer.
+ */
 export function useWorkoutMetrics(
   phase: Phase,
   bleMetrics: RowerMetrics | null,
   hrBpm?: number | null,
   /**
-   * Mag de hartslag verzameld worden? Zonder toestemming komt hij deze hook niet eens in.
-   *
-   * De gate zat tot 2026-09-16 alleen op het WEGSCHRIJVEN (`saveWorkout` filterde hem eruit)
-   * en op de verbind-knop. Deze hook kende het begrip niet en accumuleerde vrolijk door —
-   * óók de hartslag die de roeitrainer zélf meestuurt, waar geen borstband en dus geen knop
-   * aan te pas komt. Gevolg: wie "nee" antwoordde zag zijn hartslag in de samenvatting staan
-   * (functionele review F4). De filter bij het opslaan blijft als tweede grendel staan.
+   * Mag de hartslag verzameld worden? Zonder toestemming komt hij deze hook niet eens in —
+   * ook niet de hartslag die de roeitrainer zélf meestuurt, waar geen borstband en dus geen
+   * knop aan te pas komt. De filter bij het opslaan blijft als tweede grendel staan.
    */
   collectHr: boolean = true,
 ) {
   const [state, dispatch] = useReducer(metricsReducer, initialState);
 
-  const wattsSum = useRef(0);
-  const wattsCount = useRef(0);
-  const spmSum = useRef(0);
-  const spmCount = useRef(0);
-  const splitSum = useRef(0);
-  const tickCount = useRef(0);
-  const splitTickCount = useRef(0);
-  const maxWattsRef = useRef(0);
-  const maxSpmRef = useRef(0);
-  const bestSplitRef = useRef(Infinity);
-  const heartRateSum = useRef(0);
-  const heartRateCount = useRef(0);
-  const maxHeartRateRef = useRef(0);
-  const startedAtRef = useRef<Date | null>(null);
-  const initialElapsed = useRef<number | null>(null);
-  const initialDistance = useRef<number | null>(null);
+  const session = useRef<Session>(createSession());
   const weightKgRef = useRef<number | null>(null);
-  const kcalAccumulator = useRef(0);
-  const lastKcalElapsed = useRef(0);
-  const currentWattsRef = useRef(0);
-  const currentSecondsRef = useRef(0);
-  const currentDistanceRef = useRef(0);
-  const splitIntervalWattsSum = useRef(0);
-  const splitIntervalWattsCount = useRef(0);
-  const samplesRef = useRef<Sample[]>([]);
-  const lastSampleSecond = useRef(-1);
-  const initialStrokeCount = useRef<number | null>(null);
-  const totalStrokesRef = useRef(0);
-  // EMA-state voor de gesmoothe live-weergave (null = nog niet geseed).
-  const wattsEmaRef = useRef<number | null>(null);
-  const spmEmaRef = useRef<number | null>(null);
-  const splitEmaRef = useRef<number | null>(null);
-  /** Opeenvolgende packets zonder kracht én zonder slagen — zie de rust-transitie. */
-  const idlePacketsRef = useRef(0);
-  /** Afstand van het vorige verwerkte packet — staat die stil, dan sta jij ook stil. */
-  const lastIdleDistanceRef = useRef<number | null>(null);
-  // Laatst-verwerkte bleMetrics-referentie: dit effect her-draait ook op hrBpm-
-  // wijzigingen (HR-accumulatie), en dan is bleMetrics dezelfde gemergede referentie.
+
+  /**
+   * De laatst verwerkte pakket-referentie. Dit effect her-draait ook op een hartslag-update,
+   * en dan is `bleMetrics` hetzelfde object — verwerken zou het dubbel tellen.
+   */
   const lastProcessedMetricsRef = useRef<RowerMetrics | null>(null);
+
+  /**
+   * De laatste hartslag, als ref en niet uit de closure. De accumulator bemonstert hem op de
+   * cadans van de roeipakketten; een band die doorstuurt terwijl er niet geroeid wordt, hoort
+   * geen extra metingen op te leveren.
+   */
+  const hrRef = useRef<number | null>(null);
+  hrRef.current = hrBpm ?? null;
 
   // --- Load profile weight ---
   const { user } = useAuth();
@@ -162,235 +121,29 @@ export function useWorkoutMetrics(
   // --- BLE metrics effect ---
   useEffect(() => {
     if (phase !== 'active' || !bleMetrics) return;
-
-    // De EMA is orde-afhankelijk: stapt hij tweemaal op hetzelfde sample, dan
-    // ~verdubbelt de effectieve alpha en verzwakt de smoothing. Dit effect her-
-    // draait echter óók op een hrBpm-update (HR zit in de dep-array), terwijl
-    // bleMetrics dan dezelfde gemergede referentie is en de rower-velden non-null
-    // blijven. Stap de EMA's daarom enkel op een écht nieuw rower-packet. (De rauwe
-    // sommen mogen dubbel-tellen — ze zelf-corrigeren via hun eigen teller; enkel de
-    // orde-afhankelijke EMA heeft deze gate nodig.)
-    //
-    // Elke som telt op in dezelfde guard als zijn teller. Dat is geen stijlkeuze:
-    // deelt een gemiddelde door `tickCount`, dan tellen de packets waarin het veld
-    // ontbreekt (idle-nulling in ble-service, of een losse hr-update) wél in de
-    // noemer en niet in de teller — het gemiddelde wordt dan het echte gemiddelde
-    // maal de duty-cycle. Nieuwe som erbij? Nieuwe teller erbij.
-    const isNewRowerPacket = bleMetrics !== lastProcessedMetricsRef.current;
+    // Eén pakket, één stap. Zie de kop: dit is de poort van F7, en hij staat bewust vóór alles.
+    if (bleMetrics === lastProcessedMetricsRef.current) return;
     lastProcessedMetricsRef.current = bleMetrics;
 
-    const partial: Partial<WorkoutMetricsState> = {};
-
-    if (bleMetrics.instantaneousPower != null) {
-      partial.watts = bleMetrics.instantaneousPower;
-      wattsSum.current += bleMetrics.instantaneousPower;
-      wattsCount.current += 1;
-      splitIntervalWattsSum.current += bleMetrics.instantaneousPower;
-      splitIntervalWattsCount.current += 1;
-      if (bleMetrics.instantaneousPower > maxWattsRef.current) {
-        maxWattsRef.current = bleMetrics.instantaneousPower;
-      }
-      if (isNewRowerPacket) {
-        wattsEmaRef.current = ema(wattsEmaRef.current, bleMetrics.instantaneousPower, SMOOTHING.watts);
-        partial.wattsSmoothed = wattsEmaRef.current;
-      }
+    const live = step(session.current, bleMetrics, hrRef.current, {
+      weightKg: weightKgRef.current,
+      collectHr,
+    });
+    if (live.calories != null) {
+      log('tick — watts:', session.current.currentWatts, 'weight:', weightKgRef.current, 'total:', live.calories);
     }
-    if (bleMetrics.strokeRate != null) {
-      // Rauwe SPM opslaan; de 'SPM halveren'-correctie gebeurt bij weergave
-      // (zie correctSpm + useSpmHalved) zodat álle historiek consistent is.
-      partial.spm = bleMetrics.strokeRate;
-      spmSum.current += bleMetrics.strokeRate;
-      spmCount.current += 1;
-      if (bleMetrics.strokeRate > maxSpmRef.current) {
-        maxSpmRef.current = bleMetrics.strokeRate;
-      }
-      if (isNewRowerPacket) {
-        spmEmaRef.current = ema(spmEmaRef.current, bleMetrics.strokeRate, SMOOTHING.spm);
-        partial.spmSmoothed = spmEmaRef.current;
-      }
-    }
-    if (bleMetrics.instantaneousPace != null && bleMetrics.instantaneousPace > 0) {
-      partial.splitSeconds = bleMetrics.instantaneousPace;
-      splitSum.current += bleMetrics.instantaneousPace;
-      splitTickCount.current += 1;
-      if (bleMetrics.instantaneousPace < bestSplitRef.current) {
-        bestSplitRef.current = bleMetrics.instantaneousPace;
-      }
-      if (isNewRowerPacket) {
-        splitEmaRef.current = ema(splitEmaRef.current, bleMetrics.instantaneousPace, SMOOTHING.split);
-        partial.splitSmoothed = splitEmaRef.current;
-      }
-    }
-    // Rust-transitie. De erg meldt geen kracht én geen slagen meer (ble-service nult
-    // die drie samen zodra watts en spm allebei 0 zijn). De EMA stapt dan niet, dus
-    // bleef de "huidige" waarde staan op wat je vóór de pauze trok — je las 180 W
-    // terwijl je uitblies. De EMA-refs gaan mee leeg, zodat de eerste haal daarna
-    // vers seedt in plaats van vanaf de oude waarde omhoog te kruipen.
-    //
-    // Twee opeenvolgende idle-packets vereist: één enkel 0/0-packet mag geen flikkering
-    // geven als een erg tijdens de recovery even niets rapporteert.
-    //
-    // Tenzij het vliegwiel óók stilstaat. Tijdens een recovery blijft het draaien en
-    // loopt `totalDistance` gewoon door (meters per seconde, ruim boven de resolutie);
-    // bij een echte pauze staat die teller stil. Is de afstand niet bewogen, dan is dit
-    // geen recovery-gaatje maar stilstand, en is wachten op bevestiging een seconde
-    // waarin je 180 W leest terwijl je uitblaast.
-    if (isNewRowerPacket) {
-      const idle = bleMetrics.instantaneousPower == null && bleMetrics.strokeRate == null;
-      idlePacketsRef.current = idle ? idlePacketsRef.current + 1 : 0;
-
-      const distanceFrozen =
-        bleMetrics.totalDistance != null &&
-        bleMetrics.totalDistance === lastIdleDistanceRef.current;
-      lastIdleDistanceRef.current = bleMetrics.totalDistance ?? lastIdleDistanceRef.current;
-
-      if (idle && (distanceFrozen || idlePacketsRef.current >= IDLE_PACKETS_BEFORE_ZERO)) {
-        wattsEmaRef.current = null;
-        spmEmaRef.current = null;
-        splitEmaRef.current = null;
-        partial.wattsSmoothed = 0;
-        partial.spmSmoothed = 0;
-        // Split níet op 0 — dat leest als oneindig snel. Bij stilstand is het tempo
-        // ongedefinieerd, en dat toont `formatSplit` als "—".
-        partial.splitSmoothed = Infinity;
-      }
-    }
-
-    if (bleMetrics.totalDistance != null) {
-      if (initialDistance.current === null) initialDistance.current = bleMetrics.totalDistance;
-      partial.distanceMeters = bleMetrics.totalDistance - initialDistance.current;
-    }
-    if (bleMetrics.strokeCount != null) {
-      // Cumulatieve slagenteller → baselinen zoals distance; totaal = huidig − start.
-      if (initialStrokeCount.current === null) initialStrokeCount.current = bleMetrics.strokeCount;
-      totalStrokesRef.current = Math.max(0, bleMetrics.strokeCount - initialStrokeCount.current);
-    }
-    if (bleMetrics.elapsedTime != null) {
-      if (initialElapsed.current === null) initialElapsed.current = bleMetrics.elapsedTime;
-      partial.seconds = bleMetrics.elapsedTime - initialElapsed.current;
-    }
-    if (bleMetrics.resistanceLevel != null) {
-      partial.resistanceLevel = bleMetrics.resistanceLevel;
-    }
-    // HR: prefer external HR monitor, fallback to FTMS heart rate.
-    // `collectHr` staat vooraan: de tweede bron is de hartslag van de erg zelf, en die komt
-    // binnen zonder dat er ooit een knop is aangeraakt.
-    const hr = !collectHr ? null
-      : (hrBpm != null && hrBpm > 0) ? hrBpm
-      : (bleMetrics.heartRate != null && bleMetrics.heartRate > 0) ? bleMetrics.heartRate
-      : null;
-    if (hr != null) {
-      heartRateSum.current += hr;
-      heartRateCount.current += 1;
-      if (hr > maxHeartRateRef.current) {
-        maxHeartRateRef.current = hr;
-      }
-    }
-    tickCount.current += 1;
-
-    // Keep refs in sync for kcal calculation
-    if (partial.watts != null) currentWattsRef.current = partial.watts;
-    if (partial.seconds != null) currentSecondsRef.current = partial.seconds;
-    if (partial.distanceMeters != null) currentDistanceRef.current = partial.distanceMeters;
-
-    // Leg de {t, d}-tijdreeks vast op ~1 Hz (één punt per hele toestelseconde) voor
-    // de exacte beste-2000m-berekening bij het opslaan (lib/bestDistanceTime.ts).
-    // De elapsedTime van het toestel is in hele seconden en bevriest bij een pauze,
-    // dus ontdubbelen op hele seconde houdt de payload klein én de pauzes buiten de
-    // bewegende tijd.
-    //
-    // Bemonster op een VERSE elapsed-lezing én eis dat de afstand al een baseline
-    // heeft: een toestel dat ooit een distance-only pakket stuurt vóór het eerste
-    // elapsed-veld zou anders de opgebouwde afstand op t=0 samenvouwen en een
-    // vals-snelle beste 2k opleveren. De eis van een elapsed-baseline (initialElapsed
-    // wordt gezet zodra partial.seconds != null) plus een vastgestelde afstand
-    // baseline pairs every sample's t and d correctly.
-    if (partial.seconds != null && initialDistance.current !== null) {
-      const whole = Math.floor(currentSecondsRef.current);
-      if (whole !== lastSampleSecond.current) {
-        lastSampleSecond.current = whole;
-        samplesRef.current.push({
-          t: currentSecondsRef.current,
-          d: currentDistanceRef.current,
-          ...(hr != null ? { hr } : {}),
-        });
-      }
-    }
-
-    // Cumulative calories: add interval kcal every 5 seconds
-    const elapsed = currentSecondsRef.current;
-    if (elapsed > 0 && elapsed >= lastKcalElapsed.current + 5) {
-      const w = currentWattsRef.current;
-      const intervalSecs = elapsed - lastKcalElapsed.current;
-      const weightKg = weightKgRef.current ?? undefined;
-      const intervalKcal = calculateCalories(w, intervalSecs, weightKg);
-      kcalAccumulator.current += intervalKcal;
-      lastKcalElapsed.current = elapsed;
-      partial.calories = Math.round(kcalAccumulator.current);
-      log('tick — watts:', w, 'weight:', weightKg, 'interval:', intervalKcal.toFixed(3), 'total:', kcalAccumulator.current.toFixed(1));
-    }
-
-    dispatch({ type: 'BLE_UPDATE', metrics: partial });
+    dispatch({ type: 'BLE_UPDATE', metrics: live });
   }, [bleMetrics, phase, hrBpm, collectHr]);
 
   // --- Reset ---
   const resetAll = useCallback(() => {
     dispatch({ type: 'RESET' });
-    wattsSum.current = 0;
-    wattsCount.current = 0;
-    spmSum.current = 0;
-    spmCount.current = 0;
-    splitSum.current = 0;
-    tickCount.current = 0;
-    splitTickCount.current = 0;
-    maxWattsRef.current = 0;
-    maxSpmRef.current = 0;
-    bestSplitRef.current = Infinity;
-    heartRateSum.current = 0;
-    heartRateCount.current = 0;
-    maxHeartRateRef.current = 0;
-    initialElapsed.current = null;
-    initialDistance.current = null;
-    kcalAccumulator.current = 0;
-    lastKcalElapsed.current = 0;
-    currentWattsRef.current = 0;
-    currentSecondsRef.current = 0;
-    currentDistanceRef.current = 0;
-    splitIntervalWattsSum.current = 0;
-    splitIntervalWattsCount.current = 0;
-    samplesRef.current = [];
-    lastSampleSecond.current = -1;
-    initialStrokeCount.current = null;
-    totalStrokesRef.current = 0;
-    wattsEmaRef.current = null;
-    spmEmaRef.current = null;
-    splitEmaRef.current = null;
-    idlePacketsRef.current = 0;
-    lastIdleDistanceRef.current = null;
+    // Eén verse sessie in plaats van twintig losse refs terugzetten. Een nieuwe accumulator
+    // vergeten te resetten kan zo niet meer: er is er maar één.
+    session.current = createSession();
+    session.current.startedAt = new Date();
     lastProcessedMetricsRef.current = null;
-    startedAtRef.current = new Date();
   }, []);
 
-  const refs: AccumulatorRefs = {
-    wattsSum,
-    wattsCount,
-    spmSum,
-    spmCount,
-    splitSum,
-    tickCount,
-    splitTickCount,
-    maxWattsRef,
-    maxSpmRef,
-    bestSplitRef,
-    heartRateSum,
-    heartRateCount,
-    maxHeartRateRef,
-    startedAtRef,
-    splitIntervalWattsSum,
-    splitIntervalWattsCount,
-    totalStrokesRef,
-    samplesRef,
-  };
-
-  return { state, refs, resetAll, hasProfileWeight: weightKgRef.current !== null };
+  return { state, session, resetAll, hasProfileWeight: weightKgRef.current !== null };
 }

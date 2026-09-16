@@ -18,6 +18,7 @@ import { useWorkoutMetrics } from '@/lib/hooks/useWorkoutMetrics';
 import { useGoalProgress } from '@/lib/hooks/useGoalProgress';
 import { isWorthSaving } from '@/lib/storableWorkout';
 import { buildWorkoutRow } from '@/lib/workoutRow';
+import { mean } from '@/lib/sessionAccumulator';
 import { type PrEntry } from '@/lib/personalRecords';
 import { IdlePhase } from '@/components/workout/IdlePhase';
 import { ActivePhase } from '@/components/workout/ActivePhase';
@@ -49,12 +50,12 @@ export default function WorkoutScreen() {
   const [idleDurSec, setIdleDurSec] = useState('');
 
   // --- Hooks ---
-  const { state: metricsState, refs, resetAll, hasProfileWeight } = useWorkoutMetrics(phase, bleMetrics, hrBpm, healthGranted);
+  const { state: metricsState, session, resetAll, hasProfileWeight } = useWorkoutMetrics(phase, bleMetrics, hrBpm, healthGranted);
   const {
     toastMsg, splits, goalReached,
     avgWatts, avgSpm, avgSplit,
     dismissToast, fetchPRs, resetGameState, prBaseline,
-  } = useGoalProgress(phase, goal, metricsState, refs, user?.id);
+  } = useGoalProgress(phase, goal, metricsState, session, user?.id);
 
   /**
    * De records die déze rit gebroken heeft, met de waarde die ze verving. Wordt één keer
@@ -174,7 +175,7 @@ export default function WorkoutScreen() {
   const saveWorkout = useCallback(async () => {
     if (!user) return;
     if (savedRef.current) return;
-    if (refs.tickCount.current === 0) return;
+    if (session.current.packets === 0) return;
     if (!isWorthSaving(metricsState.distanceMeters, metricsState.seconds)) {
       // savedRef tóch zetten: de beslissing is genomen, en een retry zou hem herhalen.
       savedRef.current = true;
@@ -186,26 +187,27 @@ export default function WorkoutScreen() {
     // valt terug op `new Date()` wanneer de starttijd ontbreekt, en die terugval per poging
     // opnieuw uitvoeren zou de identiteit van de rit elke keer veranderen — precies de sleutel
     // waarop de wachtrij hem bewaart en waarop de unieke index een dubbele insert herkent.
+    const s = session.current;
     const { row, prEntries: entries } = buildWorkoutRow({
       userId: user.id,
-      startedAt: refs.startedAtRef.current?.toISOString() ?? new Date().toISOString(),
+      startedAt: s.startedAt?.toISOString() ?? new Date().toISOString(),
       seconds: metricsState.seconds,
       distanceMeters: metricsState.distanceMeters,
       calories: metricsState.calories,
       resistanceLevel: metricsState.resistanceLevel,
-      ticks: refs.tickCount.current,
-      // Elke som met de teller die in dezelfde guard optelde — nooit met `tickCount`, die
-      // telt ook packets waarin het veld ontbrak en drukt het gemiddelde met de duty-cycle.
-      watts: { sum: refs.wattsSum.current, count: refs.wattsCount.current },
-      spm: { sum: refs.spmSum.current, count: refs.spmCount.current },
-      split: { sum: refs.splitSum.current, count: refs.splitTickCount.current },
-      heartRate: { sum: refs.heartRateSum.current, count: refs.heartRateCount.current },
-      maxWatts: refs.maxWattsRef.current,
-      maxSpm: refs.maxSpmRef.current,
-      maxHeartRate: refs.maxHeartRateRef.current,
-      bestSplit: refs.bestSplitRef.current,
-      totalStrokes: refs.totalStrokesRef.current,
-      samples: refs.samplesRef.current,
+      ticks: s.packets,
+      // Elke som draagt zijn eigen teller: som en noemer zijn één object, dus delen door een
+      // vreemde teller kan niet meer.
+      watts: s.watts,
+      spm: s.spm,
+      split: s.split,
+      heartRate: s.heartRate,
+      maxWatts: s.maxWatts,
+      maxSpm: s.maxSpm,
+      maxHeartRate: s.maxHeartRate,
+      bestSplit: s.bestSplit,
+      totalStrokes: s.totalStrokes,
+      samples: s.samples,
       goal,
       goalReached,
       splits,
@@ -217,7 +219,7 @@ export default function WorkoutScreen() {
 
     setPrEntries(entries);
     await syncWorkout(row);
-  }, [user, metricsState, goal, goalReached, splits, refs, prBaseline, healthGranted, syncWorkout]);
+  }, [user, metricsState, goal, goalReached, splits, session, prBaseline, healthGranted, syncWorkout]);
 
   // Bij het openen van dit scherm verbinden met de toestellen van vorige keer.
   // Alleen in de idle-fase: tijdens een rit staat er al een verbinding, en op de
@@ -283,14 +285,14 @@ export default function WorkoutScreen() {
   }, [phase, goalReached, saveWorkout, disconnect, stopHR]);
 
   // --- Summary computed values ---
-  const summaryMaxWatts = refs.maxWattsRef.current > 0 ? refs.maxWattsRef.current : null;
-  const summaryBestSplit = refs.bestSplitRef.current < Infinity ? Math.round(refs.bestSplitRef.current) : null;
-  const summaryAvgHr = refs.heartRateCount.current > 0
-    ? Math.round(refs.heartRateSum.current / refs.heartRateCount.current)
-    : null;
-  const summaryMaxSpm = refs.maxSpmRef.current > 0 ? Math.round(refs.maxSpmRef.current) : null;
-  const summaryMaxHr = refs.maxHeartRateRef.current > 0 ? refs.maxHeartRateRef.current : null;
-  const summaryTotalStrokes = refs.totalStrokesRef.current > 0 ? refs.totalStrokesRef.current : null;
+  const summary = session.current;
+  const summaryMaxWatts = summary.maxWatts > 0 ? summary.maxWatts : null;
+  const summaryBestSplit = Number.isFinite(summary.bestSplit) ? Math.round(summary.bestSplit) : null;
+  const summaryAvgHrRaw = mean(summary.heartRate);
+  const summaryAvgHr = summaryAvgHrRaw != null ? Math.round(summaryAvgHrRaw) : null;
+  const summaryMaxSpm = summary.maxSpm > 0 ? Math.round(summary.maxSpm) : null;
+  const summaryMaxHr = summary.maxHeartRate > 0 ? summary.maxHeartRate : null;
+  const summaryTotalStrokes = summary.totalStrokes > 0 ? summary.totalStrokes : null;
 
   // --- Render ---
 

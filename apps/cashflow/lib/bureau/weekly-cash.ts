@@ -24,7 +24,8 @@
 import type { IncomeItem, MonthData, MonthKey } from '../cashflow/types.ts';
 import type { BureauData, IsoDate, WeekKey } from './types.ts';
 import { EPSILON, invoiceGross, round2 } from './money.ts';
-import { firstWeekOfMonth, isoWeekKey, lastWeekOfMonth, maxWeek, monthOf, weekRange, weeksFrom } from './periods.ts';
+import { endOfMonth, parseISO } from 'date-fns';
+import { firstWeekOfMonth, isoWeekKey, lastWeekOfMonth, maxWeek, monthOf, toIsoDate, weekRange, weeksFrom } from './periods.ts';
 
 export const HORIZON_WEEKS = 13;
 
@@ -93,9 +94,14 @@ export type MonthReconciliation = {
   delta: number;
 };
 
+/** Het vrije saldo aan het einde van een maand, zoals de rekenkern het uitrekent — zonder aanname over timing binnen de maand. */
+export type MonthEnd = { monthKey: MonthKey; closingFree: number };
+
 export type WeeklyCashPlan = {
   asOf: IsoDate;
   position: { bank: number; reserved: number; free: number };
+  /** De maandeinden die binnen de horizon vallen; een maand die na de laatste week eindigt, telt niet mee. */
+  monthEnds: MonthEnd[];
   weeks: WeekRow[];
   beyondHorizon: CashLine[];
   unplaced: UnplacedInvoice[];
@@ -130,6 +136,8 @@ export function reservedAtStart(anchor: MonthData): PotSplit {
   }
   return { provisions: round2(split.provisions), buffer: round2(split.buffer) };
 }
+
+const lastDayOfMonth = (m: MonthKey): IsoDate => toIsoDate(endOfMonth(parseISO(`${m}-01`)));
 
 export function buildWeeklyCashPlan({ asOf, months, incomeItems, bureau }: WeeklyCashInput): WeeklyCashPlan {
   const weekKeys = weeksFrom(asOf, HORIZON_WEEKS);
@@ -238,9 +246,15 @@ export function buildWeeklyCashPlan({ asOf, months, incomeItems, bureau }: Weekl
     return { monthKey: m.monthKey, engineMovement, placed, unplaced: open, beyondHorizon: later, delta: round2(engineMovement - placed - open - later) };
   });
 
+  const horizonEnd = weekRange(lastWeek).to;
+  const monthEnds: MonthEnd[] = horizonMonths
+    .filter((m) => lastDayOfMonth(m.monthKey) <= horizonEnd)
+    .map((m) => ({ monthKey: m.monthKey, closingFree: round2(m.endBalance) }));
+
   return {
     asOf,
     position: { bank, reserved: reservedTotal, free: round2(bank - reservedTotal) },
+    monthEnds,
     weeks,
     beyondHorizon,
     unplaced: unplaced.sort((a, b) => (a.expectedPaymentDate ?? a.dueDate).localeCompare(b.expectedPaymentDate ?? b.dueDate)),
@@ -254,7 +268,22 @@ export function verifyReconciliation(plan: WeeklyCashPlan): MonthReconciliation[
   return plan.reconciliation.filter((r) => Math.abs(r.delta) > EPSILON);
 }
 
-/** De laagste verwachte vrije stand in de horizon, met zijn week. `null` zonder weken. */
+/**
+ * Het kopgetal: het laagste vrije saldo aan een maandeinde binnen de horizon. Rekent zonder
+ * aanname over wanneer een kost of inkomst binnen de maand valt — dat is de rekenkern zelf.
+ * `null` zonder volledig gedekte maand.
+ */
+export function lowestMonthEnd(plan: WeeklyCashPlan): MonthEnd | null {
+  return plan.monthEnds.reduce<MonthEnd | null>((min, m) => (min === null || m.closingFree < min.closingFree ? m : min), null);
+}
+
+/**
+ * De laagste stand in de weektabel. Die leunt op de verdeelregel — kosten en provisies vroeg,
+ * losse inkomsten laat, facturen op hun datum, buffer op maandeinde — en is dus een aanname over
+ * timing, geen voorspelling. Meestal staat hij lager dan het laagste maandeinde, maar niet altijd:
+ * valt de buffer-storting van een maand in dezelfde week als een factuur van de volgende, dan sluit
+ * geen enkele week op dat maandeinde. Zie `lowestMonthEnd` voor het kopgetal. `null` zonder weken.
+ */
 export function lowestFree(plan: WeeklyCashPlan): { weekKey: WeekKey; closingFree: number } | null {
   return plan.weeks.reduce<{ weekKey: WeekKey; closingFree: number } | null>(
     (min, w) => (min === null || w.closingFree < min.closingFree ? { weekKey: w.weekKey, closingFree: w.closingFree } : min),

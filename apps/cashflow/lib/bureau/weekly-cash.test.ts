@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { IncomeItem, MonthData } from '../cashflow/types.ts';
-import { buildWeeklyCashPlan, lowestFree, verifyReconciliation, type WeeklyCashPlan } from './weekly-cash.ts';
+import { buildWeeklyCashPlan, lowestFree, lowestMonthEnd, verifyReconciliation, type WeeklyCashPlan } from './weekly-cash.ts';
 import { defaultGoals } from './goals.ts';
 import { emptyBureau } from './normalize.ts';
 import { invoice, month, pot, project, subtotals } from './testing.ts';
@@ -177,4 +177,42 @@ test('laagste vrije stand in de horizon', () => {
   const { plan } = scenario();
   const laagste = lowestFree(plan)!;
   assert.equal(laagste.closingFree, Math.min(...plan.weeks.map((w) => w.closingFree)));
+});
+
+test('maandeinden: de eindsaldi van de rekenkern, alleen voor maanden die binnen de horizon eindigen', () => {
+  const { plan, months } = scenario();
+  // Horizon W10–W22 eindigt op zondag 6 juni 2027: juni valt erbuiten, ook al begint hij erin.
+  assert.deepEqual(plan.monthEnds, [
+    { monthKey: '2027-03', closingFree: 8_940 },
+    { monthKey: '2027-04', closingFree: 6_340 },
+    { monthKey: '2027-05', closingFree: 3_840 },
+  ]);
+  assert.deepEqual(plan.monthEnds.map((m) => m.closingFree), months.slice(0, 3).map((m) => m.endBalance));
+  assert.deepEqual(lowestMonthEnd(plan), { monthKey: '2027-05', closingFree: 3_840 });
+});
+
+test('kopgetal en weektabel verschillen: de week trekt de kosten van een maand vóór haar inkomsten mee', () => {
+  const { plan } = scenario();
+  const week = lowestFree(plan)!;
+  const maand = lowestMonthEnd(plan)!;
+  // W22 (31 mei–6 jun) draagt juni's vaste kosten maar niet juni's losse post van 900 (laatste week van juni).
+  assert.equal(week.weekKey, '2027-W22');
+  assert.equal(week.closingFree, 3_840 - 2_500);
+  assert.ok(week.closingFree < maand.closingFree);
+});
+
+test('horizongrens: een maand die precies op de laatste zondag eindigt, telt mee', () => {
+  // 2 november 2026 → W45 t/m 2027-W04 (25–31 jan): januari 2027 eindigt op zondag 31 januari.
+  // Gezocht, niet gegokt: 2026 heeft 53 ISO-weken, dus "13 weken verder" valt niet op een rond getal.
+  const asOf = '2026-11-02';
+  const keten = ['2026-11', '2026-12', '2027-01', '2027-02'];
+  let start = 1_000;
+  const months = keten.map((k, i) => {
+    const m = month(k, { startBalance: start, subtotals: subtotals({ basis: i === 0 ? 'bank' : 'vrij', incoming: start, recurring: 100 }) });
+    start = m.endBalance;
+    return m;
+  });
+  const plan = buildWeeklyCashPlan({ asOf, months, incomeItems: [], bureau: emptyBureau() });
+  assert.equal(plan.weeks.at(-1)!.to, '2027-01-31');
+  assert.deepEqual(plan.monthEnds.map((m) => m.monthKey), ['2026-11', '2026-12', '2027-01']);
 });

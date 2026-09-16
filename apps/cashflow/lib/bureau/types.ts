@@ -57,6 +57,7 @@ export const OPEN_STAGES: readonly OpportunityStage[] = ['contact', 'gesprek', '
 
 export type SignalThresholds = {
   /** Verwacht vrij saldo onder deze vloer in een van de 13 weken. */
+  /** Kritiek als een maandeinde binnen de 13 weken onder de vloer zakt; info als alleen de weektabel dat doet. */
   negativeCash: { enabled: boolean; floor: number };
   /** Overbelasting in dagen die nog getolereerd wordt, bovenop de buffer. */
   overbooking: { enabled: boolean; toleranceDays: number };

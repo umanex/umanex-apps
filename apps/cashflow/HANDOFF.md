@@ -195,3 +195,15 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 - **Check:** `curl -s localhost:6006/index.json | grep -c -i 'textarea\|nativeselect'` — 0 = de index is nog oud.
 - **Volgende zet:** `pnpm --filter @umanex/ui pm2:restart`, dan opnieuw `stories-find-by-component` op beide bestanden.
 - **Status:** open
+
+## 2026-09-16 — Een losse `pnpm start` op :3000 komt terug na het stoppen · [risico]
+- **Bevinding:** Twee keer dezelfde keten gevonden en gestopt, met akkoord van Jeroen: `bash -c "cd /Users/jeroen/Documents/umanex-apps/apps/cashflow && pnpm start"` (ouder = launchd) → pnpm → `next-server` op `*:3000` (IPv6). Gestart om 19:55:43 en opnieuw om 22:28:06, telkens binnen een seconde na een herstart van de PM2-app `cashflow` (die telt 16 herstarts). Geen PM2-config, `launch.json`, crontab of LaunchAgent bevat het commando, en geen Bash-aanroep in de sessietranscripts van 2026-09-16 draait het letterlijk. Na een `pm2:rebuild` serveert zo'n losse server oude chunk-hashes tegen een nieuwe `.next`, en `localhost` kan via `::1` bij hem uitkomen: een witte pagina of `ChunkLoadError`.
+- **Check:** `lsof -nP -iTCP:3000 -sTCP:LISTEN | tail -n +2 | wc -l` — meer dan 1 = hij staat er weer; `ps -axo pid,ppid,lstart,command | grep "cashflow && pnpm start"` geeft het starttijdstip.
+- **Volgende zet:** Bij een volgende herstart kijken wat er in dezelfde seconde draait (bv. `ps -axo pid,ppid,lstart,command` vlak na `pm2 restart cashflow`), en welk hulpmiddel een dev-server "cd && pnpm start" als preview start. Tot dan: vóór elke `pm2:rebuild` de poort tellen.
+- **Status:** open
+
+## 2026-09-16 — Het nieuwe cash-kopgetal is niet in de browser gezien op het echte document · [next-step]
+- **Bevinding:** umanex-apps#514 staat op `main` en `:3000` is herbouwd (BUILD_ID `QPcXlBnA…`, alleen PM2 luistert, `/bureau` 200). De Chrome-extensie was bij de controle niet verbonden. Uit `/` volgt de verwachting: maandeinden sep −€ 296 · okt −€ 508 · nov −€ 7.614, kopgetal −€ 7.614 eind november.
+- **Check:** Open `http://localhost:3000/bureau` en `/bureau/cash`: noemt de tegel "laagste maandeinde −€ 7.614 (eind nov 2026)" en staat hetzelfde onder "Laagste maandeinde" op de cashpagina? (De bedragen verschuiven mee zodra de prognose verandert; dan hoort het kopgetal gelijk te zijn aan het laagste "Vorig saldo"-bedrag op `/` van de maanden erna.)
+- **Volgende zet:** Eén keer kijken; klopt het, dan kan dit op resolved.
+- **Status:** open

@@ -98,8 +98,15 @@ const SELFTEST = process.argv.includes('--selftest');
 // ScrollView), marge +1 (de `[0,0,0,-20]`-breakout van GoalHeader, die élke IdlePhase-story
 // al meldt — zie de voorbeeldenlijst in de uitvoer). De overige vijf tellers bewogen niet.
 // Twee CI-runs op dezelfde commit gaven identiek 47/253/12/48; één run zou hier geen meting zijn.
-const BEKEND = { stories: 47, randkleur: 0, metRand: 253, placeholder: 4, gescrold: 12,
-  overloop: 0, inline: 6, centerRight: 45, marge: 48 };
+//
+// Bijgesteld 2026-09-16: 47 -> 48 door `ActivePhase/Zonder Toestemming`, de renderkant van F4
+// (de BPM-rij zonder toestemming voor gezondheidsgegevens). Derde keer dezelfde vorm: geen
+// nieuwe klasse, dezelfde over één story meer. metRand +7 en centerRight +1 zijn wat een
+// ActivePhase-story bijdraagt; `gescrold` en `marge` bewogen niet, want dit scherm heeft geen
+// scrollcontainer en geen onuitdrukbare marge. Drie runs op dezelfde build gaven identiek
+// 48/260/46.
+const BEKEND = { stories: 48, randkleur: 0, metRand: 260, placeholder: 4, gescrold: 12,
+  overloop: 0, inline: 6, centerRight: 46, marge: 48 };
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.map': 'application/json' };
 

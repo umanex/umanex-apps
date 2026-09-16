@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { useAuth } from './auth-context';
 import { supabase } from './supabase';
 import { reportError } from './monitoring';
+import { stripHealthDataFromQueue } from './pendingWorkout';
 
 /**
  * Toestemming voor gezondheidsgegevens (AVG art. 9.2.a) — hartslag, gewicht,
@@ -103,6 +104,11 @@ export function HealthConsentProvider({ children }: { children: React.ReactNode 
       reportError(error, { where: 'healthConsent.revoke' });
       return false;
     }
+    // De RPC raakt alleen Postgres. Een rit die lokaal op synchronisatie wacht bleef daardoor
+    // staan mét hartslag en werd later alsnog ingestuurd — ná het intrekken (functionele
+    // review F4). Pas ná een geslaagde RPC, zodat een mislukte intrekking geen data wist die
+    // server-side gewoon blijft staan.
+    await stripHealthDataFromQueue();
     setConsent('declined');
     return true;
   }, [user]);

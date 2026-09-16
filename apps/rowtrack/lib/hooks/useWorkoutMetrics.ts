@@ -91,6 +91,16 @@ export function useWorkoutMetrics(
   phase: Phase,
   bleMetrics: RowerMetrics | null,
   hrBpm?: number | null,
+  /**
+   * Mag de hartslag verzameld worden? Zonder toestemming komt hij deze hook niet eens in.
+   *
+   * De gate zat tot 2026-09-16 alleen op het WEGSCHRIJVEN (`saveWorkout` filterde hem eruit)
+   * en op de verbind-knop. Deze hook kende het begrip niet en accumuleerde vrolijk door —
+   * óók de hartslag die de roeitrainer zélf meestuurt, waar geen borstband en dus geen knop
+   * aan te pas komt. Gevolg: wie "nee" antwoordde zag zijn hartslag in de samenvatting staan
+   * (functionele review F4). De filter bij het opslaan blijft als tweede grendel staan.
+   */
+  collectHr: boolean = true,
 ) {
   const [state, dispatch] = useReducer(metricsReducer, initialState);
 
@@ -262,8 +272,11 @@ export function useWorkoutMetrics(
     if (bleMetrics.resistanceLevel != null) {
       partial.resistanceLevel = bleMetrics.resistanceLevel;
     }
-    // HR: prefer external HR monitor, fallback to FTMS heart rate
-    const hr = (hrBpm != null && hrBpm > 0) ? hrBpm
+    // HR: prefer external HR monitor, fallback to FTMS heart rate.
+    // `collectHr` staat vooraan: de tweede bron is de hartslag van de erg zelf, en die komt
+    // binnen zonder dat er ooit een knop is aangeraakt.
+    const hr = !collectHr ? null
+      : (hrBpm != null && hrBpm > 0) ? hrBpm
       : (bleMetrics.heartRate != null && bleMetrics.heartRate > 0) ? bleMetrics.heartRate
       : null;
     if (hr != null) {
@@ -318,7 +331,7 @@ export function useWorkoutMetrics(
     }
 
     dispatch({ type: 'BLE_UPDATE', metrics: partial });
-  }, [bleMetrics, phase, hrBpm]);
+  }, [bleMetrics, phase, hrBpm, collectHr]);
 
   // --- Reset ---
   const resetAll = useCallback(() => {

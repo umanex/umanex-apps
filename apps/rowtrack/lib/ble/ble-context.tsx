@@ -11,6 +11,8 @@ import { HRBleService } from './hr-service';
 import { loadKnownDevice, saveKnownDevice, type DeviceKind } from './knownDevices';
 import { beginAutoConnectLog, recordAutoConnect } from './autoConnectLog';
 import { rowerErrorMessage, hrErrorMessage } from '@/i18n/bleErrors';
+import { useHealthConsent } from '@/lib/health-consent-context';
+import { t } from '@/i18n';
 import type { BleContextValue, ConnectionStatus, FoundDevice, HRStatus, RowerMetrics } from './types';
 
 const BleContext = createContext<BleContextValue>({
@@ -72,6 +74,24 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   statusRef.current = status;
   const hrStatusRef = useRef(hrStatus);
   hrStatusRef.current = hrStatus;
+
+  /**
+   * Mag de app hartslag verwerken? De poort staat hier, niet bij de knop.
+   *
+   * Tot 2026-09-16 zat de toestemmingscheck op de aanroepers: het startscherm gaf `noop` in
+   * plaats van `startHRScan` en autoconnect kreeg een vlag mee. Het actieve scherm kreeg de
+   * échte functie, dus midden in een rit kon je alsnog verbinden en BPM zien, terwijl de
+   * toestemmingstekst belooft dat hartslag wegblijft (functionele review F4). Een poort die
+   * elke aanroeper zelf moet zetten, wordt vroeg of laat ergens vergeten — deze kan niet
+   * overgeslagen worden.
+   *
+   * Een ref en geen waarde uit de closure: `startHRScan` en `autoConnect` hebben bewust lege
+   * dependency-arrays, zodat hun identiteit stabiel blijft en het focus-effect niet bij elke
+   * statuswissel opnieuw vuurt.
+   */
+  const { granted: healthGranted } = useHealthConsent();
+  const healthGrantedRef = useRef(healthGranted);
+  healthGrantedRef.current = healthGranted;
 
   useEffect(() => {
     // Rower service
@@ -175,6 +195,12 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
 
   // HR controls
   const startHRScan = useCallback(() => {
+    if (!healthGrantedRef.current) {
+      // Geen stille weigering: zonder reden is een knop die niets doet niet te onderscheiden
+      // van een kapotte knop, en de toestellenrij toont deze zin al.
+      setHRError(t.consent.hrBlocked);
+      return;
+    }
     setHRError(null);
     suppressed.current.delete('hr');
     hrServiceRef.current?.startScan().catch((err: unknown) => {
@@ -267,7 +293,9 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         // Zonder toestemming voor gezondheidsgegevens raakt autoconnect de band niet
         // aan. De handmatige knop was al gesloten; dit pad omzeilde die gate en
         // verwerkte dus hartslag van iemand die "nee" had geantwoord.
-        tryKind('hr', opts?.hr === false || (hrStatusRef.current !== 'idle' && hrStatusRef.current !== 'error'), (d) =>
+        // `healthGrantedRef` staat vooraan in de reden om over te slaan: zonder toestemming
+        // raakt autoconnect de band niet aan, ongeacht wat de aanroeper meegaf.
+        tryKind('hr', !healthGrantedRef.current || opts?.hr === false || (hrStatusRef.current !== 'idle' && hrStatusRef.current !== 'error'), (d) =>
           hrServiceRef.current?.connectKnown(d.id, d.name) ?? Promise.resolve(false),
         ),
       ]);

@@ -70,6 +70,12 @@ type ActivePhaseProps = {
   hrStatus: HRStatus;
   hrBpm: number | null;
   startHRScan: () => void;
+  /**
+   * Mag de app hartslag verwerken? Zonder toestemming is de BPM-rij niet tikbaar en toont hij
+   * "—". De echte poort staat in `ble-context.startHRScan`; dit is wat het scherm ervan laat
+   * zien, zodat de affordance niet belooft wat het gedrag weigert.
+   */
+  healthGranted: boolean;
   insets: EdgeInsets;
 }
 
@@ -101,6 +107,7 @@ export function ActivePhase({
   hrStatus,
   hrBpm,
   startHRScan,
+  healthGranted,
   insets,
   now,
 }: ActivePhaseProps) {
@@ -235,7 +242,8 @@ export function ActivePhase({
     // Eén bron voor "tikken doet iets": de rij is alleen tikbaar zolang er geen band hangt en
     // er geen scan loopt. Zowel de `disabled`-prop als de tekst hieronder leest hem, zodat de
     // affordance niet van het gedrag kan afdrijven.
-    const bpmTikbaar = hrStatus !== 'connected' && hrStatus !== 'scanning' && hrStatus !== 'waiting';
+    const bpmTikbaar = healthGranted
+      && hrStatus !== 'connected' && hrStatus !== 'scanning' && hrStatus !== 'waiting';
 
     let kpiOrder: KPIKey[];
     switch (goalType) {

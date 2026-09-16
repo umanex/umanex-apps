@@ -215,3 +215,10 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** Jeroen laten kiezen: minimum aantal klanten, minimum noemer als fractie van het doel, of zo laten. Dan een drempel in `SignalThresholds.clientConcentration` en een test in `signals.test.ts`.
 - **Check:** `grep -n "clientConcentration: { enabled: boolean }" apps/cashflow/lib/bureau/types.ts` — treffer = nog zonder drempel.
 - **Status:** open
+
+## 2026-09-16 — Bureau: nodige omzet per vrije klantdag telt getekend werk zonder ingeplande dagen niet mee · [fix]
+- **Wat:** `neededPerRemainingDay` deelt het omzetgat door `unallocatedClientDays` = klantwerkbudget − besteed − gepland. Getekend werk dat nog niet in dagen ingepland staat, legt geen beslag op die dagen, dus de noemer is te groot en het bedrag per dag te laag; het signaal `omzetgat` kan daardoor zwijgen. Gevonden in de code-review van 2026-09-16, afgeleid uit de code, niet gedraaid.
+- **Waarom niet nu:** De juiste noemer vraagt een keuze: resterende uren uit de projectraming aftrekken (bestaat per project, maar niet altijd ingevuld) of eisen dat getekend werk ingepland is. Beide veranderen wat "vrije klantdag" betekent.
+- **Eerste zet:** Een test in `revenue.test.ts` met een project van 10 geraamde resterende dagen zonder planning, en beslissen welke noemer het antwoord is.
+- **Check:** `grep -n "unallocatedClientDays" apps/cashflow/lib/bureau/capacity.ts` — nog altijd alleen budget − besteed − gepland = open.
+- **Status:** open

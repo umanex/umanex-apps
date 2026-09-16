@@ -125,8 +125,8 @@
    }
   },
   "linux": {
-   "gemeten": "2026-09-14",
-   "bron": "CI-run 34836969891 (ubuntu-latest)",
+   "gemeten": "2026-09-16",
+   "bron": "CI-run 34836969891 (ubuntu-latest); ActivePhase__Zonder-Toestemming uit run 35111042676, identiek herhaald in 35111048023 — dezelfde run gaf de 27 geratelde waarden hieronder byte-gelijk terug",
    "waarden": {
     "RegisterScreen__Met-Fout": {
      "tekst": 3.59,
@@ -179,6 +179,10 @@
     "ActivePhase__Doel-Afstand": {
      "tekst": 3.07,
      "overig": 0.07
+    },
+    "ActivePhase__Zonder-Toestemming": {
+     "tekst": 3.11,
+     "overig": 0.03
     },
     "ActivePhase__Landscape": {
      "tekst": 3.08,

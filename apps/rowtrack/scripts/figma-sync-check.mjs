@@ -123,7 +123,11 @@ const BEKENDE_GATEN = 50;
 // waarden die al bekend waren — het aantal unieke ongebonden waarden daalde tegelijk van
 // 53 naar 51 door de drie verwijderde componenten. Twee assen, twee richtingen, en juist
 // daarom staan ze los: een gelijk uniek getal verbergt een gegroeid oppervlak.
-const BEKENDE_VOORKOMENS = 3793;   // 1996 + 148: DeviceSection heeft 40 variantcombinaties (bleStatus x hrStatus), dus elke ongebonden waarde in een toestelrij wordt nu 40 keer geteld in plaats van een handvol keer in het scherm
+// 3793 -> 3813 op 2026-09-16: hetzelfde mechanisme, één frame. `ActivePhase/Zonder Toestemming`
+// brengt 20 extra voorkomens van waarden die al bekend waren; het unieke aantal bleef exact 50,
+// dus er is geen gat bijgekomen — er is er een vaker te zien. Precies waarvoor deze tweede
+// ratel naast `BEKENDE_GATEN` staat.
+const BEKENDE_VOORKOMENS = 3813;   // 1996 + 148: DeviceSection heeft 40 variantcombinaties (bleStatus x hrStatus), dus elke ongebonden waarde in een toestelrij wordt nu 40 keer geteld in plaats van een handvol keer in het scherm
 /** Aandeel laagnamen dat uit de code komt (sleutel + gefold + componentnaam), in procent.
  *  Een ratel zoals BEKENDE_GATEN: dalen is een regressie, stijgen vraagt om bijstellen.
  *  Sinds 2026-09-08 over de APP-noemer: de 250 nodes die react-native-web zelf schrijft
@@ -178,7 +182,10 @@ const BEKENDE_HEURISTIEK = 0;
  * `figma-sync-selftest.mjs` mikt precies hierop: hij strippt `component` van elke node en eist
  * dat dit getal instort.
  */
-const BEKENDE_GRENSNODES = 337;   // 243 + 61 uit de zeven route-schermen (elk declareert zijn eigen grens en gebruikt Button, FormField en ErrorMessage) + 1 door de tweede WorkoutCard-variant
+// 337 -> 349 op 2026-09-16: `ActivePhase/Zonder Toestemming` erbij. Een frame meer betekent
+// twaalf nodes meer die hun naam uit een gedeclareerde grens halen — de as noemt dat zelf winst,
+// want het alternatief is een sleutelgok. Geen enkele grens is verdwenen.
+const BEKENDE_GRENSNODES = 349;   // 243 + 61 uit de zeven route-schermen (elk declareert zijn eigen grens en gebruikt Button, FormField en ErrorMessage) + 1 door de tweede WorkoutCard-variant + 12 door het frame Zonder Toestemming
 /** Posities die `stabiliseer()` moest gladstrijken. `instabiel` is ná die pas gemeten en dus
  *  per constructie leeg — dit is de enige onafhankelijke maat voor dezelfde eigenschap. */
 const BEKENDE_INSTABIELE_POSITIES = 2;

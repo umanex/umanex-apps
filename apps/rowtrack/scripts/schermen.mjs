@@ -23,7 +23,11 @@ export const SCHERMEN = {
     // 2026-07-16, F19). De inhoud komt uit de OVERLAY van dat frame, niet uit de boom — een
     // react-native-web `<Modal>` portaleert buiten `#storybook-root` en de walker zet hem
     // sinds 2026-09-08 als aparte overlay naast de schermboom.
-    frames: ['Playground', 'Doel Afstand', 'Zonder Hartslagband', 'Doel Bereikt', 'Samenvatting', 'Samenvatting Zonder Gewicht', 'Landscape'],
+    // 'Zonder Toestemming' erbij op 2026-09-16: het enige frame met een geblokkeerde BPM-rij.
+    // Zonder toestemming voor gezondheidsgegevens is die rij '—' en niet tikbaar (functionele
+    // review F4) — een echte gebruikerstoestand die in geen ander frame te zien is. De variant
+    // zelf bestaat al in de library (KpiRow disabled), dus dit vraagt geen nieuw component.
+    frames: ['Playground', 'Doel Afstand', 'Zonder Hartslagband', 'Doel Bereikt', 'Samenvatting', 'Samenvatting Zonder Gewicht', 'Landscape', 'Zonder Toestemming'],
     reden: 'schermcompositie — bleStatus × hrStatus × phase × hasProfileWeight zou 160 nodes eisen voor één scherm, en die assen zijn in beeld niet orthogonaal; hoort in RowTrack - Design op Screens v2',
   },
   IdlePhase: {

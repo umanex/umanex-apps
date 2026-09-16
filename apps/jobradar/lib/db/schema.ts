@@ -1,6 +1,8 @@
 import { sqliteTable, text, integer, real, index, primaryKey, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-export const SCHEMA_VERSION = 6
+// 7: de bedrijfsplan-tabellen (plan_actions en zes andere). Documentair — er hangt geen
+// migratielogica aan; de DDL is idempotent en draait bij elke connectie.
+export const SCHEMA_VERSION = 7
 
 export type ItemStatus = 'new' | 'saved' | 'dismissed' | 'contacted'
 
@@ -187,3 +189,153 @@ export type CsvProspect = typeof csvProspects.$inferSelect
 export type ContactMoment = typeof contactMoments.$inferSelect
 export type NextAction = typeof nextActions.$inferSelect
 export type GeocodeRij = typeof geocodeCache.$inferSelect
+
+/**
+ * Het bedrijfsplan 2027.
+ *
+ * De statussen zijn een TS-union met een `as const`-lijst ernaast, zoals `KANALEN`: SQLite
+ * bewaart tekst en kent de verzameling niet, dus de lijst is de enige plek waar hij bestaat.
+ * `geblokkeerd` staat er bewust NIET bij — dat is een afgeleide toestand uit de
+ * afhankelijkheden (`lib/plan/afleiding.ts`). Een opgeslagen blokkade zou handmatig
+ * synchroon gehouden moeten worden met een andere rij, en veroudert dus stil.
+ */
+export const ACTIE_STATUSSEN = [
+  'niet_gestart',
+  'bezig',
+  'wacht_op_input',
+  'gereed',
+  'uitgesteld',
+  'vervallen',
+] as const
+export type ActieStatus = (typeof ACTIE_STATUSSEN)[number]
+
+/** Waar een actie vandaan komt. `seed` is de startinhoud en kan niet verwijderd worden. */
+export const ACTIE_BRONNEN = ['seed', 'eigen', 'idee'] as const
+export type ActieBron = (typeof ACTIE_BRONNEN)[number]
+
+export const IDEE_STATUSSEN = ['open', 'opgenomen', 'verworpen'] as const
+export type IdeeStatus = (typeof IDEE_STATUSSEN)[number]
+
+export const planActions = sqliteTable(
+  'plan_actions',
+  {
+    /** De code uit de opdracht: `A01`…`A22`, daarna `A23` en verder voor eigen acties. */
+    key: text('key').primaryKey(),
+    titel: text('titel').notNull(),
+    prioriteit: integer('prioriteit').notNull(),
+    volgorde: integer('volgorde').notNull(),
+    beschrijving: text('beschrijving'),
+    resultaat: text('resultaat'),
+    status: text('status').notNull().default('niet_gestart'),
+    volgendeStap: text('volgende_stap'),
+    gereedcriterium: text('gereedcriterium'),
+    bewijs: text('bewijs'),
+    afgerondOp: text('afgerond_op'),
+    /** NULL is onbekend, nooit 0. Zie het commentaar bij de tabel in `ddl.ts`. */
+    inschattingUren: real('inschatting_uren'),
+    resterendUren: real('resterend_uren'),
+    eigenaar: text('eigenaar').notNull().default('Jeroen'),
+    streefdatum: text('streefdatum'),
+    wachtreden: text('wachtreden'),
+    herbekijkOp: text('herbekijk_op'),
+    /** JSON-lijst `[{ label, url }]`. Geparsed met try/catch, zoals `signals`. */
+    links: text('links').notNull().default('[]'),
+    context: text('context'),
+    focusUitzondering: text('focus_uitzondering'),
+    startUitzondering: text('start_uitzondering'),
+    bron: text('bron').notNull().default('eigen'),
+    versie: integer('versie').notNull().default(1),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => ({
+    prioriteitIdx: index('plan_actions_prioriteit_idx').on(table.prioriteit, table.volgorde),
+  })
+)
+
+export const planDependencies = sqliteTable(
+  'plan_dependencies',
+  {
+    actionKey: text('action_key').notNull(),
+    dependsOnKey: text('depends_on_key').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.actionKey, table.dependsOnKey] }),
+    dependsIdx: index('plan_dependencies_depends_idx').on(table.dependsOnKey),
+  })
+)
+
+/** `beslismoment` voor B01–B03, `start` voor het startbesluit van januari 2027. */
+export type BeslissingSoort = 'beslismoment' | 'start'
+
+export const planDecisions = sqliteTable('plan_decisions', {
+  key: text('key').primaryKey(),
+  soort: text('soort').notNull(),
+  volgorde: integer('volgorde').notNull(),
+  titel: text('titel').notNull(),
+  vraag: text('vraag'),
+  /** JSON-lijst van actie-keys waarop dit beslismoment rust. */
+  acties: text('acties').notNull().default('[]'),
+  beslissing: text('beslissing'),
+  beslistOp: text('beslist_op'),
+  onderbouwing: text('onderbouwing'),
+  vervolgacties: text('vervolgacties'),
+  versie: integer('versie').notNull().default(1),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+export const planIdeas = sqliteTable('plan_ideas', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  titel: text('titel').notNull(),
+  notitie: text('notitie'),
+  status: text('status').notNull().default('open'),
+  /** De key van de actie die uit dit idee ontstond, wanneer het opgenomen is. */
+  opgenomenAls: text('opgenomen_als'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+export const planLinks = sqliteTable(
+  'plan_links',
+  {
+    actionKey: text('action_key').notNull(),
+    subjectType: text('subject_type').notNull(),
+    /** `companies.id` als tekst voor een lead, het ondernemingsnummer voor een prospect. */
+    subjectKey: text('subject_key').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.actionKey, table.subjectType, table.subjectKey] }),
+    subjectIdx: index('plan_links_subject_idx').on(table.subjectType, table.subjectKey),
+  })
+)
+
+export const planHistory = sqliteTable(
+  'plan_history',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    onderwerpType: text('onderwerp_type').notNull(),
+    onderwerpKey: text('onderwerp_key').notNull(),
+    veld: text('veld').notNull(),
+    oud: text('oud'),
+    nieuw: text('nieuw'),
+    reden: text('reden'),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => ({
+    onderwerpIdx: index('plan_history_onderwerp_idx').on(
+      table.onderwerpType,
+      table.onderwerpKey,
+      table.id
+    ),
+  })
+)
+
+export type PlanActie = typeof planActions.$inferSelect
+export type PlanAfhankelijkheid = typeof planDependencies.$inferSelect
+export type PlanBeslissing = typeof planDecisions.$inferSelect
+export type PlanIdee = typeof planIdeas.$inferSelect
+export type PlanKoppeling = typeof planLinks.$inferSelect
+export type PlanHistorie = typeof planHistory.$inferSelect

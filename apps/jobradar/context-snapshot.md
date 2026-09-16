@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-09-11_
+_Gegenereerd op 2026-09-16_
 
 ## Project
 - **App:** jobradar
@@ -42,15 +42,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-802754f docs(jobradar): prospect classification goes to the backlog instead of merging #327
-2ca664b merge: main into feature/rowtrack-web-premium-redesign
-c0e407d fix(jobradar): the map now draws the active filter, not a fixed set
-d84679f Merge remote-tracking branch 'origin/main' into fix/rowtrack-schermverschillen
-2c970c9 test(ui): add Sheet to the rendered-size baseline
+fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
+8f8756a feat(ui): wire the Storybook MCP into packages/ui
+154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
+b896418 chore(jobradar): upgrade to Next 15.5.25 and React 19
+ff20863 docs: briefing statuses onto the triad vocabulary
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/briefings/2026-06-02-feature-status-tracking.tcebc.md
+  A  apps/jobradar/briefings/2026-09-16-feature-bedrijfsplan-2027.tcebc.md
+  M  apps/jobradar/lib/contact.ts
+  M  apps/jobradar/lib/db/ddl.ts
+  M  apps/jobradar/lib/db/schema.ts
+  A  apps/jobradar/lib/plan/aannames.ts
+  A  apps/jobradar/lib/plan/afhankelijkheden.ts
+  A  apps/jobradar/lib/plan/afleiding.ts
+  A  apps/jobradar/lib/plan/export.ts
+  A  apps/jobradar/lib/plan/instellingen.ts
+  A  apps/jobradar/lib/plan/inzet.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

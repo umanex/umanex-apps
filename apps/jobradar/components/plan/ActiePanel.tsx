@@ -269,14 +269,19 @@ export function ActiePanel({
                 <Button
                   size="sm"
                   disabled={bezig || bewijs.trim() === ''}
-                  onClick={() =>
-                    zetStatus('gereed', {
-                      bewijs,
-                      links: /^https?:\/\/\S+$/i.test(bewijsLink)
-                        ? [...links, { label: 'Bewijs', url: bewijsLink.trim() }]
-                        : undefined,
-                    })
-                  }
+                  onClick={() => {
+                    // De bewijslink gaat mee én in de lokale state. Zonder die tweede helft
+                    // loopt het formulier uiteen met wat de server kreeg: `gewijzigd` wordt
+                    // waar zonder dat er iets getypt is, het paneel meldt "Niet opgeslagen",
+                    // en één klik op Bewaar stuurt de oude lijst terug en wist de bewijslink.
+                    // De versiecheck vangt dat niet — binnen één tab leest hij de versie uit
+                    // het zojuist vervangen plan, dus hij klopt per constructie.
+                    const metBewijs = /^https?:\/\/\S+$/i.test(bewijsLink)
+                      ? [...links, { label: 'Bewijs', url: bewijsLink.trim() }]
+                      : null
+                    if (metBewijs) setLinks(metBewijs)
+                    zetStatus('gereed', { bewijs, ...(metBewijs ? { links: metBewijs } : {}) })
+                  }}
                 >
                   Markeer gereed
                 </Button>

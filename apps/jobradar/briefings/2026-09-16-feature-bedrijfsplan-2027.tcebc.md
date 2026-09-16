@@ -32,8 +32,8 @@ CONTEXT:     Jobradar is een éénpersoons lokaal triagescherm (Next 15, SQLite,
              geen tweede registratie van prospectgegevens.
 
 ELEMENTS:    - Route `/plan`: `PlanClient` met Tabs Overzicht · Acties · Beslissingen · Ideeën
-             - Overzicht: eerstvolgende actie, `NuBezig` (n van 3), Beschikbaar, Geblokkeerd met
-               reden-chips, `VoortgangPerPrioriteit` (gesegmenteerde telling, ongewogen),
+             - Overzicht: eerstvolgende actie, `NuBezig` (n van 3), Beschikbaar, Wacht op
+               input, Geblokkeerd met reden-chips, `VoortgangPerPrioriteit` (ongewogen telling),
                `Startvoorwaarden` (hard / bewijs / niet vereist + startbesluit),
                `Beslismomenten`, `Uitgesteld`, `Aannames`
              - Acties: `PlanFilters` (prioriteit · status · uitvoerbaarheid · eigenaar) +
@@ -121,7 +121,7 @@ CONSTRAINTS: - Desktop-first, zoals de rest van jobradar; niet breken op 768 px,
 - [x] Typologie: voortgang toont het woord "ongewogen" en nergens een percentage — bewijs: de voetnoot in `VoortgangPerPrioriteit.tsx` staat in de opname `na-overzicht.png`, en een grep op `%` in `components/plan/` geeft nul treffers
 - [x] Typologie: geen kicker, geen `border-l-[2-9]`, geen voortgangsring — bewijs: `impeccable detect --json` gaf `[]`, mét positieve controle: op een wegwerpbestand met een gradient-titel en een `border-l-4` gaf dezelfde aanroep twee bevindingen
 - [x] State *empty*: op een verse database toont Nu bezig "Niets bezig. Start een actie uit Beschikbaar." — bewijs: `plan.png`, opgenomen door de harness op de verse database van de worktree
-- [x] State *blocked*: elke actie met een onvervulde afhankelijkheid staat onder Geblokkeerd met minstens één reden-chip — bewijs: `na-overzicht.png` toont zes geblokkeerde acties, elk met een chip; A10 draagt er drie (`wacht op A07 (bezig)`, `wacht op A08 (niet gestart)`, `wacht op A09 (wacht op input)`)
+- [x] State *blocked*: elke actie met een onvervulde afhankelijkheid en zónder vastgelegde startuitzondering staat onder Geblokkeerd met minstens één reden-chip — bewijs: `na-overzicht.png` toont zes geblokkeerde acties, elk met een chip; A10 draagt er drie (`wacht op A07 (bezig)`, `wacht op A08 (niet gestart)`, `wacht op A09 (wacht op input)`)
 - [x] State *empty*: acties gefilterd tot nul toont de zin over een filter terugzetten — bewijs: Playwright — prioriteit 4 + status gereed brengt de lijst van 22 naar 0 rijen, de zin *"zet een filter terug op Alle"* verschijnt, en de teller leest `0 van 22 acties`
 - [x] State *error*: afronden zonder bewijs wordt geweigerd met een leesbare reden — bewijs: `plan:probe` geval 9 — HTTP 400, `reden=afronden vraagt bewijs — wat toont dat het klaar is?`; de knop `Markeer gereed` staat bovendien op `disabled` zolang het veld leeg is
 - [ ] State *loading*: `app/plan/loading.tsx` toont "Plan laden…" — bewijs:
@@ -144,7 +144,7 @@ CONSTRAINTS: - Desktop-first, zoals de rest van jobradar; niet breken op 768 px,
 - [x] Edge case: een vervallen afhankelijkheid blokkeert hard, ook met een startuitzondering — bewijs: `plan-scenarios` sectie 5 — de blokkade draagt `hard: true`, de reden vraagt om verwijderen of vervangen, en een start mét uitzondering geeft een conflict; vervangen maakt de actie wél vrij
 - [x] Edge case: een beslismoment met alle acties gereed toont "Klaar voor beoordeling — geen goedkeuring" en blijft onbeslist — bewijs: `na-overzicht.png` toont B01 met die pil bij 6 van 6 gereed; `plan-scenarios` sectie 14 toetst dat `beslissing` en `beslistOp` dan NULL zijn
 - [x] Edge case: `/plan` op 400 px heeft geen horizontale scrollbalk — bewijs: flow-harness `--smal=400`, `geen horizontale overloop (400 ≤ 400)`. Was eerst 429: de oorzaak is causaal gevonden door elementen één voor één te verbergen, en de fix is in de browser getoetst tegen twee kandidaten die niet werkten
-- [x] Edge case: zonder streefdatum staat er geen datum in een actierij — bewijs: `ActieRij.tsx` rendert `streefdatum` nergens, de seed vult er geen enkele, en in `na-overzicht.png` staat in geen enkele rij een datum
+- [ ] Edge case: zonder streefdatum staat er geen datum in een actierij — `[NIET TE VERIFIËREN — het item is tautologisch: `ActieRij` rendert `streefdatum` en `herbekijkOp` überhaupt niet, dus de afwezigheid van een datum bewijst niets over het gedrag bij een lege waarde. Wat er wél staat: het veld is invoerbaar in het paneel en verdwijnt daarna uit beeld — dat is een gat, en het staat in BACKLOG]`
 - [x] Edge case: de seed twee keer draaien levert 22 acties, en een bewerkte titel en een verwijderde afhankelijkheid blijven — bewijs: `plan-scenarios` sectie 3 (tweede run `gezaaid: false`, titel `Eigen titel` blijft, kant A13←A01 blijft weg); `plan:probe` geval 0/1 — 22 acties na de eerste GET, nog altijd 22 na de tweede
 - [x] `pnpm --filter jobradar scenarios` blijft groen, inclusief de nieuwe plan-suite en haar tegenproef — bewijs: `1263 checks over 9 suite(s), en bewezen faalbaar`; de plan-suite draagt er 320 en valt met exit 1 om op zijn geïnjecteerde fout
 - [x] `pnpm --filter jobradar plan:probe` draait alle HTTP-gevallen groen — bewijs: 31 genummerde gevallen, `PROBE KLAAR`, met de positieve controle vooraan (22 gezaaide acties, 0 geschiedenisregels) en als slot 23 acties met 23 unieke keys

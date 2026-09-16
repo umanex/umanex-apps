@@ -58,17 +58,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-661f728 docs(jobradar): record the plan in the project context and close its briefing
-76a29ff fix(jobradar): stop the plan from writing reasons Jeroen never gave
-ca98e0c fix(jobradar): let a status carry its own reason, and stop showing it twice
-68c0e4f feat(jobradar): build the plan screen and hang it off the existing dashboard
-171145f feat(jobradar): expose the business plan over HTTP, with a probe that drives it
+14e1486 fix(jobradar): keep own actions out of the seed's key space, and stop the finish path losing its evidence link
+3b72ed4 fix(jobradar): make plan:probe able to fail — it printed, it did not test
+a7373f2 fix(jobradar): roll back a refused mutation instead of committing its traces
+02b8329 docs: close the handoff loop backwards — run the checks, act on what they say
+3dfe382 fix(jobradar): stop the verification instruments from dirtying the tree they measure
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/jobradar/BACKLOG.md
   M  apps/jobradar/briefings/2026-09-16-feature-bedrijfsplan-2027.tcebc.md
-   M apps/jobradar/next-env.d.ts
-   M apps/jobradar/tsconfig.json
+  M  apps/jobradar/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

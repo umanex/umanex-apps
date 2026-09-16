@@ -181,12 +181,18 @@ export function upsertExtension(d: BureauDraft, projectId: string, e: Extension)
   else p.extensions.push(e);
 }
 
-/** Een uitbreiding intrekken neemt haar mijlpalen mee: zonder uitbreiding bestaat die waarde niet. */
-export function removeExtension(d: BureauDraft, projectId: string, id: string): void {
+/**
+ * Een uitbreiding intrekken neemt haar mijlpalen mee: zonder uitbreiding bestaat die waarde niet.
+ * Geweigerd zodra één van die mijlpalen gerealiseerd is — dat is geleverde omzet, en die verdwijnt
+ * niet met één klik (dezelfde regel als een gerealiseerde mijlpaal verwijderen).
+ */
+export function removeExtension(d: BureauDraft, projectId: string, id: string): 'ok' | 'heeft-gerealiseerd' | 'geen-project' {
   const p = findProject(d, projectId);
-  if (!p) return;
+  if (!p) return 'geen-project';
+  if (p.milestones.some((m) => m.extensionId === id && m.realizedOn !== null)) return 'heeft-gerealiseerd';
   p.extensions = p.extensions.filter((e) => e.id !== id);
   p.milestones = p.milestones.filter((m) => m.extensionId !== id);
+  return 'ok';
 }
 
 export function upsertExternalCost(d: BureauDraft, projectId: string, c: ExternalCost): void {
@@ -209,10 +215,19 @@ export function removeExternalCost(d: BureauDraft, projectId: string, id: string
 // verdwijnt de post — zo werkt Jeroen al: wat binnen is, staat niet meer als te ontvangen in de
 // prognose. Een post in een afgesloten maand blijft staan, want die maand is bevroren.
 
-/** De maand waarin de gekoppelde post hoort te staan. */
-export function ledgerMonthFor(i: Invoice): MonthKey {
-  return monthOf(i.expectedPaymentDate ?? i.dueDate);
+/**
+ * De maand waarin de gekoppelde post hoort te staan. `notBefore` is de huidige maand: een datum
+ * in het verleden zet de post niet in een voorbije maand — daar rekent de prognose niet meer mee,
+ * en de post zou stil het berekende beginsaldo verschuiven. Dat het geld te laat is, meldt de
+ * weekplanning apart.
+ */
+export function ledgerMonthFor(i: Invoice, notBefore?: MonthKey): MonthKey {
+  const m = monthOf(i.expectedPaymentDate ?? i.dueDate);
+  return notBefore && m < notBefore ? notBefore : m;
 }
+
+/** Een post aanmaken voor een factuur: het id van de nieuwe post, zijn label, en de huidige maand. */
+export type LedgerTarget = { incomeItemId: string; label: string; notBefore?: MonthKey };
 
 function removeLinkedIncome(d: BureauDraft, inv: Invoice): 'verwijderd' | 'afgesloten-maand' | 'geen-post' {
   if (!inv.incomeItemId) return 'geen-post';
@@ -227,8 +242,8 @@ function removeLinkedIncome(d: BureauDraft, inv: Invoice): 'verwijderd' | 'afges
   return 'verwijderd';
 }
 
-function createLinkedIncome(d: BureauDraft, inv: Invoice, incomeItemId: string, label: string): 'ok' | 'afgesloten-maand' {
-  const monthKey = ledgerMonthFor(inv);
+function createLinkedIncome(d: BureauDraft, inv: Invoice, incomeItemId: string, label: string, notBefore?: MonthKey): 'ok' | 'afgesloten-maand' {
+  const monthKey = ledgerMonthFor(inv, notBefore);
   if (isFrozen(d, monthKey)) return 'afgesloten-maand';
   d.incomeItems.push({ id: incomeItemId, monthKey, label, amount: invoiceGross(inv), received: false });
   inv.incomeItemId = incomeItemId;
@@ -239,24 +254,24 @@ export function addInvoice(
   d: BureauDraft,
   projectId: string,
   invoice: Omit<Invoice, 'incomeItemId'>,
-  ledger: { incomeItemId: string; label: string } | null,
+  ledger: LedgerTarget | null,
 ): 'ok' | 'geen-project' | 'afgesloten-maand' {
   const p = findProject(d, projectId);
   if (!p) return 'geen-project';
   const inv: Invoice = { ...invoice, incomeItemId: null };
   p.invoices.push(inv);
   // Een betaalde factuur staat per definitie niet meer als te ontvangen in de prognose.
-  return ledger && inv.paidOn === null ? createLinkedIncome(d, inv, ledger.incomeItemId, ledger.label) : 'ok';
+  return ledger && inv.paidOn === null ? createLinkedIncome(d, inv, ledger.incomeItemId, ledger.label, ledger.notBefore) : 'ok';
 }
 
 /** Houdt een gekoppelde post in een open maand gelijk met de factuur. */
-export function updateInvoice(d: BureauDraft, projectId: string, invoiceId: string, patch: Partial<Omit<Invoice, 'id' | 'incomeItemId' | 'paidOn' | 'paidAmount'>>): void {
+export function updateInvoice(d: BureauDraft, projectId: string, invoiceId: string, patch: Partial<Omit<Invoice, 'id' | 'incomeItemId' | 'paidOn' | 'paidAmount'>>, notBefore?: MonthKey): void {
   const inv = findInvoice(d, projectId, invoiceId);
   if (!inv) return;
   Object.assign(inv, patch);
   const item = inv.incomeItemId ? d.incomeItems.find((x) => x.id === inv.incomeItemId) : undefined;
   if (!item || isFrozen(d, item.monthKey)) return;
-  const target = ledgerMonthFor(inv);
+  const target = ledgerMonthFor(inv, notBefore);
   if (isFrozen(d, target)) return;
   item.monthKey = target;
   item.amount = invoiceGross(inv);
@@ -277,12 +292,34 @@ export function linkInvoiceToLedger(
   invoiceId: string,
   incomeItemId: string,
   label: string,
+  notBefore?: MonthKey,
 ): 'ok' | 'al-gekoppeld' | 'betaald' | 'afgesloten-maand' | 'geen-factuur' {
   const inv = findInvoice(d, projectId, invoiceId);
   if (!inv) return 'geen-factuur';
   if (inv.incomeItemId) return 'al-gekoppeld';
   if (inv.paidOn) return 'betaald';
-  return createLinkedIncome(d, inv, incomeItemId, label);
+  return createLinkedIncome(d, inv, incomeItemId, label, notBefore);
+}
+
+/**
+ * Een factuur koppelen aan een post die er al stond — voor wie zijn verwachte inkomst al met de
+ * hand in de prognose zette. Er komt geen tweede post; de post zelf blijft zoals hij is tot de
+ * factuur gewijzigd wordt. Geweigerd als de post al aan een andere factuur hangt.
+ */
+export function linkInvoiceToExistingIncome(
+  d: BureauDraft,
+  projectId: string,
+  invoiceId: string,
+  incomeItemId: string,
+): 'ok' | 'geen-factuur' | 'al-gekoppeld' | 'betaald' | 'geen-post' | 'post-bezet' {
+  const inv = findInvoice(d, projectId, invoiceId);
+  if (!inv) return 'geen-factuur';
+  if (inv.incomeItemId) return 'al-gekoppeld';
+  if (inv.paidOn) return 'betaald';
+  if (!d.incomeItems.some((i) => i.id === incomeItemId)) return 'geen-post';
+  if (d.bureau.projects.some((p) => p.invoices.some((x) => x.incomeItemId === incomeItemId))) return 'post-bezet';
+  inv.incomeItemId = incomeItemId;
+  return 'ok';
 }
 
 export function markInvoicePaid(
@@ -304,13 +341,13 @@ export function unmarkInvoicePaid(
   d: BureauDraft,
   projectId: string,
   invoiceId: string,
-  ledger: { incomeItemId: string; label: string } | null,
+  ledger: LedgerTarget | null,
 ): 'ok' | 'afgesloten-maand' | 'geen-factuur' {
   const inv = findInvoice(d, projectId, invoiceId);
   if (!inv) return 'geen-factuur';
   inv.paidOn = null;
   inv.paidAmount = null;
-  if (ledger && !inv.incomeItemId) return createLinkedIncome(d, inv, ledger.incomeItemId, ledger.label);
+  if (ledger && !inv.incomeItemId) return createLinkedIncome(d, inv, ledger.incomeItemId, ledger.label, ledger.notBefore);
   return 'ok';
 }
 

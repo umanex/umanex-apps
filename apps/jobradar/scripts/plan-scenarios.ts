@@ -817,19 +817,22 @@ function versie2(db: JobradarDb, key: string): number {
   const id = idee.ok ? idee.waarde.id : 0
   const opgenomen = neemIdeeOp(db, id, 2, NU)
   check('opnemen in het plan lukt', opgenomen.ok === true)
-  check('de nieuwe actie heet A23', opgenomen.ok === true && opgenomen.waarde.actie.key === 'A23')
+  check('de nieuwe actie krijgt een eigen key', opgenomen.ok === true && opgenomen.waarde.actie.key === 'E01')
   check('met de gekozen prioriteit', opgenomen.ok === true && opgenomen.waarde.actie.prioriteit === 2)
   check('en herkenbare herkomst', opgenomen.ok === true && opgenomen.waarde.actie.bron === 'idee')
   check('het idee is nu opgenomen', opgenomen.ok === true && opgenomen.waarde.idee.status === 'opgenomen')
-  check('met een verwijzing naar de actie', opgenomen.ok === true && opgenomen.waarde.idee.opgenomenAls === 'A23')
+  check('met een verwijzing naar de actie', opgenomen.ok === true && opgenomen.waarde.idee.opgenomenAls === 'E01')
   check('het plan telt nu 23 acties', leesPlan(db, NU).acties.length === 23)
 
   const nogmaals = neemIdeeOp(db, id, 3, NU)
   check('een tweede keer opnemen wordt geweigerd', nogmaals.ok === false)
 
-  check('volgendeVrijeKey telt door na A23', volgendeVrijeKey(['A01', 'A22', 'A23']) === 'A24')
-  check('en begint bij A01 op een lege lijst', volgendeVrijeKey([]) === 'A01')
-  check('en negeert niet-A-keys', volgendeVrijeKey(['B01', 'START']) === 'A01')
+  // De E-reeks staat los van de A-reeks: een eigen actie kan nooit een seed-key bezetten, ook
+  // niet wanneer `SEED_VERSIE` er later bijkomen. Dat is de hele reden dat hij bestaat.
+  check('eigen acties tellen in hun eigen reeks', volgendeVrijeKey(['A01', 'A22', 'E01']) === 'E02')
+  check('en negeren de seed-reeks volledig', volgendeVrijeKey(['A01', 'A22', 'A23']) === 'E01')
+  check('en begint bij E01 op een lege lijst', volgendeVrijeKey([]) === 'E01')
+  check('en negeert beslissings-keys', volgendeVrijeKey(['B01', 'START']) === 'E01')
   rauw.close()
 }
 
@@ -1024,6 +1027,60 @@ function versie2(db: JobradarDb, key: string): number {
   check('en weet wie van hem afhangt', detail?.afhankelijken.join(',') === 'A03')
   check('met een lege geschiedenis op een vers plan', detail?.geschiedenis.length === 0)
   check('een onbekende key geeft null', leesActieDetail(db, 'A99') === null)
+  rauw.close()
+}
+
+// ── 22. Een weigering laat de database ongemoeid ─────────────────────────────
+// De generieke invariant, en de enige die deze klasse afdekt. `db.transaction` van
+// better-sqlite3 rolt alleen terug wanneer de callback WERPT; een teruggegeven foutobject is
+// voor de driver een geslaagde callback, dus alles wat er vóór dat `return` geschreven is,
+// commit gewoon. Gemeten 2026-09-16: een start met een vastgelegde uitzondering die daarna op
+// de focuslimiet strandde gaf netjes 409 — en liet een geschiedenisregel `start_uitzondering`
+// achter voor een actie waarvan de kolom leeg bleef. Erger dan een ontbrekende regel: hij is
+// niet van een echte te onderscheiden.
+//
+// Elke check hieronder eist eerst dat de mutatie ook werkelijk geweigerd wordt. Een geval dat
+// stilletjes slaagt meet niets, en zou hier als groen doorgaan.
+{
+  const { db, rauw } = gezaaid()
+  const snapshot = () =>
+    JSON.stringify([
+      rauw.prepare('SELECT * FROM plan_actions ORDER BY key').all(),
+      rauw.prepare('SELECT * FROM plan_history ORDER BY id').all(),
+      rauw.prepare('SELECT * FROM plan_dependencies ORDER BY action_key, depends_on_key').all(),
+      rauw.prepare('SELECT * FROM plan_decisions ORDER BY key').all(),
+      rauw.prepare('SELECT * FROM plan_links ORDER BY action_key, subject_type, subject_key').all(),
+      rauw.prepare('SELECT * FROM plan_ideas ORDER BY id').all(),
+    ])
+
+  for (const k of ['A01', 'A07', 'A09']) start(db, k)
+
+  const gevallen: [string, () => { ok: boolean }][] = [
+    // Het gemeten geval: de uitzondering wordt weggeschreven vóór de focuscontrole valt.
+    ['start met uitzondering, maar de focuslimiet is vol', () =>
+      start(db, 'A02', { startUitzondering: 'ik begin toch' })],
+    ['afronden zonder bewijs', () =>
+      wijzigStatus(db, 'A04', versie(db, 'A04'), statusInvoer({ status: 'gereed' }), INSTELLINGEN, VANDAAG, NU)],
+    ['uitstellen zonder aanleiding', () =>
+      wijzigStatus(db, 'A04', versie(db, 'A04'), statusInvoer({ status: 'uitgesteld' }), INSTELLINGEN, VANDAAG, NU)],
+    ['vervallen zonder reden', () =>
+      wijzigStatus(db, 'A04', versie(db, 'A04'), statusInvoer({ status: 'vervallen' }), INSTELLINGEN, VANDAAG, NU)],
+    ['een verouderde versie', () =>
+      wijzigStatus(db, 'A04', versie(db, 'A04') + 7, statusInvoer({ status: 'bezig' }), INSTELLINGEN, VANDAAG, NU)],
+    ['een afhankelijkheid die een cirkel sluit', () =>
+      zetAfhankelijkheden(db, 'A01', versie(db, 'A01'), ['A02'], NU)],
+    ['een seed-actie verwijderen', () => verwijderActie(db, 'A01')],
+    ['koppelen aan een onbekend bedrijf', () => koppelBedrijf(db, 'A07', 'lead', '999', NU)],
+    ['een beslissing met een onbekende actie', () =>
+      legBeslissingVast(db, 'B01', 1, { acties: ['A99'] }, NU)],
+  ]
+
+  for (const [naam, fn] of gevallen) {
+    const voor = snapshot()
+    const uitkomst = fn()
+    check(`${naam}: wordt geweigerd`, uitkomst.ok === false, 'werd aanvaard — dit geval meet niets')
+    check(`${naam}: laat de database ongemoeid`, snapshot() === voor)
+  }
   rauw.close()
 }
 

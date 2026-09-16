@@ -219,7 +219,7 @@ export type IdeeStatus = (typeof IDEE_STATUSSEN)[number]
 export const planActions = sqliteTable(
   'plan_actions',
   {
-    /** De code uit de opdracht: `A01`…`A22`, daarna `A23` en verder voor eigen acties. */
+    /** `A01`…`A22` uit de opdracht; `E01` en verder voor eigen acties, in een eigen reeks. */
     key: text('key').primaryKey(),
     titel: text('titel').notNull(),
     prioriteit: integer('prioriteit').notNull(),

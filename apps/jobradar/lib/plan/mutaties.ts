@@ -32,6 +32,53 @@ import { PARKEER_STATUS, type ActieStatus, type Mutatie, type PlanInstellingen, 
 
 type Tx = JobradarDb
 
+/**
+ * Een afgewezen mutatie, als worp.
+ *
+ * Bestaat alleen om `inTransactie` de transactie te laten terugdraaien; hij verlaat deze
+ * module nooit.
+ */
+class Afgewezen extends Error {
+  // Een gewoon veld en geen parameter-property: Node stript types alleen, het compileert ze
+  // niet, en `constructor(readonly x: T)` is syntax die een transpiler vraagt. `tsc --noEmit`
+  // zegt daar niets over — de scenario-suite draait op de stripper en viel er meteen op om.
+  mutatie: Mutatie<never>
+
+  constructor(mutatie: Mutatie<never>) {
+    super('afgewezen')
+    this.mutatie = mutatie
+  }
+}
+
+/**
+ * Een mutatie in een transactie die terugdraait zodra de uitkomst niet `ok` is.
+ *
+ * Dit is de reden dat de helper bestaat: `db.transaction` van better-sqlite3 rolt alleen terug
+ * wanneer de callback **werpt**. Een teruggegeven foutobject is voor de driver een geslaagde
+ * callback, dus alles wat er vóór dat `return` geschreven is, commit gewoon.
+ *
+ * Gemeten 2026-09-16: een start met een vastgelegde uitzondering die daarna op de focuslimiet
+ * strandde, gaf netjes 409 — en liet een geschiedenisregel `start_uitzondering` achter voor een
+ * actie waarvan de kolom leeg bleef. De geschiedenis beweerde dus dat er een uitzondering was
+ * vastgelegd die nooit gegolden heeft. Dat is erger dan een ontbrekende regel: hij is niet van een
+ * echte te onderscheiden.
+ *
+ * De worp is een privé sentinel en geen echte fout: een fout van de database moet gewoon
+ * doorlopen naar de aanroeper.
+ */
+function inTransactie<T>(db: JobradarDb, fn: (tx: Tx) => Mutatie<T>): Mutatie<T> {
+  try {
+    return db.transaction((tx: Tx) => {
+      const uit = fn(tx)
+      if (!uit.ok) throw new Afgewezen(uit as Mutatie<never>)
+      return uit
+    })
+  } catch (e) {
+    if (e instanceof Afgewezen) return e.mutatie as Mutatie<T>
+    throw e
+  }
+}
+
 const ongeldig = (reden: string): Mutatie<never> => ({ ok: false, soort: 'ongeldig', reden })
 const onbekend = (reden: string): Mutatie<never> => ({ ok: false, soort: 'onbekend', reden })
 
@@ -68,15 +115,29 @@ function schrijfHistorie(
     .run()
 }
 
-/** Volgende vrije `A`-key. `A22` → `A23`; tweecijferig tot 99, daarna gewoon langer. */
+/**
+ * De volgende vrije key voor een eigen actie: `E01`, `E02`, …
+ *
+ * Een eigen prefix, en niet doortellen in de `A`-reeks. De eerste versie deed dat wel — na de
+ * 22 gezaaide acties werd de eerstvolgende eigen actie `A23` — en dat botst met de enige
+ * gedocumenteerde manier om het plan inhoudelijk uit te breiden: `SEED_VERSIE` verhogen om
+ * nieuwe keys toe te voegen. Zo'n nieuwe seed-actie `A23` wordt dan stil overgeslagen
+ * (`onConflictDoNothing`), de poort springt tóch naar de nieuwe versie, en de bijbehorende
+ * afhankelijkheden en startvoorwaarden landen op een eigen actie van Jeroen — een kant tussen
+ * twee inhoudelijk niet-verwante acties, en een startvoorwaarde die iets anders meet dan
+ * bedoeld. Geen foutmelding, geen ontbrekende rij die opvalt.
+ *
+ * `E` voor eigen. Het scheelt bovendien bij het lezen: aan de key zie je nu waar een actie
+ * vandaan komt.
+ */
 export function volgendeVrijeKey(keys: readonly string[]): string {
   let hoogste = 0
   for (const k of keys) {
-    const m = /^A(\d+)$/.exec(k)
+    const m = /^E(\d+)$/.exec(k)
     if (m) hoogste = Math.max(hoogste, Number(m[1]))
   }
   const n = hoogste + 1
-  return `A${n < 10 ? `0${n}` : String(n)}`
+  return `E${n < 10 ? `0${n}` : String(n)}`
 }
 
 function volgendeVolgorde(tx: Tx, prioriteit: number): number {
@@ -105,7 +166,7 @@ export function wijzigActie(
   nieuweVelden: Partial<ActieVelden>,
   nu: string
 ): Mutatie<PlanActie> {
-  return db.transaction((tx) => {
+  return inTransactie(db, (tx) => {
     const actie = laadActie(tx, key)
     if (!actie) return onbekend(`${key} bestaat niet`)
     if (actie.versie !== versie) {
@@ -173,7 +234,7 @@ export function wijzigStatus(
   vandaag: string,
   nu: string
 ): Mutatie<StatusResultaat> {
-  return db.transaction((tx) => {
+  return inTransactie(db, (tx) => {
     const actie = laadActie(tx, key)
     if (!actie) return onbekend(`${key} bestaat niet`)
     if (actie.versie !== versie) {
@@ -358,7 +419,7 @@ export function zetAfhankelijkheden(
   nieuwe: unknown,
   nu: string
 ): Mutatie<{ actie: PlanActie; afhankelijkheden: string[] }> {
-  return db.transaction((tx) => {
+  return inTransactie(db, (tx) => {
     const actie = laadActie(tx, key)
     if (!actie) return onbekend(`${key} bestaat niet`)
     if (actie.versie !== versie) {
@@ -420,7 +481,7 @@ export function maakActie(
   bron: 'eigen' | 'idee',
   nu: string
 ): Mutatie<PlanActie> {
-  return db.transaction((tx) => {
+  return inTransactie(db, (tx) => {
     const keys = alleActies(tx).map((a) => a.key)
     const key = volgendeVrijeKey(keys)
     tx.insert(schema.planActions)
@@ -450,7 +511,7 @@ export function maakActieUitBody(db: JobradarDb, body: unknown, nu: string): Mut
 }
 
 export function verwijderActie(db: JobradarDb, key: string): Mutatie<true> {
-  return db.transaction((tx) => {
+  return inTransactie(db, (tx) => {
     const actie = laadActie(tx, key)
     if (!actie) return onbekend(`${key} bestaat niet`)
     if (actie.bron === 'seed') {
@@ -488,7 +549,7 @@ export function legBeslissingVast(
   const gekeurd = keurBeslissingVelden(body)
   if (!gekeurd.ok) return ongeldig(gekeurd.reden)
 
-  return db.transaction((tx) => {
+  return inTransactie(db, (tx) => {
     const rij = tx
       .select()
       .from(schema.planDecisions)
@@ -555,7 +616,7 @@ export function koppelBedrijf(
   subjectKey: string,
   nu: string
 ): Mutatie<{ nieuw: boolean }> {
-  return db.transaction((tx) => {
+  return inTransactie<{ nieuw: boolean }>(db, (tx) => {
     if (!laadActie(tx, key)) return onbekend(`${key} bestaat niet`)
 
     if (type === 'lead') {
@@ -644,7 +705,7 @@ export function wijzigIdee(
   body: Record<string, unknown>,
   nu: string
 ): Mutatie<PlanIdee> {
-  return db.transaction((tx) => {
+  return inTransactie(db, (tx) => {
     const rij = tx.select().from(schema.planIdeas).where(eq(schema.planIdeas.id, id)).limit(1).get()
     if (!rij) return onbekend('dit idee bestaat niet')
 
@@ -700,7 +761,7 @@ export function neemIdeeOp(
   prioriteit: Prioriteit,
   nu: string
 ): Mutatie<{ idee: PlanIdee; actie: PlanActie }> {
-  return db.transaction((tx) => {
+  return inTransactie(db, (tx) => {
     const idee = tx.select().from(schema.planIdeas).where(eq(schema.planIdeas.id, id)).limit(1).get()
     if (!idee) return onbekend('dit idee bestaat niet')
     if (idee.status === 'opgenomen') {
@@ -748,7 +809,7 @@ export function neemIdeeOp(
 }
 
 export function verwijderIdee(db: JobradarDb, id: number): Mutatie<true> {
-  return db.transaction((tx) => {
+  return inTransactie(db, (tx) => {
     const rij = tx.select().from(schema.planIdeas).where(eq(schema.planIdeas.id, id)).limit(1).get()
     if (!rij) return onbekend('dit idee bestaat niet')
     if (rij.status === 'opgenomen') {

@@ -32,6 +32,15 @@ import { SectionBar } from '../components/cashflow/SectionBar';
 import { RunwayCard } from '../components/cashflow/RunwayCard';
 import { BalanceFooter } from '../components/cashflow/BalanceFooter';
 import { StartBalanceRow } from '../components/cashflow/StartBalanceRow';
+import { KpiTile } from '../components/bureau/KpiTile';
+import { SignalList } from '../components/bureau/SignalList';
+import { ConcentrationTable } from '../components/bureau/ConcentrationTable';
+import { SalesFunnel } from '../components/bureau/SalesFunnel';
+import { QualificationChecklist } from '../components/bureau/QualificationChecklist';
+import { CapacityBar } from '../components/bureau/CapacityBar';
+import { MetricValue } from '../components/bureau/MetricValue';
+import { StageHistory } from '../components/bureau/StageHistory';
+import { opportunity } from '../lib/bureau/testing';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 
@@ -184,11 +193,54 @@ const Inhoud = () => h('div', null,
       // onbereikbaar via de sweep, dus is hij nooit gerenderd — en dus nooit op contrast
       // gemeten.
       h(RunwayCard, { runway: { months: -0.6, buffer: -792.57, netBurn: 1280, closedMonths: 6, hasEnoughData: true } })) }),
+
+  // Bureau: de presentationele componenten, elk in de standen die kleur of toon wisselen —
+  // tegel met en zonder gegevens (en met aandacht), de vier signaalniveaus, een aandeel boven
+  // de limiet, een trechter met en zonder percentage, en rendement onvoldoende.
+  h(Sectie, { titel: 'Bureau — KpiTile: waarde met aandacht, onvoldoende gegevens', kind:
+    h('div', { className: 'grid grid-cols-2 gap-3 max-w-3xl' },
+      h(KpiTile, { kpi: 'a', title: 'Gerealiseerde omzet', value: '€ 100.000', secondary: 'nog € 16.000 te verkopen', bar: { fraction: 0.83, label: '83 %' }, denominator: 'doel € 120.000 ex btw', source: 'Mijlpalen gerealiseerd in 2027', link: { href: '/bureau/projecten', label: 'Naar projecten' }, chips: ['1 project niet volledig in mijlpalen'], attention: true }),
+      h(KpiTile, { kpi: 'b', title: 'Eigen capaciteit', value: null, insufficient: { reason: 'Geen dagbudget voor 2027.', fix: { href: '/bureau/doelen', label: 'Doelen instellen' } }, denominator: 'geen dagbudget voor 2027', source: 'Tijdregistratie en planning', link: { href: '/bureau/tijd', label: 'Naar tijd' } })) }),
+
+  h(Sectie, { titel: 'Bureau — SignalList: vier niveaus, en leeg met uitgeschakelde signalen', kind:
+    h('div', { className: 'space-y-3 max-w-3xl' },
+      h(SignalList, { result: { disabled: [], signals: [
+        { id: 'k', level: 'kritiek', title: 'Vrije cash wordt negatief', detail: 'Laagste stand −€ 1.240, einde week 44.', href: '/bureau/cash' },
+        { id: 'l', level: 'let-op', title: 'Klant boven de klantlimiet', detail: '41 % van de vooruitblik, limiet 30 %.', href: '/bureau/klanten' },
+        { id: 'o', level: 'onzeker', title: '2 projecten zonder urenraming', detail: 'Uitloop en rendement zijn daar niet te toetsen.', href: '/bureau/projecten' },
+        { id: 'i', level: 'info', title: '1 open kans zonder volgende actie', detail: 'Zonder volgende stap valt een kans stil weg.', href: '/bureau/verkoop' },
+      ] } }),
+      h(SignalList, { result: { disabled: ['negativeCash'], signals: [] } })) }),
+
+  h(Sectie, { titel: 'Bureau — ConcentrationTable: boven limiet, en noemer nul', kind:
+    h('div', { className: 'grid grid-cols-2 gap-3 max-w-4xl' },
+      h(ConcentrationTable, { id: 'c1', title: 'Vooruitblik 2027', description: 'Gerealiseerd plus resterend getekend.', data: { year: 2027, basis: 'prognose', grouping: 'klant', denominator: 200000, limit: 0.3, rows: [
+        { key: 'c', label: 'Klant C', clientIds: ['c'], amount: 140000, share: 0.7, aboveLimit: true },
+        { key: 'a', label: 'Klant A', clientIds: ['a'], amount: 60000, share: 0.3, aboveLimit: false },
+      ] } }),
+      h(ConcentrationTable, { id: 'c2', title: 'Gerealiseerd in 2027', description: 'Mijlpalen gerealiseerd in het jaar.', data: { year: 2027, basis: 'gerealiseerd', grouping: 'klant', denominator: 0, limit: 0.3, rows: [] } })) }),
+
+  h(Sectie, { titel: 'Bureau — SalesFunnel, kwalificatie, historie, capaciteit, rendement', kind:
+    h('div', { className: 'space-y-3 max-w-4xl' },
+      h(SalesFunnel, { periodLabel: 'Heel 2027', period: { from: '2027-01-01', to: '2027-12-31' }, opportunities: [
+        ...Array.from({ length: 6 }, (_, i) => opportunity({ id: `g${i}`, stage: i < 3 ? 'voorstel' : 'gesprek', history: [{ stage: 'gesprek', on: '2027-02-01', reason: null }, ...(i < 3 ? [{ stage: 'voorstel' as const, on: '2027-03-01', reason: null }] : [])] })),
+        opportunity({ id: 'w', stage: 'gewonnen', history: [{ stage: 'voorstel', on: '2027-02-01', reason: null }, { stage: 'gewonnen', on: '2027-03-01', reason: null }] }),
+      ] }),
+      h('div', { className: 'grid grid-cols-2 gap-3' },
+        h(QualificationChecklist, { opportunity: opportunity({ id: 'q', need: 'Twee teams', decisionMakerInvolved: true }) }),
+        h(StageHistory, { history: [{ stage: 'gesprek', on: '2027-02-01', reason: null }, { stage: 'verloren', on: '2027-03-01', reason: 'Geen budget' }] })),
+      h('div', { className: 'max-w-sm space-y-2' },
+        h(CapacityBar, { label: 'Klantwerk', budget: 128, spent: 60, planned: 40 }),
+        h(CapacityBar, { label: 'Verkoop', budget: 40, spent: 30, planned: 20 }),
+        h('p', { className: 'text-sm' }, h(MetricValue, { metric: { kind: 'ok', value: 1125 } })),
+        h('p', { className: 'text-sm' }, h(MetricValue, { metric: { kind: 'onvoldoende-gegevens', reason: 'verwachte resterende uren ontbreken' }, showReason: true })))) }),
 );
 
 // ── Pagina ───────────────────────────────────────────────────────────────────
 
-const cssDir = `${ROOT}.next/static/css`;
+// `NEXT_DIST_DIR` zoals in next.config.mjs: in een tree zonder `.next` (de flow-harness bouwt in
+// `.next-harness`) rendert dit dan met de CSS van die build.
+const cssDir = `${ROOT}${process.env.NEXT_DIST_DIR ?? '.next'}/static/css`;
 let cssFiles: string[] = [];
 try {
   cssFiles = readdirSync(cssDir).filter((f) => f.endsWith('.css'));

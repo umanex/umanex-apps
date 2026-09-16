@@ -27,6 +27,23 @@ import {
 export function zaaiPlan(db: JobradarDb, nu = new Date().toISOString()): { gezaaid: boolean } {
   if (leesSeedVersie(db) >= SEED_VERSIE) return { gezaaid: false }
 
+  // Een seed-key die al bestaat met een ándere bron is een botsing, geen no-op. `onConflictDoNothing`
+  // zou hem stil overslaan terwijl de poort tóch doorschuift, en de bijbehorende kanten en
+  // startvoorwaarden zouden op de bestaande, inhoudelijk niet-verwante actie landen. Sinds eigen
+  // acties de `E`-reeks krijgen kan dit niet meer gebeuren; deze rem staat er voor de dag dat
+  // iemand die scheiding weer opheft.
+  const bezet = db
+    .select()
+    .from(schema.planActions)
+    .all()
+    .filter((a) => a.bron !== 'seed' && SEED_ACTIES.some((s) => s.key === a.key))
+  if (bezet.length > 0) {
+    throw new Error(
+      `zaaiPlan: ${bezet.map((a) => a.key).join(', ')} bestaat al met bron "${bezet[0]?.bron}" — ` +
+        'de seed zou hem stil overslaan en zijn afhankelijkheden op de verkeerde actie laten landen'
+    )
+  }
+
   db.transaction((tx) => {
     // Volgorde binnen een prioriteitsgroep = volgorde in SEED_ACTIES; die draagt betekenis
     // (A01 vóór A02) en is ook wat de opdracht toont.

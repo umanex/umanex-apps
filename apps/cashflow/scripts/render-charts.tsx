@@ -151,7 +151,8 @@ const blokken: Array<[string, string]> = [
 // De echte gebouwde stylesheet, niet een benadering: alleen daar staan zowel de
 // Tailwind-klassen als de umanex-variabelen in. Draai `pnpm --filter cashflow build`
 // als dit bestand nog niet bestaat.
-const cssDir = `${ROOT}.next/static/css`;
+// `NEXT_DIST_DIR` zoals in next.config.mjs en render-screens.tsx.
+const cssDir = `${ROOT}${process.env.NEXT_DIST_DIR ?? '.next'}/static/css`;
 const cssFiles = readdirSync(cssDir).filter((f) => f.endsWith('.css'));
 if (cssFiles.length === 0) throw new Error(`Geen gebouwde CSS in ${cssDir} — eerst builden.`);
 const css = cssFiles.map((f) => readFileSync(`${cssDir}/${f}`, 'utf8')).join('\n');

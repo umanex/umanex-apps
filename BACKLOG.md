@@ -99,6 +99,26 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Klant — umanex
 
+## 2026-09-16 — De flow-harnesses van cashflow en dashboard laten de tree vuil achter · [infra]
+- **Wat:** `next build` met een eigen `NEXT_DIST_DIR` herschrijft twee getrackte bestanden zodat
+  ze naar díe build-map wijzen: `next-env.d.ts` en `tsconfig.json`. `apps/cashflow/scripts/flow-harness.mjs`
+  en `apps/dashboard/scripts/flow-harness.mjs` zetten die variabele en zetten de bestanden niet
+  terug, dus wie de harness draait en daarna commit, neemt twee build-artefacten mee. De drie
+  jobradar-instrumenten zijn vandaag gefixt (commit `3dfe382`, beide kanten gemeten); deze twee
+  dragen dezelfde klasse, die als entry in `LEARNINGS.md` staat.
+- **Waarom niet nu:** cross-app. De fix hoort per app in een eigen commit of in een gedeelde
+  helper, niet meeliftend op een jobradar-PR. En cashflow serveert een PM2-productiebuild uit
+  dezelfde map, dus daar is de harness aanraken iets om bewust te doen in plaats van terloops.
+- **Eerste zet:** kopieer het blok uit `apps/jobradar/scripts/flow-harness.mjs` (de `BRONBESTANDEN`-map
+  met `herstelBronbestanden` op `process.on('exit', …)`). Verifieer met de tegenproef die de klasse
+  aantoont: vanuit een schone tree `( cd apps/<app> && NEXT_DIST_DIR=.next-controle npx next build )`
+  en dan `git status --porcelain -- apps/<app>/next-env.d.ts apps/<app>/tsconfig.json` — die hoort
+  vóór de fix twee regels te geven en erna nul.
+- **Naburig, niet hetzelfde:** `apps/cashflow/BACKLOG.md` heeft een item over `NEXT_DIST_DIR` dat
+  ván de shell in `pm2:rebuild` lekt. Dat is de andere richting van dezelfde variabele; beide
+  lossen op door de map expliciet te zetten in plaats van hem uit de omgeving te laten komen.
+- **Status:** open
+
 ## 2026-09-07 — Compacte maat in @umanex/ui · [design-system]
 - **Wat:** Een compacte size-as op `Button` en `Input` in `packages/ui` (de cashflow-maatvoering: `h-7`/`h-8`, `text-dense`, `rounded-sm`, `focus:ring-1`), zodat een dichte app de gedeelde primitives kan gebruiken zonder ze per call-site te overschrijven.
 - **Waarom niet nu:** Twee redenen. (1) Een variant toevoegen aan een primitive is een design-system-wijziging en die hoort vooraf bevestigd (CLAUDE.md → *Acties die altijd eerst moeten worden bevestigd*). (2) `pnpm --filter @umanex/ui figma:check` faalt hard op een variant-as die code en Figma niet delen — hij staat nu groen op 19 checks. Een nieuwe size vraagt dus ook de component-set in het Figma-bestand **Component library** (`ko2OuasYxyY2YRD69MYhWX`) én een verse `figma/manifest.json`, wat een actieve Desktop Bridge vereist.

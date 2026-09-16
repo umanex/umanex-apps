@@ -319,13 +319,24 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 - **Bevinding:** De splitsing €17.489 in provisiepotten tegenover €2.828 vrij — waarop de runway en de hele buffer-redenering in het businessplan staan — heb ik zelf berekend als `monthlyAmount × maanden − opgenomen` uit de JSONB, niet uit wat de app zélf toont. Dat is een tweede implementatie van precies de rekenkern die tussen juni en augustus veertien fix-commits nodig had (dubbele aftrek, subtotalen die niet sloten, doorrol tussen maanden).
 - **Check:** Open de app en lees de potstanden van augustus 2026 af; tel ze op. Komt het totaal op €17.489 ± €50, dan klopt mijn afleiding. Wijkt het af, dan verschuift de runway en elke bufferdatum in het businessplan mee.
 - **Volgende zet:** Eén keer aflezen en vergelijken. Dit is de #1 eerste zet van de volgende sessie, want het draagt de kop van het document.
-- **Status:** open
+- **Afgesloten (2026-09-16):** de check is gedraaid en de handmatige afleiding klopte níet. De
+  aflezing uit de app zit sinds 2026-08-25 gecodeerd in de invoer van `plan-model.mjs`: €12.846 in
+  provisiepotten tegenover de veronderstelde €17.489, en €3.131 werkelijk vrij tegenover €2.828.
+  Invariant 3 leidt het opnieuw af, en het artefact draagt die getallen — `grep -c "17.489\|2.828"`
+  erop geeft 0. De onzekerheid is weggemeten in plaats van blijven hangen.
+- **Status:** resolved
 
 ## 2026-08-25 — De runway van 0,85 maand rekent privé sparen als onvermijdelijk · [aanname]
 - **Bevinding:** Ik nam vaste uitgaven plus het volledige maandbudget (€7.968) als wat doorloopt zodra de omzet stopt. Daar zit €500 privé sparen en €500 vrije uitgave in, en dat is precies wat je als eerste stopzet. Strikt genomen is de onvermijdelijke last €6.968 en de runway 0,97 maand in plaats van 0,85.
 - **Check:** `grep -c "0,85 maand" businessplan-artifact` — of eenvoudiger: staat er in deel 7 nog 0,85, dan is de correctie niet doorgevoerd. Het verschil is klein maar het is een kopcijfer, en te laag oogt hier alarmerender dan het is.
 - **Volgende zet:** Bepalen welke budgetposten je in een noodscenario écht stopzet, en het getal daarop herzien. Dat is dezelfde vraag als de vast/variabel-splitsing die al in het plan staat.
-- **Status:** open
+- **Afgesloten (2026-09-16):** doorgevoerd en zichtbaar. `DISCRETIONAIR = ['Privé sparen', 'Vrije
+  uitgave']` staat als constante in `plan-model.mjs`, de directe last is €6.968/maand, en het
+  document draagt nu twee runways (0,45 op de directe last, 0,28 inclusief provisies) in plaats van
+  één. Het kopcijfer 0,85 bestaat nergens meer; de enige treffers in de repo waren deze entry zelf.
+  Dat de nieuwe getallen lager liggen komt doordat het vrije bedrag óók hermeten is — dat is het
+  item hierboven, niet dit.
+- **Status:** resolved
 
 ## 2026-08-25 — Het rekenmodel achter het businessplan bestaat alleen in de scratchpad · [debt]
 - **Bevinding:** Elk cijfer in het businessplan komt uit wegwerpscripts in de sessie-scratchpad — de scenariotabellen, de kasopbouw, de driejarenprojectie, het besparingsargument. Die map is sessie-lokaal en verdwijnt. Het artifact draagt de uitkomsten maar niet de afleiding, dus een volgende herrekening begint van nul en kan stil van deze afwijken.

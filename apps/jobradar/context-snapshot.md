@@ -58,17 +58,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-661f728 docs(jobradar): record the plan in the project context and close its briefing
-76a29ff fix(jobradar): stop the plan from writing reasons Jeroen never gave
-ca98e0c fix(jobradar): let a status carry its own reason, and stop showing it twice
-68c0e4f feat(jobradar): build the plan screen and hang it off the existing dashboard
-171145f feat(jobradar): expose the business plan over HTTP, with a probe that drives it
+e00a7ef docs: document the Figma chain for packages/ui and close batch 0 on evidence
+792dbe2 feat(ui): Switch and Dialog in Figma, with the guards that read the chain
+da73b18 fix(ui): a disabled Slider now looks disabled
+58b4395 feat(ui): a code-to-Figma chain for packages/ui, adapted from rowtrack
+5c03d25 feat(ui): name every rendered part with data-slot
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/jobradar/BACKLOG.md
+  M  apps/jobradar/HANDOFF.md
   M  apps/jobradar/briefings/2026-09-16-feature-bedrijfsplan-2027.tcebc.md
-   M apps/jobradar/next-env.d.ts
-   M apps/jobradar/tsconfig.json
+  M  apps/jobradar/components/plan/ActiePanel.tsx
+  M  apps/jobradar/context-snapshot.md
+  M  apps/jobradar/lib/db/schema.ts
+  M  apps/jobradar/lib/plan/mutaties.ts
+  M  apps/jobradar/lib/plan/seed-inhoud.ts
+  M  apps/jobradar/lib/plan/seed.ts
+  M  apps/jobradar/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

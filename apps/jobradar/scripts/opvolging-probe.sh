@@ -52,6 +52,22 @@ if lsof -nP -iTCP:$PORT -sTCP:LISTEN >/dev/null 2>&1; then
   exit 2
 fi
 
+# `next build` met een eigen NEXT_DIST_DIR herschrijft twee getrackte bestanden zodat ze naar
+# díe build-map wijzen: `next-env.d.ts` en `tsconfig.json`. Dit script is een meetinstrument;
+# een instrument dat de bron muteert waaruit je commit, legt die mutatie vast in je volgende
+# commit. Gemeten 2026-09-16, twee keer in één sessie.
+#
+# Inhoud bewaren en terugzetten, niet `git checkout`: dat laatste zou een échte openstaande
+# wijziging aan tsconfig.json weggooien.
+BEWAARD=$(mktemp -d)
+cp "$APP/next-env.d.ts" "$BEWAARD/next-env.d.ts" 2>/dev/null
+cp "$APP/tsconfig.json" "$BEWAARD/tsconfig.json" 2>/dev/null
+herstelBronbestanden() {
+  [ -f "$BEWAARD/next-env.d.ts" ] && cp "$BEWAARD/next-env.d.ts" "$APP/next-env.d.ts"
+  [ -f "$BEWAARD/tsconfig.json" ] && cp "$BEWAARD/tsconfig.json" "$APP/tsconfig.json"
+  rm -rf "$BEWAARD"
+}
+
 export NEXT_DIST_DIR=.next-apiprobe JOBRADAR_DB_PATH="$DB"
 (cd "$APP" && npx next build >/dev/null 2>&1) || { echo "BUILD FAALT"; exit 1; }
 
@@ -65,6 +81,7 @@ opruimen() {
   for pid in $(lsof -t -nP -iTCP:$PORT -sTCP:LISTEN 2>/dev/null); do kill "$pid" 2>/dev/null; done
   wait "$SRV" 2>/dev/null
   rm -rf "$APP/.next-apiprobe"
+  herstelBronbestanden
 }
 trap opruimen EXIT
 

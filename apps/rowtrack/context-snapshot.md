@@ -70,16 +70,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+e00a7ef docs: document the Figma chain for packages/ui and close batch 0 on evidence
 792dbe2 feat(ui): Switch and Dialog in Figma, with the guards that read the chain
 da73b18 fix(ui): a disabled Slider now looks disabled
 58b4395 feat(ui): a code-to-Figma chain for packages/ui, adapted from rowtrack
 5c03d25 feat(ui): name every rendered part with data-slot
-15fb3fd feat(ui): Switch and Dialog, and Button asChild through Slot
 ```
 
 ## Uncommitted wijzigingen
   M  apps/rowtrack/BACKLOG.md
-  M  packages/ui/CLAUDE.md
+  M  apps/rowtrack/HANDOFF.md
+  M  apps/rowtrack/context-snapshot.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -28,6 +28,8 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | SessionEffects | `apps/cashflow/components/auth/SessionEffects.tsx` | auth | — | — | — |
 | SignOutButton | `apps/cashflow/components/auth/SignOutButton.tsx` | auth | — | — | — |
 | BureauSubnav | `apps/cashflow/components/bureau/BureauSubnav.tsx` | bureau | — | — | — |
+| CapacityBar | `apps/cashflow/components/bureau/CapacityBar.tsx` | bureau | — | — | — |
+| CapacitySummary | `apps/cashflow/components/bureau/CapacitySummary.tsx` | bureau | — | — | — |
 | ExtensionList | `apps/cashflow/components/bureau/ExtensionList.tsx` | bureau | — | — | — |
 | ExternalCostList | `apps/cashflow/components/bureau/ExternalCostList.tsx` | bureau | — | — | — |
 | NumberField | `apps/cashflow/components/bureau/fields/NumberField.tsx` | fields | — | — | — |
@@ -39,11 +41,15 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | MetricValue | `apps/cashflow/components/bureau/MetricValue.tsx` | bureau | — | — | — |
 | MilestoneList | `apps/cashflow/components/bureau/MilestoneList.tsx` | bureau | — | — | — |
 | MilestoneRow | `apps/cashflow/components/bureau/MilestoneRow.tsx` | bureau | — | — | — |
+| PlanningPanel | `apps/cashflow/components/bureau/PlanningPanel.tsx` | bureau | — | — | — |
 | ProjectForm | `apps/cashflow/components/bureau/ProjectForm.tsx` | bureau | — | — | — |
 | ProjectSheet | `apps/cashflow/components/bureau/ProjectSheet.tsx` | bureau | — | — | — |
 | ProjectStatusBadge | `apps/cashflow/components/bureau/ProjectStatusBadge.tsx` | bureau | — | — | — |
 | ProjectTable | `apps/cashflow/components/bureau/ProjectTable.tsx` | bureau | — | — | — |
+| QuickTimeEntry | `apps/cashflow/components/bureau/QuickTimeEntry.tsx` | bureau | — | — | — |
 | SumLine | `apps/cashflow/components/bureau/SumLine.tsx` | bureau | — | — | — |
+| TimeEntryRow | `apps/cashflow/components/bureau/TimeEntryRow.tsx` | bureau | — | — | — |
+| WeekList | `apps/cashflow/components/bureau/WeekList.tsx` | bureau | — | — | — |
 | YearSelector | `apps/cashflow/components/bureau/YearSelector.tsx` | bureau | — | — | — |
 | YieldBreakdown | `apps/cashflow/components/bureau/YieldBreakdown.tsx` | bureau | — | — | — |
 | BalanceFooter | `apps/cashflow/components/cashflow/BalanceFooter.tsx` | cashflow | — | — | — |
@@ -71,24 +77,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+056bfa5 feat(cashflow): projects — list, sheet and detail with milestones, extensions and external costs
 40d19f9 Merge remote-tracking branch 'origin/feature/ui-textarea-native-select' into feature/cashflow-bureau-ui
 e994db9 feat(cashflow): revenue per fiscal year from milestones, and project yield A and B
 7552a2e feat(cashflow): the bureau shell and the goals page
 360eb23 feat(ui): Textarea and NativeSelect, with their Figma pages and a manifest recipe that matches the guard
-98c01c0 feat(cashflow): the bureau document key, its transitions and their tests (store version 16)
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/cashflow/app/bureau/projecten/[id]/page.tsx
-  A  apps/cashflow/app/bureau/projecten/page.tsx
-  A  apps/cashflow/components/bureau/ExtensionList.tsx
-  A  apps/cashflow/components/bureau/ExternalCostList.tsx
-  A  apps/cashflow/components/bureau/MetricValue.tsx
-  A  apps/cashflow/components/bureau/MilestoneList.tsx
-  A  apps/cashflow/components/bureau/MilestoneRow.tsx
-  A  apps/cashflow/components/bureau/ProjectForm.tsx
-  A  apps/cashflow/components/bureau/ProjectSheet.tsx
-  A  apps/cashflow/components/bureau/ProjectStatusBadge.tsx
+  A  apps/cashflow/app/bureau/tijd/page.tsx
+  A  apps/cashflow/components/bureau/CapacityBar.tsx
+  A  apps/cashflow/components/bureau/CapacitySummary.tsx
+  A  apps/cashflow/components/bureau/PlanningPanel.tsx
+  A  apps/cashflow/components/bureau/QuickTimeEntry.tsx
+  A  apps/cashflow/components/bureau/TimeEntryRow.tsx
+  A  apps/cashflow/components/bureau/WeekList.tsx
+  A  apps/cashflow/lib/bureau/capacity.test.ts
+  A  apps/cashflow/lib/bureau/capacity.ts
+   M apps/cashflow/scripts/a11y-passes.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

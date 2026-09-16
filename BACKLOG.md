@@ -97,6 +97,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** de vorm van cashflow kopiëren — die heeft een `flow:ci` die de build van de type-check-stap hergebruikt (`--dist=.next`) in plaats van opnieuw te bouwen. jobradar heeft die variant nog niet; zonder haar kost de stap een tweede volledige `next build`.
 - **Status:** open
 
+## 2026-09-16 — `.umanex-os/CLAUDE.md` (60k tekens) zit boven de 40k-drempel; trimmen kan alleen aan de bron · [docs]
+- **Wat:** Claude Code waarschuwt boven ~40k tekens per geheugenbestand; de globale laag staat op 60 080 en is ~15k van de ~33k tokens (est.) die elke sessie vóór de eerste prompt kost (`/doctor`, 2026-09-16). Kandidaten om lazy te laden: het merge-protocol plus "Cross-repo review" als skill, en de Figma-sectie opgaan in `figma-naar-code`/`code-naar-figma` — samen ≈ 8k tekens. De "nooit"-regels blijven in het bestand.
+- **Waarom niet nu:** De kopie hier wordt door `scripts/sync-os.sh` overschreven; de bron is `~/Documents/umanex-os`, waarvan de tree op `docs/dekking-meting-vastleggen` stond — andermans branch, niet aangeraakt. Dit item hoort in de BACKLOG van umanex-os en staat hier tot iemand hem daar overneemt.
+- **Eerste zet:** In umanex-os een branch vanaf `origin/main`; `wc -c CLAUDE.md` als nulmeting; de twee secties naar skills met een pointer van drie regels achter; `sync-os.sh` in één klantrepo draaien en nameten dat de hooks en `refs-check.mjs` groen blijven.
+- **Check:** `wc -c < .umanex-os/CLAUDE.md` — boven 40000 = nog boven de drempel.
+- **Status:** open
+
 # Klant — umanex
 
 ## 2026-09-07 — Compacte maat in @umanex/ui · [design-system]

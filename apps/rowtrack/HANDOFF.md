@@ -130,7 +130,7 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
   energieveld wordt nog steeds overgeslagen en de vraag staat nog open; geen treffer = de parser
   leest het en er is een besluit gevallen. Aanvullend `grep -rn "erg_calories" apps/rowtrack` —
   treffer = de erg-waarde wordt naast de eigen bewaard en de formules zijn vergelijkbaar geworden.
-- **Status:** open
+- **Status:** resolved (2026-09-16) — check gemeten 2026-09-16: `offset += 5` staat nog (`ftms-parser.ts:115`), `erg_calories` 0 treffers. Ouder dan 30 dagen en per eigen "Volgende zet" een aparte analyse: verplaatst naar `apps/rowtrack/BACKLOG.md` (2026-09-16); de meetgegevens hierboven blijven de bron.
 
 ## 2026-08-11 — Subtitle-action vuurt niet op synthetische taps; ALLE's a11y-frame staat scheef · [risico]
 - **Bevinding:** Bij de sim-verify van #257-261: de `Subtitle`-action (WIJZIG op Home én Profiel)

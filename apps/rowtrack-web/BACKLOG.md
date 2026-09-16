@@ -80,3 +80,52 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** tellen wat er nu ís — `grep -c '<main' app/[locale]/page.tsx` — en dan óf één `<main>` om alle secties, óf per `<section>` een `aria-labelledby`; nameten met het script.
 - **Check:** `pnpm --filter rowtrack-web exec node scripts/detect.mjs --no-build 2>&1 | grep -c ' region '` — nul betekent gefixt.
 - **Status:** open
+
+## 2026-09-16 — Web-tokens ontbreken; de site draait op Tailwinds schaal · [tokens]
+- **Wat:** Kleuren zijn token-only en bewaakt, maar élke maat (`text-5xl`, `px-6`, `max-w-5xl`, `py-24`) komt uit Tailwinds eigen schaal. RowTrack's tokenset heeft geen web-typeschaal, geen spacing boven 48 en geen container-widths; er staan `TODO`-markers over elf sectiebestanden plus `Section.tsx` en `globals.css`.
+- **Waarom niet nu:** HANDOFF-item van 2026-08-10, ouder dan 30 dagen bij de triage van 2026-09-16 (sessie-reflectie stap 1): werk dat blijft liggen, geen sessie-context. Check gemeten 2026-09-16: 0, onveranderd sinds 2026-08-27.
+- **Eerste zet:** De ontbrekende assen in Tokens Studio zetten (`packages/rowtrack-tokens/TOKENS-TODO.md` §2 t/m §5), dan `Section.tsx` en `SectionHeading.tsx` eerst — die twee dragen het leeuwendeel van de ritmiek.
+- **Check:** `git ls-files apps/rowtrack-web | grep -ci token` — 0 betekent dat er nog geen web-tokenbestand is.
+- **Status:** open
+
+## 2026-09-16 — Wit op de accentknop haalt geen AA · [a11y]
+- **Wat:** `fg.onAccent` (#FFFFFF) op `accent.default` (#F05454) meet 3,44:1; AA vraagt 4,5:1 en `type.buttonPrimary` is 18px regular. Nog onzichtbaar omdat er geen echte CTA-knop met tekst op accent bestaat; zodra die er komt bijt dit meteen, en het raakt óók de app.
+- **Waarom niet nu:** HANDOFF-item van 2026-08-10, ouder dan 30 dagen bij de triage van 2026-09-16. Check gemeten 2026-09-16: accent #F05454, onAccent #FFFFFF, onveranderd.
+- **Eerste zet:** Kies uit de drie uitwegen in `TOKENS-TODO.md` §1a (accent verdiepen · donkere tekst op accent · knoptekst ≥18.66px bold). Een AA-accent-tekstvariant is NIET nodig — accent-als-tekst haalt 5,21:1.
+- **Check:** `grep -o '#F05454' apps/rowtrack/tokens/tokens.json` naast `grep -A2 '"onAccent"' apps/rowtrack/tokens/tokens.json` — beide ongewijzigd = contrast nog 3,44:1.
+- **Status:** open
+
+## 2026-09-16 — De site toont prijzen die de app niet kan innen · [content]
+- **Wat:** S8 en de JSON-LD-`offers` noemen €3.99/€29.99, maar `apps/rowtrack` heeft geen in-app-aankoopcode — geen StoreKit, geen RevenueCat, geen feature-gating. De sectie zegt "Binnenkort", dus vandaag klopt het; het wordt onwaar zodra de site live gaat zonder inningsweg.
+- **Waarom niet nu:** HANDOFF-item van 2026-08-10, ouder dan 30 dagen bij de triage van 2026-09-16. Check gemeten 2026-09-16: 0 bestanden, onveranderd.
+- **Eerste zet:** Vóór publicatie: bedragen toetsen aan App Store Connect. Bestaat Pro dan nog niet, haal de offers uit `lib/schema.ts` — structured data wordt letterlijk overgenomen, zonder het "binnenkort" eromheen.
+- **Check:** `grep -rl 'StoreKit\|RevenueCat\|react-native-iap\|expo-in-app' apps/rowtrack | wc -l` — 0 = nog geen enkele inningsweg terwijl de site prijzen noemt.
+- **Status:** open
+
+## 2026-09-16 — Analyse-sectie toont de samenvatting, niet de drie tabs · [content]
+- **Wat:** S5 gaat over de splits-analyse maar toont het samenvattingsscherm, omdat het detailscherm (Overzicht/Splits/Hartslag) een ingelogd account met een training mét hartslag vraagt. In die samenvatting staan de PIEK-kolom en de BPM-rij op streepjes doordat `dev-active.tsx` daar `null` doorgeeft.
+- **Waarom niet nu:** HANDOFF-item van 2026-08-10, ouder dan 30 dagen bij de triage van 2026-09-16. Check gemeten 2026-09-16: `Analysis.tsx:54` draagt nog "Het samenvattingsscherm na een training".
+- **Eerste zet:** Inloggen op `rowtrack-test@umanex.be` op de simulator, een training met hartslag openen, `xcrun simctl io booted screenshot`. Niet: de summary-mocks in `dev-active.tsx` vullen — dat is een testfixture wijzigen voor een marketingbeeld.
+- **Check:** `grep -n 'alt=' apps/rowtrack-web/components/sections/Analysis.tsx` — noemt de alt-tekst nog "samenvattingsscherm", dan toont S5 de splits-tabs nog niet.
+- **Status:** open
+
+## 2026-09-16 — Concept-voorwaarden nog niet juridisch nagekeken · [legal]
+- **Wat:** `apps/rowtrack/docs/voorwaarden.md` staat op CONCEPT v0.1 en rendert op `/nl/voorwaarden`, maar de route staat bewust niet in `lib/routes.ts` en de sitemap. Van de Consumentenombudsdienst staat alleen naam en website in de tekst; het postadres is niet uit het hoofd ingevuld.
+- **Waarom niet nu:** HANDOFF-item van 2026-08-10, ouder dan 30 dagen bij de triage van 2026-09-16; wacht op een juridische controle, niet op een sessie. Check gemeten 2026-09-16: 1.
+- **Eerste zet:** Juridische controle; daarna het adres aanvullen, de statusregel op definitief zetten en `/voorwaarden` toevoegen aan `lib/routes.ts`.
+- **Check:** `grep -c CONCEPT apps/rowtrack/docs/voorwaarden.md` — een treffer = nog concept.
+- **Status:** open
+
+## 2026-09-16 — Geen Vercel-project; de site kan nergens heen · [infra]
+- **Wat:** `rowtrack-web` heeft geen Vercel-project — bewust: bouwen nu, publiceren ná de App Store-release. Gevolg: niemand ziet de site zonder hem lokaal te draaien, en de eerste deploy is nog een onbekende. `apps/rowtrack/BACKLOG.md` (PRIVACY_POLICY_URL) hangt hieraan.
+- **Waarom niet nu:** HANDOFF-item van 2026-08-10, ouder dan 30 dagen bij de triage van 2026-09-16; de afspraak zelf is de reden. Check gemeten 2026-09-16: 0 deployments.
+- **Eerste zet:** Root `apps/rowtrack-web`, install `cd ../.. && pnpm install --frozen-lockfile`, build `cd ../.. && pnpm turbo build --filter=rowtrack-web`, Node 20.x, ignored build step `npx turbo-ignore rowtrack-web`. Deploy blijft handmatig (Jeroen).
+- **Check:** `gh api repos/umanex/umanex-apps/deployments --jq '[.[]|select(.environment|test("rowtrack";"i"))]|length'` — 0 = nog nergens een rowtrack-deployment.
+- **Status:** open
+
+## 2026-09-16 — De app registreert meer dan de site laat zien · [idee]
+- **Wat:** Per training bewaart RowTrack ook weerstandsniveau, slagtelling, gemiddelden en maxima per metric, de beste split en de ~1 Hz-tijdreeks. Niets daarvan staat op de site; juist die diepte is waarmee RowTrack zich tegenover ErgData meet.
+- **Waarom niet nu:** HANDOFF-item van 2026-08-10, ouder dan 30 dagen bij de triage van 2026-09-16: een idee, geen sessie-context. Check gemeten 2026-09-16: 0 treffers in `components/`.
+- **Eerste zet:** S5 uitbreiden met gemiddelden/maxima en de slagtelling — S3 blijft wat je tíjdens het roeien ziet, en dat onderscheid houdt beide secties rustig.
+- **Check:** `grep -rin 'weerstand\|slagfrequentie' apps/rowtrack-web/components` — treffers alleen in `llms.txt` of in een comment tellen niet; het gaat om zichtbare secties.
+- **Status:** open

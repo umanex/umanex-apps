@@ -70,16 +70,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4584f68 docs: trim derivable and duplicated CLAUDE.md content, move the Storybook-MCP notes to packages/ui
 b52c768 docs(rowtrack): close what series A finished, record what the review leaves open
 26b3433 fix(rowtrack): a pace or power goal is an intensity, not a finish line
 3612c3b feat(rowtrack): save an interrupted ride from its checkpoint
 df9f602 refactor(rowtrack): one session accumulator, and counter resets survive a reconnect
-bfc2509 fix(rowtrack): gate heart rate on consent at the source
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/CLAUDE.md
-  M  packages/ui/CLAUDE.md
+  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

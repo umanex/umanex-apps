@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack-web
-_Gegenereerd op 2026-09-14_
+_Gegenereerd op 2026-09-16_
 
 ## Project
 - **App:** rowtrack-web
@@ -46,18 +46,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4584f68 docs: trim derivable and duplicated CLAUDE.md content, move the Storybook-MCP notes to packages/ui
+fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
+8f8756a feat(ui): wire the Storybook MCP into packages/ui
+e4ad8a3 fix(rowtrack-web): per-rule ignores instead of --scope, and two axes nobody measured
 154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
-86d8287 chore(rowtrack-web): upgrade to Next 15.5.25 and React 19
-0e89c73 feat(rowtrack-web): deterministic detector run as a Verify-pad capability
-2ca664b merge: main into feature/rowtrack-web-premium-redesign
-2c970c9 test(ui): add Sheet to the rendered-size baseline
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack-web/.detect.config.json
-  M  apps/rowtrack-web/.impeccable/config.json
-  M  apps/rowtrack-web/CLAUDE.md
-  M  apps/rowtrack-web/scripts/detect.mjs
+  M  apps/rowtrack-web/BACKLOG.md
+  M  apps/rowtrack-web/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

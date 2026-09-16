@@ -17,6 +17,7 @@
     "kbo:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/kbo-sync.mjs",
     "prospects:import": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/prospects-import.mjs",
     "opvolging:probe": "bash scripts/opvolging-probe.sh",
+    "plan:probe": "bash scripts/plan-probe.sh",
     "geocode": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/geocode.mjs"
   },
   "dependencies": {

@@ -42,24 +42,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+0a7fda3 feat(jobradar): add the 2027 business plan model with derived blocking
 fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
 8f8756a feat(ui): wire the Storybook MCP into packages/ui
 154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
 b896418 chore(jobradar): upgrade to Next 15.5.25 and React 19
-ff20863 docs: briefing statuses onto the triad vocabulary
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/jobradar/briefings/2026-09-16-feature-bedrijfsplan-2027.tcebc.md
-  M  apps/jobradar/lib/contact.ts
-  M  apps/jobradar/lib/db/ddl.ts
-  M  apps/jobradar/lib/db/schema.ts
-  A  apps/jobradar/lib/plan/aannames.ts
-  A  apps/jobradar/lib/plan/afhankelijkheden.ts
-  A  apps/jobradar/lib/plan/afleiding.ts
-  A  apps/jobradar/lib/plan/export.ts
-  A  apps/jobradar/lib/plan/instellingen.ts
-  A  apps/jobradar/lib/plan/inzet.ts
+  A  apps/jobradar/app/api/plan/acties/[key]/route.ts
+  A  apps/jobradar/app/api/plan/acties/route.ts
+  A  apps/jobradar/app/api/plan/beslissingen/[key]/route.ts
+  A  apps/jobradar/app/api/plan/export/route.ts
+  A  apps/jobradar/app/api/plan/ideeen/[id]/route.ts
+  A  apps/jobradar/app/api/plan/ideeen/route.ts
+  A  apps/jobradar/app/api/plan/koppelingen/route.ts
+  A  apps/jobradar/app/api/plan/route.ts
+  A  apps/jobradar/lib/plan/server.ts
+   M apps/jobradar/next-env.d.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

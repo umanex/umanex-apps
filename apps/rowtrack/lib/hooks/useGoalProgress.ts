@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { calculateProgress } from '@/lib/workout-goals';
+import { calculateProgress, goalEndsRide } from '@/lib/workout-goals';
 import type { WorkoutGoal } from '@/lib/workout-goals';
 import { formatDistanceDynamic, formatSplit } from '@/lib/formatters';
 import { t } from '@/i18n';
@@ -10,21 +10,20 @@ import type { SplitEntry } from '@/types/workout';
 import type { WorkoutMetricsState, SessionRef } from './useWorkoutMetrics';
 import { mean, takeSplitInterval } from '@/lib/sessionAccumulator';
 
-// --- Goal-reached celebration message (dynamisch per doeltype) ---
+// --- Goal-reached celebration message ---
 
+/**
+ * De viering hoort bij een EINDPUNT, en alleen `goalEndsRide`-types hebben er een. De takken
+ * voor tempo en vermogen zijn met F3 verdwenen: die doelen beëindigen de rit niet meer, dus er
+ * is geen moment meer waarop zo'n toast zou verschijnen. Hun copy is uit `nl.ts` gehaald in
+ * plaats van onbereikbaar te blijven staan — het nieuwe zone-model krijgt zijn eigen woorden.
+ */
 function celebrationMessage(goal: WorkoutGoal): string {
-  switch (goal.type) {
-    case 'duration':
-      return t.workout.celebration.duration(Math.round(goal.target / 60));
-    case 'distance': {
-      const { value, unit } = formatDistanceDynamic(goal.target);
-      return t.workout.celebration.distance(value, unit);
-    }
-    case 'split':
-      return t.workout.celebration.split(formatSplit(goal.target));
-    case 'watts':
-      return t.workout.celebration.watts(goal.target);
+  if (goal.type === 'distance') {
+    const { value, unit } = formatDistanceDynamic(goal.target);
+    return t.workout.celebration.distance(value, unit);
   }
+  return t.workout.celebration.duration(Math.round(goal.target / 60));
 }
 
 // De records waartegen deze rit zich meet, staan in `lib/personalRecords.ts` — die
@@ -103,6 +102,10 @@ export function useGoalProgress(
   // --- Goal progress + milestones + countdown haptics ---
   useEffect(() => {
     if (phase !== 'active' || !goal || !goalProgress) return;
+
+    // Alleen een EINDPUNT beëindigt de rit. Voor tempo en vermogen betekent `reached` "je zit
+    // er nu in", en dat is geen reden om de training af te breken — zie `goalEndsRide`.
+    if (!goalEndsRide(goal.type)) return;
 
     // Goal reached → toon de viering-toast + één Heavy haptic op het bereik-moment
     // (bleef behouden toen de 25/50/75/100%-milestone-toasts verdwenen).

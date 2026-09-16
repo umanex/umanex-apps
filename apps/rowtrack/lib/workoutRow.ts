@@ -77,6 +77,31 @@ function afgerondGemiddelde(acc: Acc): number | null {
 }
 
 /**
+ * Heeft deze rit zijn doel gehaald?
+ *
+ * Voor een eindpunt (duur, afstand) is dat een feit dat tijdens de rit is vastgesteld: de
+ * klok liep af of de meters waren gevaren, en op dát moment eindigde de training.
+ *
+ * Voor een intensiteitsdoel bestaat zo'n moment niet — tempo en vermogen zijn iets wat je
+ * volhoudt. Sinds F3 beëindigt zo'n doel de rit niet meer, dus wordt hier op de EINDWAARDEN
+ * geoordeeld: het gemiddelde over de hele rit, precies het getal dat de samenvatting toont.
+ * Eén harde haal maakt een training van twintig minuten niet geslaagd.
+ */
+function bereikteDoel(
+  input: WorkoutRowInput,
+  avgSplit: number | null,
+  avgWatts: number | null,
+): boolean {
+  const goal = input.goal;
+  if (!goal) return false;
+  if (goal.type === 'duration' || goal.type === 'distance') return input.goalReached;
+  // Lager is beter bij een tempodoel, hoger bij vermogen. Zonder meting geen geslaagd doel.
+  if (goal.type === 'split') return avgSplit != null && avgSplit <= goal.target;
+  if (goal.type === 'watts') return avgWatts != null && avgWatts >= goal.target;
+  return input.goalReached;
+}
+
+/**
  * Bouwt de rij én de PR-lijst uit de eindwaarden van één rit.
  *
  * Alle waarden die in integer-kolommen landen worden afgerond: de rauwe BLE- en max-waarden
@@ -129,7 +154,7 @@ export function buildWorkoutRow(input: WorkoutRowInput): BuiltWorkoutRow {
     resistance_level: input.resistanceLevel != null ? Math.round(input.resistanceLevel) : null,
     goal_type: input.goal?.type ?? null,
     goal_target: input.goal?.target ?? null,
-    goal_reached: input.goal ? input.goalReached : null,
+    goal_reached: input.goal ? bereikteDoel(input, avgSplit, avgWatts) : null,
     splits: input.splits.length > 0 ? [...input.splits] : null,
     // `is_pr` blijft de goedkope filter; `pr_metrics` draagt de reden. Ze komen uit dezelfde
     // lijst, dus ze kunnen niet uit elkaar lopen.

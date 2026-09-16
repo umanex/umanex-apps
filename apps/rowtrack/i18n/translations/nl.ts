@@ -254,10 +254,9 @@ export const nl = {
         `Je hebt ${min} ${min === 1 ? 'minuut' : 'minuten'} geroeid. Geweldig gedaan! 💪`,
       distance: (value: string, unit: string) =>
         `Je hebt ${value} ${unit} geroeid. Geweldig gedaan! 💪`,
-      split: (split: string) =>
-        `Je hebt je split-doel van ${split}/500m gehaald. Geweldig gedaan! 💪`,
-      watts: (w: number) =>
-        `Je hebt je doel van ${w} watt gehaald. Geweldig gedaan! 💪`,
+      // `split` en `watts` stonden hier ook. Sinds F3 beëindigt een tempo- of vermogensdoel de
+      // rit niet meer — het zijn intensiteiten, geen eindpunten — dus er is geen moment meer
+      // waarop die zinnen verschijnen. Het zone-model krijgt zijn eigen copy.
     },
   },
 

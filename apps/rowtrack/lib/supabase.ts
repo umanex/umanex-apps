@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto'
 import { createClient } from '@supabase/supabase-js'
 import { secureStorageAdapter } from './secureStorage'
+import { fetchWithDeadline, SUPABASE_REQUEST_TIMEOUT_MS } from './supabaseFetch'
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
@@ -28,5 +29,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+  },
+  global: {
+    // Eén deadline voor élke round-trip. `global.fetch` gaat naar PostgREST, Storage en
+    // Functions én naar de auth-client (gemeten in @supabase/supabase-js@2.105.3,
+    // dist/index.mjs:385 en :392), dus dit is de enige plek waar hij hoeft te staan — geen
+    // 24 losse aanroepen die er één kunnen vergeten. Het waaróm staat in supabaseFetch.ts.
+    //
+    // Laat-gebonden (een pijl in plaats van `fetch` zelf): het globale `fetch` van React
+    // Native wordt door `setUpXHR` pas tijdens het opstarten gezet, en een module-load die
+    // de functie nú vastpakt zou een andere kunnen vangen dan de app straks gebruikt.
+    fetch: fetchWithDeadline((input, init) => fetch(input, init), SUPABASE_REQUEST_TIMEOUT_MS),
   },
 })

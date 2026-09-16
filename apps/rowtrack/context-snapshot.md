@@ -70,18 +70,17 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+bb37855 docs(rowtrack): add the functional review of 2026-09-15
 fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
 8f8756a feat(ui): wire the Storybook MCP into packages/ui
 f6f8439 docs(rowtrack): validate the route-guard task on a revert measurement
 4eaa1c0 fix(rowtrack): close three holes the route guard could not see
-61b9675 fix(rowtrack): stories are not routes, and every tab is declared
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/rowtrack/audits/2026-09-15-functionele-review.md
-   M apps/rowtrack/lib/supabase.ts
-  ?? apps/rowtrack/lib/supabaseFetch.test.ts
-  ?? apps/rowtrack/lib/supabaseFetch.ts
+  M  apps/rowtrack/lib/supabase.ts
+  A  apps/rowtrack/lib/supabaseFetch.test.ts
+  A  apps/rowtrack/lib/supabaseFetch.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

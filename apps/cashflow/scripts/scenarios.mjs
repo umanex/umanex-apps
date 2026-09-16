@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Draait de scenario-suites op de rekenkern, allebei, met hun eigen tegenproef ervoor.
+ * Draait de scenario-suites op de rekenkern, alle drie, met hun eigen tegenproef ervoor:
+ * buffer en anker toetsen invarianten, regressie toetst dat geen enkel getal verschoof.
  *
  *   pnpm --filter cashflow scenarios
  *   pnpm --filter cashflow scenarios:buffer   # één suite, rauw
@@ -27,6 +28,7 @@ const APP = resolve(HERE, '..');
 const SUITES = [
   { naam: 'buffer', bestand: 'scripts/buffer-scenarios.ts' },
   { naam: 'anker', bestand: 'scripts/anchor-scenarios.ts' },
+  { naam: 'regressie', bestand: 'scripts/calc-regression.ts' },
 ];
 
 /** Draait één suite en geeft exitcode + uitvoer terug. Gooit niet: de uitkomst ís het antwoord. */
@@ -89,7 +91,7 @@ console.log('');
 console.log(
   gezakt
     ? '✗ scenarios: de rekenkern is niet groen (of een suite kan niet meer falen)'
-    : `✓ scenarios: ${totaal} checks over ${SUITES.length} suites, en allebei bewezen faalbaar`,
+    : `✓ scenarios: ${totaal} checks over ${SUITES.length} suites, en elk bewezen faalbaar`,
 );
 
 process.exit(gezakt ? 1 : 0);

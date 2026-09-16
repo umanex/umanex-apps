@@ -41,6 +41,34 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — cashflow
 
+## 2026-09-16 — `computeAnchorState` telt potstanden dubbel bij een brug vanaf een snapshot met een uitgestelde pot · [fix]
+- **Wat:** Bij het bruggen vanaf een afgesloten maand gebruikt `computeAnchorState` de potstanden van `historicalPotBalances()` — berekend tot **anker−1** — als openingsstand **op de afgesloten maand** (`lib/cashflow/calculator.ts` ±683–690 en ±774–809). Een pot die niet in de snapshot zit (uitgesteld uít de afgesloten maand) krijgt bij een gat van ≥ 2 maanden zijn tussenliggende bijdragen twee keer. Minimaal geval, afgeleid uit de code en niet gedraaid: spaardoel 900/maand vanaf 2025-10, uitgesteld 2026-01 → 2026-04, 2026-01 afgesloten, anker 2026-03 → verwacht potstand 3.600, getraceerd 4.500; `computedStartBalance` € 900 te hoog, eindsaldo onaangetast.
+- **Waarom niet nu:** Gevonden tijdens de verkenning voor het Bureau (2026-09-16); dat werk laat de rekenkern bewust byte-identiek (digest-guard), en een fix hier verschuift getallen op Jeroens echte document.
+- **Eerste zet:** Eerst een A-scenario in `scripts/anchor-scenarios.ts` met precies het minimale geval hierboven en de verwachting 3.600 — toont hij 4.500, dan is de diagnose bevestigd; toont hij 3.600, dan is de trace fout en vervalt dit item. Pas daarna de fix, en `calc-regression.ts --print-hash` bewust bijwerken in dezelfde commit.
+- **Check:** `grep -n "uitgestelde pot.*snapshot\|A12" apps/cashflow/scripts/anchor-scenarios.ts` — geen treffer = het scenario bestaat nog niet.
+- **Status:** open
+
+## 2026-09-16 — De "ontvangen"-vlag op inkomsten is in de UI niet klikbaar · [ux]
+- **Wat:** `IncomeItem.received` bestaat, `MonthCard.tsx:184` geeft `onToggleReceived` door, maar `IncomeSection.tsx:155` hernoemt hem naar `_onToggleReceived` en rendert geen bediening; de rekenkern leest het veld ook niet. Het veld is dus half weggehaald.
+- **Waarom niet nu:** Jeroen verwijdert of verplaatst ontvangen posten (bevestigd 2026-09-16), dus de vlag heeft geen gebruik; het Bureau leunt er bewust niet op. Opruimen raakt `types.ts`, `normalize`, de store, twee componenten en `RepeatMonthModal`.
+- **Eerste zet:** Beslissen: veld en prop verwijderen (met een `normalize`-stap die het veld laat vallen), of de vlag een betekenis geven. Verwijderen is consistent met de werkwijze.
+- **Check:** `grep -rn "received" apps/cashflow/components apps/cashflow/lib/cashflow/types.ts | wc -l` — > 0 = het dode veld staat er nog.
+- **Status:** open
+
+## 2026-09-16 — `seed-supabase.mjs` weigert elke backup na store-versie 14 · [infra]
+- **Wat:** `scripts/seed-supabase.mjs:46` hardcodeert `STORE_VERSION = 14` en kent `lastSeenMonth` (v15) en `bureau` (v16) niet; een actuele backup wordt geweigerd, en een geforceerde seed zou onbekende sleutels als "Genegeerd" laten vallen.
+- **Waarom niet nu:** Het script schrijft naar productie en is een eenmalige migratie van 2026-08-05; het Bureau heeft het niet nodig.
+- **Eerste zet:** Beslissen of het script nog een doel heeft. Zo ja: `STORE_VERSION` uit `lib/cashflow/normalize.ts` lezen in plaats van hardcoden en het document via `normalizeData` laten lopen; zo nee: verwijderen (bevestiging nodig).
+- **Check:** `grep -n "STORE_VERSION = 14" apps/cashflow/scripts/seed-supabase.mjs` — treffer = nog op v14.
+- **Status:** open
+
+## 2026-09-16 — Kleine drift uit de verkenning: tijdzonerand, dode code, verouderd commentaar · [refactor]
+- **Wat:** Vier losse dingen, elk klein. (1) `addMonth` in `lib/cashflow/recurring.ts` parset `yyyy-MM-01` als UTC en formatteert lokaal — correct in België, een maand fout in elke tijdzone achter UTC (`calculator.ts` gebruikt `parseISO` en heeft het niet). (2) Geen aanroepers: `computeHistoricalBalance`, `setReferenceBalance`, `removeRecurringSettlement`, en een wees-JSDoc in `types.ts` ±109. (3) `supabase/schema.sql` ±17–19 zegt dat onbekende JSON-sleutels bewaard blijven; `saveState` laat ze vallen. (4) `render-screens.tsx` ±95 spreekt nog van light én dark; `ci.yml` noemt 594 scenario-checks terwijl de suites er meer tellen.
+- **Waarom niet nu:** Geen van vier raakt het Bureau; samen een opruimronde.
+- **Eerste zet:** (1) `parseISO` gebruiken zoals `calculator.ts`; de rest zijn verwijderingen en commentaarregels, met `calc-regression` groen als bewijs dat geen getal verschoof.
+- **Check:** `grep -n "new Date(\`\${monthKey}-01\`)" apps/cashflow/lib/cashflow/recurring.ts` — treffer = (1) staat er nog.
+- **Status:** open
+
 ## 2026-09-14 — Overlays verplaatsen de focus niet en houden hem niet vast · [ux]
 - **Wat:** Bij het openen van een modal of sidepanel blijft de focus staan waar hij stond — op de knop eronder — en Tab loopt daarna door de pagina áchter de overlay. Alle vier de overlays dragen wél `aria-modal`, dus de rol staat er en het gedrag niet.
 - **Waarom niet nu:** Stond sinds 2026-08-08 als HANDOFF-item en is 37 dagen blijven staan zonder opgepakt te worden. Dat maakt het werk dat blijft liggen, geen sessie-context — verplaatst bij de sessie-reflectie van 2026-09-14. De twee zusteritems uit diezelfde ronde (inert op een gesloten paneel, Escape sluit) zijn wél gebouwd; dit is het restant.

@@ -41,10 +41,11 @@
  * (`--dist=.next`, wat CI doet met de build van de stap ervoor).
  */
 import { chromium } from 'playwright';
+import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { beoordeel, beschrijfFout, meetInPagina, STIL_CSS } from './contrast.mjs';
@@ -57,6 +58,8 @@ const require_ = createRequire(import.meta.url);
 
 const args = process.argv.slice(2);
 const SELFTEST = args.includes('--selftest');
+/** `--screenshots=<map>`: geen scenario's, maar schermafbeeldingen van elke bureau-route in drie standen. */
+const SCREENSHOTS = args.find((a) => a.startsWith('--screenshots='))?.slice('--screenshots='.length) ?? null;
 const HEADED = args.includes('--headed');
 // Gezet door de signaalhandler in main(): een onderbroken run eindigt met 130/143, niet met 1.
 let onderbroken = null;
@@ -143,6 +146,7 @@ function bureauFixture(variant) {
     nextMilestoneNote: '', blockers: '', opportunityId: null, createdAt: `${BRON}-01`, ...over,
   });
   if (variant === 'klanten') return klantenFixture(doelen, project);
+  if (variant === 'vol') return volFixture(doelen, project);
   const projects = [
     project('harnas-zonder', { name: 'Harnasproject zonder raming', fixedPriceExVat: 12000,
       milestones: [{ id: 'harnas-m1', label: 'Harnasmijlpaal', plannedMonth: BRON, amount: 4000, realizedOn: null, realizedAmount: null, extensionId: null }] }),
@@ -265,10 +269,38 @@ function klantenFixture(doelen, project) {
   };
 }
 
+/** Alles tegelijk, voor de review-screenshots: klanten, projecten met facturen, kansen, tijd en planning. */
+function volFixture(doelen, project) {
+  const klanten = klantenFixture(doelen, project);
+  const vandaag = dagVanaf(0);
+  const projecten = [
+    project('harnas-zonder', { name: 'Harnasproject zonder raming', fixedPriceExVat: 12000,
+      milestones: [{ id: 'harnas-m1', label: 'Harnasmijlpaal', plannedMonth: BRON, amount: 4000, realizedOn: null, realizedAmount: null, extensionId: null }] }),
+    project('harnas-met', { name: 'Harnasproject met raming', fixedPriceExVat: 9000, budgetedOwnHours: 64, expectedRemainingOwnHours: 16, invoices: cashFacturen('cash'),
+      externalCosts: [{ id: 'harnas-kost', label: 'Freelancer research', expected: 1200, actual: null }] }),
+    ...klanten.projects,
+  ];
+  const t = (id, date, category, projectId, hours, label = null) => ({ id, date, category, projectId, hours, hoursPerDayAtEntry: 8, label, note: '' });
+  return {
+    ...klanten,
+    clients: [{ id: 'harnas-klant', name: 'Harnasklant', groupId: null }, ...klanten.clients],
+    projects: projecten,
+    opportunities: verkoopKansen(),
+    timeEntries: [
+      t('harnas-t1', `${BRON}-01`, 'klantwerk', 'harnas-met', 24), t('harnas-t2', `${BRON}-01`, 'klantwerk', 'harnas-met', 24),
+      t('harnas-t3', vandaag, 'verkoop', null, 3), t('harnas-t4', vandaag, 'administratie', null, 1.5), t('harnas-t5', vandaag, 'klantwerk', 'harnas-zonder', 4, 'revisie'),
+    ],
+    plannedWork: [
+      { id: 'harnas-plan-1', periodKind: 'week', periodKey: `${getISOWeekYear(new Date())}-W${String(getISOWeek(new Date())).padStart(2, '0')}`, category: 'klantwerk', projectId: 'harnas-zonder', days: 3 },
+      { id: 'harnas-plan-2', periodKind: 'month', periodKey: dagVanaf(35).slice(0, 7), category: 'verkoop', projectId: null, days: 4 },
+    ],
+  };
+}
+
 function fixtureData({ leeg = false, buffer = false, bureau = null } = {}) {
   const b = bureauFixture(bureau);
   const doc = prognoseFixture({ leeg, buffer });
-  if (bureau?.startsWith('cash')) doc.incomeItems = [...doc.incomeItems, ...cashPosten()];
+  if (bureau?.startsWith('cash') || bureau === 'vol') doc.incomeItems = [...doc.incomeItems, ...cashPosten()];
   return b ? { ...doc, bureau: b } : doc;
 }
 
@@ -2152,6 +2184,43 @@ function bureauScenarios() {
   ];
 }
 
+/**
+ * Schermafbeeldingen voor een visuele review: elke bureau-route vol op 1440 en 390, leeg op 1440,
+ * en een gedeeltelijke stand. Geen oordeel — dat doet wie kijkt; de run faalt alleen als een
+ * pagina niet laadt of een paginafout gooit.
+ */
+function screenshotScenarios(map) {
+  mkdirSync(map, { recursive: true });
+  const routes = ['/bureau', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/verkoop', '/bureau/tijd', '/bureau/klanten', '/bureau/cash', '/bureau/doelen'];
+  const standen = { vol: { bureau: 'vol' }, leeg: { leeg: true }, deels: { bureau: 'projecten' } };
+  const shots = [
+    ...routes.flatMap((pad) => [['vol', pad, 1440], ['vol', pad, 390]]),
+    ...routes.filter((p) => p !== '/bureau/projecten/harnas-met').map((pad) => ['leeg', pad, 1440]),
+    ['leeg', '/bureau', 390],
+    ['deels', '/bureau', 1440],
+    ['deels', '/bureau/projecten/harnas-zonder', 1440],
+    ['deels', '/bureau/tijd', 1440],
+  ];
+  return shots.map(([stand, pad, breedte]) => {
+    const slug = pad === '/bureau' ? 'overzicht' : pad.replace('/bureau/', '').replace(/\//g, '-');
+    const bestand = join(map, `${stand}-${breedte}-${slug}.png`);
+    return {
+      naam: `screenshot — ${stand} ${breedte} ${slug}`,
+      pad,
+      wachtOp: 'bureau',
+      gedrag: standen[stand],
+      viewport: { width: breedte, height: breedte === 390 ? 844 : 900 },
+      actie: async (page, { state, foutenVoor }) => {
+        await page.screenshot({ path: bestand, fullPage: true });
+        const fouten = state.paginafouten.length - foutenVoor;
+        if (fouten) throw new Error(`${fouten} paginafout(en)`);
+        const hoogte = await page.evaluate(() => document.documentElement.scrollHeight);
+        return { ok: true, bewijs: `${bestand.split('/').pop()} (${breedte}×${hoogte})` };
+      },
+    };
+  });
+}
+
 function bureauTegenproeven() {
   return [
     {
@@ -2558,11 +2627,9 @@ async function main() {
   console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin} (ook in de build)`);
 
   const id = buildId();
-  const teDraaien = [
-    ...scenarios(),
-    ...bureauScenarios(),
-    ...(SELFTEST ? [...tegenproeven(), ...bureauTegenproeven()] : []),
-  ];
+  const teDraaien = SCREENSHOTS
+    ? screenshotScenarios(resolve(process.cwd(), SCREENSHOTS))
+    : [...scenarios(), ...bureauScenarios(), ...(SELFTEST ? [...tegenproeven(), ...bureauTegenproeven()] : [])];
   const resultaten = [];
 
   // Alles ná de spawn staat in de try: de server is detached en overleeft een exit(1),

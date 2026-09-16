@@ -98,18 +98,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+8f7db0a feat(cashflow): bureau overview — signals first, then six tiles with denominator, source and one link
 05386f0 feat(cashflow): signals — what needs attention, from the thresholds in the goals
 d5c7d02 feat(cashflow): invoices on the project, cash for 13 weeks, and client concentration pages
 804cb10 feat(cashflow): 13-week cash as a distribution of the monthly engine, client concentration, invoice state
 129a307 feat(cashflow): sales page — follow-up, funnel with denominators, and a won opportunity that becomes one project
-23dbfda feat(cashflow): sales pipeline — qualification, counts and conversions with their denominators
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/cashflow/app/bureau/page.tsx
-  A  apps/cashflow/components/bureau/KpiTile.tsx
-  M  apps/cashflow/components/bureau/ProjectTable.tsx
-  A  apps/cashflow/components/bureau/SignalList.tsx
+  M  apps/cashflow/app/bureau/page.tsx
+  M  apps/cashflow/components/bureau/WeekCashTable.tsx
   M  apps/cashflow/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME

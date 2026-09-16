@@ -104,7 +104,7 @@ export default function OverzichtPage() {
           title="Gerealiseerde omzet"
           value={r.hasMilestones ? formatCurrency(r.realized) : null}
           insufficient={{ reason: `Nog geen mijlpalen in ${year} — omzet is onbekend, niet nul.`, fix: { href: '/bureau/projecten', label: 'Projecten en mijlpalen vastleggen' } }}
-          secondary={r.target === null ? 'geen omzetdoel' : (r.aboveTarget ?? 0) > 0 ? `${formatCurrency(r.aboveTarget!)} boven doel` : `nog ${formatCurrency(r.stillToSell ?? 0)} te verkopen na getekend werk`}
+          secondary={r.target === null ? 'geen omzetdoel' : (r.aboveTarget ?? 0) > 0 ? `met getekend werk ${formatCurrency(r.signedInYear)}: ${formatCurrency(r.aboveTarget!)} boven doel` : `nog ${formatCurrency(r.stillToSell ?? 0)} te verkopen na getekend werk`}
           bar={r.target ? { fraction: r.realized / r.target, label: `${formatCurrency(r.realized)} gerealiseerd van ${formatCurrency(r.target)} doel` } : null}
           denominator={r.target === null ? `geen doel voor ${year}` : `doel ${formatCurrency(r.target)} ex btw`}
           source={`Mijlpalen gerealiseerd in ${year}`}

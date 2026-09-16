@@ -27,9 +27,6 @@ if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
 }
 
-/** Zonder toestemming voor gezondheidsgegevens doet de hartslag-rij niets. */
-const noop = () => {};
-
 export default function WorkoutScreen() {
   const { user } = useAuth();
   const {
@@ -52,7 +49,7 @@ export default function WorkoutScreen() {
   const [idleDurSec, setIdleDurSec] = useState('');
 
   // --- Hooks ---
-  const { state: metricsState, refs, resetAll, hasProfileWeight } = useWorkoutMetrics(phase, bleMetrics, hrBpm);
+  const { state: metricsState, refs, resetAll, hasProfileWeight } = useWorkoutMetrics(phase, bleMetrics, hrBpm, healthGranted);
   const {
     toastMsg, splits, goalReached,
     avgWatts, avgSpm, avgSplit,
@@ -306,8 +303,8 @@ export default function WorkoutScreen() {
         onDisconnect={disconnect}
         hrStatus={hrStatus}
         hrDeviceName={hrDeviceName}
-        hrError={healthGranted ? hrError : t.consent.hrBlocked}
-        onHRConnect={healthGranted ? startHRScan : noop}
+        hrError={hrError}
+        onHRConnect={startHRScan}
         onHRDisconnect={stopHR}
         devices={devices}
         picking={picking}
@@ -355,6 +352,7 @@ export default function WorkoutScreen() {
       hrStatus={hrStatus}
       hrBpm={hrBpm}
       startHRScan={startHRScan}
+      healthGranted={healthGranted}
       insets={insets}
     />
   );

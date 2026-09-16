@@ -57,7 +57,7 @@ const VARIANTS: { key: string; label: string; goal: WorkoutGoal | null }[] = [
 
 export default function DevActivePreview() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ goal?: string; toast?: string; summary?: string; ble?: string; bare?: string }>();
+  const params = useLocalSearchParams<{ goal?: string; toast?: string; summary?: string; ble?: string; bare?: string; consent?: string }>();
 
   // Sta landscape toe in de harness (active-workout is landscape-capable), zodat de
   // landscape-layouts + celebration hier te verifiëren zijn. Herstel portrait bij verlaten.
@@ -115,6 +115,9 @@ export default function DevActivePreview() {
         hrStatus="connected"
         hrBpm={140}
         startHRScan={() => {}}
+        // `?consent=0` toont de geblokkeerde BPM-rij op de simulator, zonder dat je in de
+        // database toestemming hoeft in te trekken — dat laatste is een destructief pad.
+        healthGranted={params.consent !== '0'}
         insets={insets}
       />
 

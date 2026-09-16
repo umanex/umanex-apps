@@ -70,7 +70,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-18e8c45 fix(rowtrack): store a finished ride locally before sending it
+148a5b1 fix(rowtrack): store a finished ride locally before sending it
 1c4b71d refactor(rowtrack): one builder for the workout row, testable on its own
 b83872a chore(rowtrack): move the blind-spot baseline to 47 stories
 5753de4 fix(rowtrack): personal records over the full history, not the last hundred rides
@@ -78,9 +78,14 @@ ad06a51 fix(rowtrack): one goal value for picker, chips and start
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/app/(tabs)/index.tsx
-  M  apps/rowtrack/lib/hooks/usePeriodGoal.ts
+  M  apps/rowtrack/app/(tabs)/workout.tsx
+  M  apps/rowtrack/app/dev-active.tsx
+  M  apps/rowtrack/components/workout/ActivePhase.stories.tsx
+  M  apps/rowtrack/components/workout/ActivePhase.tsx
+  M  apps/rowtrack/lib/ble/ble-context.tsx
+  M  apps/rowtrack/lib/health-consent-context.tsx
+  M  apps/rowtrack/lib/hooks/useWorkoutMetrics.ts
+  M  apps/rowtrack/scripts/walker-blindvlekken.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

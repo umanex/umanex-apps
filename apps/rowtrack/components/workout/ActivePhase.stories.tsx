@@ -55,6 +55,11 @@ const meta = {
     },
     hrStatus: { control: 'select', options: ['idle', 'scanning', 'waiting', 'connected', 'error'] },
     hasProfileWeight: { control: 'boolean' },
+    // BEWUST `control: false`, en dat is geen slordigheid. Een boolean met een control is
+    // voor `scripts/story-axes.mjs` een variant-as, en dan verwacht `figma:check` een
+    // component-set met een as erbij die in Figma niet bestaat. De geblokkeerde vorm staat
+    // daarom als eigen story hieronder, niet als vijfde as.
+    healthGranted: { control: false },
     metricsState: { control: 'object' },
     goal: { control: 'object' },
     splits: { control: 'object' },
@@ -95,6 +100,7 @@ const meta = {
     onContinue: () => {},
     onGoalContinue: () => {},
     hasProfileWeight: true,
+    healthGranted: true,
     hrStatus: 'connected',
     hrBpm: 148,
     startHRScan: () => {},
@@ -246,4 +252,17 @@ export const SamenvattingZonderHartslag: Story = {
  */
 export const Landscape: Story = {
   parameters: { toestel: TOESTEL.landschap },
+};
+
+/**
+ * Zonder toestemming voor gezondheidsgegevens: de BPM-rij toont "—" en is niet tikbaar.
+ *
+ * De echte poort staat in `ble-context.startHRScan`, die zonder toestemming niet eens scant.
+ * Deze story bewijst de andere helft: dat het scherm die weigering ook tóónt. Tot 2026-09-16
+ * kreeg de actieve fase de scanfunctie ongefilterd, dus je kon midden in een rit alsnog
+ * verbinden en je hartslag zien staan — terwijl het toestemmingsscherm belooft dat hij
+ * wegblijft (functionele review F4).
+ */
+export const ZonderToestemming: Story = {
+  args: { healthGranted: false, hrStatus: 'idle', hrBpm: null },
 };

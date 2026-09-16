@@ -344,3 +344,33 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 - **Check:** `grep -n 'kind.remove()\|children\]) kind.remove' apps/rowtrack/figma/builder.js` — treffer = de builder leegt nog steeds elke pagina, dus een Figma-bewerking overleeft de eerstvolgende herbouw niet.
 - **Volgende zet:** Met Jeroen afspreken wat een bewerking ín Figma betekent. Drie richtingen: (a) de regel expliciet maken in het bestand zelf, bijvoorbeeld met een beschrijving op elke pagina die zegt dat hij gegenereerd is; (b) de builder alleen laten overschrijven wat hij zelf gemaakt heeft en handmatige nodes laten staan; (c) accepteren dat het eenrichting blijft en de library alleen voor *gebruik*, niet voor *bewerking*, bedoelen.
 - **Status:** resolved (2026-09-09) — beslist door Jeroen: **Figma beslist, code bewaart.** Geen van de drie richtingen letterlijk, maar een rondgang: een wijziging wordt in de library-file op de variant gemaakt (nooit op een scherm-instance), de bouwhash-poort van de builder meldt daarna precies welke nodes handwerk dragen en is daarmee de wijzigingslijst, `figma-naar-code` zet die om in de component-code, en een herbouw (sinds 2026-09-09 een update in place, keys blijven) bewijst de rondgang met een beeld- en parity-diff van nul; daarna publiceert Jeroen. De Check slaat dus nog aan en hoort dat te blijven doen: het legen is geen risico meer maar de tegenproef van de rondgang. Uitgeschreven, met wat er vandaag nog niét rondgaat per eigenschap, in `apps/rowtrack/briefings/2026-09-09-audit-figma-verschilklassen.md` en in `apps/rowtrack/CLAUDE.md` onder *Figma — Design System-bestand*.
+
+## 2026-09-16 — Een lokale hook killt :3000 en start cashflow buiten PM2 om · [risico]
+- **Bevinding:** `.claude/settings.local.json` draagt een PostToolUse-hook op Bash die bij elk commando met "cashflow" én "build" `kill $(lsof -ti:3000)` doet en `pnpm start` via nohup start — tegen de PM2-flow in (`pm2 restart cashflow`, nooit manueel killen; `apps/cashflow/CLAUDE.md`). Gevonden door `/doctor`; de hook zwijgt (`2>/dev/null`), dus of hij ooit vuurde is niet te meten. Niet verwijderd: het is Jeroens lokale, gitignorede bestand.
+- **Check:** `jq -r '.hooks.PostToolUse[]?.hooks[]?.command' .claude/settings.local.json | grep -c 'lsof -ti:3000'` — 1 = staat er nog.
+- **Volgende zet:** Verwijderen, óf bewust houden en dan de PM2-regel in `apps/cashflow/CLAUDE.md` bijstellen — één van beide klopt niet.
+- **Status:** open
+
+## 2026-09-16 — De Figma-plugin is uit, en daarmee de "native MCP als fallback"-regel · [aanname]
+- **Bevinding:** `/doctor` zette `figma@claude-plugins-official` op `false` in `~/.claude/settings.json`: nul gebruik sinds installatie (0 skill-calls, 0 MCP-calls in 50 sessies, tegenover 1 388 calls op de Console-Bridge). Onuitgesproken aanname daarbij: de fallback in `.umanex-os/CLAUDE.md` ("native Figma MCP … uitsluitend wanneer de Bridge niet beschikbaar is én de gebruiker daar expliciet voor kiest") bestaat in Claude Code nu niet meer zonder de plugin eerst opnieuw aan te zetten.
+- **Check:** `jq -r '.enabledPlugins["figma@claude-plugins-official"]' ~/.claude/settings.json` — `false` = nog uit.
+- **Volgende zet:** Bij de eerstvolgende Bridge-uitval `/plugin` → figma aan (één handeling), óf die regel in umanex-os herformuleren tot "plugin eerst aanzetten".
+- **Status:** open
+
+## 2026-09-16 — condens-mcp staat nog aan in vier andere projecten · [next-step]
+- **Bevinding:** Nul aanroepen in 50 sessies over 12 projectmappen (7 Luminus- en 5 Columba-sessies inbegrepen). In umanex-apps is hij al uit; in umanex-os, Columba, Luminus en `~/Documents` niet. `/mcp disable` werkt per project, dus dit is niet vanuit hier te doen.
+- **Check:** `jq -r '.projects | to_entries[] | select((.value.disabledMcpServers // []) | index("condens-mcp") | not) | .key' ~/.claude.json` — lege lijst = overal uit.
+- **Volgende zet:** In elk van die vier projecten `/mcp disable condens-mcp`.
+- **Status:** open
+
+## 2026-09-16 — PR umanex-apps#503 en #502 raken allebei `apps/rowtrack/CLAUDE.md`, HANDOFF en BACKLOG · [onzekerheid]
+- **Bevinding:** De doctor-trim (umanex-apps#503, `docs/claude-doctor-trim`) haalt regels 7, 59, 70–72 en 76 uit `apps/rowtrack/CLAUDE.md` en zet in `apps/rowtrack/HANDOFF.md` één status om en in `apps/rowtrack/BACKLOG.md` twee entries achteraan; umanex-apps#502 (`chore/rowtrack-figma-sync-after-review`) wijzigt dezelfde drie bestanden in andere regio's (CLAUDE.md Figma-mapping; HANDOFF regel 799; BACKLOG regels 41 en 293). Andere hunks, dus git hoort te mergen — dat is een verwachting, geen meting.
+- **Check:** `gh pr view 503 --json mergeStateStatus -q .mergeStateStatus` na de merge van #502 — `DIRTY` = conflict; `CLEAN`/`BLOCKED`/`UNSTABLE` = mergebaar.
+- **Volgende zet:** #502 eerst mergen, dan #503 nakijken; bij `DIRTY` de drie bestanden rebasen (docs-only, geen inhoudelijke keuze).
+- **Status:** resolved (2026-09-16) — check gedraaid direct na de merge van umanex-apps#502 (15:34): `DIRTY`, maar niet op de drie voorspelde bestanden (die mergeden automatisch) — op `apps/rowtrack/context-snapshot.md`, dat de pre-commit-hook bij elke commit hergenereert mét de recente git-log en de tree-status erin, dus twee branches die dezelfde app raken botsen er per constructie op. Opgelost met een merge van `origin/main` in de docs-branch en `bash scripts/gen-snapshot.sh rowtrack`; `git merge-tree --write-tree origin/main docs/claude-doctor-trim` daarna rc=0. De klasse (een gegenereerd bestand dat via de hook in elke commit meereist) is kandidaat voor `vastleggen` in umanex-os, niet hier.
+
+## 2026-09-16 — Vier root-handoff-items van 2026-08-25 gaan op 2026-09-24 over de 30 dagen · [next-step]
+- **Bevinding:** Bezoldigingsdrempel, potverdeling, runway en variant-modellering staan open sinds 2026-08-25; drie ervan wachten op Jeroen (boekhouder, app aflezen, noodscenario), niet op een sessie. De handoff-hook schreef bij deze sessiestart 12,4k tekens; deze triage sloot er acht (rowtrack-web ×7, rowtrack ×1), die vier zijn de volgende.
+- **Check:** `awk '/^## 20/{d=$2} /^- \*\*Status:\*\* open/{print d}' HANDOFF.md | sort | head -1` — `2026-08-25` = ze staan nog.
+- **Volgende zet:** Op of na 2026-09-24 elk van de vier: resolved, BACKLOG of herformuleren. De drie Jeroen-vragen horen in zijn to-do, niet in elke sessiestart.
+- **Status:** open

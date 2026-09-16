@@ -795,3 +795,19 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** De drie duplicaten weghalen en een Android-build draaien om te bevestigen dat de permissielijst ongewijzigd uitkomt.
 - **Check:** `grep -c BLUETOOTH apps/rowtrack/app.json` → 6 = nog gedubbeld.
 - **Status:** open
+
+## 2026-09-16 — Calorieën: de erg-waarde (C2-curve) naast de eigen VO2-formule bewaren, dan het model kiezen · [analyse]
+
+- **Wat:** De app rekent kcal via VO2 (vereenvoudigd `kcal/h = 4,114·W + 2·gewicht`, `lib/calories.ts`) en gooit het FTMS-energieveld weg (`lib/ble/ftms-parser.ts:115`, `offset += 5`). De erg volgt exact de Concept2-curve (`kcal/h = 3,442·W + 300`), op drie onafhankelijke sessies bevestigd. De twee kruisen elkaar (86 kg: 189 W; 75 kg default: 238 W), dus "de app zit er 4–5% naast" wisselt van teken met vermogen én gewicht. De vier open vragen en de metingen staan uitgeschreven in `apps/rowtrack/HANDOFF.md` → 2026-08-16 (resolved, gegevens intact).
+- **Waarom niet nu:** HANDOFF-item van 2026-08-16, ouder dan 30 dagen bij de triage van 2026-09-16 (sessie-reflectie stap 1). Jeroen wil deze analyse apart doen, niet als bijproduct van een bouwsessie; zonder besluit over het model is elke code-wijziging een gok.
+- **Eerste zet:** `erg_calories` naast `calories` opslaan (eind-min-start — de erg-teller is cumulatief sinds reset) zodat de eigen formule ijkbaar wordt; het model kiezen pas daarna, met opgeslagen paren als bewijs.
+- **Check:** `grep -n "offset += 5" apps/rowtrack/lib/ble/ftms-parser.ts` — treffer = het veld wordt nog overgeslagen; `grep -rn erg_calories apps/rowtrack --include='*.ts' | wc -l` — 0 = nog niet bewaard.
+- **Status:** open
+
+## 2026-09-16 — CLAUDE.md zit op 70k tekens door herhaling, niet door afleidbaarheid · [docs]
+
+- **Wat:** Het bestand trippt de 40k-tekens-waarschuwing van Claude Code (70 301 na de doctor-trim van 2026-09-16). Een scan op afleidbare inhoud vond maar zes regels; het gewicht zit in herhaling: het 30-seconden-wachtcontract van `figma_execute` staat twee keer uitgeschreven (eigenaardigheid 6 rond regel 177, opnieuw rond 370), het contract "herstart de plugin, `figma_reload_plugin` helpt niet" drie keer (regels 9, 12 en rond 750).
+- **Waarom niet nu:** Geen mechanische cut maar redactie: welke van de twee formuleringen het bewijs draagt is een oordeel, en de metingen erin zijn van Jeroen. Buiten scope van een /doctor-ronde.
+- **Eerste zet:** Per contract de tweede uitwerking vervangen door één verwijzing naar de eerste; na elk blok `git diff` nalezen dat er geen "gemeten"-regel verdween.
+- **Check:** `wc -c < apps/rowtrack/CLAUDE.md` — boven 40000 = nog boven de drempel.
+- **Status:** open

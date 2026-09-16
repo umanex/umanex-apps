@@ -70,16 +70,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-2fa4e27 feat(rowtrack): build the blocked-consent frame in Figma, and put every frame back on its slot
-8e313f7 chore(rowtrack): refresh the Figma manifest so the publication axis can measure again
-68b09e6 feat(rowtrack): add the blocked-consent state as a screen frame
-3591668 docs(rowtrack): point the Figma mapping at the generated sources, and record the design study
-18fd998 chore(rowtrack): re-derive the Figma artefacts and prove nothing moved
+daf1f16 docs(rowtrack): record the screen-builder fix class in LEARNINGS
+d674a6f docs: close the session after the /doctor pass — triage eight stale handoff items, record the follow-ups
+4584f68 docs: trim derivable and duplicated CLAUDE.md content, move the Storybook-MCP notes to packages/ui
+b52c768 docs(rowtrack): close what series A finished, record what the review leaves open
+26b3433 fix(rowtrack): a pace or power goal is an intensity, not a finish line
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/CLAUDE.md
+  M  apps/rowtrack/HANDOFF.md
+  A  apps/rowtrack/briefings/2026-09-16-feature-datavisualisatie-detail.tcebc.md
+  M  apps/rowtrack/context-snapshot.md
+  M  apps/rowtrack/figma-map.md
   M  apps/rowtrack/figma/beeld-basislijn.json
-   M packages/ui/CLAUDE.md
+  M  apps/rowtrack/figma/beeld-verschillen.json
+  A  apps/rowtrack/figma/beelden/ActivePhase__Zonder-Toestemming.figma.png
+  M  apps/rowtrack/figma/build-spec.min.json
 
 ## Bestanden met TODO/FIXME
   (geen)

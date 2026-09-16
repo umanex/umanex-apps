@@ -20,8 +20,7 @@ opdracht duidelijk wordt — verzonnen projectcontext is schadelijker dan geen.
   dit document is twee keer geschreven zonder het te openen.
 - De app heet `soda-plus` op schijf en in git (`feat(soda-plus): ...`); `soda+` is de merknaam.
 - Werk in de hoofdtree, `apps/soda-plus`, op een feature branch vanaf `origin/main`; de vroegere eigen zusmap-worktree is op 2026-08-25 geschrapt (`.umanex-os/CLAUDE.md` → Git workflow → Parallel werk).
-- Stack conform monorepo-default: Next.js 14 + Tailwind 3, rollaag via `@umanex/config/tailwind/preset`,
-  `@umanex/ui` en `@umanex/tokens` als workspace-deps. Geen DB, geen auth, geen mail.
+- Geen DB, geen auth, geen mail.
 
 ## Wat nog open staat
 

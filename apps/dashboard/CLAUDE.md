@@ -62,13 +62,7 @@ met `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3010/` → 200.
 
 ## Wat waar staat
 
-| Laag | Bestand | Verantwoordelijkheid |
-|---|---|---|
-| Configuratie | `lib/appsConfig.ts` | de app-lijst: modus, poort, startcommando, links, scriptmenu |
-| Meting | `lib/processes.ts` | `lsof` (poort → pid), `pm2 jlist` (pid → naam), pid-leven |
-| Veiligheid | `lib/guards.ts` | welk script niet mag draaien, en waarom |
-| Uitvoering | `lib/launch.ts` | detached spawn, osascript-Terminal-tab, procesgroep stoppen |
-| Samenstelling | `lib/status.ts` | één meting per poll, verdeeld over de kaarten |
+Vijf lagen in `lib/`, elk bestand met zijn eigen docblock bovenaan; `ls apps/dashboard/lib` is de index.
 
 **De app-lijst is statisch en niet afgeleid uit `apps/*`.** Modus, poort en
 startcommando zijn oordelen: rowtrack heeft geen `dev`-script maar moet

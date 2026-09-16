@@ -49,7 +49,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
-ff4238f docs(cashflow): brief the bureau extension and record what the exploration left out of scope
+4584f68 docs: trim derivable and duplicated CLAUDE.md content, move the Storybook-MCP notes to packages/ui
 fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
 8f8756a feat(ui): wire the Storybook MCP into packages/ui
 d5e47d7 docs(cashflow): close the reflection loop — one handoff item moved, three findings filed
@@ -57,12 +57,16 @@ a8491c1 refactor(cashflow): a buffer pot does not finalize, and now something ch
 ```
 
 ## Uncommitted wijzigingen
+  M  apps/cashflow/BACKLOG.md
   M  apps/cashflow/CLAUDE.md
+  M  apps/cashflow/HANDOFF.md
+  A  apps/cashflow/PRODUCT.md
+  A  apps/cashflow/briefings/2026-09-16-feature-bureau.tcebc.md
+  M  apps/cashflow/context-snapshot.md
   M  apps/cashflow/package.json
   M  apps/cashflow/scripts/calc-baseline.ts
   A  apps/cashflow/scripts/calc-regression.ts
   A  apps/cashflow/scripts/calc-scenarios.ts
-  M  apps/cashflow/scripts/scenarios.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

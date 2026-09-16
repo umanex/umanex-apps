@@ -10,6 +10,7 @@ import { projectProfitability } from './profitability.ts';
 import { overdueActions, withoutNextAction } from './pipeline.ts';
 import { buildWeeklyCashPlan } from './weekly-cash.ts';
 import { weeksFrom } from './periods.ts';
+import type { MonthData } from '../cashflow/types.ts';
 import { month, opportunity, project, subtotals, timeEntry } from './testing.ts';
 import type { BureauData, BusinessGoals, Milestone } from './types.ts';
 
@@ -153,4 +154,27 @@ test('volgorde: kritiek eerst, info laatst — ook als een onzeker signaal eerde
   const levels = signalen.map((s) => s.level);
   assert.deepEqual(levels, [...levels].sort((x, y) => ['kritiek', 'let-op', 'onzeker', 'info'].indexOf(x) - ['kritiek', 'let-op', 'onzeker', 'info'].indexOf(y)));
   assert.equal(levels[0], 'kritiek');
+});
+
+test('negatieve cash over meerdere maanden: het laagste maandeinde telt, en alleen de maanden onder de vloer staan in de tekst', () => {
+  // Maart +500, april +200, mei −300: pas het derde maandeinde zakt onder nul.
+  const eindes = [500, 200, -300];
+  let start = 1_000;
+  const months: MonthData[] = ['2027-03', '2027-04', '2027-05'].map((k, i) => {
+    const m = month(k, { startBalance: start, subtotals: subtotals({ basis: i === 0 ? 'bank' : 'vrij', incoming: start, recurring: start - eindes[i]! }) });
+    start = m.endBalance;
+    return m;
+  });
+  const basis = build(gezond());
+  const cash = buildWeeklyCashPlan({ asOf: ASOF, months, incomeItems: [], bureau: gezond() });
+  const signaal = computeSignals({ ...basis, cash }).signals.find((x) => x.id === 'cash-negatief');
+  assert.equal(signaal?.level, 'kritiek');
+  assert.equal(signaal?.detail, 'Maandeinde 2027-05 €-300.');
+});
+
+test('negatieve cash uitgeschakeld: ook geen info over een dip in de weektabel', () => {
+  const b = gezond();
+  b.goals['2027']!.signals.negativeCash.enabled = false;
+  const r = computeSignals(build(b, { endBalance: 500, incomeAtMonthEnd: 1_000 }));
+  assert.equal(r.signals.some((x) => x.id === 'cash-krap-binnen-maand' || x.id === 'cash-negatief'), false);
 });

@@ -98,22 +98,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+4075e48 fix(cashflow): cash headline is the lowest month-end from the engine, not the weekly worst case
 c05cb5d docs(cashflow): Bureau merged — CI evidence in the briefing, and what is still open on the real document
 1a35da3 docs(cashflow): code-review findings C1–C9 with evidence, one backlog item, counts after the round
 7b498c2 fix(cashflow): code-review round — no automatic post on unpaid, fresh edit state, Enter respects a conflict, focus stays in the row
 4d0112b fix(cashflow): code-review round — realized revenue survives withdrawing an extension, posts never land in a past month
-2e84887 docs(cashflow): word the screenshot item without a build flag
 ```
 
 ## Uncommitted wijzigingen
+   M apps/cashflow/CLAUDE.md
+   M apps/cashflow/HANDOFF.md
   M  apps/cashflow/app/bureau/page.tsx
+   M apps/cashflow/briefings/2026-09-16-feature-bureau.tcebc.md
   M  apps/cashflow/components/bureau/CashPositionLine.tsx
+  M  apps/cashflow/components/bureau/GoalsForm.tsx
   M  apps/cashflow/components/bureau/WeekCashTable.tsx
   M  apps/cashflow/lib/bureau/signals.test.ts
   M  apps/cashflow/lib/bureau/signals.ts
-  M  apps/cashflow/lib/bureau/weekly-cash.test.ts
-  M  apps/cashflow/lib/bureau/weekly-cash.ts
-  M  apps/cashflow/scripts/flow-harness.mjs
+  M  apps/cashflow/lib/bureau/types.ts
 
 ## Bestanden met TODO/FIXME
   (geen)

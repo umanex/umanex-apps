@@ -279,8 +279,10 @@ export function lowestMonthEnd(plan: WeeklyCashPlan): MonthEnd | null {
 
 /**
  * De laagste stand in de weektabel. Die leunt op de verdeelregel — kosten en provisies vroeg,
- * inkomsten laat — en is dus de strengste lezing, geen voorspelling. Zie `lowestMonthEnd` voor het
- * kopgetal. `null` zonder weken.
+ * losse inkomsten laat, facturen op hun datum, buffer op maandeinde — en is dus een aanname over
+ * timing, geen voorspelling. Meestal staat hij lager dan het laagste maandeinde, maar niet altijd:
+ * valt de buffer-storting van een maand in dezelfde week als een factuur van de volgende, dan sluit
+ * geen enkele week op dat maandeinde. Zie `lowestMonthEnd` voor het kopgetal. `null` zonder weken.
  */
 export function lowestFree(plan: WeeklyCashPlan): { weekKey: WeekKey; closingFree: number } | null {
   return plan.weeks.reduce<{ weekKey: WeekKey; closingFree: number } | null>(

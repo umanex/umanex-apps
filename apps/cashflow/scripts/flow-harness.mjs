@@ -304,7 +304,12 @@ function fixtureData({ leeg = false, buffer = false, bureau = null, tekort = fal
   const doc = prognoseFixture({ leeg, buffer });
   // `tekort`: een negatief banksaldo, zodat de prognose al in de ankermaand onder nul eindigt.
   if (tekort) doc.referenceBalance = -250;
-  if (bureau?.startsWith('cash') || bureau === 'vol') doc.incomeItems = [...doc.incomeItems, ...cashPosten()];
+  if (bureau?.startsWith('cash') || bureau === 'vol') {
+    doc.incomeItems = [...doc.incomeItems, ...cashPosten()];
+    // Een kost in de tweede maand, zodat het laagste maandeinde niet het eerste is: anders kan geen
+    // meting het verschil zien tussen "laagste" en "eerste".
+    doc.expenseItems = [...doc.expenseItems, { id: 'harnas-oktoberkost', monthKey: DOEL, label: 'Harnas oktoberkost', amount: 3000, paid: false }];
+  }
   return b ? { ...doc, bureau: b } : doc;
 }
 
@@ -2235,32 +2240,51 @@ function screenshotScenarios(map) {
 
 /**
  * Elk maandeinde op de cashpagina is het vrije saldo waarmee de volgende maand op `/` opent — de
- * regel "Vorig saldo" in kolom 1 en 2 — en het kopgetal is het laagste. Niet de footer: die toont
- * de positie mét bufferpot, en die valt alleen samen met het vrije saldo zolang de pot leeg is.
+ * regel "Vorig saldo" in kolom 1 en 2 — het kopgetal is het laagste ervan (en in deze fixture niet
+ * het eerste), en de overzichtstegel noemt datzelfde maandeinde. Niet de footer: die toont de positie
+ * mét bufferpot, en die valt alleen samen met het vrije saldo zolang de pot leeg is. Geen eis dat de
+ * weektabel lager staat: met een buffer-storting en een factuur in dezelfde week kan hij hoger staan.
  */
 async function kopgetalIsMaandeinde(page) {
   await page.waitForSelector('[data-month-end]', { timeout: 10_000 });
   const eindes = await page.locator('[data-month-end]').evaluateAll((els) => els.map((e) => ({ maand: e.getAttribute('data-month-end'), waarde: Number(e.getAttribute('data-value')) })));
-  const kop = await page.locator('[data-lowest-month-end]').evaluate((el) => ({ maand: el.getAttribute('data-lowest-month'), waarde: Number(el.getAttribute('data-lowest-month-end')) }));
-  const week = Number(await page.locator('[data-lowest-week]').getAttribute('data-lowest-week'));
+  const kop = await page.locator('[data-lowest-month-end]').evaluate((el) => ({ maand: el.getAttribute('data-lowest-month'), waarde: Number(el.getAttribute('data-lowest-month-end')), eind: el.nextElementSibling?.textContent?.replace(/\s+/g, ' ').replace(/ · tekort$/, '').trim() ?? '' }));
+  const weekRegel = await page.locator('[data-lowest-week]').count();
+  const laagste = eindes.reduce((min, e) => (min === null || e.waarde < min.waarde ? e : min), null);
+  if (!laagste || laagste.maand === eindes[0].maand) throw new Error(`de fixture onderscheidt het laagste maandeinde niet van het eerste: ${JSON.stringify(eindes)}`);
+  if (kop.maand !== laagste.maand || kop.waarde !== laagste.waarde) throw new Error(`kopgetal ${JSON.stringify(kop)} is niet het laagste maandeinde ${JSON.stringify(laagste)}`);
+
   await page.goto(`${BASE}/`);
   await page.waitForSelector(KOLOM, { timeout: 20_000 });
   const saldi = await saldoPerKolom(page);
   const perMaand = Object.fromEntries([[BRON, saldi[1]], [DOEL, saldi[2]]].filter(([, r]) => r?.aanwezig && r.label === 'Vorig saldo').map(([m, r]) => [m, r.bedrag]));
   const vergeleken = eindes.filter((e) => perMaand[e.maand] !== undefined);
   const fout = vergeleken.filter((e) => Math.abs(e.waarde - perMaand[e.maand]) > 0.005);
-  const laagste = eindes.reduce((min, e) => (min === null || e.waarde < min.waarde ? e : min), null);
-  if (!vergeleken.length || !vergeleken.some((e) => e.maand === BRON)) throw new Error(`geen maandeinde te vergelijken: cash ${JSON.stringify(eindes)}, / ${JSON.stringify(perMaand)}`);
+  if (vergeleken.length !== 2) throw new Error(`niet beide maandeinden te vergelijken: cash ${JSON.stringify(eindes)}, / ${JSON.stringify(perMaand)}`);
   if (fout.length) throw new Error(`maandeinde wijkt af van "Vorig saldo" op /: ${fout.map((e) => `${e.maand} cash ${e.waarde} / ${perMaand[e.maand]}`).join(' · ')}`);
-  if (kop.maand !== laagste.maand || kop.waarde !== laagste.waarde) throw new Error(`kopgetal ${JSON.stringify(kop)} is niet het laagste maandeinde ${JSON.stringify(laagste)}`);
-  if (week > kop.waarde + 0.005) throw new Error(`de weektabel (${week}) staat hoger dan het laagste maandeinde (${kop.waarde}) — onmogelijk bij kosten vroeg en inkomsten laat`);
-  return { ok: true, bewijs: `${vergeleken.length} maandeinden gelijk aan "Vorig saldo" op / (${vergeleken.map((e) => `${e.maand} ${e.waarde}`).join(' · ')}); kopgetal ${kop.maand} ${kop.waarde}; weektabel ${week}` };
+
+  await page.goto(`${BASE}/bureau`);
+  await page.waitForSelector('[data-kpi="cash"]', { timeout: 20_000 });
+  const tegel = (await page.locator('[data-kpi="cash"]').innerText()).replace(/\s+/g, ' ');
+  if (!tegel.includes(`laagste maandeinde`) || !tegel.includes(`(${kop.eind})`)) throw new Error(`overzichtstegel noemt het maandeinde niet ("${kop.eind}"): "${tegel.slice(0, 160)}"`);
+  const tegelWeek = tegel.includes('weektabel (kosten vroeg, inkomsten laat) tot');
+  if (weekRegel && !tegelWeek) throw new Error('de cashpagina toont een diepere weekstand, de tegel noemt hem niet met dezelfde woorden');
+  return { ok: true, bewijs: `maandeinden ${eindes.map((e) => `${e.maand} ${e.waarde}`).join(' · ')}; kopgetal ${kop.maand} ${kop.waarde} (niet het eerste); gelijk aan "Vorig saldo" op / voor ${vergeleken.length} maanden; tegel "${kop.eind}"${weekRegel ? ', weekregel op beide met "kosten vroeg, inkomsten laat"' : ''}` };
 }
 
 function reviewScenarios() {
   return [
     {
       naam: 'cash — kopgetal is het laagste maandeinde, gelijk aan het saldo op /',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => kopgetalIsMaandeinde(page),
+    },
+    {
+      // Zelfde meting, eigen tegenproef: die van hierboven zet het kopgetal op het eerste maandeinde,
+      // deze verschuift een maandeinde zelf. Eén scenario kan maar één defect dragen.
+      naam: 'cash — maandeinden gelijk aan het saldo op /',
       pad: CASH,
       wachtOp: 'bureau',
       gedrag: { bureau: 'cash' },
@@ -2537,8 +2561,20 @@ function reviewScenarios() {
 function reviewTegenproeven() {
   const defect = {
     'cash — kopgetal is het laagste maandeinde, gelijk aan het saldo op /': () => {
-      const el = document.querySelector('[data-month-end]');
-      el.setAttribute('data-value', String(Number(el.getAttribute('data-value')) + 1));
+      // Het defect: het kopgetal wijst naar het eerste maandeinde in plaats van het laagste.
+      const eerste = document.querySelector('[data-month-end]');
+      const kop = document.querySelector('[data-lowest-month-end]');
+      kop.setAttribute('data-lowest-month', eerste.getAttribute('data-month-end'));
+      kop.setAttribute('data-lowest-month-end', eerste.getAttribute('data-value'));
+    },
+    'cash — maandeinden gelijk aan het saldo op /': () => {
+      // Het defect: een maandeinde dat niet uit de rekenkern komt. Het kopgetal schuift consequent mee,
+      // zodat alleen de vergelijking met "Vorig saldo" op / het kan zien.
+      const tweede = document.querySelectorAll('[data-month-end]')[1];
+      const nieuw = String(Number(tweede.getAttribute('data-value')) + 1);
+      const kop = document.querySelector('[data-lowest-month-end]');
+      if (kop.getAttribute('data-lowest-month') === tweede.getAttribute('data-month-end')) kop.setAttribute('data-lowest-month-end', nieuw);
+      tweede.setAttribute('data-value', nieuw);
     },
     'bureau — lege staat houdt een cashtekort in beeld': () => { document.querySelector('[data-signal-list]')?.remove(); },
     'facturen — nieuwe factuur gekoppeld aan een bestaande post: geen tweede post': () => {

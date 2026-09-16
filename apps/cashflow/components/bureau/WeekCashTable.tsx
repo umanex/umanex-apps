@@ -42,7 +42,7 @@ export function WeekCashTable({ weeks }: { weeks: WeekRow[] }) {
     <div className="space-y-2 rounded-xl border border-accent bg-card pt-3">
       {/* De uitleg staat buiten de scroller: in een caption rekt ze mee met de tabelbreedte en valt ze op 390 px buiten beeld. */}
       <p id="weken-uitleg" className="max-w-prose px-3 text-sm text-muted-foreground">
-        13 weken vanaf deze week, vrije cash incl. btw. De timing binnen een maand is een aanname, en de strengste: kosten en provisies in de eerste week (nooit vóór deze week), losse inkomsten in de laatste, buffer op maandeinde; alleen facturen staan op hun verwachte betaaldatum. Een week kan daardoor dieper staan dan het maandeinde — dat maandeinde is het kopgetal hierboven. De cashbehoefte uit de doelen telt niet mee.
+        13 weken vanaf deze week, vrije cash incl. btw. De timing binnen een maand is een aanname: kosten en provisies in de eerste week (nooit vóór deze week), losse inkomsten in de laatste, buffer op maandeinde; alleen facturen staan op hun verwachte betaaldatum. Een week kan daardoor dieper staan dan het maandeinde, soms ook hoger — het maandeinde uit de prognose is het kopgetal hierboven. De cashbehoefte uit de doelen telt niet mee.
       </p>
       <div data-scroll-x className="overflow-x-auto">
         <table className="w-full min-w-[44rem] text-dense" aria-describedby="weken-uitleg">

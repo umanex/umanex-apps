@@ -75,8 +75,8 @@ export function computeSignals(i: SignalInputs): SignalResult {
 
   // ── Cash ──
   // Het oordeel rust op de maandeinden van de rekenkern, niet op de weektabel: die legt kosten
-  // vroeg en inkomsten laat en is dus de strengste lezing. Duikt alleen de week onder de vloer,
-  // dan is dat een aandachtspunt over timing, geen tekort.
+  // vroeg en inkomsten laat, een aanname over timing. Duikt alleen de week onder de vloer, dan is
+  // dat een aandachtspunt over timing, geen tekort.
   if (thresholds.negativeCash.enabled && i.cash) {
     const vloer = thresholds.negativeCash.floor;
     const maand = lowestMonthEnd(i.cash);

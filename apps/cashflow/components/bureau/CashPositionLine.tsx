@@ -4,8 +4,9 @@ import { monthLabel, weekLabel } from '../../lib/bureau/format';
 
 /**
  * Waar de weken vertrekken: banksaldo, wat in potten zit, wat vrij is — en het laagste
- * maandeinde. Dat kopgetal komt uit de rekenkern zelf; de laagste stand van de weektabel staat
- * eronder, als de strengste lezing van de timing binnen een maand.
+ * maandeinde. Dat kopgetal komt uit de rekenkern zelf. De laagste stand van de weektabel staat
+ * eronder zodra hij dieper ligt: dan zegt hij iets over de timing binnen een maand. Ligt hij
+ * hoger (een buffer-storting en een factuur in dezelfde week), dan voegt hij niets toe.
  */
 export function CashPositionLine({ plan }: { plan: WeeklyCashPlan }) {
   const maand = lowestMonthEnd(plan);
@@ -50,7 +51,7 @@ export function CashPositionLine({ plan }: { plan: WeeklyCashPlan }) {
         ) : (
           <dd className="mt-1 text-muted-foreground">Geen maand die binnen de 13 weken eindigt</dd>
         )}
-        {week && (
+        {week && maand && week.closingFree < maand.closingFree - 0.005 && (
           <dd className="mt-1 text-xs text-muted-foreground" data-lowest-week={week.closingFree}>
             weektabel, kosten vroeg en inkomsten laat: {formatAmount(week.closingFree)} einde {weekLabel(week.weekKey)}
           </dd>

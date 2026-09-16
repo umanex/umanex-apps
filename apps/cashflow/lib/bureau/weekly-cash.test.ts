@@ -200,3 +200,19 @@ test('kopgetal en weektabel verschillen: de week trekt de kosten van een maand v
   assert.equal(week.closingFree, 3_840 - 2_500);
   assert.ok(week.closingFree < maand.closingFree);
 });
+
+test('horizongrens: een maand die precies op de laatste zondag eindigt, telt mee', () => {
+  // 2 november 2026 → W45 t/m 2027-W04 (25–31 jan): januari 2027 eindigt op zondag 31 januari.
+  // Gezocht, niet gegokt: 2026 heeft 53 ISO-weken, dus "13 weken verder" valt niet op een rond getal.
+  const asOf = '2026-11-02';
+  const keten = ['2026-11', '2026-12', '2027-01', '2027-02'];
+  let start = 1_000;
+  const months = keten.map((k, i) => {
+    const m = month(k, { startBalance: start, subtotals: subtotals({ basis: i === 0 ? 'bank' : 'vrij', incoming: start, recurring: 100 }) });
+    start = m.endBalance;
+    return m;
+  });
+  const plan = buildWeeklyCashPlan({ asOf, months, incomeItems: [], bureau: emptyBureau() });
+  assert.equal(plan.weeks.at(-1)!.to, '2027-01-31');
+  assert.deepEqual(plan.monthEnds.map((m) => m.monthKey), ['2026-11', '2026-12', '2027-01']);
+});

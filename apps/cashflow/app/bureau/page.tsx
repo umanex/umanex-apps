@@ -176,7 +176,7 @@ export default function OverzichtPage() {
           insufficient={{ reason: 'De maandprognose is leeg.', fix: { href: '/', label: 'Naar de prognose' } }}
           secondary={
             d.laagsteMaand
-              ? `laagste maandeinde ${formatCurrency(d.laagsteMaand.closingFree)} (eind ${monthLabel(d.laagsteMaand.monthKey)})${d.laagsteWeek && d.laagsteWeek.closingFree < d.laagsteMaand.closingFree ? ` · weektabel tot ${formatCurrency(d.laagsteWeek.closingFree)}` : ''}`
+              ? `laagste maandeinde ${formatCurrency(d.laagsteMaand.closingFree)} (eind ${monthLabel(d.laagsteMaand.monthKey)})${d.laagsteWeek && d.laagsteWeek.closingFree < d.laagsteMaand.closingFree ? ` · weektabel (kosten vroeg, inkomsten laat) tot ${formatCurrency(d.laagsteWeek.closingFree)}` : ''}`
               : undefined
           }
           denominator={leegCash ? 'geen banksaldo of posten in de prognose' : `bank ${formatCurrency(cash.position.bank)} − potten ${formatCurrency(cash.position.reserved)}`}

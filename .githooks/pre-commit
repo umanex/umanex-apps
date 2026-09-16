@@ -232,7 +232,7 @@ fi
 #     2026-09-07 door het review-panel over 197 briefings). Dezelfde awk staat in
 #     scripts/doctor.sh (blok 6b); wijzig ze samen — scripts/test-awk-parity.sh dwingt de
 #     gelijkheid af en wordt rood zodra één van de twee kopieën verschuift.
-status_af=""
+status_af=""; naar_gevalideerd=""
 while IFS= read -r -d '' f; do
   case "$f" in *.tcebc.md) ;; *) continue ;; esac
   st="$(git show ":$f" 2>/dev/null \
@@ -248,6 +248,37 @@ while IFS= read -r -d '' f; do
     "") status_af="$status_af $f (geen Status)" ;;
     *)  status_af="$status_af $f ('$st')" ;;
   esac
+
+  # 2c-bis. Overgangssignaal — gaat deze briefing in DEZE commit naar `gevalideerd`, en
+  #     draagt hij dan nog open of onbewezen items? Waarschuwt, blokkeert niet.
+  #
+  #     Blok 2b vangt één nieuw vinkje zonder bewijs. Dit vangt het moment waarop de héle
+  #     briefing "klaar" wordt verklaard: EXIT uit CLAUDE.md eist dat élk item afgevinkt is
+  #     op bewijs, en dat is een uitspraak over de hele lijst, niet over de laatste regel.
+  #     GEMETEN 2026-09-16 over vier repo's: 57 briefings van vóór 2026-08-25 staan op
+  #     `gevalideerd` met samen 514 afgevinkte items zonder bewijsregel — dat is de schuld
+  #     die geen enkele wachter zag ontstaan.
+  #
+  #     De overgang wordt aan de DIFF herkend en niet aan een tweede statusparser: `$st`
+  #     hierboven zegt dat hij nú gevalideerd is, en een toegevoegde Status-regel zegt dat
+  #     dat in deze commit gebeurt. Een nieuw bestand telt automatisch mee, want daar is elke
+  #     regel toegevoegd. Een bestaande gevalideerde briefing met alleen een tekstwijziging
+  #     draagt die regel niet en blijft dus stil.
+  if [ "$st" = gevalideerd ] \
+     && git diff --cached -U0 -- "$f" | grep -qE '^\+.*[Ss]tatus.*gevalideerd'; then
+    # Regelgebaseerd, niet item-bewust: dat laatste zit in scripts/briefings.sh, en die is
+    # in een klant-repo niet beschikbaar. Voor een waarschuwing is dit genoeg — hij noemt
+    # getallen die je in het bestand zelf kunt narekenen.
+    read -r n_open n_zb < <(git show ":$f" 2>/dev/null | awk '
+      /^```/ { blok = !blok; next } blok { next }
+      { sub(/\r$/, "") }
+      /^[[:space:]]*- \[ \]/                   { o++ }
+      /^[[:space:]]*- \[[xX]\]/ && !/bewijs:/  { z++ }
+      END { printf "%d %d", o + 0, z + 0 }')
+    if [ "${n_open:-0}" -gt 0 ] || [ "${n_zb:-0}" -gt 0 ]; then
+      naar_gevalideerd="$naar_gevalideerd $f (${n_open:-0} open, ${n_zb:-0} zonder bewijs)"
+    fi
+  fi
 done < <(staged_paths)
 
 if [ -n "$status_af" ]; then
@@ -255,6 +286,14 @@ if [ -n "$status_af" ]; then
   echo "  De triade kent drie statussen — gepland → gebouwd → gevalideerd — en alleen die"
   echo "  drie tellen mee in de telling van doctor.sh. Een eigen woord of geen Status zegt"
   echo "  niets over of de cyclus sloot. Zet in het metadata-blok: - **Status:** gebouwd"
+fi
+
+if [ -n "$naar_gevalideerd" ]; then
+  echo "⚠ Gaat naar 'gevalideerd' met onafgewerkte acceptatie:$naar_gevalideerd"
+  echo "  EXIT (CLAUDE.md): elk acceptatie-item afgevinkt op bewijs, mét dat bewijs ín de"
+  echo "  regel. Een vinkje zonder 'bewijs:' is een '- [ ]' dat er anders uitziet, dus een"
+  echo "  briefing met open of onbewezen items is niet gevalideerd maar gebouwd."
+  echo "  Zet de status terug op 'gebouwd', of vink af op een meting die rood kón worden."
 fi
 
 # 2d. Auditrapport-signaal — draagt een auditrapport zijn bestemmingen, bewijs en som?

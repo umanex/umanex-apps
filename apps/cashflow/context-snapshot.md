@@ -77,24 +77,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+7a4070c feat(cashflow): time — quick entry, capacity per year and week, and planning of remaining work
 056bfa5 feat(cashflow): projects — list, sheet and detail with milestones, extensions and external costs
 40d19f9 Merge remote-tracking branch 'origin/feature/ui-textarea-native-select' into feature/cashflow-bureau-ui
 e994db9 feat(cashflow): revenue per fiscal year from milestones, and project yield A and B
 7552a2e feat(cashflow): the bureau shell and the goals page
-360eb23 feat(ui): Textarea and NativeSelect, with their Figma pages and a manifest recipe that matches the guard
 ```
 
 ## Uncommitted wijzigingen
-  A  apps/cashflow/app/bureau/tijd/page.tsx
-  A  apps/cashflow/components/bureau/CapacityBar.tsx
-  A  apps/cashflow/components/bureau/CapacitySummary.tsx
-  A  apps/cashflow/components/bureau/PlanningPanel.tsx
-  A  apps/cashflow/components/bureau/QuickTimeEntry.tsx
-  A  apps/cashflow/components/bureau/TimeEntryRow.tsx
-  A  apps/cashflow/components/bureau/WeekList.tsx
-  A  apps/cashflow/lib/bureau/capacity.test.ts
-  A  apps/cashflow/lib/bureau/capacity.ts
-   M apps/cashflow/scripts/a11y-passes.mjs
+  M  apps/cashflow/scripts/a11y-passes.mjs
+  M  apps/cashflow/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

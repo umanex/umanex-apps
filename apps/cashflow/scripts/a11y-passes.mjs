@@ -1,8 +1,9 @@
 /**
  * Twee toegankelijkheidspassen op een draaiende pagina, voor de flow-harness.
  *
- * Overgenomen uit `apps/jobradar/scripts/flow-harness.mjs` (kopstructuur, toetsenbord), zonder
- * inhoudelijke wijziging: een tweede app met dezelfde meting, nog geen derde (rule of three).
+ * Overgenomen uit `apps/jobradar/scripts/flow-harness.mjs` (kopstructuur, toetsenbord): een tweede app
+ * met dezelfde meting, nog geen derde (rule of three). Eén inhoudelijke afwijking: de toetsenbordpass
+ * herkent de segmenten van een date- of month-veld (zie daar) — de jobradar-versie stopt op het eerste.
  */
 
 /** Koppen in documentvolgorde: begint bij h1 en slaat geen niveau over. */
@@ -28,7 +29,7 @@ export async function kopstructuur(page) {
  * daarna alles geblurd en opnieuw gelezen. Verandert er niets, dan is er geen zichtbare focus —
  * ongeacht welke klassen het element draagt.
  */
-export async function toetsenbord(page, maxStops = 120) {
+export async function toetsenbord(page, maxStops = 120, { herkenSegmenten = true } = {}) {
   await page.evaluate(() => {
     document.activeElement instanceof HTMLElement && document.activeElement.blur();
     document.body.setAttribute('tabindex', '-1');
@@ -37,12 +38,20 @@ export async function toetsenbord(page, maxStops = 120) {
   });
 
   const volgorde = [];
+  let segmenten = 0;
   for (let i = 0; i < maxStops; i++) {
     await page.keyboard.press('Tab');
-    const stop = await page.evaluate((index) => {
+    const vorige = volgorde.length ? String(volgorde[volgorde.length - 1].index) : null;
+    const stop = await page.evaluate(([index, vorige, herken]) => {
       const el = document.activeElement;
       if (!el || el === document.body || el === document.documentElement) return null;
-      if (el.hasAttribute('data-tabstop')) return { rond: true };
+      const merk = el.getAttribute('data-tabstop');
+      // Een date- of month-veld heeft in Chromium een tabstop per segment (dag, maand, jaar),
+      // terwijl `activeElement` hetzelfde input blijft. Dat is geen ronde maar hetzelfde veld:
+      // de eerste versie van deze pass stopte hier, en zag op de projectpagina niets meer ná
+      // het eerste maandveld — de telling bleef op 17 staan zonder dat er iets faalde.
+      if (herken && merk !== null && merk === vorige) return { zelfde: true };
+      if (merk !== null) return { rond: true };
       el.setAttribute('data-tabstop', String(index));
       const s = getComputedStyle(el);
       return {
@@ -52,8 +61,9 @@ export async function toetsenbord(page, maxStops = 120) {
         tabindex: el.getAttribute('tabindex'),
         gefocust: `${s.outlineStyle}|${s.outlineWidth}|${s.outlineColor}|${s.boxShadow}`,
       };
-    }, i);
+    }, [i, vorige, herkenSegmenten]);
     if (stop === null || stop.rond) break;
+    if (stop.zelfde) { segmenten++; continue; }
     volgorde.push(stop);
   }
 
@@ -72,7 +82,7 @@ export async function toetsenbord(page, maxStops = 120) {
     if (ongefocust[String(stop.index)] === stop.gefocust) problemen.push(`geen zichtbare focus: <${stop.tag}> "${stop.naam || '(zonder tekst)'}"`);
     if (stop.tabindex && Number(stop.tabindex) > 0) problemen.push(`positieve tabindex (${stop.tabindex}) op <${stop.tag}> "${stop.naam}"`);
   }
-  return { stops: volgorde.length, volgorde, problemen };
+  return { stops: volgorde.length, segmenten, volgorde, problemen };
 }
 
 /** Scrollt de pagina horizontaal? Een tabel mag binnen zijn eigen container scrollen, de body niet. */

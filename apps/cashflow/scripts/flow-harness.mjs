@@ -130,7 +130,34 @@ function bureauFixture(variant) {
       },
     },
   };
-  return { goals: doelen, clients: [], clientGroups: [], projects: [], opportunities: [], timeEntries: [], plannedWork: [] };
+  if (variant === 'doelen') {
+    return { goals: doelen, clients: [], clientGroups: [], projects: [], opportunities: [], timeEntries: [], plannedWork: [] };
+  }
+
+  // 'projecten': twee projecten met een bekende uitkomst. Zonder raming → onvoldoende gegevens;
+  // met 48 u besteed (8 u/dag) en 16 u resterend → 8 dagen → A = 9000 ÷ 8 = € 1.125/dag.
+  const project = (id, over) => ({
+    id, clientId: 'harnas-klant', offerType: 'workflowtraject', status: 'lopend', scope: '',
+    contractDate: `${BRON}-01`, plannedStart: BRON, plannedEnd: BRON, extensions: [],
+    budgetedOwnHours: null, expectedRemainingOwnHours: null, externalCosts: [], milestones: [], invoices: [],
+    nextMilestoneNote: '', blockers: '', opportunityId: null, createdAt: `${BRON}-01`, ...over,
+  });
+  return {
+    goals: doelen,
+    clients: [{ id: 'harnas-klant', name: 'Harnasklant', groupId: null }],
+    clientGroups: [],
+    projects: [
+      project('harnas-zonder', { name: 'Harnasproject zonder raming', fixedPriceExVat: 12000,
+        milestones: [{ id: 'harnas-m1', label: 'Harnasmijlpaal', plannedMonth: BRON, amount: 4000, realizedOn: null, realizedAmount: null, extensionId: null }] }),
+      project('harnas-met', { name: 'Harnasproject met raming', fixedPriceExVat: 9000, budgetedOwnHours: 64, expectedRemainingOwnHours: 16 }),
+    ],
+    opportunities: [],
+    timeEntries: [
+      { id: 'harnas-t1', date: `${BRON}-01`, category: 'klantwerk', projectId: 'harnas-met', hours: 24, hoursPerDayAtEntry: 8, label: null, note: '' },
+      { id: 'harnas-t2', date: `${BRON}-01`, category: 'klantwerk', projectId: 'harnas-met', hours: 24, hoursPerDayAtEntry: 8, label: null, note: '' },
+    ],
+    plannedWork: [],
+  };
 }
 
 function fixtureData({ leeg = false, buffer = false, bureau = null } = {}) {
@@ -297,7 +324,7 @@ function controleerBuildOrigin(origin) {
  * drie andere schermen (skeleton, lege staat, foutscherm) zag nooit een guard.
  */
 function maakRouteHandler(state, gedrag = {}) {
-  const { leeg = false, buffer = false, bureau = null, vertragingMs = 0, documentStatus = 200 } = gedrag;
+  const { leeg = false, buffer = false, bureau = null, conflict = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
 
   return async (route) => {
     const req = route.request();
@@ -324,6 +351,9 @@ function maakRouteHandler(state, gedrag = {}) {
       // Elke schrijfpoging wordt geteld en beantwoord alsof ze lukte: de app moet
       // verder kunnen, en het bewijs dat er niets weglekte is juist dat we hier staan.
       state.schrijfpogingen.push(`${req.method()} ${pad}`);
+      // `conflict`: de revisie op de server is intussen verschoven. Nul rijen terug is precies wat
+      // `saveState` als revisieconflict leest — dezelfde weg als een tweede browser.
+      if (conflict) return json([], 200);
       state.revision += 1;
       return json([{ revision: state.revision }], 200);
     }
@@ -1180,7 +1210,7 @@ async function a11yOp(page, waar) {
     ...koppen.problemen.map((p) => `koppen: ${p}`),
     ...toetsen.problemen.map((p) => `toetsenbord: ${p}`),
   ];
-  return { problemen, gemeten: contrast.gemeten, koppen: koppen.aantal, stops: toetsen.stops };
+  return { problemen, gemeten: contrast.gemeten, koppen: koppen.aantal, stops: toetsen.stops, segmenten: toetsen.segmenten };
 }
 
 function bureauScenarios() {
@@ -1264,15 +1294,212 @@ function bureauScenarios() {
       },
     },
     {
-      naam: 'bureau — 390 px zonder horizontale overflow',
-      pad: DOELEN,
+      naam: 'tijd — snelle invoer: Enter registreert, focus terug op uren, context blijft',
+      pad: '/bureau/tijd',
       wachtOp: 'bureau',
-      gedrag: { bureau: 'doelen' },
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        const voor = await page.locator('[data-time-entry]').count();
+        await page.selectOption('#tijd-project', 'harnas-met');
+        await page.fill('#tijd-uren', '1,5');
+        await page.press('#tijd-uren', 'Enter');
+        await page.waitForFunction((n) => document.querySelectorAll('[data-time-entry]').length === n + 1, voor, { timeout: 5_000 });
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        const focus = await page.evaluate(() => document.activeElement?.id);
+        const [cat, proj, uren] = await Promise.all([page.inputValue('#tijd-categorie'), page.inputValue('#tijd-project'), page.inputValue('#tijd-uren')]);
+        const nieuw = await page.locator('[data-time-entry]').last().innerText();
+        if (extra !== 1) throw new Error(`registreren gaf ${extra} schrijfacties in plaats van één`);
+        if (focus !== 'tijd-uren') throw new Error(`focus staat op "${focus}", niet op het urenveld`);
+        if (cat !== 'klantwerk' || proj !== 'harnas-met') throw new Error(`categorie/project niet behouden: ${cat} / ${proj}`);
+        if (uren !== '') throw new Error(`urenveld niet leeg na registreren: "${uren}"`);
+        if (!/1,5 u/.test(nieuw)) throw new Error(`nieuwe regel toont geen 1,5 u: "${nieuw.replace(/\s+/g, ' ')}"`);
+        return { ok: true, bewijs: `1 regel erbij ("${nieuw.replace(/\s+/g, ' ').slice(0, 40)}…"), 1 schrijfactie, focus op #tijd-uren, klantwerk + project behouden, uren leeg` };
+      },
+    },
+    {
+      naam: 'tijd — klantwerk zonder project wordt geweigerd',
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.fill('#tijd-uren', '2');
+        await page.press('#tijd-uren', 'Enter');
+        await page.waitForSelector('#tijd-fout', { timeout: 5_000 });
+        const melding = await page.locator('#tijd-fout').innerText();
+        const invalid = await page.getAttribute('#tijd-project', 'aria-invalid');
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (!melding.includes('Kies een project')) throw new Error(`melding: "${melding}"`);
+        if (invalid !== 'true') throw new Error('projectveld niet als ongeldig gemarkeerd');
+        if (extra) throw new Error(`${extra} schrijfactie(s) bij een geweigerde registratie`);
+        return { ok: true, bewijs: `"${melding}", aria-invalid op #tijd-project, 0 schrijfacties` };
+      },
+    },
+    {
+      naam: 'tijd — capaciteit: registraties als besteed, planning als resterend, zonder overlap',
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const lijn = () => page.locator('[data-capacity-line]').innerText();
+        const voor = (await lijn()).replace(/\s+/g, ' ');
+        if (!/besteed 6 d · gepland 0 d/.test(voor)) throw new Error(`vooraf verwacht besteed 6 d, gepland 0 d: "${voor}"`);
+        await page.getByRole('tab', { name: 'Planning' }).click();
+        await page.selectOption('#plan-project', 'harnas-met');
+        await page.fill('#plan-dagen', '2');
+        await page.locator('button', { hasText: 'Inplannen' }).click();
+        await page.waitForFunction(() => /gepland 2 d/.test(document.querySelector('[data-capacity-line]')?.textContent ?? ''), null, { timeout: 5_000 });
+        const na = (await lijn()).replace(/\s+/g, ' ');
+        if (!/besteed 6 d · gepland 2 d/.test(na)) throw new Error(`na inplannen verwacht besteed 6 d, gepland 2 d: "${na}"`);
+        return { ok: true, bewijs: `"${voor.slice(0, 30)}…" → "${na.slice(0, 30)}…" — besteed onveranderd` };
+      },
+    },
+    {
+      naam: 'tijd — revisieconflict zet registreren uit, met hint',
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten', conflict: true },
+      actie: async (page) => {
+        await page.selectOption('#tijd-project', 'harnas-met');
+        await page.fill('#tijd-uren', '1');
+        await page.press('#tijd-uren', 'Enter');
+        await page.waitForSelector('#tijd-registreren:disabled', { timeout: 10_000 });
+        const hint = await page.locator('#tijd-conflict').innerText();
+        const alarm = await page.locator('[role=alert]', { hasText: 'Elders gewijzigd' }).count();
+        if (!hint.includes('herladen')) throw new Error(`geen hint bij de uitgeschakelde knop: "${hint}"`);
+        if (!alarm) throw new Error('SyncStatus meldt het conflict niet');
+        return { ok: true, bewijs: `na een geweigerde schrijfactie: Registreren uit, "${hint}", SyncStatus-alert zichtbaar` };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op tijd (beide tabs)',
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const registratie = await a11yOp(page, 'tijd');
+        await page.getByRole('tab', { name: 'Planning' }).click();
+        await page.waitForSelector('#plan-dagen', { timeout: 5_000 });
+        const planning = await a11yOp(page, 'tijd-planning');
+        const problemen = [...registratie.problemen, ...planning.problemen];
+        if (problemen.length) throw new Error(problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `registratie ${registratie.gemeten} + planning ${planning.gemeten} tekstelementen boven AA; ${registratie.stops}/${planning.stops} tabstops (+${registratie.segmenten}/${planning.segmenten} datumsegmenten) met zichtbare focus` };
+      },
+    },
+    ...['/bureau/doelen', '/bureau/projecten', '/bureau/projecten/harnas-met', '/bureau/tijd'].map((pad) => ({
+      naam: `bureau — 390 px zonder horizontale overflow · ${pad.replace('/bureau/', '')}`,
+      pad,
+      wachtOp: 'bureau',
+      gedrag: { bureau: pad === DOELEN ? 'doelen' : 'projecten' },
       viewport: { width: 390, height: 844 },
       actie: async (page) => {
         const r = await horizontaleOverflow(page);
         if (r.scroll > r.breedte) throw new Error(`pagina scrollt ${r.scroll - r.breedte} px horizontaal: ${r.boosdoeners.join(', ')}`);
         return { ok: true, bewijs: `scrollbreedte ${r.scroll} ≤ ${r.breedte}` };
+      },
+    })),
+    {
+      naam: 'projecten — zonder urenraming geen rendement, met raming A = € 1.125',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const rij = (id) => page.locator(`[data-project-row="${id}"]`);
+        if ((await rij('harnas-zonder').count()) !== 1 || (await rij('harnas-met').count()) !== 1) throw new Error('de twee fixture-projecten staan niet elk één keer in de tabel');
+        const zonder = await rij('harnas-zonder').innerText();
+        const onvoldoende = await rij('harnas-zonder').locator('[data-onvoldoende]').count();
+        if (onvoldoende !== 2) throw new Error(`project zonder raming toont ${onvoldoende} keer "Onvoldoende gegevens" in plaats van twee (A en B)`);
+        if (/\/dag/.test(zonder)) throw new Error(`project zonder raming toont tóch een bedrag per dag: "${zonder.replace(/\s+/g, ' ')}"`);
+        const met = (await rij('harnas-met').innerText()).replace(/\s+/g, ' ');
+        if (!met.includes('€ 1.125 /dag')) throw new Error(`project met raming toont niet € 1.125 /dag: "${met}"`);
+        return { ok: true, bewijs: 'zonder raming: 2× "Onvoldoende gegevens", geen bedrag; met raming: € 1.125 /dag (9.000 ÷ 8 d)' };
+      },
+    },
+    {
+      naam: 'projecten — sheet: focus blijft binnen, Escape sluit en geeft hem terug',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const knop = page.locator('button', { hasText: 'Nieuw project' });
+        await knop.click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        for (let i = 0; i < 40; i++) {
+          await page.keyboard.press('Tab');
+          const binnen = await page.evaluate(() => Boolean(document.activeElement?.closest('[role=dialog]')));
+          if (!binnen) throw new Error(`na ${i + 1}× Tab staat de focus buiten de sheet`);
+        }
+        await page.keyboard.press('Escape');
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'detached' });
+        const terug = await page.evaluate(() => document.activeElement?.textContent?.trim());
+        if (terug !== 'Nieuw project') throw new Error(`na Escape staat de focus op "${terug}", niet op de knop die de sheet opende`);
+        return { ok: true, bewijs: '40× Tab binnen [role=dialog], Escape sluit, focus terug op "Nieuw project"' };
+      },
+    },
+    {
+      naam: 'projecten — nieuw project: één schrijfactie, nieuwe klant, naar de detailpagina',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.locator('button', { hasText: 'Nieuw project' }).click();
+        await page.fill('#project-klant', 'Nieuwe harnasklant');
+        await page.fill('#project-naam', 'Harnasscan');
+        await page.selectOption('#project-aanbod', 'productdiagnose');
+        await page.fill('#project-prijs', '3.550');
+        const hint = await page.locator('#project-klant-hint').innerText();
+        if (!hint.includes('wordt aangemaakt')) throw new Error(`geen melding dat de klant nieuw is: "${hint}"`);
+        const zonderOpslaan = await nieuweSchrijfacties(page, state, basis);
+        if (zonderOpslaan) throw new Error(`invullen schreef ${zonderOpslaan} keer weg`);
+        await page.locator('[role=dialog] button[type=submit]').click();
+        await page.waitForURL(/\/bureau\/projecten\/[0-9a-f-]{36}$/, { timeout: 10_000 });
+        await page.waitForSelector('#project-titel', { timeout: 10_000 });
+        const titel = await page.locator('#project-titel').innerText();
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (titel !== 'Harnasscan') throw new Error(`detailpagina toont "${titel}"`);
+        if (extra !== 1) throw new Error(`aanmaken gaf ${extra} schrijfacties in plaats van één (klant en project samen)`);
+        return { ok: true, bewijs: '0 schrijfacties tijdens invullen, 1 bij aanmaken (klant + project), detailpagina "Harnasscan"' };
+      },
+    },
+    {
+      naam: 'projecten — mijlpaal afvinken verplaatst omzet van resterend naar gerealiseerd',
+      pad: '/bureau/projecten/harnas-zonder',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const omzet = () => page.locator('dl').first().locator('div', { hasText: 'Omzet in' }).innerText();
+        const voor = (await omzet()).replace(/\s+/g, ' ');
+        if (!/€ 0 .*€ 4\.000 getekend resterend/.test(voor)) throw new Error(`vooraf verwacht € 0 gerealiseerd en € 4.000 resterend: "${voor}"`);
+        const basis = state.schrijfpogingen.length;
+        await page.locator('[data-milestone-row="harnas-m1"] button[role=checkbox]').click();
+        const na = (await omzet()).replace(/\s+/g, ' ');
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (!/€ 4\.000 .*€ 0 getekend resterend/.test(na)) throw new Error(`na afvinken verwacht € 4.000 gerealiseerd en € 0 resterend: "${na}"`);
+        if (extra !== 1) throw new Error(`afvinken gaf ${extra} schrijfacties`);
+        const verwijder = await page.locator('button[aria-label="Verwijder mijlpaal Harnasmijlpaal"]').isDisabled();
+        if (!verwijder) throw new Error('een gerealiseerde mijlpaal is nog te verwijderen');
+        return { ok: true, bewijs: `"${voor}" → "${na}", 1 schrijfactie, verwijderen uitgeschakeld` };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op projecten',
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const lijst = await a11yOp(page, 'projecten');
+        await page.locator('button', { hasText: 'Nieuw project' }).click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        const sheet = await sweep(page, 'projectsheet');
+        await page.keyboard.press('Escape');
+        await page.goto(`${BASE}/bureau/projecten/harnas-met`);
+        await page.waitForSelector('#project-titel', { timeout: 20_000 });
+        const detail = await a11yOp(page, 'projectdetail');
+        const problemen = [...lijst.problemen, ...sheet.fouten.map((f) => `sheet contrast: ${beschrijfFout(f)}`), ...detail.problemen];
+        if (problemen.length) throw new Error(problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `lijst ${lijst.gemeten} + sheet ${sheet.gemeten} + detail ${detail.gemeten} tekstelementen boven AA; koppen ${lijst.koppen}/${detail.koppen}; ${lijst.stops}/${detail.stops} tabstops met zichtbare focus (detail: ${detail.segmenten} extra datumsegmenten)` };
       },
     },
   ];
@@ -1335,6 +1562,72 @@ function bureauTegenproeven() {
         return r.scroll <= r.breedte
           ? { ok: true, bewijs: 'geen overflow gezien' }
           : { ok: false, bewijs: `scrollbreedte ${r.scroll} > ${r.breedte}` };
+      },
+    },
+    {
+      naam: 'tegenproef — registratie zonder wegschrijf-call',
+      moetFalen: true,
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.selectOption('#tijd-project', 'harnas-met');
+        await page.fill('#tijd-uren', '1');
+        await page.press('#tijd-uren', 'Enter');
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        return extra === 0
+          ? { ok: true, bewijs: 'geen schrijfactie na registreren' }
+          : { ok: false, bewijs: `${extra} schrijfactie na registreren, zoals het hoort` };
+      },
+    },
+    {
+      naam: 'tegenproef — toetsenbordpass stopt op een datumveld',
+      moetFalen: true,
+      pad: '/bureau/tijd',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        // Het veld Datum staat vroeg in de volgorde; de knoppen erna (Vandaag, Gisteren, Registreren)
+        // horen gezien te worden. Zonder segmentherkenning stopt de pass op het datumveld.
+        // Zonder segmentherkenning — de vorige versie. Bereikt die Registreren tóch, dan kon het
+        // defect op deze pagina niet optreden en bewijst de herstelling niets.
+        const r = await toetsenbord(page, 120, { herkenSegmenten: false });
+        const gezien = r.volgorde.some((s) => s.naam === 'Registreren');
+        return gezien
+          ? { ok: true, bewijs: `oude pass liep tóch door tot Registreren (${r.stops} stops)` }
+          : { ok: false, bewijs: `oude pass stopte na ${r.stops} stops vóór Registreren, zoals het defect voorspelt` };
+      },
+    },
+    {
+      naam: 'tegenproef — rendement uit een halve noemer',
+      moetFalen: true,
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        const zonder = await page.locator('[data-project-row="harnas-zonder"]').innerText();
+        return /\/dag/.test(zonder)
+          ? { ok: true, bewijs: 'bedrag per dag zonder raming' }
+          : { ok: false, bewijs: 'geen bedrag per dag zonder raming, zoals het hoort' };
+      },
+    },
+    {
+      naam: 'tegenproef — sheet laat de focus ontsnappen',
+      moetFalen: true,
+      pad: '/bureau/projecten',
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'projecten' },
+      actie: async (page) => {
+        await page.locator('button', { hasText: 'Nieuw project' }).click();
+        await page.waitForSelector('[role=dialog]', { timeout: 5_000, state: 'visible' });
+        for (let i = 0; i < 40; i++) {
+          await page.keyboard.press('Tab');
+          if (!(await page.evaluate(() => Boolean(document.activeElement?.closest('[role=dialog]'))))) {
+            return { ok: true, bewijs: `focus buiten de sheet na ${i + 1}× Tab` };
+          }
+        }
+        return { ok: false, bewijs: 'focus bleef 40× Tab binnen de sheet, zoals het hoort' };
       },
     },
     {

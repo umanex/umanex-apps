@@ -14,11 +14,11 @@ import { weekCapacity, yearCapacity } from '../../lib/bureau/capacity';
 import { projectProfitability, yieldSummary } from '../../lib/bureau/profitability';
 import { clientConcentration } from '../../lib/bureau/concentration';
 import { openPipeline, overdueActions, withoutNextAction } from '../../lib/bureau/pipeline';
-import { buildWeeklyCashPlan, HORIZON_WEEKS, lowestFree } from '../../lib/bureau/weekly-cash';
+import { buildWeeklyCashPlan, HORIZON_WEEKS, lowestFree, lowestMonthEnd } from '../../lib/bureau/weekly-cash';
 import { computeSignals, type Signal } from '../../lib/bureau/signals';
 import { approvedTotal } from '../../lib/bureau/money';
 import { monthOf, monthsCovering, weeksFrom } from '../../lib/bureau/periods';
-import { formatDays, formatPercent, weekLabel } from '../../lib/bureau/format';
+import { formatDays, formatPercent, monthLabel, weekLabel } from '../../lib/bureau/format';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { SignalList } from '../../components/bureau/SignalList';
 import { KpiTile } from '../../components/bureau/KpiTile';
@@ -51,7 +51,7 @@ export default function OverzichtPage() {
       year, asOf: today, goals, revenue, capacity, weeks, cash, concentration, projects: bureau.projects, profitability,
       overdueActions: achterstallig, withoutNextAction: withoutNextAction(bureau.opportunities),
       goalDeviations: consistentie ? { days: consistentie.days.deviation, quarters: consistentie.quarters?.deviation ?? null } : null,
-      money: formatCurrency, days: formatDays, percent: (s) => formatPercent(s), weekLabel,
+      money: formatCurrency, days: formatDays, percent: (s) => formatPercent(s), weekLabel, monthLabel,
     });
     const resterendeMijlpalen = bucketMilestones(bureau).buckets.filter((b) => b.year === year && b.kind === 'resterend').length;
     const gerealiseerdOoit = bucketMilestones(bureau).buckets.filter((b) => b.kind === 'gerealiseerd' && nietGeannuleerd.some((p) => p.id === b.projectId)).reduce((s, b) => s + b.amount, 0);
@@ -61,7 +61,8 @@ export default function OverzichtPage() {
       yield: yieldSummary(profitability),
       projectCount: profitability.length,
       verwacht: nietGeannuleerd.reduce((s, p) => s + approvedTotal(p), 0),
-      laagste: lowestFree(cash),
+      laagsteWeek: lowestFree(cash),
+      laagsteMaand: lowestMonthEnd(cash),
     };
   }, [bureau, year, today, huidigJaar, months, incomeItems]);
 
@@ -71,6 +72,7 @@ export default function OverzichtPage() {
   const nodig = c ? neededPerRemainingDay(r.stillToSell, c.unallocatedClientDays) : null;
   const zonderDatum = cash.unplaced.filter((u) => u.inForecast).length;
   const doelA = goals ? revenuePerDayTarget(goals) : null;
+  const zonderDoelen = { ...signals, signals: signals.signals.filter((s) => s.id !== 'geen-doelen') };
 
   return (
     <section aria-labelledby="overzicht-titel" className="space-y-5">
@@ -94,9 +96,10 @@ export default function OverzichtPage() {
         >
           Omzetdoel, eigen dagen per categorie en de klantlimiet zijn de maatstaf waar dit overzicht tegen meet. Daarna projecten, tijd en kansen — tot dan staat hieronder overal waarom er nog geen getal is.
         </EmptyState>
-      ) : (
-        <SignalList result={signals} />
-      )}
+      ) : null}
+      {/* Zonder bureau-gegevens neemt de lege staat de plaats van "Geen doelen" in, maar signalen die
+          daar niet van afhangen — een tekort in de prognose — horen er nog altijd te staan. */}
+      {leegBureau ? zonderDoelen.signals.length > 0 && <SignalList result={zonderDoelen} /> : <SignalList result={signals} />}
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         <KpiTile
@@ -171,7 +174,11 @@ export default function OverzichtPage() {
           title="Vrije cash, 13 weken"
           value={leegCash ? null : formatCurrency(cash.position.free)}
           insufficient={{ reason: 'De maandprognose is leeg.', fix: { href: '/', label: 'Naar de prognose' } }}
-          secondary={d.laagste ? `laagste ${formatCurrency(d.laagste.closingFree)}, einde ${weekLabel(d.laagste.weekKey)}` : undefined}
+          secondary={
+            d.laagsteMaand
+              ? `laagste maandeinde ${formatCurrency(d.laagsteMaand.closingFree)} (eind ${monthLabel(d.laagsteMaand.monthKey)})${d.laagsteWeek && d.laagsteWeek.closingFree < d.laagsteMaand.closingFree ? ` · weektabel tot ${formatCurrency(d.laagsteWeek.closingFree)}` : ''}`
+              : undefined
+          }
           denominator={leegCash ? 'geen banksaldo of posten in de prognose' : `bank ${formatCurrency(cash.position.bank)} − potten ${formatCurrency(cash.position.reserved)}`}
           source="Maandprognose verdeeld over 13 weken, vanaf vandaag"
           link={{ href: '/bureau/cash', label: 'Naar cash' }}

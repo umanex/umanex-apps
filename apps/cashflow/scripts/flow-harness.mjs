@@ -299,9 +299,11 @@ function volFixture(doelen, project) {
   };
 }
 
-function fixtureData({ leeg = false, buffer = false, bureau = null } = {}) {
+function fixtureData({ leeg = false, buffer = false, bureau = null, tekort = false } = {}) {
   const b = bureauFixture(bureau);
   const doc = prognoseFixture({ leeg, buffer });
+  // `tekort`: een negatief banksaldo, zodat de prognose al in de ankermaand onder nul eindigt.
+  if (tekort) doc.referenceBalance = -250;
   if (bureau?.startsWith('cash') || bureau === 'vol') doc.incomeItems = [...doc.incomeItems, ...cashPosten()];
   return b ? { ...doc, bureau: b } : doc;
 }
@@ -464,7 +466,7 @@ function controleerBuildOrigin(origin) {
  * drie andere schermen (skeleton, lege staat, foutscherm) zag nooit een guard.
  */
 function maakRouteHandler(state, gedrag = {}) {
-  const { leeg = false, buffer = false, bureau = null, conflict = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
+  const { leeg = false, buffer = false, bureau = null, tekort = false, conflict = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
 
   return async (route) => {
     const req = route.request();
@@ -486,7 +488,7 @@ function maakRouteHandler(state, gedrag = {}) {
         if (documentStatus !== 200) {
           return json({ message: 'harness: opzettelijke serverfout' }, documentStatus);
         }
-        return json({ data: fixtureData({ leeg, buffer, bureau }), revision: state.revision }, 200);
+        return json({ data: fixtureData({ leeg, buffer, bureau, tekort }), revision: state.revision }, 200);
       }
       // Elke schrijfpoging wordt geteld en beantwoord alsof ze lukte: de app moet
       // verder kunnen, en het bewijs dat er niets weglekte is juist dat we hier staan.
@@ -2231,8 +2233,56 @@ function screenshotScenarios(map) {
   });
 }
 
+/**
+ * Elk maandeinde op de cashpagina is het vrije saldo waarmee de volgende maand op `/` opent — de
+ * regel "Vorig saldo" in kolom 1 en 2 — en het kopgetal is het laagste. Niet de footer: die toont
+ * de positie mét bufferpot, en die valt alleen samen met het vrije saldo zolang de pot leeg is.
+ */
+async function kopgetalIsMaandeinde(page) {
+  await page.waitForSelector('[data-month-end]', { timeout: 10_000 });
+  const eindes = await page.locator('[data-month-end]').evaluateAll((els) => els.map((e) => ({ maand: e.getAttribute('data-month-end'), waarde: Number(e.getAttribute('data-value')) })));
+  const kop = await page.locator('[data-lowest-month-end]').evaluate((el) => ({ maand: el.getAttribute('data-lowest-month'), waarde: Number(el.getAttribute('data-lowest-month-end')) }));
+  const week = Number(await page.locator('[data-lowest-week]').getAttribute('data-lowest-week'));
+  await page.goto(`${BASE}/`);
+  await page.waitForSelector(KOLOM, { timeout: 20_000 });
+  const saldi = await saldoPerKolom(page);
+  const perMaand = Object.fromEntries([[BRON, saldi[1]], [DOEL, saldi[2]]].filter(([, r]) => r?.aanwezig && r.label === 'Vorig saldo').map(([m, r]) => [m, r.bedrag]));
+  const vergeleken = eindes.filter((e) => perMaand[e.maand] !== undefined);
+  const fout = vergeleken.filter((e) => Math.abs(e.waarde - perMaand[e.maand]) > 0.005);
+  const laagste = eindes.reduce((min, e) => (min === null || e.waarde < min.waarde ? e : min), null);
+  if (!vergeleken.length || !vergeleken.some((e) => e.maand === BRON)) throw new Error(`geen maandeinde te vergelijken: cash ${JSON.stringify(eindes)}, / ${JSON.stringify(perMaand)}`);
+  if (fout.length) throw new Error(`maandeinde wijkt af van "Vorig saldo" op /: ${fout.map((e) => `${e.maand} cash ${e.waarde} / ${perMaand[e.maand]}`).join(' · ')}`);
+  if (kop.maand !== laagste.maand || kop.waarde !== laagste.waarde) throw new Error(`kopgetal ${JSON.stringify(kop)} is niet het laagste maandeinde ${JSON.stringify(laagste)}`);
+  if (week > kop.waarde + 0.005) throw new Error(`de weektabel (${week}) staat hoger dan het laagste maandeinde (${kop.waarde}) — onmogelijk bij kosten vroeg en inkomsten laat`);
+  return { ok: true, bewijs: `${vergeleken.length} maandeinden gelijk aan "Vorig saldo" op / (${vergeleken.map((e) => `${e.maand} ${e.waarde}`).join(' · ')}); kopgetal ${kop.maand} ${kop.waarde}; weektabel ${week}` };
+}
+
 function reviewScenarios() {
   return [
+    {
+      naam: 'cash — kopgetal is het laagste maandeinde, gelijk aan het saldo op /',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'cash' },
+      actie: async (page) => kopgetalIsMaandeinde(page),
+    },
+    {
+      naam: 'bureau — lege staat houdt een cashtekort in beeld',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { leeg: true, tekort: true },
+      actie: async (page) => {
+        const leeg = await page.locator('[data-empty-state]').count();
+        const signaal = page.locator('[data-signal="cash-negatief"]');
+        const geenDoelen = await page.locator('[data-signal="geen-doelen"]').count();
+        if (leeg !== 1) throw new Error(`${leeg} lege staten`);
+        if ((await signaal.count()) !== 1) throw new Error('het cashtekort staat niet in de signalen naast de lege staat');
+        if (geenDoelen) throw new Error('"Geen doelen" staat dubbel: in de lege staat én als signaal');
+        const tekst = (await signaal.innerText()).replace(/\s+/g, ' ');
+        if (!/Maandeinde .*−€ 250/.test(tekst)) throw new Error(`signaal zonder maandeinde: "${tekst}"`);
+        return { ok: true, bewijs: `1 lege staat, signaal "${tekst.slice(0, 80)}", geen dubbel "Geen doelen"` };
+      },
+    },
     {
       naam: 'facturen — nieuwe factuur gekoppeld aan een bestaande post: geen tweede post',
       pad: '/bureau/projecten/harnas-met',
@@ -2486,6 +2536,11 @@ function reviewScenarios() {
  */
 function reviewTegenproeven() {
   const defect = {
+    'cash — kopgetal is het laagste maandeinde, gelijk aan het saldo op /': () => {
+      const el = document.querySelector('[data-month-end]');
+      el.setAttribute('data-value', String(Number(el.getAttribute('data-value')) + 1));
+    },
+    'bureau — lege staat houdt een cashtekort in beeld': () => { document.querySelector('[data-signal-list]')?.remove(); },
     'facturen — nieuwe factuur gekoppeld aan een bestaande post: geen tweede post': () => {
       // Het defect: de keuze voor een bestaande post gaat verloren en er komt een nieuwe.
       const select = document.querySelector('[id$="-prognose"]');

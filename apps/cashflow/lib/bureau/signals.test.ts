@@ -16,11 +16,19 @@ import type { BureauData, BusinessGoals, Milestone } from './types.ts';
 const ASOF = '2027-03-10';
 const m = (id: string, amount: number, over: Partial<Milestone> = {}): Milestone => ({ id, label: id, plannedMonth: '2027-06', amount, realizedOn: null, realizedAmount: null, extensionId: null, ...over });
 
-function build(bureau: BureauData, opts: { goals?: BusinessGoals | null; endBalance?: number } = {}): SignalInputs {
+function build(bureau: BureauData, opts: { goals?: BusinessGoals | null; endBalance?: number; incomeAtMonthEnd?: number } = {}): SignalInputs {
   const goals = opts.goals === undefined ? (bureau.goals['2027'] ?? null) : opts.goals;
   const start = 1_000;
   const eind = opts.endBalance ?? 500;
-  const maart = month('2027-03', { startBalance: start, subtotals: subtotals({ basis: 'bank', incoming: start, recurring: start - eind }) });
+  // Een losse inkomstenpost valt in de laatste week van de maand; de vaste kosten in de eerste.
+  const inkomen = opts.incomeAtMonthEnd ?? 0;
+  const posten = inkomen ? [{ id: 'los', monthKey: '2027-03', label: 'Los', amount: inkomen, received: false }] : [];
+  const maart = month('2027-03', {
+    startBalance: start,
+    totalIncome: inkomen,
+    incomeItems: posten,
+    subtotals: subtotals({ basis: 'bank', incoming: start + inkomen, recurring: start + inkomen - eind }),
+  });
   const cash = buildWeeklyCashPlan({ asOf: ASOF, months: [maart], incomeItems: [], bureau });
   return {
     year: 2027,
@@ -40,6 +48,7 @@ function build(bureau: BureauData, opts: { goals?: BusinessGoals | null; endBala
     days: (n) => `${n} d`,
     percent: (s) => `${Math.round(s * 100)} %`,
     weekLabel: (w) => w,
+    monthLabel: (m) => m,
   };
 }
 
@@ -79,6 +88,18 @@ test('negatieve cash: kritiek onder de vloer, niet erboven; uitgeschakeld = weg 
   const r = computeSignals(build(b, { endBalance: -200 }));
   assert.equal(r.signals.some((s) => s.id === 'cash-negatief'), false);
   assert.deepEqual(r.disabled, ['negativeCash']);
+});
+
+test('negatieve cash oordeelt op het maandeinde; een dip alleen in de weektabel is info, geen tekort', () => {
+  // Maart: 1.000 bank, 1.500 kosten in de eerste week, 1.000 inkomen in de laatste → maandeinde 500, week 10 op −500.
+  const dip = computeSignals(build(gezond(), { endBalance: 500, incomeAtMonthEnd: 1_000 }));
+  assert.equal(dip.signals.some((x) => x.id === 'cash-negatief'), false, 'het maandeinde blijft boven nul');
+  const info = dip.signals.find((x) => x.id === 'cash-krap-binnen-maand');
+  assert.equal(info?.level, 'info');
+  assert.match(info!.detail, /€-500/);
+  const tekort = computeSignals(build(gezond(), { endBalance: -200 })).signals.find((x) => x.id === 'cash-negatief');
+  assert.equal(tekort?.detail, 'Maandeinde 2027-03 €-200.');
+  assert.equal(computeSignals(build(gezond(), { endBalance: -200 })).signals.some((x) => x.id === 'cash-krap-binnen-maand'), false, 'bij een echt tekort geen tweede, zachtere melding');
 });
 
 test('klantconcentratie op de vooruitblik, met noemer en limiet in de tekst', () => {

@@ -12,7 +12,7 @@ import type { WeeklyCashPlan } from './weekly-cash.ts';
 import type { Concentration } from './concentration.ts';
 import type { ProjectProfitability } from './profitability.ts';
 import { neededPerRemainingDay } from './revenue.ts';
-import { lowestFree, verifyReconciliation } from './weekly-cash.ts';
+import { lowestFree, lowestMonthEnd, verifyReconciliation } from './weekly-cash.ts';
 import { defaultGoals, revenuePerDayTarget } from './goals.ts';
 import { EPSILON, round2 } from './money.ts';
 
@@ -50,6 +50,7 @@ export type SignalInputs = {
   days: (n: number) => string;
   percent: (share: number) => string;
   weekLabel: (weekKey: string) => string;
+  monthLabel: (monthKey: string) => string;
 };
 
 export type SignalResult = { signals: Signal[]; disabled: Array<keyof SignalThresholds> };
@@ -73,14 +74,28 @@ export function computeSignals(i: SignalInputs): SignalResult {
   }
 
   // ── Cash ──
+  // Het oordeel rust op de maandeinden van de rekenkern, niet op de weektabel: die legt kosten
+  // vroeg en inkomsten laat en is dus de strengste lezing. Duikt alleen de week onder de vloer,
+  // dan is dat een aandachtspunt over timing, geen tekort.
   if (thresholds.negativeCash.enabled && i.cash) {
-    const laagste = lowestFree(i.cash);
-    if (laagste && laagste.closingFree < thresholds.negativeCash.floor - EPSILON) {
+    const vloer = thresholds.negativeCash.floor;
+    const maand = lowestMonthEnd(i.cash);
+    const week = lowestFree(i.cash);
+    if (maand && maand.closingFree < vloer - EPSILON) {
+      const onder = i.cash.monthEnds.filter((m) => m.closingFree < vloer - EPSILON);
       add({
         id: 'cash-negatief',
         level: 'kritiek',
-        title: thresholds.negativeCash.floor === 0 ? 'Vrije cash wordt negatief' : `Vrije cash onder ${i.money(thresholds.negativeCash.floor)}`,
-        detail: `Laagste stand ${i.money(laagste.closingFree)}, einde ${i.weekLabel(laagste.weekKey)}.`,
+        title: vloer === 0 ? 'Vrije cash wordt negatief' : `Vrije cash onder ${i.money(vloer)}`,
+        detail: `Maandeinde ${onder.map((m) => `${i.monthLabel(m.monthKey)} ${i.money(m.closingFree)}`).join(' · ')}.`,
+        href: '/bureau/cash',
+      });
+    } else if (week && week.closingFree < vloer - EPSILON) {
+      add({
+        id: 'cash-krap-binnen-maand',
+        level: 'info',
+        title: 'Binnen een maand kan vrije cash onder de vloer zakken',
+        detail: `Elk maandeinde blijft erboven, maar met kosten vroeg en inkomsten laat zakt de weektabel tot ${i.money(week.closingFree)} (einde ${i.weekLabel(week.weekKey)}).`,
         href: '/bureau/cash',
       });
     }

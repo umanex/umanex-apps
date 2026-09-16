@@ -9,6 +9,7 @@ const meta = {
   component: Switch,
   parameters: {
     tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=107-31' },
   },
   // `checked` en `disabled` zijn de twee assen die de vorm veranderen, dus ook de twee
   // variant-assen in Figma (2 × 2 = 4 varianten). Hover en focus zijn bewust geen as.

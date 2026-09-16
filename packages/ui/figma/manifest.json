@@ -312,7 +312,8 @@
   ],
   "effectStyles": [
     "shadow/sm",
-    "shadow/md"
+    "shadow/md",
+    "shadow/lg"
   ],
   "pages": {
     "Overzicht": {
@@ -892,6 +893,54 @@
             "id": "95:16"
           }
         ]
+      },
+      "extra": []
+    },
+    "Switch": {
+      "pageId": "107:22",
+      "primary": {
+        "name": "Switch",
+        "id": "107:31",
+        "type": "COMPONENT_SET",
+        "variantProperties": {
+          "checked": [
+            "false",
+            "true"
+          ],
+          "disabled": [
+            "false",
+            "true"
+          ]
+        },
+        "varianten": [
+          {
+            "name": "checked=false, disabled=false",
+            "id": "107:23"
+          },
+          {
+            "name": "checked=false, disabled=true",
+            "id": "107:25"
+          },
+          {
+            "name": "checked=true, disabled=false",
+            "id": "107:27"
+          },
+          {
+            "name": "checked=true, disabled=true",
+            "id": "107:29"
+          }
+        ]
+      },
+      "extra": []
+    },
+    "Dialog": {
+      "pageId": "107:32",
+      "primary": {
+        "name": "DialogContent",
+        "id": "107:33",
+        "type": "COMPONENT",
+        "variantProperties": null,
+        "varianten": null
       },
       "extra": []
     }

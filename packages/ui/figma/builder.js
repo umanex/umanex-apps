@@ -426,8 +426,10 @@ for (const [comp, d] of Object.entries(SPEC)) {
     const kolommen = Math.min(KOL, comps.length), rijen = Math.ceil(comps.length / KOL);
     hoofd.resize(2 * MARGE + kolommen * kolB + (kolommen - 1) * TUSSEN, 2 * MARGE + rijen * rijH + (rijen - 1) * TUSSEN);
     hoofd.name = naam;
-    const bg = V.get('Theme:background');
-    hoofd.fills = bg ? [figma.variables.setBoundVariableForPaint({ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }, 'color', bg)] : [];
+    // Geen vulling op de set: zo staan de handgebouwde sets in dit bestand (Checkbox, gemeten
+    // 2026-09-16: 0 fills, 0 strokes). Een set-vulling reist niet mee naar een instance, maar een
+    // tweede vorm naast de bestaande maakt de library inconsistent zonder dat iemand erom vroeg.
+    hoofd.fills = [];
   } else {
     hoofd = comps[0];
   }

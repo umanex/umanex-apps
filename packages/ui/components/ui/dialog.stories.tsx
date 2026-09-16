@@ -27,6 +27,7 @@ const meta: Meta<PlaygroundArgs> = {
   component: DialogContent,
   parameters: {
     tokens: { source },
+    figma: { url: 'https://www.figma.com/design/ko2OuasYxyY2YRD69MYhWX/Component-library?node-id=107-33' },
     // Modaal: de verduistering zou de docs-pagina bedekken. In een eigen iframe blijft ze binnen de story.
     docs: { story: { inline: false, iframeHeight: 480 } },
   },

@@ -67,8 +67,13 @@ function stubVan(manifest, geometrie, { muteer } = {}) {
                 itemSpacing: g.gap, cornerRadius: g.r, strokeWeight: g.bw, fills: telbaar(g.fills), strokes: telbaar(g.strokes),
                 effects: telbaar(g.eff), opacity: g.op } : {}) };
   };
-  const componentNode = (d) => {
-    const n = { name: d.name, id: d.id, type: d.type, getPluginData: () => '' };
+  // Een pagina die de builder maakte draagt `pluginData('primair')` op zijn primary — zo herkennen
+  // beide leesscripts hem. Welke pagina's dat zijn, zegt de gecommitte geometrie (`paginas`). Zonder
+  // dit leest de stub Switch als handgebouwde set en telt hem mee in `gemeten` (gemeten 2026-09-16:
+  // 12 sets tegen 11 — een fout van de stub, niet van het script).
+  const builderPaginas = new Set(Object.keys(geometrie.paginas ?? {}));
+  const componentNode = (d, isBuilderPrimary = false) => {
+    const n = { name: d.name, id: d.id, type: d.type, getPluginData: (k) => (k === 'primair' && isBuilderPrimary ? '1' : '') };
     if (d.type === 'COMPONENT_SET') {
       n.variantGroupProperties = Object.fromEntries(Object.entries(d.variantProperties ?? {}).map(([as, w]) => [as, { values: w }]));
       n.children = (d.varianten ?? []).map(v => variantNode(d.name, v));
@@ -77,7 +82,7 @@ function stubVan(manifest, geometrie, { muteer } = {}) {
   };
   const alleNodes = [];
   const paginas = Object.entries(manifest.pages).map(([naam, p]) => {
-    const kinderen = [...(p.primary ? [componentNode(p.primary)] : []), ...p.extra.map(componentNode)];
+    const kinderen = [...(p.primary ? [componentNode(p.primary, builderPaginas.has(naam))] : []), ...p.extra.map(d => componentNode(d))];
     alleNodes.push(...kinderen);
     return { name: naam, id: p.pageId, children: kinderen };
   });
@@ -132,7 +137,9 @@ const eis = (naam, ok, detail = '') => gevallen.push({ naam, ok, detail });
   const bewaard = { $comment: GEOMETRIE.$comment, fileKey: GEOMETRIE.fileKey, gegenereerd: GEOMETRIE.gegenereerd, sets: GEOMETRIE.sets, varianten: GEOMETRIE.varianten, gemeten: GEOMETRIE.gemeten };
   const d = verschillen(legacy, bewaard);
   eis(`lees-geometrie.js reproduceert de ${GEOMETRIE.varianten} legacy-metingen`, d.length === 0, d.slice(0, 5).join('\n        '));
-  eis('lees-geometrie.js geeft nul builder-pagina\'s op een stub zonder pluginData (positieve controle op de filter)', Object.keys(uit.paginas).length === 0, JSON.stringify(Object.keys(uit.paginas)));
+  const verwacht = Object.keys(GEOMETRIE.paginas ?? {}).sort();
+  eis(`lees-geometrie.js herkent precies de builder-pagina's (${verwacht.join(', ') || 'geen'}) — de filter op pluginData werkt`,
+    JSON.stringify(Object.keys(uit.paginas).sort()) === JSON.stringify(verwacht), JSON.stringify(Object.keys(uit.paginas)));
 }
 
 // 2. Tegenproef op het SCRIPT: het defect van 2026-09-09 (geneste assen) moet rood worden.

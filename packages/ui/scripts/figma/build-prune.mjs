@@ -162,7 +162,11 @@ function snoei(node, diepte, pad, comp, isWortel = false) {
   // vult. De builder zet hem, leest de maat terug en valt terug op FIXED bij een verschil.
   if (node.richting && (node.kinderen?.length || (node.tekst && node.doos))) {
     const kindVult = as => (node.kinderen ?? []).some(k => !['absolute', 'fixed'].includes(k.positie) && (k.rekt ?? '').includes(as));
-    const hug = (node.maat.h || kindVult('H') ? '' : 'H') + (node.maat.v || kindVult('V') ? '' : 'V');
+    // En niet op een as waarop de node zelf zijn ouder vult: FILL wint daar toch, en een HUG die
+    // eerst gezet en dan teruggedraaid wordt is ruis in `hugAfwijkingen` (gemeten 2026-09-16: de
+    // footer van DialogContent, HUG 208 tegen 462 -> FIXED, daarna FILL).
+    const vult = as => (node.rekt ?? '').includes(as);
+    const hug = (node.maat.h || kindVult('H') || vult('H') ? '' : 'H') + (node.maat.v || kindVult('V') || vult('V') ? '' : 'V');
     if (hug) o.hug = hug;
   }
   if (M.rest.length) o.margeRest = M.rest;

@@ -6,6 +6,7 @@ import { errorMessage } from '../../lib/cashflow/error-message';
 import { hydrateFromRemote, resetSync, startSync } from '../../lib/cashflow/sync';
 import { isAuthError, withAuthRetry } from '../../lib/supabase/auth-recovery';
 import { supabase } from '../../lib/supabase/client';
+import { SessionEffects } from './SessionEffects';
 
 type Phase = 'loading' | 'ready' | 'error';
 
@@ -103,5 +104,10 @@ export function DataGate({ userId, children }: { userId: string; children: React
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <SessionEffects />
+      {children}
+    </>
+  );
 }

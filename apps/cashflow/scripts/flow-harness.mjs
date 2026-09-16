@@ -49,6 +49,7 @@ import { fileURLToPath } from 'node:url';
 
 import { beoordeel, beschrijfFout, meetInPagina, STIL_CSS } from './contrast.mjs';
 import { kiesDist } from './harness-dist.mjs';
+import { horizontaleOverflow, kopstructuur, toetsenbord } from './a11y-passes.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = resolve(HERE, '..');
@@ -108,7 +109,37 @@ const DOEL = monthKey(1);
  * mislukte fetch, en het hoort ook iets anders te tonen: lege staten per sectie in
  * plaats van een foutscherm.
  */
-function fixtureData({ leeg = false, buffer = false } = {}) {
+/**
+ * Het bureau-deel van de fixture. Zonder variant ontbreekt de sleutel helemaal — dat is een
+ * document van vóór store-versie 16, en precies het geval dat `normalizeBureau` moet dragen.
+ */
+const JAAR = Number(BRON.slice(0, 4));
+
+function bureauFixture(variant) {
+  if (!variant) return undefined;
+  const doelen = {
+    [String(JAAR)]: {
+      year: JAAR, revenueTarget: 120000, quarterTargets: [30000, 30000, 30000, 30000],
+      days: { total: 200, buffer: 10, perCategory: { klantwerk: 128, verkoop: 40, 'umanex-os': 12, administratie: 10 } },
+      hoursPerDay: 8, daysPerWeek: 5, maxClientShare: 0.3, monthlyCashNeed: 11000,
+      targetRevenuePerDay: null, targetMarginPerDay: null,
+      signals: {
+        negativeCash: { enabled: true, floor: 0 }, overbooking: { enabled: true, toleranceDays: 0 },
+        projectOverrun: { enabled: true, ratio: 1 }, clientConcentration: { enabled: true },
+        overdueSalesAction: { enabled: true, graceDays: 0 }, revenueGap: { enabled: true },
+      },
+    },
+  };
+  return { goals: doelen, clients: [], clientGroups: [], projects: [], opportunities: [], timeEntries: [], plannedWork: [] };
+}
+
+function fixtureData({ leeg = false, buffer = false, bureau = null } = {}) {
+  const b = bureauFixture(bureau);
+  const metBureau = (doc) => (b ? { ...doc, bureau: b } : doc);
+  return metBureau(prognoseFixture({ leeg, buffer }));
+}
+
+function prognoseFixture({ leeg = false, buffer = false } = {}) {
   // De buffer-variant zet één bufferpot en één kost die de pot ver overstijgt, zodat de
   // maandfooter alle drie zijn standen laat zien: opbouw, stilstand, en een stand die
   // negatief staat. Zonder die derde stand kan geen enkele check onderscheiden of de
@@ -266,7 +297,7 @@ function controleerBuildOrigin(origin) {
  * drie andere schermen (skeleton, lege staat, foutscherm) zag nooit een guard.
  */
 function maakRouteHandler(state, gedrag = {}) {
-  const { leeg = false, buffer = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
+  const { leeg = false, buffer = false, bureau = null, vertragingMs = 0, documentStatus = 200 } = gedrag;
 
   return async (route) => {
     const req = route.request();
@@ -288,7 +319,7 @@ function maakRouteHandler(state, gedrag = {}) {
         if (documentStatus !== 200) {
           return json({ message: 'harness: opzettelijke serverfout' }, documentStatus);
         }
-        return json({ data: fixtureData({ leeg, buffer }), revision: state.revision }, 200);
+        return json({ data: fixtureData({ leeg, buffer, bureau }), revision: state.revision }, 200);
       }
       // Elke schrijfpoging wordt geteld en beantwoord alsof ze lukte: de app moet
       // verder kunnen, en het bewijs dat er niets weglekte is juist dat we hier staan.
@@ -454,7 +485,7 @@ const KOLOM = '.grid.grid-cols-3 > div';
  * `'niets'` geeft de pagina meteen terug, want een scenario dat juist de laad- of
  * foutstaat meet mag niet wachten op een scherm dat er nooit komt.
  */
-async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen' } = {}) {
+async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen', pad = '/' } = {}) {
   const page = await context.newPage();
   page.on('pageerror', (err) => state.paginafouten.push(String(err).slice(0, 200)));
 
@@ -474,7 +505,7 @@ async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen' } = {
 
   // Laag 2 — de origin die de app hoort te gebruiken, uit de fixture bediend.
   await page.route(`${state.origin}/**`, maakRouteHandler(state, gedrag));
-  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}${pad}`, { waitUntil: 'domcontentloaded' });
 
   // Elke wachtstap meldt wat er wél op het scherm stond. Een kale "Timeout waiting for
   // #email" laat je raden of de app niet hydrateerde, of al ingelogd was, of viel.
@@ -506,6 +537,12 @@ async function openApp(context, state, { gedrag = {}, wachtOp = 'kolommen' } = {
   if (wachtOp === 'kolommen') {
     await wacht(KOLOM, 'de maandkolommen');
     if (!gedrag.leeg) await wacht(`text=${LABEL}`, `de fixture-post "${LABEL}"`);
+  }
+  if (wachtOp === 'bureau') {
+    await wacht('[data-bureau-page] > *', 'een bureau-pagina');
+    // Voorbij de 800 ms debounce van sync.ts: een schrijfactie die het laden zelf uitlokt,
+    // hoort niet mee te tellen in het venster van het scenario.
+    await page.waitForTimeout(1_200);
   }
   return page;
 }
@@ -783,11 +820,12 @@ function kortBericht(bericht) {
 }
 
 async function draaiScenario(browser, state, scenario) {
-  const { naam, gedrag = {}, wachtOp = 'kolommen', actie } = scenario;
-  const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  const { naam, gedrag = {}, wachtOp = 'kolommen', pad = '/', viewport = { width: 1600, height: 1000 }, actie } = scenario;
+  const context = await browser.newContext({ viewport });
   try {
-    const page = await openApp(context, state, { gedrag, wachtOp });
-    const uitkomst = await actie(page, { state, schrijfVoor: state.schrijfpogingen.length });
+    const foutenVoor = state.paginafouten.length;
+    const page = await openApp(context, state, { gedrag, wachtOp, pad });
+    const uitkomst = await actie(page, { state, schrijfVoor: state.schrijfpogingen.length, foutenVoor });
     return { naam, ...uitkomst };
   } catch (err) {
     return { naam, ok: false, bewijs: kortBericht(err.message ?? err) };
@@ -1120,6 +1158,202 @@ function scenarios() {
  * "geen fouten" even overtuigend als een die werkt. Deze horen dus te FALEN; de runner
  * keert hun oordeel om.
  */
+// ── Bureau ───────────────────────────────────────────────────────────────────
+//
+// Dezelfde onderschepping, andere routes. Elke schrijftelling wacht voorbij de 800 ms debounce
+// van sync.ts, net als `verhuisd()`: korter en de teller staat gegarandeerd op nul, ongeacht de
+// code — een meting die niet kán falen.
+
+const DOELEN = '/bureau/doelen';
+const nieuweSchrijfacties = async (page, state, basis) => {
+  await page.waitForTimeout(1_200);
+  return state.schrijfpogingen.length - basis;
+};
+
+/** Contrast, kopstructuur en toetsenbord op één pagina; alle drie moeten schoon zijn. */
+async function a11yOp(page, waar) {
+  const contrast = await sweep(page, waar);
+  const koppen = await kopstructuur(page);
+  const toetsen = await toetsenbord(page);
+  const problemen = [
+    ...contrast.fouten.map((f) => `contrast: ${beschrijfFout(f)}`),
+    ...koppen.problemen.map((p) => `koppen: ${p}`),
+    ...toetsen.problemen.map((p) => `toetsenbord: ${p}`),
+  ];
+  return { problemen, gemeten: contrast.gemeten, koppen: koppen.aantal, stops: toetsen.stops };
+}
+
+function bureauScenarios() {
+  return [
+    {
+      naam: 'bureau — document zonder bureau-sleutel',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      actie: async (page, { state, foutenVoor }) => {
+        const leeg = page.locator('[data-empty-state]');
+        if ((await leeg.count()) !== 1) throw new Error(`${await leeg.count()} lege staten in plaats van één`);
+        const tekst = await leeg.innerText();
+        if (!tekst.includes('Nog geen doelen')) throw new Error(`lege staat zonder uitleg: "${tekst.slice(0, 80)}"`);
+        const fouten = state.paginafouten.length - foutenVoor;
+        if (fouten) throw new Error(`${fouten} paginafout(en): ${state.paginafouten.slice(-fouten).join(' | ')}`);
+        return { ok: true, bewijs: 'v15-document zonder bureau: één lege staat "Nog geen doelen", geen paginafout' };
+      },
+    },
+    {
+      naam: 'doelen — startwaarden schrijven niets tot opslaan',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.locator('button', { hasText: 'Startwaarden invullen' }).click();
+        await page.waitForSelector('#doel-omzet', { timeout: 5_000, state: 'visible' });
+        const waarde = await page.inputValue('#doel-omzet');
+        if (waarde !== '200000') throw new Error(`omzetdoel toont "${waarde}", niet de startwaarde 200000`);
+        const zonderOpslaan = await nieuweSchrijfacties(page, state, basis);
+        if (zonderOpslaan) throw new Error(`startwaarden invullen schreef ${zonderOpslaan} keer weg zonder opslaan`);
+        await page.locator('button[type=submit]', { hasText: 'opslaan' }).click();
+        const naOpslaan = await nieuweSchrijfacties(page, state, basis);
+        if (naOpslaan !== 1) throw new Error(`opslaan gaf ${naOpslaan} schrijfacties in plaats van één`);
+        const status = await page.locator('button[type=submit]').innerText();
+        return { ok: true, bewijs: `0 schrijfacties na "Startwaarden invullen", 1 na opslaan; knop daarna "${status}"` };
+      },
+    },
+    {
+      naam: 'doelen — somregel toont het verschil, corrigeert niets',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.fill('#doel-dagen-klantwerk', '130');
+        const regel = await page.locator('[data-sum-line]', { hasText: 'Som categorieën' }).innerText();
+        if (!/verschil \+2 d/.test(regel)) throw new Error(`somregel meldt geen verschil +2 d: "${regel}"`);
+        const totaal = await page.inputValue('#doel-dagen-totaal');
+        if (totaal !== '200') throw new Error(`het totaal veranderde mee naar "${totaal}"`);
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (extra) throw new Error(`typen in het formulier schreef ${extra} keer weg`);
+        return { ok: true, bewijs: `"${regel.replace(/\s+/g, ' ')}", totaal blijft 200, 0 schrijfacties` };
+      },
+    },
+    {
+      naam: 'doelen — onleesbare invoer blokkeert opslaan',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.fill('#doel-omzet', 'veel');
+        await page.locator('button[type=submit]').click();
+        await page.waitForSelector('#doel-omzet[aria-invalid="true"]', { timeout: 5_000 });
+        const focus = await page.evaluate(() => document.activeElement?.id);
+        if (focus !== 'doel-omzet') throw new Error(`focus staat op "${focus}", niet op het ongeldige veld`);
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        if (extra) throw new Error(`een ongeldig formulier schreef ${extra} keer weg`);
+        return { ok: true, bewijs: 'aria-invalid op het omzetveld, focus erop, 0 schrijfacties' };
+      },
+    },
+    {
+      naam: 'bureau — contrast, koppen en toetsenbord op doelen',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        const r = await a11yOp(page, 'doelen');
+        if (r.problemen.length) throw new Error(r.problemen.slice(0, 4).join(' · '));
+        return { ok: true, bewijs: `${r.gemeten} tekstelementen boven AA, ${r.koppen} koppen zonder sprong, ${r.stops} tabstops met zichtbare focus` };
+      },
+    },
+    {
+      naam: 'bureau — 390 px zonder horizontale overflow',
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      viewport: { width: 390, height: 844 },
+      actie: async (page) => {
+        const r = await horizontaleOverflow(page);
+        if (r.scroll > r.breedte) throw new Error(`pagina scrollt ${r.scroll - r.breedte} px horizontaal: ${r.boosdoeners.join(', ')}`);
+        return { ok: true, bewijs: `scrollbreedte ${r.scroll} ≤ ${r.breedte}` };
+      },
+    },
+  ];
+}
+
+function bureauTegenproeven() {
+  return [
+    {
+      naam: 'tegenproef — startwaarden schrijven meteen weg',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      actie: async (page, { state }) => {
+        const basis = state.schrijfpogingen.length;
+        await page.locator('button', { hasText: 'Startwaarden invullen' }).click();
+        const extra = await nieuweSchrijfacties(page, state, basis);
+        return extra > 0
+          ? { ok: true, bewijs: `${extra} schrijfactie(s) zonder opslaan` }
+          : { ok: false, bewijs: 'geen schrijfactie zonder opslaan, zoals het hoort' };
+      },
+    },
+    {
+      naam: 'tegenproef — somregel past het totaal aan',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        await page.fill('#doel-dagen-klantwerk', '130');
+        const totaal = await page.inputValue('#doel-dagen-totaal');
+        return totaal === '202'
+          ? { ok: true, bewijs: 'totaal volgde de som' }
+          : { ok: false, bewijs: `totaal bleef ${totaal}, zoals het hoort` };
+      },
+    },
+    {
+      naam: 'tegenproef — kop overgeslagen',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        await page.evaluate(() => document.querySelector('h1')?.insertAdjacentHTML('afterend', '<h5>Ingeschoven kop</h5>'));
+        const r = await kopstructuur(page);
+        return r.problemen.length === 0
+          ? { ok: true, bewijs: 'geen sprong gezien' }
+          : { ok: false, bewijs: r.problemen[0] };
+      },
+    },
+    {
+      naam: 'tegenproef — horizontale overflow op 390 px',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      viewport: { width: 390, height: 844 },
+      actie: async (page) => {
+        await page.evaluate(() => document.querySelector('[data-bureau-page]')?.insertAdjacentHTML('beforeend', '<div style="width:600px;height:4px"></div>'));
+        const r = await horizontaleOverflow(page);
+        return r.scroll <= r.breedte
+          ? { ok: true, bewijs: 'geen overflow gezien' }
+          : { ok: false, bewijs: `scrollbreedte ${r.scroll} > ${r.breedte}` };
+      },
+    },
+    {
+      naam: 'tegenproef — focus zonder zichtbare ring',
+      moetFalen: true,
+      pad: DOELEN,
+      wachtOp: 'bureau',
+      gedrag: { bureau: 'doelen' },
+      actie: async (page) => {
+        await page.addStyleTag({ content: '*:focus, *:focus-visible { outline: none !important; box-shadow: none !important; }' });
+        const r = await toetsenbord(page);
+        return r.problemen.length === 0
+          ? { ok: true, bewijs: `${r.stops} tabstops, allemaal zichtbaar` }
+          : { ok: false, bewijs: `${r.problemen.length} tabstop(s) zonder zichtbare focus` };
+      },
+    },
+  ];
+}
+
 function tegenproeven() {
   return [
     {
@@ -1297,7 +1531,11 @@ async function main() {
   console.log(`Flow-harness — ${BRON} → ${DOEL}, origin afgesloten: ${state.origin} (ook in de build)`);
 
   const id = buildId();
-  const teDraaien = [...scenarios(), ...(SELFTEST ? tegenproeven() : [])];
+  const teDraaien = [
+    ...scenarios(),
+    ...bureauScenarios(),
+    ...(SELFTEST ? [...tegenproeven(), ...bureauTegenproeven()] : []),
+  ];
   const resultaten = [];
 
   // Alles ná de spawn staat in de try: de server is detached en overleeft een exit(1),

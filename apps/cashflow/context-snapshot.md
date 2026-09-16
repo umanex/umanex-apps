@@ -25,7 +25,14 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | DataGate | `apps/cashflow/components/auth/DataGate.tsx` | auth | — | — | — |
 | LoginForm | `apps/cashflow/components/auth/LoginForm.tsx` | auth | — | — | — |
 | LoginGate | `apps/cashflow/components/auth/LoginGate.tsx` | auth | — | — | — |
+| SessionEffects | `apps/cashflow/components/auth/SessionEffects.tsx` | auth | — | — | — |
 | SignOutButton | `apps/cashflow/components/auth/SignOutButton.tsx` | auth | — | — | — |
+| BureauSubnav | `apps/cashflow/components/bureau/BureauSubnav.tsx` | bureau | — | — | — |
+| NumberField | `apps/cashflow/components/bureau/fields/NumberField.tsx` | fields | — | — | — |
+| FormSection | `apps/cashflow/components/bureau/FormSection.tsx` | bureau | — | — | — |
+| GoalsForm | `apps/cashflow/components/bureau/GoalsForm.tsx` | bureau | — | — | — |
+| SumLine | `apps/cashflow/components/bureau/SumLine.tsx` | bureau | — | — | — |
+| YearSelector | `apps/cashflow/components/bureau/YearSelector.tsx` | bureau | — | — | — |
 | BalanceFooter | `apps/cashflow/components/cashflow/BalanceFooter.tsx` | cashflow | — | — | — |
 | BufferChart | `apps/cashflow/components/cashflow/BufferChart.tsx` | cashflow | — | — | — |
 | CashflowDndContext | `apps/cashflow/components/cashflow/CashflowDndContext.tsx` | cashflow | — | — | — |
@@ -45,28 +52,30 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | StartBalanceRow | `apps/cashflow/components/cashflow/StartBalanceRow.tsx` | cashflow | — | — | — |
 | VarianceChart | `apps/cashflow/components/cashflow/VarianceChart.tsx` | cashflow | — | — | — |
 | WaterfallChart | `apps/cashflow/components/cashflow/WaterfallChart.tsx` | cashflow | — | — | — |
+| EmptyState | `apps/cashflow/components/feedback/EmptyState.tsx` | feedback | — | — | — |
 | SyncStatus | `apps/cashflow/components/feedback/SyncStatus.tsx` | feedback | — | — | — |
+| AppHeader | `apps/cashflow/components/layout/AppHeader.tsx` | layout | — | — | — |
 
 ## Recente commits (app + packages)
 ```
+98c01c0 feat(cashflow): the bureau document key, its transitions and their tests (store version 16)
 0e63bf9 test(cashflow): pin the month engine to a digest hash before the bureau lands
 ff4238f docs(cashflow): brief the bureau extension and record what the exploration left out of scope
 fc45be8 feat(ui): run Storybook under PM2 so the MCP is always reachable
 8f8756a feat(ui): wire the Storybook MCP into packages/ui
-d5e47d7 docs(cashflow): close the reflection loop — one handoff item moved, three findings filed
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/cashflow/briefings/2026-09-16-feature-bureau.tcebc.md
-  A  apps/cashflow/lib/bureau/goals.test.ts
-  A  apps/cashflow/lib/bureau/goals.ts
-  A  apps/cashflow/lib/bureau/money.ts
-  A  apps/cashflow/lib/bureau/mutations.test.ts
-  A  apps/cashflow/lib/bureau/mutations.ts
-  A  apps/cashflow/lib/bureau/normalize.ts
-  A  apps/cashflow/lib/bureau/periods.test.ts
-  A  apps/cashflow/lib/bureau/periods.ts
-  A  apps/cashflow/lib/bureau/testing.ts
+  M  apps/cashflow/app/analyse/page.tsx
+  A  apps/cashflow/app/bureau/doelen/page.tsx
+  A  apps/cashflow/app/bureau/layout.tsx
+  M  apps/cashflow/app/page.tsx
+  M  apps/cashflow/components/auth/DataGate.tsx
+  A  apps/cashflow/components/auth/SessionEffects.tsx
+  M  apps/cashflow/components/auth/SignOutButton.tsx
+  A  apps/cashflow/components/bureau/BureauSubnav.tsx
+  A  apps/cashflow/components/bureau/FormSection.tsx
+  A  apps/cashflow/components/bureau/GoalsForm.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

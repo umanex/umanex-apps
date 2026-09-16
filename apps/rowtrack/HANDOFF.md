@@ -799,7 +799,7 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 - **Volgende zet:** `pnpm --filter rowtrack build-storybook` (staat al), dan `parity`. Wijkt er
   iets af: eerst nagaan of het verschil uit de babel-wijziging komt (vergelijk tegen `4bb9484`,
   de commit vóór de fix) vóór je de Figma-kant aanpast.
-- **Status:** resolved (2026-09-09) — de eigen Check gedraaid: `parity` exit 0, *Geen verschil over 3 516 nodes* over 220 varianten en 27 480 velden. De geometrie is sindsdien meermaals hermeten, o.a. na de dieptekap-fix.
+- **Status:** resolved (2026-09-16) — de Check is gedraaid en slaagt. Op een verse `build-storybook` van `main` gaf `parity` exit 0 over 206 varianten, 3 627 nodes en 35 242 velden, en `figma:spec` is opnieuw afgeleid: `spec-diff` meldt **geen verschil** in de gerenderde DOM over 3 914 nodes en 62 624 velden. De babel-wijziging heeft dus geen maat verschoven. Beide guards draaien sindsdien ook in CI, dus deze vraag kan niet meer stil verouderen.
   **Aanvulling 2026-09-09, ándere sessie — de conclusie klopt, de Check droeg hem niet.** `parity`
   exit 0 kán deze wijziging per constructie niet vinden: de refactor merged om 14:06 (`63b425e`) en
   `figma/geometry.figma.json` is om 14:23 opnieuw gecommit (`df1e0fe`), dus de Figma-kant is

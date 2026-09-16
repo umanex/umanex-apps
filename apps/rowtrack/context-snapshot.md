@@ -70,15 +70,24 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+daf1f16 docs(rowtrack): record the screen-builder fix class in LEARNINGS
 d674a6f docs: close the session after the /doctor pass — triage eight stale handoff items, record the follow-ups
 4584f68 docs: trim derivable and duplicated CLAUDE.md content, move the Storybook-MCP notes to packages/ui
 b52c768 docs(rowtrack): close what series A finished, record what the review leaves open
 26b3433 fix(rowtrack): a pace or power goal is an intensity, not a finish line
-3612c3b feat(rowtrack): save an interrupted ride from its checkpoint
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/rowtrack/LEARNINGS.md
+  M  apps/rowtrack/BACKLOG.md
+  M  apps/rowtrack/CLAUDE.md
+  M  apps/rowtrack/HANDOFF.md
+  A  apps/rowtrack/briefings/2026-09-16-feature-datavisualisatie-detail.tcebc.md
+  M  apps/rowtrack/context-snapshot.md
+  M  apps/rowtrack/figma-map.md
+  M  apps/rowtrack/figma/beeld-basislijn.json
+  M  apps/rowtrack/figma/beeld-verschillen.json
+  A  apps/rowtrack/figma/beelden/ActivePhase__Zonder-Toestemming.figma.png
+  M  apps/rowtrack/figma/build-spec.min.json
 
 ## Bestanden met TODO/FIXME
   (geen)

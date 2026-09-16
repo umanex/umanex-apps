@@ -41,6 +41,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-09-16 — De IdlePhase-picker is in Storybook inert geworden · [ux]
+- **Wat:** Sinds F2 (PR umanex-apps#493) is de picker gecontroleerd: de wielindex wordt afgeleid uit de waarde die de ouder vasthoudt. De stories geven `() => {}` als setters mee, dus in Storybook komt die waarde nooit terug en beweegt een chip-tik of een wielbeweging niets meer. Statisch rendert alles gelijk — dat is wat de 28 schermframes meten, en `beeld` staat op de basislijn — maar wie in de Playground klikt, ziet een dode picker.
+- **Waarom niet nu:** gevonden tijdens de Figma-sync-ronde van 2026-09-16, niet de gevraagde taak. Het raakt geen enkel frame en geen enkele guard; het kost alleen een verkeerde indruk bij wie de catalogus doorklikt.
+- **Eerste zet:** `useArgs` uit `storybook/preview-api` in `IdlePhase.stories.tsx`, zodat `setIdleGoalInput`, `setIdleDurMin` en `setIdleDurSec` de args bijwerken in plaats van niets te doen. Let op de variant-assen: een setter blijft `control: false`, anders leidt `story-axes.mjs` er een as uit af.
+- **Check:** `grep -c useArgs apps/rowtrack/components/workout/IdlePhase.stories.tsx` — 0 = de setters zijn nog noops.
+- **Status:** open
+
 ## 2026-09-16 — De functionele review van 2026-09-15: F3 vraagt nog een doelmodel, F6 en de losse eindjes staan open · [feature]
 - **Wat:** Van de tien bevindingen in `audits/2026-09-15-functionele-review.md` is Reeks A gebouwd (F1, F2, F4, F5, F6, F7, F8, F9, F10 en het deel van F3 dat geen ontwerp vraagt). Wat overblijft:
   1. **F3, het volledige model** — een streefzone (tempo of vermogen) bínnen een tijd- of afstandsdoel, zoals Jeroen op 2026-09-16 koos. Vraagt een eigen TC-EBC, ontwerp in Figma (`QkRgMc7Quqtbow71DiYa1n`) en een migratie op `workouts`: `goal_zone_type`, `goal_zone_target`, `seconds_in_zone`, plus de bestaande `CHECK (goal_type IN …)` en `workouts_goal_consistency` aanpassen. Losse `split`/`watts`-doelen verdwijnen dan uit de picker; oude ritten blijven leesbaar.
@@ -293,6 +300,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** Figma: één detail-scherm ontwerpen (HR-verloop + zones) op basis van een echte rit uit het testaccount; daarna een TC-EBC schrijven en `pnpm --filter rowtrack add react-native-svg` (dependency → eerst bevestigen) plus native rebuild; check: `grep -c react-native-svg apps/rowtrack/package.json` ≥1.
 - **Check:** `grep -c react-native-svg apps/rowtrack/package.json` — 0 = geen tekenlaag in de app, dus nog steeds nul grafieken.
 - **Relevantie 2026-09-14:** LEEFT. Check gedraaid: `grep -c react-native-svg apps/rowtrack/package.json` → 0, en er is geen victory/recharts/skia. Nog steeds nul grafieken. Let op de omvang: dit is een feature met een nieuwe tekenlaag, geen opruimwerk — het vraagt een eigen TC-EBC én een dependency-beslissing.
+- **Ontwerp ligt er sinds 2026-09-16.** Aangetroffen tijdens de Figma-sync-ronde: twee handgemaakte studieframes op *Screens v2* in `T1bGrvIzSNeLyh5CbarATZ` — `474:1504` (*Analyse — studie / Rust*) en `474:1505` (*/ Uitgelezen*), 430×431. Ze tonen een hartslagverloop met gemiddelde-stippellijn, pieklabel en tijdas, plus een splits-staafdiagram rond het ritgemiddelde (rood = trager, grijs = sneller); de tweede voegt een uitleespunt toe met een waardebubbel. Ze dragen géén `bouwhash`, dus builder, `parity` en `beeld` raken ze niet — en ze lagen precies op de bouwplek van `ProfileScreen`, vandaar de verplaatsing naar x = 20 000 / 20 478. Die plek houdt ongeveer veertien nieuwe frames; daarna liggen ze weer in de weg. **De briefing staat in `briefings/2026-09-16-feature-datavisualisatie-detail.tcebc.md`** met vier open vragen, waarvan er één al gemeten is: de 26 staafjes in de studie zijn exact de langste rit in de database (13 405 m), dus een rit van 20 km past niet.
 - **Status:** open
 
 ## 2026-09-07 — UX-audit P3-verzamellijst (F13–F19) · [ux]

@@ -192,3 +192,17 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** de vier ontbrekende apps toevoegen met `dir`, `status` en `description`, en per app beslissen of `figmaKey` een key krijgt of het woord `geen`. Daarna de elf `[TODO]`-velden langs, in dezelfde ronde — half invullen laat de hook waarschuwen zonder dat iemand weet welke helft nog open is.
 - **Check:** `node -e 'const c=require("./context.json");const j=new Set(Object.values(c.apps).map(a=>a.dir.replace("apps/","")));const s=require("fs").readdirSync("apps").filter(a=>a!==".DS_Store");console.log(s.filter(a=>!j.has(a)).length, (JSON.stringify(c.apps).match(/\[TODO/g)||[]).length)'` — geeft dat iets anders dan `0 0`, dan leeft dit item. Gemeten 2026-09-15: `4 11`. *Let op het `c.apps` in plaats van `c`: het `_comment`-veld van `context.json` noemt het woord `[TODO` zelf, en een telling over het hele object telt dus zijn eigen beschrijving mee — dat gaf 12 in plaats van 11.*
 - **Status:** open
+
+## 2026-09-16 — Persoonlijke financiële cijfers staan in een publieke repo · [security]
+- **Wat:** `umanex/umanex-apps` is publiek (`gh repo view` → `PUBLIC`, gemeten 2026-09-16), en `scripts/plan-model.mjs` is getrackt met echte bedragen: vaste kosten, budgetten, provisies, het saldo en de potstanden van augustus, de buffer, de autolease en het klanttarief (`VAST`, `BUDGET`, `PROVISIE`, `SALDO_AUG`, `POT`, `BUFFER_AUG`, `PEUGEOT`, `LUMINUS_MAAND_EX_BTW`, `LUMINUS_DAGTARIEF`). Het klanttarief is daarbij ook bedrijfsgevoelig tegenover een klant.
+- **Waarom niet nu:** Gezien tijdens de verkenning voor het Bureau. Het bestand uit de huidige tree halen lost het niet op — het staat in de history (`8915ec9`, `4d79dbf`), en die herschrijven is destructief en naar buiten gericht (force-push op een publieke repo, forks en caches). Dat is Jeroens beslissing, niet een bijwerk.
+- **Eerste zet:** Kiezen tussen (a) de repo privé zetten, (b) de invoerwaarden uit het script halen naar een gitignored `plan-model.local.json` en de history laten zoals ze is, of (c) (b) plus een history-rewrite. (a) is één instelling en dekt ook alle andere apps; (b) alleen voorkomt nieuwe lekken.
+- **Check:** `gh repo view umanex/umanex-apps --json visibility -q .visibility` én `git ls-files scripts/plan-model.mjs` — `PUBLIC` plus een treffer = dit item leeft.
+- **Status:** open
+
+## 2026-09-16 — Radix `Select` en een `Table` in `@umanex/ui` · [design-system]
+- **Wat:** Het Bureau in cashflow gebruikt native selects (via het nieuwe `NativeSelect`) en een app-lokale `DataTable`-shell. Een gestylede Radix `Select` en een shadcn `Table` in `packages/ui` zouden dat gedeeld maken.
+- **Waarom niet nu:** `Select` vraagt een nieuwe dependency (`@radix-ui/react-select`) en een Figma-component-set met open/dicht- en itemstates; de bestaande app gebruikt al native selects. shadcn's `Table` rendert `p-4`-cellen, te ruim voor de dichte ledger — dat wacht op het item "Compacte maat in @umanex/ui" hierboven.
+- **Eerste zet:** Na de compacte maat: `Table` met een `size`-as (`default` · `compact`) en `DataTable` in cashflow erop laten steunen; `Select` pas bij een tweede app die het nodig heeft (rule of three).
+- **Check:** `ls packages/ui/components/ui/ | grep -ci "^select\|^table"` — 0 = geen van beide bestaat.
+- **Status:** open

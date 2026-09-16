@@ -30,6 +30,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 <!-- De sessie-reflectie skill voegt hieronder de juiste laag-header toe bij de eerste entry. -->
 
+# Project — jobradar
+
 ## 2026-09-16 — Het bedrijfsplan draait op één machine, en dat is een keuze met een houdbaarheid · [aanname]
 - **Bevinding:** `/plan` draagt vanaf nu het voorbereidingsplan voor de start van umanex — de
   acties, het bewijs bij het afronden, de beslismomenten. Die staan in `.data/jobradar.db`, een
@@ -43,6 +45,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Volgende zet:** beslissen wat genoeg is. De markdown-export (`/api/plan/export?formaat=md`) is
   er al en is deterministisch, dus hem periodiek in de repo of in een map met back-up zetten kost
   één commando. Zwaarder — Supabase, zoals cashflow — is een andere app dan deze.
+- **Status:** open
 
 ## 2026-09-16 — De seed kan maar één keer, en de tekst van de acties is daarmee bevroren · [risico]
 - **Bevinding:** `zaaiPlan` draait één keer per `SEED_VERSIE` en doet daarna nooit meer een UPDATE.
@@ -56,3 +59,4 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Volgende zet:** niets bouwen. Wel weten: tekst wijzig je vanaf nu ín de app, niet in het
   bestand. `SEED_VERSIE` verhogen mag alleen om nieuwe keys toe te voegen; dat staat in de kop van
   `seed-inhoud.ts`.
+- **Status:** open

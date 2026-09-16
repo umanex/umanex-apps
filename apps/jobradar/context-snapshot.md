@@ -58,17 +58,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 
 ## Recente commits (app + packages)
 ```
+5af6924 Merge pull request #507 from umanex/feature/jobradar-bedrijfsplan
+726f28a docs(jobradar): the plan briefing is built, not validated — one axis cannot be measured here
 661f728 docs(jobradar): record the plan in the project context and close its briefing
 76a29ff fix(jobradar): stop the plan from writing reasons Jeroen never gave
-ca98e0c fix(jobradar): let a status carry its own reason, and stop showing it twice
-68c0e4f feat(jobradar): build the plan screen and hang it off the existing dashboard
-171145f feat(jobradar): expose the business plan over HTTP, with a probe that drives it
+360eb23 feat(ui): Textarea and NativeSelect, with their Figma pages and a manifest recipe that matches the guard
 ```
 
 ## Uncommitted wijzigingen
-  M  apps/jobradar/briefings/2026-09-16-feature-bedrijfsplan-2027.tcebc.md
-   M apps/jobradar/next-env.d.ts
-   M apps/jobradar/tsconfig.json
+  M  apps/jobradar/HANDOFF.md
+  M  apps/jobradar/scripts/flow-harness.mjs
+  M  apps/jobradar/scripts/opvolging-probe.sh
+  M  apps/jobradar/scripts/plan-probe.sh
 
 ## Bestanden met TODO/FIXME
   (geen)

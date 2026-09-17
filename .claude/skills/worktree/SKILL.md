@@ -1,6 +1,6 @@
 ---
 name: worktree
-description: De procedure voor een tweede git-worktree — wanneer er één mag bestaan, waar hij hoort te staan, hoe je hem bijwerkt zonder een losse HEAD te krijgen, en wat je doet met een oude zusmap die je aantreft. Gebruik deze skill altijd wanneer een tweede working tree in beeld komt: bij een sub-agent die mag schrijven, wanneer Jeroen om twee gelijktijdige taken vraagt, wanneer `git worktree list` meer dan één tree toont, wanneer `git checkout main` faalt met "already used by worktree", of wanneer de gebruiker zegt "worktree", "tweede tree", "zusmap", "parallel werken", "aparte kopie van de repo".
+description: De procedure voor een tweede git-worktree — wanneer er één mag bestaan, waar hij hoort te staan, hoe je hem bijwerkt zonder een losse HEAD te krijgen, en wat je doet met een oude zusmap die je aantreft. Gebruik deze skill altijd wanneer een tweede working tree in beeld komt: bij een sub-agent die mag schrijven, wanneer Jeroen om twee gelijktijdige taken vraagt of bij een bezette tree de tijdelijke tree kiest, wanneer je vanuit `.claude/worktrees/` wilt mergen of opruimen, wanneer `git worktree list` meer dan één tree toont, wanneer `git checkout main` faalt met "already used by worktree", of wanneer de gebruiker zegt "worktree", "tweede tree", "zusmap", "parallel werken", "aparte kopie van de repo".
 ---
 
 ## Werkwijze
@@ -35,19 +35,52 @@ Let op wáár die tree staat: **ín de repo**. Bij de meting van 2026-08-21 nege
 
 Hoeft de agent niets te schrijven, neem dan een read-only agent-type naar het model van `.claude/agents/design-reviewer.md` — met dit voorbehoud: dat type houdt `Bash`, en juist via Bash liep de `prettier --write` die dit veroorzaakte.
 
-### 2. Jeroen vraagt er expliciet om
+### 2. Jeroen kiest ervoor
 
-Twee lange taken die echt gelijktijdig moeten. Dan ook ín de repo, met een naam die zegt waarvoor:
+Twee routes, allebei zijn keuze:
+
+- **Hij vraagt er expliciet om** — twee lange taken die echt gelijktijdig moeten.
+- **De tak-poort is rood en hij kiest de vierde optie.** Bij een bezette tree legt `CLAUDE.md` vier keuzes voor: om beurten, eerst afronden, stashen, of een tijdelijke tree. Zet in die vraag wat de tree in díe repo kost — gemeten, niet geschat:
+
+```bash
+R=$(git rev-parse --show-toplevel)
+ls -a "$R" | grep -E '^package\.json$'                                          # eigen install per tree
+git -C "$R" ls-files -oi --exclude-standard --directory | grep -E '(^|/)\.env'  # reist niet mee
+lsof -t -nP -iTCP -sTCP:LISTEN 2>/dev/null | sort -u | while IFS= read -r p; do # serveert iets uit de hoofdtree
+  c=$(lsof -a -p "$p" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
+  case "$c" in "$R"|"$R"/*) echo "$p $c" ;; esac
+done
+```
+
+GEMETEN op 2026-09-17: umanex-apps gaf een `package.json`, drie `.env`-bestanden (`cashflow`, `jobradar`, `rowtrack`) en acht luisteraars uit de hoofdtree; umanex-os geen van de eerste twee en één luisteraar — de `figma-console-mcp` van de lopende Claude-sessie, die de cwd van die sessie erft. Lees een luisteraar dus na met `ps -o command= -p <pid>` vóór je hem als kost noemt. En geen `.env*`-glob: in zsh stopt een glob zonder treffer het hele commando.
+
+In beide routes staat de tree ín de repo, met een naam die zegt waarvoor:
 
 ```bash
 git worktree add .claude/worktrees/<taak> -b <type>/<beschrijving> origin/main
 ```
 
-Het pad staat in `.gitignore` en `pre-commit` weigert een gestaged pad eronder, dus de tree kan niet als repo-inhoud meereizen. Weg zodra de PR gemerged is:
+Het pad staat in `.gitignore` en `pre-commit` weigert een gestaged pad eronder, dus de tree kan niet als repo-inhoud meereizen. `worktree add` zet `origin/main` als upstream (*set up to track 'origin/main'*) — push de branch dus met `git push -u origin <branch>`. Weg zodra de PR gemerged is, in de volgorde hieronder.
+
+### Mergen en opruimen vanuit een tijdelijke tree
+
+Het merge-blok in `CLAUDE.md` begint met `git checkout main`, en dat faalt in een linked tree (zie *Een worktree kan `main` niet uitchecken*). Sluit daarom af vanuit de hoofdtree:
 
 ```bash
-git worktree remove .claude/worktrees/<taak>
+T=.claude/worktrees/<taak>
+out=$(gh pr merge <nr> --merge); rc=$?; echo "$out"         # geen --delete-branch
+state=$(gh pr view <nr> --json state -q .state)
+[ "$rc" -eq 0 ] && [ "$state" = MERGED ] || { echo "STOP — state=$state, niets opruimen"; exit 1; }
+git worktree remove "$T" || exit 1                          # weigert bij gewijzigd of ongetrackt werk
+git branch -d <branch> && git push origin --delete <branch>
+git fetch -q origin && git pull --ff-only origin main        # de hoofdtree bijtrekken
 ```
+
+Waarom die volgorde, GEMETEN op 2026-09-17 in een wegwerp-repo:
+
+- `git branch -d` weigert zolang de tree bestaat (*cannot delete branch … used by worktree*) — eerst de tree weg.
+- `git worktree remove` weigert met een ongetrackt bestand erin (*contains modified or untracked files*). Dat is de laatste controle op werk dat nergens anders staat: meld wat erin zit, nooit `--force` op eigen gezag.
+- `git pull --ff-only` in een hoofdtree met ander openstaand werk slaagt als de merge andere bestanden raakt, en laat dat werk staan. Raakt hij hetzelfde bestand, dan weigert hij (rc=1, niets gewijzigd). Dan is de hoofdtree níet bijgetrokken: meld dat als open gat (*Een merge is pas af…* in `CLAUDE.md`), en stash het werk van een ander niet om de pull erdoor te krijgen.
 
 Nooit in `~/Documents`, nooit permanent, en buiten geval 1 nooit op eigen initiatief — **de agent-tree kies jíj, de taak-tree kiest Jeroen.**
 

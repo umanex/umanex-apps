@@ -14,8 +14,9 @@ const meta = {
     max: { control: 'number' },
     step: { control: 'number' },
     disabled: { control: 'boolean' },
+    thumbLabel: { control: 'text' },
   },
-  args: { defaultValue: [40], min: 0, max: 100, step: 1, disabled: false },
+  args: { defaultValue: [40], min: 0, max: 100, step: 1, disabled: false, thumbLabel: 'Minimumscore' },
 } satisfies Meta<typeof Slider>;
 
 export default meta;
@@ -23,6 +24,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {
   render: (args) => <Slider className="w-72" {...args} />,
+};
+
+/** Zonder `thumbLabel` heeft de greep geen naam — de gebruiksplek hoort hem te geven. */
+export const ZonderNaam: Story = {
+  render: () => <Slider className="w-72" defaultValue={[40]} />,
 };
 
 export const Range: Story = {

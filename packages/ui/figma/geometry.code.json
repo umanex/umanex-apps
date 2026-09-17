@@ -1,8 +1,90 @@
 {
   "$comment": "Gemeten code-kant. Herschrijf met `pnpm --filter @umanex/ui geometry --write` na een BEDOELDE wijziging.",
-  "stories": 42,
+  "stories": 44,
   "gegenereerd": "2026-09-17",
   "gemeten": {
+    "componenten-badge--maten": {
+      "aantal": 7,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 70,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "flex flex-wrap gap-3 items-center",
+          "h": 22,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "12px",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "bg-primary border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold hover:bg-primary/80 inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-primary-foreground text-xs transition-colors whitespace-nowrap",
+          "h": 22,
+          "padding": "2/10/2/10",
+          "radius": "9999px/9999px/9999px/9999px",
+          "border": 1,
+          "gap": "",
+          "font": "12/16 600",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "bg-primary border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold hover:bg-primary/80 inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-2xs text-primary-foreground transition-colors whitespace-nowrap",
+          "h": 20,
+          "padding": "2/10/2/10",
+          "radius": "9999px/9999px/9999px/9999px",
+          "border": 1,
+          "gap": "",
+          "font": "11/14 600",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-foreground text-xs transition-colors whitespace-nowrap",
+          "h": 22,
+          "padding": "2/10/2/10",
+          "radius": "9999px/9999px/9999px/9999px",
+          "border": 1,
+          "gap": "",
+          "font": "12/16 600",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-2xs text-foreground transition-colors whitespace-nowrap",
+          "h": 20,
+          "padding": "2/10/2/10",
+          "radius": "9999px/9999px/9999px/9999px",
+          "border": 1,
+          "gap": "",
+          "font": "11/14 600",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "bg-warning border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold hover:bg-warning/80 inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-2xs text-warning-foreground transition-colors whitespace-nowrap",
+          "h": 20,
+          "padding": "2/10/2/10",
+          "radius": "9999px/9999px/9999px/9999px",
+          "border": 1,
+          "gap": "",
+          "font": "11/14 600",
+          "opacity": "1"
+        }
+      ]
+    },
     "componenten-badge--playground": {
       "aantal": 2,
       "elementen": [
@@ -19,7 +101,7 @@
         },
         {
           "tag": "div",
-          "klassen": "bg-primary border border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring font-semibold hover:bg-primary/80 inline-flex items-center px-2.5 py-0.5 rounded-full text-primary-foreground text-xs transition-colors",
+          "klassen": "bg-primary border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold hover:bg-primary/80 inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-primary-foreground text-xs transition-colors whitespace-nowrap",
           "h": 22,
           "padding": "2/10/2/10",
           "radius": "9999px/9999px/9999px/9999px",
@@ -57,7 +139,7 @@
         },
         {
           "tag": "div",
-          "klassen": "bg-primary border border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring font-semibold hover:bg-primary/80 inline-flex items-center px-2.5 py-0.5 rounded-full text-primary-foreground text-xs transition-colors",
+          "klassen": "bg-primary border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold hover:bg-primary/80 inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-primary-foreground text-xs transition-colors whitespace-nowrap",
           "h": 22,
           "padding": "2/10/2/10",
           "radius": "9999px/9999px/9999px/9999px",
@@ -68,7 +150,7 @@
         },
         {
           "tag": "div",
-          "klassen": "bg-secondary border border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring font-semibold hover:bg-secondary/80 inline-flex items-center px-2.5 py-0.5 rounded-full text-secondary-foreground text-xs transition-colors",
+          "klassen": "bg-secondary border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold hover:bg-secondary/80 inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-secondary-foreground text-xs transition-colors whitespace-nowrap",
           "h": 22,
           "padding": "2/10/2/10",
           "radius": "9999px/9999px/9999px/9999px",
@@ -79,7 +161,7 @@
         },
         {
           "tag": "div",
-          "klassen": "border focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring font-semibold inline-flex items-center px-2.5 py-0.5 rounded-full text-foreground text-xs transition-colors",
+          "klassen": "border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-foreground text-xs transition-colors whitespace-nowrap",
           "h": 22,
           "padding": "2/10/2/10",
           "radius": "9999px/9999px/9999px/9999px",
@@ -90,7 +172,7 @@
         },
         {
           "tag": "div",
-          "klassen": "bg-success border border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring font-semibold hover:bg-success/80 inline-flex items-center px-2.5 py-0.5 rounded-full text-success-foreground text-xs transition-colors",
+          "klassen": "bg-success border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold hover:bg-success/80 inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-success-foreground text-xs transition-colors whitespace-nowrap",
           "h": 22,
           "padding": "2/10/2/10",
           "radius": "9999px/9999px/9999px/9999px",
@@ -101,7 +183,7 @@
         },
         {
           "tag": "div",
-          "klassen": "bg-warning border border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring font-semibold hover:bg-warning/80 inline-flex items-center px-2.5 py-0.5 rounded-full text-warning-foreground text-xs transition-colors",
+          "klassen": "bg-warning border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold hover:bg-warning/80 inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-warning-foreground text-xs transition-colors whitespace-nowrap",
           "h": 22,
           "padding": "2/10/2/10",
           "radius": "9999px/9999px/9999px/9999px",
@@ -112,7 +194,7 @@
         },
         {
           "tag": "div",
-          "klassen": "bg-destructive border border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring font-semibold hover:bg-destructive/80 inline-flex items-center px-2.5 py-0.5 rounded-full text-destructive-foreground text-xs transition-colors",
+          "klassen": "bg-destructive border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-semibold hover:bg-destructive/80 inline-flex items-center px-2.5 py-0.5 ring-offset-background rounded-full text-destructive-foreground text-xs transition-colors whitespace-nowrap",
           "h": 22,
           "padding": "2/10/2/10",
           "radius": "9999px/9999px/9999px/9999px",
@@ -1971,6 +2053,80 @@
       ]
     },
     "componenten-slider--range": {
+      "aantal": 6,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 56,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "span",
+          "klassen": "data-[disabled]:opacity-50 flex items-center relative select-none touch-none w-72",
+          "h": 8,
+          "w": 288,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "span",
+          "klassen": "bg-secondary grow h-2 overflow-hidden relative rounded-full w-full",
+          "h": 8,
+          "w": 288,
+          "padding": "0/0/0/0",
+          "radius": "9999px/9999px/9999px/9999px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "span",
+          "klassen": "absolute bg-primary h-full",
+          "h": 8,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "span",
+          "klassen": "",
+          "h": 20,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "span",
+          "klassen": "bg-background block border-2 border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-5 ring-offset-background rounded-full transition-colors w-5",
+          "h": 20,
+          "w": 20,
+          "padding": "0/0/0/0",
+          "radius": "9999px/9999px/9999px/9999px",
+          "border": 2,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        }
+      ]
+    },
+    "componenten-slider--zonder-naam": {
       "aantal": 6,
       "elementen": [
         {

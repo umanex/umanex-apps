@@ -47,11 +47,7 @@ export function ScoreBadge({ score, className, opbouw, soort = 'Score' }: ScoreB
   return (
     <Tooltip>
       {/* De naam draagt het zichtbare getal, zodat wie "45" uitspreekt de knop ook vindt. */}
-      {/* `focus:ring-0 focus:ring-offset-0`: badgeVariants draagt een ring op `:focus`, bedoeld voor
-          een niet-interactieve pil, en op een knop gaf die ook bij een muisklik een ring. tailwind-merge
-          vervangt ze hier; de ring van `focusRing` op `:focus-visible` staat later in de CSS en blijft.
-
-          `preventDefault` in onClick: Radix sluit de tooltip na een klik (`composeEventHandlers` in
+      {/* `preventDefault` in onClick: Radix sluit de tooltip na een klik (`composeEventHandlers` in
           react-tooltip 1.2.8), tenzij de klik al defaultPrevented is. Enter en Spatie zijn ook een
           klik, dus wie de opbouw met het toetsenbord opende, zag hem bij activeren weer verdwijnen. */}
       <TooltipTrigger
@@ -62,7 +58,6 @@ export function ScoreBadge({ score, className, opbouw, soort = 'Score' }: ScoreB
           badgeVariants({ variant }),
           'tabular-nums',
           focusRing,
-          'focus:ring-0 focus:ring-offset-0',
           className
         )}
         data-score-opbouw

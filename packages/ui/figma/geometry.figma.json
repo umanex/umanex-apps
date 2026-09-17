@@ -3,10 +3,10 @@
   "fileKey": "ko2OuasYxyY2YRD69MYhWX",
   "gegenereerd": "2026-09-17",
   "sets": 11,
-  "varianten": 76,
+  "varianten": 82,
   "gemeten": {
     "Badge": {
-      "variant=default": {
+      "variant=default, size=default": {
         "h": 20,
         "lay": "HORIZONTAL",
         "pad": [
@@ -23,7 +23,7 @@
         "eff": 0,
         "op": 1
       },
-      "variant=secondary": {
+      "variant=secondary, size=default": {
         "h": 20,
         "lay": "HORIZONTAL",
         "pad": [
@@ -40,7 +40,7 @@
         "eff": 0,
         "op": 1
       },
-      "variant=destructive": {
+      "variant=destructive, size=default": {
         "h": 20,
         "lay": "HORIZONTAL",
         "pad": [
@@ -57,7 +57,7 @@
         "eff": 0,
         "op": 1
       },
-      "variant=outline": {
+      "variant=outline, size=default": {
         "h": 22,
         "lay": "HORIZONTAL",
         "pad": [
@@ -74,7 +74,7 @@
         "eff": 0,
         "op": 1
       },
-      "variant=success": {
+      "variant=success, size=default": {
         "h": 20,
         "lay": "HORIZONTAL",
         "pad": [
@@ -91,8 +91,110 @@
         "eff": 0,
         "op": 1
       },
-      "variant=warning": {
+      "variant=warning, size=default": {
         "h": 20,
+        "lay": "HORIZONTAL",
+        "pad": [
+          2,
+          10,
+          2,
+          10
+        ],
+        "gap": 0,
+        "r": 9999,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
+      "variant=default, size=sm": {
+        "h": 18,
+        "lay": "HORIZONTAL",
+        "pad": [
+          2,
+          10,
+          2,
+          10
+        ],
+        "gap": 0,
+        "r": 9999,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
+      "variant=secondary, size=sm": {
+        "h": 18,
+        "lay": "HORIZONTAL",
+        "pad": [
+          2,
+          10,
+          2,
+          10
+        ],
+        "gap": 0,
+        "r": 9999,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
+      "variant=destructive, size=sm": {
+        "h": 18,
+        "lay": "HORIZONTAL",
+        "pad": [
+          2,
+          10,
+          2,
+          10
+        ],
+        "gap": 0,
+        "r": 9999,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
+      "variant=outline, size=sm": {
+        "h": 20,
+        "lay": "HORIZONTAL",
+        "pad": [
+          2,
+          10,
+          2,
+          10
+        ],
+        "gap": 0,
+        "r": 9999,
+        "bw": 1,
+        "fills": 0,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
+      "variant=success, size=sm": {
+        "h": 18,
+        "lay": "HORIZONTAL",
+        "pad": [
+          2,
+          10,
+          2,
+          10
+        ],
+        "gap": 0,
+        "r": 9999,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
+      "variant=warning, size=sm": {
+        "h": 18,
         "lay": "HORIZONTAL",
         "pad": [
           2,

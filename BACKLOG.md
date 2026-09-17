@@ -41,6 +41,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Globaal
 
+## 2026-09-17 — `Slider` rendert één greep, ook met twee waarden · [fix]
+- **Wat:** `packages/ui/components/ui/slider.tsx` rendert precies één `SliderPrimitive.Thumb`, ongeacht hoeveel waarden er in `value`/`defaultValue` staan. De story `Componenten/Slider → Range` zet `defaultValue={[20, 60]}` en toont dus een bereik met één greep: de ondergrens is niet te verplaatsen. Gemeten 2026-09-17 op de verse `storybook-static`: 1 thumb in de DOM en 1 `role="slider"` in de toegankelijkheidsboom, voor alle drie de stories.
+- **Waarom niet nu:** fase 4a gaf de thumb een naam (`thumbLabel`); een greep per waarde verandert de API — `thumbLabel` wordt dan een naam per greep — en vraagt een Figma-variant voor de bereikvorm. Dat hoort in een bibliotheekbatch, niet in een naamgevingsfase.
+- **Eerste zet:** de thumbs afleiden uit `value ?? defaultValue` (`.map`), `thumbLabel` als `string | string[]` typeren, en de Range-story op twee grepen meten (2 in de DOM, 2 in de AX-boom, elk met naam). Zolang dat niet gebeurd is, gebruikt geen enkele app een bereik-slider — gemeten: jobradar is de enige consument en zet één waarde.
+- **Status:** open
+
 ## 2026-09-17 — `Sheet` geeft de focus alleen terug aan een `SheetTrigger` · [refactor]
 - **Wat:** Radix Dialog zet de focus bij sluiten terug op zijn trigger. Elk paneel dat via state opent (zonder `SheetTrigger`) valt dan naar `body`. In jobradar fase 3 kregen drie panelen daarom elk een eigen `onOpenAutoFocus`/`onCloseAutoFocus` met opener-ref en terugval (`ContactPanel`, `ActiePanel`, `BeslissingPanel`) — drie kopieën van hetzelfde patroon, en `BeslissingPanel` heeft al geen laatste anker.
 - **Waarom niet nu:** `packages/ui` bleef in fase 3 bewust ongewijzigd; de juiste plek is `SheetContent` zelf (opener onthouden bij openen, terugval-prop), en dat raakt elke consumer.

@@ -1104,6 +1104,21 @@ function scenarios() {
       },
     },
     {
+      // De standaardfixture heeft geen bufferpot: dan is Buffer gelijk aan Vrij en zou "+ bufferpot € 0"
+      // ruis zijn. Zelfde keuze als de footer op dit scherm.
+      naam: 'antwoord — zonder bufferpot geen brugregel',
+      actie: async (page) => {
+        const kaart = page.locator('[data-cash-answer]');
+        if ((await kaart.getAttribute('data-cash-answer')) !== 'ok') return { ok: false, bewijs: 'geen antwoord op de kaart' };
+        if (await page.locator('[data-answer-bridge]').count()) return { ok: false, bewijs: 'brugregel zonder bufferpot' };
+        if (!(await page.locator('[data-month-footer]').first().innerText()).includes('Geen buffer')) {
+          throw new Error('de fixture heeft wél een bufferpot — dit scenario meet dan niets');
+        }
+        const waarde = Number(await page.locator('[data-answer-value]').getAttribute('data-answer-value'));
+        return { ok: true, bewijs: `kaart toont ${waarde} zonder brugregel, footer meldt "Geen buffer"` };
+      },
+    },
+    {
       // Openen en sluiten is het pad dat de sweep hierboven nodig heeft; dit scenario
       // toetst het als gedrag, zodat een kapotte modal niet als contrast-fout leest.
       naam: 'modals — openen en sluiten',
@@ -1357,7 +1372,10 @@ function scenarios() {
         const tekst = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' '));
         const ontbreekt = verwacht.filter((v) => !tekst.includes(v));
         if (ontbreekt.length) throw new Error(`lege staat ontbreekt: ${ontbreekt.join(', ')}`);
-        return { ok: true, bewijs: `drie lege staten getoond in plaats van een blanco kolom` };
+        const kaart = await page.locator('[data-cash-answer]').getAttribute('data-cash-answer');
+        if (kaart !== 'leeg') return { ok: false, bewijs: `de antwoordkaart staat op "${kaart}" bij een leeg document` };
+        if (await page.locator('[data-answer-value]').count()) return { ok: false, bewijs: 'de antwoordkaart toont een bedrag bij een leeg document' };
+        return { ok: true, bewijs: `drie lege staten getoond in plaats van een blanco kolom; antwoordkaart "leeg" zonder bedrag` };
       },
     },
     {
@@ -2421,6 +2439,8 @@ async function antwoordKaart(page) {
   const stand = (await page.locator('[data-answer-stand]').innerText()).trim();
   const oorzaak = (await page.locator('[data-answer-cause]').innerText()).replace(/\s+/g, ' ').trim();
   if (!['gedekt', 'tekort'].includes(stand)) return { ok: false, bewijs: `stand leest "${stand}", geen woord` };
+  const kaartTekst = (await kaart.innerText()).replace(/\s+/g, ' ');
+  if (!/laagste punt, eind [a-z]+ \d{4}/.test(kaartTekst)) return { ok: false, bewijs: `geen maand in woorden: "${kaartTekst.slice(0, 120)}"` };
   if (!oorzaak) return { ok: false, bewijs: 'geen oorzaakregel' };
   if ((await brug.count()) !== 1) return { ok: false, bewijs: `${await brug.count()} brugregels op de kaart` };
   const vrij = Number(await brug.getAttribute('data-free'));

@@ -12,17 +12,19 @@ import type { CashOutlook, OutlookKop, OutlookOorzaak } from '../../lib/cashflow
  */
 
 const KOP_LABEL: Record<OutlookKop, string> = {
-  inkomsten: 'saldo + inkomsten',
+  // "inkomsten" is de eigen inkomst van die maand, niet de sectiekop op `/` (die draagt het saldo).
+  inkomsten: 'inkomsten',
   vast: 'vaste uitgaven',
   eenmalig: 'eenmalige uitgaven',
   budgetten: 'budgetten',
   provisies: 'provisies',
-  bufferpot: 'bufferpot',
 };
 
 function oorzaakTekst(oorzaak: NonNullable<OutlookOorzaak>): string {
   if (oorzaak.soort === 'grootste-kost') {
-    return `grootste post die maand: ${KOP_LABEL[oorzaak.kop]} ${formatAmount(oorzaak.bedrag)}`;
+    // In de ankermaand dragen de koppen wat er nog van het banksaldo af moet; dat zegt de regel er dan bij.
+    const wat = oorzaak.nogTeBetalen ? 'grootste post die nog moet vertrekken' : 'grootste post die maand';
+    return `${wat}: ${KOP_LABEL[oorzaak.kop]} ${formatAmount(oorzaak.bedrag)}`;
   }
   const richting = oorzaak.delta > 0 ? 'hoger' : 'lager';
   return `grootste verschil met ${getMonthLabel(oorzaak.vorigeMaand).toLowerCase()}: ${KOP_LABEL[oorzaak.kop]} ${formatAmount(Math.abs(oorzaak.delta))} ${richting}`;

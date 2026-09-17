@@ -182,7 +182,7 @@ const Inhoud = () => h('div', null,
       h(CashAnswer, { outlook: { kind: 'ok', maandKey: '2026-11', buffer: -6219.25, vrij: -6219.25, bufferPot: 0, gedekt: false, heeftBufferpot: true,
         oorzaak: { soort: 'verschil', kop: 'inkomsten', delta: -6648.26, vorigeMaand: '2026-10' } } }),
       h(CashAnswer, { outlook: { kind: 'ok', maandKey: '2026-10', buffer: 196.88, vrij: 0, bufferPot: 196.88, gedekt: true, heeftBufferpot: true,
-        oorzaak: { soort: 'grootste-kost', kop: 'provisies', bedrag: 18521 } } }),
+        oorzaak: { soort: 'grootste-kost', kop: 'provisies', bedrag: 5762, nogTeBetalen: true } } }),
       h(CashAnswer, { outlook: { kind: 'leeg' } }),
       h(CashAnswer, { outlook: { kind: 'geen-maand' } })) }),
 

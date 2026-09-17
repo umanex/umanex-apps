@@ -2820,9 +2820,14 @@ function reviewTegenproeven() {
     },
     'bureau — lege staat houdt een cashtekort in beeld': () => { document.querySelector('[data-signal-list]')?.remove(); },
     // Het defect: het grote getal op de kaart wijkt af van de rekenkern (zoals vrij vandaag in plaats van het laagste punt).
+    // Het defect: het getal van de kaart wijkt af van de rekenkern. Brug én getal schuiven samen op,
+    // zodat de optel-check groen blijft en de vergelijking met /bureau/cash moet afgaan — anders zou
+    // die as geen bewijs hebben dat hij rood kan worden (review 2026-09-17).
     'antwoord — kaart toont de laagste Buffer, met brug en uitgelijnde footers': () => {
-      const el = document.querySelector('[data-answer-value]');
-      el.setAttribute('data-answer-value', String(Number(el.getAttribute('data-answer-value')) + 100));
+      const waarde = document.querySelector('[data-answer-value]');
+      const brug = document.querySelector('[data-answer-bridge]');
+      waarde.setAttribute('data-answer-value', String(Number(waarde.getAttribute('data-answer-value')) + 100));
+      brug.setAttribute('data-free', String(Number(brug.getAttribute('data-free')) + 100));
     },
     // Het defect: de brug toont een pot die niet bij de Buffer hoort (zoals `buffer.delta` in plaats van `buffer.total`).
     'geldtaal — brug onder de footer telt op tot de Buffer': () => {

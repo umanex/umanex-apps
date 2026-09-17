@@ -73,7 +73,9 @@ state=$(gh pr view <nr> --json state -q .state)
 [ "$rc" -eq 0 ] && [ "$state" = MERGED ] || { echo "STOP — state=$state, niets opruimen"; exit 1; }
 git worktree remove "$T" || exit 1                          # weigert bij gewijzigd of ongetrackt werk
 git branch -d <branch> && git push origin --delete <branch>
-git fetch -q origin && git pull --ff-only origin main        # de hoofdtree bijtrekken
+head=$(git rev-parse --abbrev-ref HEAD)                      # de hoofdtree bijtrekken — alleen op main
+[ "$head" = main ] || { echo "STOP — hoofdtree staat op $head: niet bijtrekken, melden"; exit 1; }
+git fetch -q origin && git pull --ff-only origin main
 ```
 
 Waarom die volgorde, GEMETEN op 2026-09-17 in een wegwerp-repo:
@@ -81,6 +83,7 @@ Waarom die volgorde, GEMETEN op 2026-09-17 in een wegwerp-repo:
 - `git branch -d` weigert zolang de tree bestaat (*cannot delete branch … used by worktree*) — eerst de tree weg.
 - `git worktree remove` weigert met een ongetrackt bestand erin (*contains modified or untracked files*). Dat is de laatste controle op werk dat nergens anders staat: meld wat erin zit, nooit `--force` op eigen gezag.
 - `git pull --ff-only` in een hoofdtree met ander openstaand werk slaagt als de merge andere bestanden raakt, en laat dat werk staan. Raakt hij hetzelfde bestand, dan weigert hij (rc=1, niets gewijzigd). Dan is de hoofdtree níet bijgetrokken: meld dat als open gat (*Een merge is pas af…* in `CLAUDE.md`), en stash het werk van een ander niet om de pull erdoor te krijgen.
+- Bijtrekken alleen als de hoofdtree op `main` staat. Juist wanneer hij bezet is — de reden dat je een tijdelijke tree koos — staat er vaak de feature branch van een andere sessie, en daar doet `git pull --ff-only origin main` niets goeds: heeft die branch nog geen eigen commit, dan slaagt hij stil (rc=0) en schuift hij andermans branch naar `main`; heeft hij er wel een, dan weigert hij (rc=128). Gemeten in een wegwerp-repo, en in het echt tegengekomen in umanex-apps, waar de hoofdtree op `feature/jobradar-a11y-fouten` stond. Meld dan dat de hoofdtree niet bijgetrokken is, en laat hem aan de sessie die er werkt.
 
 Nooit in `~/Documents`, nooit permanent, en buiten geval 1 nooit op eigen initiatief — **de agent-tree kies jíj, de taak-tree kiest Jeroen.**
 

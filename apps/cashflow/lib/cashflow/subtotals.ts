@@ -199,3 +199,26 @@ export function pendingOverrideDelta(
     return s + cost(p, override, isCurrentMonth) - cost(p, p.provisionThisMonth, isCurrentMonth);
   }, 0);
 }
+
+export type PotStand = { provisions: number; buffer: number };
+
+/**
+ * Wat er bij de start van een ankermaand al in de potten zit, na wat er deze maand al uit
+ * betaald is. Dezelfde potten als de provisiekop hierboven: spaardoelen, niet gefinaliseerd.
+ *
+ * In de ankermaand draagt die kop de stand plus de storting van deze maand. Twee lezers delen dit:
+ * de brug onder de provisiekop op `/` ("al opzij € X + storting € Y") en het weekmodel van Bureau,
+ * dat de stand één keer van het banksaldo aftrekt ("In potten"). Stond dit op twee plekken, dan kon
+ * de brug op `/` en het getal op `/bureau/cash` stil uit elkaar lopen.
+ */
+export function potStandAtStart(pots: ReservationPotBalance[]): PotStand {
+  const split: PotStand = { provisions: 0, buffer: 0 };
+  for (const p of pots) {
+    if (p.potType !== 'spaardoel' || p.finalized) continue;
+    const paid = p.paymentsThisMonth.reduce((s, x) => s + x.fromReservation, 0);
+    const stand = Math.max(0, p.deferredFromPrevious - paid);
+    if (p.isDeficitBuffer) split.buffer += stand;
+    else split.provisions += stand;
+  }
+  return { provisions: Math.round(split.provisions * 100) / 100, buffer: Math.round(split.buffer * 100) / 100 };
+}

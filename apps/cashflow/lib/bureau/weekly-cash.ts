@@ -1,5 +1,5 @@
 /**
- * Dertien weken vrije cash, als verdeling van de maandrekenkern — geen tweede rekenkern.
+ * Dertien weken Vrij (geld buiten elke pot), als verdeling van de maandrekenkern — geen tweede rekenkern.
  *
  * De maandtotalen komen uit `calculateMonths` (ankermaand = de maand van vandaag). Deze module
  * beslist alleen in wélke week een maandbedrag valt:
@@ -26,6 +26,7 @@
  */
 import type { IncomeItem, MonthData, MonthKey } from '../cashflow/types.ts';
 import { bufferSummary } from '../cashflow/buffer.ts';
+import { potStandAtStart, type PotStand } from '../cashflow/subtotals.ts';
 import type { BureauData, IsoDate, WeekKey } from './types.ts';
 import { EPSILON, invoiceGross, round2 } from './money.ts';
 import { endOfMonth, parseISO } from 'date-fns';
@@ -130,23 +131,9 @@ export type WeeklyCashInput = {
   bureau: BureauData;
 };
 
-type PotSplit = { provisions: number; buffer: number };
-
-/**
- * Wat er bij de start van de ankermaand al in de potten zit, na wat er deze maand al uit
- * betaald is. Dezelfde potten als de provisiekop van `computeMonthSubtotals`: spaardoelen, niet
- * gefinaliseerd.
- */
-export function reservedAtStart(anchor: MonthData): PotSplit {
-  const split: PotSplit = { provisions: 0, buffer: 0 };
-  for (const p of anchor.reservationPots) {
-    if (p.potType !== 'spaardoel' || p.finalized) continue;
-    const paid = p.paymentsThisMonth.reduce((s, x) => s + x.fromReservation, 0);
-    const stand = Math.max(0, p.deferredFromPrevious - paid);
-    if (p.isDeficitBuffer) split.buffer += stand;
-    else split.provisions += stand;
-  }
-  return { provisions: round2(split.provisions), buffer: round2(split.buffer) };
+/** Wat er bij de start van de ankermaand al in de potten zit; de afleiding staat bij de provisiekop. */
+export function reservedAtStart(anchor: MonthData): PotStand {
+  return potStandAtStart(anchor.reservationPots);
 }
 
 const lastDayOfMonth = (m: MonthKey): IsoDate => toIsoDate(endOfMonth(parseISO(`${m}-01`)));

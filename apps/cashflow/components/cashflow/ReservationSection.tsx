@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ReservationPotBalance, ReservationPayment, MonthKey, ReservationPotType } from '../../lib/cashflow/types';
 import { formatAmount, getMonthLabel, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
-import { pendingOverrideDelta } from '../../lib/cashflow/subtotals';
+import { pendingOverrideDelta, potStandAtStart } from '../../lib/cashflow/subtotals';
 import { SectionBar } from './SectionBar';
 
 interface DeferredReservationDisplayItem {
@@ -335,6 +335,7 @@ function PotSubgroup({
   onUnfinalize,
   onAmountChange,
   locked,
+  standAtStart,
 }: {
   label: string;
   potType: ReservationPotType;
@@ -353,6 +354,12 @@ function PotSubgroup({
   onUnfinalize: (reservationId: string) => void;
   onAmountChange: (reservationId: string, amount: number | null) => void;
   locked?: boolean;
+  /**
+   * Alleen de provisies in de ankermaand: wat er bij de start al in de potten zat. Daar telt de kop
+   * de stand plus de storting van deze maand, terwijl de velden eronder alleen de storting tonen —
+   * zonder deze regel telt "−€ 18.521" niet op uit wat je ziet.
+   */
+  standAtStart?: number;
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
   // Zie RecurringSection: in een afgesloten maand is de filterknop uitgeschakeld, dus mag
@@ -374,6 +381,16 @@ function PotSubgroup({
         onAdd={() => onRegisterPayment(potType)}
         addAriaLabel="Betaling registreren"
       />
+      {standAtStart !== undefined && standAtStart >= 0.005 && (
+        <span
+          className="-mt-1 pl-2 text-2xs leading-tight tabular-nums text-muted-foreground"
+          data-provision-bridge
+          data-stand={standAtStart}
+          data-deposit={subtotaal - standAtStart}
+        >
+          al opzij {formatAmount(standAtStart)} + storting {formatAmount(subtotaal - standAtStart)}
+        </span>
+      )}
 
       <div className="flex flex-col gap-1 w-full">
         {activePots.map((pot, index) => (
@@ -497,6 +514,7 @@ export function ReservationSection({
         activePots={spaardoelActive}
         finalizedPots={spaardoelFinalized}
         amount={provisionAmount}
+        standAtStart={isCurrentMonth ? potStandAtStart(pots).provisions : undefined}
         {...sharedProps}
       />
 

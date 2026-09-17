@@ -249,6 +249,7 @@ export function MonthCard({
       <BalanceFooter
         movement={buffer.movement}
         position={buffer.position}
+        bufferPot={buffer.total}
         hasBuffer={hasBuffer}
         isAnchor={isFirst || locked}
       />

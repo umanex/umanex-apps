@@ -17,6 +17,13 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       notitie in plaats van als fout, zodat rood rood blijft betekenen. **Eerste zet:** `min-w-0` op
       de `h3` in `JobCard.tsx`, en `/` toevoegen aan `SMAL_ROUTES` in de harness zodat het gemeten
       blijft. (harness-meting 2026-09-16)
+      **Kanttekening 2026-09-17 (critique, hypothese — niet getoetst):** die eerste zet raakt
+      vermoedelijk de verkeerde laag. `truncate` zet al `overflow: hidden`, en dan is de automatische
+      minimumbreedte van een flex-item al 0. Waarschijnlijker is de grid eromheen: `grid gap-3
+      sm:grid-cols-2 xl:grid-cols-3` (`DashboardClient.tsx:339/363/521`) heeft onder `sm` geen
+      `grid-cols-1`, dus één impliciete `auto`-kolom die meegroeit met de langste titel. **Toets:**
+      `min-w-0` alléén op de `h3` → `--smal=400` meet nog altijd > 400; `grid-cols-1` (of `min-w-0` op
+      de `Card`) → 400. Eén variabele per run.
 
 - [ ] `fix`: **Een verwijderde actie blijft als dode key in een beslismoment staan.**
       `verwijderActie` ruimt kanten en koppelingen op, maar niet de JSON-lijst in
@@ -40,10 +47,6 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       `bezig` is en waarvan een afhankelijkheid daarna op `vervallen` gaat, kan gewoon op `gereed`
       gezet worden — `blokkadeVan` wordt alleen geraadpleegd op het pad naar `bezig`. De rij toont
       het signaal wel. (finish-review 2026-09-16, P2)
-- [ ] `ui`: **Een actie op vervallen zetten blokkeert haar afhankelijken hard, zonder melding op dat
-      moment.** Het paneel vraagt een reden en zet de status; dat de vier acties die eraan hangen
-      daarmee hard geblokkeerd raken tot je elke kant verwijdert of vervangt, staat pas in hun eigen
-      rij. Toon de gevolgen bij de beslissing, niet erna. (finish-review 2026-09-16, P2)
 - [ ] `fix`: **De client herkent een versieconflict aan een regex op de Nederlandse foutzin.**
       `ActiePanel` en `BeslissingPanel` doen `/intussen elders gewijzigd/.test(fout)` om de
       Herlaad-knop te tonen, terwijl het antwoord al `conflict: 'versie'` draagt. Eén herformulering
@@ -159,6 +162,75 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       taak met eigen risico, geen bijproduct van een opruiming.
       (gemeten bij het verwijderen van de KBO-leadbron, 2026-08-29)
 
+- [ ] `ux`: **Sneltoetsen voor triage op het dashboard** (j/k om te bewegen, s bewaren, d afwijzen).
+      Er is nu geen enkele sneltoets en elke kaart kost twee tab-stops of meer. **Waarom niet nu:**
+      pas zinvol als de statusactie een knop is in plaats van een select (plan
+      `delightful-stirring-blossom`, fase 2), en de hint hoort in `Kbd` uit bibliotheekbatch 1.
+      (critique 2026-09-17, persona Alex)
+- [ ] `fix`: **Een tweetalige vacature verschijnt als twee kaarten.** Belfius staat in de NL- en de
+      FR-versie als twee losse vacatures, met twee statussen die uit elkaar lopen. Dit is dedupe in de
+      sync (`dedupe_hash`), geen UI-kwestie, dus buiten het UX/UI-plan. Eerste zet: tellen hoeveel paren
+      `(bedrijf, regio, datum)` met een verschillende titel er in `.data/jobradar.db` staan, vóór je
+      een regel bouwt. (critique 2026-09-17)
+- [ ] `ux`: **"Laatst geëxporteerd" bij de plan-export.** De markdown-export is nu de enige back-up
+      van het bedrijfsplan (HANDOFF 2026-09-16), maar staat er als grijs tekstlinkje zonder datum.
+      **Waarom niet nu:** hangt aan de open back-upbeslissing in `HANDOFF.md`; een datum tonen van een
+      export die nergens bewaard wordt, suggereert een vangnet dat er niet is. (critique 2026-09-17)
+- [ ] `ux`: **Een geparkeerde actie met startuitzondering leest tegenstrijdig.** Parkeren laat
+      `start_uitzondering` staan (`mutaties.ts`, parkeertak), dus de rij staat onder Beschikbaar met
+      tegelijk een chip "wacht op …", een badge "gestart met een uitzondering" en een knop Start.
+      Technisch juist, maar drie signalen die elkaar lijken tegen te spreken. Hangt samen met het
+      open item "een startuitzondering is permanent". Geen instrument zet deze toestand. (design-review
+      fase 1, 2026-09-17, P3)
+- [ ] `a11y`: **Na Start in het blok "nu beschikbaar" valt de focus op de container van de sheet.** De
+      knop wordt vervangen door een statuslabel. Kleinste fix: de focus naar dat label of naar de
+      volgende Start-knop in het blok. (design-review fase 1, 2026-09-17, P3)
+- [ ] `a11y`: **Twee knoppen heten "Start A01" wanneer niets loopt** — één op de Eerstvolgende-kaart,
+      één op de rij. Ze doen hetzelfde, maar een lijst van knoppen in een schermlezer toont ze dubbel.
+      (design-review fase 1, 2026-09-17, P3)
+- [ ] `fix`: **Markeer gereed is kort opnieuw klikbaar tussen het PATCH-antwoord en het verse detail.**
+      Een tweede klik levert een 400 "staat al op gereed" in het paneel. Kleinste fix: de knop verbergen
+      zodra het antwoord `gereed` is, niet pas wanneer het detail binnen is. (design-review fase 1,
+      2026-09-17, P3)
+- [ ] `fix`: **`haalDetail` verwerkt antwoorden in aankomstvolgorde, niet in verzoekvolgorde.** Twee
+      snelle wissels kunnen een ouder detail over een nieuwer zetten. Bestond al; sinds 2026-09-17 leunt
+      het scroll-effect na afronden op `actie.status` uit dat detail. Kleinste fix: een `AbortController`
+      per verzoek, zoals `ContactPanel` al doet. (design-review fase 1, 2026-09-17, P3)
+- [ ] `test`: **De flow-harness crasht op een lege `jobradar.db` in de Prospects-sectie.** Gemeten 2026-09-17 met
+      `JOBRADAR_DB_PATH` naar een nieuwe database: `TimeoutError` op `locator('[role="tabpanel"]:visible h3').first()`
+      in de sorteercheck (de regel staat ook op `origin/main`), waardoor de notities aan het eind niet
+      meer afgedrukt worden. Het Verify-pad belooft dat een verse tree de lege staat meet. Eerste zet: een
+      count-guard vóór `innerText()`, zoals de triage-sectie die heeft. (triage-fase 2026-09-17)
+- [ ] `test`: **`opvolging:probe` controleert gevallen 1–12 niet — hij drukt ze af.** Ze eindigen altijd
+      op PROBE KLAAR, ook wanneer een route 500 geeft of een 409 een 200 wordt: de faalklasse die
+      `plan:probe` op 2026-09-16 al had en waar hij van genezen werd. Gevallen 13–17 (heropenen,
+      2026-09-17) vergelijken wél. Eerste zet: de `p`-regels ombouwen naar de `v`-vorm van `plan-probe.sh`,
+      met per geval een verwachte waarde, en één keer rood laten worden. (triage-fase 2026-09-17)
+- [ ] `refactor`: **`StatusDropdown.tsx` heeft sinds de triage-fase geen enkele importeur meer.** Vervangen
+      door `StatusActies` op alle vier de plekken. Niet verwijderd omdat bestanden verwijderen eerst
+      akkoord vraagt. Eerste zet: `grep -rn StatusDropdown apps/jobradar` moet 0 geven buiten het bestand
+      zelf, dan weg. (design-review fase 2, 2026-09-17, P3)
+- [ ] `ux`: **Het statusfilter staat er ook op het tabblad Prospects, waar het niets doet.** `filterQuery`
+      kent geen status; dat bestond al, maar met "Open" als nieuwe standaard is het zichtbaarder. Kleinste
+      fix: het filter verbergen of uitschakelen met uitleg zolang Prospects actief is. (design-review
+      fase 2, 2026-09-17, P3)
+- [ ] `fix`: **De statusroutes antwoorden in het Engels** ("Invalid status", "Invalid id"), en
+      `StatusActies` toont dat letterlijk naast Nederlandse tekst: "Niet bewaard: Invalid status". Eerste
+      zet: de drie routes onder `app/api/jobs|leads|prospects` in het Nederlands, zoals de plan-routes.
+      (design-review fase 2, 2026-09-17, P3)
+- [ ] `fix`: **Een trage prospects-fetch kan een net bewaarde status overschrijven.** `StatusActies` neemt
+      een nieuwe `status`-prop over via een effect; komt een oudere pagina-respons binnen ná een geslaagde
+      wissel, dan zet die de oude status terug. Zeldzaam (250 ms debounce, AbortController per filter),
+      maar niet uitgesloten. (design-review fase 2, 2026-09-17, P3)
+- [ ] `test`: **Geen geval toetst dat de UI zelf een reden invult bij een statuswissel.** De vorm van
+      `76a29ff`: kies op `/plan` "Uitgesteld" zonder reden, en de client schreef "Aanleiding: nog te
+      bepalen" in een veld van de gebruiker. `scripts/plan-ui-probe.mjs` legt sinds 2026-09-17 de
+      PATCH-bodies van echte klikken vast (regel 191) en toetst de `status` erin (regel 205), maar
+      nergens de `reden`. Eerste zet: vaststellen hoe de UI een wissel zonder reden nu afhandelt (sinds
+      `ca98e0c`), dan één geval dat die wissel via de knop doet en eist dat de body geen door de client
+      verzonnen `reden` draagt; tegenproef: `76a29ff` terugdraaien en de check rood zien. (umanex-os
+      LEARNINGS 2026-09-16, *Verzonnen inhoud*; learnings-ronde 2026-09-17)
+
 ## Verworpen
 
 Met reden, want zonder reden komt hetzelfde voorstel over drie maanden terug en begint de
@@ -183,6 +255,11 @@ afweging van nul.
   (ux-audit 2026-08-11, limiet)
 
 ## Gebouwd
+
+- `ui`: Een actie op vervallen zetten blokkeerde haar afhankelijken hard, zonder melding op dat
+  moment. **Gebouwd 2026-09-17** (umanex-apps#517): het redenblok in `ActiePanel` noemt vóór het
+  bevestigen elke afhankelijke actie met haar eigen gevolg. Gemeten in `plan-ui-probe.mjs` UI 14.
+  (finish-review 2026-09-16, P2)
 
 - `infra`: **Eigen build-map voor de flow-harness.** Hij bouwde in de gedeelde `.next`, en
   `next build` maakt die map eerst leeg — een dev-server op 3003 die eruit serveert gaf

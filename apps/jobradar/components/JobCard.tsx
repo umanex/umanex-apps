@@ -11,28 +11,33 @@ import {
   TooltipTrigger,
 } from '@umanex/ui/components/ui/tooltip'
 import { ScoreBadge } from './ScoreBadge'
-import { StatusDropdown } from './StatusDropdown'
+import { StatusActies } from './StatusActies'
+import { LAGE_SCORE_GRENS } from '@/lib/triage'
 import type { Job, ItemStatus } from '@/lib/db/schema'
 
 type JobCardProps = {
   job: Job
   isNew: boolean
+  /** Uit wanneer alle vacatures uit één bron komen: dan zegt "adzuna" op elke kaart niets. */
+  toonBron: boolean
   onStatusChange: (status: ItemStatus) => void
 }
 
-export function JobCard({ job, isNew, onStatusChange }: JobCardProps) {
+export function JobCard({ job, isNew, toonBron, onStatusChange }: JobCardProps) {
   const breakdown = JSON.parse(job.scoreBreakdown) as Record<string, number>
   const hasBreakdown = Object.keys(breakdown).length > 0
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className="transition-shadow hover:shadow-md" data-item={`job-${job.id}`}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="truncate text-sm font-semibold">{job.title}</h3>
-              {isNew && (
-                <Badge variant="default" className="shrink-0 text-2xs">
+              {/* Outline en alleen vanaf de scoregrens: de gevulde badge was het luidste element
+                  op de kaart, ook op een score 0 (critique 2026-09-17). */}
+              {isNew && job.score >= LAGE_SCORE_GRENS && (
+                <Badge variant="outline" className="shrink-0 text-2xs" data-nieuw>
                   nieuw
                 </Badge>
               )}
@@ -62,11 +67,12 @@ export function JobCard({ job, isNew, onStatusChange }: JobCardProps) {
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="flex items-center gap-2">
+          {/* Op één regel: "Brussel Hoofdstad" brak over twee regels en duwde de rij uit elkaar. */}
+          <span className="flex min-w-0 items-center gap-2 whitespace-nowrap" data-meta>
             <span className="rounded bg-muted px-1.5 py-0.5">{job.region}</span>
             {/* Adzuna levert geen postcode — die stond hier als een kale "0" op elke kaart. */}
-            {(job.city || job.postcode > 0) && <span>{job.city ?? job.postcode}</span>}
-            <span className="rounded bg-muted px-1.5 py-0.5">{job.source}</span>
+            {(job.city || job.postcode > 0) && <span className="min-w-0 truncate">{job.city ?? job.postcode}</span>}
+            {toonBron && <span className="rounded bg-muted px-1.5 py-0.5" data-bron>{job.source}</span>}
           </span>
           <a
             href={job.url}
@@ -81,9 +87,10 @@ export function JobCard({ job, isNew, onStatusChange }: JobCardProps) {
           </a>
         </div>
         <div className="mt-2 border-t pt-2">
-          <StatusDropdown
+          <StatusActies
             endpoint={`/api/jobs/${job.id}`}
             status={job.jobStatus as ItemStatus}
+            naam={job.title}
             onStatusChange={onStatusChange}
           />
         </div>

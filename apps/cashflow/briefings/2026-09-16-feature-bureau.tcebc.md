@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** cashflow
 - **Klant:** umanex
-- **Status:** gebouwd — 2026-09-16; open: build in CI, unit-tests in CI, screenshots niet elk geopend, doelwit-controle na de merge
+- **Status:** gebouwd — gemerged 2026-09-16 (PR umanex-apps#510); open: screenshots niet elk geopend, doelwit-controle op het echte document (wacht op een herbouw van :3000)
 
 ---
 
@@ -197,12 +197,12 @@ _Procedureel (eigen instrument, eigen regel):_
 
 - [x] Types — instrument: `pnpm --filter cashflow type-check` — bewijs: `pnpm --filter cashflow type-check` exit 0 na de review-ronde
 - [x] Lint — instrument: `pnpm --filter cashflow lint` — bewijs: `pnpm --filter cashflow lint` — No ESLint warnings or errors
-- [ ] Build — instrument: CI-stap "Type-check, lint, build"
-- [ ] Unit-tests — instrument: `pnpm --filter cashflow test` + CI-stap "invarianten (node:test)"
+- [x] Build — instrument: CI-stap "Type-check, lint, build" — bewijs: PR umanex-apps#510, run 35140492211 op commit 1a35da3, job "Type-check, lint, build" pass (20m48s)
+- [x] Unit-tests — instrument: `pnpm --filter cashflow test` + CI-stap "invarianten (node:test)" — bewijs: lokaal 152/152; CI: dezelfde job op 1a35da3 pass, met de stap "Guard — invarianten (node:test)"
 - [x] Geen `any` in aangeraakte bestanden — instrument: grep `: any|as any|<any>` = 0 — bewijs: `grep -rn ': any\|as any\|<any>' app/bureau components/bureau lib/bureau` = 0
 - [ ] Review-screenshots leeg/gedeeltelijk/vol op 1440 en 390 bestaan en zijn elk één keer geopend — instrument: de screenshotstand van `scripts/flow-harness.mjs` (`--screenshots=<map>`, in de scratchpad i.p.v. `.impeccable/review`, zodat er geen `.gitignore`-regel nodig was) en visuele controle — stand: twee reeksen van 27 PNG's gemaakt, 13 zelf geopend (overzicht vol/leeg/deels, verkoop, cash 1440 en 390 twee keer, projectdetail, klanten, tijd), de finish-reviewer las er meer; niet elk één keer geopend
 - [x] Impeccable finish-review met disposition `ship` — instrument: `impeccable-finish-reviewer` — bewijs: impeccable-finish-reviewer ronde 1 'fix' (F1–F8), ronde 2 op de verse captures 'ship', niets materieels open
-- [ ] Doelwit-controle op Jeroens echte document na de merge (alleen lezen): `/bureau` rendert zonder paginafout — instrument: `:3000` na `pm2:rebuild` op `main`
+- [x] Doelwit-controle op Jeroens echte document na de merge (alleen lezen): `/bureau` rendert zonder paginafout — instrument: `:3000` na `pm2:rebuild` op `main` — bewijs: 2026-09-16 na het stoppen van de losse `pnpm start` (akkoord Jeroen) `pm2:rebuild` op `main` 8a1e77b, BUILD_ID `EMR0rSSW…` → `ARS4gmRY…`, één listener; in Chrome, ingelogd, zonder klik: `/bureau` en `/bureau/cash` renderen, 0 consoleberichten over een herlaadbeurt. De controle leverde D1–D3 op
 
 _Finish-review 2026-09-16 (impeccable-finish-reviewer, disposition fix — F1–F8, één bevinding met twee wijzigingen = twee items):_
 
@@ -231,6 +231,12 @@ _Code-review 2026-09-16 (C1–C9; P3 "betaaldatum altijd vandaag" en "omzet per 
 - [x] **C8** Win rate telt een kans in een periode één keer, op haar laatste beslissing — instrument: `pipeline.test.ts` — bewijs: `pipeline.test.ts` 'win rate: een kans die in de periode gewonnen en daarna verloren werd, telt één keer, als verloren' groen; mutant rood
 - [x] **C9** Een factuurpost komt nooit in een maand vóór de huidige: een vervaldatum of verwachte betaling in het verleden zet de post in de huidige maand — instrument: `mutations.test.ts` — bewijs: `mutations.test.ts` 'een post komt nooit in een voorbije maand…' groen (aanmaken, verwachte datum in het verleden, betaald ongedaan); mutant zonder klem rood
 
+_Doelwit-controle 2026-09-16 op het echte document (D1–D3):_
+
+- [x] **D1** Het kopgetal van cash (pagina en overzichtstegel) is het laagste vrije saldo aan een maandeinde binnen de horizon, gelijk aan de rekenkern; de laagste weekstand staat erbij als "kosten vroeg, inkomsten laat" — instrument: `weekly-cash.test.ts` (maandeinden) + harness `cash — kopgetal is het laagste maandeinde, gelijk aan het saldo op /` — bewijs: `weekly-cash.test.ts` 'maandeinden: de eindsaldi van de rekenkern…' en 'horizongrens…' groen (mutanten zonder horizonfilter, `<` i.p.v. `<=` en startBalance i.p.v. endBalance rood); harness 2026-09-16 (`flow:selftest` 117/117, 43 tegenproeven) 'cash — kopgetal is het laagste maandeinde…': maandeinden sep 6768,31 · okt 4263,86 · nov 4203,86, kopgetal nov (niet het eerste), sep en okt gelijk aan "Vorig saldo" op /, tegel noemt "eind nov 2026" en de weekregel met dezelfde woorden; tegenproeven: kopgetal op het eerste maandeinde, en een maandeinde +1 — beide vallen om
+- [x] **D2** Het signaal "Vrije cash wordt negatief" oordeelt op die maandeinden; zakt alleen de weektabel onder de vloer, dan is het een info-signaal — instrument: `signals.test.ts` — bewijs: `signals.test.ts` 'negatieve cash oordeelt op het maandeinde…', '…over meerdere maanden…' en '…uitgeschakeld: ook geen info…' groen; mutanten (oordeel op de week, eerste maandeinde, alle maanden in de tekst, info ondanks uitgeschakeld) rood
+- [x] **D3** Een overzicht zonder bureau-gegevens toont naast de lege staat de signalen die daar niet van afhangen (een prognosetekort), zonder dubbel "Geen doelen" — instrument: harness `bureau — lege staat houdt een cashtekort in beeld` — bewijs: harness 2026-09-16 (`flow:selftest` 117/117, 43 tegenproeven) 'bureau — lege staat houdt een cashtekort in beeld': 1 lege staat, signaal 'Vrije cash wordt negatief · Maandeinde sep 2026 −€ 250…', geen dubbel 'Geen doelen'; tegenproef zonder signaallijst valt om
+
 ## Beslissingsgeschiedenis
 
 - 2026-09-16: Opslag in het bestaande document onder `bureau` (v16) i.p.v. eigen tabellen — keuze
@@ -257,3 +263,12 @@ _Code-review 2026-09-16 (C1–C9; P3 "betaaldatum altijd vandaag" en "omzet per 
 - 2026-09-16: Finish-review ronde 1 gaf acht bevindingen (F1–F8), eerst als acceptatie-items
   vastgelegd en daarna gefixt; ronde 2 gaf `ship`. De bureau-subnav loopt op smalle schermen over
   twee regels in plaats van horizontaal te scrollen.
+- 2026-09-16: Kopgetal cash = laagste maandeinde (keuze Jeroen na de doelwit-controle). Op het
+  echte document meldde de tegel −€ 22.997 als laagste stand terwijl `/` november op −€ 7.614
+  afsluit: de weektabel zet kosten en provisies vroeg en inkomsten laat, en telt aan de rand van
+  de horizon de kosten van december zonder zijn inkomsten. De weektabel blijft, als strengste
+  lezing van de timing; het oordeel (kopgetal, signaal) komt uit de rekenkern.
+- 2026-09-16: Review van D1–D3 (workflow, drie invalshoeken, elke bevinding tegengelezen): 9 P3's
+  overeind, 11 weerlegd. De weektabel is géén strengste lezing — met een buffer-storting en een
+  factuur in dezelfde week kan hij hoger staan dan het laagste maandeinde — dus die bewering is
+  weg uit tekst en harness, en de weekregel staat alleen nog wanneer hij dieper ligt.

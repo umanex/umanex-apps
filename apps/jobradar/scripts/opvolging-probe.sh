@@ -124,4 +124,31 @@ p "10. één volgende actie, nieuwste wint"     "$(tel "SELECT count(*)||' × '|
 ID=$(tel 'SELECT min(id) FROM contact_moments;')
 p "11. moment verwijderen"                    "$(curl -s -o /tmp/body -w '%{http_code}' -X DELETE "$B/api/opvolging/moment/$ID")  rijen=$(tel 'SELECT count(*) FROM contact_moments;')  status=$(tel 'SELECT lead_status FROM companies WHERE id=1;')"
 p "12. GET historiek van lead 1"              "$(curl -s "$B/api/opvolging?type=lead&key=1" | node -e "const j=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log('momenten='+j.momenten.length,'actie='+j.actie?.omschrijving,'optOut='+j.optOut)")"
+# ── Heropenen (2026-09-17) — deze gevallen VERGELIJKEN en bepalen de exitcode ────────────────
+# De twaalf regels hierboven drukken af en eindigen altijd op PROBE KLAAR; dat is een bekend gat
+# (BACKLOG). Wat hieronder staat kan wél falen.
+GEZAKT=0
+v() { if [ "$2" = "$3" ]; then printf '  ✓ %-50s %s\n' "$1" "$3"; else printf '  ✗ %-50s verwacht %s, kreeg %s\n' "$1" "$2" "$3"; GEZAKT=$((GEZAKT + 1)); fi; }
+patchs() { curl -s -o /tmp/body -w '%{http_code}' -X PATCH "$B$1" -H 'content-type: application/json' -d "$2"; }
+# Positieve controle op de opstelling: lead 1 en de prospect hebben contactmomenten, lead 2 niet.
+v "13. opstelling: lead 1 heeft contactmomenten" "ja" "$([ "$(tel "SELECT count(*) FROM contact_moments WHERE subject_type='lead' AND subject_key='1';")" -gt 0 ] && echo ja || echo nee)"
+v "    lead 2 heeft er geen" "0" "$(tel "SELECT count(*) FROM contact_moments WHERE subject_type='lead' AND subject_key='2';")"
+v "14. lead 1 afwijzen" "200" "$(patchs /api/leads/1 '{"status":"dismissed"}')"
+v "    lead 1 heropenen" "200" "$(patchs /api/leads/1 '{"status":"new"}')"
+v "    antwoord: gecontacteerd" "contacted" "$(q status)"
+v "    database: gecontacteerd" "contacted" "$(tel 'SELECT lead_status FROM companies WHERE id=1;')"
+v "15. lead 2 afwijzen" "200" "$(patchs /api/leads/2 '{"status":"dismissed"}')"
+v "    lead 2 heropenen zonder contact" "200" "$(patchs /api/leads/2 '{"status":"new"}')"
+v "    antwoord: nieuw" "new" "$(q status)"
+v "    database: nieuw" "new" "$(tel 'SELECT lead_status FROM companies WHERE id=2;')"
+v "16. prospect afwijzen" "200" "$(patchs /api/prospects/0747501103 '{"status":"dismissed"}')"
+v "    prospect heropenen" "200" "$(patchs /api/prospects/0747501103 '{"status":"new"}')"
+v "    antwoord: gecontacteerd" "contacted" "$(q status)"
+v "    database: gecontacteerd" "contacted" "$(tel "SELECT status FROM prospect_status WHERE enterprise_number='0747501103';")"
+v "17. bewaren blijft bewaren (geen afleiding)" "200" "$(patchs /api/leads/1 '{"status":"saved"}')"
+v "    antwoord: bewaard" "saved" "$(q status)"
+if [ "$GEZAKT" -gt 0 ]; then
+  echo "✗ PROBE GEZAKT — $GEZAKT assertie(s)"
+  exit 1
+fi
 echo "PROBE KLAAR"

@@ -11,7 +11,7 @@ import {
   TooltipTrigger,
 } from '@umanex/ui/components/ui/tooltip'
 import { ScoreBadge } from './ScoreBadge'
-import { StatusDropdown } from './StatusDropdown'
+import { StatusActies } from './StatusActies'
 import { PlanBadge } from './plan/PlanBadge'
 import type { Company, ItemStatus } from '@/lib/db/schema'
 import type { KboVermoeden } from '@/lib/kbo/spiegel'
@@ -50,7 +50,7 @@ export function LeadCard({
   const hasBreakdown = Object.keys(breakdown).length > 0
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className="transition-shadow hover:shadow-md" data-item={`lead-${company.id}`}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
@@ -151,9 +151,10 @@ export function LeadCard({
           )}
         </div>
         <div className="mt-2 flex items-center justify-between gap-2 border-t pt-2">
-          <StatusDropdown
+          <StatusActies
             endpoint={`/api/leads/${company.id}`}
             status={company.leadStatus as ItemStatus}
+            naam={company.companyName}
             onStatusChange={onStatusChange}
           />
           <span className="flex items-center gap-2">

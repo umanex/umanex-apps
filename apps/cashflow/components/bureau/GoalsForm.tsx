@@ -28,7 +28,7 @@ type GoalsFormProps = {
 };
 
 const signaalTekst: Record<SignalKey, { titel: string; uitleg: string }> = {
-  negativeCash: { titel: 'Verwacht negatief vrij saldo', uitleg: 'In een van de komende 13 weken zakt het vrije saldo onder de vloer.' },
+  negativeCash: { titel: 'Verwacht negatief vrij saldo', uitleg: 'Een maandeinde binnen de komende 13 weken zakt onder de vloer (kritiek). Zakt alleen de weektabel eronder, dan volgt een info-signaal over de timing.' },
   overbooking: { titel: 'Overboekte capaciteit', uitleg: 'Besteed plus gepland gaat boven het dagbudget, ook nadat de buffer is opgebruikt.' },
   projectOverrun: { titel: 'Projectuitloop', uitleg: 'Bestede plus verwachte resterende uren gaan boven de begrote uren van een project.' },
   clientConcentration: { titel: 'Klantconcentratie boven de grens', uitleg: 'Eén klant of klantgroep draagt meer dan het maximale aandeel hierboven.' },

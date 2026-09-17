@@ -177,3 +177,33 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 - **Check:** `grep -c "Nog af" apps/cashflow/.charts-preview.html` na `pnpm --filter cashflow render:charts` — telt alleen de fixture-titels, niet de kop zelf, zolang dit openstaat.
 - **Volgende zet:** Ofwel de kop één keer met het oog bekijken op `/analyse` (tabel openklappen) en de woordkeuze bevestigen of bijstellen, ofwel de tabel in de preview open renderen zodat hij een artefact krijgt.
 - **Status:** open
+
+## 2026-09-16 — Bureau is gemerged maar nooit op het echte document gezien; :3000 serveert nog de build van 14 september · [next-step]
+- **Bevinding:** PR umanex-apps#510 staat op `main` en de hoofdtree is bijgetrokken, maar de PM2-build op `:3000` is niet herbouwd (BUILD_ID `EMR0rSSWzotAa6Cmn-0cg`, 14 sep 22:44). Alle verificatie van Bureau liep op `:3100` met fixtures. Het eerste gebruik op het echte document normaliseert naar store-versie 16 en schrijft bij de eerste wijziging de sleutel `bureau` mee weg.
+- **Check:** `cd apps/cashflow && find app components lib store -newer .next/BUILD_ID | head -1` — een pad = de build loopt achter op de bron.
+- **Volgende zet:** Eerst de dubbele server op `:3000` oplossen (volgend item), dan `pnpm --filter cashflow pm2:rebuild` op `main`, dan `/bureau` en `/` openen zonder iets te wijzigen: rendert Bureau zonder paginafout, en staan de kolomtotalen op `/` zoals gewend? Daarmee sluit het laatste acceptatie-item in `briefings/2026-09-16-feature-bureau.tcebc.md`.
+- **Status:** resolved — 2026-09-16: herbouwd op `main` (BUILD_ID `ARS4gmRY…`), `/bureau` en `/bureau/cash` gezien op het echte document zonder paginafout of consolebericht. De controle vond dat het cash-kopgetal de weektabel volgde (−€ 22.997) in plaats van de maandeinden (nov −€ 7.614); opgelost als D1–D3 in de briefing.
+
+## 2026-09-16 — Er luisteren twee cashflow-servers op :3000 · [risico]
+- **Bevinding:** Naast PM2 (`next-server` pid 63194, bindt `127.0.0.1:3000`) draait een losse `pnpm start` (pid 63202 → `next-server` 63212, bindt `*:3000` op IPv6), beide gestart op 16 sep 19:55 vanuit `apps/cashflow`. Een browser op `localhost:3000` kan via `::1` bij de losse server uitkomen. Die herstart niet mee met `pm2:rebuild`, dus na een herbouw serveert hij oude chunk-hashes tegen een nieuwe `.next`: witte pagina of `ChunkLoadError`. Niet door deze sessie gestart en niet gestopt.
+- **Check:** `lsof -nP -iTCP:3000 -sTCP:LISTEN | tail -n +2 | wc -l` — meer dan 1 = nog dubbel.
+- **Volgende zet:** Jeroen beslist of de losse `pnpm start` weg mag (hij hoort niet bij PM2, zie `apps/cashflow/CLAUDE.md` → "Niet manueel killen"); daarna pas herbouwen.
+- **Status:** resolved — 2026-09-16: met akkoord van Jeroen de keten `bash -c "cd apps/cashflow && pnpm start"` (63200 → 63201 → 63202 → `next-server` 63212) gestopt; daarna één listener, PM2 op `127.0.0.1:3000`. Wie hem startte is niet vastgesteld.
+
+## 2026-09-16 — De Storybook-index op :6006 kent Textarea en NativeSelect niet · [next-step]
+- **Bevinding:** De twee componenten staan op `main` met story (PR umanex-apps#505), maar de draaiende Storybook in de hoofdtree gaf een index van 47 entries zonder ze; `stories-find-by-component` antwoordde leeg. Vermoedelijk gestart vóór de pull.
+- **Check:** `curl -s localhost:6006/index.json | grep -c -i 'textarea\|nativeselect'` — 0 = de index is nog oud.
+- **Volgende zet:** `pnpm --filter @umanex/ui pm2:restart`, dan opnieuw `stories-find-by-component` op beide bestanden.
+- **Status:** open
+
+## 2026-09-16 — Een losse `pnpm start` op :3000 komt terug na het stoppen · [risico]
+- **Bevinding:** Twee keer dezelfde keten gevonden en gestopt, met akkoord van Jeroen: `bash -c "cd /Users/jeroen/Documents/umanex-apps/apps/cashflow && pnpm start"` (ouder = launchd) → pnpm → `next-server` op `*:3000` (IPv6). Gestart om 19:55:43 en opnieuw om 22:28:06, telkens binnen een seconde na een herstart van de PM2-app `cashflow` (die telt 16 herstarts). Geen PM2-config, `launch.json`, crontab of LaunchAgent bevat het commando, en geen Bash-aanroep in de sessietranscripts van 2026-09-16 draait het letterlijk. Na een `pm2:rebuild` serveert zo'n losse server oude chunk-hashes tegen een nieuwe `.next`, en `localhost` kan via `::1` bij hem uitkomen: een witte pagina of `ChunkLoadError`.
+- **Check:** `lsof -nP -iTCP:3000 -sTCP:LISTEN | tail -n +2 | wc -l` — meer dan 1 = hij staat er weer; `ps -axo pid,ppid,lstart,command | grep "cashflow && pnpm start"` geeft het starttijdstip.
+- **Volgende zet:** Bij een volgende herstart kijken wat er in dezelfde seconde draait (bv. `ps -axo pid,ppid,lstart,command` vlak na `pm2 restart cashflow`), en welk hulpmiddel een dev-server "cd && pnpm start" als preview start. Tot dan: vóór elke `pm2:rebuild` de poort tellen.
+- **Status:** open
+
+## 2026-09-16 — Het nieuwe cash-kopgetal is niet in de browser gezien op het echte document · [next-step]
+- **Bevinding:** umanex-apps#514 staat op `main` en `:3000` is herbouwd (BUILD_ID `QPcXlBnA…`, alleen PM2 luistert, `/bureau` 200). De Chrome-extensie was bij de controle niet verbonden. Uit `/` volgt de verwachting: maandeinden sep −€ 296 · okt −€ 508 · nov −€ 7.614, kopgetal −€ 7.614 eind november.
+- **Check:** Open `http://localhost:3000/bureau` en `/bureau/cash`: noemt de tegel "laagste maandeinde −€ 7.614 (eind nov 2026)" en staat hetzelfde onder "Laagste maandeinde" op de cashpagina? (De bedragen verschuiven mee zodra de prognose verandert; dan hoort het kopgetal gelijk te zijn aan het laagste "Vorig saldo"-bedrag op `/` van de maanden erna.)
+- **Volgende zet:** Eén keer kijken; klopt het, dan kan dit op resolved.
+- **Status:** open

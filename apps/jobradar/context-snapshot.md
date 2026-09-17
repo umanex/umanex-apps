@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-09-16_
+_Afgeleid uit de inhoud van de tree, zonder datum. Wanneer hij het laatst veranderde: `git log -1 -- apps/jobradar/context-snapshot.md`._
 
 ## Project
 - **App:** jobradar
@@ -29,8 +29,18 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | FilterBar | `apps/jobradar/components/FilterBar.tsx` | components | — | — | — |
 | HerkomstFilter | `apps/jobradar/components/HerkomstFilter.tsx` | components | — | — | — |
 | JobCard | `apps/jobradar/components/JobCard.tsx` | components | — | — | — |
+| LageScoreLijst | `apps/jobradar/components/LageScoreLijst.tsx` | components | — | — | — |
 | LeadCard | `apps/jobradar/components/LeadCard.tsx` | components | — | — | — |
 | NextActionBadge | `apps/jobradar/components/NextActionBadge.tsx` | components | — | — | — |
+| ProspectCard | `apps/jobradar/components/ProspectCard.tsx` | components | — | — | — |
+| ProspectMap | `apps/jobradar/components/ProspectMap.tsx` | components | — | — | — |
+| RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
+| ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
+| SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
+| StatusActies | `apps/jobradar/components/StatusActies.tsx` | components | — | — | — |
+| StatusDropdown | `apps/jobradar/components/StatusDropdown.tsx` | components | — | — | — |
+| SyncButton | `apps/jobradar/components/SyncButton.tsx` | components | — | — | — |
+| TermChips | `apps/jobradar/components/TermChips.tsx` | components | — | — | — |
 | Aannames | `apps/jobradar/components/plan/Aannames.tsx` | plan | — | — | — |
 | ActieGroep | `apps/jobradar/components/plan/ActieGroep.tsx` | plan | — | — | — |
 | ActieLijst | `apps/jobradar/components/plan/ActieLijst.tsx` | plan | — | — | — |
@@ -47,35 +57,13 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | PlanStatusPill | `apps/jobradar/components/plan/PlanStatusPill.tsx` | plan | — | — | — |
 | Startvoorwaarden | `apps/jobradar/components/plan/Startvoorwaarden.tsx` | plan | — | — | — |
 | VoortgangPerPrioriteit | `apps/jobradar/components/plan/VoortgangPerPrioriteit.tsx` | plan | — | — | — |
-| ProspectCard | `apps/jobradar/components/ProspectCard.tsx` | components | — | — | — |
-| ProspectMap | `apps/jobradar/components/ProspectMap.tsx` | components | — | — | — |
-| RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
-| ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
-| SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
-| StatusDropdown | `apps/jobradar/components/StatusDropdown.tsx` | components | — | — | — |
-| SyncButton | `apps/jobradar/components/SyncButton.tsx` | components | — | — | — |
-| TermChips | `apps/jobradar/components/TermChips.tsx` | components | — | — | — |
 
-## Recente commits (app + packages)
+## Recente commits en lopend werk
+_Staat bewust niet in dit bestand: het verschilt per moment en per tree, en een gecommitte kopie is al verouderd op het moment dat hij landt. Vraag het live op:_
 ```
-e00a7ef docs: document the Figma chain for packages/ui and close batch 0 on evidence
-792dbe2 feat(ui): Switch and Dialog in Figma, with the guards that read the chain
-da73b18 fix(ui): a disabled Slider now looks disabled
-58b4395 feat(ui): a code-to-Figma chain for packages/ui, adapted from rowtrack
-5c03d25 feat(ui): name every rendered part with data-slot
+git log --oneline -5 -- apps/jobradar packages
+git status --short -- apps/jobradar packages
 ```
-
-## Uncommitted wijzigingen
-  M  apps/jobradar/BACKLOG.md
-  M  apps/jobradar/HANDOFF.md
-  M  apps/jobradar/briefings/2026-09-16-feature-bedrijfsplan-2027.tcebc.md
-  M  apps/jobradar/components/plan/ActiePanel.tsx
-  M  apps/jobradar/context-snapshot.md
-  M  apps/jobradar/lib/db/schema.ts
-  M  apps/jobradar/lib/plan/mutaties.ts
-  M  apps/jobradar/lib/plan/seed-inhoud.ts
-  M  apps/jobradar/lib/plan/seed.ts
-  M  apps/jobradar/scripts/flow-harness.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

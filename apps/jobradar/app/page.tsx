@@ -6,6 +6,7 @@ import { berekenDekking } from '@/lib/coverage'
 import { koppelBedrijven } from '@/lib/kbo/spiegel'
 import { leesKoppelingenPerBedrijf } from '@/lib/plan/lees'
 import type { RegionCode } from '@/lib/regions'
+import { leesStand } from '@/lib/triage'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,14 +14,22 @@ export default async function HomePage({
   searchParams,
 }: {
   /**
-   * `?tab=leads&zoek=Acme` — de sprong vanuit een gekoppeld bedrijf in het bedrijfsplan.
+   * De filterstand: `?tab=leads&zoek=Acme` (de sprong vanuit het bedrijfsplan) en sinds
+   * 2026-09-17 ook `status`, `regio` en `score`.
    *
    * Server-side gelezen en als beginwaarde doorgegeven, niet via `useSearchParams`: dat zou
    * een Suspense-grens vragen rond een client-component die al de hele pagina is.
    */
-  searchParams: Promise<{ tab?: string; zoek?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { tab, zoek } = await searchParams
+  const ruw = await searchParams
+  // Een parameter die twee keer in de URL staat, komt als array binnen; de eerste telt.
+  const stand = leesStand({
+    get: (naam) => {
+      const w = ruw[naam]
+      return Array.isArray(w) ? (w[0] ?? null) : (w ?? null)
+    },
+  })
   const db = getDb()
   const [jobs, companies, syncRuns] = await Promise.all([
     db.query.jobs.findMany({ orderBy: (j, { desc: d }) => [d(j.score)] }),
@@ -58,8 +67,7 @@ export default async function HomePage({
         dekking={dekking}
         vermoedens={vermoedens}
         koppelingen={koppelingen}
-        initialTab={tab ?? null}
-        initialZoek={zoek ?? null}
+        initialStand={stand}
       />
     </main>
   )

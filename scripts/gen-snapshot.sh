@@ -14,11 +14,30 @@
 # gematcht op het .dir-veld (apps/<app>) — niet op de JSON-key, want die kan afwijken
 # (bv. key "enviroMobile" → dir "apps/enviro-mobile"). Ontbreekt de data, dan worden
 # [TODO]-placeholders geschreven zodat de snapshot toch bruikbaar is.
+#
+# INVARIANT: dezelfde inhoud van de tree geeft byte voor byte hetzelfde bestand — ongeacht
+# de dag, de geschiedenis, wat er gestaged staat, de taalinstelling van de shell of de
+# volgorde waarin bestanden op schijf staan. Het bestand wordt bij elke commit herschreven
+# en gecommit, dus alles wat per moment of per tree verschilt, wordt een merge-conflict
+# tussen twee branches die niets met elkaar te maken hebben.
+#
+# GEMETEN 2026-09-16: umanex-apps#511 (cashflow-docs) en umanex-apps#512 (packages/ui) waren
+# elk los mergebaar met main, maar botsten onderling op apps/cashflow/context-snapshot.md.
+# De oorzaak zat in drie secties die per moment verschillen: een datum, "Recente commits"
+# en "Uncommitted wijzigingen". Die laatste was bovendien nooit waar: de hook genereert
+# vlak vóór de commit, dus hij noemde telkens de bestanden van de commit zélf (1a35da3:
+# drie bestanden "uncommitted", exact de drie die hij vastlegde) — en bij een merge alle
+# bestanden die main binnenbracht. Die drie secties zijn weg; wie ze nodig heeft vraagt
+# ze live op, en het bestand zegt hoe.
+#
+# LC_ALL=C: `sort` en de glob over packages/* volgen de taalinstelling. GEMETEN: onder C
+# en en_US.UTF-8 kwam de componententabel van cashflow, rowtrack en jobradar in een andere
+# volgorde. Een commit vanuit een shell met een andere locale herschikte dan de tabel.
 
 set -uo pipefail
+export LC_ALL=C
 
 CONTEXT_JSON="./context.json"
-DATE="$(date +%Y-%m-%d)"
 TARGET="${1:-all}"
 
 has_jq() { command -v jq >/dev/null 2>&1; }
@@ -84,20 +103,20 @@ generate_snapshot() {
     return
   fi
 
-  local figma_key figma_url description recent changed todos packages
+  local figma_key figma_url description todos packages
   figma_key="$(ctx_field "$app" figmaKey)";   [ -n "$figma_key" ]   || figma_key="[TODO: figmaKey in context.json]"
   figma_url="$(ctx_field "$app" figmaUrl)";    [ -n "$figma_url" ]   || figma_url="[TODO: figmaUrl in context.json]"
   description="$(ctx_field "$app" description)"; [ -n "$description" ] || description="[TODO: description in context.json]"
 
-  recent="$(git log --oneline -5 -- "$app_dir" packages 2>/dev/null)"; [ -n "$recent" ] || recent="(geen commits gevonden)"
-  changed="$(git status --short -- "$app_dir" packages 2>/dev/null | head -10 | sed 's/^/  /')"; [ -n "$changed" ] || changed="  (geen)"
-  todos="$(grep -rl "TODO\|FIXME\|HACK" "$app_dir/src" --include='*.tsx' --include='*.ts' 2>/dev/null | head -10 | sed 's/^/  - /')"; [ -n "$todos" ] || todos="  (geen)"
+  # `sort` vóór `head`: grep -r geeft de volgorde waarin bestanden op schijf staan, en die
+  # verschilt tussen twee trees met dezelfde inhoud (GEMETEN op APFS: `b c a` tegen `a b c`).
+  todos="$(grep -rl "TODO\|FIXME\|HACK" "$app_dir/src" --include='*.tsx' --include='*.ts' 2>/dev/null | sort | head -10 | sed 's/^/  - /')"; [ -n "$todos" ] || todos="  (geen)"
   packages="$(list_packages)"
   components="$(list_components "$app_dir")"
 
   cat > "$app_dir/context-snapshot.md" << EOF
 # Context Snapshot — $app
-_Gegenereerd op ${DATE}_
+_Afgeleid uit de inhoud van de tree, zonder datum. Wanneer hij het laatst veranderde: \`git log -1 -- $app_dir/context-snapshot.md\`._
 
 ## Project
 - **App:** $app
@@ -119,13 +138,12 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: \`// @figma\`-header
 |---|---|---|---|---|---|
 $components
 
-## Recente commits (app + packages)
+## Recente commits en lopend werk
+_Staat bewust niet in dit bestand: het verschilt per moment en per tree, en een gecommitte kopie is al verouderd op het moment dat hij landt. Vraag het live op:_
 \`\`\`
-$recent
+git log --oneline -5 -- $app_dir packages
+git status --short -- $app_dir packages
 \`\`\`
-
-## Uncommitted wijzigingen
-$changed
 
 ## Bestanden met TODO/FIXME
 $todos

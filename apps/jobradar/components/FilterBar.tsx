@@ -6,10 +6,13 @@ import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
 import { RegionFilter } from './RegionFilter'
 import type { RegionCode } from '@/lib/regions'
-import type { ItemStatus } from '@/lib/db/schema'
+import type { StatusFilter } from '@/lib/triage'
 
-const STATUS_OPTIONS: { value: ItemStatus | ''; label: string }[] = [
-  { value: '', label: 'Alle statussen' },
+// Open eerst, en als standaard: afgewezen werk hoort niet mee te scrollen bij het openen. Open
+// is alles behalve afgewezen — ook gecontacteerd, want dat is lopend werk (zie `pastBijStatus`).
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'open', label: 'Open' },
+  { value: 'alle', label: 'Alle statussen' },
   { value: 'new', label: 'Nieuw' },
   { value: 'saved', label: 'Opgeslagen' },
   { value: 'dismissed', label: 'Afgewezen' },
@@ -22,10 +25,10 @@ type FilterBarProps = {
   onZoekChange: (zoek: string) => void
   regions: RegionCode[]
   minScore: number
-  statusFilter: ItemStatus | ''
+  statusFilter: StatusFilter
   onRegionsChange: (regions: RegionCode[]) => void
   onMinScoreChange: (score: number) => void
-  onStatusFilterChange: (status: ItemStatus | '') => void
+  onStatusFilterChange: (status: StatusFilter) => void
 }
 
 export function FilterBar({
@@ -72,7 +75,8 @@ export function FilterBar({
       </div>
       <select
         value={statusFilter}
-        onChange={(e) => onStatusFilterChange(e.target.value as ItemStatus | '')}
+        aria-label="Status"
+        onChange={(e) => onStatusFilterChange(e.target.value as StatusFilter)}
         // `outline-none` zonder vervanging maakte de focus hier onzichtbaar — geen
         // afwijkende vorm maar helemaal geen indicator (gemeten, ux-audit-vervolg).
         className={cn(

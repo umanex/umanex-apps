@@ -71,6 +71,16 @@ export async function zetStatus(type: SubjectType, key: string, status: ItemStat
     })
 }
 
+/** Hoeveel contactmomenten er voor dit onderwerp vastliggen — voor `statusNaHeropenen`. */
+export async function telContactmomenten(type: SubjectType, key: string): Promise<number> {
+  const db = getDb()
+  const rijen = await db
+    .select({ id: schema.contactMoments.id })
+    .from(schema.contactMoments)
+    .where(and(eq(schema.contactMoments.subjectType, type), eq(schema.contactMoments.subjectKey, key)))
+  return rijen.length
+}
+
 /** De historiek van één onderwerp, nieuwste eerst, plus zijn volgende actie. */
 export async function leesOpvolging(type: SubjectType, key: string) {
   const db = getDb()

@@ -22,6 +22,12 @@ if [ -z "$SP" ]; then
   exit 2
 fi
 mkdir -p "$SP"
+# Optioneel `--shot=<map>`: de UI-pass legt dan het gevulde plan vast (overzicht, Geblokkeerd
+# open, het paneel na een afronding). Tot 2026-09-17 bestond daar geen instrument voor.
+SHOTMAP=""
+case "${2:-}" in
+  --shot=*) SHOTMAP="${2#--shot=}"; mkdir -p "$SHOTMAP" ;;
+esac
 PORT=3118
 DB="$SP/plan.db"
 rm -f "$DB" "$DB-wal" "$DB-shm"
@@ -189,6 +195,30 @@ vbevat "   als markdown" "text/markdown" "$(grep -i '^content-type' /tmp/planhdr
 v "29. export xml" "400" "$(curl -s -o /tmp/planbody -w '%{http_code}' "$B/api/plan/export?formaat=xml")"
 v "30. slot: geen duplicaten" "23" "$(tel 'SELECT count(DISTINCT key) FROM plan_actions;')" "unieke keys"
 v "   evenveel rijen als keys" "$(tel 'SELECT count(DISTINCT key) FROM plan_actions;')" "$(tel 'SELECT count(*) FROM plan_actions;')"
+
+# Wat afronden van $1 zou moeten vrijgeven, afgeleid uit de rijen zélf en niet uit de app: niet
+# gestart, zonder startuitzondering, hangt van $1 af, en elke andere afhankelijkheid is gereed.
+# Een tweede definitie naast `uitvoerbaarheidVan` — met opzet, anders vergelijkt de probe de
+# route met zichzelf.
+verwachtVrij() {
+  tel "SELECT a.key FROM plan_actions a
+       WHERE a.status = 'niet_gestart' AND COALESCE(a.start_uitzondering, '') = ''
+         AND EXISTS (SELECT 1 FROM plan_dependencies d WHERE d.action_key = a.key AND d.depends_on_key = '$1')
+         AND NOT EXISTS (SELECT 1 FROM plan_dependencies d JOIN plan_actions b ON b.key = d.depends_on_key
+                         WHERE d.action_key = a.key AND d.depends_on_key <> '$1' AND b.status <> 'gereed')
+       ORDER BY a.key;" | paste -sd, -
+}
+VERW13=$(verwachtVrij A13)
+v "31. de verwachting voor A13 is niet leeg" "ja" "$([ -n "$VERW13" ] && echo ja || echo nee)" "$VERW13"
+V=$(versie A13)
+v "   A13 gereed" "200" "$(patch A13 '{"status":"gereed","bewijs":"probe","versie":'"$V"'}')"
+v "   vrijgekomen = afleiding uit de database" "$VERW13" "$(node -e "const j=JSON.parse(require('fs').readFileSync('/tmp/planbody','utf8'));console.log([...(j.vrijgekomen??['(veld ontbreekt)'])].sort().join(','))")"
+
+# De bediening door een browser, op de toestand die hierboven is achtergelaten. Alleen hier
+# mag er geklikt worden: deze database gaat na de run weg.
+echo ""
+echo "UI — /plan in de browser (plan-ui-probe.mjs)"
+BASE="$B" SHOT="$SHOTMAP" node "$APP/scripts/plan-ui-probe.mjs" || GEZAKT=$((GEZAKT + 1))
 
 if [ "$GEZAKT" -gt 0 ]; then
   echo ""

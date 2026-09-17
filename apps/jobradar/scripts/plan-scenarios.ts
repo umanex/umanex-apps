@@ -25,7 +25,7 @@ import {
   SEED_VERSIE,
 } from '../lib/plan/seed-inhoud'
 import { keurAfhankelijkheden, vindCirkel } from '../lib/plan/afhankelijkheden'
-import { belangrijksteVolgendeActie, leidAf } from '../lib/plan/afleiding'
+import { belangrijksteVolgendeActie, leidAf, vrijgekomenActies } from '../lib/plan/afleiding'
 import {
   koppelBedrijf,
   legBeslissingVast,
@@ -1082,6 +1082,138 @@ function versie2(db: JobradarDb, key: string): number {
     check(`${naam}: laat de database ongemoeid`, snapshot() === voor)
   }
   rauw.close()
+}
+
+// ── 23. Afronden noemt precies wat er vrijkomt ──────────────────────────────
+// Over het hele model, niet één voorbeeld: voor élke seed-actie X op een verse seed. Het orakel
+// leest de seed-constanten, niet `uitvoerbaarheidVan` — anders vergelijkt de check de functie
+// met zichzelf. Op een verse seed is geen enkele actie gereed of vervallen en heeft niemand een
+// startuitzondering, dus "vrij" betekent daar: niet gestart, en X is de enige afhankelijkheid.
+{
+  const seedStatus = new Map(
+    SEED_ACTIES.map((a) => [a.key, a.uitgesteldOmdat ? 'uitgesteld' : 'niet_gestart'])
+  )
+  let metGevolg = 0
+  let totaalVrij = 0
+  for (const x of SEED_ACTIES.map((a) => a.key)) {
+    const verwacht = SEED_ACTIES.map((a) => a.key)
+      .filter((y) => {
+        const deps = SEED_AFHANKELIJKHEDEN[y] ?? []
+        return seedStatus.get(y) === 'niet_gestart' && deps.length === 1 && deps[0] === x
+      })
+      .sort()
+
+    const { db, rauw } = gezaaid()
+    const voor = leesPlan(db, NU).acties
+    rondAf(db, x)
+    check(`23 ${x}: rondt af`, status(db, x) === 'gereed', status(db, x))
+    const kreeg = vrijgekomenActies(voor, leesPlan(db, NU).acties).sort()
+    check(
+      `23 ${x}: vrijgekomen = acties met ${x} als enige afhankelijkheid`,
+      JSON.stringify(kreeg) === JSON.stringify(verwacht),
+      `verwacht [${verwacht}], kreeg [${kreeg}]`
+    )
+    if (verwacht.length > 0) metGevolg++
+    totaalVrij += kreeg.length
+    rauw.close()
+  }
+  // Positieve controle op het orakel zelf: zonder één actie met gevolg zou "leeg = leeg" 22 keer
+  // slagen en niets meten. A01 geeft er op de seed van 2026-09-16 drie (A02, A04, A13).
+  check('23: minstens één actie heeft een gevolg', metGevolg > 0, `${metGevolg} van ${SEED_ACTIES.length}`)
+  check('23: A01 geeft A02, A04 en A13', (() => {
+    const { db, rauw } = gezaaid()
+    const voor = leesPlan(db, NU).acties
+    rondAf(db, 'A01')
+    const k = vrijgekomenActies(voor, leesPlan(db, NU).acties).sort().join(',')
+    rauw.close()
+    return k === 'A02,A04,A13'
+  })())
+  console.log(`  23: ${metGevolg} van ${SEED_ACTIES.length} acties geven vrij, ${totaalVrij} in totaal`)
+
+  // Wat al beschikbaar was, telt niet als vrijgekomen. Het scherpe geval is een geparkeerde actie
+  // mét startuitzondering: niet gestart, alle afhankelijkheden straks gereed — een implementatie
+  // die de afhankelijkheden afloopt in plaats van de uitvoerbaarheid te vergelijken, noemt haar
+  // wél. Een lopende actie (de eerste vorm van deze check) valt al weg op de status en kon dat
+  // defect dus niet vangen (design-review 2026-09-17).
+  {
+    const { db, rauw } = gezaaid()
+    start(db, 'A01')
+    start(db, 'A02', { startUitzondering: 'inhoudelijk rond' })
+    wijzigStatus(db, 'A02', versie(db, 'A02'), statusInvoer({ status: 'niet_gestart' }), INSTELLINGEN, VANDAAG, NU)
+    const voor = leesPlan(db, NU).acties
+    const a02voor = voor.find((a) => a.key === 'A02')
+    check(
+      '23: opstelling — A02 is geparkeerd mét uitzondering en al beschikbaar',
+      a02voor?.status === 'niet_gestart' && Boolean(a02voor.startUitzondering) && a02voor.uitvoerbaarheid === 'beschikbaar',
+      `${a02voor?.status} / ${a02voor?.startUitzondering} / ${a02voor?.uitvoerbaarheid}`
+    )
+    rondAf(db, 'A01')
+    const na = vrijgekomenActies(voor, leesPlan(db, NU).acties)
+    check('23: een geparkeerde actie die al beschikbaar was, telt niet', !na.includes('A02'), `[${na}]`)
+    check('23: A04 en A13 komen wél vrij naast de geparkeerde A02', na.includes('A04') && na.includes('A13'), `[${na}]`)
+    rauw.close()
+  }
+
+  // Een harde blokkade gaat niet open door een ándere afhankelijkheid af te ronden.
+  {
+    const { db, rauw } = gezaaid()
+    rondAf(db, 'A01')
+    rondAf(db, 'A02')
+    wijzigStatus(db, 'A03', versie(db, 'A03'), statusInvoer({ status: 'vervallen', reden: 'test' }), INSTELLINGEN, VANDAAG, NU)
+    const voor = leesPlan(db, NU).acties
+    rondAf(db, 'A04')
+    const na = vrijgekomenActies(voor, leesPlan(db, NU).acties)
+    check('23: opstelling — A03 is vervallen', status(db, 'A03') === 'vervallen', status(db, 'A03'))
+    check('23: A05 komt niet vrij zolang A03 vervallen is, ook als A04 gereed wordt', !na.includes('A05'), `[${na}]`)
+    rauw.close()
+  }
+}
+
+// ── 23b. Opeenvolgende afrondingen, tegen een orakel uit de rijen ────────────
+// Over het hele model en over tijd: in twee volgordes elke actie afronden, en na elke stap
+// vergelijken met wat de rijen vóór die stap zeggen. Het orakel leest status, startuitzondering
+// en de kanten — nooit `uitvoerbaarheid`. Dit dekt wat een verse seed niet kan: acties met meer
+// dan één afhankelijkheid waarvan de rest al gereed is (A03, A05, A10).
+{
+  const alleKeys = SEED_ACTIES.map((a) => a.key)
+  const multi = new Set<string>()
+  let stappen = 0
+  for (const [naam, volgorde] of [
+    ['A01→A22', alleKeys],
+    ['A22→A01', [...alleKeys].reverse()],
+  ] as const) {
+    const { db, rauw } = gezaaid()
+    for (const x of volgorde) {
+      const rijen = db.select().from(schema.planActions).all()
+      const perKey = new Map(rijen.map((r) => [r.key, r]))
+      const verwacht = rijen
+        .filter((y) => {
+          const deps = SEED_AFHANKELIJKHEDEN[y.key] ?? []
+          return (
+            y.status === 'niet_gestart' &&
+            !y.startUitzondering &&
+            deps.includes(x) &&
+            deps.every((d) => d === x || perKey.get(d)?.status === 'gereed')
+          )
+        })
+        .map((y) => y.key)
+        .sort()
+      const voor = leesPlan(db, NU).acties
+      rondAf(db, x)
+      const kreeg = vrijgekomenActies(voor, leesPlan(db, NU).acties).sort()
+      check(
+        `23b ${naam} ${x}: vrijgekomen = orakel`,
+        JSON.stringify(kreeg) === JSON.stringify(verwacht),
+        `verwacht [${verwacht}], kreeg [${kreeg}]`
+      )
+      for (const k of verwacht) if ((SEED_AFHANKELIJKHEDEN[k] ?? []).length > 1) multi.add(k)
+      stappen++
+    }
+    rauw.close()
+  }
+  const gedekt = [...multi].sort().join(',')
+  check('23b: de volgordes dekken A03, A05 en A10 (meerdere afhankelijkheden)', ['A03', 'A05', 'A10'].every((k) => multi.has(k)), gedekt)
+  console.log(`  23b: ${stappen} afrondingen over twee volgordes, meervoudig gedekt: ${gedekt}`)
 }
 
 // ── Tegenproef ───────────────────────────────────────────────────────────────

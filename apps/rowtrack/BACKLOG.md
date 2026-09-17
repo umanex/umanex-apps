@@ -41,6 +41,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-09-17 — Parity vergelijkt opacity met de pixel-tolerantie · [test]
+- **Wat:** `scripts/geometry-parity.mjs` vergelijkt hoogte, padding, gap, radius, randbreedte én opacity met één `TOL = 0.5` (regel 103; opacity in de lijst op regel 176). Een opacity-verschil tot een halve dekking valt daardoor per constructie binnen de marge, en de zelftest muteert alleen een pixelveld. In de kopie in `packages/ui` bracht een eigen drempel voor fracties meteen een echt verborgen verschil boven (`Slider/disabled=true`: 0,5 in Figma, 1 in de browser); die fix zit in umanex/umanex-apps#512.
+- **Waarom niet nu:** gevonden in een learnings-ronde in umanex-os, niet tijdens rowtrack-werk. De bevestiging na de fix vraagt een verse Figma-meting via de Desktop Bridge.
+- **Eerste zet:** de fractie-drempel (`dichtbijFractie`) en de zelftest-case *"opacity 0,7 -> 0,8: rood"* overnemen uit `packages/ui/scripts/geometry-parity.mjs` op de branch van umanex/umanex-apps#512, dan de parity-as opnieuw draaien — reken op echte opacity-verschillen.
+- **Check:** `git show origin/main:apps/rowtrack/scripts/geometry-parity.mjs | grep -c dichtbijFractie` — 0 = het item leeft. Positieve controle: `git show origin/feature/ui-batch-0-figma-keten:packages/ui/scripts/geometry-parity.mjs | grep -c dichtbijFractie` hoort ≥ 1 te geven.
+- **Status:** open
+
 ## 2026-09-16 — Twee calorieformules die elkaar kruisen: vier productvragen, analyse af · [feature]
 - **Wat:** De app rekent calorieën zelf uit (`lib/calories.ts`, via VO2 → `kcal/h = 4,114·W + 2·gewicht`)
   en gooit het kcal-veld weg dat de erg meestuurt (`lib/ble/ftms-parser.ts:115`, `offset += 5`). De

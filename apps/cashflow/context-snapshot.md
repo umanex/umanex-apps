@@ -1,5 +1,5 @@
 # Context Snapshot — cashflow
-_Gegenereerd op 2026-09-16_
+_Afgeleid uit de inhoud van de tree, zonder datum. Wanneer hij het laatst veranderde: `git log -1 -- apps/cashflow/context-snapshot.md`._
 
 ## Project
 - **App:** cashflow
@@ -37,10 +37,6 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | ConversionPanel | `apps/cashflow/components/bureau/ConversionPanel.tsx` | bureau | — | — | — |
 | ExtensionList | `apps/cashflow/components/bureau/ExtensionList.tsx` | bureau | — | — | — |
 | ExternalCostList | `apps/cashflow/components/bureau/ExternalCostList.tsx` | bureau | — | — | — |
-| NumberField | `apps/cashflow/components/bureau/fields/NumberField.tsx` | fields | — | — | — |
-| SelectField | `apps/cashflow/components/bureau/fields/SelectField.tsx` | fields | — | — | — |
-| TextareaField | `apps/cashflow/components/bureau/fields/TextareaField.tsx` | fields | — | — | — |
-| TextField | `apps/cashflow/components/bureau/fields/TextField.tsx` | fields | — | — | — |
 | FollowUpList | `apps/cashflow/components/bureau/FollowUpList.tsx` | bureau | — | — | — |
 | FormSection | `apps/cashflow/components/bureau/FormSection.tsx` | bureau | — | — | — |
 | GoalsForm | `apps/cashflow/components/bureau/GoalsForm.tsx` | bureau | — | — | — |
@@ -73,6 +69,10 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | WeekList | `apps/cashflow/components/bureau/WeekList.tsx` | bureau | — | — | — |
 | YearSelector | `apps/cashflow/components/bureau/YearSelector.tsx` | bureau | — | — | — |
 | YieldBreakdown | `apps/cashflow/components/bureau/YieldBreakdown.tsx` | bureau | — | — | — |
+| NumberField | `apps/cashflow/components/bureau/fields/NumberField.tsx` | fields | — | — | — |
+| SelectField | `apps/cashflow/components/bureau/fields/SelectField.tsx` | fields | — | — | — |
+| TextField | `apps/cashflow/components/bureau/fields/TextField.tsx` | fields | — | — | — |
+| TextareaField | `apps/cashflow/components/bureau/fields/TextareaField.tsx` | fields | — | — | — |
 | BalanceFooter | `apps/cashflow/components/cashflow/BalanceFooter.tsx` | cashflow | — | — | — |
 | BufferChart | `apps/cashflow/components/cashflow/BufferChart.tsx` | cashflow | — | — | — |
 | CashflowDndContext | `apps/cashflow/components/cashflow/CashflowDndContext.tsx` | cashflow | — | — | — |
@@ -96,26 +96,12 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | SyncStatus | `apps/cashflow/components/feedback/SyncStatus.tsx` | feedback | — | — | — |
 | AppHeader | `apps/cashflow/components/layout/AppHeader.tsx` | layout | — | — | — |
 
-## Recente commits (app + packages)
+## Recente commits en lopend werk
+_Staat bewust niet in dit bestand: het verschilt per moment en per tree, en een gecommitte kopie is al verouderd op het moment dat hij landt. Vraag het live op:_
 ```
-e00a7ef docs: document the Figma chain for packages/ui and close batch 0 on evidence
-792dbe2 feat(ui): Switch and Dialog in Figma, with the guards that read the chain
-da73b18 fix(ui): a disabled Slider now looks disabled
-58b4395 feat(ui): a code-to-Figma chain for packages/ui, adapted from rowtrack
-5c03d25 feat(ui): name every rendered part with data-slot
+git log --oneline -5 -- apps/cashflow packages
+git status --short -- apps/cashflow packages
 ```
-
-## Uncommitted wijzigingen
-  M  apps/cashflow/BACKLOG.md
-  M  apps/cashflow/CLAUDE.md
-  M  apps/cashflow/app/analyse/page.tsx
-  A  apps/cashflow/app/bureau/cash/page.tsx
-  A  apps/cashflow/app/bureau/doelen/page.tsx
-  A  apps/cashflow/app/bureau/klanten/page.tsx
-  A  apps/cashflow/app/bureau/layout.tsx
-  A  apps/cashflow/app/bureau/page.tsx
-  A  apps/cashflow/app/bureau/projecten/[id]/page.tsx
-  A  apps/cashflow/app/bureau/projecten/page.tsx
 
 ## Bestanden met TODO/FIXME
   (geen)

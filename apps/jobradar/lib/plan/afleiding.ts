@@ -323,6 +323,25 @@ export function belangrijksteVolgendeActie(acties: readonly ActieWeergave[]): Vo
   return beschikbaar ? { key: beschikbaar.key, reden: 'beschikbaar' } : null
 }
 
+/**
+ * Welke acties door één wijziging van geblokkeerd naar beschikbaar gingen.
+ *
+ * Een vergelijking van twee afleidingen, geen eigen regel: wat "vrij" is, beslist
+ * `uitvoerbaarheidVan` al. Zou dit zelf de afhankelijkheden aflopen, dan bestonden er twee
+ * definities van geblokkeerd — en die lopen uiteen zodra er een blokkadevorm bijkomt (een
+ * startuitzondering, een harde blokkade). Een actie die al beschikbaar was, telt niet: er kwam
+ * niets vrij, ze stond al open.
+ */
+export function vrijgekomenActies(
+  voor: readonly Pick<ActieWeergave, 'key' | 'uitvoerbaarheid'>[],
+  na: readonly Pick<ActieWeergave, 'key' | 'uitvoerbaarheid'>[]
+): string[] {
+  const eerder = new Map(voor.map((a) => [a.key, a.uitvoerbaarheid]))
+  return na
+    .filter((a) => a.uitvoerbaarheid === 'beschikbaar' && eerder.get(a.key) === 'geblokkeerd')
+    .map((a) => a.key)
+}
+
 export function leidAf(invoer: PlanInvoer): {
   acties: ActieWeergave[]
   beslissingen: BeslissingWeergave[]

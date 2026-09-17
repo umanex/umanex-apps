@@ -7,6 +7,7 @@ import {
   keurStatusInvoer,
   keurVersie,
 } from '@/lib/plan/keuring'
+import { vrijgekomenActies } from '@/lib/plan/afleiding'
 import { leesInstellingen } from '@/lib/plan/instellingen'
 import { verwijderActie, wijzigActie, wijzigStatus, zetAfhankelijkheden } from '@/lib/plan/mutaties'
 import { antwoord, leesBody, nu, planDb, vandaag } from '@/lib/plan/server'
@@ -59,6 +60,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ke
   if (heeftStatus) {
     const gekeurd = keurStatusInvoer(body)
     if (!gekeurd.ok) return NextResponse.json({ ok: false, error: gekeurd.reden }, { status: 400 })
+    // Vóór de wissel lezen, in dezelfde synchrone doorloop: better-sqlite3 blokkeert en er zit
+    // geen `await` tussen, dus geen ander verzoek kan tussen deze lezing en de mutatie landen.
+    const voor = leesPlan(db).acties
     const mutatie = wijzigStatus(
       db,
       key,
@@ -68,11 +72,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ke
       vandaag(),
       nu()
     )
-    return antwoord(mutatie, ({ actie, geparkeerd }) => ({
-      actie: leesActieDetail(db, actie.key),
-      geparkeerd,
-      plan: leesPlan(db),
-    }))
+    return antwoord(mutatie, ({ actie, geparkeerd }) => {
+      const plan = leesPlan(db)
+      return {
+        actie: leesActieDetail(db, actie.key),
+        geparkeerd,
+        plan,
+        vrijgekomen: vrijgekomenActies(voor, plan.acties),
+      }
+    })
   }
 
   if (heeftAfhankelijkheden) {

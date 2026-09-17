@@ -28,6 +28,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FILE_KEY, LEGACY, kebab } from './doel.mjs';
+import { gapRol } from './layout-rollen.mjs';
 
 const UI = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BASE = JSON.parse(readFileSync(join(UI, 'figma/manifest.json'), 'utf8')).collections.Base.variables;
@@ -133,7 +134,10 @@ function snoei(node, diepte, pad, comp, isWortel = false) {
   // `space-y-1.5` levert 6 = spacing-1_5. Uit twee bronnen opgeteld is hij dat niet meer.
   if (node.gap || M.gap) {
     o.gap = r2((node.gap ?? 0) + M.gap);
-    const gv = !M.gap ? node.gapVar : (!node.gap ? spacingVar(M.gap) : null);
+    // `space-y-heading` komt als marge binnen; de klasse op de ouder zegt welke rol dat is.
+    const margeRol = gapRol(node.klassen ?? [], [node.richting === 'row' ? 'space-x' : 'space-y']);
+    const margeVar = margeRol && BASE[margeRol] === M.gap ? `Base:${margeRol}` : spacingVar(M.gap);
+    const gv = !M.gap ? node.gapVar : (!node.gap ? margeVar : null);
     if (gv) o.gapVar = gv;
   }
   if (node.justify && !['normal', 'flex-start', 'start'].includes(node.justify)) o.justify = node.justify;

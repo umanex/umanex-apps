@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+/**
+ * tokens.json → figma/base-payload.json: wat de Figma-collectie Base hoort te dragen.
+ *
+ * Base was tot 2026-09-17 een tweede bron: spacing, border en icon-stroke bestonden alleen in
+ * Figma, met Tailwinds defaults als stille oorsprong. Sinds Layout/Scale in tokens.json staat, is
+ * Figma ontvanger. Dit script zegt wat er moet staan; `figma/zet-base.js` zet het in Figma, bij
+ * naam, zodat bestaande variabele-ids (en daarmee elke binding) blijven.
+ *
+ * Niet in de payload: de radius-stappen. Die leidt de preset met calc() af van één token; ze
+ * blijven een bekend gat in figma-sync-check (BEKENDE_GATEN).
+ */
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const UI = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const tokens = JSON.parse(readFileSync(join(UI, '../tokens/tokens.json'), 'utf8'));
+const layout = tokens['Layout/Scale'];
+const base = tokens['Theme/base'] ?? {};
+if (!layout?.spacing) { console.error('✗ Layout/Scale ontbreekt in tokens.json'); process.exit(1); }
+
+const px = (node) => {
+  const t = String(node.$value ?? node.value);
+  if (t.endsWith('rem')) return parseFloat(t) * 16;
+  const n = parseFloat(t);
+  if (Number.isNaN(n)) throw new Error(`geen getal: ${t}`);
+  return n;
+};
+
+const schaal = [
+  ...Object.entries(layout.spacing).map(([k, v]) => ({ naam: `spacing-${k}`, px: px(v) })),
+  ...Object.entries(layout.border ?? {}).map(([k, v]) => ({ naam: `border-${k}`, px: px(v) })),
+  { naam: 'icon-stroke', px: px(layout.icon.stroke) },
+];
+const schaalNamen = new Set(schaal.map(s => s.naam));
+
+// Figma-scope per rolgroep: GAP dekt padding en gap in auto layout, WIDTH_HEIGHT de afmetingen.
+// Zo verschijnt spacing-surface niet in het hoogteveld en size-control-md niet bij padding.
+const SCOPES = { spacing: ['GAP'], size: ['WIDTH_HEIGHT'] };
+const rollen = [];
+for (const [groep, scopes] of Object.entries(SCOPES)) {
+  for (const [k, v] of Object.entries(base[groep] ?? {})) {
+    const ref = String(v.$value ?? v.value).match(/^\{spacing\.([\w]+)\}$/);
+    if (!ref) { console.error(`✗ ${groep}.${k} is geen alias naar een spacing-stap: ${v.$value}`); process.exit(1); }
+    const alias = `spacing-${ref[1]}`;
+    if (!schaalNamen.has(alias)) { console.error(`✗ ${groep}.${k} wijst naar ${alias}, die niet in Layout/Scale staat`); process.exit(1); }
+    rollen.push({ naam: `${groep}-${k}`, alias, scopes });
+  }
+}
+
+const uit = {
+  $comment: 'Gegenereerd door scripts/figma/base-payload.mjs uit packages/tokens/tokens.json — niet met de hand bewerken.',
+  schaal,
+  rollen,
+};
+writeFileSync(join(UI, 'figma/base-payload.json'), JSON.stringify(uit, null, 2) + '\n');
+console.log(`✓ figma/base-payload.json: ${schaal.length} schaalvariabelen, ${rollen.length} rollen`);

@@ -213,11 +213,14 @@ if (!fails.some(f => f.startsWith('[schaal]'))) ok('schaal', `radius-afgeleiden 
 
 // Elke Base-variabele moet in een categorie vallen die een regel draagt. Een naam die
 // nergens onder valt is drift: hij komt uit geen enkele bron en niets toetst zijn waarde.
+const IS_SCHAAL = /^(spacing-([\d_]+|px)|border-\d+|icon-stroke)$/;
+const IS_LAYOUTROL = /^(spacing|size)-[a-z][a-z-]*$/;
 const BASE_CATEGORIE = [
   [/^radius(-lg|-md|-sm|-full)?$/, 'radius-schaal uit de preset'],
-  [/^spacing-[\d_]+$/,             'Layout/Scale spacing'],
-  [/^border-[12]$/,                'Layout/Scale border'],
+  [/^spacing-([\d_]+|px)$/,        'Layout/Scale spacing'],
+  [/^border-\d+$/,                 'Layout/Scale border'],
   [/^icon-stroke$/,                'Layout/Scale icon.stroke'],
+  [IS_LAYOUTROL,                   'Theme/base layout-rol (alias) — spacing-px valt al onder de schaal'],
 ];
 const zonderCategorie = Object.keys(B).filter(n => !BASE_CATEGORIE.some(([re]) => re.test(n)));
 if (zonderCategorie.length) fail('schaal', `Base-variabele zonder bekende categorie (drift): ${zonderCategorie.join(', ')}`);
@@ -238,10 +241,30 @@ if (!layout?.spacing) {
     'icon-stroke': px(layout.icon?.stroke ?? { $value: NaN }),
   };
   const schaalFout = Object.entries(B)
-    .filter(([n]) => /^(spacing-|border-|icon-stroke$)/.test(n))
+    .filter(([n]) => IS_SCHAAL.test(n))
     .filter(([n, v]) => v !== verwacht[n]);
   if (schaalFout.length) fail('schaal', `wijkt af van Layout/Scale in tokens.json: ${schaalFout.map(([n, v]) => `${n}=${v} (token ${verwacht[n]})`).join(', ')}`);
-  else ok('schaal', `${Object.keys(B).filter(n => /^(spacing-|border-|icon-stroke$)/.test(n)).length} spacing-, border- en icon-variabelen gelijk aan Layout/Scale`);
+  else ok('schaal', `${Object.keys(B).filter(n => IS_SCHAAL.test(n)).length} spacing-, border- en icon-variabelen gelijk aan Layout/Scale`);
+
+  // Layout-rollen: in Figma een alias naar de schaalstap die Theme/base noemt. Een rol met een
+  // eigen getal zou kloppen tot de schaal verschuift, en daarna stil blijven staan.
+  const themeBase = JSON.parse(readFileSync(layoutPad, 'utf8'))['Theme/base'] ?? {};
+  const rolDoelen = {};
+  for (const groep of ['spacing', 'size']) {
+    for (const [k, v] of Object.entries(themeBase[groep] ?? {})) {
+      const ref = String(v.$value ?? v.value).match(/^\{spacing\.([\w]+)\}$/);
+      rolDoelen[`${groep}-${k}`] = ref ? `spacing-${ref[1]}` : `geen alias (${v.$value ?? v.value})`;
+    }
+  }
+  const aliassen = manifest.collections.Base.aliassen ?? {};
+  const rolFout = [
+    ...Object.entries(rolDoelen).filter(([n]) => !(n in B)).map(([n]) => `${n} ontbreekt in Figma`),
+    ...Object.entries(rolDoelen).filter(([n]) => n in B && aliassen[n] !== rolDoelen[n])
+      .map(([n]) => `${n} wijst naar ${aliassen[n] ?? `een eigen waarde (${B[n]})`}, token zegt ${rolDoelen[n]}`),
+    ...Object.keys(B).filter(n => IS_LAYOUTROL.test(n) && !IS_SCHAAL.test(n) && !(n in rolDoelen)).map(n => `${n} staat niet in Theme/base`),
+  ];
+  if (rolFout.length) fail('schaal', `layout-rollen: ${rolFout.join('; ')}`);
+  else ok('schaal', `${Object.keys(rolDoelen).length} layout-rollen zijn in Figma een alias naar hun stap uit Theme/base`);
 }
 
 // ---- 5b. Token-dekking: elke variabele hangt aan een pad in tokens.json ----

@@ -34,6 +34,7 @@ import { chromium } from 'playwright';
 import { fontSize as TYPO_SIZE, fontWeight as TYPO_WEIGHT, fontFamily as TYPO_FAMILY }
   from '../../../tokens/build/typography.mjs';
 import { NIET_VISUEEL, primairVan } from './doel.mjs';
+import { paddingRollen, gapRol } from './layout-rollen.mjs';
 
 const UI = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const STATIC = join(UI, 'storybook-static');
@@ -495,9 +496,21 @@ function bind(node, pad, comp) {
     meld('radius', v);
     return null;
   });
-  node.paddingVar = node.padding.map(v => (v ? spacingVar(v) : null));
-  node.padding.forEach((v, i) => { if (v && !node.paddingVar[i]) meld('padding', v); });
-  if (node.gap) { node.gapVar = spacingVar(node.gap); if (!node.gapVar) meld('gap', node.gap); }
+  // Een layout-rol in de klasse beslist (p-surface → spacing-surface), mits de browser de waarde
+  // van die rol rendert; anders is het een fout, zoals bij een kleurrol. Zonder rol: op waarde.
+  const rolVar = (rol, v, wat) => {
+    if (BASE[rol] === v) return `Base:${rol}`;
+    fout(`klasse-waarde-mismatch — ${wat}: klasse zegt ${rol} (${BASE[rol]}), browser rendert ${v}`);
+    return null;
+  };
+  const padRol = paddingRollen(node.klassen);
+  node.paddingVar = node.padding.map((v, i) => (!v ? null : padRol[i] ? rolVar(padRol[i], v, 'padding') : spacingVar(v)));
+  node.padding.forEach((v, i) => { if (v && !node.paddingVar[i] && !padRol[i]) meld('padding', v); });
+  if (node.gap) {
+    const gr = gapRol(node.klassen, ['gap', node.richting === 'row' ? 'gap-x' : 'gap-y']);
+    node.gapVar = gr ? rolVar(gr, node.gap, 'gap') : spacingVar(node.gap);
+    if (!node.gapVar && !gr) meld('gap', node.gap);
+  }
   if (node.opacity < 1) meld('opacity', node.opacity);
   if (node.boxShadow) {
     const lagen = schaduwLagen(node.boxShadow);

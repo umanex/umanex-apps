@@ -182,6 +182,26 @@ const gevallen = [
     },
   },
   {
+    naam: 'layout-rol in Figma wijst naar een andere stap dan Theme/base',
+    as: '[schaal]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      m.collections.Base.aliassen = { ...(m.collections.Base.aliassen ?? {}), 'spacing-surface': 'spacing-5' };
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
+    naam: 'layout-rol ontbreekt in Figma',
+    as: '[schaal]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      delete m.collections.Base.variables['size-control-md'];
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
     // Afgaan-kant van de dekkings-as: een variabele die nergens in tokens.json staat en
     // ook niet als bekende schuld genoteerd is. Precies het defect uit de learning.
     naam: 'nieuwe variabele zonder token in de bron',

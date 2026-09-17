@@ -97,6 +97,15 @@ Voorwaarden: de wijziging gebeurt in één keer, gaat via een PR, en Jeroen doet
 na de merge een **Pull in Tokens Studio** op zodat de plugin de nieuwe structuur overneemt.
 Push je vanuit de plugin vóór die pull, dan draai je de restructurering terug.
 
+**Zet bij die pull de variabele-export van de plugin uit.** Gemeten 2026-09-17, na de pull van de
+layout-tokens: naast `Theme` (43, modes Light/Dark) en `Base` (57) stonden er acht nieuwe
+collecties in de Component library — één per token-set, samen 213 variabelen, elk met één mode
+genoemd naar de set en met nul bindingen. Dat is een tweede bron naast de collecties waar de
+keten en alle 1310 bindingen op staan, en in de gepubliceerde library ziet een ontwerper
+`background` dan twee keer: één keer omschakelbaar, één keer niet. Verwijderd na een
+versie-checkpoint; zonder die instelling komt het terug bij elke volgende pull. Figma-variabelen
+komen hier uit `packages/ui/figma/zet-base.js` en de Theme-keten, niet uit de plugin.
+
 **Lagen.** Drie assen, elk hun eigen set(s):
 
 ```

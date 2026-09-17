@@ -131,7 +131,15 @@ export function meetInPagina() {
       continue;
     }
 
-    const tekst = tekstKleur.a < 1 ? overElkaar(tekstKleur, onder) : tekstKleur;
+    // De opacity van het element en zijn voorouders dooft de tekst zelf ook, niet alleen de
+    // vlakken eronder. Tot 2026-09-17 telde ze hier niet mee, en mat `text-muted-foreground
+    // opacity-70` als volle muted-kleur (≈5,0:1) terwijl er ≈2,8:1 op het scherm stond.
+    // Benadering: een opacity boven het ondoorzichtige vlak dooft tekst en vlak samen; hier
+    // telt hij alleen in de tekst, dus zo'n geval meet strenger dan het is — nooit milder.
+    let opaciteit = 1;
+    for (let n = el; n; n = n.parentElement) opaciteit *= parseFloat(getComputedStyle(n).opacity || '1');
+    const effectief = { ...tekstKleur, a: tekstKleur.a * opaciteit };
+    const tekst = effectief.a < 1 ? overElkaar(effectief, onder) : tekstKleur;
 
     // Kort pad voor de melding — genoeg om het terug te vinden, niet het hele DOM-pad.
     const beschrijf = (n) =>

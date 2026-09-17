@@ -40,6 +40,13 @@ export type TriageStand = {
    * herladen na een doorklik stil een andere lijst (design-review 2026-09-17).
    */
   via: 'bedrijf' | ''
+  /**
+   * Alleen wat bij de laatste sync binnenkwam — dezelfde voorwaarde als de badge "nieuw" op een kaart
+   * (`isNieuw`). Los van de status: "nieuw" is wanneer iets binnenkwam, "niet beoordeeld" is wat je
+   * ermee deed. Tot 2026-09-17 heetten die twee op hetzelfde scherm allebei "nieuw", en "+N vacatures"
+   * filterde daardoor op de status in plaats van op de sync.
+   */
+  nieuw: boolean
 }
 
 export const STANDAARD: TriageStand = {
@@ -49,6 +56,38 @@ export const STANDAARD: TriageStand = {
   tab: 'jobs',
   zoek: '',
   via: '',
+  nieuw: false,
+}
+
+/**
+ * Kwam dit item binnen bij de laatste sync? `vorigeSyncAt` is de start van de sync dáárvoor; met maar
+ * één sync is dat 1970 en is alles nieuw. ISO-tijdstempels, dus een stringvergelijking is de chronologie.
+ *
+ * Eén functie voor de badge én het filter: twee kopieën van deze vergelijking kunnen stil uiteenlopen,
+ * en dan toont het vinkje andere kaarten dan die met de badge.
+ */
+export function isNieuw(eerstGezienAt: string, vorigeSyncAt: string): boolean {
+  return eerstGezienAt >= vorigeSyncAt
+}
+
+/** Wat een vacature of lead moet hebben om door de filters te komen (de zoekterm uitgezonderd). */
+export type Filterbaar = { regio: string; score: number; status: string; eerstGezienAt: string }
+
+/**
+ * De filters van het dashboard behalve de zoekterm, als één pure voorwaarde. De zoekterm blijft in de
+ * component: bij een doorklik matcht hij op de bedrijfssleutel, en die hangt aan `normaliseerBedrijf`.
+ */
+export function pastBijFilters(
+  item: Filterbaar,
+  stand: Pick<TriageStand, 'status' | 'regios' | 'minScore' | 'nieuw'>,
+  vorigeSyncAt: string
+): boolean {
+  return (
+    (stand.regios as readonly string[]).includes(item.regio) &&
+    item.score >= stand.minScore &&
+    pastBijStatus(item.status, stand.status) &&
+    (!stand.nieuw || isNieuw(item.eerstGezienAt, vorigeSyncAt))
+  )
 }
 
 /**
@@ -76,6 +115,7 @@ export function leesStand(params: Params): TriageStand {
   const tab = params.get('tab')
   const zoek = params.get('zoek')
   const via = params.get('via')
+  const nieuw = params.get('nieuw')
 
   let regios = [...STANDAARD.regios]
   if (regio === 'geen') regios = []
@@ -97,6 +137,9 @@ export function leesStand(params: Params): TriageStand {
     tab: tab !== null && (TABS as readonly string[]).includes(tab) ? (tab as Tab) : STANDAARD.tab,
     zoek: zoek ?? STANDAARD.zoek,
     via: via === 'bedrijf' ? 'bedrijf' : STANDAARD.via,
+    // Alleen `1` zet het aan: een oude bladwijzer met `nieuw=true` of `nieuw=ja` valt terug, zoals elke
+    // andere onbekende waarde.
+    nieuw: nieuw === '1',
   }
 }
 
@@ -111,6 +154,7 @@ export function schrijfStand(stand: TriageStand): URLSearchParams {
   if (regios.length === 0) p.set('regio', 'geen')
   else if (regios.length !== ALLE_REGIOS.length) p.set('regio', regios.join(','))
   if (stand.minScore !== STANDAARD.minScore) p.set('score', String(stand.minScore))
+  if (stand.nieuw !== STANDAARD.nieuw) p.set('nieuw', '1')
   return p
 }
 

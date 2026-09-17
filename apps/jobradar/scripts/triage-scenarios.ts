@@ -11,7 +11,9 @@ import {
   ALLE_REGIOS,
   LAGE_SCORE_GRENS,
   STANDAARD,
+  isNieuw,
   leesStand,
+  pastBijFilters,
   pastBijStatus,
   schrijfStand,
   splitsOpScore,
@@ -47,8 +49,9 @@ const gelijk = (a: TriageStand, b: TriageStand) => JSON.stringify(a) === JSON.st
       for (let minScore = 0; minScore <= 100; minScore += 5)
         for (const tab of tabs)
           for (const zoek of zoektermen)
-           for (const via of ['', 'bedrijf'] as const) {
-            const stand: TriageStand = { status, regios, minScore, tab, zoek, via }
+           for (const via of ['', 'bedrijf'] as const)
+            for (const nieuw of [false, true]) {
+            const stand: TriageStand = { status, regios, minScore, tab, zoek, via, nieuw }
             // Door een echte URL, niet alleen door URLSearchParams: zo reist de codering mee.
             const url = new URL(`http://x/?${schrijfStand(stand)}`)
             const terug = leesStand(url.searchParams)
@@ -57,7 +60,7 @@ const gelijk = (a: TriageStand, b: TriageStand) => JSON.stringify(a) === JSON.st
             n++
           }
   console.log(`  1: ${n} standen door de URL heen en terug`)
-  check('1: de ruimte is niet leeg', n === 6 * 8 * 21 * 3 * 5 * 2, String(n))
+  check('1: de ruimte is niet leeg', n === 6 * 8 * 21 * 3 * 5 * 2 * 2, String(n))
 }
 
 // ── 2. De standaard schrijft niets ───────────────────────────────────────────
@@ -98,6 +101,10 @@ const gelijk = (a: TriageStand, b: TriageStand) => JSON.stringify(a) === JSON.st
   const geldig = leesStand(new URLSearchParams('status=dismissed&regio=BRU,WVL&score=25&tab=leads&zoek=x&via=bedrijf'))
   check('3: geldige waarden worden gelezen', geldig.status === 'dismissed' && geldig.minScore === 25 && geldig.tab === 'leads' && geldig.zoek === 'x' && geldig.via === 'bedrijf', JSON.stringify(geldig))
   check('3: via=onzin valt terug op leeg', leesStand(new URLSearchParams('via=onzin')).via === '')
+  check('3: nieuw=1 wordt gelezen', leesStand(new URLSearchParams('nieuw=1')).nieuw === true)
+  for (const qs of ['nieuw=true', 'nieuw=ja', 'nieuw=0', 'nieuw=']) {
+    check(`3 ${qs}: nieuw valt terug op uit`, leesStand(new URLSearchParams(qs)).nieuw === false)
+  }
   check('3: regio\'s in vaste volgorde, zonder dubbels', JSON.stringify(leesStand(new URLSearchParams('regio=BRU,WVL,BRU')).regios) === '["WVL","BRU"]')
   check('3: regio=geen is een lege selectie', leesStand(new URLSearchParams('regio=geen')).regios.length === 0)
 }
@@ -111,6 +118,42 @@ const gelijk = (a: TriageStand, b: TriageStand) => JSON.stringify(a) === JSON.st
   for (const f of statussen) {
     check(`4: filter ${f} laat alleen ${f} door`, statussen.every((s) => pastBijStatus(s, f as StatusFilter) === (s === f)))
   }
+}
+
+// ── 6. Het vinkje "Alleen nieuw" selecteert precies de badge-items ───────────
+// Over elke combinatie van de andere filters en een reeks items rond de grens van de vorige sync
+// (ervóór, precies erop, erna). De eis: met het vinkje = zonder het vinkje ∩ badge-voorwaarde. En de
+// badge-voorwaarde is `isNieuw` zelf — dezelfde functie die de kaart gebruikt.
+{
+  const VORIGE = '2026-09-10T08:00:00.000Z'
+  const tijden = ['2026-09-01T00:00:00.000Z', '2026-09-10T07:59:59.999Z', VORIGE, '2026-09-10T08:00:00.001Z', '2026-09-17T12:00:00.000Z']
+  const items = []
+  let id = 0
+  for (const regio of [...ALLE_REGIOS, 'VBR'])
+    for (const score of [0, 5, 9, 10, 45, 100])
+      for (const status of ['new', 'saved', 'dismissed', 'contacted'])
+        for (const eerstGezienAt of tijden) items.push({ id: id++, regio, score, status, eerstGezienAt })
+  const regioSets: RegionCode[][] = []
+  for (let m = 0; m < 1 << ALLE_REGIOS.length; m++) regioSets.push(ALLE_REGIOS.filter((_, i) => m & (1 << i)))
+  let standen = 0
+  let metNieuwTotaal = 0
+  for (const status of ['open', 'alle', 'new', 'saved', 'dismissed', 'contacted'] as StatusFilter[])
+    for (const regios of regioSets)
+      for (const minScore of [0, 5, 10, 50, 100]) {
+        const zonder = items.filter((it) => pastBijFilters(it, { status, regios, minScore, nieuw: false }, VORIGE))
+        const met = items.filter((it) => pastBijFilters(it, { status, regios, minScore, nieuw: true }, VORIGE))
+        const verwacht = zonder.filter((it) => isNieuw(it.eerstGezienAt, VORIGE))
+        if (JSON.stringify(met.map((x) => x.id)) !== JSON.stringify(verwacht.map((x) => x.id))) {
+          check(`6 ${status}/${regios.join(',')}/${minScore}: vinkje = zonder ∩ badge`, false, `${met.length} tegen ${verwacht.length}`)
+        } else geslaagd++
+        metNieuwTotaal += met.length
+        standen++
+      }
+  // Positieve kant: zonder deze twee slaagt de gelijkheid ook als het vinkje niets doet of alles wegfiltert.
+  check('6: het vinkje filtert iets weg', metNieuwTotaal > 0 && metNieuwTotaal < standen * items.length)
+  check('6: precies op de grens is nieuw, een milliseconde ervoor niet', isNieuw(VORIGE, VORIGE) && !isNieuw('2026-09-10T07:59:59.999Z', VORIGE))
+  check('6: met maar één sync (vorige = 1970) is alles nieuw', tijden.every((t) => isNieuw(t, '1970-01-01T00:00:00.000Z')))
+  console.log(`  6: ${standen} filterstanden × ${items.length} items, met en zonder vinkje`)
 }
 
 // ── 5. Splitsen op score: een partitie, zonder verlies ───────────────────────

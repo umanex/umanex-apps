@@ -1,6 +1,8 @@
 'use client'
 
 import { Search, X } from 'lucide-react'
+import { Checkbox } from '@umanex/ui/components/ui/checkbox'
+import { Label } from '@umanex/ui/components/ui/label'
 import { Slider } from '@umanex/ui/components/ui/slider'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
@@ -10,10 +12,13 @@ import type { StatusFilter } from '@/lib/triage'
 
 // Open eerst, en als standaard: afgewezen werk hoort niet mee te scrollen bij het openen. Open
 // is alles behalve afgewezen — ook gecontacteerd, want dat is lopend werk (zie `pastBijStatus`).
+// `new` heet "Niet beoordeeld" en niet "Nieuw": "nieuw" is op dit scherm de badge voor wat bij de
+// laatste sync binnenkwam, en dat is het vinkje hieronder. Eén woord voor twee dingen liet "+N
+// vacatures" tot 2026-09-17 op de verkeerde as filteren. De waarde in de URL blijft `new`.
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: 'open', label: 'Open' },
   { value: 'alle', label: 'Alle statussen' },
-  { value: 'new', label: 'Nieuw' },
+  { value: 'new', label: 'Niet beoordeeld' },
   { value: 'saved', label: 'Opgeslagen' },
   { value: 'dismissed', label: 'Afgewezen' },
   { value: 'contacted', label: 'Gecontacteerd' },
@@ -29,6 +34,9 @@ type FilterBarProps = {
   onRegionsChange: (regions: RegionCode[]) => void
   onMinScoreChange: (score: number) => void
   onStatusFilterChange: (status: StatusFilter) => void
+  /** Null = niet van toepassing op dit tabblad (Prospects komen uit de KBO-spiegel, niet uit een sync). */
+  alleenNieuw: boolean | null
+  onAlleenNieuwChange: (aan: boolean) => void
 }
 
 export function FilterBar({
@@ -41,9 +49,11 @@ export function FilterBar({
   onRegionsChange,
   onMinScoreChange,
   onStatusFilterChange,
+  alleenNieuw,
+  onAlleenNieuwChange,
 }: FilterBarProps) {
   return (
-    <div className="flex flex-col gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:flex-wrap sm:items-center">
       <RegionFilter selected={regions} onChange={onRegionsChange} />
 
       {/* Geen debounce: er wordt gefilterd op rijen die al in het geheugen staan, dus er is
@@ -90,6 +100,19 @@ export function FilterBar({
           </option>
         ))}
       </select>
+      {alleenNieuw !== null && (
+        <div className="flex items-center gap-1.5">
+          <Checkbox
+            id="alleen-nieuw"
+            checked={alleenNieuw}
+            onCheckedChange={(v) => onAlleenNieuwChange(v === true)}
+            data-alleen-nieuw
+          />
+          <Label htmlFor="alleen-nieuw" className="cursor-pointer whitespace-nowrap text-sm">
+            Alleen nieuw bij de laatste sync
+          </Label>
+        </div>
+      )}
       <div className="flex items-center gap-3 sm:ml-auto">
         <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
           Min. score

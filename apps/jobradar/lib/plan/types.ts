@@ -54,7 +54,9 @@ export const STATUS_KLEUR: Record<ActieStatus, string> = {
   wacht_op_input: 'text-warning',
   gereed: 'text-success',
   uitgesteld: 'text-muted-foreground',
-  vervallen: 'text-muted-foreground opacity-60',
+  // Geen `opacity-60` meer: dat haalde 2,36:1 op wit en dimde rand en pijl alsof de select
+  // uitgeschakeld was. Het woord "Vervallen" maakt het onderscheid al, net als in `PlanStatusPill`.
+  vervallen: 'text-muted-foreground',
 }
 
 export const PRIORITEITEN: readonly Prioriteit[] = [1, 2, 3, 4] as const
@@ -254,6 +256,14 @@ export type VersieConflict = {
 }
 
 export type PlanConflict = FocusConflict | AfhankelijkheidConflict | VersieConflict
+
+/**
+ * Wat een bediening terugkrijgt van een verzoek dat hij zelf verstuurde.
+ *
+ * Met de melding erbij, zodat hij de fout naast zichzelf kan tonen in plaats van in de banner
+ * bovenaan de pagina — en een veld pas leegmaakt of sluit wanneer het antwoord er is.
+ */
+export type Verzoekuitkomst = { ok: boolean; fout: string | null }
 
 /**
  * De uitkomst van een schrijfactie.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -22,8 +22,9 @@ type BeslissingPanelProps = {
   bezig: boolean
   fout: string | null
   onOpenChange: (open: boolean) => void
-  onBewaar: (body: Record<string, unknown>) => void
-  onHerlaad: () => void
+  /** Geeft terug of het verzoek slaagde, zodat de bevestiging pas na het antwoord komt. */
+  onBewaar: (body: Record<string, unknown>) => Promise<boolean>
+  onHerlaad: () => Promise<boolean>
 }
 
 const INVOER = 'rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50'
@@ -50,12 +51,113 @@ export function BeslissingPanel({
   const [datum, setDatum] = useState(beslissing.beslistOp ?? vandaag)
   const [onderbouwing, setOnderbouwing] = useState(beslissing.onderbouwing ?? '')
   const [vervolg, setVervolg] = useState(beslissing.vervolgacties ?? '')
+  const [melding, setMelding] = useState('')
+  const [vraagSluiten, setVraagSluiten] = useState(false)
+  /** Na een mislukte herlading blijft de knop staan, ook al is de melding dan geen versieconflict meer. */
+  const [herlaadGevraagd, setHerlaadGevraagd] = useState(false)
 
   const versieConflict = fout !== null && /intussen elders gewijzigd/.test(fout)
 
+  // Vergeleken met wat er bewaard is, zoals de server bewaart — getrimd. Na een geslaagde Bewaar
+  // levert het plan dezelfde waarden en telt niets meer als onbewaard, ook niet een tekstvak dat
+  // op een regeleinde eindigde.
+  const tekstAnders = (lokaal: string, bewaard: string | null) =>
+    lokaal.trim() !== (bewaard ?? '').trim()
+  const onbewaard =
+    tekstAnders(tekst, beslissing.beslissing) ||
+    datum !== (beslissing.beslistOp ?? vandaag) ||
+    tekstAnders(onderbouwing, beslissing.onderbouwing) ||
+    tekstAnders(vervolg, beslissing.vervolgacties)
+
+  /**
+   * Waar de focus na het sluiten naartoe gaat.
+   *
+   * Radix geeft hem alleen terug aan een `SheetTrigger` (`context.triggerRef`), en dit paneel opent
+   * via state. Zonder trigger roept de dialog `preventDefault()` op zijn eigen terugkeer en focust
+   * hij niets: na Escape of het kruis stond de focus op `body`. `onOpenAutoFocus` loopt vóór de
+   * focus het paneel in verhuist, dus `activeElement` is dan nog de knop die het opende.
+   */
+  const opener = useRef<HTMLElement | null>(null)
+  const terugRef = useRef<HTMLButtonElement>(null)
+  /** Waar de focus stond toen de vraag verscheen, om er na Terug naar terug te keren. */
+  const voorVraag = useRef<HTMLElement | null>(null)
+  const foutRef = useRef<HTMLParagraphElement>(null)
+
+  // De foutmelding staat bovenaan, Bewaar onderaan een scrollend paneel: zonder dit verscheen de
+  // fout buiten beeld. Scrollen, geen focus verplaatsen — de melding is al een `alert`, en een
+  // focus erop zou hem twee keer laten voorlezen.
+  useEffect(() => {
+    if (fout) foutRef.current?.scrollIntoView({ block: 'nearest' })
+    else setHerlaadGevraagd(false)
+  }, [fout])
+
+  useEffect(() => {
+    if (vraagSluiten) terugRef.current?.focus()
+  }, [vraagSluiten])
+
+  // Wie de invoer intussen bewaarde of terugzette, hoeft niets meer te bevestigen.
+  useEffect(() => {
+    if (!onbewaard) setVraagSluiten(false)
+  }, [onbewaard])
+
+  /**
+   * Eén plek voor Escape, een klik op de overlay én het sluitkruis. Het kruis roept
+   * `onOpenChange(false)` rechtstreeks aan (`DialogClose`), dus `onEscapeKeyDown` of
+   * `onInteractOutside` zouden het missen.
+   */
+  const vraagOfSluit = (open: boolean) => {
+    if (open || !onbewaard) {
+      onOpenChange(open)
+      return
+    }
+    if (vraagSluiten) {
+      terugRef.current?.focus()
+      return
+    }
+    const actief = document.activeElement
+    voorVraag.current = actief instanceof HTMLElement ? actief : null
+    setVraagSluiten(true)
+  }
+
+  const bewaar = async () => {
+    // `aria-disabled` en een guard in plaats van `disabled`: de knop houdt zijn focus tijdens het
+    // verzoek, in plaats van hem af te geven aan `body`.
+    if (bezig) return
+    setMelding('')
+    const ok = await onBewaar({
+      beslissing: tekst.trim() === '' ? null : tekst,
+      beslistOp: tekst.trim() === '' ? null : datum,
+      onderbouwing: onderbouwing.trim() === '' ? null : onderbouwing,
+      vervolgacties: vervolg.trim() === '' ? null : vervolg,
+    })
+    if (!ok) return
+    setMelding(
+      tekst.trim() === ''
+        ? `${beslissing.key} bewaard, zonder beslissing.`
+        : `${beslissing.key} vastgelegd, beslist op ${datum}.`
+    )
+  }
+
+  const herlaad = async () => {
+    setHerlaadGevraagd(true)
+    setMelding('')
+    if (await onHerlaad()) setMelding('Plan herladen.')
+  }
+
   return (
-    <Sheet open onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-md">
+    <Sheet open onOpenChange={vraagOfSluit}>
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-md"
+        onOpenAutoFocus={() => {
+          const actief = document.activeElement
+          opener.current = actief instanceof HTMLElement && actief !== document.body ? actief : null
+        }}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault()
+          if (opener.current?.isConnected) opener.current.focus()
+        }}
+      >
         <SheetHeader>
           <SheetTitle>
             <span className="tabular-nums text-muted-foreground">{beslissing.key}</span>{' '}
@@ -64,11 +166,45 @@ export function BeslissingPanel({
           <SheetDescription>{beslissing.vraag}</SheetDescription>
         </SheetHeader>
 
+        {vraagSluiten && onbewaard && (
+          <div
+            role="group"
+            aria-labelledby="beslissing-sluit-vraag"
+            className="space-y-2 rounded-md border border-warning p-3"
+            data-sluit-vraag
+          >
+            <p id="beslissing-sluit-vraag" className="text-sm font-medium">
+              Onbewaarde wijzigingen weggooien?
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="destructive" onClick={() => onOpenChange(false)}>
+                Weggooien
+              </Button>
+              <Button
+                ref={terugRef}
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (voorVraag.current?.isConnected) voorVraag.current.focus()
+                  setVraagSluiten(false)
+                }}
+              >
+                Terug
+              </Button>
+            </div>
+          </div>
+        )}
+
         {fout && (
-          <p role="alert" className="rounded-md border border-destructive p-2 text-sm text-destructive">
+          <p
+            ref={foutRef}
+            role="alert"
+            className="scroll-mt-6 rounded-md border border-destructive p-2 text-sm text-destructive"
+            data-paneel-fout
+          >
             {fout}
-            {versieConflict && (
-              <Button size="sm" variant="outline" className="ml-2" onClick={onHerlaad}>
+            {(versieConflict || herlaadGevraagd) && (
+              <Button size="sm" variant="outline" className="ml-2" onClick={() => void herlaad()}>
                 Herlaad plan
               </Button>
             )}
@@ -173,19 +309,20 @@ export function BeslissingPanel({
           </div>
           <Button
             size="sm"
-            disabled={bezig}
-            onClick={() =>
-              onBewaar({
-                beslissing: tekst.trim() === '' ? null : tekst,
-                beslistOp: tekst.trim() === '' ? null : datum,
-                onderbouwing: onderbouwing.trim() === '' ? null : onderbouwing,
-                vervolgacties: vervolg.trim() === '' ? null : vervolg,
-              })
-            }
+            aria-disabled={bezig}
+            onClick={() => void bewaar()}
+            className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
           >
             {bezig ? 'Bezig…' : 'Bewaar'}
           </Button>
         </section>
+
+        {/* Altijd gerenderd, ook leeg: een live-regio die pas met zijn inhoud verschijnt, wordt
+            niet betrouwbaar voorgelezen. Binnen het paneel, want zolang de sheet open is staat
+            alles erbuiten op `aria-hidden`. De key in de tekst houdt meldingen verschillend. */}
+        <p aria-live="polite" className="sr-only" data-paneel-melding>
+          {melding}
+        </p>
       </SheetContent>
     </Sheet>
   )

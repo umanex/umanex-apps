@@ -31,17 +31,35 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
   const [maand, setMaand] = useState(begin.lancering.slice(5, 7))
   const [urenPerDag, setUrenPerDag] = useState(String(begin.urenPerDag))
   const [focusLimiet, setFocusLimiet] = useState(String(begin.focusLimiet))
+  /**
+   * De laatst bewaarde stand, niet de stand van bij het laden.
+   *
+   * Tegen `begin` vergeleken bleef Opslaan na een bewaring actief, en zette je daarna de
+   * oorspronkelijke waarde terug, dan werd Opslaan uitgeschakeld terwijl de database de
+   * tussenwaarde droeg — die was dan niet meer terug te zetten zonder te herladen.
+   */
+  const [opgeslagen, setOpgeslagen] = useState(begin)
   const [bezig, setBezig] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
   const [melding, setMelding] = useState<string | null>(null)
 
   const huidig = `${jaar}-${maand}`
   const gewijzigd =
-    huidig !== begin.lancering ||
-    Number(urenPerDag) !== begin.urenPerDag ||
-    Number(focusLimiet) !== begin.focusLimiet
+    huidig !== opgeslagen.lancering ||
+    Number(urenPerDag) !== opgeslagen.urenPerDag ||
+    Number(focusLimiet) !== opgeslagen.focusLimiet
+
+  /** "Opgeslagen." hoort bij de bewaarde stand; naast nieuwe invoer zegt hij iets onwaars. */
+  const wijzig = (zet: (waarde: string) => void, waarde: string) => {
+    zet(waarde)
+    setMelding(null)
+  }
 
   const opslaan = async () => {
+    // `aria-disabled` en niet `disabled`: een knop die de focus heeft en disabled wordt, geeft die
+    // focus af aan `body`. Dat gebeurde twee keer per bewaring — bij het versturen, en opnieuw
+    // na het antwoord, omdat er dan niets meer gewijzigd is.
+    if (bezig || !gewijzigd) return
     setBezig(true)
     setFout(null)
     setMelding(null)
@@ -57,11 +75,26 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
           },
         }),
       })
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null
+      const data = (await res.json().catch(() => null)) as {
+        ok?: boolean
+        error?: string
+        instellingen?: PlanInstellingen
+      } | null
       if (!res.ok || !data?.ok) {
         setFout(data?.error ?? `Mislukt (HTTP ${res.status})`)
         return
       }
+      // Wat de server bewaarde, niet wat we stuurden: hij rondt de uren af op twee decimalen.
+      const bewaard = data.instellingen ?? {
+        lancering: huidig,
+        urenPerDag: Number(urenPerDag),
+        focusLimiet: Number(focusLimiet),
+      }
+      setOpgeslagen(bewaard)
+      setJaar(bewaard.lancering.slice(0, 4))
+      setMaand(bewaard.lancering.slice(5, 7))
+      setUrenPerDag(String(bewaard.urenPerDag))
+      setFocusLimiet(String(bewaard.focusLimiet))
       setMelding('Opgeslagen.')
     } catch {
       setFout('Geen antwoord van de server.')
@@ -84,7 +117,7 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
               id="plan-maand"
               value={maand}
               disabled={bezig}
-              onChange={(e) => setMaand(e.target.value)}
+              onChange={(e) => wijzig(setMaand, e.target.value)}
               className={cn('cursor-pointer', INVOER, focusRing)}
             >
               {MAANDEN.map((m, i) => (
@@ -97,7 +130,7 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
               aria-label="Jaar van de start"
               value={jaar}
               disabled={bezig}
-              onChange={(e) => setJaar(e.target.value)}
+              onChange={(e) => wijzig(setJaar, e.target.value)}
               className={cn('cursor-pointer tabular-nums', INVOER, focusRing)}
             >
               {jaren.map((j) => (
@@ -121,7 +154,7 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
             step="0.5"
             value={urenPerDag}
             disabled={bezig}
-            onChange={(e) => setUrenPerDag(e.target.value)}
+            onChange={(e) => wijzig(setUrenPerDag, e.target.value)}
             className={cn('w-20 tabular-nums', INVOER, focusRing)}
           />
         </div>
@@ -138,7 +171,7 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
             step="1"
             value={focusLimiet}
             disabled={bezig}
-            onChange={(e) => setFocusLimiet(e.target.value)}
+            onChange={(e) => wijzig(setFocusLimiet, e.target.value)}
             className={cn('w-20 tabular-nums', INVOER, focusRing)}
           />
         </div>
@@ -150,7 +183,12 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
       </p>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button size="sm" onClick={opslaan} disabled={bezig || !gewijzigd}>
+        <Button
+          size="sm"
+          onClick={opslaan}
+          aria-disabled={bezig || !gewijzigd}
+          className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
+        >
           {bezig ? 'Bezig…' : 'Opslaan'}
         </Button>
         {fout && (
@@ -159,12 +197,20 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
             {fout}
           </p>
         )}
-        {melding && (
-          <p className="flex items-start gap-2 text-sm text-muted-foreground">
-            <Check className="mt-0.5 h-4 w-4 shrink-0" />
-            {melding}
-          </p>
-        )}
+        {/* Altijd gerenderd, ook leeg: een live-regio die pas met zijn inhoud verschijnt, wordt
+            niet betrouwbaar voorgelezen. Leeg neemt hij geen breedte in. */}
+        <p
+          role="status"
+          className="flex items-start gap-2 text-sm text-muted-foreground"
+          data-planinstellingen-melding
+        >
+          {melding && (
+            <>
+              <Check aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+              {melding}
+            </>
+          )}
+        </p>
       </div>
     </div>
   )

@@ -41,6 +41,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Globaal
 
+## 2026-09-17 — `Button` belooft `asChild` in zijn type en voert het niet uit · [fix]
+- **Wat:** `packages/ui/components/ui/button.tsx` declareert `asChild?: boolean` in `ButtonProps`, maar `Button` destructureert alleen `{ className, variant, size, ...props }` en rendert altijd een `<button>`. `<Button asChild><a href="/">` levert dus een `<a>` ín een `<button>` (ongeldige HTML) plus `asChild` als onbekend DOM-attribuut — en `tsc` keurt het goed. Gevonden in jobradar fase 3: de foutpagina gebruikt daarom `buttonVariants` op een `<a>`.
+- **Waarom niet nu:** gedeeld component; hoort in een bibliotheekbatch, niet in een app-PR over toegankelijkheid.
+- **Eerste zet:** kiezen tussen Radix `Slot` (dan werkt de prop, zoals shadcn hem bedoelt) of de prop uit het type halen. Toets: `grep -rn "asChild" apps packages --include=*.tsx` op `<Button` — elke treffer rendert vandaag een geneste knop.
+- **Status:** open
+
+## 2026-09-17 — `Sheet` geeft de focus alleen terug aan een `SheetTrigger` · [refactor]
+- **Wat:** Radix Dialog zet de focus bij sluiten terug op zijn trigger. Elk paneel dat via state opent (zonder `SheetTrigger`) valt dan naar `body`. In jobradar fase 3 kregen drie panelen daarom elk een eigen `onOpenAutoFocus`/`onCloseAutoFocus` met opener-ref en terugval (`ContactPanel`, `ActiePanel`, `BeslissingPanel`) — drie kopieën van hetzelfde patroon, en `BeslissingPanel` heeft al geen laatste anker.
+- **Waarom niet nu:** `packages/ui` bleef in fase 3 bewust ongewijzigd; de juiste plek is `SheetContent` zelf (opener onthouden bij openen, terugval-prop), en dat raakt elke consumer.
+- **Eerste zet:** in `sheet.tsx` het actieve element vastleggen in `onOpenAutoFocus` en in `onCloseAutoFocus` teruggeven als het nog `isConnected` is, anders een `terugval`-prop; daarna de drie handlers in jobradar weghalen en de focuschecks van `flow` en `plan:probe` groen houden.
+- **Status:** open
+
 ## 2026-09-12 — `next lint` verdwijnt in Next 16; de hele lint-keten moet naar ESLint 9 flat config · [infra]
 - **Wat:** Alle zeven Next-apps draaien `"lint": "next lint"`, en dat commando is in 15.5.25 deprecated en weg in 16. Migreren is geen scriptregel maar een keten: `packages/config/eslint/tokens.cjs` is bewust ESLint 8-vorm (`module.exports = { rules }`, geladen via `require.resolve` — zie het resolved HANDOFF-item van 2026-08-05, dat de vórige flat-config juist terugbouwde omdat niets hem consumeerde), zeven app-`.eslintrc`-bestanden hangen eraan, en `eslint` staat op 8.57.1 dat zelf al deprecated is. Gemeten 2026-09-12: nul `eslint.config.*` in de repo.
 - **Waarom niet nu:** Gevonden in de opruimronde ná de Next 15-upgrade. De deprecatie is vandaag alleen een waarschuwing — `lint` geeft over alle zeven apps exit 0 zonder bevindingen. Het omzetten raakt een gedeeld package waar een eigen CI-guard op staat (`pnpm --filter @umanex/tokens guard`), dus het verdient een ronde met een tegenproef dat de token-regels ná de migratie nog vuren — precies wat een haastige migratie stil zou verliezen.
@@ -89,6 +101,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Wat:** `packages/ui/components/ui/badge.tsx` heeft `focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2` in zijn cva-basis, maar rendert een `div` zonder `tabIndex`. Die klassen kunnen per constructie nooit afgaan. Bovendien is het `focus:` en niet `focus-visible:` — een derde vorm naast de `focusRing`-constante die de rest van de laag nu gebruikt.
 - **Waarom niet nu:** nul zichtbaar effect, dus het is opruimwerk en geen fix. Het meeliften op een PR die over jobradar-toegankelijkheid gaat zou een wijziging aan een gedeeld component verstoppen in een app-PR.
 - **Eerste zet:** beslissen of de Badge ooit focusbaar wordt (een filter-chip zou het willen). Zo nee: klassen weg. Zo ja: `focusRing` uit `@umanex/ui/lib/focus` gebruiken, net als `Button`.
+- **2026-09-17:** "nul zichtbaar effect" klopt niet meer. jobradar zet `badgeVariants` sinds fase 3 op een focusbare `<button>` (de scoreopbouw in `ScoreBadge.tsx`), en daar tekende `focus:ring-2` een ring bij élke muisklik. Lokaal geneutraliseerd met `focus:ring-0 focus:ring-offset-0` na `focusRing`; de eerste zet hierboven is daarmee beslist: de Badge wordt focusbaar gebruikt, dus `focusRing` in de basis.
 - **Status:** open
 
 ## 2026-08-27 — De flow-harness van jobradar draait in geen enkele CI-stap · [test]

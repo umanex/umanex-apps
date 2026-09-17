@@ -1,5 +1,5 @@
 # Context Snapshot — jobradar
-_Gegenereerd op 2026-09-16_
+_Afgeleid uit de inhoud van de tree, zonder datum. Wanneer hij het laatst veranderde: `git log -1 -- apps/jobradar/context-snapshot.md`._
 
 ## Project
 - **App:** jobradar
@@ -31,6 +31,14 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | JobCard | `apps/jobradar/components/JobCard.tsx` | components | — | — | — |
 | LeadCard | `apps/jobradar/components/LeadCard.tsx` | components | — | — | — |
 | NextActionBadge | `apps/jobradar/components/NextActionBadge.tsx` | components | — | — | — |
+| ProspectCard | `apps/jobradar/components/ProspectCard.tsx` | components | — | — | — |
+| ProspectMap | `apps/jobradar/components/ProspectMap.tsx` | components | — | — | — |
+| RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
+| ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
+| SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
+| StatusDropdown | `apps/jobradar/components/StatusDropdown.tsx` | components | — | — | — |
+| SyncButton | `apps/jobradar/components/SyncButton.tsx` | components | — | — | — |
+| TermChips | `apps/jobradar/components/TermChips.tsx` | components | — | — | — |
 | Aannames | `apps/jobradar/components/plan/Aannames.tsx` | plan | — | — | — |
 | ActieGroep | `apps/jobradar/components/plan/ActieGroep.tsx` | plan | — | — | — |
 | ActieLijst | `apps/jobradar/components/plan/ActieLijst.tsx` | plan | — | — | — |
@@ -47,26 +55,13 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | PlanStatusPill | `apps/jobradar/components/plan/PlanStatusPill.tsx` | plan | — | — | — |
 | Startvoorwaarden | `apps/jobradar/components/plan/Startvoorwaarden.tsx` | plan | — | — | — |
 | VoortgangPerPrioriteit | `apps/jobradar/components/plan/VoortgangPerPrioriteit.tsx` | plan | — | — | — |
-| ProspectCard | `apps/jobradar/components/ProspectCard.tsx` | components | — | — | — |
-| ProspectMap | `apps/jobradar/components/ProspectMap.tsx` | components | — | — | — |
-| RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
-| ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
-| SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
-| StatusDropdown | `apps/jobradar/components/StatusDropdown.tsx` | components | — | — | — |
-| SyncButton | `apps/jobradar/components/SyncButton.tsx` | components | — | — | — |
-| TermChips | `apps/jobradar/components/TermChips.tsx` | components | — | — | — |
 
-## Recente commits (app + packages)
+## Recente commits en lopend werk
+_Staat bewust niet in dit bestand: het verschilt per moment en per tree, en een gecommitte kopie is al verouderd op het moment dat hij landt. Vraag het live op:_
 ```
-cb7c742 docs(jobradar): file the rest of the review, and keep red meaning red
-14e1486 fix(jobradar): keep own actions out of the seed's key space, and stop the finish path losing its evidence link
-3b72ed4 fix(jobradar): make plan:probe able to fail — it printed, it did not test
-a7373f2 fix(jobradar): roll back a refused mutation instead of committing its traces
-02b8329 docs: close the handoff loop backwards — run the checks, act on what they say
+git log --oneline -5 -- apps/jobradar packages
+git status --short -- apps/jobradar packages
 ```
-
-## Uncommitted wijzigingen
-  M  apps/jobradar/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

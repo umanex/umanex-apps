@@ -99,6 +99,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Klant — umanex
 
+## 2026-09-17 — `ds:guard` ziet een rauw formulierveld naast een bestaande primitive niet · [test]
+- **Wat:** Een as in `pnpm ds:guard` die per app op `@umanex/ui` telt hoeveel `<input>`, `<select>`, `<textarea>` en `<button>` er in app-code staan terwijl `Input`, `NativeSelect`, `Textarea` en `Button` bestaan — met een ratel (baseline per app, tweezijdig), zodat er een bij rood is en er een af de baseline laat zakken.
+- **Waarom niet nu:** De critique van jobradar (2026-09-17) vond 49 native velden en 20 native knoppen terwijl `ds:guard` groen stond: zijn `[dubbel]`-as zoekt een lokale kópie op naam, niet een rauw element waar een primitive voor bestaat. Het plan `delightful-stirring-blossom` migreert jobradar met de hand (fase 4b); een guard erbij is een tooling-beslissing voor alle apps, en cashflow heeft volgens de meting van 2026-09-07 58 bewust te dichte controls die een naïeve telling rood zou maken.
+- **Eerste zet:** eerst de telling per app draaien (`grep -c '<input\|<select\|<textarea'` over `apps/*/components` en `apps/*/app`, zonder `api/`) en de uitkomst naast de open entry *Compacte maat in @umanex/ui* leggen — zolang die niet beslist is, kan de ratel voor cashflow alleen een baseline zijn, geen doel.
+- **Status:** open
+
 ## 2026-09-16 — De flow-harnesses van cashflow en dashboard laten de tree vuil achter · [infra]
 - **Wat:** `next build` met een eigen `NEXT_DIST_DIR` herschrijft twee getrackte bestanden zodat
   ze naar díe build-map wijzen: `next-env.d.ts` en `tsconfig.json`. `apps/cashflow/scripts/flow-harness.mjs`

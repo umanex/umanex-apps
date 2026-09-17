@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** packages/ui + packages/config (monorepo-niveau)
 - **Klant:** umanex
-- **Status:** gepland — batch 0 gevalideerd 2026-09-16, batches 1–6 open
+- **Status:** gepland — batch 0 gevalideerd 2026-09-16 en gemerged (umanex-apps#512), layout-tokens volgt, batches 1–6 open
 
 ---
 
@@ -40,8 +40,8 @@ BEHAVIOUR:   Storybook: Playground per component, args = Figma-assen, primaire e
              tegenproeven.
 
 CONSTRAINTS: Tokens-first (bg-black/80 → overlay-scrim, rounded-[2px] → rounded-sm,
-             text-[0.8rem] → text-dense); auto layout op elk frame; hover/focus geen variant
-             (besluit 2026-08-25); asnamen = propnamen; eerste `variants: {` in een bestand =
+             text-[0.8rem] → text-dense); auto layout op elk frame; hover en focus-visible
+             zijn een `state`-as (besluit 2026-09-17); asnamen = propnamen; eerste `variants: {` in een bestand =
              assen van de primary; argTypes plat; deterministisch renderen (geen
              datum-van-vandaag, geen random, geen netwerkbeelden, animaties uit); fileKey-guard
              in élke figma_execute; geen next build in de hoofdtree; commits feat(ui) per batch;
@@ -52,7 +52,9 @@ CONSTRAINTS: Tokens-first (bg-black/80 → overlay-scrim, rounded-[2px] → roun
 
 ## Open vragen
 
-- Geen. De scope, dependencies, oplevering, recept-pagina's en de Field-port zijn beslist door Jeroen (zie Beslissingsgeschiedenis).
+- De `state`-as (default, hover, focus-visible) op een set die ook `disabled` draagt: volledig product, of de combinaties `disabled × hover` en `disabled × focus-visible` weglaten? `disabled:pointer-events-none` maakt ze in de browser onbereikbaar, maar de `[varianten]`-as eist vandaag het volledige product. Blokkeert batch 1 (Toggle).
+- De 17 sets die al in Figma staan (15 handgebouwd + Switch en Dialog): de `state`-as nu achteraf toevoegen, of alleen voor nieuwe componenten vanaf batch 1? De set-ids blijven in beide gevallen, maar de 15 handgebouwde weigert de builder (geen `bouwhash`). Blokkeert batch 1.
+- De scope en dependencies, de oplevering, de recept-pagina's en de Field-port zijn beslist door Jeroen (zie Beslissingsgeschiedenis).
 
 ## Aannames
 
@@ -66,7 +68,9 @@ CONSTRAINTS: Tokens-first (bg-black/80 → overlay-scrim, rounded-[2px] → roun
 ### Kritische assen
 
 - [ ] Typologie — elke nieuwe component heeft precies één Figma-pagina met als primary de component(set) die `primair.mjs` noemt
-- [ ] States — elke boolean-prop die de vorm verandert (`checked`, `disabled`, `pressed`, `open`, `isActive`) is een variant-as; hover/focus n.v.t. (besluit 2026-08-25, BACKLOG-item staat)
+- [ ] States — elke boolean-prop die de vorm verandert (`checked`, `disabled`, `pressed`, `open`, `isActive`) is een variant-as
+- [ ] States — elke set waarvan de primary een `hover:`- of `focus-visible:`-klasse draagt, heeft een `state`-as (default, hover, focus-visible)
+- [ ] States — een set zónder `hover:`- en `focus-visible:`-klassen heeft geen `state`-as (tegenproef: Separator, Label)
 - [ ] Interactie n.v.t. — presentational primitives; state via Storybook-args, geen prototype-reactions in Figma
 - [ ] Edge cases — aantal variant-nodes per set = product van de asgroottes (`[varianten]`-as)
 
@@ -138,3 +142,5 @@ Worden per batch aan deze lijst toegevoegd vóór de bouw van die batch, met dez
 - 2026-09-16: drie batch-0-items herschreven na meting, niet afgezwakt: `ongebonden ≤ 1` was een schatting uit het plan (gemeten 3, elk met reden in de guard), `hergebruikt = 6` telde de set mee die de builder niet telt (5 + gelijke set-id/key apart bewezen), en "geen tekst-zonder-text-style" sloot DialogTitle niet uit terwijl die per ontwerp geen style kan hebben.
 - 2026-09-16: de parity-tolerantie van 0,51 gold ook voor opacity — een tegenproef in Figma bleef groen. Tolerantie per veld (0,01 voor opacity); daarna kwam `Slider disabled` boven (Figma 0,5, browser 1). De oorzaak zat in `slider.tsx` (`disabled:opacity-50` op een span) en is daar gerepareerd, niet in de guard uitgezonderd. Faalklasse in umanex-os/LEARNINGS (Globaal); rowtrack draagt dezelfde tolerantie (apps/rowtrack/BACKLOG.md).
 - 2026-09-16: batch 0 in de worktree `.claude/worktrees/ui-batch-0` op verzoek van Jeroen, nadat een parallelle sessie de hoofdtree naar `main` zette.
+- 2026-09-17: hover en focus-visible worden wél Figma-varianten, als `state`-as — besluit Jeroen, herroept het besluit van 2026-08-25. Gevolg voor de keten: de walker forceert `:hover`/`:focus-visible` per variant en de binding leest in die variant de `hover:`/`focus-visible:`-klassen in plaats van ze te negeren; varianten per interactieve set tot ×3. Werk in batch 1, vóór de eerste set.
+- 2026-09-17: layout-tokens (spacing-schaal + rollen in `tokens.json`, Figma Base eruit gezet) als eigen PR tussen batch 0 en batch 1 — besluit Jeroen. Briefing: `briefings/2026-09-17-feature-layout-tokens.tcebc.md`.

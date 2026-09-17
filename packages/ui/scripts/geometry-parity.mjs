@@ -143,7 +143,91 @@ const BEKENDE_AFWIJKINGEN = {
   'Badge/variant=warning hoogte': 'idem — transparante border in de code, geen stroke in Figma',
 };
 
-const fig = JSON.parse(readFileSync(join(ui, 'figma/geometry.figma.json'), 'utf8'));
+// `--figma=<pad>` leest een andere Figma-meting — voor de tegenproef in Figma zelf, zodat de echte
+// lezing niet overschreven hoeft te worden om een gemuteerde te toetsen.
+const figmaFlag = process.argv.find(a => a.startsWith('--figma='));
+const fig = JSON.parse(readFileSync(figmaFlag ? figmaFlag.slice('--figma='.length) : join(ui, 'figma/geometry.figma.json'), 'utf8'));
+
+/**
+ * DE PAGINA'S VAN DE BUILDER — recursief, node per node, tegen figma/build-spec.min.json.
+ *
+ * De legacy-sets hierboven worden per WORTEL tegen de browser gelegd, met een handgeschreven
+ * selector per set. Voor de componenten die scripts/figma/ bouwt bestaat een betere referentie: de
+ * min-spec, die zelf een meting van de browser is en per node dezelfde velden draagt. Zo wordt elke
+ * node vergeleken, niet alleen de wortel — een padding drie niveaus diep valt anders nooit op.
+ *
+ * Buiten de vergelijking, en waarom: BREEDTE (tekstgedreven, zie de kop), de HOOGTE VAN EEN TEKST
+ * die Figma zelf bepaalt (`WIDTH_AND_HEIGHT` — dan meet je twee tekstengines, niet de bouw), en de
+ * INHOUD VAN EEN ICOON (vectorpaden uit de SVG-import, niet uit de spec). Een Check 0 op inhoud
+ * doet figma/toets-batch.js, tegen een DOM-telling buiten de walker om.
+ */
+const TEKST_HOOGTE_VAST = 8, VULLING = 1, RAND = 2, EFFECT = 4;
+function vergelijkPaginas(paginas, spec) {
+  const uit = []; let nodes = 0, varianten = 0;
+  const nul4 = [0, 0, 0, 0];
+  const dichtbij = (a, b) => Math.abs(Number(a) - Number(b)) <= 0.51;
+  // Opacity is een fractie, geen pixel: met 0,51 viel elk verschil tot en met een halve dekking
+  // stil binnen de tolerantie (gemeten 2026-09-16 — de sluitknop van Dialog op 0,8 in Figma tegen
+  // 0,7 in de spec gaf groen). Daarom een eigen tolerantie.
+  const dichtbijFractie = (a, b) => Math.abs(Number(a) - Number(b)) <= 0.01;
+  function loop(f, s, pad, isWortel) {
+    nodes++;
+    const [naam, type, h, padding, gap, radius, rand, opacity, vlaggen, layoutMode, kinderen = []] = f;
+    const tekst = type === 'TEXT';
+    const verschil = (wat, a, b) => uit.push(`${pad} ${wat}: Figma ${a} tegen spec ${b}`);
+    if (!isWortel && naam !== s.naam) verschil('naam', naam, s.naam);
+    if (!tekst || (vlaggen & TEKST_HOOGTE_VAST)) { if (!dichtbij(h, s.h)) verschil('hoogte', h, s.h); }
+    if (!dichtbijFractie(opacity, s.opacity ?? 1)) verschil('opacity', opacity, s.opacity ?? 1);
+    if (tekst || s.svg) return;
+    const P = s.padding ?? nul4, R = s.radius ?? nul4;
+    ['boven', 'rechts', 'onder', 'links'].forEach((z, i) => { if (!dichtbij(padding[i], P[i])) verschil(`padding-${z}`, padding[i], P[i]); });
+    if (layoutMode !== 'NONE' && !dichtbij(gap, s.gap ?? 0)) verschil('gap', gap, s.gap ?? 0);
+    ['lb', 'rb', 'ro', 'lo'].forEach((z, i) => { if (!dichtbij(radius[i], R[i])) verschil(`radius-${z}`, radius[i], R[i]); });
+    const Z = s.border ? (s.borderZijden ?? [s.border, s.border, s.border, s.border]) : nul4;
+    ['boven', 'rechts', 'onder', 'links'].forEach((z, i) => { if (!dichtbij(rand[i], Z[i])) verschil(`rand-${z}`, rand[i], Z[i]); });
+    if (!!(vlaggen & VULLING) !== !!s.bg) verschil('vulling', vlaggen & VULLING ? 1 : 0, s.bg ? 1 : 0);
+    if (!!(vlaggen & EFFECT) !== !!s.schaduwStyle) verschil('effect', vlaggen & EFFECT ? 1 : 0, s.schaduwStyle ? 1 : 0);
+    const sk = s.k ?? [];
+    if (kinderen.length !== sk.length) { verschil('kinderen', kinderen.length, sk.length); return; }
+    kinderen.forEach((k, i) => loop(k, sk[i], `${pad}>${sk[i].naam ?? i}`, false));
+  }
+  for (const [comp, p] of Object.entries(paginas ?? {})) {
+    const c = spec.componenten?.[comp];
+    if (!c) { uit.push(`${comp}: pagina van de builder zonder component in build-spec.min.json`); continue; }
+    for (const v of c.varianten) {
+      const f = p.varianten[v.naam];
+      if (!f) { uit.push(`${comp}/${v.naam}: variant staat in de spec maar niet in Figma`); continue; }
+      varianten++;
+      loop(f, v.boom, `${comp}/${v.naam}`, true);
+    }
+    for (const naam of Object.keys(p.varianten)) if (!c.varianten.some(v => v.naam === naam)) uit.push(`${comp}/${naam}: variant staat in Figma maar niet in de spec`);
+  }
+  return { verschillen: uit, nodes, varianten };
+}
+const SPEC_MIN = existsSync(join(ui, 'figma/build-spec.min.json')) ? JSON.parse(readFileSync(join(ui, 'figma/build-spec.min.json'), 'utf8')) : null;
+
+if (process.argv.includes('--selftest')) {
+  // Tegenproef op de recursie, zonder browser: de gecommitte meting moet groen zijn, en een
+  // mutatie diep in de boom moet rood worden op precies dat pad.
+  const kopie = () => JSON.parse(JSON.stringify(fig.paginas ?? {}));
+  const r0 = vergelijkPaginas(fig.paginas, SPEC_MIN);
+  const eisen = [['controle: de gecommitte meting is groen', r0.verschillen.length === 0 && r0.nodes > 0, r0.verschillen.slice(0, 3).join(' | ') || `${r0.nodes} nodes`]];
+  const p1 = kopie(); const dialoog = p1.Dialog?.varianten?.default;
+  if (dialoog) {
+    dialoog[10][1][10][0][3][3] += 4;                        // footer > eerste knop: padding-links +4
+    const r1 = vergelijkPaginas(p1, SPEC_MIN);
+    eisen.push(['padding +4 op een knop drie niveaus diep: precies één verschil', r1.verschillen.length === 1 && /footer>button padding-links/.test(r1.verschillen[0]), r1.verschillen.join(' | ')]);
+    const p2 = kopie(); p2.Dialog.varianten.default[10].pop();   // de sluitknop weg
+    const r2 = vergelijkPaginas(p2, SPEC_MIN);
+    const p3 = kopie(); p3.Dialog.varianten.default[10].find(k => k[0] === 'close')[7] = 0.8;
+    const r3 = vergelijkPaginas(p3, SPEC_MIN);
+    eisen.push(['opacity 0,7 -> 0,8: rood (een fractie, geen pixel)', r3.verschillen.length === 1 && /close opacity/.test(r3.verschillen[0]), r3.verschillen.join(' | ')]);
+    eisen.push(['een verdwenen kind: rood op kinderen', r2.verschillen.some(v => /kinderen: Figma 2 tegen spec 3/.test(v)), r2.verschillen.join(' | ')]);
+  } else eisen.push(['Dialog staat in geometry.figma.json (positieve controle)', false, 'geen Dialog-pagina']);
+  for (const [naam, ok, detail] of eisen) console.log(`${ok ? '  ok' : 'FOUT'}  ${naam}${ok ? '' : `\n        ${detail}`}`);
+  process.exit(eisen.every(e => e[1]) ? 0 : 1);
+}
+
 const { server, poort } = await serve(STATIC);
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -173,7 +257,9 @@ for (const [set, varianten] of Object.entries(fig.gemeten)) {
     for (const [wat, a, b] of paren) {
       if (story.nietVergelijkbaar?.includes(wat)) { onmeetbaar.add(`${set}: ${wat}`); continue; }
       const sleutel = `${set}/${naam} ${wat}`;
-      const afwijkt = Math.abs(Number(a) - Number(b)) > 0.51;
+      // Dezelfde val als in `vergelijkPaginas`: opacity is een fractie, dus 0,51 liet elk verschil
+      // tot een halve dekking door. Tot 2026-09-16 kon deze as een opacity-afwijking niet zien.
+      const afwijkt = Math.abs(Number(a) - Number(b)) > (wat === 'opacity' ? 0.01 : 0.51);
       if (afwijkt && BEKENDE_AFWIJKINGEN[sleutel]) { bekend.add(sleutel); continue; }
       if (!afwijkt && BEKENDE_AFWIJKINGEN[sleutel]) {
         verschillen.push(`${sleutel}: staat als bekende afwijking maar is nu gelijk — haal hem uit BEKENDE_AFWIJKINGEN`);
@@ -187,6 +273,9 @@ for (const [set, varianten] of Object.entries(fig.gemeten)) {
 await browser.close(); server.close();
 
 if (!getoetst) { console.error('✗ nul varianten getoetst — de as meet niets.'); process.exit(1); }
+const boom = fig.paginas ? vergelijkPaginas(fig.paginas, SPEC_MIN) : { verschillen: [], nodes: 0, varianten: 0 };
+verschillen.push(...boom.verschillen);
+if (SPEC_MIN) for (const comp of Object.keys(SPEC_MIN.componenten)) if (!fig.paginas?.[comp]) console.log(`  ~~ ${comp}: in de spec, nog niet in Figma gebouwd`);
 for (const o of overgeslagen) console.log('  ~~ ' + o);
 for (const o of onmeetbaar) console.log('  ~~ onmeetbaar — ' + o);
 for (const b of bekend) console.log(`  !!  bekende afwijking — ${b}: ${BEKENDE_AFWIJKINGEN[b]}`);
@@ -197,5 +286,6 @@ if (verschillen.length) {
   process.exit(1);
 }
 console.log(`\n✓ geometry-parity: ${getoetst} varianten, Figma en browser gelijk op hoogte, padding, gap, radius, rand, opacity en de aanwezigheid van vulling/rand/effect.`);
+console.log(`✓ keten-pagina's: ${boom.varianten} varianten, ${boom.nodes} nodes recursief gelijk aan build-spec.min.json.`);
 console.log(`  Niet vergeleken: breedte (tekstgedreven), verticale padding (bij vaste hoogte), en kleur/schaduw/icoonvorm.`);
 if (overgeslagen.length) console.log(`  ${overgeslagen.length} set(s) overgeslagen — zie de ~~-regels.`);

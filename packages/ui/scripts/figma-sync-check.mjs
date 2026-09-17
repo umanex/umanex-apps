@@ -27,6 +27,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 // een kopie die hier meegroeit is een tweede waarheid.
 import { tokenPaden, bouwIndex, dek } from '../../../scripts/figma-token-coverage.mjs';
 import { join, dirname } from 'node:path';
+import { NIET_VISUEEL, FIGMA_ONLY, LEGACY, primairVan } from './figma/doel.mjs';
 import { fileURLToPath } from 'node:url';
 
 // --root=<pad> laat de selftest de guard op een gemuteerde kopie draaien; zonder de
@@ -74,27 +75,9 @@ function cvaVariants(source) {
   return Object.keys(out).length ? out : null;
 }
 
-/**
- * Props die de code kent maar die GEEN visuele variant-as zijn. Elke uitsluiting
- * draagt zijn reden, zodat ze telbaar is in plaats van stilzwijgend weggelaten —
- * een weggelaten as ziet er in het rapport identiek uit aan een as die klopt.
- *
- * Numerieke controls (Slider.min/max/step) staan hier bewust NIET in: `control: 'number'`
- * levert geen options, dus argTypeAssen() ziet ze per constructie al niet als as. Een
- * uitsluiting die nooit vuurt zou een filtering suggereren die niet plaatsvindt.
- */
-const NIET_VISUEEL = {
-  'Input.type':      'HTML input-type; verandert het uiterlijk van het veld niet',
-  'Tooltip.side':    'bepaalt de plaatsing t.o.v. de trigger, niet het uiterlijk van TooltipContent',
-};
-
-/**
- * Assen die alleen in Figma bestaan omdat de code ze als interne state draagt
- * (geen prop, dus niet uit cva of argTypes af te leiden). Ook hier: mét reden.
- */
-const FIGMA_ONLY = {
-  'ThemeToggle.mode': 'useState(isDark) bepaalt Moon vs Sun; interne state, geen prop',
-};
+// De uitsluitingen (NIET_VISUEEL, FIGMA_ONLY) staan sinds 2026-09-16 in scripts/figma/doel.mjs,
+// met hun redenen: de bouwspec leest dezelfde lijst, en twee kopieën van een oordeel lopen stil
+// uiteen. Import, geen kopie.
 
 /** Leest de argTypes-assen uit een stories-bestand: select/radio met options, of boolean. */
 function argTypeAssen(src) {
@@ -455,6 +438,75 @@ for (const { file, component, src } of storyComponents) {
   if (nodeId !== verwachtId) { fail('link', `${file}: linkt naar ${nodeId}, maar ${component} staat op ${verwachtId}`); continue; }
 }
 if (!fails.some(f => f.startsWith('[link]'))) ok('link', `${codeComponents.length} deep-links wijzen naar de juiste node`);
+
+// ---- 6. De Figma-keten: slots, binding, laagnamen ----
+//
+// Drie assen over de artefacten van scripts/figma/ (gecommit, dus leesbaar in CI zonder browser
+// of Figma). Ze gelden voor de componenten die de keten bouwt — de handgebouwde LEGACY-set heeft
+// geen bouwspec.
+const ketenComponenten = codeComponents.filter(c => !LEGACY.includes(c));
+const bronVan = comp => readdirSync(componentsDir).find(f => !f.includes('.stories.')
+  && [`${comp.toLowerCase()}.tsx`, `${comp.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}.tsx`].includes(f.toLowerCase()));
+
+// [slots] — de walker vindt een component aan zijn primaire `data-slot`. Ontbreekt die in de bron,
+// dan meet `figma:spec` niets en weigert hij te schrijven; hier wordt het rood vóór iemand bouwt.
+// En géén `dark:` in een component: de keten meet alleen light en bindt aan mode-variabelen, dus een
+// dark-specifieke klasse zou in Figma stil wegvallen.
+{
+  let slotsOk = 0;
+  for (const comp of ketenComponenten) {
+    const bron = bronVan(comp);
+    const slot = primairVan(comp).slot;
+    if (!bron) { fail('slots', `${comp}: geen bronbestand`); continue; }
+    if (!readFileSync(join(componentsDir, bron), 'utf8').includes(`data-slot="${slot}"`)) fail('slots', `${bron}: mist data-slot="${slot}" — de walker vindt ${comp} niet`);
+    else slotsOk++;
+  }
+  const metDark = readdirSync(componentsDir).filter(f => f.endsWith('.tsx') && !f.includes('.stories.')
+    && /(^|[\s'"`])dark:/.test(readFileSync(join(componentsDir, f), 'utf8')));
+  if (metDark.length) fail('slots', `dark:-klasse in ${metDark.join(', ')} — de keten meet light en bindt aan modes; een dark-klasse valt in Figma weg`);
+  if (slotsOk === ketenComponenten.length && !metDark.length) ok('slots', `${slotsOk} keten-componenten dragen hun primaire data-slot; 0 dark:-klassen`);
+}
+
+// [binding] — de waarden die de render gebruikt en waarvoor geen variabele of text style bestaat.
+// Tweezijdig, zoals BEKENDE_GATEN: een nieuw gat is rood, en een gat dat verdwenen is óók — anders
+// dekt de lijst na verloop van tijd af wat de as moet vangen.
+const BEKENDE_ONGEBONDEN = {
+  'opacity = 0.5': 'disabled:opacity-50 — Tailwinds opacity-schaal heeft geen token (Switch, disabled)',
+  'opacity = 0.7': 'opacity-70 op de sluitknop van Dialog — idem',
+  'text style = 18px/18 600 — regelhoogte 18 ≠ token 28, tracking -0.45px ≠ 0px':
+    'DialogTitle draagt leading-none tracking-tight; geen text style past op de tokenschaal, dus rauw in Figma',
+};
+{
+  const pad = join(root, 'figma/ongebonden.json');
+  if (!existsSync(pad)) fail('binding', 'figma/ongebonden.json ontbreekt — draai `pnpm --filter @umanex/ui figma:spec`');
+  else {
+    const o = JSON.parse(readFileSync(pad, 'utf8'));
+    const nieuw = o.uniek.filter(u => !BEKENDE_ONGEBONDEN[u]);
+    const weg = Object.keys(BEKENDE_ONGEBONDEN).filter(u => !o.uniek.includes(u));
+    if (nieuw.length) fail('binding', `nieuwe ongebonden waarde(n): ${nieuw.join(' | ')}`);
+    if (weg.length) fail('binding', `bekend gat niet meer gemeten — haal uit BEKENDE_ONGEBONDEN: ${weg.join(' | ')}`);
+    if (!nieuw.length && !weg.length) ok('binding', `${o.uniek.length} bekende ongebonden waarden over ${o.aantalVoorkomens} voorkomens, geen nieuwe`);
+  }
+}
+
+// [laagnaam] — elke laagnaam komt uit de code (data-slot, icon, label), geen tag-gok, geen cijfer,
+// geen tekstinhoud. En de positieve controle: elk keten-component staat in de gecommitte spec,
+// anders zijn de nullen hierboven een uitspraak over een lege meting.
+{
+  const lpad = join(root, 'figma/laagnamen.json'), spad = join(root, 'figma/build-spec.min.json');
+  if (!existsSync(lpad) || !existsSync(spad)) fail('laagnaam', 'figma/laagnamen.json of build-spec.min.json ontbreekt — draai figma:spec');
+  else {
+    const l = JSON.parse(readFileSync(lpad, 'utf8'));
+    const spec = JSON.parse(readFileSync(spad, 'utf8'));
+    const nietGemeten = ketenComponenten.filter(c => !spec.componenten?.[c]);
+    if (nietGemeten.length) fail('laagnaam', `niet in build-spec.min.json: ${nietGemeten.join(', ')} — de spec is ouder dan de stories`);
+    if (!l.nodes) fail('laagnaam', 'nul nodes in laagnamen.json — meting ongeldig');
+    if (l.perBron?.heuristiek) fail('laagnaam', `${l.perBron.heuristiek} laagnaam(en) geraden uit de tag: ${(l.heuristiek ?? []).slice(0, 3).join(', ')} — geef het element een data-slot`);
+    if (l.indexNamen || l.copyNamen) fail('laagnaam', `${l.indexNamen} cijfernamen, ${l.copyNamen} namen naar tekstinhoud`);
+    if (!nietGemeten.length && l.nodes && !l.perBron?.heuristiek && !l.indexNamen && !l.copyNamen)
+      ok('laagnaam', `${l.nodes} laagnamen over ${ketenComponenten.length} keten-componenten, allemaal uit de code`);
+  }
+}
 
 // ---- Rapport ----
 console.log('figma-sync-check — packages/ui ↔ Figma "%s" (%s)\n', manifest.fileName, manifest.fileKey);

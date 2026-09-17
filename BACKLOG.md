@@ -215,7 +215,8 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** besluit Jeroen 2026-09-09 — rule of three, en de tweede consumer moet de aannames **breken**, niet bevestigen: `packages/ui` is React DOM + Tailwind + twee modes, rowtrack is rnw + StyleSheet + één mode. Een package dat nu uit rowtrack alleen getild wordt, generaliseert uit een steekproef die per constructie slaagt, en bevriest de blindvlekken die de audit van die dag mat (laagnaam-ambiguïteit verdrievoudigd zonder dat een as het zag).
 - **Eerste zet:** zodra `packages/ui` een walker of builder nodig heeft (de beeldvergelijking daar, BACKLOG 2026-09-08, is de waarschijnlijke aanleiding): begin met de twee bestaande kopieën (parity, sync-check) en maak de rnw-laag een adapter in plaats van een voorwaarde.
 - **Check:** `for f in geometry-parity.mjs figma-sync-check.mjs; do diff apps/rowtrack/scripts/$f packages/ui/scripts/$f | grep -c '^[<>]'; done` — 542 en 1 043 = de kopieën lopen nog uiteen en er is nog niet geëxtraheerd; 0 = ze zijn één.
-- **Status:** open
+- **Update 2026-09-16:** de trigger vuurde — `packages/ui` krijgt een walker en builder voor 41 nieuwe shadcn-componenten (`briefings/2026-09-16-feature-shadcn-volledige-bibliotheek.tcebc.md`). Besloten: **kopiëren met een `ADAPTER`-object** in `packages/ui/scripts/figma/` + `packages/ui/figma/`, rowtrack onaangeroerd. Reden: rowtrack's CI draait zeven Figma-stappen op zijn eigen artefacten (de poort-selftest leest `builder.js` als brontekst), en de naad is pas bekend na de pilot. Nieuwe trigger voor de extractie: een derde consumer, **of** een bugfix die in beide kopieën moet landen.
+- **Status:** gepland
 
 ## 2026-09-15 — `context.json` kent vier apps niet en draagt elf `[TODO]`-waarden · [docs]
 - **Wat:** `context.json` voedt `gen-snapshot.sh`, en dat schrijft zijn `[TODO]`-strings letterlijk in `apps/<app>/context-snapshot.md` — het bestand dat een volgende sessie als eerste leest. Gemeten 2026-09-15: **alpine, dashboard, soda-plus en vyvey** ontbreken volledig, en jobradar, portfolio, rowtrack en rowtrack-web dragen samen elf `[TODO]`-velden (`figmaKey`, `figmaUrl`, `description`).
@@ -237,4 +238,33 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** `Select` vraagt een nieuwe dependency (`@radix-ui/react-select`) en een Figma-component-set met open/dicht- en itemstates; de bestaande app gebruikt al native selects. shadcn's `Table` rendert `p-4`-cellen, te ruim voor de dichte ledger — dat wacht op het item "Compacte maat in @umanex/ui" hierboven.
 - **Eerste zet:** Na de compacte maat: `Table` met een `size`-as (`default` · `compact`) en `DataTable` in cashflow erop laten steunen; `Select` pas bij een tweede app die het nodig heeft (rule of three).
 - **Check:** `ls packages/ui/components/ui/ | grep -ci "^select\|^table"` — 0 = geen van beide bestaat.
+- **Update 2026-09-16:** opgenomen in de volledige shadcn-bibliotheek — `Select` in batch 2, `Table` in batch 3 (zonder `size`-as; die blijft wachten op "Compacte maat"). Besluit Jeroen: scope "écht alles", dus de rule-of-three-rem op `Select` vervalt.
+- **Status:** gepland
+
+## 2026-09-16 — Apps overzetten op de nieuwe shadcn-primitives · [refactor]
+- **Wat:** Zodra de volledige bibliotheek in `@umanex/ui` staat, de handgebouwde varianten in de apps vervangen: cashflow (Bureau: native selects → `Select`, `components/bureau/feedback/EmptyState.tsx` → `Empty`, lokale DataTable-shell → `DataTable`; modals `RepeatMonthModal`/`ReservationPaymentModal` → `Dialog`), jobradar (`StatusDropdown`, `FilterBar` en de selects in `plan/` → `Select`; `HerkomstFilter` → `RadioGroup`; `<details>` in `plan/ActiePanel`/`Aannames` → `Collapsible`; `CoverageBar` → `Progress`), dashboard (cockpit-tabellen → `Table`).
+- **Waarom niet nu:** Buiten de scope van `briefings/2026-09-16-feature-shadcn-volledige-bibliotheek.tcebc.md` — die bouwt de gedeelde laag, niet de adoptie. Elke vervanging verandert gedrag en uiterlijk van een draaiende app en verdient zijn eigen verify-pad per app.
+- **Eerste zet:** Na batch 2 (Select) en 3 (Table): één app kiezen (jobradar heeft de meeste handgebouwde selects), de vervangingen daar doen en op zijn flow-harness verifiëren.
+- **Check:** `grep -rln '<select' apps/cashflow apps/jobradar --include=*.tsx | grep -v node_modules | wc -l` — groter dan 0 = er staan nog native selects buiten `NativeSelect`.
+- **Status:** open
+
+## 2026-09-16 — Geportalde content valt buiten de geometrie-basislijn van packages/ui · [test]
+- **Wat:** `packages/ui/scripts/geometry-check.mjs` meet uitsluitend binnen `#storybook-root`. Radix portalt `DialogContent`, `PopoverContent`, `SelectContent` e.d. naar `body`, dus hun maten staan niet in `figma/geometry.code.json` — alleen de trigger. De recursieve parity meet ze wél (document-breed), maar de maat-as van de code-kant niet.
+- **Waarom niet nu:** De scope verbreden tot `document` zou de bestaande DropdownMenu-basislijnen herschrijven en play-gedreven stories racy maken. Bewust gelaten in batch 0 van de shadcn-bibliotheek.
+- **Eerste zet:** Een aparte `portal`-sectie per story in `geometry.code.json` (naast `elementen`), alleen gevuld wanneer `[data-slot$="-content"]` buiten de root staat, met een wachtstap op dat element.
+- **Check:** `grep -c 'body\|document.querySelectorAll' packages/ui/scripts/geometry-check.mjs` — 0 = de scope is nog `#storybook-root`.
+- **Status:** open
+
+## 2026-09-16 — Het plotgebied van Chart als SVG-import in Figma · [design-system]
+- **Wat:** In batch 6 van de shadcn-bibliotheek krijgt `ChartContainer` in Figma een placeholder-rechthoek voor het plotgebied. Een SVG-import van de gerenderde recharts-`<svg>` (met de `--color-*`-variabelen opgelost en aan `chart-1…5` gebonden) zou een echte grafiek tonen.
+- **Waarom niet nu:** `createNodeFromSvg` levert geneste groepen met honderden paden en rauwe kleuren; binden per pad is een eigen stuk werk dat de batch niet mag ophouden.
+- **Eerste zet:** Eén BarChart-story importeren, tellen hoeveel paden en welke fills er binnenkomen, en daarop beslissen of binden per kleur haalbaar is.
+- **Check:** `grep -c 'createNodeFromSvg' packages/ui/figma/builder.js` — 1 = alleen de lucide-iconentak; 2+ = de chart-tak bestaat.
+- **Status:** open
+
+## 2026-09-16 — Iconstreep in Figma dikker dan in de browser · [design-system]
+- **Wat:** Elk lucide-icoon in de Component library draagt `strokeWeight` 2, gebonden aan `Base:icon-stroke` — ook op iconen van 16 en 20 px. Lucide schaalt zijn streep mee met de viewBox (`absoluteStrokeWidth` staat uit), dus de browser tekent 2 × 16/24 ≈ 1,33 px op 16 px. Gemeten 2026-09-16 op Sheet, Checkbox, NativeSelect, ThemeToggle (handgebouwd) en Dialog (keten): alle vijf 2 px, in beeld zichtbaar dikker dan de render.
+- **Waarom niet nu:** Het is de huisconventie van de hele library, niet een fout van één component; de nieuwe keten volgt hem bewust zodat er geen twee diktes naast elkaar staan. Oplossen raakt elk icoon tegelijk.
+- **Eerste zet:** Kiezen tussen (a) `icon-stroke` per icoonmaat (`icon-stroke-16` = 1,33, `-20` = 1,67) als Base-variabelen, of (b) `absoluteStrokeWidth` in de code aanzetten zodat de browser óók 2 px tekent. (b) verandert het beeld van elke app; (a) alleen Figma.
+- **Check:** in Figma `findAll(n => n.type === 'VECTOR')` op de pagina's met iconen, `strokeWeight` lezen naast de maat van het ouderframe — 2 op een 16-frame = dit item leeft.
 - **Status:** open

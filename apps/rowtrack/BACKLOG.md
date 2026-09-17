@@ -41,6 +41,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — rowtrack
 
+## 2026-09-17 — Parity vergelijkt opacity met de pixel-tolerantie · [test]
+- **Wat:** `scripts/geometry-parity.mjs` vergelijkt hoogte, padding, gap, radius, randbreedte én opacity met één `TOL = 0.5` (regel 103; opacity in de lijst op regel 176). Een opacity-verschil tot een halve dekking valt daardoor per constructie binnen de marge, en de zelftest muteert alleen een pixelveld. In de kopie in `packages/ui` bracht een eigen drempel voor fracties meteen een echt verborgen verschil boven (`Slider/disabled=true`: 0,5 in Figma, 1 in de browser); die fix zit in umanex/umanex-apps#512.
+- **Waarom niet nu:** gevonden in een learnings-ronde in umanex-os, niet tijdens rowtrack-werk. De bevestiging na de fix vraagt een verse Figma-meting via de Desktop Bridge.
+- **Eerste zet:** de fractie-drempel (`dichtbijFractie`) en de zelftest-case *"opacity 0,7 -> 0,8: rood"* overnemen uit `packages/ui/scripts/geometry-parity.mjs` op de branch van umanex/umanex-apps#512, dan de parity-as opnieuw draaien — reken op echte opacity-verschillen.
+- **Check:** `git show origin/main:apps/rowtrack/scripts/geometry-parity.mjs | grep -c dichtbijFractie` — 0 = het item leeft. Positieve controle: `git show origin/feature/ui-batch-0-figma-keten:packages/ui/scripts/geometry-parity.mjs | grep -c dichtbijFractie` hoort ≥ 1 te geven.
+- **Status:** open
+
 ## 2026-09-16 — Twee calorieformules die elkaar kruisen: vier productvragen, analyse af · [feature]
 - **Wat:** De app rekent calorieën zelf uit (`lib/calories.ts`, via VO2 → `kcal/h = 4,114·W + 2·gewicht`)
   en gooit het kcal-veld weg dat de erg meestuurt (`lib/ble/ftms-parser.ts:115`, `offset += 5`). De
@@ -821,4 +828,11 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** Geen functioneel gevolg gemeten; het is opruimwerk in een configbestand, en configwijzigingen vragen bevestiging (CLAUDE.md-regel).
 - **Eerste zet:** De drie duplicaten weghalen en een Android-build draaien om te bevestigen dat de permissielijst ongewijzigd uitkomt.
 - **Check:** `grep -c BLUETOOTH apps/rowtrack/app.json` → 6 = nog gedubbeld.
+- **Status:** open
+
+## 2026-09-16 — De parity-as ziet een opacity-verschil onder een halve dekking niet · [fix]
+- **Wat:** `apps/rowtrack/scripts/geometry-parity.mjs:103-104` vergelijkt elk veld met `TOL = 0.5`, ook `opacity` (`:176`) — een fractie tussen 0 en 1. Een variant die in Figma op 0,6 staat terwijl de browser 1 rendert, blijft groen. Gevonden in `packages/ui/scripts/geometry-parity.mjs`, dat dezelfde vorm had: een tegenproef in Figma (0,7 -> 0,8) bleef groen, en na de fix kwam daar een echt verborgen verschil boven (Slider disabled, 0,5 tegen 1). Faalklasse vastgelegd in `umanex-os/LEARNINGS.md` (Globaal, 2026-09-16).
+- **Waarom niet nu:** Buiten de scope van de shadcn-bibliotheek (`briefings/2026-09-16-feature-shadcn-volledige-bibliotheek.tcebc.md`), die rowtrack bewust onaangeroerd laat; en een strakkere tolerantie kan in rowtrack echte verschillen blootleggen die eerst een eigen oordeel vragen.
+- **Eerste zet:** Een tolerantie per veld (0,5 voor pixels, 0,01 voor opacity), de `--selftest` een opacity-mutatie laten eisen, en de eerste rode run lezen vóór er iets aan de basislijn verandert — zoals in packages/ui gebeurde.
+- **Check:** `grep -n "TOL = 0.5" apps/rowtrack/scripts/geometry-parity.mjs && grep -c "opacity" apps/rowtrack/scripts/geometry-parity.mjs` — een treffer op de eerste en geen aparte opacity-tolerantie = dit item leeft.
 - **Status:** open

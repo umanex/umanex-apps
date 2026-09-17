@@ -218,6 +218,14 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       een nieuwe `status`-prop over via een effect; komt een oudere pagina-respons binnen ná een geslaagde
       wissel, dan zet die de oude status terug. Zeldzaam (250 ms debounce, AbortController per filter),
       maar niet uitgesloten. (design-review fase 2, 2026-09-17, P3)
+- [ ] `test`: **Geen geval toetst dat de UI zelf een reden invult bij een statuswissel.** De vorm van
+      `76a29ff`: kies op `/plan` "Uitgesteld" zonder reden, en de client schreef "Aanleiding: nog te
+      bepalen" in een veld van de gebruiker. `scripts/plan-ui-probe.mjs` legt sinds 2026-09-17 de
+      PATCH-bodies van echte klikken vast (regel 191) en toetst de `status` erin (regel 205), maar
+      nergens de `reden`. Eerste zet: vaststellen hoe de UI een wissel zonder reden nu afhandelt (sinds
+      `ca98e0c`), dan één geval dat die wissel via de knop doet en eist dat de body geen door de client
+      verzonnen `reden` draagt; tegenproef: `76a29ff` terugdraaien en de check rood zien. (umanex-os
+      LEARNINGS 2026-09-16, *Verzonnen inhoud*; learnings-ronde 2026-09-17)
 
 - [ ] `a11y`: **Kleine toegankelijkheids- en state-bevindingen (P3) uit de inventaris van 2026-09-17**, per bestand
       hieronder. Bron: de workflow `jobradar-a11y-fouten-inventaris` (4 assen, adversarieel geverifieerd) plus

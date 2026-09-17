@@ -1,0 +1,47 @@
+{
+ "$comment": "GEGENEREERD door scripts/figma/story-axes.mjs uit de gebouwde Storybook. Niet met de hand bewerken.",
+ "componenten": {
+  "Dialog": {
+   "storyId": "componenten-dialog--playground",
+   "titel": "Componenten/Dialog",
+   "assen": {},
+   "uitgesloten": {},
+   "variantNodes": 1
+  },
+  "Switch": {
+   "storyId": "componenten-switch--playground",
+   "titel": "Componenten/Switch",
+   "assen": {
+    "checked": [
+     false,
+     true
+    ],
+    "disabled": [
+     false,
+     true
+    ]
+   },
+   "uitgesloten": {},
+   "variantNodes": 4
+  }
+ },
+ "legacy": [
+  "ThemeToggle",
+  "Badge",
+  "Button",
+  "Card",
+  "Checkbox",
+  "DropdownMenu",
+  "Input",
+  "Label",
+  "NativeSelect",
+  "Separator",
+  "Sheet",
+  "Slider",
+  "Tabs",
+  "Textarea",
+  "Tooltip"
+ ],
+ "fouten": [],
+ "totaalVariantNodes": 5
+}

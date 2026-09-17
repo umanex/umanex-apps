@@ -233,33 +233,33 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
       - r.13 Vervangt de boundary de inhoud (bv. na een client-navigatie of een fout in een handler tijdens het renderen), dan gaat de focus niet naar de kop en is er geen role=alert. Er is geen <title>-wijziging, dus ook de routeaankondiging …
       - r.14 Vervangt de error boundary de pagina na een clientinteractie, dan krijgt de kop geen focus en is er geen live-melding. Het element met focus verdwijnt, dus de focus valt op body.
-      - r.15 De foutpagina toont error.message rechtstreeks. In productie is dat voor elke server-renderfout Next's Engelse standaardzin 'An error occurred in the Server Components render. The specific message is omitted in production builds…'…
-      - r.19 De enige bediening is Opnieuw proberen. Er is geen link naar het dashboard. Deze error.tsx vangt ook fouten op /plan en /instellingen, want die hebben geen eigen error.tsx.
+      - r.15 De foutpagina toont error.message rechtstreeks. In productie is dat voor elke server-renderfout Next's Engelse standaardzin 'An error occurred in the Server Components render. The specific message is omitted in production builds…'… **→ opgelost in fase 3 (c02a, gemeten)**
+      - r.19 De enige bediening is Opnieuw proberen. Er is geen link naar het dashboard. Deze error.tsx vangt ook fouten op /plan en /instellingen, want die hebben geen eigen error.tsx. **→ opgelost in fase 3 (c02b, gemeten)**
 - [ ] `a11y`: **P3's in `app/instellingen/page.tsx`** (1). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
-      - r.16 /instellingen heeft geen loading.tsx. De render leest de zoekopdracht en roept planDb() aan, en planDb zaait het plan bij het eerste bezoek. Een client-navigatie vanaf het dashboard of het plan toont tot dan niets.
+      - r.16 /instellingen heeft geen loading.tsx. De render leest de zoekopdracht en roept planDb() aan, en planDb zaait het plan bij het eerste bezoek. Een client-navigatie vanaf het dashboard of het plan toont tot dan niets. **→ opgelost in fase 3 (c14b, gemeten)**
 - [ ] `a11y`: **P3's in `app/page.tsx`** (1). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
-      - r.34 / heeft geen loading.tsx (alleen app/plan/loading.tsx bestaat). Navigeer je client-side naar / (de link 'Terug naar het dashboard' op /plan en /instellingen), dan blijft de vorige pagina zonder indicatie staan tot de force-dynamic…
+      - r.34 / heeft geen loading.tsx (alleen app/plan/loading.tsx bestaat). Navigeer je client-side naar / (de link 'Terug naar het dashboard' op /plan en /instellingen), dan blijft de vorige pagina zonder indicatie staan tot de force-dynamic… **→ opgelost in fase 3 (c14a, gemeten)**
 - [ ] `a11y`: **P3's in `app/plan/loading.tsx`** (2). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
       - r.13 De laadtekst staat in een aria-live-regio die samen met zijn inhoud verschijnt. Het project legt zelf vast dat zo'n regio niet betrouwbaar wordt voorgelezen (ActiePanel.tsx r.557-560).
       - r.13 De laadtekst staat in een aria-live-regio die al mét inhoud gemount wordt. Live-regio's kondigen wijzigingen ná de mount aan, dus een schermlezer zegt 'Plan laden…' niet betrouwbaar. De route-announcer vangt dat niet op, omdat de …
 - [ ] `a11y`: **P3's in `components/ActieRij.tsx`** (1). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
-      - r.125 'Wijzig' vervangt de alinea waarin hij zelf staat door een invoerveld zonder autoFocus. Bewaar en Annuleer (r.94-114) halen zichzelf weer weg. De knop die je indrukt verdwijnt telkens, en de focus valt op body.
+      - r.125 'Wijzig' vervangt de alinea waarin hij zelf staat door een invoerveld zonder autoFocus. Bewaar en Annuleer (r.94-114) halen zichzelf weer weg. De knop die je indrukt verdwijnt telkens, en de focus valt op body. **→ deels in fase 3 (zie `components/plan/ActieRij.tsx` r.127)**
 - [ ] `a11y`: **P3's in `components/ContactPanel.tsx`** (5). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
-      - r.128 Na een geslaagde Vastleggen wordt de notitie geleegd en de historiek opnieuw geladen. De enige aankondiging is de bestaande live-regio, die van 'Historiek laden' naar 'N contactmomenten' springt. Een expliciete bevestiging is er n…
+      - r.128 Na een geslaagde Vastleggen wordt de notitie geleegd en de historiek opnieuw geladen. De enige aankondiging is de bestaande live-regio, die van 'Historiek laden' naar 'N contactmomenten' springt. Een expliciete bevestiging is er n… **→ opgelost in fase 3 (c22a, gemeten)**
       - r.278 [niet geverifieerd] 'maxLength' kapt geplakte tekst stil af, zonder teller of melding. Het gaat om de notitie (2000), het bewijs en de beslissingsvelden (4000, ActiePanel.tsx:299 en BeslissingPanel.tsx:127-168) en de aannames (8000, Aannames.tsx:40).…
-      - r.288 Vastleggen wordt 'disabled' zolang 'bezig' waar is; de knop heeft op dat moment de focus, die daardoor naar body gaat (geen node verwijderd, dus FocusScope vangt het niet op).
-      - r.288 Vastleggen wordt 'disabled' tijdens 'bezig'. Daarna vervangt 'haal()' de hele historiek door 'Laden…' (r.209-210). De focus valt op body, en FocusScope zet hem bij die DOM-mutatie op de sheet-container (handleMutations: 'if (focus…
-      - r.288 Vastleggen en Bewaren/Bijwerken worden disabled tijdens bezig. Daarna vervangt haal() de hele timeline door 'Laden…' (r.209-210), dus de bevestigknop 'Verwijderen' in ContactTimeline verdwijnt onder de focus. In alle drie de geval…
+      - r.288 Vastleggen wordt 'disabled' zolang 'bezig' waar is; de knop heeft op dat moment de focus, die daardoor naar body gaat (geen node verwijderd, dus FocusScope vangt het niet op). **→ opgelost in fase 3 (c24, gemeten)**
+      - r.288 Vastleggen wordt 'disabled' tijdens 'bezig'. Daarna vervangt 'haal()' de hele historiek door 'Laden…' (r.209-210). De focus valt op body, en FocusScope zet hem bij die DOM-mutatie op de sheet-container (handleMutations: 'if (focus… **→ opgelost in fase 3 (c24, gemeten)**
+      - r.288 Vastleggen en Bewaren/Bijwerken worden disabled tijdens bezig. Daarna vervangt haal() de hele timeline door 'Laden…' (r.209-210), dus de bevestigknop 'Verwijderen' in ContactTimeline verdwijnt onder de focus. In alle drie de geval… **→ opgelost in fase 3 (c24 en de Verwijderen-checks onder c21, gemeten)**
 - [ ] `a11y`: **P3's in `components/ContactTimeline.tsx`** (3). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
       - r.59 Een inline bevestiging (Verwijderen/Annuleren in de historiek, 'Zeker?' in ActiePanel.tsx:1042-1056, het redenblok in ActiePanel.tsx:413-485) vangt Escape niet af. Escape gaat naar Radix DismissableLayer en sluit de hele sheet. Co…
-      - r.81 De prullenbakknop wordt bij klik vervangen door Verwijderen/Annuleren; de gefocuste knop verdwijnt en Radix FocusScope zet de focus op de sheet-container.
-      - r.81 De prullenbakknop vervangt zichzelf door Verwijderen/Annuleren (r.59-79), zonder dat de focus mee verhuist. De verwijderde knop stuurt de focus naar body, en Radix zet hem daarna op de sheet-container. Annuleren haalt zichzelf ook…
+      - r.81 De prullenbakknop wordt bij klik vervangen door Verwijderen/Annuleren; de gefocuste knop verdwijnt en Radix FocusScope zet de focus op de sheet-container. **→ opgelost in fase 3 (focus naar Annuleren/prullenbak; gemeten onder c21 Verwijderen)**
+      - r.81 De prullenbakknop vervangt zichzelf door Verwijderen/Annuleren (r.59-79), zonder dat de focus mee verhuist. De verwijderde knop stuurt de focus naar body, en Radix zet hem daarna op de sheet-container. Annuleren haalt zichzelf ook… **→ opgelost in fase 3 (idem)**
 - [ ] `a11y`: **P3's in `components/DashboardClient.tsx`** (5). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
       - r.107 [niet geverifieerd] Het commentaar zegt 'Sinds 2026-09-17 alle filters, niet alleen tab en zoek' (r.53-56), maar TriageStand (lib/triage.ts:31-43) kent alleen status, regio's, score, tab, zoek en via. De filters van het tabblad Prospects bestaan alle…
@@ -297,30 +297,30 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
 - [ ] `a11y`: **P3's in `components/ProspectMap.tsx`** (9). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
       - r.37 Een afgewezen marker heeft dezelfde vulklasse als het provincievlak eronder: beide fill-muted. Alleen een stroke van 1 eenheid in de achtergrondkleur scheidt ze. /api/kaart filtert afgewezen prospects niet weg (route.ts:105 zet de…
-      - r.76 Beide fetches doen r.json() zonder r.ok te controleren. /api/kaart heeft geen try/catch rond haalSelectie en de db-lezingen, en open() in lib/kbo/spiegel.ts gooit bij een mislukte ATTACH opnieuw (r.95-99). Een 500 heeft dus geen J…
-      - r.80 fout wordt gezet maar nergens teruggezet naar null. Na één mislukte /api/kaart-lading halen filterwijzigingen wel nieuwe punten op, maar de component geeft eerst de alert terug (r.113-119), dus de kaart blijft kapot tot je naar Li…
+      - r.76 Beide fetches doen r.json() zonder r.ok te controleren. /api/kaart heeft geen try/catch rond haalSelectie en de db-lezingen, en open() in lib/kbo/spiegel.ts gooit bij een mislukte ATTACH opnieuw (r.95-99). Een 500 heeft dus geen J… **→ opgelost in fase 3 (r.ok op beide fetches; het 500-pad gemeten onder c19)**
+      - r.80 fout wordt gezet maar nergens teruggezet naar null. Na één mislukte /api/kaart-lading halen filterwijzigingen wel nieuwe punten op, maar de component geeft eerst de alert terug (r.113-119), dus de kaart blijft kapot tot je naar Li… **→ opgelost in fase 3 (c19, gemeten)**
       - r.122 'Kaart laden…' is een gewone p zonder role=status. Bij een filterwijziging blijven de oude punten en tellers zonder enige laadtoestand staan tot het antwoord binnen is. De nieuwe telling (r.162-170) staat niet in een live-regio.
       - r.173 De live-regio van de kaart meldt alleen het aantal; twee losse stippen na elkaar geven twee keer "1 bedrijven geselecteerd", dus de tweede keuze wordt niet aangekondigd.
       - r.202 De gekozen marker wordt alleen visueel onderscheiden (grotere straal); de knop draagt geen aria-pressed.
-      - r.213 Elke cluster is een eigen tab-stop, en die stops staan in DOM-volgorde: gesorteerd op x, niet geografisch. Wie met Enter een marker kiest, moet eerst langs alle resterende markers tabben voor hij bij de StatusActies in de aside ko…
-      - r.258 Markers zijn in SVG-eenheden r=5 (actief 7), de ruit is 8×8 en een cluster r=11, in een viewBox van 1000 breed. Bij 1280 px viewport is de svg ongeveer 912 CSS-px breed (1216 min aside 'lg:w-72' min 'gap-4'). Een losse stip is dan…
-      - r.258 De klikbare vorm is ook de zichtbare vorm: een stip r=5 (r=7 als hij actief is), een ruit van 8×8 en een cluster r=11, allemaal in viewBox-eenheden op een breedte van 1000. Clusters worden pas samengevoegd onder 18 eenheden, dus b…
+      - r.213 Elke cluster is een eigen tab-stop, en die stops staan in DOM-volgorde: gesorteerd op x, niet geografisch. Wie met Enter een marker kiest, moet eerst langs alle resterende markers tabben voor hij bij de StatusActies in de aside ko… **→ opgelost in fase 3 (c18, gemeten)**
+      - r.258 Markers zijn in SVG-eenheden r=5 (actief 7), de ruit is 8×8 en een cluster r=11, in een viewBox van 1000 breed. Bij 1280 px viewport is de svg ongeveer 912 CSS-px breed (1216 min aside 'lg:w-72' min 'gap-4'). Een losse stip is dan… **→ opgelost in fase 3 (c20, gemeten)**
+      - r.258 De klikbare vorm is ook de zichtbare vorm: een stip r=5 (r=7 als hij actief is), een ruit van 8×8 en een cluster r=11, allemaal in viewBox-eenheden op een breedte van 1000. Clusters worden pas samengevoegd onder 18 eenheden, dus b… **→ opgelost in fase 3 (c20, gemeten)**
 - [ ] `a11y`: **P3's in `components/RegionFilter.tsx`** (1). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
       - r.26 "Regio" is een losse span; de drie checkboxen hangen er niet aan, dus ze hebben alleen hun regionaam.
 - [ ] `a11y`: **P3's in `components/ScoreBadge.tsx`** (1). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
-      - r.15 De scorepil rendert alleen een getal, zonder dat de toegankelijke tekst zegt dat het een score is.
+      - r.15 De scorepil rendert alleen een getal, zonder dat de toegankelijke tekst zegt dat het een score is. **→ deels in fase 3: de pil mét opbouw noemt de score (c10b); de kale pil zonder opbouw niet**
 - [ ] `a11y`: **P3's in `components/SearchSettingsForm.tsx`** (2). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
-      - r.139 'Herstel de standaard' wordt alleen gerenderd zolang '!isStandaard'. Na een geslaagd herstel wordt 'isStandaard' waar en verdwijnt de knop onder de focus. Hetzelfde geldt voor de chip-verwijderknop in TermChips.tsx:78-89: de chip …
+      - r.139 'Herstel de standaard' wordt alleen gerenderd zolang '!isStandaard'. Na een geslaagd herstel wordt 'isStandaard' waar en verdwijnt de knop onder de focus. Hetzelfde geldt voor de chip-verwijderknop in TermChips.tsx:78-89: de chip … **→ deels in fase 3: Herstel houdt de focus (c42); de chip-verwijderknop in TermChips niet**
       - r.147 [niet geverifieerd] De validatiefout staat onder de knoppen, ver van het veld waarover hij gaat. Voorbeelden: 'Zonder zoektermen…', "'x' staat zowel bij de zoektermen als bij de uitsluitingen" en 'is één woord'. Het TermChips-veld krijgt geen 'aria-i…
 - [ ] `a11y`: **P3's in `components/SyncButton.tsx`** (4). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
-      - r.35 '+N vacatures, +N leads' is platte tekst, geen link naar de nieuwe items. De aanname in de briefing dat /?status=new daarheen leidt, klopt niet. status=new is de triagestatus 'nog niet beoordeeld' (lib/triage.ts:26, pastBijStatus)…
-      - r.61 Dezelfde faalklasse als de paginering, op minder frequente plekken: een knop die je net indrukte, wordt 'disabled', en volgens StatusActies.tsx:58-59 geeft hij zijn focus dan af aan body. Het gaat om SyncButton.tsx:61 ('disabled={…
-      - r.61 De knop wordt tijdens de sync 'disabled'. Wie hem met Enter of Spatie start, verliest de focus aan body, de klasse die StatusActies.tsx:58–59 beschrijft en vermijdt.
-      - r.63 Tijdens de sync zie je alleen een draaiend icoon en 'Bezig…'. Je ziet niet hoe lang het al duurt of ongeveer nog duurt. Volgens CLAUDE.md duurt een sync ~12 s door de Adzuna-pauzes.
+      - r.35 '+N vacatures, +N leads' is platte tekst, geen link naar de nieuwe items. De aanname in de briefing dat /?status=new daarheen leidt, klopt niet. status=new is de triagestatus 'nog niet beoordeeld' (lib/triage.ts:26, pastBijStatus)… **→ opgelost in fase 3 (c13d, c13e, c44–c47, gemeten)**
+      - r.61 Dezelfde faalklasse als de paginering, op minder frequente plekken: een knop die je net indrukte, wordt 'disabled', en volgens StatusActies.tsx:58-59 geeft hij zijn focus dan af aan body. Het gaat om SyncButton.tsx:61 ('disabled={… **→ opgelost voor SyncButton in fase 3 (c13a, gemeten)**
+      - r.61 De knop wordt tijdens de sync 'disabled'. Wie hem met Enter of Spatie start, verliest de focus aan body, de klasse die StatusActies.tsx:58–59 beschrijft en vermijdt. **→ opgelost in fase 3 (c13a, gemeten)**
+      - r.63 Tijdens de sync zie je alleen een draaiend icoon en 'Bezig…'. Je ziet niet hoe lang het al duurt of ongeveer nog duurt. Volgens CLAUDE.md duurt een sync ~12 s door de Adzuna-pauzes. **→ opgelost in fase 3 (c13b, gemeten)**
 - [ ] `a11y`: **P3's in `components/TermChips.tsx`** (4). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
       - r.51 [niet geverifieerd] Typ je een term die al bestaat, dan verandert de lijst niet, maar het veld wordt wel geleegd. Ontdubbelen gebeurt hoofdletterongevoelig, in splitsTermen en normaliseerZinsnedes op lowercase. Er komt geen melding, en dat geldt voor…
@@ -336,7 +336,7 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       - r.28 [niet geverifieerd] 'N acties getoond' is op het tabblad Acties de enige aankondiging na een filterwissel. Gemeten met sqlite3 -readonly: prioriteit 1 en 2 hebben elk 6 acties, 3 en 4 elk 5, en alle 22 hebben eigenaar 'Jeroen'. Wissel je van priorite…
 - [ ] `a11y`: **P3's in `components/plan/ActiePanel.tsx`** (13). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
-      - r.385 De status-select roept in onChange direct zetStatus aan en krijgt disabled={bezig}. Het element dat net gekozen werd, wordt dus disabled terwijl het de focus heeft. Hetzelfde patroon zit op alle velden en knoppen in het paneel en …
+      - r.385 De status-select roept in onChange direct zetStatus aan en krijgt disabled={bezig}. Het element dat net gekozen werd, wordt dus disabled terwijl het de focus heeft. Hetzelfde patroon zit op alle velden en knoppen in het paneel en … **→ deels in fase 3: de select verstuurt niet meer bij een wissel (c29) en Heropen, Bewaar en Zet op houden de focus (c30c); de overige knoppen staan in het BACKLOG-item hieronder**
       - r.508 [niet geverifieerd] Bij een 409 op de focusregel zet 'verstuur' zowel 'fout' ('er zijn al 3 acties bezig', mutaties.ts r.352) als 'conflict' (PlanClient.tsx:128-129). Het paneel rendert beide tegelijk als role="alert": de foutregel (r.361) en het con…
       - r.519 In het focusconflict staat per lopende actie een knop "Parkeer" zonder key; per constructie zijn het er evenveel als de focuslimiet (standaard 3).
       - r.810 [niet geverifieerd] Een link heeft zijn URL als React-key (r.794) en wordt ook op URL verwijderd. Dezelfde URL kan twee keer in de lijst komen: via Voeg toe, of doordat Markeer gereed een bewijslink met een bestaande URL toevoegt (r.327-331). Dan sta…
@@ -352,7 +352,7 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
 - [ ] `a11y`: **P3's in `components/plan/ActieRij.tsx`** (3). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
       - r.54 De titelknop opent het actiepaneel (een Sheet) maar draagt geen aria-haspopup, terwijl Afronden… in dezelfde rij (r.183) en Open op de Eerstvolgende-kaart dat wel doen.
-      - r.127 Wijzig vervangt de knop door een invoerveld zonder focus te verplaatsen; Bewaar en Annuleer halen het blok weer weg. In alle drie de gevallen verdwijnt het gefocuste element.
+      - r.127 Wijzig vervangt de knop door een invoerveld zonder focus te verplaatsen; Bewaar en Annuleer halen het blok weer weg. In alle drie de gevallen verdwijnt het gefocuste element. **→ deels in fase 3: na een geslaagde Bewaar gaat de focus naar Wijzig; Wijzig en Annuleer zelf niet**
       - r.133 De knop om de volgende stap te bewerken heet alleen "Wijzig", zonder actie en zonder object.
 - [ ] `a11y`: **P3's in `components/plan/Beslismomenten.tsx`** (1). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
@@ -372,7 +372,7 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       - r.176 'laatstGewijzigd.current' wordt gezet vóór de PATCH en alleen gewist in het effect op '[plan, openActie]'. Faalt een Start zonder conflict (500 of netwerkfout), dan blijft de ref staan. Bij de eerstvolgende wijziging van 'plan' of…
       - r.265 [niet geverifieerd] 'Terug naar het dashboard' op /plan (r.264-273) en op /instellingen (app/instellingen/page.tsx:23-32) linkt naar een kale '/'. De filterstand die fase 2 in de URL bewaart (status, regio, score, tab, zoek), valt daardoor terug op d…
       - r.310 De tweede exportlink heet alleen "JSON".
-      - r.318 'Herlaad plan' staat in de foutmelding, en die wordt alleen gerenderd zolang 'fout' gezet is. 'herlaad' doet als eerste 'setFout(null)' (r.146), dus de knop verdwijnt meteen onder de focus.
+      - r.318 'Herlaad plan' staat in de foutmelding, en die wordt alleen gerenderd zolang 'fout' gezet is. 'herlaad' doet als eerste 'setFout(null)' (r.146), dus de knop verdwijnt meteen onder de focus. **→ opgelost in fase 3 (c35, gemeten)**
       - r.592 Tussen de klik op een actietitel of 'Open' en het antwoord van /api/plan/acties/{key} rendert er niets: het paneel verschijnt pas als detail binnen is. Er is geen laadindicator, geen aria-busy en geen live-melding.
 - [ ] `a11y`: **P3's in `components/plan/PlanInstellingenForm.tsx`** (1). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
@@ -390,6 +390,70 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
 - [ ] `a11y`: **P3's in `packages/ui/components/ui/sheet.tsx`** (1). Gevonden door de inventaris van fase 3 (2026-09-17);
       niet gebouwd omdat fase 3 alle P1/P2 nam en de P3's gegroepeerd parkeert.
       - r.50 [niet geverifieerd] Geen enkele animatie respecteert 'prefers-reduced-motion'. Het gaat om de sheet die 500 ms inschuift, de zoom van de tooltip (tooltip.tsx:19), en 'animate-spin' tijdens de sync van ~12 s (SyncButton.tsx:62) en de zoektest (SearchS…
+
+- [x] `feature`: **"+N vacatures" na een sync toont niet wat er nieuw is.** Gebouwd in fase 3 (c13d)
+      volgens de aanname in de briefing: de link zet het statusfilter op Nieuw. Maar Nieuw is de
+      triagestatus "nog niet beoordeeld" (`lib/triage.ts`), niet "binnengekomen sinds de vorige sync" —
+      met weinig afgewezen vacatures toont hij vrijwel de hele lijst. Zie ook het P3-item bij
+      `SyncButton.tsx` r.35. **Eerste zet:** een stand `sinds=<previousSyncAt>` in `TriageStand` en de URL
+      (`leesStand`/`schrijfStand` + de 30.240-standen-suite), en de link daarop zetten. (review fase 3, 2026-09-17)
+      **Gebouwd 2026-09-17 in fase 3 (items c13d/e, c44–c49b, gemeten), keuze Jeroen:** een vast vinkje "Alleen nieuw bij de laatste
+      sync" in de filterbalk op de badge-voorwaarde, en de statusoptie "Nieuw" hernoemd naar "Niet beoordeeld".
+- [x] `fix`: **Wijzig op een actierij opent met een verouderde volgende stap.** `ActieRij.tsx` zet `stap`
+      één keer uit `actie.volgendeStap` bij het mounten. Pas je de stap aan in het paneel of herlaad je het
+      plan, dan opent Wijzig met de oude tekst — en Bewaar overschrijft de nieuwere stap, want de versie is
+      dan wél actueel. **Eerste zet:** `stap` bij het openen van het veld uit de actuele prop zetten, met een
+      `plan-ui-probe`-geval: stap wijzigen via HTTP, dan Wijzig → de nieuwe tekst staat erin. (fix-ronde fase 3, 2026-09-17)
+      **Gebouwd 2026-09-17 in fase 3 (item c50, gemeten), op vraag van Jeroen.**
+- [ ] `ux`: **Onbewaarde invoer in het actiepaneel verdwijnt zonder vraag bij een paneelwissel.** De
+      sluitvraag (c39) dekt Escape, overlay en kruis, niet (a) de automatische wissel naar een andere actie
+      wanneer Start in het blok "nu beschikbaar" op een 409 strandt, en (b) de link "Open in dashboard".
+      Beslissing nodig: bij onbewaarde invoer niet automatisch wisselen, of vooraf altijd vragen. (bouw fase 3, 2026-09-17)
+- [ ] `ux`: **Na Bewaren van de volgende actie blijven kaart en sortering oud.** `ContactPanel` meldt de
+      nieuwe actie niet aan `DashboardClient`, dus `NextActionBadge` en "Volgende actie eerst" tonen de oude
+      stand tot de volgende lading. **Eerste zet:** prop `onActieChange(actie | null)` die `bewaarActie` na
+      succes aanroept. (bouw fase 3, 2026-09-17)
+- [ ] `ux`: **De actiekeuze in PlanKoppeling telt niet als onbewaarde invoer.** Het paneel vraagt bevestiging
+      bij een getypt contactmoment, niet bij een gekozen maar niet gekoppelde actie — `PlanKoppeling` is een
+      slot en meldt zijn staat niet. **Eerste zet:** callback `onOnbewaard(boolean)` naar `ContactPanel`. (bouw fase 3, 2026-09-17)
+- [ ] `ux`: **Tijdens de eerste historiek-lading zijn Vastleggen en Bewaren inert.** Bewuste ruil in fase 3:
+      zonder die rem overschreef de lading de getypte actie. Een klik tijdens een trage lading doet niets
+      (gedimd, wel zichtbaar). Ter beoordeling na gebruik; alternatief is de lading niet laten overschrijven
+      wat al getypt is. (review fase 3, 2026-09-17)
+- [ ] `refactor`: **De kaart scheidt clusters in de component in plaats van in `lib/kaart.ts`.** `scheidClusters`
+      in `ProspectMap.tsx` garandeert dat geen twee markers dichter dan het klikdoel liggen (c20); die garantie
+      hoort in `clusterPunten`, met een invariant in `scripts/kaart-scenarios.ts`. Staat als `// TODO` in de code. (bouw fase 3, 2026-09-17)
+- [ ] `ux`: **Clusteren op klikdoelgrootte maakt de grootste markers groot.** Doorgerekend op 217 echte punten
+      (niet in de browser gezien): losse markers 77 → 59 bij 1280 px en 77 → 40 bij 1024 px; de grootste marker
+      bundelt 49 resp. 64 bedrijven (was 33), dus het paneel na één keuze toont tot 64 rijen met statusknoppen.
+      Alternatief overwogen en verworpen: straal houden met overlappende klikdoelen (een buur neemt dan een deel
+      van het doel over). **Eerste zet:** kijken bij 1024 px of 64 rijen werkbaar zijn; zo niet, het paneel groeperen. (review fase 3, 2026-09-17)
+- [ ] `a11y`: **Een viewportwissel kan de kaartfocus laten vallen.** De clustering hangt aan de gemeten breedte
+      (ResizeObserver); valt bij een resize de sleutel van de gefocuste marker weg, dan gaat de focus naar body en
+      klopt `gekozen` niet meer met een marker. Uit de code gelezen, niet gemeten. (review fase 3, 2026-09-17)
+- [ ] `a11y`: **Op de kaart is kleur voor muisgebruikers het enige statussignaal.** Markers dragen naam en status
+      voor een schermlezer; met de muis is er geen tooltip of `<title>`, en de legenda verklaart de kleur zonder
+      hem te vervangen (WCAG 1.4.1). (bouw fase 3, 2026-09-17)
+- [ ] `a11y`: **Herlaad-knoppen hebben geen guard.** `PlanClient`, `ActiePanel` en `BeslissingPanel`: dubbel
+      activeren tijdens een herlading stuurt parallelle GET's. aria-disabled + guard, zoals de rest. (review fase 3, 2026-09-17)
+- [ ] `a11y`: **Knoppen in het actiepaneel die je zelf activeert, staan nog op native `disabled`.** Markeer gereed,
+      Parkeer, Start met uitzondering, Start toch, Verwijder, Voeg toe (afhankelijkheden), Start in het blok met
+      vrijgekomen acties, en Afronden… in `ActieRij`: bij een fout of 409 valt de focus op body. En na een
+      geslaagde Zet op/Heropen verdwijnt de knop en zet FocusScope de focus op de sheet-container — beter naar het
+      status-select. (fix-ronde fase 3, 2026-09-17)
+- [ ] `a11y`: **`BeslissingPanel` kent geen laatste focusanker.** Zijn openers blijven vandaag verbonden, maar een
+      opener die wegvalt zet de focus op body; `ActiePanel` loopt sinds fase 3 een reeks kandidaten af. (fix-ronde fase 3, 2026-09-17)
+- [ ] `refactor`: **De focusterugval na het opvolgingspaneel zoekt de Opvolging-knop op tekst.** `LeadCard` en
+      `ProspectCard` geven die knop geen data-attribuut, en `ProspectCard` heeft geen `data-item`; een hernoemde
+      knop valt stil terug op het tabpaneel. **Eerste zet:** `data-opvolging` op beide knoppen, `data-item` op
+      `ProspectCard`. (fix-ronde fase 3, 2026-09-17)
+- [ ] `a11y`: **TermChips geeft vermoedelijk twee keer de focus aan body.** (1) Tab uit een chipveld met getypte
+      tekst: `onBlur={voegToe}` leegt het veld, waardoor Toevoegen `disabled` wordt op het moment dat de focus erop
+      landt. (2) Enter die de laatste toegelaten woordcombinatie toevoegt, zet het veld met focus op `disabled`
+      (`vol`). Niet gemeten. (bouw fase 3, 2026-09-17)
+- [ ] `test`: **De toetsenbord-pass van de harness raakt zijn plafond eerder.** Sinds de scoreopbouw een focusbare
+      knop is, telt elke kaart met opbouw één tab-stop meer; de pass stopt na 80 stops en dekt dus minder van `/`.
+      **Eerste zet:** het plafond per route instelbaar maken of de pass per tabpaneel laten lopen. (review fase 3, 2026-09-17)
 
 ## Verworpen
 

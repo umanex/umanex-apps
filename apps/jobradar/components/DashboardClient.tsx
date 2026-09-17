@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
 import { cn } from '@umanex/ui/lib/utils'
@@ -69,16 +69,19 @@ export function DashboardClient({
   const [jobs, setJobs] = useState(initialJobs)
   const [companies, setCompanies] = useState(initialCompanies)
   /**
-   * De beginstand: in de browser uit de adresbalk, op de server uit de prop.
+   * De beginstand, uit de router — niet uit de adresbalk en niet alleen uit de prop.
    *
-   * Bij het laden zijn die twee dezelfde URL, dus de hydration klopt. Het verschil is Back: keer je
-   * van /plan terug, dan hergebruikt Next de gecachete render met de `initialStand` van bij het
-   * laden, terwijl de adresbalk de stand draagt die je daarna koos. De adresbalk is dan de waarheid
-   * (design-review 2026-09-17).
+   * De prop draagt de URL van de server-render; na Back hergebruikt Next die gecachete render met een
+   * oude stand. De adresbalk (`window.location`) was de eerste fix, maar loopt bij een voorwaartse
+   * navigatie achter: Next zet de URL pas in de commit, dus "Open in dashboard" vanuit /plan las nog
+   * `/plan` en landde op Vacatures zonder zoekterm (gemeten in de browser, 2026-09-17 — een regressie
+   * uit #518). `useSearchParams` leest de router zelf: juist bij laden, bij een voorwaartse navigatie
+   * en bij Back, en dankzij `replaceState(null, …)` hieronder ook na filteren. Deze pagina is
+   * `force-dynamic`, dus de hook eist geen Suspense-grens: hij valt alleen terug bij prerenderen
+   * (gelezen in `next/dist/client/components/bailout-to-client-rendering.js`).
    */
-  const [begin] = useState<TriageStand>(() =>
-    typeof window === 'undefined' ? initialStand : leesStand(new URLSearchParams(window.location.search))
-  )
+  const zoekParams = useSearchParams()
+  const [begin] = useState<TriageStand>(() => (zoekParams ? leesStand(zoekParams) : initialStand))
   const [regions, setRegions] = useState<RegionCode[]>(begin.regios)
   const router = useRouter()
   const [minScore, setMinScore] = useState(begin.minScore)

@@ -623,6 +623,30 @@ async function main() {
       }
       if (!leegGemeten) notes.push('triage: geen zoekterm gevonden die alleen lage scores raakt — lege grid niet gemeten');
 
+      // Voorwaartse client-navigatie mét query — de sprong "Open in dashboard" vanuit /plan. Een Link
+      // doet `router.push`; de URL wordt pas in de commit gezet, dus een beginstand die de adresbalk
+      // leest, kan hier nog /plan zien (criticus 2026-09-17). Alleen lezen: navigeren muteert niets.
+      {
+        const naam = execFileSync('sqlite3', ['-readonly', DB, 'SELECT company_name FROM companies ORDER BY id LIMIT 1;']).toString().trim();
+        if (!naam) {
+          notes.push('triage: geen lead in de database — voorwaartse navigatie met query niet gemeten');
+        } else {
+          await laad('/plan');
+          const doel = `/?tab=leads&zoek=${encodeURIComponent(naam)}`;
+          await page.evaluate((u) => window.next?.router?.push(u), doel);
+          await page.waitForURL((u) => u.pathname === '/', { timeout: 10_000 }).catch(() => {});
+          await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+          await page.waitForTimeout(600);
+          const stand = {
+            tab: (await page.locator('[role="tab"][data-state="active"]').first().innerText().catch(() => '')).replace(/\s+\d+$|\s+—$/, '').trim(),
+            zoek: await page.locator('input[type="search"]').first().inputValue().catch(() => '(geen veld)'),
+            url: new URL(page.url()).search,
+          };
+          if (stand.tab !== 'Leads' || stand.zoek !== naam || !stand.url.includes('tab=leads')) fail(`triage: navigatie naar ${doel} gaf ${JSON.stringify(stand)}`);
+          else ok(`triage: voorwaartse navigatie met query landt op Leads met "${naam}" (${stand.url})`);
+        }
+      }
+
       // Doorklik vanaf een lead en herladen: de lijst hoort op de bedrijfssleutel te blijven matchen.
       // Alleen lezen — "toon deze vacatures" verandert niets in de database.
       await laad('/?tab=leads');

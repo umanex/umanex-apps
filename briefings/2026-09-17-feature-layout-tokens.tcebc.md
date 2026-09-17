@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** packages/tokens + packages/config + packages/ui (monorepo-niveau)
 - **Klant:** umanex
-- **Status:** gebouwd — review en de twee procesitems open
+- **Status:** gebouwd — review-ronde 1 verwerkt, ronde 2 loopt; na de merge Jeroens Pull in Tokens Studio
 
 ---
 
@@ -101,15 +101,35 @@ Bewust géén rol: Button `px-4`/`px-8`, Badge `px-2.5 py-0.5`, menu `pl-8`/`px-
 - [x] Tegenproef — een Base-variabele zonder tokenpad maakt `[dekking]` rood — bewijs: selftest-case `spacing-13 = 52` rood op [dekking] (verhuisd van `spacing-7`, dat nu een token heeft)
 - [x] Elke rolvariabele in Base is een alias naar zijn schaalvariabele — bewijs: runtime read-back 11/11 (`spacing-surface→spacing-6 [GAP]` … `size-control-lg→spacing-11 [WIDTH_HEIGHT]`); `[schaal]` toetst het tegen Theme/base, met 2 nieuwe tegenproeven
 - [x] De ids van de 22 bestaande Base-variabelen zijn ongewijzigd — bewijs: `idsGewijzigd: []` in dezelfde call als het schrijven; tweede droge run 0 wijzigingen
-- [x] Switch en Dialog binden padding, gap en hoogte aan de rolvariabele waar de code de rol-utility draagt — bewijs: spec 0 fouten; Dialog runtime read-back `DialogContent` padding `spacing-surface` ×4, gap `spacing-stack`, header `spacing-heading`, footer `spacing-inline`, knoppen `spacing-control-y`; toets-batch 7b 0 verschillen. Switch draagt geen rol-utility
+- [x] Switch en Dialog binden padding en gap aan de rolvariabele waar de code de rol-utility draagt — bewijs: spec 0 fouten; Dialog runtime read-back `DialogContent` padding `spacing-surface` ×4, gap `spacing-stack`, header `spacing-heading`, footer `spacing-inline`, knoppen `spacing-control-y`; toets-batch 7b 0 verschillen. Switch draagt geen rol-utility
 - [x] De 15 handgebouwde componenten binden aan de rolvariabele waar de code de rol-utility draagt — bewijs: 213 velden herbonden met log vóór/na, 4 bewust niet (Sheet-gap, waarde ≠ rol → BACKLOG 2026-09-17); read-back per pagina: resterende `spacing-N` zijn alleen stappen zonder rol (`px-4`, `px-8`, `px-2`, separator, `pr-9`, `h-20`, `pt-2`)
 - [x] `pnpm --filter @umanex/ui parity` geeft 0 verschillen na de herbinding — bewijs: 68 varianten + 19 keten-nodes, 2 runs; TabsTrigger, ThemeToggle en SheetContent slaat parity al over (geen playground met die assen)
+
+### Review-ronde 1 (code-review PR umanex-apps#524, 15 bevindingen)
+
+- [x] R1 · P1 — `[schaal]` is rood als een stap uit `Layout/Scale` in Figma Base ontbreekt — bewijs: selftest-case "stap uit Layout/Scale ontbreekt in Figma" (`icon-stroke` weg) rood op [schaal]; figma:check:selftest 28 tegenproeven groen
+- [x] R2 · P1 — de swatch-matrix van `apps/cashflow/scripts/render-screens.tsx` telt alleen kleurrollen, geen layout-rollen — bewijs: CI-log `verify:visual` "✓ 54 rollen" op dd83810 (vóór), "✓ 43 rollen" op c5d1db5 (na) = `hslRoles` + `rawRoles` (43)
+- [x] R3 · P1 — de keten bindt de hoogte van een element met `h-control-*` aan `size-control-*` — bewijs: spec `hVar: Base:size-control-md` ×2; runtime read-back beide footer-knoppen `height=size-control-md (40)`; toets-batch `bindingVerschillen` 0, tegenproef `spacing-10` op één knop → 1 met de exacte regel
+- [x] R4 · P1 — de keten bindt de breedte van een element met `w-control-*` aan `size-control-*` — bewijs: Button tijdelijk uit LEGACY en door de walker: `size=icon` → `h` en `w` = `Base:size-control-md` (40×40), `sm` → `size-control-sm`, `lg` → `size-control-lg`; daarna teruggezet, `figma/` git-schoon. De builder bindt `width` via dezelfde `bind()` als `height` (R3, in Figma gemeten)
+- [x] R5 · P2 — een baseline-regel in de token guard dekt één fragment, niet het hele bestand — bewijs: `mt-[13px]` op dezelfde regel als `pl-[22px]` → rc=1 op [arbitrary-spacing]
+- [x] R6 · P2 — een baseline-regel zonder treffer maakt de token guard rood — bewijs: `pl-[22px]` → `pl-5` → rc=1 op [baseline-verouderd]
+- [x] R7 · P2 — `build-prune` meldt een `space-x/y`-rol waarvan de marge afwijkt, in plaats van stil op de stap te binden — bewijs: marge onder `space-y-heading` in `build-spec.json` op 8 gezet → `ongebonden.json` bevat "spacing-heading (6) ≠ marge 8" (nieuwe ongebonden waarde = rood op [binding], bestaande selftest-case); daarna teruggezet, `figma/` git-schoon
+- [x] R8 · P2 — `@umanex/tokens` staat in `dependencies` van `@umanex/ui` — bewijs: `packages/ui/package.json`; lockfile-diff verplaatst alleen die entry (+3/−3)
+- [x] R9 · P2 — een gefaalde layout-validatie laat `theme.css` en `roles.mjs` ongewijzigd — bewijs: `spacing.4 = 1.1rem`, ontbrekende stap, kapotte alias en `spacing.auto` → rc=1 met sha van build/ gelijk; tegenkant: de HEAD-build met dezelfde fout zet `1.1rem` in theme.css
+- [x] R10 · P2 — `$`-sleutels op groepsniveau breken build, payload en `figma:check` niet — bewijs: `$type`/`$description` op spacing, border en Theme/base → build rc=0 met identieke uitvoer, payload gelijk, figma:check rc=0; tegenkant: HEAD-payload gooit "geen getal", HEAD-build exporteert `$type` als stap
+- [x] R11 · P2 — `arbitrary-spacing` vangt `!p-[…]`, niet-px-waarden en `scroll-m/p` — bewijs: `!p-[13px]`, `gap-[1ch]`, `p-[5%]`, `scroll-mt-[13px]`, `sm:!-mt-[2px]`, `m-[calc(1rem+2px)]` elk rc=1; scope telt met de ruime regex 1 treffer (de gebaselinede)
+- [x] R12 · P3 — de ESLint-spiegel (`packages/config/eslint/tokens.cjs`) kent `arbitrary-spacing` — bewijs: eslint via stdin in jobradar: `p-[13px]` en `!mt-[3px]` rc=1, `p-4 gap-inline` rc=0; `pnpm --filter jobradar lint` schoon
+- [x] R13 · P3 — de botsingscheck kent Tailwinds gereserveerde spacing-sleutels (`auto`, `full`, `screen`, `min`, `max`, `fit`) — bewijs: rol `spacing.auto` → rc=1 "gereserveerde Tailwind-sleutel"
+- [x] R14 · P3 — `gapRol` volgt dezelfde voorrang als `paddingRollen` (een latere schaalklasse wist de rol) — bewijs: probe `gap-stack gap-y-2` (kolom) → null; `gap-inline` (rij) → spacing-inline; spec van Dialog ongewijzigd behalve `hVar`
+- [x] R15 · P3 — `layout.mjs` exporteert geen ongebruikte `iconStroke`; de build eist van `icon.stroke` alleen een getal — bewijs: diff layout.mjs −2 regels; `1.5` → rc=0, `dik` → rc=1
+- [x] R17 · P1 — de ESLint-spiegel breekt `cashflow#lint` niet op de gebaselinede plek (CI-run 35248117831 faalde erop) — bewijs: `eslint-disable-next-line` met verwijzing naar dezelfde BACKLOG-entry; `turbo lint --force` 7/7 lokaal; CI-run 35248551985 groen
+- [x] R16 · P3 — naar BACKLOG: `border`-groep botst in de merge met kleurrol `border`; rolgroepen en alias-regex staan op drie plekken; spacing- en size-rollen zijn als utility onderling uitwisselbaar — bewijs: BACKLOG 2026-09-17 (drie entries)
 
 ### Docs en proces
 
 - [x] Storybook `Tokens/Layout` toont schaal en rollen, gelezen uit tokens.json — bewijs: render op storybook-static: 11 rolrijen met gemeten 24/4/12/8/6/8/16/6/36/40/44 px, 40 schaalrijen; Radius-pagina toont weer 1 rij
 - [x] `CLAUDE.md` (root) noemt `Layout/Scale` in de lagen-tabel — bewijs: `git diff origin/main -- CLAUDE.md`
-- [ ] De PR-body draagt de naamlijst ter review
+- [x] De PR-body draagt de naamlijst ter review — bewijs: `gh pr view 524 --json body` bevat de tabel (`spacing.surface` … `size.control-sm/md/lg`)
 - [ ] Na Jeroens Pull in Tokens Studio geeft zijn eerstvolgende push 0 diff op `Layout/Scale` en `Theme/base` — [NIET TE VERIFIËREN vóór de merge — vraagt Jeroens pull]
 
 ## Beslissingsgeschiedenis

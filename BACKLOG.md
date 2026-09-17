@@ -88,6 +88,27 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** Vóór batch 5: een instance van DialogContent maken, een tekst overriden, Dialog herbouwen en kijken of de override staat. Staat hij niet, dan kinderen op naam hergebruiken in plaats van vervangen.
 - **Check:** de tegenproef hierboven; zolang hij niet gedraaid is, leeft dit item.
 - **Status:** open
+
+## 2026-09-17 — Layout/Scale-groep `border` botst in de build met de kleurrol `border` · [debt]
+- **Wat:** `packages/tokens/build.mjs` merget per mode de primitives en de rolsets met `deepMerge`. `Layout/Scale` heeft een groep `border` (breedtes), `Theme/light|dark` een leaf `border` (kleur); de leaf overschrijft de groep. Een alias `{border.1}` in een rolset is daardoor onoplosbaar in onze build, terwijl Tokens Studio hem wel oplost (code-review umanex-apps#524).
+- **Waarom niet nu:** Er verwijst vandaag niets naar `{border.N}`. De groep hernoemen (`borderWidth`) breekt de naamkoppeling met de Figma-variabelen `border-1/2`, die de dekkingscheck op de staart van het pad maakt.
+- **Eerste zet:** Bij de eerste rol die een borderbreedte aliast: de merge per set laten namespacen, of de Figma-namen mee hernoemen via `zet-base.js`.
+- **Check:** `node -e` met een rol `size.divider: {border.1}` in een kopie van tokens.json → build faalt op "could not be found" = leeft.
+- **Status:** open
+
+## 2026-09-17 — Rolgroepen en alias-regex van de layout-rollen staan op drie plekken · [refactor]
+- **Wat:** `['spacing', 'size']`, de regex `{spacing.X}` en rem→px staan in `packages/tokens/build.mjs`, `packages/ui/scripts/figma/base-payload.mjs` en `packages/ui/scripts/figma-sync-check.mjs`. Een derde rolgroep of een alias naar iets anders dan spacing vraagt vier wijzigingen die elkaar niet controleren (code-review umanex-apps#524).
+- **Waarom niet nu:** Werkend en getoetst; een gedeelde export (`roles.mjs` met rol → alias → groep) is een verbouwing voor een tweede lezer die er nog niet is.
+- **Eerste zet:** De build laat `roles.mjs` een map `layoutRoles` uitschrijven (`spacing-surface: { utility, alias, groep }`); payload en guard lezen die.
+- **Check:** `grep -rn "\['spacing', 'size'\]\|spacing: \['GAP'\]" packages/tokens/build.mjs packages/ui/scripts` > 1 treffer-bestand = leeft.
+- **Status:** open
+
+## 2026-09-17 — Spacing- en size-rollen zijn als utility onderling uitwisselbaar · [design-system]
+- **Wat:** De preset zet alle layout-rollen in één `spacing`-map, dus `p-control-md` (40 px padding) en `h-surface` zijn geldige utilities, terwijl Figma de groepen scheidt (spacing → scope GAP, size → WIDTH_HEIGHT). tailwind-merge kent ze ook als één groep (code-review umanex-apps#524).
+- **Waarom niet nu:** Niets gebruikt de kruising; de scheiding vraagt aparte theme-sleutels (`padding`, `gap`, `space`, `margin` voor spacing; `height`, `width`, `size` voor size) en een tailwind-merge-config per groep.
+- **Eerste zet:** Een guard-regel die `(p|m|gap|space)-(control-sm|control-md|control-lg)` en `(h|w|size)-(surface|menu|…)` weigert — goedkoper dan de preset splitsen, en hij zegt precies wat de afspraak is.
+- **Check:** `grep -rnE "\b(p|gap)-control-(sm|md|lg)\b|\b(h|w)-(surface|menu|inline|stack)\b" apps packages/ui --include='*.tsx'` — 0 = nog geen misbruik, het item leeft wel.
+- **Status:** open
 ## 2026-08-25 — Sync-guard ziet een Figma-wijziging pas na een verse manifest · [test]
 - **Wat:** `figma:check` toetst de code tegen `packages/ui/figma/manifest.json` — een neergeslagen meting van het Figma-bestand, geen live verbinding. Wijzigt iemand iets ín Figma zonder de manifest te verversen, dan blijft CI groen terwijl de twee kanten uit elkaar lopen. De omgekeerde richting (code wijzigt, Figma niet) wordt wél gevangen.
 - **Waarom niet nu:** CI heeft geen Figma-toegang. De live-kant vereist een `FIGMA_ACCESS_TOKEN` als repo-secret plus een REST-pad (`figma_get_file_data` of de Figma REST API) — dat is een eigen infra-beslissing met een secret erbij, en die hoort Jeroen te nemen.

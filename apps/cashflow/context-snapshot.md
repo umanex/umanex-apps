@@ -75,6 +75,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | TextareaField | `apps/cashflow/components/bureau/fields/TextareaField.tsx` | fields | — | — | — |
 | BalanceFooter | `apps/cashflow/components/cashflow/BalanceFooter.tsx` | cashflow | — | — | — |
 | BufferChart | `apps/cashflow/components/cashflow/BufferChart.tsx` | cashflow | — | — | — |
+| CashAnswer | `apps/cashflow/components/cashflow/CashAnswer.tsx` | cashflow | — | — | — |
 | CashflowDndContext | `apps/cashflow/components/cashflow/CashflowDndContext.tsx` | cashflow | — | — | — |
 | ExpenseSection | `apps/cashflow/components/cashflow/ExpenseSection.tsx` | cashflow | — | — | — |
 | IncomeSection | `apps/cashflow/components/cashflow/IncomeSection.tsx` | cashflow | — | — | — |

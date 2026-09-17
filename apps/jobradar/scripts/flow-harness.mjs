@@ -6,6 +6,8 @@
  *   pnpm --filter jobradar flow --selftest  # bewijst dat hij kán falen
  *   pnpm --filter jobradar flow --headed    # meekijken terwijl het gebeurt
  *   pnpm --filter jobradar flow --shot=.flow-shots  # render per route vastleggen
+ *   pnpm --filter jobradar flow --alleen=fase3-kaart,routes  # alleen deze secties
+ *   pnpm --filter jobradar flow --hergebruik-build   # geen build als .next-harness nieuwer is dan elke bron
  *
  * Waarom dit bestaat: zonder uitvoerbaar pad valt de flow-as van `verify` terug op
  * "overgeslagen", en dan is elk acceptatie-item dat door de UI loopt onverifieerbaar.
@@ -35,7 +37,8 @@
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -47,6 +50,14 @@ const SELFTEST = args.includes('--selftest');
 const HEADED = args.includes('--headed');
 const SHOT = args.find((a) => a.startsWith('--shot='))?.slice(7) ?? null;
 const PORT = Number(args.find((a) => a.startsWith('--port='))?.slice(7) ?? 3103);
+// Secties apart draaien. Bestaat voor wie één as bouwt: een volle run kost minuten, en elke
+// sectie meet op zichzelf (eigen goto, eigen onderschepping). De zelftest volgt `--selftest`.
+const ALLEEN = args.find((a) => a.startsWith('--alleen='))?.slice(9).split(',').filter(Boolean) ?? null;
+const doe = (sectie) => !ALLEEN || ALLEEN.includes(sectie);
+// Hergebruik alleen op een meting: de build blijft staan als zijn BUILD_ID nieuwer is dan elk
+// bronbestand dat hij bundelt. Een vlag die blind hergebruikt, zou de belofte "je test per
+// definitie de huidige code" stil breken — precies bij een tegenproef, die de bron muteert.
+const HERGEBRUIK = args.includes('--hergebruik-build');
 // Eén extra opname op een smallere breedte, alleen bij --shot. Bewust géén tweede
 // meetronde: de BACKLOG verwierp meten op meerdere viewports (jobradar is een
 // desktop-triagescherm), maar één beeld om te kunnen kíjken is iets anders dan een as
@@ -63,6 +74,20 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 /** Routes die moeten laden. Uitbreiden zodra er een scherm bijkomt. */
 const ROUTES = ['/', '/instellingen', '/plan'];
+
+/**
+ * Fase 3 (fouten en toegankelijkheid, 2026-09-17): één module per oppervlak, elk met een
+ * `export default async function (m)` die het meetcontext-object hieronder krijgt. Losse bestanden
+ * zodat de assen apart te lezen en apart te draaien zijn (`--alleen=fase3-kaart`).
+ */
+const FASE3_MODULES = [
+  ['fase3-server', 'flow/fase3-server.mjs'],
+  ['fase3-dashboard', 'flow/fase3-dashboard.mjs'],
+  ['fase3-kaart', 'flow/fase3-kaart.mjs'],
+  ['fase3-opvolging', 'flow/fase3-opvolging.mjs'],
+  ['fase3-instellingen', 'flow/fase3-instellingen.mjs'],
+  ['fase3-nieuw', 'flow/fase3-nieuw.mjs'],
+];
 
 const fails = [];
 const notes = [];
@@ -104,6 +129,44 @@ async function waitForServer(url, timeoutMs = 60_000) {
  * gerenderd, dus alleen de gerenderde pagina weet hoeveel het er zijn en in welke
  * volgorde ze staan.
  */
+/** Nieuwste mtime over alles wat de build bundelt — voor `--hergebruik-build`. */
+function nieuwsteBron() {
+  const wortels = ['app', 'components', 'lib', 'public', '../../packages/ui/components', '../../packages/ui/lib', '../../packages/config', '../../packages/tokens/build'];
+  // Géén tsconfig.json en next-env.d.ts: de build zelf herschrijft die en de harness zet ze bij
+  // exit terug, dus hun mtime ligt na elke run ná de BUILD_ID en hergebruik zou nooit gebeuren.
+  const losse = ['next.config.mjs', 'next.config.js', 'next.config.ts', 'package.json', 'tailwind.config.ts', 'tailwind.config.js', 'postcss.config.mjs', 'postcss.config.js'];
+  let max = 0;
+  const loop = (map) => {
+    let kinderen;
+    try { kinderen = readdirSync(map, { withFileTypes: true }); } catch { return; }
+    for (const k of kinderen) {
+      if (k.name === 'node_modules' || k.name.startsWith('.')) continue;
+      const pad = join(map, k.name);
+      if (k.isDirectory()) loop(pad);
+      else max = Math.max(max, statSync(pad).mtimeMs);
+    }
+  };
+  for (const w of wortels) loop(join(APP, w));
+  for (const l of losse) { try { max = Math.max(max, statSync(join(APP, l)).mtimeMs); } catch { /* bestaat niet */ } }
+  return max;
+}
+
+/**
+ * Vingerafdruk van de database die de server leest: sha256 over `.dump`, alleen-lezen geopend.
+ * Grover dan een telling per status, en dat is de bedoeling: een module die klikt, moet elk lek
+ * zien — ook in een tabel waar hij niet aan dacht (contactmomenten, instellingen, plan).
+ */
+async function dbVingerafdruk() {
+  const { execFileSync } = await import('node:child_process');
+  const DB = process.env.JOBRADAR_DB_PATH ?? join(APP, '.data/jobradar.db');
+  try {
+    const dump = execFileSync('sqlite3', ['-readonly', DB, '.dump'], { maxBuffer: 256 * 1024 * 1024 });
+    return createHash('sha256').update(dump).digest('hex').slice(0, 16);
+  } catch (e) {
+    return `onleesbaar: ${String(e).split('\n')[0]}`;
+  }
+}
+
 async function kopstructuur(page) {
   return page.evaluate(() => {
     const koppen = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map((h) => ({
@@ -138,6 +201,53 @@ async function kopstructuur(page) {
  * `positieve tabindex` wordt apart gemeld: die breekt de documentvolgorde en is de
  * klassieke oorzaak van een volgorde die niet met het beeld overeenkomt.
  */
+/**
+ * Bedienbare elementen zonder naam, zoals de BROWSER die berekent (2026-09-17).
+ *
+ * Geen eigen heuristiek over aria-label of <label>: de toegankelijkheidsboom van Chromium via CDP is
+ * wat een schermlezer krijgt, inclusief wat Radix of een `role="img"` eromheen ermee doet. Een
+ * element dat buiten de boom valt (`ignored`) telt niet mee als bedienbaar — dat is een ander defect
+ * (bv. knoppen onder een img) en de reden dat de kaart ook zijn eigen check heeft.
+ *
+ * Elke naamloze telt, met rol en een korte beschrijving van het DOM-element, zodat een melding
+ * aanwijst wát er mist in plaats van alleen hoeveel.
+ */
+const BEDIENBARE_ROLLEN = new Set(['button', 'link', 'textbox', 'searchbox', 'combobox', 'listbox', 'checkbox', 'radio', 'slider', 'spinbutton', 'switch', 'tab', 'menuitem', 'menuitemcheckbox', 'menuitemradio']);
+async function naamloos(page) {
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    const { nodes } = await cdp.send('Accessibility.getFullAXTree');
+    const bedienbaar = nodes.filter((n) => !n.ignored && BEDIENBARE_ROLLEN.has(n.role?.value));
+    const zonder = bedienbaar.filter((n) => !String(n.name?.value ?? '').trim());
+    const beschreven = [];
+    for (const n of zonder) {
+      let wat = '?';
+      if (n.backendDOMNodeId) {
+        const { node } = await cdp.send('DOM.describeNode', { backendNodeId: n.backendDOMNodeId }).catch(() => ({ node: null }));
+        if (node) {
+          const attrs = Object.fromEntries((node.attributes ?? []).reduce((acc, v, i, a) => (i % 2 ? acc : [...acc, [v, a[i + 1]]]), []));
+          wat = `${node.nodeName.toLowerCase()}${attrs.id ? '#' + attrs.id : ''}${attrs.class ? '.' + attrs.class.split(/\s+/).slice(0, 2).join('.') : ''}`;
+        }
+      }
+      beschreven.push({ rol: n.role.value, wat });
+    }
+    return { totaal: bedienbaar.length, zonder: beschreven };
+  } finally {
+    await cdp.detach().catch(() => {});
+  }
+}
+
+/**
+ * De enige toegestane naamloze: de slider-thumb van "Min. score" op `/`. De naam kan pas mee als
+ * `@umanex/ui` hem doorgeeft (plan fase 4a). Tweezijdig: is hij er niet meer of wel benoemd, dan is
+ * de uitzondering verouderd en hoort ze hier weg — anders dekt ze straks een nieuw defect af.
+ */
+function naamUitzonderingen(route, zonder) {
+  if (route !== '/') return { rest: zonder, uitzondering: 0 };
+  const sliders = zonder.filter((z) => z.rol === 'slider');
+  return { rest: zonder.filter((z) => z.rol !== 'slider'), uitzondering: sliders.length };
+}
+
 /**
  * Selects op kaarten, lage-scorerijen of prospectrijen. Sinds 2026-09-17 hoort dat nul te zijn:
  * de status is een knop, geen randloze select. Een functie, zodat `--selftest` er een defect in
@@ -286,8 +396,15 @@ async function main() {
   };
   process.on('exit', herstelBronbestanden);
 
-  console.log(`→ Verse build in ${DIST}`);
-  await run('npx', ['next', 'build'], { env });
+  const idBestand = join(APP, DIST, 'BUILD_ID');
+  const bron = nieuwsteBron();
+  if (HERGEBRUIK && existsSync(idBestand) && statSync(idBestand).mtimeMs > bron) {
+    console.log(`→ Build hergebruikt: ${DIST}/BUILD_ID (${new Date(statSync(idBestand).mtimeMs).toISOString()}) is nieuwer dan de nieuwste bron (${new Date(bron).toISOString()})`);
+  } else {
+    if (HERGEBRUIK) console.log('→ --hergebruik-build: de build is ouder dan de bron (of ontbreekt) — toch bouwen');
+    console.log(`→ Verse build in ${DIST}`);
+    await run('npx', ['next', 'build'], { env });
+  }
 
   // "Bouwt in .next-harness" mag niet van de vlag komen: als `distDir` niet zou werken,
   // schrijft de build gewoon in `.next` en zegt de log iets anders dan er gebeurde.
@@ -315,9 +432,12 @@ async function main() {
 
   // Alles buiten de eigen origin wordt afgebroken en geteld.
   const leaks = new Set();
+  // Eigen origins: de hoofdserver, plus wat een module er via `extraServer` bij start (een tweede
+  // `next start` uit dezelfde build, met een kapotte database om de foutpagina op te wekken).
+  const eigenOrigins = new Set([BASE]);
   await ctx.route('**/*', (route) => {
     const url = route.request().url();
-    if (url.startsWith(BASE) || url.startsWith('data:') || url.startsWith('blob:')) return route.continue();
+    if ([...eigenOrigins].some((o) => url.startsWith(o)) || url.startsWith('data:') || url.startsWith('blob:')) return route.continue();
     leaks.add(new URL(url).origin);
     return route.abort();
   });
@@ -327,8 +447,8 @@ async function main() {
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
   page.on('pageerror', (e) => consoleErrors.push(String(e)));
 
-  console.log('→ Routes');
-  for (const route of ROUTES) {
+  if (doe('routes')) console.log('→ Routes');
+  for (const route of doe('routes') ? ROUTES : []) {
     const res = await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
     const status = res?.status() ?? 0;
     // Alleen 4xx/5xx is een fout. Een 3xx is dat niet: de Next App Router beantwoordt een
@@ -357,6 +477,13 @@ async function main() {
     if (tb.problemen.length) for (const p of tb.problemen) fail(`${route} toetsenbord: ${p}`);
     else ok(`${route} toetsenbord: ${tb.stops} stops, elk met zichtbare focus`);
     notes.push(`${route} tab-volgorde: ${tb.volgorde.map((s) => `${s.tag}${s.naam ? `(${s.naam.slice(0, 18)})` : ''}`).join(' → ') || '(geen)'}`);
+
+    const namen = await naamloos(page);
+    const { rest, uitzondering } = naamUitzonderingen(route, namen.zonder);
+    if (namen.totaal === 0) fail(`${route} namen: nul bedienbare elementen in de toegankelijkheidsboom — dit meet niets`);
+    else if (rest.length) fail(`${route} namen: ${rest.length} van ${namen.totaal} bedienbare elementen zonder naam (${rest.slice(0, 4).map((z) => `${z.rol} ${z.wat}`).join('; ')})`);
+    else ok(`${route} namen: ${namen.totaal} bedienbare elementen, elk met een naam${uitzondering ? ` (+ ${uitzondering} bekende uitzondering: slider-thumb Min. score, fase 4a)` : ''}`);
+    if (route === '/' && uitzondering !== 1) fail(`/ namen: de uitzondering voor de slider-thumb telde ${uitzondering}, verwacht 1 — pas naamUitzonderingen() aan`);
     if (SHOT) {
       const name = route === '/' ? 'index' : route.replace(/\//g, '-').replace(/^-/, '');
       const file = resolve(process.cwd(), `${SHOT}/${name}.png`);
@@ -392,6 +519,7 @@ async function main() {
   // een interne link ook. Knoppen worden NIET blind aangeklikt — op dit dashboard heet er
   // één "Sync nu" en die haalt externe data op. Dat zou de origin-guard hierboven terecht
   // als lek tellen en de run laten falen op iets dat geen defect is.
+  if (doe('interactie')) {
   console.log('→ Interactie (echt aangedreven, geen goto)');
   // De route-lus eindigt op de láátste route. Zonder deze regel zou de interactie
   // meeverhuizen naar /instellingen zodra daar een route bijkomt — daar is geen
@@ -428,6 +556,7 @@ async function main() {
   } else {
     notes.push('geen select en geen interne link op de eerste route — interactie niet uitgereden');
   }
+  }
 
   // ── Dashboard-triage (2026-09-17) ──────────────────────────────────────────
   // Draait op de database van de tree — de echte. Daarom: geen enkele klik die kan muteren zonder
@@ -435,8 +564,8 @@ async function main() {
   // onderschepping werkt vóór er iets aangeklikt wordt. Lezen (filters, URL, herladen) mag vrij.
   // Na elke onderschepte reeks telt de harness in de database elke status ongelijk aan `new`,
   // vóór en na: een lek van Bewaar zou een telling van alleen `dismissed` niet zien.
-  console.log('→ Dashboard-triage');
-  {
+  if (doe('triage')) {
+    console.log('→ Dashboard-triage');
     const { execFileSync } = await import('node:child_process');
     const DB = process.env.JOBRADAR_DB_PATH ?? join(APP, '.data/jobradar.db');
     const dbStand = () => {
@@ -655,17 +784,35 @@ async function main() {
         notes.push('triage: geen lead met "toon deze vacatures" — doorklik niet gemeten');
       } else {
         await doorklik.click();
-        await page.waitForTimeout(400);
-        const u = new URL(page.url());
-        const melding = page.locator('p[aria-live="polite"].sr-only:not([data-status-melding])').first();
-        const voor = { via: u.searchParams.get('via'), items: await page.locator('[role="tabpanel"]:visible [data-status]').count(), melding: (await melding.innerText()).trim() };
+        // Sinds fase 3 (2026-09-17) komt de doorklik-telling 400 ms na de klik in de filtertelling, en
+        // bij herladen blijft die regio bewust leeg (geen aankondiging bij het laden). De vorige vorm
+        // pakte de eerste sr-only live-regio — dat werd de lege sync-melding — en vergeleek de melding
+        // na herladen. Wat "overleeft herladen" betekent, staat in de URL en in de lijst: via=bedrijf,
+        // dezelfde zoekterm en precies dezelfde items. De melding vóór herladen is de positieve controle
+        // dat de doorklik iets filterde, en zijn getal moet de lijst tellen.
+        const telling = page.locator('[data-filter-telling]');
+        await page.waitForFunction(() => (document.querySelector('[data-filter-telling]')?.textContent ?? '').trim() !== '', null, { timeout: 3_000 }).catch(() => {});
+        const stand = async () => {
+          const u = new URL(page.url());
+          return {
+            via: u.searchParams.get('via'),
+            zoek: u.searchParams.get('zoek'),
+            // Kaarten én (ingeklapte) lage-scorerijen: samen de gefilterde lijst.
+            items: (await page.locator('[role="tabpanel"]:visible [data-item]').evaluateAll((els) => els.map((e) => e.getAttribute('data-item')))).sort(),
+          };
+        };
+        const tellingen = await telling.count();
+        const voor = { ...(await stand()), melding: tellingen === 1 ? (await telling.innerText()).trim() : '' };
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
-        const na = { items: await page.locator('[role="tabpanel"]:visible [data-status]').count(), melding: (await melding.innerText()).trim() };
-        if (voor.via !== 'bedrijf') fail(`triage: na de doorklik staat via=${voor.via} in de URL, verwacht "bedrijf"`);
-        else if (!voor.melding) fail('triage: na de doorklik is er geen melding "N vacatures van …" — dit meet niets');
-        else if (na.items !== voor.items || na.melding !== voor.melding) fail(`triage: na herladen ${JSON.stringify(na)}, vóór ${JSON.stringify({ items: voor.items, melding: voor.melding })}`);
-        else ok(`triage: doorklik overleeft herladen ("${voor.melding}", ${voor.items} items)`);
+        const na = await stand();
+        const getal = Number(voor.melding.match(/^(\d+) vacatures? van /)?.[1] ?? NaN);
+        if (tellingen !== 1) fail(`triage: ${tellingen} filtertellingen ([data-filter-telling]), verwacht 1 — doorklik niet gemeten`);
+        else if (voor.via !== 'bedrijf') fail(`triage: na de doorklik staat via=${voor.via} in de URL, verwacht "bedrijf"`);
+        else if (Number.isNaN(getal) || voor.items.length === 0) fail(`triage: na de doorklik geen melding "N vacatures van …" of nul items ("${voor.melding}", ${voor.items.length}) — dit meet niets`);
+        else if (getal !== voor.items.length) fail(`triage: de doorklik-melding zegt ${getal}, de lijst telt ${voor.items.length} items`);
+        else if (na.via !== voor.via || na.zoek !== voor.zoek || JSON.stringify(na.items) !== JSON.stringify(voor.items)) fail(`triage: na herladen ${JSON.stringify({ via: na.via, zoek: na.zoek, items: na.items.length })}, vóór ${JSON.stringify({ via: voor.via, zoek: voor.zoek, items: voor.items.length })}${JSON.stringify(na.items) !== JSON.stringify(voor.items) ? ' — andere items' : ''}`);
+        else ok(`triage: doorklik overleeft herladen (via=bedrijf, zoek "${voor.zoek}", dezelfde ${voor.items.length} items; vóór herladen "${voor.melding}")`);
       }
 
       // ── Onderschept met een GESLAAGD antwoord: de client-toestand zonder de database te raken ──
@@ -785,8 +932,8 @@ async function main() {
   // Dit tabblad haalt zijn eigen pagina op en rendert dus pas na een klik. Zonder deze stap
   // meten de kopstructuur- en toetsenbord-passes hierboven een paneel dat nooit gemount is.
   // Een tab-trigger aanklikken is veilig: hij navigeert niet en raakt geen externe bron.
-  console.log('→ Prospects-tabblad');
-  {
+  if (doe('prospects')) {
+    console.log('→ Prospects-tabblad');
     const trigger = page.locator('[role="tab"]', { hasText: 'Prospects' }).first();
     if (!(await trigger.count())) {
       notes.push('geen Prospects-tabblad gevonden — overgeslagen');
@@ -1040,7 +1187,7 @@ async function main() {
                 const kbody = await kres.json().catch(() => null);
                 await page.waitForTimeout(800);
 
-                const svg = page.locator('[role="tabpanel"]:visible svg[role="img"]');
+                const svg = page.locator('[role="tabpanel"]:visible svg[data-kaart]');
                 if ((await svg.count()) !== 1) {
                   fail(`kaart: ${await svg.count()} svg's gevonden, verwacht 1`);
                 } else {
@@ -1103,11 +1250,18 @@ async function main() {
                   }
 
                   // Een marker moet met het toetsenbord te bereiken zijn.
-                  const eersteMarker = svg.locator('[role="button"]').first();
-                  await eersteMarker.focus();
-                  const heeftFocus = await eersteMarker.evaluate((el) => el === document.activeElement);
-                  if (heeftFocus) ok('kaart: een marker is focusbaar');
-                  else fail('kaart: een marker kan geen focus krijgen');
+                  // Roving tabindex (fase 3): precies één marker staat in de tab-volgorde. `.focus()`
+                  // alleen bewees dat niet meer — dat slaagt ook op tabindex -1.
+                  const stops = svg.locator('[role="button"][tabindex="0"]');
+                  const aantalStops = await stops.count();
+                  if (aantalStops !== 1) {
+                    fail(`kaart: ${aantalStops} markers met tabindex 0, verwacht precies 1`);
+                  } else {
+                    await stops.focus();
+                    const heeftFocus = await stops.evaluate((el) => el === document.activeElement);
+                    if (heeftFocus) ok('kaart: precies één marker in de tab-volgorde, en die krijgt focus');
+                    else fail('kaart: de marker met tabindex 0 kan geen focus krijgen');
+                  }
 
                   // ── Volgt de kaart het filter? ─────────────────────────────
                   // Dit is de scherpste check van het hele kaart-blok, want het is de
@@ -1218,7 +1372,7 @@ async function main() {
               }
 
               // Terug naar de lijst, zodat de checks hieronder hun paneel terugvinden.
-              await page.locator('[role="tabpanel"]:visible button', { hasText: /^Lijstweergave$/ }).click();
+              await page.locator('[role="tabpanel"]:visible button[aria-pressed="true"]', { hasText: /^Kaartweergave$/ }).click();
               await page.waitForTimeout(400);
             }
 
@@ -1254,8 +1408,8 @@ async function main() {
     }
   }
 
-  console.log('→ Bedrijfsplan');
-  {
+  if (doe('plan')) {
+    console.log('→ Bedrijfsplan');
     await page.goto(BASE + '/plan', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
 
@@ -1336,6 +1490,69 @@ async function main() {
     }
   }
 
+  // ── Fase 3-modules ─────────────────────────────────────────────────────────
+  {
+    const laad = async (pad, base = BASE) => {
+      await page.goto(base + pad, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    };
+    /**
+     * Onderschept elk schrijvend verzoek naar /api (alles behalve GET/HEAD) en toetst eerst met een
+     * eigen fetch dat de onderschepping werkt. `{ status, body, vertraging }` beantwoordt, `{ abort: true }`
+     * laat de fetch gooien (netwerkfout). Geeft false als de positieve controle faalt: klik dan NIET.
+     */
+    const onderschepSchrijven = async (antwoord, base = BASE) => {
+      await page.unroute(`${base}/api/**`).catch(() => {});
+      await page.route(`${base}/api/**`, async (route) => {
+        const m = route.request().method();
+        if (m === 'GET' || m === 'HEAD') return route.continue();
+        if (antwoord.vertraging) await new Promise((r) => setTimeout(r, antwoord.vertraging));
+        if (antwoord.abort) return route.abort('failed');
+        return route.fulfill({ status: antwoord.status ?? 200, contentType: 'application/json', body: JSON.stringify(antwoord.body ?? { harness: true }) });
+      });
+      const controle = await page.evaluate(async () => {
+        try {
+          const r = await fetch('/api/jobs/0', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{}' });
+          return { status: r.status, body: await r.text() };
+        } catch (e) {
+          return { gegooid: String(e) };
+        }
+      });
+      if (antwoord.abort) return Boolean(controle.gegooid);
+      return controle.status === (antwoord.status ?? 200) && JSON.stringify(antwoord.body ?? { harness: true }) === controle.body;
+    };
+    const stopOnderschepping = (base = BASE) => page.unroute(`${base}/api/**`).catch(() => {});
+    /** Tweede `next start` uit dezelfde build, met eigen env. Stopt vanzelf bij exit. */
+    const extraServer = async ({ port, env: extra }) => {
+      if (!(await portFree(port))) throw new Error(`poort ${port} is bezet`);
+      const proc = spawn('npx', ['next', 'start', '--port', String(port)], { cwd: APP, stdio: 'ignore', env: { ...env, ...extra } });
+      const halt = () => { try { proc.kill('SIGTERM'); } catch { /* al weg */ } };
+      process.on('exit', halt);
+      const base = `http://127.0.0.1:${port}`;
+      if (!(await waitForServer(base))) { halt(); throw new Error(`extra server op ${port} kwam niet op`); }
+      eigenOrigins.add(base);
+      return { base, stop: () => { halt(); eigenOrigins.delete(base); } };
+    };
+    const meetCtx = {
+      page, browserContext: ctx, browser, BASE, APP, HERE, DIST, env, ok, fail, notes, consoleErrors,
+      laad, onderschepSchrijven, stopOnderschepping, extraServer, dbVingerafdruk, kopstructuur, toetsenbord, naamloos,
+    };
+    for (const [naam, pad] of FASE3_MODULES) {
+      if (!doe(naam)) continue;
+      console.log(`→ ${naam}`);
+      const bestand = join(HERE, pad);
+      if (!existsSync(bestand)) { fail(`${naam}: module scripts/${pad} ontbreekt — deze assen meten niets`); continue; }
+      const mod = await import(bestand);
+      try {
+        await mod.default(meetCtx);
+      } catch (e) {
+        fail(`${naam}: module gooide ${String(e).split('\n')[0]}`);
+      } finally {
+        await stopOnderschepping();
+      }
+    }
+  }
+
   if (SELFTEST) {
     console.log('→ Zelftest (dit scenario hóórt te falen)');
     await page.goto(BASE + '/deze-route-bestaat-niet-' + Date.now(), { waitUntil: 'domcontentloaded' })
@@ -1366,6 +1583,12 @@ async function main() {
     const tbZelftest = await toetsenbord(page);
     if (tbZelftest.problemen.length) fail(`ZELFTEST toetsenbord: ${tbZelftest.problemen[0]}`);
     else console.log('  ! toetsenbord-pass zag het ingespoten defect NIET');
+
+    // Naam-as: een naamloze select vooraan. De browser moet hem als combobox zonder naam tonen.
+    await page.evaluate(() => document.body.prepend(document.createElement('select')));
+    const naamZelftest = naamUitzonderingen('/', (await naamloos(page)).zonder);
+    if (naamZelftest.rest.length) fail(`ZELFTEST namen: ${naamZelftest.rest.length} naamloos (${naamZelftest.rest[0].rol} ${naamZelftest.rest[0].wat})`);
+    else console.log('  ! naam-as zag het ingespoten defect NIET');
 
     // Triage (2026-09-17): een select in een kaart, en een Bewaar-knop die "ingedrukt" zegt op een
     // item dat niet bewaard is. Alleen in de DOM van deze pagina — de database blijft onaangeroerd.
@@ -1414,7 +1637,7 @@ async function main() {
   for (const n of notes) console.log(`  • ${n}`);
   if (SELFTEST) {
     // Elke as apart: één gefaalde assertie bewees vroeger alleen dat de routecheck meet.
-    const assen = ['ZELFTEST:', 'ZELFTEST kopstructuur', 'ZELFTEST toetsenbord', 'ZELFTEST triage-selects', 'ZELFTEST triage-knoppen'];
+    const assen = ['ZELFTEST:', 'ZELFTEST kopstructuur', 'ZELFTEST toetsenbord', 'ZELFTEST triage-selects', 'ZELFTEST triage-knoppen', 'ZELFTEST namen'];
     const gemist = assen.filter((a) => !fails.some((f) => f.startsWith(a)));
     console.log(gemist.length === 0
       ? `✓ zelftest: alle ${assen.length} assen falen wanneer ze horen te falen`

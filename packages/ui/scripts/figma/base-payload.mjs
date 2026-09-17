@@ -28,9 +28,12 @@ const px = (node) => {
   return n;
 };
 
+// Tokens Studio mag op groepsniveau `$type` of `$description` schrijven; dat is geen stap.
+const stappen = (groep) => Object.entries(groep ?? {}).filter(([k]) => !k.startsWith('$'));
+
 const schaal = [
-  ...Object.entries(layout.spacing).map(([k, v]) => ({ naam: `spacing-${k}`, px: px(v) })),
-  ...Object.entries(layout.border ?? {}).map(([k, v]) => ({ naam: `border-${k}`, px: px(v) })),
+  ...stappen(layout.spacing).map(([k, v]) => ({ naam: `spacing-${k}`, px: px(v) })),
+  ...stappen(layout.border).map(([k, v]) => ({ naam: `border-${k}`, px: px(v) })),
   { naam: 'icon-stroke', px: px(layout.icon.stroke) },
 ];
 const schaalNamen = new Set(schaal.map(s => s.naam));
@@ -40,7 +43,7 @@ const schaalNamen = new Set(schaal.map(s => s.naam));
 const SCOPES = { spacing: ['GAP'], size: ['WIDTH_HEIGHT'] };
 const rollen = [];
 for (const [groep, scopes] of Object.entries(SCOPES)) {
-  for (const [k, v] of Object.entries(base[groep] ?? {})) {
+  for (const [k, v] of stappen(base[groep])) {
     const ref = String(v.$value ?? v.value).match(/^\{spacing\.([\w]+)\}$/);
     if (!ref) { console.error(`✗ ${groep}.${k} is geen alias naar een spacing-stap: ${v.$value}`); process.exit(1); }
     const alias = `spacing-${ref[1]}`;

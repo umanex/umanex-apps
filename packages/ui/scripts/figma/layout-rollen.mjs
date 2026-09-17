@@ -32,11 +32,40 @@ export function paddingRollen(klassen) {
   return kanten;
 }
 
-/** De rol achter de eerste klasse met een van de prefixen (`gap`, `space-y`, …), of null. */
+// gap-x/gap-y winnen van gap (ze staan later in de stylesheet); space-x/space-y staan apart.
+const GAP_VOORRANG = [['gap', 'space-x', 'space-y'], ['gap-x', 'gap-y']];
+
+/**
+ * De rol achter de gap-klasse met de hoogste voorrang uit `prefixen`, of null. Net als bij
+ * padding wist een schaalklasse op dezelfde as de rol: `gap-stack gap-y-2` rendert 8, niet 16.
+ */
 export function gapRol(klassen, prefixen) {
-  for (const k of klassen) {
-    const m = k.match(/^(gap-x|gap-y|gap|space-x|space-y)-(.+)$/);
-    if (m && prefixen.includes(m[1]) && layoutRoleUtilities[m[2]]) return layoutRoleUtilities[m[2]];
+  let rol = null;
+  for (const fase of GAP_VOORRANG) {
+    for (const k of klassen) {
+      const m = k.match(/^(gap-x|gap-y|gap|space-x|space-y)-(.+)$/);
+      if (!m || !fase.includes(m[1]) || !prefixen.includes(m[1])) continue;
+      rol = layoutRoleUtilities[m[2]] ?? null;
+    }
   }
-  return null;
+  return rol;
+}
+
+/**
+ * Hoogte- en breedterol uit `h-`, `w-` en `size-` (size zet beide, h/w winnen erna). Een
+ * schaalklasse op een as wist de rol. Alleen een rol telt, want een maat zonder rol bindt de
+ * keten niet (hij heeft geen variabele voor h-10).
+ */
+export function maatRollen(klassen) {
+  const uit = { h: null, w: null };
+  for (const fase of [['size'], ['h', 'w']]) {
+    for (const k of klassen) {
+      const m = k.match(/^(size|h|w)-(.+)$/);
+      if (!m || !fase.includes(m[1])) continue;
+      const rol = layoutRoleUtilities[m[2]] ?? null;
+      if (m[1] !== 'w') uit.h = rol;
+      if (m[1] !== 'h') uit.w = rol;
+    }
+  }
+  return uit;
 }

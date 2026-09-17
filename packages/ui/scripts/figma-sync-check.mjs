@@ -235,14 +235,18 @@ if (!layout?.spacing) {
   fail('schaal', `Layout/Scale niet gevonden in ${layoutPad} — spacing/border/icon-stroke niet te toetsen`);
 } else {
   const px = v => { const t = String(v.$value ?? v.value); return t.endsWith('rem') ? parseFloat(t) * 16 : parseFloat(t); };
+  const stappen = groep => Object.entries(groep ?? {}).filter(([k]) => !k.startsWith('$'));
   const verwacht = {
-    ...Object.fromEntries(Object.entries(layout.spacing).map(([k, v]) => [`spacing-${k}`, px(v)])),
-    ...Object.fromEntries(Object.entries(layout.border ?? {}).map(([k, v]) => [`border-${k}`, px(v)])),
+    ...Object.fromEntries(stappen(layout.spacing).map(([k, v]) => [`spacing-${k}`, px(v)])),
+    ...Object.fromEntries(stappen(layout.border).map(([k, v]) => [`border-${k}`, px(v)])),
     'icon-stroke': px(layout.icon?.stroke ?? { $value: NaN }),
   };
-  const schaalFout = Object.entries(B)
-    .filter(([n]) => IS_SCHAAL.test(n))
-    .filter(([n, v]) => v !== verwacht[n]);
+  const schaalFout = [
+    ...Object.entries(B).filter(([n]) => IS_SCHAAL.test(n)).filter(([n, v]) => v !== verwacht[n]),
+    // Tweezijdig: een stap uit Layout/Scale die in Figma ontbreekt telt ook. [dekking] kijkt
+    // alleen van Figma naar tokens, dus zonder deze regel viel een verdwenen icon-stroke stil.
+    ...Object.keys(verwacht).filter(n => !(n in B)).map(n => [n, 'ontbreekt']),
+  ];
   if (schaalFout.length) fail('schaal', `wijkt af van Layout/Scale in tokens.json: ${schaalFout.map(([n, v]) => `${n}=${v} (token ${verwacht[n]})`).join(', ')}`);
   else ok('schaal', `${Object.keys(B).filter(n => IS_SCHAAL.test(n)).length} spacing-, border- en icon-variabelen gelijk aan Layout/Scale`);
 
@@ -251,7 +255,7 @@ if (!layout?.spacing) {
   const themeBase = JSON.parse(readFileSync(layoutPad, 'utf8'))['Theme/base'] ?? {};
   const rolDoelen = {};
   for (const groep of ['spacing', 'size']) {
-    for (const [k, v] of Object.entries(themeBase[groep] ?? {})) {
+    for (const [k, v] of Object.entries(themeBase[groep] ?? {}).filter(([k]) => !k.startsWith('$'))) {
       const ref = String(v.$value ?? v.value).match(/^\{spacing\.([\w]+)\}$/);
       rolDoelen[`${groep}-${k}`] = ref ? `spacing-${ref[1]}` : `geen alias (${v.$value ?? v.value})`;
     }

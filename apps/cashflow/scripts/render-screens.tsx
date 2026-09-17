@@ -20,6 +20,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement as h, type ReactNode } from 'react';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { scalarRoles } from '@umanex/tokens/roles';
 
 import { Badge } from '@umanex/ui/components/ui/badge';
 import { Button } from '@umanex/ui/components/ui/button';
@@ -52,9 +53,11 @@ const themeCss = readFileSync(`${ROOT}../../packages/tokens/build/theme.css`, 'u
 const rootBlok = themeCss.slice(themeCss.indexOf(':root {'), themeCss.indexOf('.dark {'));
 const ROLLEN = [...rootBlok.matchAll(/--([a-z0-9-]+):/g)]
   .map((m) => m[1])
-  // radius is geen kleur en heeft geen swatch. De type-guard is nodig omdat een
-  // regex-capture `string | undefined` oplevert.
-  .filter((n): n is string => n !== undefined && n !== 'radius');
+  // Niet-kleuren (radius, en sinds 2026-09-17 de layout-rollen spacing-* en size-*)
+  // hebben geen swatch: `hsl(var(--spacing-surface))` is geen kleur. De lijst komt uit
+  // de tokenbuild, zodat een volgende scalar-rol hier niet opnieuw als kleur binnenkomt.
+  // De type-guard is nodig omdat een regex-capture `string | undefined` oplevert.
+  .filter((n): n is string => n !== undefined && !scalarRoles.includes(n));
 
 // Rollen die een tekstkleur zijn, niet een vlak — die tonen we als letter op de
 // achtergrond in plaats van als gevuld blokje.

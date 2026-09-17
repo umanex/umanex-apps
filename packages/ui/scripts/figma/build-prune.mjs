@@ -136,10 +136,17 @@ function snoei(node, diepte, pad, comp, isWortel = false) {
     o.gap = r2((node.gap ?? 0) + M.gap);
     // `space-y-heading` komt als marge binnen; de klasse op de ouder zegt welke rol dat is.
     const margeRol = gapRol(node.klassen ?? [], [node.richting === 'row' ? 'space-x' : 'space-y']);
-    const margeVar = margeRol && BASE[margeRol] === M.gap ? `Base:${margeRol}` : spacingVar(M.gap);
+    // Noemt de klasse een rol maar wijkt de marge af, dan is dat een melding in ongebonden.json
+    // (de [binding]-ratel wordt rood), geen stille binding op de stap met dezelfde waarde.
+    if (margeRol && BASE[margeRol] !== M.gap) {
+      spec.ongebonden.push(`${comp} ${pad || 'wortel'}: ${margeRol} (${BASE[margeRol]}) ≠ marge ${M.gap}`);
+    }
+    const margeVar = margeRol ? (BASE[margeRol] === M.gap ? `Base:${margeRol}` : null) : spacingVar(M.gap);
     const gv = !M.gap ? node.gapVar : (!node.gap ? margeVar : null);
     if (gv) o.gapVar = gv;
   }
+  if (node.hoogteVar) o.hVar = node.hoogteVar;
+  if (node.breedteVar) o.wVar = node.breedteVar;
   if (node.justify && !['normal', 'flex-start', 'start'].includes(node.justify)) o.justify = node.justify;
   if (node.align && !['normal', 'stretch'].includes(node.align)) o.align = node.align;
   if (node.omgekeerd) o.omgekeerd = true;

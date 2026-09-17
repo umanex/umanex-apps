@@ -34,7 +34,7 @@ import { chromium } from 'playwright';
 import { fontSize as TYPO_SIZE, fontWeight as TYPO_WEIGHT, fontFamily as TYPO_FAMILY }
   from '../../../tokens/build/typography.mjs';
 import { NIET_VISUEEL, primairVan } from './doel.mjs';
-import { paddingRollen, gapRol } from './layout-rollen.mjs';
+import { paddingRollen, gapRol, maatRollen } from './layout-rollen.mjs';
 
 const UI = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const STATIC = join(UI, 'storybook-static');
@@ -511,6 +511,11 @@ function bind(node, pad, comp) {
     node.gapVar = gr ? rolVar(gr, node.gap, 'gap') : spacingVar(node.gap);
     if (!node.gapVar && !gr) meld('gap', node.gap);
   }
+  // Een maat bindt alleen via een rol (h-control-md → size-control-md); h-10 heeft geen
+  // variabele en blijft een getal, zoals voorheen.
+  const maatRol = maatRollen(node.klassen);
+  if (maatRol.h) node.hoogteVar = rolVar(maatRol.h, node.h, 'hoogte');
+  if (maatRol.w) node.breedteVar = rolVar(maatRol.w, node.w, 'breedte');
   if (node.opacity < 1) meld('opacity', node.opacity);
   if (node.boxShadow) {
     const lagen = schaduwLagen(node.boxShadow);

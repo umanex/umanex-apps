@@ -192,6 +192,16 @@ const gevallen = [
     },
   },
   {
+    naam: 'stap uit Layout/Scale ontbreekt in Figma',
+    as: '[schaal]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(p));
+      delete m.collections.Base.variables['icon-stroke'];
+      schrijf(p, JSON.stringify(m, null, 2));
+    },
+  },
+  {
     naam: 'layout-rol ontbreekt in Figma',
     as: '[schaal]',
     muteer: uiRoot => {

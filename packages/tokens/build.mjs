@@ -196,6 +196,86 @@ function mergeSets(sets) {
   return merged;
 }
 
+// --- Layout valideren ---------------------------------------------------------
+// Vóór elke schrijfactie: faalt een stap, dan blijven theme.css, roles.mjs en layout.mjs
+// staan zoals ze waren. Eerst stond deze check ná het schrijven van theme.css, en een
+// afgewezen `spacing.4 = 1.1rem` liet `--spacing-stack: 1.1rem` in een gecommit bestand
+// achter (code-review umanex-apps#524).
+//
+// De schaal IS Tailwind v3's schaal, stap voor stap. De preset vervangt theme.spacing
+// en theme.borderWidth door deze export, dus een stap die hier ontbreekt verdwijnt
+// uit elke app (geen p-7 meer, zonder foutmelding) en een stap die afwijkt verschuift
+// elke bestaande klasse. Beide falen hier, hard. Eigen stappen toevoegen mag.
+//
+// DTCG verbiedt een punt in een tokennaam, dus de sleutel 0.5 heet in tokens.json 0_5
+// — dezelfde schrijfwijze als de Figma-variabele spacing-0_5. En Tailwinds DEFAULT-
+// borderbreedte heet border.1, zoals de Figma-variabele border-1.
+const LAYOUT = (() => {
+  const layout = tokenSets['Layout/Scale'];
+  if (!layout?.spacing) throw new Error('[tokens] set "Layout/Scale" mist de spacing-groep');
+  const val = (node) => String(node.$value ?? node.value);
+  // Tokens Studio mag op groepsniveau `$type` of `$description` schrijven; dat is geen stap.
+  const stappen = (groep) => Object.entries(groep ?? {}).filter(([k]) => !k.startsWith('$'));
+
+  const TAILWIND_V3_SPACING = {
+    0: '0px', px: '1px', 0.5: '0.125rem', 1: '0.25rem', 1.5: '0.375rem', 2: '0.5rem',
+    2.5: '0.625rem', 3: '0.75rem', 3.5: '0.875rem', 4: '1rem', 5: '1.25rem', 6: '1.5rem',
+    7: '1.75rem', 8: '2rem', 9: '2.25rem', 10: '2.5rem', 11: '2.75rem', 12: '3rem',
+    14: '3.5rem', 16: '4rem', 20: '5rem', 24: '6rem', 28: '7rem', 32: '8rem', 36: '9rem',
+    40: '10rem', 44: '11rem', 48: '12rem', 52: '13rem', 56: '14rem', 60: '15rem',
+    64: '16rem', 72: '18rem', 80: '20rem', 96: '24rem',
+  };
+  const TAILWIND_V3_BORDER = { 0: '0px', 1: '1px', 2: '2px', 4: '4px', 8: '8px' };
+
+  const spacing = Object.fromEntries(stappen(layout.spacing).map(([k, v]) => [k.replace('_', '.'), val(v)]));
+  for (const [key, expected] of Object.entries(TAILWIND_V3_SPACING)) {
+    if (!(key in spacing)) {
+      throw new Error(`[tokens] spacing.${key.replace('.', '_')} ontbreekt in Layout/Scale — de preset vervangt Tailwinds schaal, dus elke p-${key}/gap-${key} zou stil verdwijnen.`);
+    }
+    if (spacing[key] !== expected) {
+      throw new Error(`[tokens] spacing.${key.replace('.', '_')} is ${spacing[key]}, Tailwind-default is ${expected} — een gedeelde stap wijzigen verschuift elke bestaande p-${key}. Voeg een eigen stap toe i.p.v. deze te veranderen.`);
+    }
+  }
+
+  const border = Object.fromEntries(stappen(layout.border).map(([k, v]) => [k, val(v)]));
+  for (const [key, expected] of Object.entries(TAILWIND_V3_BORDER)) {
+    if (border[key] !== expected) {
+      throw new Error(`[tokens] border.${key} is ${border[key] ?? 'afwezig'}, Tailwind-default is ${expected}`);
+    }
+  }
+  const { 1: borderDefault, ...borderRest } = border;
+
+  // icon.stroke leest geen code (lucide zet hem zelf); hij bestaat voor Figma's iconen
+  // (figma/base-payload.json). Hier alleen: het moet een getal zijn.
+  if (Number.isNaN(Number(val(layout.icon?.stroke ?? { $value: 'x' })))) {
+    throw new Error('[tokens] icon.stroke ontbreekt of is geen getal');
+  }
+
+  // Layout-rollen als utility-sleutel: spacing-surface → p-surface, size-control-md →
+  // h-control-md. De groep valt weg, want Tailwind leidt padding, gap, height en width
+  // allemaal af van één spacing-map. Twee lezers hebben deze afleiding nodig — de preset
+  // en cn() in packages/ui — dus hij wordt hier één keer gemaakt.
+  //
+  // Een sleutel mag geen schaalstap zijn (een rol "4"), niet samenvallen met een andere
+  // rol, en geen sleutel die Tailwind zelf naast de spacing-map in dezelfde utilities
+  // zet: `margin` is `{ auto, ...spacing }`, `width` kent `full`, `screen`, `min`, `max`,
+  // `fit` — een rol `spacing.auto` zou elke mx-auto stil overschrijven.
+  const GERESERVEERD = new Set(['auto', 'full', 'screen', 'svh', 'lvh', 'dvh', 'min', 'max', 'fit', 'px']);
+  const themeBase = tokenSets['Theme/base'] ?? {};
+  const roleUtilities = {};
+  for (const group of ['spacing', 'size']) {
+    for (const [key] of stappen(themeBase[group])) {
+      const name = `${group}-${key}`;
+      if (key in spacing || GERESERVEERD.has(key) || key in roleUtilities) {
+        throw new Error(`[tokens] layout-rol "${name}" botst op utility-sleutel "${key}" (schaalstap, andere rol of gereserveerde Tailwind-sleutel)`);
+      }
+      roleUtilities[key] = name;
+    }
+  }
+
+  return { spacing, borderWidth: { DEFAULT: borderDefault, ...borderRest }, roleUtilities };
+})();
+
 if (!existsSync(R('build'))) await mkdir(R('build'), { recursive: true });
 
 // De primitives krijgen GEEN eigen CSS-output meer. Ze bestonden als
@@ -305,28 +385,11 @@ await writeFile(R('build/theme.css'), [...header, ...blocks, ''].join('\n'));
 const asList = (kind) =>
   [...roleKinds].filter(([, k]) => k === kind).map(([n]) => n);
 
-// Layout-rollen als utility-sleutel: spacing-surface → p-surface, size-control-md →
-// h-control-md. De groep valt weg, want Tailwind leidt padding, gap, height en width
-// allemaal af van één spacing-map. Twee lezers hebben deze afleiding nodig — de preset
-// (om de utility te maken) en cn() in packages/ui (zodat tailwind-merge p-surface als
-// padding herkent en een className="p-4" van de consument laat winnen) — dus hij
-// wordt hier één keer gemaakt in plaats van twee keer nagebouwd.
-const LAYOUT_ROLE_GROUPS = ['spacing', 'size'];
-const scaleKeys = new Set(
-  Object.keys(tokenSets['Layout/Scale']?.spacing ?? {}).map((k) => k.replace('_', '.'))
-);
-const layoutRoleUtilities = {};
-for (const name of asList('scalar')) {
-  const group = LAYOUT_ROLE_GROUPS.find((g) => name.startsWith(`${g}-`));
-  if (!group) continue;
-  const key = name.slice(group.length + 1);
-  // Een rol die een schaalstap overschaduwt (een rol "4") of twee rollen die op
-  // dezelfde utility landen (spacing-control-md én size-control-md) overschrijven
-  // elkaar anders stil.
-  if (scaleKeys.has(key) || key in layoutRoleUtilities) {
-    throw new Error(`[tokens] layout-rol "${name}" botst op utility-sleutel "${key}" (schaalstap of andere rol)`);
-  }
-  layoutRoleUtilities[key] = name;
+// De layout-rollen als utility-sleutel komen uit de validatie bovenaan. Hier alleen de
+// tegencontrole: elke rol daar moet na het resolven ook als scalar-rol bestaan.
+const layoutRoleUtilities = LAYOUT.roleUtilities;
+for (const role of Object.values(layoutRoleUtilities)) {
+  if (!asList('scalar').includes(role)) throw new Error(`[tokens] layout-rol "${role}" kwam niet als scalar uit de resolve`);
 }
 
 await writeFile(
@@ -429,84 +492,30 @@ await writeFile(
 }
 
 // --- Layout -> build/layout.mjs ---------------------------------------------
-// Zelfde levering als de typografie, om dezelfde reden: Tailwind heeft de schaal op
-// configuratieniveau nodig om er p-4, gap-2 en border-2 van te maken.
-//
-// De schaal IS Tailwind v3's schaal, stap voor stap. De preset vervangt theme.spacing
-// en theme.borderWidth door deze export, dus een stap die hier ontbreekt verdwijnt
-// uit elke app (geen p-7 meer, zonder foutmelding) en een stap die afwijkt verschuift
-// elke bestaande klasse. Beide falen hier, hard. Eigen stappen toevoegen mag.
-//
-// DTCG verbiedt een punt in een tokennaam, dus de sleutel 0.5 heet in tokens.json 0_5
-// — dezelfde schrijfwijze als de Figma-variabele spacing-0_5. En Tailwinds DEFAULT-
-// borderbreedte heet border.1, zoals de Figma-variabele border-1.
-{
-  const layout = tokenSets['Layout/Scale'];
-  if (!layout?.spacing) throw new Error('[tokens] set "Layout/Scale" mist de spacing-groep');
-  const val = (node) => String(node.$value ?? node.value);
-
-  const TAILWIND_V3_SPACING = {
-    0: '0px', px: '1px', 0.5: '0.125rem', 1: '0.25rem', 1.5: '0.375rem', 2: '0.5rem',
-    2.5: '0.625rem', 3: '0.75rem', 3.5: '0.875rem', 4: '1rem', 5: '1.25rem', 6: '1.5rem',
-    7: '1.75rem', 8: '2rem', 9: '2.25rem', 10: '2.5rem', 11: '2.75rem', 12: '3rem',
-    14: '3.5rem', 16: '4rem', 20: '5rem', 24: '6rem', 28: '7rem', 32: '8rem', 36: '9rem',
-    40: '10rem', 44: '11rem', 48: '12rem', 52: '13rem', 56: '14rem', 60: '15rem',
-    64: '16rem', 72: '18rem', 80: '20rem', 96: '24rem',
-  };
-  const TAILWIND_V3_BORDER = { 0: '0px', 1: '1px', 2: '2px', 4: '4px', 8: '8px' };
-
-  const spacing = Object.fromEntries(
-    Object.entries(layout.spacing).map(([k, v]) => [k.replace('_', '.'), val(v)])
-  );
-  for (const [key, expected] of Object.entries(TAILWIND_V3_SPACING)) {
-    if (!(key in spacing)) {
-      throw new Error(`[tokens] spacing.${key.replace('.', '_')} ontbreekt in Layout/Scale — de preset vervangt Tailwinds schaal, dus elke p-${key}/gap-${key} zou stil verdwijnen.`);
-    }
-    if (spacing[key] !== expected) {
-      throw new Error(`[tokens] spacing.${key.replace('.', '_')} is ${spacing[key]}, Tailwind-default is ${expected} — een gedeelde stap wijzigen verschuift elke bestaande p-${key}. Voeg een eigen stap toe i.p.v. deze te veranderen.`);
-    }
-  }
-
-  const border = Object.fromEntries(Object.entries(layout.border ?? {}).map(([k, v]) => [k, val(v)]));
-  for (const [key, expected] of Object.entries(TAILWIND_V3_BORDER)) {
-    if (border[key] !== expected) {
-      throw new Error(`[tokens] border.${key} is ${border[key] ?? 'afwezig'}, Tailwind-default is ${expected}`);
-    }
-  }
-  const { 1: borderDefault, ...borderRest } = border;
-  const borderWidth = { DEFAULT: borderDefault, ...borderRest };
-
-  // lucide-react tekent op stroke-width 2 en de code zet hem nergens anders; het
-  // token legt vast wat Figma's iconen moeten dragen, niet wat de code configureert.
-  const iconStroke = Number(val(layout.icon?.stroke ?? { $value: NaN }));
-  if (iconStroke !== 2) throw new Error(`[tokens] icon.stroke is ${iconStroke}, lucide-react tekent op 2`);
-
-  await writeFile(
-    R('build/layout.mjs'),
-    [
-      '/**',
-      ' * Do not edit directly, this file was auto-generated by packages/tokens/build.mjs.',
-      ' * Bron: packages/tokens/tokens.json (set Layout/Scale).',
-      ' *',
-      ' * Sleutels in Tailwind-notatie (0.5, DEFAULT); in tokens.json heten ze 0_5 en border.1.',
-      ' */',
-      '',
-      `export const spacing = ${JSON.stringify(spacing, null, 2)};\n`,
-      `export const borderWidth = ${JSON.stringify(borderWidth, null, 2)};\n`,
-      `export const iconStroke = ${iconStroke};\n`,
-    ].join('\n')
-  );
-  await writeFile(
-    R('build/layout.d.ts'),
-    [
-      '/** Do not edit directly, generated by packages/tokens/build.mjs. */',
-      'export declare const spacing: Record<string, string>;',
-      'export declare const borderWidth: Record<string, string>;',
-      'export declare const iconStroke: number;',
-      '',
-    ].join('\n')
-  );
-}
+// Gevalideerd bovenaan, vóór de eerste schrijfactie (zie "Layout valideren").
+await writeFile(
+  R('build/layout.mjs'),
+  [
+    '/**',
+    ' * Do not edit directly, this file was auto-generated by packages/tokens/build.mjs.',
+    ' * Bron: packages/tokens/tokens.json (set Layout/Scale).',
+    ' *',
+    ' * Sleutels in Tailwind-notatie (0.5, DEFAULT); in tokens.json heten ze 0_5 en border.1.',
+    ' */',
+    '',
+    `export const spacing = ${JSON.stringify(LAYOUT.spacing, null, 2)};\n`,
+    `export const borderWidth = ${JSON.stringify(LAYOUT.borderWidth, null, 2)};\n`,
+  ].join('\n')
+);
+await writeFile(
+  R('build/layout.d.ts'),
+  [
+    '/** Do not edit directly, generated by packages/tokens/build.mjs. */',
+    'export declare const spacing: Record<string, string>;',
+    'export declare const borderWidth: Record<string, string>;',
+    '',
+  ].join('\n')
+);
 
 // Idem voor de rollen, zodat de preset ze zonder cast kan consumeren.
 await writeFile(

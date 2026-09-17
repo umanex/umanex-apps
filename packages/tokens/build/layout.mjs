@@ -50,5 +50,3 @@ export const borderWidth = {
   "8": "8px",
   "DEFAULT": "1px"
 };
-
-export const iconStroke = 2;

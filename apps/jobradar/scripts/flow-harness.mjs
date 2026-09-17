@@ -238,14 +238,13 @@ async function naamloos(page) {
 }
 
 /**
- * De enige toegestane naamloze: de slider-thumb van "Min. score" op `/`. De naam kan pas mee als
- * `@umanex/ui` hem doorgeeft (plan fase 4a). Tweezijdig: is hij er niet meer of wel benoemd, dan is
- * de uitzondering verouderd en hoort ze hier weg — anders dekt ze straks een nieuw defect af.
+ * Geen uitzonderingen meer. Tot 2026-09-17 stond hier één: de slider-thumb van "Min. score", die
+ * geen naam kón krijgen omdat `@umanex/ui` er geen prop voor had. Fase 4a gaf Slider `thumbLabel`
+ * en `FilterBar` geeft hem mee, dus de as eist nu nul naamloze bedienbare elementen — strenger dan
+ * een uitzondering die zichzelf telt.
  */
 function naamUitzonderingen(route, zonder) {
-  if (route !== '/') return { rest: zonder, uitzondering: 0 };
-  const sliders = zonder.filter((z) => z.rol === 'slider');
-  return { rest: zonder.filter((z) => z.rol !== 'slider'), uitzondering: sliders.length };
+  return { rest: zonder, uitzondering: 0 };
 }
 
 /**
@@ -482,8 +481,8 @@ async function main() {
     const { rest, uitzondering } = naamUitzonderingen(route, namen.zonder);
     if (namen.totaal === 0) fail(`${route} namen: nul bedienbare elementen in de toegankelijkheidsboom — dit meet niets`);
     else if (rest.length) fail(`${route} namen: ${rest.length} van ${namen.totaal} bedienbare elementen zonder naam (${rest.slice(0, 4).map((z) => `${z.rol} ${z.wat}`).join('; ')})`);
-    else ok(`${route} namen: ${namen.totaal} bedienbare elementen, elk met een naam${uitzondering ? ` (+ ${uitzondering} bekende uitzondering: slider-thumb Min. score, fase 4a)` : ''}`);
-    if (route === '/' && uitzondering !== 1) fail(`/ namen: de uitzondering voor de slider-thumb telde ${uitzondering}, verwacht 1 — pas naamUitzonderingen() aan`);
+    else ok(`${route} namen: ${namen.totaal} bedienbare elementen, elk met een naam${uitzondering ? ` (+ ${uitzondering} uitzondering)` : ''}`);
+    if (uitzondering !== 0) fail(`${route} namen: ${uitzondering} uitzondering(en) — sinds fase 4a hoort naamUitzonderingen() er geen te maken`);
     if (SHOT) {
       const name = route === '/' ? 'index' : route.replace(/\//g, '-').replace(/^-/, '');
       const file = resolve(process.cwd(), `${SHOT}/${name}.png`);

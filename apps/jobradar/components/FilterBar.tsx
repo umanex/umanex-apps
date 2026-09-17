@@ -117,12 +117,15 @@ export function FilterBar({
         <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
           Min. score
         </span>
+        {/* `thumbLabel`: het zichtbare "Min. score" hoort bij de rij, niet bij de greep. Zonder deze
+            naam las een schermlezer alleen "slider" (naam-as van de harness, fase 3). */}
         <Slider
           value={[minScore]}
           onValueChange={([v]) => onMinScoreChange(v ?? 0)}
           min={0}
           max={100}
           step={5}
+          thumbLabel="Minimumscore"
           className="w-32"
         />
         <span className="w-8 text-right text-sm tabular-nums">{minScore}</span>

@@ -121,7 +121,8 @@ Bewust géén rol: Button `px-4`/`px-8`, Badge `px-2.5 py-0.5`, menu `pl-8`/`px-
 - [x] R12 (P3) — de ESLint-spiegel (`packages/config/eslint/tokens.cjs`) kent `arbitrary-spacing` — bewijs: eslint via stdin in jobradar: `p-[13px]` en `!mt-[3px]` rc=1, `p-4 gap-inline` rc=0; `pnpm --filter jobradar lint` schoon
 - [x] R13 (P3) — de botsingscheck kent Tailwinds gereserveerde spacing-sleutels (`auto`, `full`, `screen`, `min`, `max`, `fit`) — bewijs: rol `spacing.auto` → rc=1 "gereserveerde Tailwind-sleutel"
 - [x] R14 (P3) — `gapRol` volgt dezelfde voorrang als `paddingRollen` (een latere schaalklasse wist de rol) — bewijs: probe `gap-stack gap-y-2` (kolom) → null; `gap-inline` (rij) → spacing-inline; spec van Dialog ongewijzigd behalve `hVar`
-- [x] R15 (P3) — `layout.mjs` exporteert geen ongebruikte `iconStroke`; de build eist van `icon.stroke` alleen een getal — bewijs: diff layout.mjs −2 regels; `1.5` → rc=0, `dik` → rc=1
+- [x] R15 (P3) — `layout.mjs` exporteert geen ongebruikte `iconStroke` — bewijs: diff `build/layout.mjs` −2 regels, `layout.d.ts` −1; `grep -rn iconStroke packages apps` buiten build.mjs-commentaar 0
+- [x] R15b (P3) — de build eist van `icon.stroke` alleen een getal — bewijs: `1.5` → rc=0, `dik` → rc=1 "icon.stroke ontbreekt of is geen getal"
 - [x] R17 (P1) — de ESLint-spiegel breekt `cashflow#lint` niet op de gebaselinede plek (CI-run 35248117831 faalde erop) — bewijs: `eslint-disable-next-line` met verwijzing naar dezelfde BACKLOG-entry; `turbo lint --force` 7/7 lokaal; CI-run 35248551985 groen
 - [x] R16 (P3) — naar BACKLOG: `border`-groep botst in de merge met kleurrol `border`; rolgroepen en alias-regex staan op drie plekken; spacing- en size-rollen zijn als utility onderling uitwisselbaar — bewijs: BACKLOG 2026-09-17 (drie entries)
 

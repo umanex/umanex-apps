@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** packages/tokens + packages/config + packages/ui (monorepo-niveau)
 - **Klant:** umanex
-- **Status:** gebouwd — review-ronde 1 verwerkt, ronde 2 loopt; na de merge Jeroens Pull in Tokens Studio
+- **Status:** gebouwd — ronde 2 verwerkt; wacht op Jeroen (Figma teruggedraaid, naamlijst)
 
 ---
 
@@ -33,7 +33,7 @@ CONSTRAINTS: Een rol pas bij ≥ 2 componenten (gemeten), anders een schaalstap.
 
 ## Open vragen
 
-- Geen.
+- Naamlijst (code-review ronde 2): `spacing.menu` dient ook de binnenpadding van TabsList, en `spacing.control-x`/`item-y` ook Tooltip en TabsTrigger — zelfde waarde, ander doel. Wie `menu` ruimer maakt, verschuift elke TabsList mee. Houden (rollen als gedeelde maat) of splitsen/hernoemen (rollen als doel)? Na de merge kost hernoemen een tweede `zet-base` plus herbinden in Figma.
 
 ## Aannames
 
@@ -109,7 +109,7 @@ Bewust géén rol: Button `px-4`/`px-8`, Badge `px-2.5 py-0.5`, menu `pl-8`/`px-
 
 - [x] R1 (P1) — `[schaal]` is rood als een stap uit `Layout/Scale` in Figma Base ontbreekt — bewijs: selftest-case "stap uit Layout/Scale ontbreekt in Figma" (`icon-stroke` weg) rood op [schaal]; figma:check:selftest 28 tegenproeven groen
 - [x] R2 (P1) — de swatch-matrix van `apps/cashflow/scripts/render-screens.tsx` telt alleen kleurrollen, geen layout-rollen — bewijs: CI-log `verify:visual` "✓ 54 rollen" op dd83810 (vóór), "✓ 43 rollen" op c5d1db5 (na) = `hslRoles` + `rawRoles` (43)
-- [x] R3 (P1) — de keten bindt de hoogte van een element met `h-control-*` aan `size-control-*` — bewijs: spec `hVar: Base:size-control-md` ×2; runtime read-back beide footer-knoppen `height=size-control-md (40)`; toets-batch `bindingVerschillen` 0, tegenproef `spacing-10` op één knop → 1 met de exacte regel
+- [ ] R3 (P1) — de keten bindt de hoogte van een element met `h-control-*` aan `size-control-*` — spec: `hVar: Base:size-control-md` ×2 en de toets met tegenproef slaagde; **daarna teruggedraaid in Figma** (DialogContent terug op de kinderen `141:53…` van de vorige bouw, geen height-binding — vermoedelijk een undo in Desktop). Opnieuw bouwen wacht op Jeroen (HANDOFF 2026-09-17)
 - [x] R4 (P1) — de keten bindt de breedte van een element met `w-control-*` aan `size-control-*` — bewijs: Button tijdelijk uit LEGACY en door de walker: `size=icon` → `h` en `w` = `Base:size-control-md` (40×40), `sm` → `size-control-sm`, `lg` → `size-control-lg`; daarna teruggezet, `figma/` git-schoon. De builder bindt `width` via dezelfde `bind()` als `height` (R3, in Figma gemeten)
 - [x] R5 (P2) — een baseline-regel in de token guard dekt één fragment, niet het hele bestand — bewijs: `mt-[13px]` op dezelfde regel als `pl-[22px]` → rc=1 op [arbitrary-spacing]
 - [x] R6 (P2) — een baseline-regel zonder treffer maakt de token guard rood — bewijs: `pl-[22px]` → `pl-5` → rc=1 op [baseline-verouderd]
@@ -125,6 +125,22 @@ Bewust géén rol: Button `px-4`/`px-8`, Badge `px-2.5 py-0.5`, menu `pl-8`/`px-
 - [x] R15b (P3) — de build eist van `icon.stroke` alleen een getal — bewijs: `1.5` → rc=0, `dik` → rc=1 "icon.stroke ontbreekt of is geen getal"
 - [x] R17 (P1) — de ESLint-spiegel breekt `cashflow#lint` niet op de gebaselinede plek (CI-run 35248117831 faalde erop) — bewijs: `eslint-disable-next-line` met verwijzing naar dezelfde BACKLOG-entry; `turbo lint --force` 7/7 lokaal; CI-run 35248551985 groen
 - [x] R16 (P3) — naar BACKLOG: `border`-groep botst in de merge met kleurrol `border`; rolgroepen en alias-regex staan op drie plekken; spacing- en size-rollen zijn als utility onderling uitwisselbaar — bewijs: BACKLOG 2026-09-17 (drie entries)
+
+### Review-ronde 2 (code-review PR umanex-apps#524, 15 bevindingen, geen P0/P1)
+
+- [x] S1 (P2) — het Tokens-blok op een component-docspagina toont de layout-rollen die het component gebruikt — bewijs: gerenderde docs op storybook-static: Button 6 layout-rijen (`spacing.inline`, `size.control-md`, …), Card 2, Badge 0
+- [x] S2 (P2) — `[schaal]` is rood als `icon-stroke` in Figma niet 2 is (lucide tekent op 2, ongeacht het token) — bewijs: selftest-case "icon-stroke 1.5 in token én Figma" rood op [schaal]; zonder de regel bleef hij groen
+- [ ] S3 (P2) — de naamcontrole in `toets-batch` vergelijkt padding en gap alleen op auto-layout-nodes
+- [x] S4 (P2) — de naamcontrole in `toets-batch` meldt een ontbrekende variant- of kind-node als verschil — bewijs: spec met een extra kind in de footer → "default>footer>extra: node ontbreekt in Figma"
+- [x] S5 (P3) — `figma-sync-check` herkent een layout-rol met een cijfer in de naam (`size-control-2xl`) — bewijs: zwijg-kant-case groen; met de oude regex vals alarm
+- [x] S6 (P3) — een baseline-regel in de token guard dekt een vast aantal voorkomens; één meer is rood — bewijs: tweede `pl-[22px]` in ReservationSection → rc=1; hersteld rc=0
+- [x] S7 (P3) — padding of gap van 1 px bindt aan `spacing-px` (build-spec en build-prune) — bewijs: eenmalige probe op de broncode van beide `spacingVar`: 1 → `Base:spacing-px`, 6/24 ongewijzigd, 13 → null
+- [x] S8 (P3) — `toets-batch` bouwt de variabelen-map één keer per batch — bewijs: map vóór de componentlus met `Promise.all`; de run in Figma (S4) slaagt ermee
+- [x] S9 (P3) — de swatch-matrix van cashflow leest de positieve lijst `hslRoles` + `rawRoles` — bewijs: filter op `hslRoles.includes \|\| rawRoles.includes`; cashflow type-check groen [CI-telling volgt na push]
+- [x] S10 (P3) — de melding van `arbitrary-spacing` verwijst niet naar umanex-rollen die in rowtrack-web niet bestaan — bewijs: melding "gebruik een schaalstap of een layout-rol uit de preset van deze app" in guard en ESLint-spiegel
+- [x] S11 (P3) — `figma/base-payload.json` kan niet ongemerkt verouderen ten opzichte van tokens.json — bewijs: `base-payload.mjs --check` rc=0 actueel, rc=1 na `spacing.surface → {spacing.5}`; draait als eerste stap van `figma:check:selftest` (CI)
+- [x] S12 (P3) — `geometry-check` wacht niet op een gepauzeerde animatie — bewijs: filter `playState !== 'paused'`; geometry 2× groen op de verse build
+- [x] S13 — naar BACKLOG: variants en `ps-/pe-`/margin-rollen in de voorrangsregel; niet-numerieke schaalstappen; bereik van de eslint-disable — bewijs: BACKLOG 2026-09-17 (drie entries)
 
 ### Docs en proces
 

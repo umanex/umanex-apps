@@ -10,7 +10,7 @@
  * Niet in de payload: de radius-stappen. Die leidt de preset met calc() af van één token; ze
  * blijven een bekend gat in figma-sync-check (BEKENDE_GATEN).
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,6 +19,7 @@ const tokens = JSON.parse(readFileSync(join(UI, '../tokens/tokens.json'), 'utf8'
 const layout = tokens['Layout/Scale'];
 const base = tokens['Theme/base'] ?? {};
 if (!layout?.spacing) { console.error('✗ Layout/Scale ontbreekt in tokens.json'); process.exit(1); }
+if (!layout.icon?.stroke) { console.error('✗ Layout/Scale mist icon.stroke'); process.exit(1); }
 
 const px = (node) => {
   const t = String(node.$value ?? node.value);
@@ -57,5 +58,19 @@ const uit = {
   schaal,
   rollen,
 };
-writeFileSync(join(UI, 'figma/base-payload.json'), JSON.stringify(uit, null, 2) + '\n');
-console.log(`✓ figma/base-payload.json: ${schaal.length} schaalvariabelen, ${rollen.length} rollen`);
+const doel = join(UI, 'figma/base-payload.json');
+const inhoud = JSON.stringify(uit, null, 2) + '\n';
+// --check: het gecommitte bestand moet gelijk zijn aan wat tokens.json nu oplevert. Een push uit
+// Tokens Studio bouwt packages/tokens, niet deze payload; zonder de check schrijft zet-base.js
+// daarna stil de oude waarden naar Figma.
+if (process.argv.includes('--check')) {
+  const huidig = existsSync(doel) ? readFileSync(doel, 'utf8') : '';
+  if (huidig !== inhoud) {
+    console.error('✗ figma/base-payload.json loopt achter op tokens.json — draai `pnpm --filter @umanex/ui figma:base`');
+    process.exit(1);
+  }
+  console.log(`✓ figma/base-payload.json actueel: ${schaal.length} schaalvariabelen, ${rollen.length} rollen`);
+} else {
+  writeFileSync(doel, inhoud);
+  console.log(`✓ figma/base-payload.json: ${schaal.length} schaalvariabelen, ${rollen.length} rollen`);
+}

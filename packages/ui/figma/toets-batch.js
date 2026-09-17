@@ -20,6 +20,13 @@ const check0 = await (await fetch(`http://localhost:${POORT}/check0.json`)).json
 const rond = n => Math.round(n * 100) / 100;
 const zichtbaar = arr => Array.isArray(arr) ? arr.filter(p => p.visible !== false && (p.opacity ?? 1) > 0) : [];
 
+// Variabele-id → "Collectie:naam", één keer per batch (de map verandert niet tussen componenten).
+const varNaam = new Map();
+for (const c of await figma.variables.getLocalVariableCollectionsAsync()) {
+  const vars = await Promise.all(c.variableIds.map(id => figma.variables.getVariableByIdAsync(id)));
+  for (const v of vars) varNaam.set(v.id, `${c.name}:${v.name}`);
+}
+
 const verslag = {};
 for (const comp of BATCH) {
   const d = min.componenten[comp];
@@ -80,18 +87,21 @@ for (const comp of BATCH) {
   // De read-back hieronder vergelijkt waarden; p-6 en p-surface renderen allebei 24. Hier de naam:
   // spec en Figma parallel (de builder hangt kinderen in spec-volgorde), per veld de variabele
   // die de spec noemt tegen de variabele die op de node staat.
-  const varNaam = new Map();
-  for (const c of await figma.variables.getLocalVariableCollectionsAsync())
-    for (const id of c.variableIds) varNaam.set(id, `${c.name}:${(await figma.variables.getVariableByIdAsync(id)).name}`);
   r.bindingen = [];
   const PAD_VELDEN = ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'];
   const vergelijk = (s, n, pad) => {
-    if (!s || !n) return;
+    if (!s) return;
+    // Een node die de spec noemt maar Figma mist, is een verschil — geen stille nul.
+    if (!n) { r.bindingen.push(`${pad}: node ontbreekt in Figma`); return; }
     const bv = n.boundVariables ?? {};
-    const naamOp = veld => (bv[veld]?.id ? varNaam.get(bv[veld].id) : null) ?? null;
+    const naamOp = veld => (bv[veld]?.id ? (varNaam.get(bv[veld].id) ?? `onbekend:${bv[veld].id}`) : null);
+    // Padding en gap bindt de builder alleen op een auto-layout-frame (spec: kinderen + richting);
+    // op een blad of tekstnode zou de spec-waarde een vals verschil geven.
+    const autoLayout = !!(s.k?.length && s.rij !== undefined);
     const paren = [
-      ...PAD_VELDEN.map((veld, i) => [veld, s.paddingVar?.[i] ?? null]),
-      ['itemSpacing', s.gapVar ?? null], ['height', s.hVar ?? null], ['width', s.wVar ?? null],
+      ...(autoLayout ? PAD_VELDEN.map((veld, i) => [veld, s.paddingVar?.[i] ?? null]) : []),
+      ...(autoLayout ? [['itemSpacing', s.gapVar ?? null]] : []),
+      ['height', s.hVar ?? null], ['width', s.wVar ?? null],
     ];
     for (const [veld, verwacht] of paren) {
       const echt = naamOp(veld);

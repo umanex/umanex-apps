@@ -33,7 +33,7 @@ import { gapRol } from './layout-rollen.mjs';
 const UI = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BASE = JSON.parse(readFileSync(join(UI, 'figma/manifest.json'), 'utf8')).collections.Base.variables;
 /** Een spacing-waarde die exact een stap van de schaal is, bindt — ook als ze uit een marge komt. */
-const spacingVar = v => { const naam = 'spacing-' + String(v / 4).replace('.', '_'); return BASE[naam] === v ? `Base:${naam}` : null; };
+const spacingVar = v => { const naam = v === 1 ? 'spacing-px' : 'spacing-' + String(v / 4).replace('.', '_'); return BASE[naam] === v ? `Base:${naam}` : null; };
 const spec = JSON.parse(readFileSync(join(UI, 'figma/build-spec.json'), 'utf8'));
 if (spec.walkerVersie !== 3 || spec.adapter !== 'dom-tailwind') {
   console.error(`figma/build-spec.json draagt walkerVersie ${spec.walkerVersie} / adapter ${spec.adapter} — deze pas eist 3 / dom-tailwind`);

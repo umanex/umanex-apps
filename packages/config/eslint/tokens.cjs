@@ -65,8 +65,7 @@ const VERBODEN = [
     // Zelfde regel als arbitrary-spacing in packages/tokens/scripts/guard.mjs.
     re: /(^|[\s"'`:])!?-?(p|px|py|pt|pr|pb|pl|ps|pe|m|mx|my|mt|mr|mb|ml|ms|me|gap|gap-x|gap-y|space-x|space-y|scroll-[mp][xytrblse]?)-\[[^\]]+\]/,
     msg:
-      'arbitrary spacing — gebruik een schaalstap (p-4) of een layout-rol (p-surface, gap-inline). ' +
-      'De schaal staat in de set Layout/Scale, de rollen in Theme/base.',
+      'arbitrary spacing — gebruik een schaalstap of een layout-rol uit de preset van deze app.',
   },
 ];
 

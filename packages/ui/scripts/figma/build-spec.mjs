@@ -467,7 +467,8 @@ function bind(node, pad, comp) {
     return null;
   };
   const spacingVar = (v) => {
-    const naam = 'spacing-' + String(v / 4).replace('.', '_');
+    // 1 px is spacing-px, niet spacing-0_25.
+    const naam = v === 1 ? 'spacing-px' : 'spacing-' + String(v / 4).replace('.', '_');
     return BASE[naam] === v ? `Base:${naam}` : null;
   };
 

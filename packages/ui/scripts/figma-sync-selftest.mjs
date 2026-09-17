@@ -304,6 +304,20 @@ const gevallen = [
     },
   },
   {
+    // Token en Figma samen verschoven: de vergelijking met Layout/Scale klopt, maar de code tekent
+    // nog op lucide's 2.
+    naam: 'icon-stroke 1.5 in token én Figma',
+    as: '[schaal]',
+    muteer: uiRoot => {
+      const tp = join(uiRoot, '../tokens/tokens.json');
+      const t = JSON.parse(lees(tp)); t['Layout/Scale'].icon.stroke.$value = '1.5';
+      schrijf(tp, JSON.stringify(t, null, 2));
+      const mp = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(mp)); m.collections.Base.variables['icon-stroke'] = 1.5;
+      schrijf(mp, JSON.stringify(m, null, 2));
+    },
+  },
+  {
     naam: 'keten-component ontbreekt in de gecommitte spec',
     as: '[laagnaam]',
     muteer: uiRoot => {
@@ -324,6 +338,32 @@ console.log('figma-sync-selftest — tegenproef per as\n');
   rmSync(tmp, { recursive: true, force: true });
   if (r.code === 0) console.log('  ok   zwijg-kant: ongewijzigde kopie is groen');
   else { console.log('  FAIL zwijg-kant: guard slaat alarm zonder defect\n' + r.out); stuk++; }
+}
+
+// Zwijg-kant met een geldige wijziging: een layout-rol met een cijfer in de naam, gedekt door
+// token en alias, is geen drift.
+const zwijgGevallen = [
+  {
+    naam: 'layout-rol size-control-2xl, gedekt door token en alias',
+    muteer: uiRoot => {
+      const tp = join(uiRoot, '../tokens/tokens.json');
+      const t = JSON.parse(lees(tp)); t['Theme/base'].size['control-2xl'] = { $type: 'sizing', $value: '{spacing.12}' };
+      schrijf(tp, JSON.stringify(t, null, 2));
+      const mp = join(uiRoot, 'figma/manifest.json');
+      const m = JSON.parse(lees(mp));
+      m.collections.Base.variables['size-control-2xl'] = 48;
+      m.collections.Base.aliassen = { ...(m.collections.Base.aliassen ?? {}), 'size-control-2xl': 'spacing-12' };
+      schrijf(mp, JSON.stringify(m, null, 2));
+    },
+  },
+];
+for (const g of zwijgGevallen) {
+  const { tmp, uiRoot } = verseKopie();
+  g.muteer(uiRoot);
+  const r = draai(uiRoot);
+  rmSync(tmp, { recursive: true, force: true });
+  if (r.code === 0) console.log(`  ok   zwijg-kant: ${g.naam}`);
+  else { console.log(`  FAIL zwijg-kant: ${g.naam} — vals alarm\n` + r.out.split('\n').filter(l => l.includes('FAIL')).join('\n')); stuk++; }
 }
 
 // Afgaan-kant: elk defect moet rood worden, op de juiste as.
@@ -347,4 +387,4 @@ for (const g of gevallen) {
 }
 
 if (stuk) { console.log(`\n${stuk} van ${gevallen.length + 1} tegenproeven faalde. De guard meet niet wat hij belooft.`); process.exit(1); }
-console.log(`\n${gevallen.length + 1} tegenproeven geslaagd (1 zwijg-kant, ${gevallen.length} afgaan-kant).`);
+console.log(`\n${gevallen.length + 1 + zwijgGevallen.length} tegenproeven geslaagd (${1 + zwijgGevallen.length} zwijg-kant, ${gevallen.length} afgaan-kant).`);

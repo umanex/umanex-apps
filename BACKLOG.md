@@ -109,6 +109,27 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** Een guard-regel die `(p|m|gap|space)-(control-sm|control-md|control-lg)` en `(h|w|size)-(surface|menu|…)` weigert — goedkoper dan de preset splitsen, en hij zegt precies wat de afspraak is.
 - **Check:** `grep -rnE "\b(p|gap)-control-(sm|md|lg)\b|\b(h|w)-(surface|menu|inline|stack)\b" apps packages/ui --include='*.tsx'` — 0 = nog geen misbruik, het item leeft wel.
 - **Status:** open
+
+## 2026-09-17 — De rol-afleiding van de Figma-keten kent geen variants, `ps-/pe-` of margin-rollen · [debt]
+- **Wat:** `packages/ui/scripts/figma/layout-rollen.mjs` leest de klassen die de walker als geldend doorgeeft, maar zonder hun variant of `!important`. Bij `sm:p-surface px-4` op 1280 px wint in CSS de mediaregel, terwijl de voorrangsregel `px-4` laat winnen, dus bindt de keten `spacing-6` in plaats van `spacing-surface`. `ps-`/`pe-` (logische padding) en een margin-rol op een kind (`mt-stack`) vallen stil terug op binden op waarde (code-review umanex-apps#524, ronde 2).
+- **Waarom niet nu:** Geen component in `packages/ui` gebruikt die vormen; de voorrang goed nabootsen vraagt de variant-volgorde uit Tailwinds stylesheet.
+- **Eerste zet:** In de walker per padding-kant de klasse vastleggen waarvan de computed style wint (`getComputedStyle` per kandidaat-klasse toggelen), in plaats van de voorrang te reconstrueren.
+- **Check:** `grep -rnE "\b(sm|md|lg):p[xytrbl]?-(surface|menu|control|item)|\bp[se]-(control|item)|\bm[trblxy]?-(stack|inline|heading)" packages/ui/components` — 0 = nog niet geraakt, het item leeft wel.
+- **Status:** open
+
+## 2026-09-17 — Een niet-numerieke stap in Layout/Scale wordt in Figma als rol gelezen · [debt]
+- **Wat:** `build.mjs` staat eigen stappen toe, maar `figma-sync-check` herkent schaalvariabelen aan `spacing-<cijfers|px>`. Een stap `spacing.gutter` wordt daar een layout-rol die niet in `Theme/base` staat (rood), en `cn()` voegt alleen rolsleutels aan tailwind-merge toe, dus `cn("p-gutter","p-4")` houdt beide (code-review umanex-apps#524, ronde 2).
+- **Waarom niet nu:** Er is geen niet-numerieke stap, en de eerste zou de naamgeving van de schaal openbreken, wat een eigen besluit is.
+- **Eerste zet:** Schaal- en rolnamen in de guard uit tokens.json afleiden in plaats van uit een regex, en `cn()` alle niet-Tailwind-default sleutels van `layout.mjs` meegeven.
+- **Check:** `node -e "const t=require('./packages/tokens/tokens.json'); console.log(Object.keys(t['Layout/Scale'].spacing).filter(k=>!/^(\\d+(_\\d)?|px)$/.test(k)))"` — `[]` = nog niet geraakt.
+- **Status:** open
+
+## 2026-09-17 — De eslint-disable in ReservationSection zet alle token-regels uit voor die regel · [debt]
+- **Wat:** `no-restricted-syntax` draagt alle zeven token-regels; `eslint-disable-next-line` kan er niet één uitzetten. Een latere `bg-white` of `text-[13px]` op dezelfde regel meldt de editor niet meer; de token guard in CI wel (code-review umanex-apps#524, ronde 2).
+- **Waarom niet nu:** De echte oplossing is `pl-[22px]` wegwerken (entry hierboven in `apps/cashflow/BACKLOG.md`), niet de uitzondering verfijnen.
+- **Eerste zet:** Het cashflow-item oppakken; de disable en de guard-baseline verdwijnen dan samen.
+- **Check:** `grep -n "eslint-disable-next-line no-restricted-syntax" apps/cashflow/components/cashflow/ReservationSection.tsx` — treffer = leeft.
+- **Status:** open
 ## 2026-08-25 — Sync-guard ziet een Figma-wijziging pas na een verse manifest · [test]
 - **Wat:** `figma:check` toetst de code tegen `packages/ui/figma/manifest.json` — een neergeslagen meting van het Figma-bestand, geen live verbinding. Wijzigt iemand iets ín Figma zonder de manifest te verversen, dan blijft CI groen terwijl de twee kanten uit elkaar lopen. De omgekeerde richting (code wijzigt, Figma niet) wordt wél gevangen.
 - **Waarom niet nu:** CI heeft geen Figma-toegang. De live-kant vereist een `FIGMA_ACCESS_TOKEN` als repo-secret plus een REST-pad (`figma_get_file_data` of de Figma REST API) — dat is een eigen infra-beslissing met een secret erbij, en die hoort Jeroen te nemen.

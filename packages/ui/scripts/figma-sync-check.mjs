@@ -214,7 +214,7 @@ if (!fails.some(f => f.startsWith('[schaal]'))) ok('schaal', `radius-afgeleiden 
 // Elke Base-variabele moet in een categorie vallen die een regel draagt. Een naam die
 // nergens onder valt is drift: hij komt uit geen enkele bron en niets toetst zijn waarde.
 const IS_SCHAAL = /^(spacing-([\d_]+|px)|border-\d+|icon-stroke)$/;
-const IS_LAYOUTROL = /^(spacing|size)-[a-z][a-z-]*$/;
+const IS_LAYOUTROL = /^(spacing|size)-[a-z][a-z0-9-]*$/;
 const BASE_CATEGORIE = [
   [/^radius(-lg|-md|-sm|-full)?$/, 'radius-schaal uit de preset'],
   [/^spacing-([\d_]+|px)$/,        'Layout/Scale spacing'],
@@ -248,6 +248,10 @@ if (!layout?.spacing) {
     ...Object.keys(verwacht).filter(n => !(n in B)).map(n => [n, 'ontbreekt']),
   ];
   if (schaalFout.length) fail('schaal', `wijkt af van Layout/Scale in tokens.json: ${schaalFout.map(([n, v]) => `${n}=${v} (token ${verwacht[n]})`).join(', ')}`);
+  // Los van het token: de code tekent iconen met lucide's stroke-width 2 en leest icon.stroke
+  // nergens. Verschuiven token en Figma samen naar 1,5, dan klopt de vergelijking hierboven
+  // en tekent Figma toch iets anders dan de browser.
+  if (B['icon-stroke'] !== 2) fail('schaal', `icon-stroke = ${B['icon-stroke']}, maar lucide-react tekent op stroke-width 2 (de code leest het token niet)`);
   else ok('schaal', `${Object.keys(B).filter(n => IS_SCHAAL.test(n)).length} spacing-, border- en icon-variabelen gelijk aan Layout/Scale`);
 
   // Layout-rollen: in Figma een alias naar de schaalstap die Theme/base noemt. Een rol met een

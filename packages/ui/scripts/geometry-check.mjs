@@ -129,10 +129,10 @@ async function vastleggen() {
       await document.fonts.ready;
     });
     // Eindige animaties uitlopen (tooltip zoom-in): anders meet de run een tussenstand, en
-    // twee runs op dezelfde build gaven opacity 0 en 1. Oneindige (pulse, spin) niet.
+    // twee runs op dezelfde build gaven opacity 0 en 1. Oneindige (pulse, spin) en gepauzeerde niet.
     await page.evaluate(() => Promise.race([
       Promise.all(document.getAnimations()
-        .filter(a => a.effect?.getComputedTiming().iterations !== Infinity)
+        .filter(a => a.playState !== 'paused' && a.effect?.getComputedTiming().iterations !== Infinity)
         .map(a => a.finished.catch(() => null))),
       new Promise(r => setTimeout(r, 3000)),
     ]));

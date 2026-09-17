@@ -10,6 +10,7 @@ type Props = {
 const KIND_LABEL: Record<TokenUse['kind'], string> = {
   color: 'Kleur',
   radius: 'Radius',
+  layout: 'Layout',
   typography: 'Typografie',
 };
 

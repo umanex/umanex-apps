@@ -180,6 +180,26 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       van het bedrijfsplan (HANDOFF 2026-09-16), maar staat er als grijs tekstlinkje zonder datum.
       **Waarom niet nu:** hangt aan de open back-upbeslissing in `HANDOFF.md`; een datum tonen van een
       export die nergens bewaard wordt, suggereert een vangnet dat er niet is. (critique 2026-09-17)
+- [ ] `ux`: **Een geparkeerde actie met startuitzondering leest tegenstrijdig.** Parkeren laat
+      `start_uitzondering` staan (`mutaties.ts`, parkeertak), dus de rij staat onder Beschikbaar met
+      tegelijk een chip "wacht op …", een badge "gestart met een uitzondering" en een knop Start.
+      Technisch juist, maar drie signalen die elkaar lijken tegen te spreken. Hangt samen met het
+      open item "een startuitzondering is permanent". Geen instrument zet deze toestand. (design-review
+      fase 1, 2026-09-17, P3)
+- [ ] `a11y`: **Na Start in het blok "nu beschikbaar" valt de focus op de container van de sheet.** De
+      knop wordt vervangen door een statuslabel. Kleinste fix: de focus naar dat label of naar de
+      volgende Start-knop in het blok. (design-review fase 1, 2026-09-17, P3)
+- [ ] `a11y`: **Twee knoppen heten "Start A01" wanneer niets loopt** — één op de Eerstvolgende-kaart,
+      één op de rij. Ze doen hetzelfde, maar een lijst van knoppen in een schermlezer toont ze dubbel.
+      (design-review fase 1, 2026-09-17, P3)
+- [ ] `fix`: **Markeer gereed is kort opnieuw klikbaar tussen het PATCH-antwoord en het verse detail.**
+      Een tweede klik levert een 400 "staat al op gereed" in het paneel. Kleinste fix: de knop verbergen
+      zodra het antwoord `gereed` is, niet pas wanneer het detail binnen is. (design-review fase 1,
+      2026-09-17, P3)
+- [ ] `fix`: **`haalDetail` verwerkt antwoorden in aankomstvolgorde, niet in verzoekvolgorde.** Twee
+      snelle wissels kunnen een ouder detail over een nieuwer zetten. Bestond al; sinds 2026-09-17 leunt
+      het scroll-effect na afronden op `actie.status` uit dat detail. Kleinste fix: een `AbortController`
+      per verzoek, zoals `ContactPanel` al doet. (design-review fase 1, 2026-09-17, P3)
 
 ## Verworpen
 

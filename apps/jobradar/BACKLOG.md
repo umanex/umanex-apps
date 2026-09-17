@@ -17,6 +17,13 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       notitie in plaats van als fout, zodat rood rood blijft betekenen. **Eerste zet:** `min-w-0` op
       de `h3` in `JobCard.tsx`, en `/` toevoegen aan `SMAL_ROUTES` in de harness zodat het gemeten
       blijft. (harness-meting 2026-09-16)
+      **Kanttekening 2026-09-17 (critique, hypothese — niet getoetst):** die eerste zet raakt
+      vermoedelijk de verkeerde laag. `truncate` zet al `overflow: hidden`, en dan is de automatische
+      minimumbreedte van een flex-item al 0. Waarschijnlijker is de grid eromheen: `grid gap-3
+      sm:grid-cols-2 xl:grid-cols-3` (`DashboardClient.tsx:339/363/521`) heeft onder `sm` geen
+      `grid-cols-1`, dus één impliciete `auto`-kolom die meegroeit met de langste titel. **Toets:**
+      `min-w-0` alléén op de `h3` → `--smal=400` meet nog altijd > 400; `grid-cols-1` (of `min-w-0` op
+      de `Card`) → 400. Eén variabele per run.
 
 - [ ] `fix`: **Een verwijderde actie blijft als dode key in een beslismoment staan.**
       `verwijderActie` ruimt kanten en koppelingen op, maar niet de JSON-lijst in
@@ -158,6 +165,21 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       dedupe en opruimen gaan. Weghalen betekent die suite herschrijven, en dat is een eigen
       taak met eigen risico, geen bijproduct van een opruiming.
       (gemeten bij het verwijderen van de KBO-leadbron, 2026-08-29)
+
+- [ ] `ux`: **Sneltoetsen voor triage op het dashboard** (j/k om te bewegen, s bewaren, d afwijzen).
+      Er is nu geen enkele sneltoets en elke kaart kost twee tab-stops of meer. **Waarom niet nu:**
+      pas zinvol als de statusactie een knop is in plaats van een select (plan
+      `delightful-stirring-blossom`, fase 2), en de hint hoort in `Kbd` uit bibliotheekbatch 1.
+      (critique 2026-09-17, persona Alex)
+- [ ] `fix`: **Een tweetalige vacature verschijnt als twee kaarten.** Belfius staat in de NL- en de
+      FR-versie als twee losse vacatures, met twee statussen die uit elkaar lopen. Dit is dedupe in de
+      sync (`dedupe_hash`), geen UI-kwestie, dus buiten het UX/UI-plan. Eerste zet: tellen hoeveel paren
+      `(bedrijf, regio, datum)` met een verschillende titel er in `.data/jobradar.db` staan, vóór je
+      een regel bouwt. (critique 2026-09-17)
+- [ ] `ux`: **"Laatst geëxporteerd" bij de plan-export.** De markdown-export is nu de enige back-up
+      van het bedrijfsplan (HANDOFF 2026-09-16), maar staat er als grijs tekstlinkje zonder datum.
+      **Waarom niet nu:** hangt aan de open back-upbeslissing in `HANDOFF.md`; een datum tonen van een
+      export die nergens bewaard wordt, suggereert een vangnet dat er niet is. (critique 2026-09-17)
 
 ## Verworpen
 

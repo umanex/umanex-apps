@@ -13,8 +13,9 @@ const meta = {
   },
   argTypes: {
     disabled: { control: 'boolean' },
+    size: { control: 'radio', options: ['default', 'sm'] },
   },
-  args: { placeholder: 'Wat is de concrete aanleiding?', disabled: false },
+  args: { placeholder: 'Wat is de concrete aanleiding?', disabled: false, size: 'default' },
 } satisfies Meta<typeof Textarea>;
 
 export default meta;
@@ -22,6 +23,16 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {
   render: (args) => <Textarea className="w-80" {...args} />,
+};
+
+/** `sm` haalt de vloer van 80px weg en zet de padding op 6px; de hoogte komt van `rows`. */
+export const Maten: Story = {
+  render: () => (
+    <div className="flex w-72 flex-col gap-3">
+      <Textarea rows={2} defaultValue="Standaard: vloer van 80px." />
+      <Textarea size="sm" rows={2} defaultValue="sm: twee regels, compact." />
+    </div>
+  ),
 };
 
 export const WithLabel: Story = {

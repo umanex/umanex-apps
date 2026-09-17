@@ -13,8 +13,9 @@ const meta = {
   argTypes: {
     type: { control: 'select', options: ['text', 'email', 'password', 'number', 'search', 'file'] },
     disabled: { control: 'boolean' },
+    size: { control: 'radio', options: ['default', 'sm'] },
   },
-  args: { type: 'text', placeholder: 'Bedrijfsnaam', disabled: false },
+  args: { type: 'text', placeholder: 'Bedrijfsnaam', disabled: false, size: 'default' },
 } satisfies Meta<typeof Input>;
 
 export default meta;
@@ -22,6 +23,16 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {
   render: (args) => <Input className="w-72" {...args} />,
+};
+
+/** `sm` (36px) is de compacte maat die consumenten tot 2026-09-17 zelf nabouwden. */
+export const Maten: Story = {
+  render: () => (
+    <div className="flex w-72 flex-col gap-3">
+      <Input placeholder="Standaard, 40px" />
+      <Input size="sm" placeholder="sm, 36px" />
+    </div>
+  ),
 };
 
 export const WithLabel: Story = {

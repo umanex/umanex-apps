@@ -3,7 +3,7 @@
   "fileKey": "ko2OuasYxyY2YRD69MYhWX",
   "gegenereerd": "2026-09-17",
   "sets": 11,
-  "varianten": 82,
+  "varianten": 88,
   "gemeten": {
     "Badge": {
       "variant=default, size=default": {
@@ -1100,7 +1100,7 @@
       }
     },
     "Input": {
-      "disabled=false": {
+      "disabled=false, size=default": {
         "h": 40,
         "lay": "HORIZONTAL",
         "pad": [
@@ -1117,8 +1117,42 @@
         "eff": 0,
         "op": 1
       },
-      "disabled=true": {
+      "disabled=true, size=default": {
         "h": 40,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          12,
+          0,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 0.5
+      },
+      "disabled=false, size=sm": {
+        "h": 36,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          12,
+          0,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
+      "disabled=true, size=sm": {
+        "h": 36,
         "lay": "HORIZONTAL",
         "pad": [
           0,
@@ -1350,7 +1384,7 @@
       }
     },
     "Textarea": {
-      "disabled=false": {
+      "disabled=false, size=default": {
         "h": 80,
         "lay": "VERTICAL",
         "pad": [
@@ -1367,7 +1401,7 @@
         "eff": 0,
         "op": 1
       },
-      "disabled=true": {
+      "disabled=true, size=default": {
         "h": 80,
         "lay": "VERTICAL",
         "pad": [
@@ -1383,10 +1417,44 @@
         "strokes": 1,
         "eff": 0,
         "op": 0.5
+      },
+      "disabled=false, size=sm": {
+        "h": 54,
+        "lay": "VERTICAL",
+        "pad": [
+          6,
+          12,
+          6,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
+      "disabled=true, size=sm": {
+        "h": 54,
+        "lay": "VERTICAL",
+        "pad": [
+          6,
+          12,
+          6,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 0.5
       }
     },
     "NativeSelect": {
-      "disabled=false": {
+      "disabled=false, size=default": {
         "h": 40,
         "lay": "HORIZONTAL",
         "pad": [
@@ -1403,8 +1471,42 @@
         "eff": 0,
         "op": 1
       },
-      "disabled=true": {
+      "disabled=true, size=default": {
         "h": 40,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          36,
+          0,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 0.5
+      },
+      "disabled=false, size=sm": {
+        "h": 36,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          36,
+          0,
+          12
+        ],
+        "gap": 0,
+        "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
+      "disabled=true, size=sm": {
+        "h": 36,
         "lay": "HORIZONTAL",
         "pad": [
           0,

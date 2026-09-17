@@ -739,16 +739,28 @@
           "disabled": [
             "false",
             "true"
+          ],
+          "size": [
+            "default",
+            "sm"
           ]
         },
         "varianten": [
           {
-            "name": "disabled=false",
+            "name": "disabled=false, size=default",
             "id": "27:409"
           },
           {
-            "name": "disabled=true",
+            "name": "disabled=true, size=default",
             "id": "27:412"
+          },
+          {
+            "name": "disabled=false, size=sm",
+            "id": "145:94"
+          },
+          {
+            "name": "disabled=true, size=sm",
+            "id": "145:96"
           }
         ]
       },
@@ -940,16 +952,28 @@
           "disabled": [
             "false",
             "true"
+          ],
+          "size": [
+            "default",
+            "sm"
           ]
         },
         "varianten": [
           {
-            "name": "disabled=false",
+            "name": "disabled=false, size=default",
             "id": "95:6"
           },
           {
-            "name": "disabled=true",
+            "name": "disabled=true, size=default",
             "id": "95:8"
+          },
+          {
+            "name": "disabled=false, size=sm",
+            "id": "145:106"
+          },
+          {
+            "name": "disabled=true, size=sm",
+            "id": "145:108"
           }
         ]
       },
@@ -965,16 +989,28 @@
           "disabled": [
             "false",
             "true"
+          ],
+          "size": [
+            "default",
+            "sm"
           ]
         },
         "varianten": [
           {
-            "name": "disabled=false",
+            "name": "disabled=false, size=default",
             "id": "95:12"
           },
           {
-            "name": "disabled=true",
+            "name": "disabled=true, size=default",
             "id": "95:16"
+          },
+          {
+            "name": "disabled=false, size=sm",
+            "id": "145:98"
+          },
+          {
+            "name": "disabled=true, size=sm",
+            "id": "145:102"
           }
         ]
       },

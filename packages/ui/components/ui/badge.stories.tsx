@@ -11,14 +11,32 @@ const meta = {
   },
   argTypes: {
     variant: { control: 'select', options: ['default', 'secondary', 'destructive', 'outline', 'success', 'warning'] },
+    size: { control: 'radio', options: ['default', 'sm'] },
   },
-  args: { children: 'Actief', variant: 'default' },
+  args: { children: 'Actief', variant: 'default', size: 'default' },
 } satisfies Meta<typeof Badge>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+/** `sm` is de compacte maat die consumenten tot 2026-09-17 met `className="text-2xs"` nabouwden. */
+export const Maten: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-3">
+      <Badge>Default</Badge>
+      <Badge size="sm">Default sm</Badge>
+      <Badge variant="outline">Outline</Badge>
+      <Badge variant="outline" size="sm">
+        Outline sm
+      </Badge>
+      <Badge variant="warning" size="sm">
+        wacht op input
+      </Badge>
+    </div>
+  ),
+};
 
 export const Variants: Story = {
   render: () => (

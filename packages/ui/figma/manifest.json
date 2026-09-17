@@ -356,6 +356,14 @@
       "fontSize": 14,
       "lineHeight": 20,
       "letterSpacing": 0
+    },
+    {
+      "name": "sans/2xs-semibold",
+      "family": "Fira Sans",
+      "style": "SemiBold",
+      "fontSize": 11,
+      "lineHeight": 14,
+      "letterSpacing": 0
     }
   ],
   "effectStyles": [
@@ -391,32 +399,60 @@
             "outline",
             "success",
             "warning"
+          ],
+          "size": [
+            "default",
+            "sm"
           ]
         },
         "varianten": [
           {
-            "name": "variant=default",
+            "name": "variant=default, size=default",
             "id": "27:377"
           },
           {
-            "name": "variant=secondary",
+            "name": "variant=secondary, size=default",
             "id": "27:380"
           },
           {
-            "name": "variant=destructive",
+            "name": "variant=destructive, size=default",
             "id": "27:383"
           },
           {
-            "name": "variant=outline",
+            "name": "variant=outline, size=default",
             "id": "27:386"
           },
           {
-            "name": "variant=success",
+            "name": "variant=success, size=default",
             "id": "27:389"
           },
           {
-            "name": "variant=warning",
+            "name": "variant=warning, size=default",
             "id": "27:392"
+          },
+          {
+            "name": "variant=default, size=sm",
+            "id": "144:226"
+          },
+          {
+            "name": "variant=secondary, size=sm",
+            "id": "144:228"
+          },
+          {
+            "name": "variant=destructive, size=sm",
+            "id": "144:230"
+          },
+          {
+            "name": "variant=outline, size=sm",
+            "id": "144:232"
+          },
+          {
+            "name": "variant=success, size=sm",
+            "id": "144:234"
+          },
+          {
+            "name": "variant=warning, size=sm",
+            "id": "144:236"
           }
         ]
       },

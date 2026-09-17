@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** packages/tokens + packages/config + packages/ui (monorepo-niveau)
 - **Klant:** umanex
-- **Status:** gebouwd — ronde 2 verwerkt; wacht op Jeroen (Figma teruggedraaid, naamlijst)
+- **Status:** gebouwd — ronde 2 verwerkt, Figma herbouwd; resteert Jeroens Pull in Tokens Studio na de merge
 
 ---
 
@@ -23,7 +23,7 @@ BEHAVIOUR:   Schaalwaarden = Tailwind v3 1-op-1, dus geen bestaande klasse versc
              op een afwijkende of ontbrekende stap. Rollen zijn CSS-variabelen in :root en worden
              utilities (p-surface, px-control-x, gap-inline, h-control-md). Figma-rolvariabelen zijn
              aliassen naar de schaalvariabele; bestaande variabele-ids blijven.
-CONSTRAINTS: Een rol pas bij ≥ 2 componenten (gemeten), anders een schaalstap. Bulk-route voor
+CONSTRAINTS: Een rol pas bij ≥ 2 componenten met dezelfde maat op een vergelijkbare plek (gemeten), anders een schaalstap. Bulk-route voor
              tokens.json: één PR, Pull in Tokens Studio direct na de merge. Geen next build in de
              hoofdtree. fileKey-guard in elke figma_execute; Desktop Bridge op Component library.
              Handgebouwde nodes herbinden, nooit herbouwen; elke herbinding logt vóór/na.
@@ -33,7 +33,7 @@ CONSTRAINTS: Een rol pas bij ≥ 2 componenten (gemeten), anders een schaalstap.
 
 ## Open vragen
 
-- Naamlijst (code-review ronde 2): `spacing.menu` dient ook de binnenpadding van TabsList, en `spacing.control-x`/`item-y` ook Tooltip en TabsTrigger — zelfde waarde, ander doel. Wie `menu` ruimer maakt, verschuift elke TabsList mee. Houden (rollen als gedeelde maat) of splitsen/hernoemen (rollen als doel)? Na de merge kost hernoemen een tweede `zet-base` plus herbinden in Figma.
+- Geen.
 
 ## Aannames
 
@@ -109,7 +109,7 @@ Bewust géén rol: Button `px-4`/`px-8`, Badge `px-2.5 py-0.5`, menu `pl-8`/`px-
 
 - [x] R1 (P1) — `[schaal]` is rood als een stap uit `Layout/Scale` in Figma Base ontbreekt — bewijs: selftest-case "stap uit Layout/Scale ontbreekt in Figma" (`icon-stroke` weg) rood op [schaal]; figma:check:selftest 28 tegenproeven groen
 - [x] R2 (P1) — de swatch-matrix van `apps/cashflow/scripts/render-screens.tsx` telt alleen kleurrollen, geen layout-rollen — bewijs: CI-log `verify:visual` "✓ 54 rollen" op dd83810 (vóór), "✓ 43 rollen" op c5d1db5 (na) = `hslRoles` + `rawRoles` (43)
-- [ ] R3 (P1) — de keten bindt de hoogte van een element met `h-control-*` aan `size-control-*` — spec: `hVar: Base:size-control-md` ×2 en de toets met tegenproef slaagde; **daarna teruggedraaid in Figma** (DialogContent terug op de kinderen `141:53…` van de vorige bouw, geen height-binding — vermoedelijk een undo in Desktop). Opnieuw bouwen wacht op Jeroen (HANDOFF 2026-09-17)
+- [x] R3 (P1) — de keten bindt de hoogte van een element met `h-control-*` aan `size-control-*` — bewijs: spec `hVar: Base:size-control-md` ×2; na de undo opnieuw gebouwd (kinderen `142:80…`), read-back beide footer-knoppen `h=40 size-control-md`; toets-batch 0 bindingverschillen, eerdere tegenproef `spacing-10` op één knop → 1
 - [x] R4 (P1) — de keten bindt de breedte van een element met `w-control-*` aan `size-control-*` — bewijs: Button tijdelijk uit LEGACY en door de walker: `size=icon` → `h` en `w` = `Base:size-control-md` (40×40), `sm` → `size-control-sm`, `lg` → `size-control-lg`; daarna teruggezet, `figma/` git-schoon. De builder bindt `width` via dezelfde `bind()` als `height` (R3, in Figma gemeten)
 - [x] R5 (P2) — een baseline-regel in de token guard dekt één fragment, niet het hele bestand — bewijs: `mt-[13px]` op dezelfde regel als `pl-[22px]` → rc=1 op [arbitrary-spacing]
 - [x] R6 (P2) — een baseline-regel zonder treffer maakt de token guard rood — bewijs: `pl-[22px]` → `pl-5` → rc=1 op [baseline-verouderd]
@@ -130,7 +130,7 @@ Bewust géén rol: Button `px-4`/`px-8`, Badge `px-2.5 py-0.5`, menu `pl-8`/`px-
 
 - [x] S1 (P2) — het Tokens-blok op een component-docspagina toont de layout-rollen die het component gebruikt — bewijs: gerenderde docs op storybook-static: Button 6 layout-rijen (`spacing.inline`, `size.control-md`, …), Card 2, Badge 0
 - [x] S2 (P2) — `[schaal]` is rood als `icon-stroke` in Figma niet 2 is (lucide tekent op 2, ongeacht het token) — bewijs: selftest-case "icon-stroke 1.5 in token én Figma" rood op [schaal]; zonder de regel bleef hij groen
-- [ ] S3 (P2) — de naamcontrole in `toets-batch` vergelijkt padding en gap alleen op auto-layout-nodes
+- [x] S3 (P2) — de naamcontrole in `toets-batch` vergelijkt padding en gap alleen op auto-layout-nodes — bewijs: spec met `paddingVar` op tekstnode `title`: nieuwe toets 0 verschillen, de versie van 82378a4 meldt "title paddingTop: spec Base:spacing-2, Figma —"
 - [x] S4 (P2) — de naamcontrole in `toets-batch` meldt een ontbrekende variant- of kind-node als verschil — bewijs: spec met een extra kind in de footer → "default>footer>extra: node ontbreekt in Figma"
 - [x] S5 (P3) — `figma-sync-check` herkent een layout-rol met een cijfer in de naam (`size-control-2xl`) — bewijs: zwijg-kant-case groen; met de oude regex vals alarm
 - [x] S6 (P3) — een baseline-regel in de token guard dekt een vast aantal voorkomens; één meer is rood — bewijs: tweede `pl-[22px]` in ReservationSection → rc=1; hersteld rc=0
@@ -155,3 +155,4 @@ Bewust géén rol: Button `px-4`/`px-8`, Badge `px-2.5 py-0.5`, menu `pl-8`/`px-
 - 2026-09-17: radius-stappen buiten deze PR — ze zijn een calc() op één token, geen layout, en uitschrijven wijzigt de CSS-uitvoer van elke app.
 - 2026-09-17: `cn()` uitgebreid met de rol-sleutels — zonder dat wint een className van de consument niet meer van een rol-utility (17 overrides in de apps).
 - 2026-09-17: Figma Base spiegelt de volledige `Layout/Scale` (41 variabelen), niet alleen de gebruikte stappen — dan zegt de dekkingscheck iets over de bron in plaats van over het gebruik.
+- 2026-09-17: naamlijst blijft (besluit Jeroen); een rol is een gedeelde maat op een vergelijkbare plek, geen doel — regel in root-CLAUDE.md en de Layout-docs aangepast.

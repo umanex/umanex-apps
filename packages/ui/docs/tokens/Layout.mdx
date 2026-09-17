@@ -10,8 +10,10 @@ haalt `theme.spacing` en `theme.borderWidth` hieruit, en de tokenbuild faalt als
 ontbreekt of afwijkt. **De layout-rollen** in `Theme/base` wijzen naar een stap en worden
 utilities: `p-surface`, `gap-inline`, `h-control-md`.
 
-Een rol bestaat pas als twee of meer componenten dezelfde waarde voor hetzelfde doel dragen.
-Wat maar één component gebruikt (Button `px-4`, Badge `px-2.5`), blijft een schaalstap.
+Een rol bestaat pas als twee of meer componenten dezelfde maat op een vergelijkbare plek dragen.
+Hij is een gedeelde maat, geen doel: `spacing.menu` is de binnenrand van DropdownMenuContent én
+van TabsList, dus wie hem ruimer maakt, maakt beide ruimer. Wat maar één component gebruikt
+(Button `px-4`, Badge `px-2.5`), blijft een schaalstap.
 
 In Figma staan beide in de collectie `Base`: de schaal als getal, elke rol als alias naar zijn
 stap. `pnpm --filter @umanex/ui figma:check` toetst dat de alias naar dezelfde stap wijst als

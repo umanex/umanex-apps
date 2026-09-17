@@ -41,12 +41,6 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Globaal
 
-## 2026-09-17 — `Button` belooft `asChild` in zijn type en voert het niet uit · [fix]
-- **Wat:** `packages/ui/components/ui/button.tsx` declareert `asChild?: boolean` in `ButtonProps`, maar `Button` destructureert alleen `{ className, variant, size, ...props }` en rendert altijd een `<button>`. `<Button asChild><a href="/">` levert dus een `<a>` ín een `<button>` (ongeldige HTML) plus `asChild` als onbekend DOM-attribuut — en `tsc` keurt het goed. Gevonden in jobradar fase 3: de foutpagina gebruikt daarom `buttonVariants` op een `<a>`.
-- **Waarom niet nu:** gedeeld component; hoort in een bibliotheekbatch, niet in een app-PR over toegankelijkheid.
-- **Eerste zet:** kiezen tussen Radix `Slot` (dan werkt de prop, zoals shadcn hem bedoelt) of de prop uit het type halen. Toets: `grep -rn "asChild" apps packages --include=*.tsx` op `<Button` — elke treffer rendert vandaag een geneste knop.
-- **Status:** open
-
 ## 2026-09-17 — `Sheet` geeft de focus alleen terug aan een `SheetTrigger` · [refactor]
 - **Wat:** Radix Dialog zet de focus bij sluiten terug op zijn trigger. Elk paneel dat via state opent (zonder `SheetTrigger`) valt dan naar `body`. In jobradar fase 3 kregen drie panelen daarom elk een eigen `onOpenAutoFocus`/`onCloseAutoFocus` met opener-ref en terugval (`ContactPanel`, `ActiePanel`, `BeslissingPanel`) — drie kopieën van hetzelfde patroon, en `BeslissingPanel` heeft al geen laatste anker.
 - **Waarom niet nu:** `packages/ui` bleef in fase 3 bewust ongewijzigd; de juiste plek is `SheetContent` zelf (opener onthouden bij openen, terugval-prop), en dat raakt elke consumer.

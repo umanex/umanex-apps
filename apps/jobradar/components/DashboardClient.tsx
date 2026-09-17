@@ -19,6 +19,7 @@ import { ContactPanel } from './ContactPanel'
 import { PlanKoppeling } from './plan/PlanKoppeling'
 import { Button } from '@umanex/ui/components/ui/button'
 import { Checkbox } from '@umanex/ui/components/ui/checkbox'
+import { NativeSelect } from '@umanex/ui/components/ui/native-select'
 import { Label } from '@umanex/ui/components/ui/label'
 import type { SpiegelStaat, KboVermoeden } from '@/lib/kbo/spiegel'
 import {
@@ -741,21 +742,22 @@ export function DashboardClient({
                 <Label htmlFor="prospect-sortering" className="cursor-pointer text-sm">
                   Sorteer
                 </Label>
-                <select
+                <NativeSelect
                   id="prospect-sortering"
                   value={sortering}
+                  size="sm"
                   onChange={(e) => setSortering(e.target.value as Sortering)}
-                  className={cn(
-                    'cursor-pointer rounded-md border bg-background px-2 py-1 text-sm text-foreground',
-                    focusRing
-                  )}
+                  wrapperClassName="w-auto"
+                  className="w-auto cursor-pointer"
                 >
                   <option value="oprichting">Nieuwste eerst</option>
                   <option value="omvang">Grootste eerst</option>
                   <option value="ebitda">Hoogste EBITDA eerst</option>
                   <option value="actie">Volgende actie eerst</option>
-                </select>
-                <p className="text-sm tabular-nums text-muted-foreground">
+                </NativeSelect>
+                {/* Eigen anker: de harness las deze teller als `#prospect-sortering + p`, en sinds de
+                    select uit @umanex/ui komt (met een omhulling) klopte die buur-relatie niet meer. */}
+                <p className="text-sm tabular-nums text-muted-foreground" data-prospects-teller>
                   {prospectBezig || (prospectTotaal === null && !prospectMislukt)
                     ? 'Bezig…'
                     : prospectMislukt || prospectTotaal === null

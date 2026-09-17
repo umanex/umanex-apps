@@ -2,6 +2,8 @@
 
 import { Search, X } from 'lucide-react'
 import { Checkbox } from '@umanex/ui/components/ui/checkbox'
+import { Input } from '@umanex/ui/components/ui/input'
+import { NativeSelect } from '@umanex/ui/components/ui/native-select'
 import { Label } from '@umanex/ui/components/ui/label'
 import { Slider } from '@umanex/ui/components/ui/slider'
 import { cn } from '@umanex/ui/lib/utils'
@@ -60,17 +62,15 @@ export function FilterBar({
           niets om te vertragen. */}
       <div className="relative flex items-center">
         <Search className="pointer-events-none absolute left-2 h-4 w-4 text-muted-foreground" aria-hidden />
-        <input
+        <Input
           ref={veldRef}
           type="search"
+          size="sm"
           value={zoek}
           onChange={(e) => onZoekChange(e.target.value)}
           aria-label="Zoek op titel of bedrijf"
           placeholder="Zoek op titel of bedrijf"
-          className={cn(
-            'w-56 rounded-md border border-input bg-background py-1 pl-8 pr-8 text-sm text-foreground',
-            focusRing
-          )}
+          className="w-56 pl-8 pr-8"
         />
         {zoek && (
           <button
@@ -83,23 +83,20 @@ export function FilterBar({
           </button>
         )}
       </div>
-      <select
+      <NativeSelect
         value={statusFilter}
         aria-label="Status"
+        size="sm"
         onChange={(e) => onStatusFilterChange(e.target.value as StatusFilter)}
-        // `outline-none` zonder vervanging maakte de focus hier onzichtbaar — geen
-        // afwijkende vorm maar helemaal geen indicator (gemeten, ux-audit-vervolg).
-        className={cn(
-          'cursor-pointer rounded-md border bg-background px-2 py-1 text-sm text-foreground',
-          focusRing
-        )}
+        wrapperClassName="w-auto"
+        className="w-auto cursor-pointer"
       >
         {STATUS_OPTIONS.map(({ value, label }) => (
           <option key={value} value={value}>
             {label}
           </option>
         ))}
-      </select>
+      </NativeSelect>
       {alleenNieuw !== null && (
         <div className="flex items-center gap-1.5">
           <Checkbox

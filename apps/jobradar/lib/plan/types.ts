@@ -276,3 +276,17 @@ export type Mutatie<T> =
   | { ok: true; waarde: T }
   | { ok: false; soort: 'ongeldig' | 'onbekend'; reden: string }
   | { ok: false; soort: 'conflict'; reden: string; conflict: PlanConflict }
+
+/**
+ * De jaren die de startkeuze aanbiedt: vier vanaf nu, plus het jaar dat al bewaard staat.
+ *
+ * Tot 2026-09-17 stond die lijst hardcoded op `[2026, 2027, 2028, 2029]`. Twee gaten: in 2030 kon je
+ * de start niet meer kiezen, en een bewaard jaar buiten de lijst verdween stil — de select toonde dan
+ * de eerste optie, niet de waarde. Pure functie, zodat beide gaten in de scenario's toetsbaar zijn:
+ * de klok van de browser is geen meetinstrument.
+ */
+export function jarenVoorStart(nu: number, bewaard?: number): number[] {
+  const venster = [nu, nu + 1, nu + 2, nu + 3]
+  const alles = bewaard && Number.isFinite(bewaard) ? [bewaard, ...venster] : venster
+  return [...new Set(alles)].sort((a, b) => a - b)
+}

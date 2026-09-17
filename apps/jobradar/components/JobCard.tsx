@@ -31,7 +31,7 @@ export function JobCard({ job, isNew, toonBron, onStatusChange }: JobCardProps) 
               {/* Outline en alleen vanaf de scoregrens: de gevulde badge was het luidste element
                   op de kaart, ook op een score 0 (critique 2026-09-17). */}
               {isNew && job.score >= LAGE_SCORE_GRENS && (
-                <Badge variant="outline" className="shrink-0 text-2xs" data-nieuw>
+                <Badge size="sm" variant="outline" className="shrink-0" data-nieuw>
                   nieuw
                 </Badge>
               )}

@@ -13,8 +13,9 @@ const meta = {
   },
   argTypes: {
     disabled: { control: 'boolean' },
+    size: { control: 'radio', options: ['default', 'sm'] },
   },
-  args: { disabled: false, defaultValue: 'workflowtraject' },
+  args: { disabled: false, defaultValue: 'workflowtraject', size: 'default' },
 } satisfies Meta<typeof NativeSelect>;
 
 export default meta;
@@ -36,6 +37,20 @@ export const Playground: Story = {
     <NativeSelect wrapperClassName="w-80" {...args}>
       {aanbod}
     </NativeSelect>
+  ),
+};
+
+/** `sm` (36px) is de compacte maat die consumenten tot 2026-09-17 zelf nabouwden. */
+export const Maten: Story = {
+  render: () => (
+    <div className="flex w-72 flex-col gap-3">
+      <NativeSelect defaultValue="a">
+        <option value="a">Standaard, 40px</option>
+      </NativeSelect>
+      <NativeSelect size="sm" defaultValue="a">
+        <option value="a">sm, 36px</option>
+      </NativeSelect>
+    </div>
   ),
 };
 

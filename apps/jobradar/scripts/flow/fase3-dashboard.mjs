@@ -238,6 +238,9 @@ export default async function (m) {
       continue;
     }
     // Het tabpaneel (Radix: tabIndex 0) en dan Tab: de eerste stop in de eerste kaart hoort de pil te zijn.
+    // Twee pogingen, want de eerste Tab kan vóór de hydratie vallen: dan krijgt de pil wél de focus maar
+    // handelt React het focus-event niet af en blijft de tooltip dicht (gemeten 2026-09-17: run 1 open,
+    // run 2 dicht, zelfde build). Het aantal pogingen staat in de uitvoer — blijft hij dicht, dan is het rood.
     await paneel().focus();
     await page.keyboard.press('Tab');
     const gefocust = await trigger.evaluate((el) => el === document.activeElement);
@@ -255,14 +258,25 @@ export default async function (m) {
       });
     const bevat = (tekst) => opbouw.every(([k, v]) => tekst.includes(k) && tekst.includes(`+${v}`));
     let open = await leesOpen();
-    for (let i = 0; i < 10 && !(open.state !== 'closed' && open.tip && bevat(open.tip)); i++) {
-      await page.waitForTimeout(100);
-      open = await leesOpen();
+    let pogingen = 1;
+    for (let ronde = 0; ronde < 2; ronde++) {
+      for (let i = 0; i < 15 && !(open.state !== 'closed' && open.tip && bevat(open.tip)); i++) {
+        await page.waitForTimeout(100);
+        open = await leesOpen();
+      }
+      if (open.state !== 'closed' && open.tip && bevat(open.tip)) break;
+      if (ronde === 0 && gefocust) {
+        pogingen = 2;
+        await trigger.evaluate((el) => el.blur());
+        await paneel().focus();
+        await page.keyboard.press('Tab');
+        open = await leesOpen();
+      }
     }
     const isOpen = (o) => o.state !== 'closed' && o.tip !== null && bevat(o.tip) && o.zichtbaar === 1 && bevat(o.beeld);
     if (!gefocust) fail(`c10a: Tab vanaf het tabpaneel landt niet op de scorepil van ${soort}kaart ${id} maar op ${waar}`);
     else if (!isOpen(open)) fail(`c10a: de scorepil van ${soort}kaart ${id} heeft de toetsenbordfocus, maar de opbouw is niet open (${JSON.stringify(open)})`);
-    else ok(`c10a: ${soort}kaart ${id}: Tab zet de focus op de scorepil en de opbouw staat open ("${open.beeld.slice(0, 60)}", ${opbouw.length} onderdelen uit de database)`);
+    else ok(`c10a: ${soort}kaart ${id}: Tab zet de focus op de scorepil en de opbouw staat open ("${open.beeld.slice(0, 60)}", ${opbouw.length} onderdelen uit de database, ${pogingen} poging(en))`);
 
     if (!gefocust || !isOpen(open)) {
       fail(`c10c: ${soort}kaart ${id}: de opbouw stond niet open met de toetsenbordfocus — Enter niet te meten, dit meet niets`);
@@ -386,7 +400,7 @@ export default async function (m) {
       await page.getByRole('tab', { name: /^Prospects/ }).click();
       const res = await antwoord;
       await page.waitForTimeout(1_500);
-      const teller = paneel().locator('#prospect-sortering + p');
+      const teller = paneel().locator('[data-prospects-teller]');
       const lees = async () => ({
         teller: (await teller.count()) === 1 ? (await teller.innerText()).trim() : `(${await teller.count()} tellers)`,
         pil: (await page.getByRole('tab', { name: /^Prospects/ }).innerText()).replace(/\s+/g, ' ').trim(),
@@ -469,9 +483,11 @@ export default async function (m) {
   } else {
     // Herkend aan zijn plek (naast de sortering) en aan wat hij is (een toggle), niet aan zijn naam: de
     // naam is juist wat gemeten wordt.
-    const knop = paneel().locator('#prospect-sortering ~ button[aria-pressed]');
+    // Anker op wat de knop zelf draagt, niet op zijn buur: sinds de sortering uit @umanex/ui komt,
+    // zit die in een omhulling en is de `~`-relatie weg (fase 4b, 2026-09-17).
+    const knop = paneel().locator('button[data-weergave][aria-pressed]');
     if ((await knop.count()) !== 1) {
-      for (const k of ['c08', 'c08b', 'c08c']) fail(`${k}: ${await knop.count()} toggles naast de sortering, verwacht 1 — dit meet niets`);
+      for (const k of ['c08', 'c08b', 'c08c']) fail(`${k}: ${await knop.count()} weergave-toggles in het paneel, verwacht 1 — dit meet niets`);
     } else {
       const lees = async () => {
         await page.mouse.move(0, 0);

@@ -6,13 +6,14 @@ import { Button } from '@umanex/ui/components/ui/button'
 import { Label } from '@umanex/ui/components/ui/label'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
-import type { PlanInstellingen } from '@/lib/plan/types'
+import { Input } from '@umanex/ui/components/ui/input'
+import { NativeSelect } from '@umanex/ui/components/ui/native-select'
+import { jarenVoorStart, type PlanInstellingen } from '@/lib/plan/types'
 
 type PlanInstellingenFormProps = {
   begin: PlanInstellingen
 }
 
-const INVOER = 'rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50'
 
 const MAANDEN = [
   'januari', 'februari', 'maart', 'april', 'mei', 'juni',
@@ -103,7 +104,8 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
     }
   }
 
-  const jaren = [2026, 2027, 2028, 2029]
+  // De lijst zelf staat in `lib/plan/types.ts` — pure functie, getoetst in de scenario-suite.
+  const jaren = jarenVoorStart(new Date().getFullYear(), Number(jaar) || undefined)
 
   return (
     <div className="space-y-4">
@@ -113,32 +115,34 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
             Beoogde start
           </Label>
           <div className="flex gap-2">
-            <select
+            <NativeSelect
+              size="sm"
               id="plan-maand"
               value={maand}
               disabled={bezig}
               onChange={(e) => wijzig(setMaand, e.target.value)}
-              className={cn('cursor-pointer', INVOER, focusRing)}
+              className="cursor-pointer"
             >
               {MAANDEN.map((m, i) => (
                 <option key={m} value={String(i + 1).padStart(2, '0')}>
                   {m}
                 </option>
               ))}
-            </select>
-            <select
+            </NativeSelect>
+            <NativeSelect
+              size="sm"
               aria-label="Jaar van de start"
               value={jaar}
               disabled={bezig}
               onChange={(e) => wijzig(setJaar, e.target.value)}
-              className={cn('cursor-pointer tabular-nums', INVOER, focusRing)}
+              className="cursor-pointer tabular-nums"
             >
               {jaren.map((j) => (
                 <option key={j} value={String(j)}>
                   {j}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
         </div>
 
@@ -146,7 +150,8 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
           <Label htmlFor="plan-uren" className="text-2xs">
             Uren per werkdag
           </Label>
-          <input
+          <Input
+            size="sm"
             id="plan-uren"
             type="number"
             min="1"
@@ -155,7 +160,7 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
             value={urenPerDag}
             disabled={bezig}
             onChange={(e) => wijzig(setUrenPerDag, e.target.value)}
-            className={cn('w-20 tabular-nums', INVOER, focusRing)}
+            className="w-20 tabular-nums"
           />
         </div>
 
@@ -163,7 +168,8 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
           <Label htmlFor="plan-focus" className="text-2xs">
             Hoeveel acties tegelijk
           </Label>
-          <input
+          <Input
+            size="sm"
             id="plan-focus"
             type="number"
             min="1"
@@ -172,7 +178,7 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
             value={focusLimiet}
             disabled={bezig}
             onChange={(e) => wijzig(setFocusLimiet, e.target.value)}
-            className={cn('w-20 tabular-nums', INVOER, focusRing)}
+            className="w-20 tabular-nums"
           />
         </div>
       </div>

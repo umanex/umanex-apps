@@ -65,7 +65,7 @@ export function ContactTimeline({
           <div className="flex items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium tabular-nums">{m.datum}</span>
-              <Badge variant="secondary" className="text-2xs">
+              <Badge size="sm" variant="secondary">
                 {KANAAL_LABEL[m.kanaal] ?? m.kanaal}
               </Badge>
             </div>

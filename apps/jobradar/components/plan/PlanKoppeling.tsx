@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
+import { NativeSelect } from '@umanex/ui/components/ui/native-select'
 import type { SubjectType } from '@/lib/db/schema'
 
 type PlanKoppelingProps = {
@@ -158,16 +159,14 @@ export function PlanKoppeling({ type, subjectKey, onChange }: PlanKoppelingProps
             )}
 
             <div className="flex flex-wrap gap-2">
-              <select
+              <NativeSelect
+                size="sm"
                 ref={keuzeRef}
                 aria-label="Actie om aan te koppelen"
                 value={keuze}
                 disabled={bezig || kandidaten.length === 0}
                 onChange={(e) => setKeuze(e.target.value)}
-                className={cn(
-                  'min-w-0 flex-1 cursor-pointer rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50',
-                  focusRing
-                )}
+                className="min-w-0 flex-1 cursor-pointer rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50"
               >
                 <option value="">
                   {kandidaten.length === 0 ? 'Alle acties zijn al gekoppeld.' : 'Kies een actie…'}
@@ -177,7 +176,7 @@ export function PlanKoppeling({ type, subjectKey, onChange }: PlanKoppelingProps
                     {a.key} — {a.titel}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <Button
                 size="sm"
                 variant="outline"

@@ -1,6 +1,6 @@
 {
   "$comment": "Gemeten code-kant. Herschrijf met `pnpm --filter @umanex/ui geometry --write` na een BEDOELDE wijziging.",
-  "stories": 44,
+  "stories": 47,
   "gegenereerd": "2026-09-17",
   "gemeten": {
     "componenten-badge--maten": {
@@ -1124,6 +1124,58 @@
         }
       ]
     },
+    "componenten-input--maten": {
+      "aantal": 4,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 136,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "flex flex-col gap-3 w-72",
+          "h": 88,
+          "w": 288,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "12px",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "input",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-sm flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-md placeholder:text-muted-foreground px-control-x py-control-y ring-offset-background rounded-md text-sm w-full",
+          "h": 40,
+          "w": 288,
+          "padding": "8/12/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "input",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-sm flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-sm placeholder:text-muted-foreground px-control-x py-control-y ring-offset-background rounded-md text-sm w-full",
+          "h": 36,
+          "w": 288,
+          "padding": "8/12/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        }
+      ]
+    },
     "componenten-input--playground": {
       "aantal": 2,
       "elementen": [
@@ -1388,6 +1440,104 @@
           "gap": "",
           "font": "14/14 500",
           "opacity": "0.7"
+        }
+      ]
+    },
+    "componenten-nativeselect--maten": {
+      "aantal": 8,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 136,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "flex flex-col gap-3 w-72",
+          "h": 88,
+          "w": 288,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "12px",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "relative w-full",
+          "h": 40,
+          "w": 288,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "select",
+          "klassen": "appearance-none bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-md peer pl-control-x pr-9 py-control-y ring-offset-background rounded-md text-sm w-full",
+          "h": 40,
+          "w": 288,
+          "padding": "8/36/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "svg",
+          "klassen": "",
+          "h": 16,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "relative w-full",
+          "h": 36,
+          "w": 288,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "select",
+          "klassen": "appearance-none bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-sm peer pl-control-x pr-9 py-control-y ring-offset-background rounded-md text-sm w-full",
+          "h": 36,
+          "w": 288,
+          "padding": "8/36/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "svg",
+          "klassen": "",
+          "h": 16,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
         }
       ]
     },
@@ -2612,6 +2762,58 @@
           "padding": "0/0/0/0",
           "radius": "0px/0px/0px/0px",
           "border": 0,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        }
+      ]
+    },
+    "componenten-textarea--maten": {
+      "aantal": 4,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 194,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "flex flex-col gap-3 w-72",
+          "h": 146,
+          "w": 288,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "12px",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "textarea",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring min-h-20 placeholder:text-muted-foreground px-control-x py-control-y ring-offset-background rounded-md text-sm w-full",
+          "h": 80,
+          "w": 288,
+          "padding": "8/12/8/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
+          "gap": "",
+          "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "textarea",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring min-h-0 placeholder:text-muted-foreground px-control-x py-item-y ring-offset-background rounded-md text-sm w-full",
+          "h": 54,
+          "w": 288,
+          "padding": "6/12/6/12",
+          "radius": "6px/6px/6px/6px",
+          "border": 1,
           "gap": "",
           "font": "14/20 400",
           "opacity": "1"

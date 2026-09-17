@@ -519,7 +519,7 @@ export function ProspectMap({ filter }: ProspectMapProps) {
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-sm font-medium">{p.naam}</span>
                         {p.herkomst === 'lead' && (
-                          <Badge variant="outline" className="shrink-0 text-2xs">
+                          <Badge size="sm" variant="outline" className="shrink-0">
                             vermoeden
                           </Badge>
                         )}

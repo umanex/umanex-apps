@@ -5,6 +5,8 @@ import { Badge } from '@umanex/ui/components/ui/badge'
 import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
+import { Input } from '@umanex/ui/components/ui/input'
+import { NativeSelect } from '@umanex/ui/components/ui/native-select'
 import { PRIORITEIT_LABEL } from '@/lib/plan/seed-inhoud'
 import {
   PRIORITEITEN,
@@ -28,7 +30,6 @@ type IdeeenProps = {
   onOpenActie: (key: string) => void
 }
 
-const INVOER = 'rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50'
 
 /**
  * De ideeënlijst.
@@ -114,7 +115,8 @@ export function Ideeen({
       </p>
 
       <div ref={toevoegenRef} className="flex flex-wrap gap-2">
-        <input
+        <Input
+          size="sm"
           ref={invoerRef}
           type="text"
           aria-label="Nieuw idee"
@@ -123,7 +125,7 @@ export function Ideeen({
           disabled={bezig}
           placeholder="Waar denk je aan?"
           onChange={(e) => setTitel(e.target.value)}
-          className={cn('min-w-0 flex-1', INVOER, focusRing)}
+          className="min-w-0 flex-1"
         />
         <Button
           size="sm"
@@ -153,12 +155,12 @@ export function Ideeen({
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-medium">{i.titel}</span>
                 {i.status === 'opgenomen' && (
-                  <Badge variant="success" className="text-2xs">
+                  <Badge size="sm" variant="success">
                     opgenomen als {i.opgenomenAls}
                   </Badge>
                 )}
                 {i.status === 'verworpen' && (
-                  <Badge variant="outline" className="text-2xs text-muted-foreground">
+                  <Badge size="sm" variant="outline" className="text-muted-foreground">
                     verworpen
                   </Badge>
                 )}
@@ -181,12 +183,13 @@ export function Ideeen({
 
               {opnemen === i.id && (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <select
+                  <NativeSelect
+                    size="sm"
                     aria-label="Prioriteitsgroep"
                     value={prioriteit}
                     disabled={bezig}
                     onChange={(e) => setPrioriteit(e.target.value)}
-                    className={cn('min-w-0 flex-1 cursor-pointer', INVOER, focusRing)}
+                    className="min-w-0 flex-1 cursor-pointer"
                   >
                     <option value="">Kies een prioriteitsgroep…</option>
                     {PRIORITEITEN.map((p) => (
@@ -194,7 +197,7 @@ export function Ideeen({
                         {p}. {PRIORITEIT_LABEL[p]}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                   <Button
                     size="sm"
                     disabled={prioriteit === ''}

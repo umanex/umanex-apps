@@ -463,6 +463,17 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       knop is, telt elke kaart met opbouw één tab-stop meer; de pass stopt na 80 stops en dekt dus minder van `/`.
       **Eerste zet:** het plafond per route instelbaar maken of de pass per tabpaneel laten lopen. (review fase 3, 2026-09-17)
 
+- [ ] `refactor`: **Achttien sectiegrenzen zijn `border-t pt-4` in plaats van `Separator`.** Fase 4b liet ze
+      staan: de rand zit op de sectie zelf en draagt zijn eigen padding, terwijl `Separator` een los element
+      is met eigen marges — omzetten verschuift de ruimte in achttien panelen, en dat was precies wat die fase
+      uitsloot. **Eerste zet:** één sectie omzetten, de hoogte van het paneel vóór en ná meten, en pas bij
+      gelijke maat de rest. (fase 4b, 2026-09-17)
+- [ ] `ui`: **Het chipveld in TermChips blijft een rauwe `<input>`.** Het is een randloze inline-editor binnen
+      een omrande chip-zone; een `Input` zet daar een tweede rand en achtergrond binnen de eerste. Dat is het
+      enige veld van de 47 dat niet uit `@umanex/ui` komt. **Eerste zet:** beslissen of de bibliotheek een
+      "veld zonder schil" kent (zoals shadcn's `Input` in een `InputGroup`), of dat dit bewust app-code blijft.
+      (fase 4b, 2026-09-17)
+
 ## Verworpen
 
 Met reden, want zonder reden komt hetzelfde voorstel over drie maanden terug en begint de

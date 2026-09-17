@@ -1,12 +1,28 @@
 import * as React from 'react';
 import { ChevronDown } from 'lucide-react';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 import { focusRing } from '../../lib/focus';
 
-export type NativeSelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
-  /** Klassen voor de omhulling — daar zet je de breedte. `className` gaat naar de select zelf. */
-  wrapperClassName?: string;
-};
+/** Dezelfde twee maten als `Input`: `default` 40px (`size.control-md`), `sm` 36px (`size.control-sm`). */
+export const nativeSelectVariants = cva(
+  'peer flex w-full appearance-none rounded-md border border-input bg-background py-control-y pl-control-x pr-9 text-sm disabled:cursor-not-allowed disabled:opacity-50',
+  {
+    variants: {
+      size: {
+        default: 'h-control-md',
+        sm: 'h-control-sm',
+      },
+    },
+    defaultVariants: { size: 'default' },
+  }
+);
+
+export type NativeSelectProps = Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> &
+  VariantProps<typeof nativeSelectVariants> & {
+    /** Klassen voor de omhulling — daar zet je de breedte. `className` gaat naar de select zelf. */
+    wrapperClassName?: string;
+  };
 
 /**
  * De keuzelijst van het platform, in de vorm van `Input`.
@@ -16,15 +32,11 @@ export type NativeSelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & 
  * De opties zijn gewone `<option>`-kinderen. Het pijltje is decoratie (`aria-hidden`).
  */
 export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProps>(
-  ({ className, wrapperClassName, children, ...props }, ref) => (
+  ({ className, wrapperClassName, size, children, ...props }, ref) => (
     <div data-slot="native-select-wrapper" className={cn('relative w-full', wrapperClassName)}>
       <select
         data-slot="native-select"
-        className={cn(
-          'peer flex h-control-md w-full appearance-none rounded-md border border-input bg-background py-control-y pl-control-x pr-9 text-sm disabled:cursor-not-allowed disabled:opacity-50',
-          focusRing,
-          className,
-        )}
+        className={cn(nativeSelectVariants({ size }), focusRing, className)}
         ref={ref}
         {...props}
       >

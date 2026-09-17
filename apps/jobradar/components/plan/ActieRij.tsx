@@ -5,6 +5,7 @@ import { Badge } from '@umanex/ui/components/ui/badge'
 import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
+import { Input } from '@umanex/ui/components/ui/input'
 import { PlanStatusPill } from './PlanStatusPill'
 import {
   STATUS_LABEL_INLINE,
@@ -139,17 +140,20 @@ export function ActieRij({
             >
               {actie.titel}
             </button>
+            {/* `whitespace-normal` op deze twee chips: de Badge staat sinds 2026-09-17 op nowrap (een
+                label breekt niet), maar dit zijn zinnen met een actietitel erin. Op 400 px liep /plan
+                daardoor over — gemeten 512 px met plan:probe. */}
             {actie.signalen.map((s) => (
-              <Badge
+              <Badge size="sm"
                 key={`${s.soort}-${s.key}`}
                 variant={s.soort === 'afhankelijkheid_vervallen' ? 'destructive' : 'warning'}
-                className="text-2xs font-normal"
+                className="whitespace-normal font-normal"
               >
                 {s.tekst}
               </Badge>
             ))}
             {herbekijkVerlopen && (
-              <Badge variant="warning" className="text-2xs">
+              <Badge size="sm" variant="warning">
                 herbekijkdatum verstreken
               </Badge>
             )}
@@ -158,17 +162,15 @@ export function ActieRij({
           {variant === 'bezig' && stapBewerken ? (
             <div ref={bewerkRef} className="mt-2 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <input
+                <Input
+                  size="sm"
                   type="text"
                   aria-label={`Volgende stap van ${actie.key}`}
                   value={stap}
                   maxLength={300}
                   disabled={bezig}
                   onChange={(e) => setStap(e.target.value)}
-                  className={cn(
-                    'min-w-0 flex-1 rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50',
-                    focusRing
-                  )}
+                  className="min-w-0 flex-1 rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50"
                 />
                 <Button
                   ref={bewaarRef}
@@ -258,7 +260,7 @@ export function ActieRij({
               {actie.blokkade.map((b) => (
                 <li key={b.key}>
                   {/* Met de titel: "wacht op A05" vroeg je te onthouden wat A05 was. */}
-                  <Badge variant={b.hard ? 'destructive' : 'outline'} className="text-2xs font-normal">
+                  <Badge size="sm" variant={b.hard ? 'destructive' : 'outline'} className="whitespace-normal font-normal">
                     {b.hard
                       ? `${b.key} · ${b.titel} is vervallen — verwijder of vervang de afhankelijkheid`
                       : `wacht op ${b.key} · ${b.titel} (${STATUS_LABEL_INLINE[b.status]})`}

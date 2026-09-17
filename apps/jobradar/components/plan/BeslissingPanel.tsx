@@ -13,6 +13,8 @@ import { Button } from '@umanex/ui/components/ui/button'
 import { Label } from '@umanex/ui/components/ui/label'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
+import { Input } from '@umanex/ui/components/ui/input'
+import { Textarea } from '@umanex/ui/components/ui/textarea'
 import { BESLISMOMENT_LABEL, type BeslissingWeergave } from '@/lib/plan/types'
 
 type BeslissingPanelProps = {
@@ -27,7 +29,6 @@ type BeslissingPanelProps = {
   onHerlaad: () => Promise<boolean>
 }
 
-const INVOER = 'rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50'
 const DATUM_RING =
   'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background'
 
@@ -213,7 +214,7 @@ export function BeslissingPanel({
 
         <section className="space-y-2">
           <h3 className="text-sm font-semibold">Stand</h3>
-          <Badge
+          <Badge size="sm"
             variant={
               beslissing.afgeleid === 'beslist'
                 ? 'success'
@@ -221,7 +222,7 @@ export function BeslissingPanel({
                   ? 'warning'
                   : 'outline'
             }
-            className="text-2xs"
+            
           >
             {BESLISMOMENT_LABEL[beslissing.afgeleid]}
           </Badge>
@@ -233,9 +234,9 @@ export function BeslissingPanel({
                   <li key={key} className="flex items-center gap-2 text-sm">
                     <span className="tabular-nums text-muted-foreground">{key}</span>
                     <span className="min-w-0 truncate">{a?.titel}</span>
-                    <Badge
+                    <Badge size="sm"
                       variant={a?.status === 'gereed' ? 'success' : 'outline'}
-                      className="ml-auto shrink-0 text-2xs"
+                      className="ml-auto shrink-0"
                     >
                       {a?.status === 'gereed' ? 'gereed' : 'nog niet'}
                     </Badge>
@@ -256,55 +257,59 @@ export function BeslissingPanel({
             <Label htmlFor="beslissing-tekst" className="text-2xs">
               Wat heb je besloten?
             </Label>
-            <textarea
+            <Textarea
+              size="sm"
               id="beslissing-tekst"
               rows={2}
               value={tekst}
               maxLength={4000}
               disabled={bezig}
               onChange={(e) => setTekst(e.target.value)}
-              className={cn('w-full', INVOER, focusRing)}
+              className="w-full"
             />
           </div>
           <div className="space-y-1">
             <Label htmlFor="beslissing-datum" className="text-2xs">
               Datum
             </Label>
-            <input
+            <Input
+              size="sm"
               id="beslissing-datum"
               type="date"
               value={datum}
               disabled={bezig}
               onChange={(e) => setDatum(e.target.value)}
-              className={cn(INVOER, DATUM_RING, focusRing)}
+              className={cn(DATUM_RING)}
             />
           </div>
           <div className="space-y-1">
             <Label htmlFor="beslissing-onderbouwing" className="text-2xs">
               Onderbouwing
             </Label>
-            <textarea
+            <Textarea
+              size="sm"
               id="beslissing-onderbouwing"
               rows={3}
               value={onderbouwing}
               maxLength={4000}
               disabled={bezig}
               onChange={(e) => setOnderbouwing(e.target.value)}
-              className={cn('w-full', INVOER, focusRing)}
+              className="w-full"
             />
           </div>
           <div className="space-y-1">
             <Label htmlFor="beslissing-vervolg" className="text-2xs">
               Vervolgacties
             </Label>
-            <textarea
+            <Textarea
+              size="sm"
               id="beslissing-vervolg"
               rows={2}
               value={vervolg}
               maxLength={4000}
               disabled={bezig}
               onChange={(e) => setVervolg(e.target.value)}
-              className={cn('w-full', INVOER, focusRing)}
+              className="w-full"
             />
           </div>
           <Button

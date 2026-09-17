@@ -4,7 +4,8 @@
  *
  * hslRoles    -> hsl(var(--x)); kleuren als HSL-triplet, dus /alpha werkt
  * rawRoles    -> var(--x); kleuren met alpha, die geen triplet kunnen zijn
- * scalarRoles -> var(--x); niet-kleuren (radius, later spacing en type)
+ * scalarRoles -> var(--x); niet-kleuren (radius, layout-rollen spacing-* en size-*)
+ * layoutRoleUtilities -> utility-sleutel → rolnaam (surface → spacing-surface)
  */
 
 export const hslRoles = [
@@ -57,5 +58,30 @@ export const rawRoles = [
 ];
 
 export const scalarRoles = [
-  "radius"
+  "radius",
+  "spacing-surface",
+  "spacing-menu",
+  "spacing-control-x",
+  "spacing-control-y",
+  "spacing-item-y",
+  "spacing-inline",
+  "spacing-stack",
+  "spacing-heading",
+  "size-control-sm",
+  "size-control-md",
+  "size-control-lg"
 ];
+
+export const layoutRoleUtilities = {
+  "surface": "spacing-surface",
+  "menu": "spacing-menu",
+  "control-x": "spacing-control-x",
+  "control-y": "spacing-control-y",
+  "item-y": "spacing-item-y",
+  "inline": "spacing-inline",
+  "stack": "spacing-stack",
+  "heading": "spacing-heading",
+  "control-sm": "size-control-sm",
+  "control-md": "size-control-md",
+  "control-lg": "size-control-lg"
+};

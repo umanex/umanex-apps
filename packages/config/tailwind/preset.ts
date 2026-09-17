@@ -2,8 +2,9 @@ import type { Config } from 'tailwindcss';
 import animate from 'tailwindcss-animate';
 // Gegenereerd door packages/tokens/build.mjs; TypeScript leidt de string[]-types
 // rechtstreeks uit de .mjs af, dus er is geen .d.ts nodig.
-import { hslRoles, rawRoles } from '@umanex/tokens/roles';
+import { hslRoles, rawRoles, layoutRoleUtilities } from '@umanex/tokens/roles';
 import { fontSize, fontWeight, letterSpacing } from '@umanex/tokens/typography';
+import { spacing, borderWidth } from '@umanex/tokens/layout';
 
 /**
  * De gedeelde umanex Tailwind-preset.
@@ -58,11 +59,22 @@ function colorsFromRoles(): ColorMap {
   return colors;
 }
 
+// Layout-rollen als utilities (p-surface, h-control-md). De afleiding rol → sleutel,
+// inclusief de botsingscheck, zit in de tokenbuild; cn() in packages/ui leest dezelfde map.
+const layoutSpacing = Object.fromEntries(
+  Object.entries(layoutRoleUtilities).map(([key, role]) => [key, `var(--${role})`])
+);
+
 const preset: Config = {
   content: [],
   darkMode: ['class'],
   theme: {
+    // Vervangen, niet uitbreiden: de schaal komt uit Layout/Scale. De tokenbuild
+    // garandeert dat elke Tailwind-v3-stap erin staat met zijn default-waarde.
+    spacing,
+    borderWidth,
     extend: {
+      spacing: layoutSpacing,
       colors: colorsFromRoles(),
       borderRadius: {
         lg: 'var(--radius)',

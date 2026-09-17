@@ -81,21 +81,23 @@ export function computeSignals(i: SignalInputs): SignalResult {
     const vloer = thresholds.negativeCash.floor;
     const maand = lowestMonthEnd(i.cash);
     const week = lowestFree(i.cash);
-    if (maand && maand.closingFree < vloer - EPSILON) {
-      const onder = i.cash.monthEnds.filter((m) => m.closingFree < vloer - EPSILON);
+    // Op de Buffer (vrij + bufferpot), het getal van de footer op `/`: een maand waarin het overschot
+    // in de pot landt heeft Vrij op € 0 en is geen tekort.
+    if (maand && maand.buffer < vloer - EPSILON) {
+      const onder = i.cash.monthEnds.filter((m) => m.buffer < vloer - EPSILON);
       add({
         id: 'cash-negatief',
         level: 'kritiek',
-        title: vloer === 0 ? 'Vrije cash wordt negatief' : `Vrije cash onder ${i.money(vloer)}`,
-        detail: `Maandeinde ${onder.map((m) => `${i.monthLabel(m.monthKey)} ${i.money(m.closingFree)}`).join(' · ')}.`,
+        title: vloer === 0 ? 'Buffer wordt negatief' : `Buffer onder ${i.money(vloer)}`,
+        detail: `Maandeinde ${onder.map((m) => `${i.monthLabel(m.monthKey)} ${i.money(m.buffer)}`).join(' · ')}.`,
         href: '/bureau/cash',
       });
     } else if (week && week.closingFree < vloer - EPSILON) {
       add({
         id: 'cash-krap-binnen-maand',
         level: 'info',
-        title: 'Binnen een maand kan vrije cash onder de vloer zakken',
-        detail: `Elk maandeinde blijft erboven, maar met kosten vroeg en inkomsten laat zakt de weektabel tot ${i.money(week.closingFree)} (einde ${i.weekLabel(week.weekKey)}).`,
+        title: 'Binnen een maand kan Vrij onder de vloer zakken',
+        detail: `Elke Buffer op maandeinde blijft erboven, maar met kosten vroeg en inkomsten laat zakt Vrij in de weektabel tot ${i.money(week.closingFree)} (einde ${i.weekLabel(week.weekKey)}).`,
         href: '/bureau/cash',
       });
     }

@@ -20,6 +20,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement as h, type ReactNode } from 'react';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { hslRoles, rawRoles } from '@umanex/tokens/roles';
 
 import { Badge } from '@umanex/ui/components/ui/badge';
 import { Button } from '@umanex/ui/components/ui/button';
@@ -52,9 +53,11 @@ const themeCss = readFileSync(`${ROOT}../../packages/tokens/build/theme.css`, 'u
 const rootBlok = themeCss.slice(themeCss.indexOf(':root {'), themeCss.indexOf('.dark {'));
 const ROLLEN = [...rootBlok.matchAll(/--([a-z0-9-]+):/g)]
   .map((m) => m[1])
-  // radius is geen kleur en heeft geen swatch. De type-guard is nodig omdat een
-  // regex-capture `string | undefined` oplevert.
-  .filter((n): n is string => n !== undefined && n !== 'radius');
+  // Alleen kleurrollen krijgen een swatch, uit de positieve lijst van de tokenbuild. Een
+  // zwarte lijst (eerst `radius`, daarna scalarRoles) liet elke nieuwe niet-kleur als kapotte
+  // `hsl(var(--x))`-swatch binnen — de layout-rollen deden dat op 2026-09-17.
+  // De type-guard is nodig omdat een regex-capture `string | undefined` oplevert.
+  .filter((n): n is string => n !== undefined && (hslRoles.includes(n) || rawRoles.includes(n)));
 
 // Rollen die een tekstkleur zijn, niet een vlak — die tonen we als letter op de
 // achtergrond in plaats van als gevuld blokje.
@@ -175,12 +178,12 @@ const Inhoud = () => h('div', null,
 
   h(Sectie, { titel: 'BalanceFooter — opbouw, ankermaand zonder bedrag, negatieve stand, geen buffer', kind:
     h('div', { className: 'grid grid-cols-2 gap-3 max-w-3xl' },
-      h('div', null, h(BalanceFooter, { movement: 500, position: 4074.62, hasBuffer: true, isAnchor: false })),
-      h('div', null, h(BalanceFooter, { movement: -900, position: 120, hasBuffer: true, isAnchor: true })),
+      h('div', null, h(BalanceFooter, { movement: 500, position: 4074.62, bufferPot: 4074.62, hasBuffer: true, isAnchor: false })),
+      h('div', null, h(BalanceFooter, { movement: -900, position: 120, bufferPot: 120, hasBuffer: true, isAnchor: true })),
       // De stand die het model tot 2026-09-06 als "€ 0,00" met een aparte regel
       // "Niet gedekt" toonde: de pot is leeg en het tekort staat in het vrije saldo.
-      h('div', null, h(BalanceFooter, { movement: -900, position: -780.25, hasBuffer: true, isAnchor: false })),
-      h('div', null, h(BalanceFooter, { movement: 0, position: 0, hasBuffer: false, isAnchor: false }))) }),
+      h('div', null, h(BalanceFooter, { movement: -900, position: -780.25, bufferPot: 0, hasBuffer: true, isAnchor: false })),
+      h('div', null, h(BalanceFooter, { movement: 0, position: 0, bufferPot: 0, hasBuffer: false, isAnchor: false }))) }),
 
   h(Sectie, { titel: 'RunwayCard — te weinig data, gezond, krap, geen tekort, negatief', kind:
     h('div', { className: 'grid grid-cols-2 gap-3 max-w-3xl' },
@@ -205,7 +208,7 @@ const Inhoud = () => h('div', null,
   h(Sectie, { titel: 'Bureau — SignalList: vier niveaus, en leeg met uitgeschakelde signalen', kind:
     h('div', { className: 'space-y-3 max-w-3xl' },
       h(SignalList, { result: { disabled: [], signals: [
-        { id: 'k', level: 'kritiek', title: 'Vrije cash wordt negatief', detail: 'Laagste stand −€ 1.240, einde week 44.', href: '/bureau/cash' },
+        { id: 'k', level: 'kritiek', title: 'Buffer wordt negatief', detail: 'Laagste stand −€ 1.240, einde week 44.', href: '/bureau/cash' },
         { id: 'l', level: 'let-op', title: 'Klant boven de klantlimiet', detail: '41 % van de vooruitblik, limiet 30 %.', href: '/bureau/klanten' },
         { id: 'o', level: 'onzeker', title: '2 projecten zonder urenraming', detail: 'Uitloop en rendement zijn daar niet te toetsen.', href: '/bureau/projecten' },
         { id: 'i', level: 'info', title: '1 open kans zonder volgende actie', detail: 'Zonder volgende stap valt een kans stil weg.', href: '/bureau/verkoop' },

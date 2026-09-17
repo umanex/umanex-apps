@@ -30,7 +30,7 @@ export const ThemeToggle = () => {
       data-slot="theme-toggle"
       onClick={toggle}
       aria-label={isDark ? 'Schakel naar light mode' : 'Schakel naar dark mode'}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex h-control-md w-control-md items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {/* render pas na mount om hydration mismatch met het theme-init script te vermijden */}
       {isDark === null ? null : isDark ? (

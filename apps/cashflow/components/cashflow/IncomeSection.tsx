@@ -195,7 +195,10 @@ export function IncomeSection({
   return (
     <div className="flex flex-col gap-2 w-full">
       <SectionBar
-        label="Inkomsten"
+        // De kop telt het saldo mee dat eronder als eerste regel staat; zonder die regel is het
+        // puur inkomsten. Zo leest "+€ 24.300,75" niet als inkomsten naast de waterval die
+        // alleen de maandinkomsten "Inkomsten" noemt.
+        label={showStartBalance ? 'Saldo + inkomsten' : 'Inkomsten'}
         amount={amount}
         direction="in"
         onAdd={() => setAdding(true)}

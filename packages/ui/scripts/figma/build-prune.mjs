@@ -28,11 +28,12 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FILE_KEY, LEGACY, kebab } from './doel.mjs';
+import { gapRol } from './layout-rollen.mjs';
 
 const UI = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BASE = JSON.parse(readFileSync(join(UI, 'figma/manifest.json'), 'utf8')).collections.Base.variables;
 /** Een spacing-waarde die exact een stap van de schaal is, bindt — ook als ze uit een marge komt. */
-const spacingVar = v => { const naam = 'spacing-' + String(v / 4).replace('.', '_'); return BASE[naam] === v ? `Base:${naam}` : null; };
+const spacingVar = v => { const naam = v === 1 ? 'spacing-px' : 'spacing-' + String(v / 4).replace('.', '_'); return BASE[naam] === v ? `Base:${naam}` : null; };
 const spec = JSON.parse(readFileSync(join(UI, 'figma/build-spec.json'), 'utf8'));
 if (spec.walkerVersie !== 3 || spec.adapter !== 'dom-tailwind') {
   console.error(`figma/build-spec.json draagt walkerVersie ${spec.walkerVersie} / adapter ${spec.adapter} — deze pas eist 3 / dom-tailwind`);
@@ -133,9 +134,19 @@ function snoei(node, diepte, pad, comp, isWortel = false) {
   // `space-y-1.5` levert 6 = spacing-1_5. Uit twee bronnen opgeteld is hij dat niet meer.
   if (node.gap || M.gap) {
     o.gap = r2((node.gap ?? 0) + M.gap);
-    const gv = !M.gap ? node.gapVar : (!node.gap ? spacingVar(M.gap) : null);
+    // `space-y-heading` komt als marge binnen; de klasse op de ouder zegt welke rol dat is.
+    const margeRol = gapRol(node.klassen ?? [], [node.richting === 'row' ? 'space-x' : 'space-y']);
+    // Noemt de klasse een rol maar wijkt de marge af, dan is dat een melding in ongebonden.json
+    // (de [binding]-ratel wordt rood), geen stille binding op de stap met dezelfde waarde.
+    if (margeRol && BASE[margeRol] !== M.gap) {
+      spec.ongebonden.push(`${comp} ${pad || 'wortel'}: ${margeRol} (${BASE[margeRol]}) ≠ marge ${M.gap}`);
+    }
+    const margeVar = margeRol ? (BASE[margeRol] === M.gap ? `Base:${margeRol}` : null) : spacingVar(M.gap);
+    const gv = !M.gap ? node.gapVar : (!node.gap ? margeVar : null);
     if (gv) o.gapVar = gv;
   }
+  if (node.hoogteVar) o.hVar = node.hoogteVar;
+  if (node.breedteVar) o.wVar = node.breedteVar;
   if (node.justify && !['normal', 'flex-start', 'start'].includes(node.justify)) o.justify = node.justify;
   if (node.align && !['normal', 'stretch'].includes(node.align)) o.align = node.align;
   if (node.omgekeerd) o.omgekeerd = true;

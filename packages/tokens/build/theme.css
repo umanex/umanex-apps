@@ -49,6 +49,17 @@
   --finance-total: 220 43% 11%;
   --overlay-scrim: rgba(10, 10, 10, 0.5);
   --radius: 0.5rem;
+  --spacing-surface: 1.5rem;
+  --spacing-menu: 0.25rem;
+  --spacing-control-x: 0.75rem;
+  --spacing-control-y: 0.5rem;
+  --spacing-item-y: 0.375rem;
+  --spacing-inline: 0.5rem;
+  --spacing-stack: 1rem;
+  --spacing-heading: 0.375rem;
+  --size-control-sm: 2.25rem;
+  --size-control-md: 2.5rem;
+  --size-control-lg: 2.75rem;
 }
 
 .dark {

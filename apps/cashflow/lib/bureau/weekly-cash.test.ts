@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { IncomeItem, MonthData } from '../cashflow/types.ts';
-import { buildWeeklyCashPlan, lowestFree, lowestMonthEnd, verifyReconciliation, type WeeklyCashPlan } from './weekly-cash.ts';
+import { buildWeeklyCashPlan, lowestFree, lowestMonthEnd, reservedAtStart, verifyReconciliation, type WeeklyCashPlan } from './weekly-cash.ts';
 import { defaultGoals } from './goals.ts';
+import { round2 } from './money.ts';
 import { emptyBureau } from './normalize.ts';
+import { lastWeekOfMonth, weekRange } from './periods.ts';
 import { invoice, month, pot, project, subtotals } from './testing.ts';
 import type { BureauData, Invoice } from './types.ts';
 
@@ -30,7 +32,7 @@ function scenario(over: { invoices?: Invoice[]; extraIncome?: IncomeItem[]; bure
     incomeItems: maartPosten,
     reservationPots: [
       pot({ reservationId: 'provisie', deferredFromPrevious: 3_000, provisionThisMonth: 500 }),
-      pot({ reservationId: 'buffer', deferredFromPrevious: 1_000, provisionThisMonth: 200, isDeficitBuffer: true }),
+      pot({ reservationId: 'buffer', deferredFromPrevious: 1_000, provisionThisMonth: 200, potBalance: 1_200, isDeficitBuffer: true }),
     ],
     subtotals: subtotals({ basis: 'bank', incoming: 10_000 + maartIn, recurring: 2_500, oneOff: 300, budgets: 400, provisions: 3_500, buffer: 1_200 }),
   });
@@ -91,7 +93,7 @@ test('reconciliatie-tegenproef: één cent in één week is al een verschil', ()
 
 test('reserveringen gaan in de ankermaand één keer af: vrij bij de start = bank − potstand', () => {
   const { plan } = scenario();
-  assert.deepEqual(plan.position, { bank: 10_000, reserved: 4_000, free: 6_000 });
+  assert.deepEqual(plan.position, { bank: 10_000, reserved: 4_000, provisions: 3_000, buffer: 1_000, free: 6_000 });
   const w10 = week(plan, '2027-W10');
   assert.equal(w10.openingFree, 6_000);
   assert.equal(w10.outflows, 3_200, 'vast, eenmalig en budget van maart, naar deze week want de eerste week van maart is voorbij');
@@ -183,12 +185,12 @@ test('maandeinden: de eindsaldi van de rekenkern, alleen voor maanden die binnen
   const { plan, months } = scenario();
   // Horizon W10–W22 eindigt op zondag 6 juni 2027: juni valt erbuiten, ook al begint hij erin.
   assert.deepEqual(plan.monthEnds, [
-    { monthKey: '2027-03', closingFree: 8_940 },
-    { monthKey: '2027-04', closingFree: 6_340 },
-    { monthKey: '2027-05', closingFree: 3_840 },
+    { monthKey: '2027-03', closingFree: 8_940, bufferPot: 1_200, buffer: 10_140 },
+    { monthKey: '2027-04', closingFree: 6_340, bufferPot: 0, buffer: 6_340 },
+    { monthKey: '2027-05', closingFree: 3_840, bufferPot: 0, buffer: 3_840 },
   ]);
   assert.deepEqual(plan.monthEnds.map((m) => m.closingFree), months.slice(0, 3).map((m) => m.endBalance));
-  assert.deepEqual(lowestMonthEnd(plan), { monthKey: '2027-05', closingFree: 3_840 });
+  assert.deepEqual(lowestMonthEnd(plan), { monthKey: '2027-05', closingFree: 3_840, bufferPot: 0, buffer: 3_840 });
 });
 
 test('kopgetal en weektabel verschillen: de week trekt de kosten van een maand vóór haar inkomsten mee', () => {
@@ -215,4 +217,180 @@ test('horizongrens: een maand die precies op de laatste zondag eindigt, telt mee
   const plan = buildWeeklyCashPlan({ asOf, months, incomeItems: [], bureau: emptyBureau() });
   assert.equal(plan.weeks.at(-1)!.to, '2027-01-31');
   assert.deepEqual(plan.monthEnds.map((m) => m.monthKey), ['2026-11', '2026-12', '2027-01']);
+});
+
+/**
+ * Bufferpot die in de ankermaand een tekort dekt (stap 0, 2026-09-17). Gemeten op het echte document:
+ * "In potten" op /bureau/cash (16.043) en de Provisies-kop van de Prognose (18.521) verschillen met
+ * exact de bufferstand bij de start (3.284). Een definitieverschil, geen dubbeltelling:
+ *
+ *   In potten      = provisiestand + bufferstand          (reservedAtStart)
+ *   Provisies-kop  = provisiestand + stortingen deze maand (subtotals.provisions)
+ *
+ * (a) is een eigen assert omdat `engineMovement` en de geplaatste regels allebei aan `reservedAtStart`
+ * hangen: laat je de bufferpot eruit, dan verschuiven ze samen en blijft `verifyReconciliation` leeg.
+ * De bestaande scenario's laten de buffer alleen groeien; een bufferregel die nooit negatief wordt,
+ * valt pas hier om.
+ *
+ * Handgerekend, vandaag woensdag 13 januari 2027 (W02). Januari en februari 2027 eindigen op een
+ * zondag (W04, W08), dus de laatste week van elke maand sluit precies op het maandeinde.
+ * Januari (anker, bank 10.000): losse post 1.500 · vast 7.500 · budget 500 · provisiepot 3.000 stand
+ * + 800 · bufferpot 2.000 stand. De sweep neemt de hele pot op, 300 blijft ongedekt: eindsaldo −300.
+ * De opname valt in de week van het tekort, bij de kosten (beslissing 2026-09-17).
+ * Februari: post 9.000, vast 2.500, provisie 800 → 5.400 over, dat de buffer opbouwt → 0.
+ */
+const ASOF_BUFFER = '2027-01-13';
+const ANKER = '2027-01';
+const PROVISIESTAND = 3_000;
+const BUFFERSTAND = 2_000;
+
+function bufferScenario() {
+  const post = (id: string, monthKey: string, amount: number): IncomeItem => ({ id, monthKey, label: id, amount, received: false });
+  const janPost = post('post-jan', '2027-01', 1_500);
+  const febPost = post('post-feb', '2027-02', 9_000);
+
+  const januari: MonthData = month('2027-01', {
+    startBalance: 10_000,
+    totalIncome: 1_500,
+    incomeItems: [janPost],
+    reservationPots: [
+      pot({ reservationId: 'provisie', deferredFromPrevious: PROVISIESTAND, provisionThisMonth: 800, potBalance: 3_800 }),
+      // De sweep heeft de pot leeggehaald: storting = −stand, eindstand 0, geen kost.
+      pot({ reservationId: 'buffer', deferredFromPrevious: BUFFERSTAND, provisionThisMonth: -BUFFERSTAND, potBalance: 0, isDeficitBuffer: true, autoContribution: -BUFFERSTAND }),
+      // Een budget draagt geen stand: het mag nooit in "In potten" belanden.
+      pot({ reservationId: 'budget', potType: 'maandelijks_budget', provisionThisMonth: 500, potBalance: 500 }),
+    ],
+    subtotals: subtotals({ basis: 'bank', incoming: 11_500, recurring: 7_500, budgets: 500, provisions: PROVISIESTAND + 800, buffer: 0 }),
+  });
+  const februari: MonthData = month('2027-02', {
+    startBalance: januari.endBalance,
+    totalIncome: 9_000,
+    incomeItems: [febPost],
+    subtotals: subtotals({ basis: 'vrij', incoming: januari.endBalance + 9_000, recurring: 2_500, provisions: 800, buffer: 5_400 }),
+  });
+  const months = [januari, februari];
+  const plan = buildWeeklyCashPlan({ asOf: ASOF_BUFFER, months, incomeItems: [janPost, febPost], bureau: emptyBureau() });
+  return { plan, months };
+}
+
+/**
+ * De drie uitspraken als één meetfunctie, zodat de test en de tegenproef exact hetzelfde meten.
+ * Leeg = alles sluit aan; anders per uitspraak de naam en het verschil.
+ */
+function aansluiting(plan: WeeklyCashPlan, anker: MonthData): Array<{ check: string; delta: number }> {
+  const out: Array<{ check: string; delta: number }> = [];
+  const noteer = (check: string, actual: number, expected: number) => {
+    const delta = round2(actual - expected);
+    if (delta !== 0) out.push({ check, delta });
+  };
+  const laatste = lastWeekOfMonth(anker.monthKey);
+  const week = plan.weeks.find((w) => w.weekKey === laatste);
+  const bufferRegels = plan.weeks.flatMap((w) => w.lines.map((l) => ({ w: w.weekKey, l }))).filter(({ l }) => l.monthKey === anker.monthKey && l.source === 'buffer');
+
+  // (a) In potten = provisiestand + bufferstand — tegen de handgerekende standen, niet tegen reservedAtStart.
+  noteer('a:in-potten', plan.position.reserved, PROVISIESTAND + BUFFERSTAND);
+  noteer('a:vrij', plan.position.free, anker.startBalance - PROVISIESTAND - BUFFERSTAND);
+  // Het weekmodel trekt stand + nieuwe provisie af; de Prognose-kop is stand + storting. Het verschil is de bufferstand.
+  const provisieRegel = plan.weeks.flatMap((w) => w.lines).find((l) => l.monthKey === anker.monthKey && l.source === 'provisies')?.amount ?? 0;
+  noteer('a:verschil-met-prognosekop', plan.position.reserved - provisieRegel - anker.subtotals.provisions, BUFFERSTAND);
+
+  // (b) De bufferstand komt terug in de week van het tekort — de eerste week van de ankermaand, bij de
+  // kosten — en de laatste week sluit op het maandeinde.
+  noteer('b:bufferregel-aantal', bufferRegels.length, 1);
+  noteer('b:bufferregel-bedrag', bufferRegels[0]?.l.amount ?? 0, BUFFERSTAND - anker.subtotals.buffer);
+  noteer('b:bufferregel-in-eerste-week', bufferRegels.filter(({ w }) => w === plan.weeks[0]?.weekKey).length, 1);
+  noteer('b:laatste-week-sluit-op-maandeinde', week?.closingFree ?? Number.NaN, anker.endBalance);
+
+  // (c) De weken tellen per maand op tot de rekenkern.
+  for (const r of verifyReconciliation(plan)) out.push({ check: `c:reconciliatie:${r.monthKey}`, delta: r.delta });
+  return out;
+}
+
+test('bufferpot met stand en tekort in de ankermaand: in potten, bufferregel en reconciliatie sluiten aan', () => {
+  const { plan, months } = bufferScenario();
+  const [januari] = months;
+  // Voorwaarde van het scenario: de laatste week van januari eindigt op 31 januari.
+  assert.equal(weekRange(lastWeekOfMonth(ANKER)).to, '2027-01-31');
+  assert.deepEqual(reservedAtStart(januari!), { provisions: PROVISIESTAND, buffer: BUFFERSTAND }, 'het budget telt niet mee');
+  assert.deepEqual(plan.position, { bank: 10_000, reserved: 5_000, provisions: PROVISIESTAND, buffer: BUFFERSTAND, free: 5_000 });
+  assert.deepEqual(aansluiting(plan, januari!), []);
+  // De maandbewegingen zelf, handgerekend: januari −300 − (10.000 − 5.000); februari 0 − (−300).
+  assert.deepEqual(plan.reconciliation.map((r) => [r.monthKey, r.engineMovement, r.delta]), [
+    ['2027-01', -5_300, 0],
+    ['2027-02', 300, 0],
+  ]);
+});
+
+test('timing (beslissing 2026-09-17): de opname uit de bufferpot valt in de week van het tekort', () => {
+  // Tot deze datum kwam de pot pas in de laatste week vrij, en stonden W02 en W03 op −3.800 terwijl
+  // de rekenkern hem in dezelfde maand al gebruikt. Nu dekt hij het tekort in de week dat het ontstaat:
+  // 5.000 vrij − 8.800 kosten + 2.000 uit de pot = −1.800, tot de losse post van 1.500 in W04 binnenkomt.
+  // Het verschil met vroeger is precies de bufferstand.
+  const { plan } = bufferScenario();
+  const einde = Object.fromEntries(plan.weeks.slice(0, 3).map((w) => [w.weekKey, w.closingFree]));
+  assert.deepEqual(einde, { '2027-W02': -1_800, '2027-W03': -1_800, '2027-W04': -300 });
+});
+
+/**
+ * Kopgetal op de Buffer, niet op Vrij. Januari: alles wat overblijft landt in de bufferpot, dus Vrij
+ * € 0 en Buffer € 1.000. Februari: geen pot, Vrij en Buffer € 100. Het laagste punt is februari;
+ * op Vrij gerekend zou het januari zijn — de maand waarin het er het best voor staat.
+ */
+function potVolScenario() {
+  const januari = month('2027-01', {
+    startBalance: 1_000,
+    reservationPots: [pot({ reservationId: 'buffer', isDeficitBuffer: true, provisionThisMonth: 1_000, potBalance: 1_000 })],
+    subtotals: subtotals({ basis: 'bank', incoming: 1_000, buffer: 1_000 }),
+  });
+  const februari = month('2027-02', { startBalance: 0, totalIncome: 100, subtotals: subtotals({ basis: 'vrij', incoming: 100 }) });
+  return buildWeeklyCashPlan({ asOf: ASOF_BUFFER, months: [januari, februari], incomeItems: [], bureau: emptyBureau() });
+}
+
+test('maandeinden dragen Vrij én Buffer; het laagste punt kiest op de Buffer', () => {
+  const plan = potVolScenario();
+  assert.deepEqual(plan.monthEnds, [
+    { monthKey: '2027-01', closingFree: 0, bufferPot: 1_000, buffer: 1_000 },
+    { monthKey: '2027-02', closingFree: 100, bufferPot: 0, buffer: 100 },
+  ]);
+  assert.equal(lowestMonthEnd(plan)?.monthKey, '2027-02');
+});
+
+test('tegenproef: op Vrij gerekend wijst het laagste punt de maand met de volle pot aan', () => {
+  const plan = potVolScenario();
+  const opVrij = plan.monthEnds.reduce((min, m) => (m.closingFree < min.closingFree ? m : min));
+  assert.equal(opVrij.monthKey, '2027-01', 'het scenario onderscheidt Vrij van Buffer');
+  assert.notEqual(opVrij.monthKey, lowestMonthEnd(plan)?.monthKey);
+});
+
+test('tegenproef: één cent verschil op elke uitspraak wordt gezien, en alleen die', () => {
+  const { plan, months } = bufferScenario();
+  const januari = months[0]!;
+  const laatste = lastWeekOfMonth(ANKER);
+
+  // (a) één cent meer in potten.
+  const a: WeeklyCashPlan = { ...plan, position: { ...plan.position, reserved: plan.position.reserved + 0.01 } };
+  assert.deepEqual(aansluiting(a, januari).map((x) => [x.check, x.delta]), [
+    ['a:in-potten', 0.01],
+    ['a:verschil-met-prognosekop', 0.01],
+  ]);
+
+  // (b) de laatste week sluit één cent naast het maandeinde.
+  const b: WeeklyCashPlan = { ...plan, weeks: plan.weeks.map((w) => (w.weekKey === laatste ? { ...w, closingFree: w.closingFree - 0.01 } : w)) };
+  assert.deepEqual(aansluiting(b, januari).map((x) => [x.check, x.delta]), [['b:laatste-week-sluit-op-maandeinde', -0.01]]);
+
+  // (c) één cent in één week van januari.
+  const c: WeeklyCashPlan = { ...plan, reconciliation: plan.reconciliation.map((r) => (r.monthKey === ANKER ? { ...r, placed: r.placed + 0.01, delta: round2(r.delta - 0.01) } : r)) };
+  assert.deepEqual(aansluiting(c, januari).map((x) => [x.check, x.delta]), [['c:reconciliatie:2027-01', -0.01]]);
+});
+
+test('tegenproef: een bufferstand die één cent naast de handwaarde ligt, ziet alleen (a) — de reconciliatie is er blind voor', () => {
+  const { months } = bufferScenario();
+  const [januari, februari] = months;
+  const scheef: MonthData = {
+    ...januari!,
+    reservationPots: januari!.reservationPots.map((p) => (p.isDeficitBuffer ? { ...p, deferredFromPrevious: BUFFERSTAND + 0.01 } : p)),
+  };
+  const plan = buildWeeklyCashPlan({ asOf: ASOF_BUFFER, months: [scheef, februari!], incomeItems: [...scheef.incomeItems, ...februari!.incomeItems], bureau: emptyBureau() });
+  assert.deepEqual(verifyReconciliation(plan), [], 'engineMovement en de regels verschuiven samen');
+  assert.deepEqual(aansluiting(plan, scheef).map((x) => x.check), ['a:in-potten', 'a:vrij', 'a:verschil-met-prognosekop', 'b:bufferregel-bedrag']);
 });

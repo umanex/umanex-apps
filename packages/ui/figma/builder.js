@@ -196,7 +196,8 @@ const J = { center: 'CENTER', 'space-between': 'SPACE_BETWEEN', 'flex-end': 'MAX
 const A = { center: 'CENTER', 'flex-end': 'MAX', end: 'MAX', 'flex-start': 'MIN', start: 'MIN', baseline: 'BASELINE', normal: null, stretch: null };
 const VELDEN_BINDBAAR = ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'itemSpacing',
   'topLeftRadius', 'topRightRadius', 'bottomRightRadius', 'bottomLeftRadius',
-  'strokeWeight', 'strokeTopWeight', 'strokeRightWeight', 'strokeBottomWeight', 'strokeLeftWeight'];
+  'strokeWeight', 'strokeTopWeight', 'strokeRightWeight', 'strokeBottomWeight', 'strokeLeftWeight',
+  'width', 'height'];
 
 async function maakTekst(n, pad) {
   const t = figma.createText();
@@ -284,6 +285,9 @@ async function maak(n, pad, doel = null) {
     bind(f, 'itemSpacing', n.gapVar, pad);
   } else f.layoutMode = 'NONE';
   f.resize(Math.max(0.01, n.w), Math.max(0.01, n.h));
+  // Een maat met een layout-rol (h-control-md) bindt aan size-control-md; zonder rol blijft hij een getal.
+  bind(f, 'height', n.hVar, pad);
+  bind(f, 'width', n.wVar, pad);
 
   f.fills = n.bg ? [verf(n.bg, n.bgVar, n.bgVar ? n.bgOp : n.bg.a, pad, 'achtergrond')] : [];
   if (n.border) {

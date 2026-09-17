@@ -299,9 +299,9 @@ function volFixture(doelen, project) {
   };
 }
 
-function fixtureData({ leeg = false, buffer = false, bureau = null, tekort = false } = {}) {
+function fixtureData({ leeg = false, buffer = false, bureau = null, tekort = false, labels = false } = {}) {
   const b = bureauFixture(bureau);
-  const doc = prognoseFixture({ leeg, buffer });
+  const doc = prognoseFixture({ leeg, buffer, labels });
   // `tekort`: een negatief banksaldo, zodat de prognose al in de ankermaand onder nul eindigt.
   if (tekort) doc.referenceBalance = -250;
   if (bureau?.startsWith('cash') || bureau === 'vol') {
@@ -313,7 +313,7 @@ function fixtureData({ leeg = false, buffer = false, bureau = null, tekort = fal
   return b ? { ...doc, bureau: b } : doc;
 }
 
-function prognoseFixture({ leeg = false, buffer = false } = {}) {
+function prognoseFixture({ leeg = false, buffer = false, labels = false } = {}) {
   // De buffer-variant zet één bufferpot en één kost die de pot ver overstijgt, zodat de
   // maandfooter alle drie zijn standen laat zien: opbouw, stilstand, en een stand die
   // negatief staat. Zonder die derde stand kan geen enkele check onderscheiden of de
@@ -348,15 +348,35 @@ function prognoseFixture({ leeg = false, buffer = false } = {}) {
     referenceMonth: BRON,
     historyStartMonth: BRON,
     balanceOverrides: [],
-    expenseItems: leeg ? [] : [{ id: 'harness-1', monthKey: BRON, label: LABEL, amount: AMOUNT, paid: false }],
+    // `labels`: wat alleen met afgewerkte of gesplitste posten rendert en tot 2026-09-17 met
+    // opacity werd uitgedoofd — "Budget:" in de ankermaand, "Betaald · Provisie · Cash" onder de
+    // pot, de afgeleide uitgave "– resterend" in de maand erna, en achter de filter "Alle" een
+    // betaalde uitgave, een betaalde vaste kost en een gefinaliseerde pot. Zonder deze fixture
+    // kon de sweep ze nooit meten, hoe goed het instrument ook was.
+    expenseItems: leeg
+      ? []
+      : [
+          { id: 'harness-1', monthKey: BRON, label: LABEL, amount: AMOUNT, paid: false },
+          ...(labels ? [{ id: 'harness-betaald', monthKey: BRON, label: 'Harnas betaald', amount: 42, paid: true }] : []),
+        ],
     incomeItems: [],
-    recurringItems: [],
-    recurringSettlements: [],
-    reservationSettlements: [],
+    recurringItems: labels ? [{ id: 'harness-vast', label: 'Harnas vast', amount: 80, type: 'expense', frequency: 'monthly', startMonth: BRON }] : [],
+    recurringSettlements: labels ? [{ id: 'harness-vast-betaald', recurringId: 'harness-vast', monthKey: BRON, paid: true, actualAmount: 80 }] : [],
+    reservationSettlements: labels ? [{ id: 'harness-afgerond-final', reservationId: 'harness-afgerond', monthKey: BRON, effectiveAmount: 30, finalized: true }] : [],
     reservations: leeg
       ? []
-      : [{ id: 'harness-pot', label: POT, monthlyAmount: 60, startMonth: BRON, type: 'spaardoel' }],
-    reservationPayments: [],
+      : [
+          { id: 'harness-pot', label: POT, monthlyAmount: 60, startMonth: BRON, type: 'spaardoel' },
+          ...(labels
+            ? [
+                { id: 'harness-budget', label: 'Harnasbudget', monthlyAmount: 200, startMonth: BRON, type: 'maandelijks_budget' },
+                { id: 'harness-afgerond', label: 'Harnas afgerond', monthlyAmount: 30, startMonth: BRON, type: 'spaardoel' },
+              ]
+            : []),
+        ],
+    reservationPayments: labels
+      ? [{ id: 'harness-betaling', reservationId: 'harness-pot', monthKey: DOEL, label: 'Harnasbetaling', invoiceAmount: 150, fromReservation: 100, fromCash: 50 }]
+      : [],
     recurringDefers: [],
     reservationDefers: [],
     reopenedMonths: [],
@@ -471,7 +491,7 @@ function controleerBuildOrigin(origin) {
  * drie andere schermen (skeleton, lege staat, foutscherm) zag nooit een guard.
  */
 function maakRouteHandler(state, gedrag = {}) {
-  const { leeg = false, buffer = false, bureau = null, tekort = false, conflict = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
+  const { leeg = false, buffer = false, bureau = null, tekort = false, labels = false, conflict = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
 
   return async (route) => {
     const req = route.request();
@@ -493,7 +513,7 @@ function maakRouteHandler(state, gedrag = {}) {
         if (documentStatus !== 200) {
           return json({ message: 'harness: opzettelijke serverfout' }, documentStatus);
         }
-        return json({ data: fixtureData({ leeg, buffer, bureau, tekort }), revision: state.revision }, 200);
+        return json({ data: fixtureData({ leeg, buffer, bureau, tekort, labels }), revision: state.revision }, 200);
       }
       // Elke schrijfpoging wordt geteld en beantwoord alsof ze lukte: de app moet
       // verder kunnen, en het bewijs dat er niets weglekte is juist dat we hier staan.
@@ -787,9 +807,14 @@ async function saldoPerKolom(page) {
       aanwezig: true,
       label: treffer[0],
       bedrag: bedragUit(rijtekst),
-      // Binnen de sectie = ná de inkomstenkop en vóór de kop van de volgende sectie.
-      inSectie:
-        tekst.indexOf('Inkomsten') < treffer.index && treffer.index < tekst.indexOf('Vaste uitgaves'),
+      // Binnen de sectie = ná de inkomstenkop en vóór de kop van de volgende sectie. De kop heet sinds
+      // 2026-09-17 "Saldo + inkomsten" zodra er een saldoregel staat; een `indexOf` op het oude woord
+      // gaf dan −1 en maakte deze vergelijking per constructie waar. Daarom: eerst de kop vinden.
+      inSectie: (() => {
+        const kop = tekst.search(/Saldo \+ inkomsten|Inkomsten/);
+        if (kop < 0) throw new Error(`kolom ${i}: geen inkomstenkop gevonden`);
+        return kop < treffer.index && treffer.index < tekst.indexOf('Vaste uitgaves');
+      })(),
       rijtekst,
     });
   }
@@ -1054,6 +1079,28 @@ function scenarios() {
         }
         const per = metingen.map((m) => `${m.waar} ${m.gemeten}`).join(', ');
         return { ok: true, bewijs: `${gemeten} tekstelementen boven AA (${per})` };
+      },
+    },
+    {
+      // De kleine grijze regels onder potten en betalingen. Eerst tellen dat ze er staan: een
+      // sweep over een scherm zonder die regels is groen omdat er niets te meten valt.
+      naam: 'contrast — potlabels, betalingen en afgeleide uitgaven',
+      gedrag: { labels: true },
+      actie: async (page) => {
+        // "Alle" in elke sectie van de ankerkolom: betaalde en gefinaliseerde posten staan achter de filter.
+        const filters = page.locator('button[aria-label^="Filter: openstaand"]');
+        const aantalFilters = await filters.count();
+        if (aantalFilters === 0) throw new Error('geen filterknop "Open" gevonden — de afgewerkte posten blijven verborgen');
+        for (let i = 0; i < aantalFilters; i++) await page.locator('button[aria-label^="Filter: openstaand"]').first().click();
+        const gezocht = ['Budget:', 'Betaald:', 'Provisie:', 'Cash:', '– resterend', 'Harnas betaald', 'Harnas vast', 'Harnas afgerond'];
+        const tekst = await page.locator('body').innerText();
+        const ontbreekt = gezocht.filter((t) => !tekst.includes(t));
+        if (ontbreekt.length) throw new Error(`de fixture rendert ${ontbreekt.join(', ')} niet — dan meet de sweep ze ook niet`);
+        const m = await sweep(page, 'prognose met labels');
+        if (m.fouten.length) {
+          return { ok: false, bewijs: `${m.fouten.length} kleurcombinatie(s) onder AA (${m.gemeten} tekstelementen gemeten)`, details: m.fouten.map((f) => beschrijfFout(f)) };
+        }
+        return { ok: true, bewijs: `${gezocht.length} labelsoorten in beeld, ${m.gemeten} tekstelementen boven AA` };
       },
     },
     {
@@ -2239,11 +2286,12 @@ function screenshotScenarios(map) {
 }
 
 /**
- * Elk maandeinde op de cashpagina is het vrije saldo waarmee de volgende maand op `/` opent — de
- * regel "Vorig saldo" in kolom 1 en 2 — het kopgetal is het laagste ervan (en in deze fixture niet
- * het eerste), en de overzichtstegel noemt datzelfde maandeinde. Niet de footer: die toont de positie
- * mét bufferpot, en die valt alleen samen met het vrije saldo zolang de pot leeg is. Geen eis dat de
- * weektabel lager staat: met een buffer-storting en een factuur in dezelfde week kan hij hoger staan.
+ * Elk maandeinde op de cashpagina is de Buffer van die maand; deze fixture heeft geen bufferpot, dus
+ * valt die samen met het vrije saldo waarmee de volgende maand op `/` opent — "Vorig saldo" in kolom 1
+ * en 2. Het kopgetal is het laagste (en in deze fixture niet het eerste), en de overzichtstegel noemt
+ * datzelfde laagste punt. Dat Buffer en Vrij uit elkaar lopen zodra er een pot is, toetst
+ * `geldtaalOpCash`. Geen eis dat de weektabel lager staat: met een opbouw en een factuur in dezelfde
+ * week kan hij hoger staan.
  */
 async function kopgetalIsMaandeinde(page) {
   await page.waitForSelector('[data-month-end]', { timeout: 10_000 });
@@ -2266,14 +2314,120 @@ async function kopgetalIsMaandeinde(page) {
   await page.goto(`${BASE}/bureau`);
   await page.waitForSelector('[data-kpi="cash"]', { timeout: 20_000 });
   const tegel = (await page.locator('[data-kpi="cash"]').innerText()).replace(/\s+/g, ' ');
-  if (!tegel.includes(`laagste maandeinde`) || !tegel.includes(`(${kop.eind})`)) throw new Error(`overzichtstegel noemt het maandeinde niet ("${kop.eind}"): "${tegel.slice(0, 160)}"`);
-  const tegelWeek = tegel.includes('weektabel (kosten vroeg, inkomsten laat) tot');
+  if (!tegel.includes(`laagste punt ${kop.eind}:`)) throw new Error(`overzichtstegel noemt het laagste punt niet ("${kop.eind}"): "${tegel.slice(0, 160)}"`);
+  const tegelWeek = tegel.includes('weektabel (kosten vroeg, inkomsten laat): Vrij tot');
   if (weekRegel && !tegelWeek) throw new Error('de cashpagina toont een diepere weekstand, de tegel noemt hem niet met dezelfde woorden');
   return { ok: true, bewijs: `maandeinden ${eindes.map((e) => `${e.maand} ${e.waarde}`).join(' · ')}; kopgetal ${kop.maand} ${kop.waarde} (niet het eerste); gelijk aan "Vorig saldo" op / voor ${vergeleken.length} maanden; tegel "${kop.eind}"${weekRegel ? ', weekregel op beide met "kosten vroeg, inkomsten laat"' : ''}` };
 }
 
+/**
+ * Eén geldtaal (2026-09-17): Buffer = vrij + bufferpot, overal hetzelfde getal. Op de bufferfixture
+ * lopen Vrij en Buffer uit elkaar (het overschot van de eerste maand landt in de pot), dus eerst dat
+ * vaststellen — een fixture waarin ze samenvallen kan het verschil niet meten.
+ *
+ * Op `/`: per kolom telt de brugregel onder de footer op tot de Buffer. Op `/bureau/cash`: elk
+ * maandeinde is de footer-Buffer van zijn kolom, het kopgetal is het laagste en zijn brug telt op.
+ * Op `/bureau`: de tegel toont datzelfde getal groot.
+ */
+const BRUG = /^vrij ([+−-]?€ [\d.,]+) \+ bufferpot ([+−-]?€ [\d.,]+)$/;
+
+async function geldtaalOpPrognose(page) {
+  const kolommen = page.locator(KOLOM);
+  const aantal = await kolommen.count();
+  const footers = await footerPerKolom(page);
+  const rijen = [];
+  for (let i = 0; i < aantal; i++) {
+    const brug = kolommen.nth(i).locator('[data-buffer-bridge]');
+    if ((await brug.count()) !== 1) throw new Error(`kolom ${i}: ${await brug.count()} brugregels, verwacht 1`);
+    // De zichtbare bedragen, niet de attributen: die zijn per constructie `position − pot` en `pot`,
+    // en tellen dus altijd op — ook als de component de verkeerde pot krijgt (review 2026-09-17).
+    const tekst = (await brug.innerText()).replace(/\s+/g, ' ').trim();
+    const t = tekst.match(BRUG);
+    if (!t) return { ok: false, bewijs: `kolom ${i}: brugregel leest "${tekst}"` };
+    const f = footers[i];
+    if (!f?.aanwezig) throw new Error(`kolom ${i}: geen leesbare footer`);
+    rijen.push({ kolom: i, maand: [BRON, DOEL, monthKey(2)][i], vrij: bedragUit(t[1]), pot: bedragUit(t[2]), buffer: f.stand });
+  }
+  if (!rijen.some((r) => Math.abs(r.pot) >= 0.005)) throw new Error(`de fixture heeft nergens een gevulde pot — Vrij en Buffer vallen overal samen: ${JSON.stringify(rijen)}`);
+  const optel = rijen.filter((r) => Math.abs(r.vrij + r.pot - r.buffer) > 0.005);
+  if (optel.length) return { ok: false, bewijs: `brug telt niet op tot de Buffer: ${JSON.stringify(optel)}` };
+
+  // Een onafhankelijke bron voor de pot: de maandeinden op /bureau/cash komen uit het weekmodel, niet uit de footer.
+  await page.goto(`${BASE}${CASH}`);
+  await page.waitForSelector('[data-month-end]', { timeout: 20_000 });
+  const potten = Object.fromEntries(await page.locator('[data-month-end]').evaluateAll((els) => els.map((e) => [e.getAttribute('data-month-end'), Number(e.getAttribute('data-pot'))])));
+  const vergeleken = rijen.filter((r) => potten[r.maand] !== undefined);
+  if (!vergeleken.length) throw new Error(`geen kolom te vergelijken met /bureau/cash: ${JSON.stringify(potten)}`);
+  const pot = vergeleken.filter((r) => Math.abs(r.pot - potten[r.maand]) > 0.005);
+  if (pot.length) return { ok: false, bewijs: `pot in de brug wijkt af van het maandeinde op /bureau/cash: ${pot.map((r) => `${r.maand} ${r.pot} / ${potten[r.maand]}`).join(' · ')}` };
+  return { ok: true, bewijs: `${rijen.map((r) => `kolom ${r.kolom}: vrij ${r.vrij} + pot ${r.pot} = Buffer ${r.buffer}`).join(' · ')}; pot gelijk aan /bureau/cash voor ${vergeleken.length} maanden` };
+}
+
+async function geldtaalOpCash(page) {
+  await page.waitForSelector('[data-month-end]', { timeout: 10_000 });
+  const eindes = await page.locator('[data-month-end]').evaluateAll((els) => els.map((e) => ({ maand: e.getAttribute('data-month-end'), buffer: Number(e.getAttribute('data-value')), vrij: Number(e.getAttribute('data-free')), pot: Number(e.getAttribute('data-pot')) })));
+  // Het object eerst: een maandeinde met een gevulde pot. Gelezen uit `data-pot`, niet uit het verschil
+  // tussen de twee waarden — dat verschil is precies wat de meting hieronder moet kunnen zien verdwijnen.
+  if (!eindes.some((e) => Math.abs(e.pot) >= 0.005)) throw new Error(`geen maandeinde met een gevulde bufferpot: ${JSON.stringify(eindes)}`);
+  const kop = await page.locator('[data-lowest-month-end]').evaluate((el) => ({ maand: el.getAttribute('data-lowest-month'), waarde: Number(el.getAttribute('data-lowest-month-end')) }));
+  const brug = await page.locator('[data-lowest-bridge]').evaluate((el) => ({ vrij: Number(el.getAttribute('data-free')), pot: Number(el.getAttribute('data-pot')) }));
+  const laagste = eindes.reduce((min, e) => (min === null || e.buffer < min.buffer ? e : min), null);
+  if (kop.maand !== laagste.maand || Math.abs(kop.waarde - laagste.buffer) > 0.005) return { ok: false, bewijs: `kopgetal ${JSON.stringify(kop)} is niet de laagste Buffer ${JSON.stringify(laagste)}` };
+  if (Math.abs(brug.vrij + brug.pot - kop.waarde) > 0.005) return { ok: false, bewijs: `brug onder het kopgetal telt niet op: ${JSON.stringify(brug)} ≠ ${kop.waarde}` };
+
+  await page.goto(`${BASE}/`);
+  await page.waitForSelector(KOLOM, { timeout: 20_000 });
+  const footers = await footerPerKolom(page);
+  const perMaand = Object.fromEntries([BRON, DOEL, monthKey(2)].map((m, i) => [m, footers[i]?.aanwezig ? footers[i].stand : undefined]));
+  const vergeleken = eindes.filter((e) => perMaand[e.maand] !== undefined);
+  if (!vergeleken.length) throw new Error(`geen maandeinde te vergelijken met de footers op /: ${JSON.stringify({ eindes, perMaand })}`);
+  const afwijkend = vergeleken.filter((e) => Math.abs(e.buffer - perMaand[e.maand]) > 0.005);
+  if (afwijkend.length) return { ok: false, bewijs: `maandeinde wijkt af van de footer-Buffer op /: ${afwijkend.map((e) => `${e.maand} cash ${e.buffer} / footer ${perMaand[e.maand]}`).join(' · ')}` };
+  return { ok: true, bewijs: `maandeinden ${eindes.map((e) => `${e.maand} Buffer ${e.buffer} (vrij ${e.vrij})`).join(' · ')}; kopgetal ${kop.maand} ${kop.waarde} = laagste, brug ${brug.vrij} + ${brug.pot}; gelijk aan de footer op / voor ${vergeleken.length} maanden` };
+}
+
+/**
+ * De overzichtstegel: groot staat de laagste Buffer, niet wat er vandaag vrij is. Alleen het grote getal
+ * gelezen — dezelfde waarde staat ook in de tweede regel, en een check over de hele tegel bleef groen als
+ * het grote getal terugviel op vrij vandaag (review 2026-09-17). Start op `/bureau`, zodat een defect in
+ * de tegel vóór de meting staat; het kopgetal komt daarna van `/bureau/cash`.
+ */
+async function geldtaalOpTegel(page) {
+  await page.waitForSelector('[data-kpi="cash"] [data-kpi-value]', { timeout: 20_000 });
+  const titel = (await page.locator('[data-kpi="cash"] h3').innerText()).trim();
+  const groot = bedragUit(await page.locator('[data-kpi="cash"] [data-kpi-value]').innerText());
+  const vandaag = bedragUit((await page.locator('[data-kpi="cash"] [data-kpi-noemer]').innerText()).match(/vrij vandaag ([+−-]?€\s?[\d.,]+)/)?.[1] ?? ''); // Intl schrijft een U+00A0 na het €-teken
+
+  await page.goto(`${BASE}${CASH}`);
+  await page.waitForSelector('[data-lowest-month-end]', { timeout: 20_000 });
+  const laagste = Number(await page.locator('[data-lowest-month-end]').getAttribute('data-lowest-month-end'));
+  // Het object eerst: kan deze fixture "laagste Buffer" van "vrij vandaag" onderscheiden?
+  if (vandaag === null || Math.abs(vandaag - laagste) <= 0.5) throw new Error(`de fixture onderscheidt vrij vandaag (${vandaag}) niet van de laagste Buffer (${laagste})`);
+  if (titel !== 'Buffer, 13 weken' || groot === null || Math.abs(groot - laagste) > 0.5) return { ok: false, bewijs: `tegel "${titel}" toont ${groot} groot, verwacht de laagste Buffer ${laagste} (vrij vandaag ${vandaag})` };
+  return { ok: true, bewijs: `tegel "${titel}": groot ${groot} = laagste Buffer ${laagste}, vrij vandaag ${vandaag} in de noemer` };
+}
+
 function reviewScenarios() {
   return [
+    {
+      naam: 'geldtaal — brug onder de footer telt op tot de Buffer',
+      gedrag: { buffer: true },
+      actie: async (page) => geldtaalOpPrognose(page),
+    },
+    {
+      naam: 'geldtaal — cash toont de laagste Buffer, gelijk aan de footer op /',
+      pad: CASH,
+      wachtOp: 'bureau',
+      gedrag: { buffer: true },
+      actie: async (page) => geldtaalOpCash(page),
+    },
+    {
+      naam: 'geldtaal — tegel toont de laagste Buffer groot, vrij vandaag in de noemer',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { buffer: true },
+      actie: async (page) => geldtaalOpTegel(page),
+    },
     {
       naam: 'cash — kopgetal is het laagste maandeinde, gelijk aan het saldo op /',
       pad: CASH,
@@ -2577,6 +2731,20 @@ function reviewTegenproeven() {
       tweede.setAttribute('data-value', nieuw);
     },
     'bureau — lege staat houdt een cashtekort in beeld': () => { document.querySelector('[data-signal-list]')?.remove(); },
+    // Het defect: de brug toont een pot die niet bij de Buffer hoort (zoals `buffer.delta` in plaats van `buffer.total`).
+    'geldtaal — brug onder de footer telt op tot de Buffer': () => {
+      const brug = document.querySelector('[data-buffer-bridge]');
+      brug.textContent = brug.textContent.replace(/bufferpot .*$/, 'bufferpot € 9.999,99');
+    },
+    // Het defect van vóór 2026-09-17: de maandeinden dragen Vrij in plaats van de Buffer.
+    'geldtaal — cash toont de laagste Buffer, gelijk aan de footer op /': () => {
+      document.querySelectorAll('[data-month-end]').forEach((el) => el.setAttribute('data-value', el.getAttribute('data-free')));
+    },
+    // Het defect van vóór 2026-09-17: groot staat wat er vandaag vrij is.
+    'geldtaal — tegel toont de laagste Buffer groot, vrij vandaag in de noemer': () => {
+      const noemer = document.querySelector('[data-kpi="cash"] [data-kpi-noemer]').textContent;
+      document.querySelector('[data-kpi="cash"] [data-kpi-value]').textContent = noemer.match(/vrij vandaag ([^=]+)=/)[1].trim();
+    },
     'facturen — nieuwe factuur gekoppeld aan een bestaande post: geen tweede post': () => {
       // Het defect: de keuze voor een bestaande post gaat verloren en er komt een nieuwe.
       const select = document.querySelector('[id$="-prognose"]');
@@ -2868,6 +3036,28 @@ function tegenproeven() {
         const m = await sweep(page, 'prognose + injectie');
         if (m.fouten.length) return { ok: false, bewijs: `${m.fouten.length} fout(en) gevonden, zoals het hoort` };
         return { ok: true, bewijs: 'de geïnjecteerde te lichte tekst glipte door de sweep' };
+      },
+    },
+    {
+      // Een kleur die op zich AA haalt, gedoofd door opacity — precies het patroon
+      // `text-muted-foreground opacity-70` dat tot 2026-09-17 als volle muted-kleur mat.
+      naam: 'tegenproef — muted tekst met opacity',
+      moetFalen: true,
+      actie: async (page) => {
+        await page.evaluate(() => {
+          const p = document.createElement('p');
+          p.style.cssText = 'background:#ffffff;padding:4px';
+          const s = document.createElement('span');
+          s.textContent = 'tegenproef: muted met opacity';
+          s.className = 'text-2xs text-muted-foreground';
+          s.style.opacity = '0.7';
+          p.appendChild(s);
+          document.body.appendChild(p);
+        });
+        const m = await sweep(page, 'prognose + opacity-injectie');
+        const gevonden = m.fouten.filter((f) => f.voorbeeldTekst.includes('tegenproef: muted met opacity'));
+        if (gevonden.length) return { ok: false, bewijs: `gezien: ${gevonden[0].ratio.toFixed(2)}:1, zoals het hoort` };
+        return { ok: true, bewijs: 'muted tekst met opacity glipte door de sweep' };
       },
     },
     {

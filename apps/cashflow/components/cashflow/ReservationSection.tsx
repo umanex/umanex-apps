@@ -22,6 +22,8 @@ interface ReservationSectionProps {
   /** Stapbedragen van de twee ledger-regels, uit de calculator. */
   budgetAmount: number;
   provisionAmount: number;
+  /** Stand van de provisiepotten bij de start, alleen wanneer de provisiekop hem draagt (bankbasis). */
+  provisionStandAtStart?: number;
   deferredReservationItems: DeferredReservationDisplayItem[];
   onRegisterPayment: (filterType: ReservationPotType) => void;
   onRemovePayment: (id: string) => void;
@@ -203,14 +205,14 @@ function DraggablePotRow({
             // en dan moet je in één keer leren dat er twee bedragen zijn én dat ze verschillen.
             // De prijs is een korte dubbeling bij een onaangeroerd budget; dat weegt lichter.
             <div className="flex items-center gap-1">
-              <span className="text-2xs text-muted-foreground opacity-70">Budget:</span>
+              <span className="text-2xs text-muted-foreground">Budget:</span>
               <span className="text-2xs font-semibold tabular-nums text-finance-positive">
                 {formatAmount(pot.provisionThisMonth)}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-1">
-              <span className="text-2xs text-muted-foreground opacity-70">Provisie:</span>
+              <span className="text-2xs text-muted-foreground">Provisie:</span>
               <span className={`text-2xs font-semibold tabular-nums ${displayAmount < 0 ? 'text-finance-negative' : 'text-finance-positive'}`}>
                 {formatAmount(displayAmount)}
                 {displayAmount < 0 && ' ⚠'}
@@ -258,6 +260,7 @@ function DraggablePotRow({
 
       {/* Betalingsdetails — enkel wanneer betalingen aanwezig */}
       {hasPayments && (
+        // eslint-disable-next-line no-restricted-syntax -- arbitrary spacing, zelfde uitzondering als de BASELINE in packages/tokens/scripts/guard.mjs; apps/cashflow/BACKLOG.md 2026-09-17
         <div className="pl-[22px] flex flex-col">
           {pot.paymentsThisMonth.map((payment, pi) => (
             <div
@@ -294,17 +297,17 @@ function DraggablePotRow({
                   </span>
                 ) : (
                   <>
-                    <span className="text-muted-foreground opacity-70">Betaald:</span>
+                    <span className="text-muted-foreground">Betaald:</span>
                     <span className="font-semibold text-foreground tabular-nums">{formatAmount(payment.invoiceAmount)}</span>
                     {payment.fromReservation > 0 && (
                       <>
-                        <span className="text-muted-foreground/40">·</span>
-                        <span className="text-muted-foreground opacity-70">Provisie:</span>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="text-muted-foreground">Provisie:</span>
                         <span className="font-semibold text-finance-positive tabular-nums">{formatAmount(payment.fromReservation)}</span>
                       </>
                     )}
-                    <span className="text-muted-foreground/40">·</span>
-                    <span className="text-muted-foreground opacity-70">Cash:</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-muted-foreground">Cash:</span>
                     <span className="font-semibold text-finance-negative tabular-nums">{formatAmount(payment.fromCash)}</span>
                   </>
                 )}
@@ -335,6 +338,7 @@ function PotSubgroup({
   onUnfinalize,
   onAmountChange,
   locked,
+  standAtStart,
 }: {
   label: string;
   potType: ReservationPotType;
@@ -353,6 +357,12 @@ function PotSubgroup({
   onUnfinalize: (reservationId: string) => void;
   onAmountChange: (reservationId: string, amount: number | null) => void;
   locked?: boolean;
+  /**
+   * Alleen de provisies in de ankermaand: wat er bij de start al in de potten zat. Daar telt de kop
+   * de stand plus de storting van deze maand, terwijl de velden eronder alleen de storting tonen —
+   * zonder deze regel telt "−€ 18.521" niet op uit wat je ziet.
+   */
+  standAtStart?: number;
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
   // Zie RecurringSection: in een afgesloten maand is de filterknop uitgeschakeld, dus mag
@@ -374,6 +384,16 @@ function PotSubgroup({
         onAdd={() => onRegisterPayment(potType)}
         addAriaLabel="Betaling registreren"
       />
+      {standAtStart !== undefined && standAtStart >= 0.005 && (
+        <span
+          className="-mt-1 pl-2 text-2xs leading-tight tabular-nums text-muted-foreground"
+          data-provision-bridge
+          data-stand={standAtStart}
+          data-deposit={subtotaal - standAtStart}
+        >
+          al opzij {formatAmount(standAtStart)} + storting {formatAmount(subtotaal - standAtStart)}
+        </span>
+      )}
 
       <div className="flex flex-col gap-1 w-full">
         {activePots.map((pot, index) => (
@@ -396,11 +416,11 @@ function PotSubgroup({
           finalizedPots.map((pot, index) => (
             <div
               key={pot.reservationId}
-              className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full opacity-50 ${
+              className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full ${
                 (activePots.length + index) % 2 !== 0 ? 'bg-muted' : ''
               }`}
             >
-              <span className="flex-1 text-sm truncate min-w-0">{pot.label}</span>
+              <span className="flex-1 text-sm truncate min-w-0 text-muted-foreground">{pot.label}</span>
               <span className="text-xs text-muted-foreground tabular-nums shrink-0">
                 {formatAmount(pot.effectiveAmount)} / {formatAmount(pot.monthlyAmount)}
               </span>
@@ -424,6 +444,7 @@ export function ReservationSection({
   pots,
   budgetAmount,
   provisionAmount,
+  provisionStandAtStart,
   deferredReservationItems,
   onRegisterPayment,
   onRemovePayment,
@@ -497,6 +518,7 @@ export function ReservationSection({
         activePots={spaardoelActive}
         finalizedPots={spaardoelFinalized}
         amount={provisionAmount}
+        standAtStart={provisionStandAtStart}
         {...sharedProps}
       />
 

@@ -25,7 +25,24 @@ for (const c of cols) {
   const modeNaam = Object.fromEntries(c.modes.map(m => [m.modeId, m.name]));
   const vars = await Promise.all(c.variableIds.map(id => figma.variables.getVariableByIdAsync(id)));
   if (c.name === 'Base') {
-    collections[c.name] = { modes: c.modes.map(m => m.name), variables: Object.fromEntries(vars.map(v => [v.name, Object.values(v.valuesByMode)[0]])) };
+    // Een layout-rol (spacing-surface) is een alias naar een schaalstap (spacing-6). `variables`
+    // blijft naam -> getal, want build-spec en de guard rekenen ermee; de verwijzing zelf staat
+    // apart in `aliassen`, zodat de guard kan toetsen dat hij naar de stap uit tokens.json wijst.
+    const perId = new Map(vars.map(v => [v.id, v]));
+    const waarde = (v, diepte = 0) => {
+      const w = Object.values(v.valuesByMode)[0];
+      if (w && typeof w === 'object' && w.type === 'VARIABLE_ALIAS') {
+        const doel = perId.get(w.id);
+        return doel && diepte < 5 ? waarde(doel, diepte + 1) : null;
+      }
+      return w;
+    };
+    const aliassen = {};
+    for (const v of vars) {
+      const w = Object.values(v.valuesByMode)[0];
+      if (w && typeof w === 'object' && w.type === 'VARIABLE_ALIAS') aliassen[v.name] = perId.get(w.id)?.name ?? `onbekend:${w.id}`;
+    }
+    collections[c.name] = { modes: c.modes.map(m => m.name), variables: Object.fromEntries(vars.map(v => [v.name, waarde(v)])), ...(Object.keys(aliassen).length ? { aliassen } : {}) };
     continue;
   }
   collections[c.name] = { modes: c.modes.map(m => m.name), variables: vars.map(v => v.name) };

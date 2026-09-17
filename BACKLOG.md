@@ -64,8 +64,30 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** De Storybook→Figma-export moest de waarden ergens vandaan halen; ze rauw laten zou principe 2 van `code-naar-figma` schenden (nul hardcoded waarden). Een `Spacing`-set in `tokens.json` toevoegen is een gecoördineerde token-restructurering die via Tokens Studio en een Pull hoort te lopen — een eigen taak, niet een bijproduct van deze.
 - **Deels gedaan (2026-08-25):** de *meting* staat er, de token-bron nog niet. `figma-sync-check.mjs` heeft sinds vandaag een as `[dekking]` die elke Figma-variabele tegen `packages/tokens/tokens.json` toetst (vergelijker: `scripts/figma-token-coverage.mjs`, gesynct vanuit umanex-os). De twintig namen uit dit item staan daar als `BEKENDE_GATEN` — expliciet en greppable, in plaats van ongemeten. Die lijst werkt twee kanten op: een nieuw gat faalt, en een naam die géén gat meer is faalt óók, dus zodra de `Spacing`-set bestaat dwingt CI het opruimen van de lijst af. Draait in CI via `pnpm --filter @umanex/ui figma:check:selftest`; tegenproef in `figma-sync-selftest.mjs` (13 cases).
 - **Eerste zet:** Set `Spacing` (en later `Shadow`) in Tokens Studio aanmaken en pushen. `classifySet` in `packages/tokens/build.mjs` gooit sinds 2026-08-05 op een onbekende set, dus de build wijst zelf de weg (HANDOFF 2026-08-05, resolved). Daarna `packages/ui/scripts/figma-sync-check.mjs` de spacing-as tegen de tokens laten toetsen in plaats van tegen de `n × 4px`-rekenregel.
+- **Deels gebouwd (2026-09-17):** spacing, border en icon-stroke hebben nu een token-bron: set `Layout/Scale` plus layout-rollen in `Theme/base` (`briefings/2026-09-17-feature-layout-tokens.tcebc.md`). De preset leest de schaal eruit, Figma Base is eruit gezet (`figma/zet-base.js`) en `figma-sync-check` toetst `[schaal]` tegen de tokens in plaats van `n × 4px`. `BEKENDE_GATEN` telt nog 4 namen. **Wat openblijft:** de radius-stappen (`radius-sm|md|lg|full` — de preset leidt ze met `calc()` af van één token; uitschrijven wijzigt de CSS-uitvoer van elke app) en de schaduwen (`shadow/sm|md|lg`).
 - **Status:** open
 
+
+## 2026-09-17 — Sheet: gap in Figma 8, in de code 16 · [design-system]
+- **Wat:** De vier varianten van `SheetContent` in de Component library dragen `itemSpacing` 8, ongebonden. De code zet `gap-stack` (16, vóór 2026-09-17 `gap-4`) — maar `SheetContent` heeft geen `flex` of `grid`, dus die gap doet in de browser niets (overgenomen uit shadcn). De afstand tussen de kinderen komt van hun eigen marges; de 8 in Figma is daar vermoedelijk op nagebouwd. Het herbinden van 2026-09-17 heeft dit veld bewust niet geschreven (waarde ≠ rol). `parity` meldt het niet omdat hij SheetContent overslaat (`~~ SheetContent: geen playground met deze assen als props`, gemeten 2026-09-17 — net als TabsTrigger en ThemeToggle).
+- **Waarom niet nu:** Kiezen tussen `flex flex-col gap-stack` (de gap gaat werken, de marges van de kinderen moeten dan weg) en `gap-stack` weghalen (de code zegt dan wat ze doet) is een ontwerpbeslissing, geen token-migratie.
+- **Eerste zet:** In de Sheet-story de afstand tussen header en footer meten; daarna een van beide kiezen en Figma laten volgen.
+- **Check:** `figma_execute` op `83:21` (`SheetContent side=right`): `itemSpacing` 8 zonder `boundVariables.itemSpacing` = dit item leeft.
+- **Status:** open
+
+## 2026-09-17 — Bindingen op de handgebouwde Figma-pagina's hebben geen guard · [test]
+- **Wat:** Op 2026-09-17 zijn 213 velden op tien handgebouwde pagina's (Button, Card, Tabs, …) herbonden van `spacing-N` naar hun layout-rol. Voor keten-pagina's toetst `toets-batch` (7b) de bindingnaam tegen de spec; voor de handgebouwde doet niets dat. Verandert een component in de code van rol (`p-surface` → `p-menu`), dan blijft `figma:check` groen en `parity` ook, want de waarde kan gelijk blijven.
+- **Waarom niet nu:** Een naam-as vraagt een mapping klasse → Figma-veld per handgebouwde node, dus precies de herbouw die de keten voor die vijftien uitsluit.
+- **Eerste zet:** In `lees-geometrie.js` per legacy-variant de gebonden variabelenaam per veld meeschrijven, en in `geometry-parity.mjs` naast de maat vergelijken met de rol uit de klasse van het gemeten element.
+- **Check:** `grep -c "boundVariables\|gebonden" packages/ui/figma/lees-geometrie.js` = 0 → leeft nog.
+- **Status:** open
+
+## 2026-09-17 — Instance-overrides op kind-nodes overleven een ketenbouw vermoedelijk niet · [risico]
+- **Wat:** De builder houdt component-id en key vast maar vervangt de kinderen (HANDOFF 2026-08-25, resolved) — ook bij een bouw met dezelfde spec, gemeten 2026-09-17 op DialogContent (ids `141:39…` → `141:53…`). Een override op een kind in een instance (een andere knoptekst in een Dialog-instance) hangt aan dat kind; vermoedelijk valt hij weg bij de volgende bouw. Niet gemeten: er bestaat nog geen instance van een keten-component.
+- **Waarom niet nu:** Wordt pas echt bij batch 5 (Combobox, DatePicker als FRAME met instances).
+- **Eerste zet:** Vóór batch 5: een instance van DialogContent maken, een tekst overriden, Dialog herbouwen en kijken of de override staat. Staat hij niet, dan kinderen op naam hergebruiken in plaats van vervangen.
+- **Check:** de tegenproef hierboven; zolang hij niet gedraaid is, leeft dit item.
+- **Status:** open
 ## 2026-08-25 — Sync-guard ziet een Figma-wijziging pas na een verse manifest · [test]
 - **Wat:** `figma:check` toetst de code tegen `packages/ui/figma/manifest.json` — een neergeslagen meting van het Figma-bestand, geen live verbinding. Wijzigt iemand iets ín Figma zonder de manifest te verversen, dan blijft CI groen terwijl de twee kanten uit elkaar lopen. De omgekeerde richting (code wijzigt, Figma niet) wordt wél gevangen.
 - **Waarom niet nu:** CI heeft geen Figma-toegang. De live-kant vereist een `FIGMA_ACCESS_TOKEN` als repo-secret plus een REST-pad (`figma_get_file_data` of de Figma REST API) — dat is een eigen infra-beslissing met een secret erbij, en die hoort Jeroen te nemen.

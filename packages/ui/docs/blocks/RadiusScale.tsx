@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { scalars } from '../lib/tokenCatalog';
+import { radiusScalars } from '../lib/tokenCatalog';
 import { code, muted, table, td, th } from '../lib/docsStyles';
 
 const STEPS = ['sm', 'md', 'lg'] as const;
@@ -34,7 +34,7 @@ export const RadiusScale = () => {
           </tr>
         </thead>
         <tbody>
-          {scalars.map((s) => (
+          {radiusScalars.map((s) => (
             <tr key={s.name}>
               <td style={td}><code style={code}>{s.path}</code></td>
               <td style={td}>{s.set}</td>

@@ -40,6 +40,12 @@ De check wordt bij sessiestart mee getoond, en `sessie-reflectie` draait hem bij
 <!-- De sessie-reflectie skill voegt hieronder de juiste laag-header toe bij de eerste entry. -->
 # Klant — umanex
 
+## 2026-09-17 — Iets anders dan de keten schreef in DialogContent tijdens een bouw · [onzekerheid]
+- **Bevinding:** Tussen twee calls van de layout-tokens-sessie (toets-batch zag 1 set kinderen, twee minuten later toonde een capture er 2) kreeg DialogContent (`107:33`) een tweede, volledige set kinderen erbij, door elkaar geweven met de bestaande. In dat venster draaide de sessie alleen lokale commando's; de leesscripts maken geen nodes (`grep` op create/clone/append: 0). De poort van de builder weigerde daarna terecht ("met de hand gewijzigd", hash `t47su5:12 → 4yxntg:23`). Opgeruimd na een versie-checkpoint; de poort accepteerde de hash daarna weer, dus die set was de enige mutatie. Twee kandidaten, niet onderscheiden: een undo in Figma Desktop (zet verwijderde kinderen terug op hun oude plek, wat het door-elkaar verklaart) of een andere sessie op dezelfde Desktop Bridge (de status toonde MCP-instances op 9223, 9224 en 9226). De nieuwe set had id-prefix `139:`, de sessie zelf maakte `141:`.
+- **Check:** `figma_execute` → `(await figma.getNodeByIdAsync('107:33')).children.length` — 3 = schoon; meer = het gebeurde opnieuw. En Jeroen vragen of hij op 2026-09-17 rond 17:00 in de Component library werkte of een tweede sessie aan de Bridge had.
+- **Volgende zet:** Bij de volgende ketenbouw `bouwbezig` en de kindertelling vóór én ná elke call loggen; blijkt het een tweede sessie, dan een lock per bestand in `bouw-batch.js` die ook de lees-stubs respecteert.
+- **Status:** open
+
 ## 2026-08-25 — "100% in sync" is structureel bewezen, niet visueel · [onzekerheid]
 - **Bevinding:** De Storybook→Figma-export is op vijf assen getoetst (pagina per component, variant-assen, kleurrollen, afgeleide schalen, deep-links) plus 86 mode-waarden tegen `theme.css`. Wat níet getoetst is: of een component in Figma er hetzelfde *uitziet* als in de browser. Beide kanten putten uit dezelfde bron, maar de twee renders zijn nooit naast elkaar gelegd. Een Button met 2px verkeerde padding in Figma zou door elke groene check komen. De claim in de PR is dus enger dan "100% in sync" suggereert — dat is bewust, maar het staat nergens in de guard-output zelf.
 - **Check:** `pnpm --filter @umanex/ui figma:check | grep -i "pixel\|render\|screenshot"` — leeg = er is nog geen visuele as; een treffer = er is er een bijgekomen.

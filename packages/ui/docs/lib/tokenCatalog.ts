@@ -8,7 +8,8 @@
  */
 import themeCss from '@umanex/tokens/theme.css?raw';
 import tokens from '@umanex/tokens/tokens.json';
-import { hslRoles, rawRoles, scalarRoles } from '@umanex/tokens/roles';
+import { hslRoles, rawRoles, scalarRoles, layoutRoleUtilities } from '@umanex/tokens/roles';
+import { spacing, borderWidth } from '@umanex/tokens/layout';
 import { fontFamily, fontSize, fontWeight, letterSpacing } from '@umanex/tokens/typography';
 
 export type Mode = 'light' | 'dark';
@@ -126,8 +127,33 @@ const base = set('Theme/base');
 export const scalars: ScalarRole[] = scalarRoles.map((name) => {
   const value = cssByMode.light[name];
   if (value === undefined) throw new Error(`[tokens] scalar "${name}" ontbreekt in theme.css`);
-  return { name, path: name, set: 'Theme/base', value, ref: base.get(name)?.$value ?? '' };
+  // Het pad staat met punten in tokens.json (spacing.surface), de rolnaam met streepjes.
+  const path = [...base.keys()].find((p) => roleName(p) === name);
+  if (!path) throw new Error(`[tokens] scalar "${name}" staat niet in Theme/base`);
+  return { name, path, set: 'Theme/base', value, ref: base.get(path)?.$value ?? '' };
 });
+
+/** De radius-rol; de layout-rollen staan sinds 2026-09-17 ook in scalarRoles. */
+export const radiusScalars = scalars.filter((s) => s.name === 'radius' || s.name.startsWith('radius-'));
+
+/** Layout-rollen met hun utility-sleutel (spacing-surface -> surface -> p-surface). */
+export type LayoutRole = ScalarRole & { utility: string };
+const utilityVan = new Map(Object.entries(layoutRoleUtilities).map(([key, role]) => [role, key]));
+export const layoutRoles: LayoutRole[] = scalars
+  .filter((s) => utilityVan.has(s.name))
+  .map((s) => ({ ...s, utility: utilityVan.get(s.name) as string }));
+
+/** Layout/Scale: de spacing- en borderschaal zoals de preset hem krijgt. */
+export const spacingScale = Object.entries(spacing).map(([key, value]) => ({
+  key,
+  path: `spacing.${key.replace('.', '_')}`,
+  value,
+}));
+export const borderScale = Object.entries(borderWidth).map(([key, value]) => ({
+  key,
+  path: `border.${key === 'DEFAULT' ? '1' : key}`,
+  value,
+}));
 
 /** Typografie: de gegenereerde schaal, met het Tokens Studio-pad per key. */
 export type TypeStep = { key: string; path: string; size: string; lineHeight: string };

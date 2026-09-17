@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** packages/tokens + packages/config + packages/ui (monorepo-niveau)
 - **Klant:** umanex
-- **Status:** gepland
+- **Status:** gebouwd — review en de twee procesitems open
 
 ---
 
@@ -51,7 +51,7 @@ CONSTRAINTS: Een rol pas bij ≥ 2 componenten (gemeten), anders een schaalstap.
 | `spacing.control-y` | `{spacing.2}` | Input, Textarea, NativeSelect, Button | `py-control-y` |
 | `spacing.item-y` | `{spacing.1_5}` | DropdownMenuItem, TabsTrigger, Tooltip | `py-item-y` |
 | `spacing.inline` | `{spacing.2}` | Button, DropdownMenuItem, Dialog/Sheet-footer | `gap-inline`, `space-x-inline` |
-| `spacing.stack` | `{spacing.4}` | DialogContent, SheetContent | `gap-stack` |
+| `spacing.stack` | `{spacing.4}` | DialogContent (grid), SheetContent (geen flex/grid: de gap doet daar niets — BACKLOG 2026-09-17); tweede echte consument: AlertDialogContent in batch 2 | `gap-stack` |
 | `spacing.heading` | `{spacing.1_5}` | CardHeader, DialogHeader | `space-y-heading` |
 | `size.control-sm` / `-md` / `-lg` | `{spacing.9}` / `{spacing.10}` / `{spacing.11}` | Button · Input, NativeSelect, TabsList, ThemeToggle | `h-control-md` |
 
@@ -61,50 +61,60 @@ Bewust géén rol: Button `px-4`/`px-8`, Badge `px-2.5 py-0.5`, menu `pl-8`/`px-
 
 ### Kritische assen
 
-- [ ] Typologie — `Layout/Scale` staat in `PRIMITIVE_SETS` en levert `layout.mjs`
-- [ ] Typologie — `ROLE_GROUPS` blijft `Theme` en `Semantic`; de rollen landen in `Theme/base`
-- [ ] States n.v.t. — tokens hebben geen data-laag, dus loading/empty/error bestaan hier niet
-- [ ] Interactie n.v.t. — tokens hebben geen gedrag; hover/focus hoort bij de bibliotheek-briefing
-- [ ] Edge case — `spacing.4` op `1.1rem` laat `pnpm --filter @umanex/tokens build` falen
-- [ ] Edge case — een ontbrekende Tailwind-v3-spacingsleutel laat de build falen
-- [ ] Edge case — een rol die naar een onbestaande stap aliast laat de build falen
+- [x] Typologie — `Layout/Scale` staat in `PRIMITIVE_SETS` en levert `layout.mjs` — bewijs: `packages/tokens/build.mjs` regel 57; build schrijft `build/layout.mjs` (rc=0)
+- [x] Typologie — `ROLE_GROUPS` blijft `Theme` en `Semantic`; de rollen landen in `Theme/base` — bewijs: `git diff origin/main -- packages/tokens/build.mjs` raakt `ROLE_GROUPS` niet; `theme.css` :root draagt `--spacing-surface` … `--size-control-lg` (11 regels)
+- [x] States n.v.t. — tokens hebben geen data-laag, dus loading/empty/error bestaan hier niet — bewijs: geen component of datastroom in de diff buiten klassewissels
+- [x] Interactie n.v.t. — tokens hebben geen gedrag; hover/focus hoort bij de bibliotheek-briefing — bewijs: besluit 2026-09-17 staat in `2026-09-16-feature-shadcn-volledige-bibliotheek.tcebc.md`
+- [x] Edge case — `spacing.4` op `1.1rem` laat `pnpm --filter @umanex/tokens build` falen — bewijs: rc=1, "spacing.4 is 1.1rem, Tailwind-default is 1rem"
+- [x] Edge case — een ontbrekende Tailwind-v3-spacingsleutel laat de build falen — bewijs: `spacing.7` weg → rc=1, "spacing.7 ontbreekt in Layout/Scale"
+- [x] Edge case — een rol die naar een onbestaande stap aliast laat de build falen — bewijs: `{spacing.13}` → rc=1, "Some token references (1) could not be found"; tokens.json daarna byte-gelijk hersteld (sha `aef4900de4b0`)
 
 ### Tokens en code
 
-- [ ] `Layout/Scale` draagt elke spacing-sleutel van Tailwind v3 met dezelfde waarde (telling tegen `tailwindcss/defaultTheme`)
-- [ ] `Theme/base` draagt precies de rollen uit de naamlijst
-- [ ] `preset.ts` bevat geen literal spacing- of borderWidth-waarde
-- [ ] Gecompileerde Tailwind-CSS van cashflow is vóór/na byte-gelijk op bestaande regels
-- [ ] Gecompileerde Tailwind-CSS van jobradar is vóór/na byte-gelijk op bestaande regels
-- [ ] Gecompileerde Tailwind-CSS van dashboard is vóór/na byte-gelijk op bestaande regels
-- [ ] Gecompileerde Tailwind-CSS van portfolio is vóór/na byte-gelijk op bestaande regels
-- [ ] Gecompileerde Tailwind-CSS van soda-plus is vóór/na byte-gelijk op bestaande regels
-- [ ] In de 17 componentbestanden staat geen schaalklasse meer die een rol uit de naamlijst dupliceert
-- [ ] `pnpm --filter @umanex/ui geometry` geeft 0 verschillen na de klassewissel
-- [ ] Token guard kent `arbitrary-spacing`; tegenproef `p-[13px]` in een componentbestand is rood
-- [ ] `pnpm --filter @umanex/tokens guard` groen
-- [ ] `pnpm ds:guard:selftest` groen
-- [ ] `pnpm turbo type-check` groen
+- [x] `Layout/Scale` draagt elke spacing-sleutel van Tailwind v3 met dezelfde waarde — bewijs: 35/35 sleutels uit `tailwindcss/defaultTheme` (3.4.19); de build-guard toetst ze bij elke build
+- [x] `Theme/base` draagt precies de rollen uit de naamlijst — bewijs: `layoutRoleUtilities` in `build/roles.mjs` = 11 sleutels, gelijk aan de tabel
+- [x] `preset.ts` bevat geen literal spacing- of borderWidth-waarde — bewijs: `spacing` en `borderWidth` komen uit `@umanex/tokens/layout`; rollen als `var(--…)` uit `layoutRoleUtilities`
+- [x] Gecompileerde Tailwind-CSS van cashflow is vóór/na byte-gelijk op bestaande regels — bewijs: `tailwindcss -c` vóór/na de preset-wissel `cmp` gelijk (46 384 B); tegenproef `spacing.4 = 1.1rem` in layout.mjs → 26 regels verschil (op packages/ui)
+- [x] Gecompileerde Tailwind-CSS van jobradar is vóór/na byte-gelijk op bestaande regels — bewijs: `cmp` gelijk (39 096 B), zelfde run
+- [x] Gecompileerde Tailwind-CSS van dashboard is vóór/na byte-gelijk op bestaande regels — bewijs: `cmp` gelijk (36 186 B), zelfde run
+- [x] Gecompileerde Tailwind-CSS van portfolio is vóór/na byte-gelijk op bestaande regels — bewijs: `cmp` gelijk (41 665 B), zelfde run
+- [x] Gecompileerde Tailwind-CSS van soda-plus is vóór/na byte-gelijk op bestaande regels — bewijs: `cmp` gelijk (30 588 B), zelfde run; gemeten vóór de klassewissel in de componenten, die de CSS bedoeld verandert
+- [x] In de 17 componentbestanden staat geen schaalklasse meer die een rol uit de naamlijst dupliceert — bewijs: grep per rol op zijn consumenten 0/0/0/0/0/0/0/0/0/0/0/0; positieve controle: `p-6` in `card.tsx` op origin/main = 3
+- [x] `pnpm --filter @umanex/ui geometry` geeft 0 verschillen na de klassewissel — bewijs: 225 elementen over 42 stories, 0 maatverschillen tegen de basislijn van main (56 klassewijzigingen), 3 identieke runs; tegenproef `--spacing-surface: 1.25rem` in de gebouwde CSS → 12 verschillen
+- [x] Token guard kent `arbitrary-spacing`; tegenproef `p-[13px]` in een componentbestand is rood — bewijs: `badge.tsx` met `p-[13px]` → rc=1 op `[arbitrary-spacing]`; zonder de baseline-regel valt cashflow `ReservationSection.tsx:261`
+- [x] `pnpm --filter @umanex/tokens guard` groen — bewijs: rc=0, 400 bestanden, 1 baseline-uitzondering (apps/cashflow/BACKLOG.md 2026-09-17)
+- [x] `pnpm ds:guard:selftest` groen — bewijs: rc=0, 9/9 apps
+- [x] `pnpm turbo type-check` groen — bewijs: `--force`, 9/9 taken, 0 uit cache; tegenproef: een typefout in `preset.ts` faalt jobradar (TS2322)
+
+### Gevonden tijdens de bouw
+
+- [x] `cn()` laat een className van de consument winnen van een rol-utility — bewijs: 7 gevallen (`cn("p-surface","p-4")` = `p-4`, `cn("h-control-md w-full","h-8")` = `w-full h-8`, …) groen; zonder de uitbreiding hield tailwind-merge beide klassen. Eenmalige probe, niet gecommit; structureel leest `cn()` dezelfde `layoutRoleUtilities` als de preset
+- [x] `geometry-check` meet de eerste story met geladen fonts — bewijs: badge--playground koud 73 px met 0 fonts, warm 72 px met 2 (eenmalige probe); na de fix 3 runs identiek
+- [x] `geometry-check` meet een uitgelopen animatie — bewijs: tooltip--open gaf opacity 0 en 1 op dezelfde build; na de fix 3 runs identiek
+- [x] `geometry-check` meet de breedte van `w-control-md` — bewijs: `button--sizes [5].w` en `themetoggle--default [1].w` weer 40 in de basislijn
+- [x] `lees-manifest.js` leest een alias als getal plus `aliassen` — bewijs: recept-selftest 8/8 op het ververste manifest; tegenproef zonder alias-resolutie 6/8
 
 ### Figma
 
-- [ ] `BEKENDE_GATEN` in `packages/ui/scripts/figma-sync-check.mjs` bevat alleen `radius-sm`, `radius-md`, `radius-lg` en `radius-full`
-- [ ] `[dekking]` groen op het bijgewerkte manifest
-- [ ] Tegenproef — een Base-variabele zonder tokenpad maakt `[dekking]` rood
-- [ ] Elke rolvariabele in Base is een alias naar zijn schaalvariabele (read-back via de runtime)
-- [ ] De ids van de 22 bestaande Base-variabelen zijn ongewijzigd (manifest-diff)
-- [ ] Switch en Dialog binden padding, gap en hoogte aan de rolvariabele waar de code de rol-utility draagt
-- [ ] De 15 handgebouwde componenten binden aan de rolvariabele waar de code de rol-utility draagt (log vóór/na per node)
-- [ ] `pnpm --filter @umanex/ui parity` geeft 0 verschillen na de herbinding
+- [x] `BEKENDE_GATEN` in `packages/ui/scripts/figma-sync-check.mjs` bevat alleen `radius-sm`, `radius-md`, `radius-lg` en `radius-full` — bewijs: `git diff`; de ratel faalde eerst op 17 namen die wél een token kregen
+- [x] `[dekking]` groen op het bijgewerkte manifest — bewijs: "96/100 variabelen gedekt door tokens.json; 4 bekende gaten (radius-stappen)"
+- [x] Tegenproef — een Base-variabele zonder tokenpad maakt `[dekking]` rood — bewijs: selftest-case `spacing-13 = 52` rood op [dekking] (verhuisd van `spacing-7`, dat nu een token heeft)
+- [x] Elke rolvariabele in Base is een alias naar zijn schaalvariabele — bewijs: runtime read-back 11/11 (`spacing-surface→spacing-6 [GAP]` … `size-control-lg→spacing-11 [WIDTH_HEIGHT]`); `[schaal]` toetst het tegen Theme/base, met 2 nieuwe tegenproeven
+- [x] De ids van de 22 bestaande Base-variabelen zijn ongewijzigd — bewijs: `idsGewijzigd: []` in dezelfde call als het schrijven; tweede droge run 0 wijzigingen
+- [x] Switch en Dialog binden padding, gap en hoogte aan de rolvariabele waar de code de rol-utility draagt — bewijs: spec 0 fouten; Dialog runtime read-back `DialogContent` padding `spacing-surface` ×4, gap `spacing-stack`, header `spacing-heading`, footer `spacing-inline`, knoppen `spacing-control-y`; toets-batch 7b 0 verschillen. Switch draagt geen rol-utility
+- [x] De 15 handgebouwde componenten binden aan de rolvariabele waar de code de rol-utility draagt — bewijs: 213 velden herbonden met log vóór/na, 4 bewust niet (Sheet-gap, waarde ≠ rol → BACKLOG 2026-09-17); read-back per pagina: resterende `spacing-N` zijn alleen stappen zonder rol (`px-4`, `px-8`, `px-2`, separator, `pr-9`, `h-20`, `pt-2`)
+- [x] `pnpm --filter @umanex/ui parity` geeft 0 verschillen na de herbinding — bewijs: 68 varianten + 19 keten-nodes, 2 runs; TabsTrigger, ThemeToggle en SheetContent slaat parity al over (geen playground met die assen)
 
 ### Docs en proces
 
-- [ ] Storybook `Tokens/Layout` toont schaal en rollen, gelezen uit tokens.json
-- [ ] `CLAUDE.md` (root) noemt `Layout/Scale` in de lagen-tabel
+- [x] Storybook `Tokens/Layout` toont schaal en rollen, gelezen uit tokens.json — bewijs: render op storybook-static: 11 rolrijen met gemeten 24/4/12/8/6/8/16/6/36/40/44 px, 40 schaalrijen; Radius-pagina toont weer 1 rij
+- [x] `CLAUDE.md` (root) noemt `Layout/Scale` in de lagen-tabel — bewijs: `git diff origin/main -- CLAUDE.md`
 - [ ] De PR-body draagt de naamlijst ter review
-- [ ] Na Jeroens Pull in Tokens Studio geeft zijn eerstvolgende push 0 diff op `Layout/Scale` en `Theme/base`
+- [ ] Na Jeroens Pull in Tokens Studio geeft zijn eerstvolgende push 0 diff op `Layout/Scale` en `Theme/base` — [NIET TE VERIFIËREN vóór de merge — vraagt Jeroens pull]
 
 ## Beslissingsgeschiedenis
 
 - 2026-09-17: layout-tokens als schaal + rollen, als eigen PR tussen batch 0 en batch 1 — besluit Jeroen.
 - 2026-09-17: radius-stappen buiten deze PR — ze zijn een calc() op één token, geen layout, en uitschrijven wijzigt de CSS-uitvoer van elke app.
+- 2026-09-17: `cn()` uitgebreid met de rol-sleutels — zonder dat wint een className van de consument niet meer van een rol-utility (17 overrides in de apps).
+- 2026-09-17: Figma Base spiegelt de volledige `Layout/Scale` (41 variabelen), niet alleen de gebruikte stappen — dan zegt de dekkingscheck iets over de bron in plaats van over het gebruik.

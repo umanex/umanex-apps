@@ -106,6 +106,12 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Klant — umanex
 
+## 2026-09-17 — `--primary` en `--ring` delen hun tint met `--finance-negative` · [design-system]
+- **Wat:** Beslissen of focusring en merkkleur een tint mogen dragen die in een geld-app "verlies" betekent. Gemeten in `packages/tokens/build/theme.css` (light): `--primary` = `--ring` = `0 56.2% 49.2%`, `--finance-negative` = `--destructive` = `0 73.7% 41.8%` — dezelfde tint 0°. In cashflow is rood daardoor tegelijk focusring, link ("Finaliseren →"), sleepdoel en tekort. Opties: een neutrale `--ring` in `Theme/light|dark`, of een eigen rol voor de focusring los van `--primary`.
+- **Waarom niet nu:** Het is een tokenbeslissing voor alle apps (portfolio en vyvey dragen de merkkleur bewust), en tokens gaan via Tokens Studio. Het cashflow-UX-plan van 2026-09-17 (stap 7) ontlast de kleur alleen in hoe cashflow de rollen gebruikt, zonder tokenwijziging. Niet te verwarren met de entry *Hover- en focus-states staan niet in Figma* (Globaal) en met de opgeloste HANDOFF-entry "--primary haalt AA niet" (2026-08-05): die gingen over contrast en Figma-varianten, dit over betekenis.
+- **Eerste zet:** na stap 7 van het cashflow-plan de berekende kleuren tellen die nog gelijk zijn aan `--ring` op elementen die geen focus hebben; is dat nul, dan speelt het alleen nog bij focus en is een neutrale `--ring` de kleinste ingreep.
+- **Status:** open
+
 ## 2026-09-17 — `ds:guard` ziet een rauw formulierveld naast een bestaande primitive niet · [test]
 - **Wat:** Een as in `pnpm ds:guard` die per app op `@umanex/ui` telt hoeveel `<input>`, `<select>`, `<textarea>` en `<button>` er in app-code staan terwijl `Input`, `NativeSelect`, `Textarea` en `Button` bestaan — met een ratel (baseline per app, tweezijdig), zodat er een bij rood is en er een af de baseline laat zakken.
 - **Waarom niet nu:** De critique van jobradar (2026-09-17) vond 49 native velden en 20 native knoppen terwijl `ds:guard` groen stond: zijn `[dubbel]`-as zoekt een lokale kópie op naam, niet een rauw element waar een primitive voor bestaat. Het plan `delightful-stirring-blossom` migreert jobradar met de hand (fase 4b); een guard erbij is een tooling-beslissing voor alle apps, en cashflow heeft volgens de meting van 2026-09-07 58 bewust te dichte controls die een naïeve telling rood zou maken.

@@ -102,7 +102,8 @@ Push je vanuit de plugin vóór die pull, dan draai je de restructurering terug.
 ```
 Primitives          rauwe ramps, enige plek met een literal hex — resolve-only, geen output
 Typography/Scale    families, size/leading/weight/tracking — levert build/typography.mjs
-Theme/base          mode-blinde rollen (radius) — alleen in :root
+Layout/Scale        spacing-, border- en icon-schaal (= Tailwind v3) — levert build/layout.mjs
+Theme/base          mode-blinde rollen (radius, layout-rollen spacing-*/size-*) — alleen in :root
 Theme/light|dark    DE shadcn-rollaag, per mode
 Semantic/light|dark domeinrollen (finance, overlay), per mode
 ```
@@ -112,7 +113,10 @@ wordt automatisch een mode-blok; alles buiten `Theme/` en `Semantic/` is een pri
 
 **Consumptieregel.** App-code en `packages/ui` raken uitsluitend de **rollaag** aan, via een
 Tailwind-utility uit `@umanex/config/tailwind/preset`. Geen primitive, geen rauwe
-paletklasse (`bg-green-500`), geen hardcoded hex, geen arbitrary font-size of radius.
+paletklasse (`bg-green-500`), geen hardcoded hex, geen arbitrary font-size, radius of spacing.
+Layout: een schaalstap (`p-4`) of een layout-rol (`p-surface`, `h-control-md`); een rol bestaat
+pas als twee componenten dezelfde maat op een vergelijkbare plek dragen. Een rol is een gedeelde
+maat, geen doel: wie hem wijzigt, verschuift elk component dat hem draagt (zie de docs-tabel).
 De preset wordt gegenereerd uit de tokens, dus een kleur die geen rol is heeft geen utility.
 Ontbreekt er een waarde? Voeg een rol toe in **beide** mode-sets — de build faalt op
 asymmetrie — en gebruik hem als utility.

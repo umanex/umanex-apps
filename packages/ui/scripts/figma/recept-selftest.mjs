@@ -47,14 +47,18 @@ function stubVan(manifest, geometrie, { muteer } = {}) {
       const id = `${naam}/${vn}`; ids.push(id);
       const valuesByMode = {};
       for (const m of modes) {
-        if (!Array.isArray(c.variables)) { valuesByMode[m.modeId] = c.variables[vn]; continue; }
+        if (!Array.isArray(c.variables)) {
+          const doel = c.aliassen?.[vn];
+          valuesByMode[m.modeId] = doel ? { type: 'VARIABLE_ALIAS', id: `${naam}/${doel}` } : c.variables[vn];
+          continue;
+        }
         const w = c.waarden?.[vn]?.[m.name];
         const hsl = String(w).match(/^([\d.]+) ([\d.]+)% ([\d.]+)%$/);
         const rgba = String(w).match(/^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/);
         valuesByMode[m.modeId] = hsl ? hslNaarRgbFloat(+hsl[1], +hsl[2], +hsl[3])
           : rgba ? { r: +rgba[1] / 255, g: +rgba[2] / 255, b: +rgba[3] / 255, a: +rgba[4] } : w;
       }
-      variabelen.set(id, { name: vn, valuesByMode });
+      variabelen.set(id, { id, name: vn, valuesByMode });
     }
     collecties.push({ name: naam, modes, variableIds: ids });
   }

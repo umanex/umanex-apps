@@ -20,6 +20,13 @@ const check0 = await (await fetch(`http://localhost:${POORT}/check0.json`)).json
 const rond = n => Math.round(n * 100) / 100;
 const zichtbaar = arr => Array.isArray(arr) ? arr.filter(p => p.visible !== false && (p.opacity ?? 1) > 0) : [];
 
+// Variabele-id → "Collectie:naam", één keer per batch (de map verandert niet tussen componenten).
+const varNaam = new Map();
+for (const c of await figma.variables.getLocalVariableCollectionsAsync()) {
+  const vars = await Promise.all(c.variableIds.map(id => figma.variables.getVariableByIdAsync(id)));
+  for (const v of vars) varNaam.set(v.id, `${c.name}:${v.name}`);
+}
+
 const verslag = {};
 for (const comp of BATCH) {
   const d = min.componenten[comp];
@@ -76,6 +83,38 @@ for (const comp of BATCH) {
     if (zichtbaar(n.effects).length && !n.effectStyleId) r.rauw.push(`${pad(n)}: effect zonder effect style`);
   }
 
+  // --- 3b. Bindingnamen -----------------------------------------------------------------------
+  // De read-back hieronder vergelijkt waarden; p-6 en p-surface renderen allebei 24. Hier de naam:
+  // spec en Figma parallel (de builder hangt kinderen in spec-volgorde), per veld de variabele
+  // die de spec noemt tegen de variabele die op de node staat.
+  r.bindingen = [];
+  const PAD_VELDEN = ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'];
+  const vergelijk = (s, n, pad) => {
+    if (!s) return;
+    // Een node die de spec noemt maar Figma mist, is een verschil — geen stille nul.
+    if (!n) { r.bindingen.push(`${pad}: node ontbreekt in Figma`); return; }
+    const bv = n.boundVariables ?? {};
+    const naamOp = veld => (bv[veld]?.id ? (varNaam.get(bv[veld].id) ?? `onbekend:${bv[veld].id}`) : null);
+    // Padding en gap bindt de builder alleen op een auto-layout-frame (spec: kinderen + richting);
+    // op een blad of tekstnode zou de spec-waarde een vals verschil geven.
+    const autoLayout = !!(s.k?.length && s.rij !== undefined);
+    const paren = [
+      ...(autoLayout ? PAD_VELDEN.map((veld, i) => [veld, s.paddingVar?.[i] ?? null]) : []),
+      ...(autoLayout ? [['itemSpacing', s.gapVar ?? null]] : []),
+      ['height', s.hVar ?? null], ['width', s.wVar ?? null],
+    ];
+    for (const [veld, verwacht] of paren) {
+      const echt = naamOp(veld);
+      if (verwacht !== echt && (verwacht || echt)) r.bindingen.push(`${pad} ${veld}: spec ${verwacht ?? '—'}, Figma ${echt ?? '—'}`);
+    }
+    const kinderen = 'children' in n ? n.children : [];
+    (s.k ?? []).forEach((k, i) => vergelijk(k, kinderen[i], `${pad}>${k.naam ?? i}`));
+  };
+  for (const v of d.varianten) {
+    const n = hoofd.type === 'COMPONENT_SET' ? knopen.find(k => k.name === v.naam) : hoofd;
+    vergelijk(v.boom, n, v.naam);
+  }
+
   // --- 4. Read-back van de wortel ------------------------------------------------------------
   for (const v of d.varianten) {
     const n = hoofd.type === 'COMPONENT_SET' ? knopen.find(k => k.name === v.naam) : hoofd;
@@ -98,10 +137,10 @@ for (const comp of BATCH) {
     buitenVocab: r.leesbaarheid.buitenVocabAantal, numeriek: r.leesbaarheid.numeriek, naarInhoud: r.leesbaarheid.naarInhoudVernoemd,
     groepen: r.leesbaarheid.groepen, zonderAutoLayout: r.leesbaarheid.zonderAutoLayout.length,
     tekstZonderStyle: `${r.leesbaarheid.tekstZonderStyle.length} (verwacht: ${r.leesbaarheid.tekstZonderStyleVerwacht.join(', ') || 'geen'})`,
-    description: !!r.leesbaarheid.description, rauw: r.rauw.length, readbackVerschillen: r.readback.length,
+    description: !!r.leesbaarheid.description, rauw: r.rauw.length, readbackVerschillen: r.readback.length, bindingVerschillen: r.bindingen.length,
   };
   verslag[comp] = r;
 }
 const uit = { stamp: STAMP, batch: BATCH, verslag };
 try { await fetch(`http://localhost:${POORT}/toets-${STAMP}.json`, { method: 'POST', body: JSON.stringify(uit, null, 1) }); } catch { /* de return draagt de samenvatting */ }
-return Object.fromEntries(Object.entries(verslag).map(([c, r]) => [c, r.fout ? r : { ...r.samenvatting, rauwVoorbeeld: r.rauw.slice(0, 5), readback: r.readback.slice(0, 8), check0Verschil: r.check0.filter(x => !x.gelijk) }]));
+return Object.fromEntries(Object.entries(verslag).map(([c, r]) => [c, r.fout ? r : { ...r.samenvatting, rauwVoorbeeld: r.rauw.slice(0, 5), readback: r.readback.slice(0, 8), bindingen: r.bindingen.slice(0, 8), check0Verschil: r.check0.filter(x => !x.gelijk) }]));

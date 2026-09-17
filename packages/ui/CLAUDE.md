@@ -31,15 +31,17 @@ Twee variabelen-collections in Figma:
 | Collection | Modes | Inhoud | Bron |
 |---|---|---|---|
 | `Theme` | Light, Dark | de 42 hsl-rollen + `overlay-scrim` | `packages/tokens/build/theme.css` |
-| `Base` | Value | `radius*`, `spacing-*`, `border-*`, `icon-stroke` | preset + Tailwind-schaal + lucide |
+| `Base` | Value | `spacing-*`, `border-*`, `icon-stroke`, de layout-rollen (`spacing-surface`, `size-control-md`, … als alias) en `radius*` | `Layout/Scale` + `Theme/base` in `tokens.json`; `radius*` uit de preset |
 
 `radius-lg/md/sm` zijn afgeleiden van `--radius` (`var(--radius)`, `−2px`, `−4px` — zoals de
-preset ze definieert); de guard rekent die regel terug. `spacing-*` volgt Tailwinds `n × 4px`.
+preset ze definieert); de guard rekent die regel terug. `spacing-*`, `border-*` en `icon-stroke`
+toetst de guard tegen `Layout/Scale`, en elke layout-rol moet een alias zijn naar de stap die
+`Theme/base` noemt. Base gelijkzetten gaat met `figma/zet-base.js` (zie Verify-pad), bij naam: een
+bestaande variabele houdt zijn id en dus elke binding.
 
 **Bekende gaten**, expliciet in plaats van stil:
-- `spacing-*`, `border-*` en `icon-stroke` hebben **geen token in `tokens.json`** — hun bron is de
-  Tailwind-default respectievelijk lucide-react. `roles.mjs` zegt "later spacing"; tot dat er is,
-  is de Figma-kant de enige plek waar deze schaal expliciet staat. Zie `BACKLOG.md`.
+- `radius-sm|md|lg|full` hebben **geen eigen token**: de preset leidt ze met `calc()` af van één
+  token (`radius`). Ze staan als `BEKENDE_GATEN` in de guard. Zie `BACKLOG.md` 2026-08-25.
 - `shadow/sm` en `shadow/md` zijn Tailwind-defaults, om dezelfde reden.
 - De guard ziet **geen** wijziging die in Figma gemaakt wordt zonder verse manifest. CI heeft geen
   Figma-toegang; de manifest is een meting, geen live verbinding.
@@ -61,6 +63,7 @@ preset ze definieert); de guard rekent die regel terug. `spacing-*` volgt Tailwi
 | **Leesscripts tegenproeven** | `pnpm --filter @umanex/ui figma:recept:selftest` — `lees-manifest.js` en `lees-geometrie.js` op een stub uit de gecommitte bestanden |
 | **Builder-poort tegenproeven** | `pnpm --filter @umanex/ui figma:poort:selftest` — `poort`, `bouwhash` en de meldingen-basislijn, letterlijk uit `figma/builder.js` |
 | **Deep-links actueel** | `node scripts/figma/links.mjs --check` — exit 1 als een keten-story een andere url zou krijgen |
+| **Base gelijkzetten met tokens** | `pnpm --filter @umanex/ui figma:base` schrijft `figma/base-payload.json`; daarna `figma/zet-base.js` via `figma_execute` (parameters `figma, POORT, SCHRIJF`) — eerst met `SCHRIJF = false`, dan pas schrijven, dan het manifest verversen |
 
 ### De Figma-keten — een component in Figma bouwen
 
@@ -117,6 +120,9 @@ tokenbron (BACKLOG 2026-08-25), dus dat is een vraag aan Jeroen, geen default.
   (`BEKENDE_ONGEBONDEN` in de guard, met reden per waarde).
 - `figma/laagnamen.json` — `heuristiek` hoort 0 te zijn; `[laagnaam]` is rood op één.
 - Iconstreep: 2 px in Figma tegen ±1,33 px in de browser — huisconventie, zie BACKLOG 2026-09-16.
+- De builder vervangt bij elke bouw de **kinderen** van een component: set-id, component-id en key
+  blijven, de ids eronder zijn nieuw — ook met dezelfde spec (gemeten 2026-09-17 op DialogContent).
+  Onschuldig zolang niets naar een kind-node verwijst; zie BACKLOG 2026-09-17 (instance-overrides).
 - Geportalde content (DialogContent) staat niet in `geometry.code.json` — `parity` meet hem wel,
   recursief tegen de spec. Zie BACKLOG 2026-09-16.
 

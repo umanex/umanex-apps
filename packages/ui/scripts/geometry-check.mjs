@@ -36,6 +36,7 @@ import { createServer } from 'node:http';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { layoutRoleUtilities } from '@umanex/tokens/roles';
 
 const ui = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STATIC = join(ui, 'storybook-static');
@@ -64,7 +65,7 @@ function serve(root) {
  * Meet in de pagina. Alleen font-onafhankelijke doosmaten: een breedte die uit de tekst
  * volgt is onvergelijkbaar, dus die gaat er alleen in bij een expliciete breedte-klasse.
  */
-const meet = () => {
+const meet = (rolSleutels) => {
   const root = document.querySelector('#storybook-root');
   if (!root) return { fout: 'geen #storybook-root' };
   const els = [...root.querySelectorAll('*')].filter(e => {
@@ -81,7 +82,10 @@ const meet = () => {
       // tekstgedreven. Mijn macOS-run was groen, CI op Linux gaf zestien verschillen op
       // font-metrics. Dat is rail 2: groen op een ander doelwit bewijst niets.
       const tokens = (typeof e.className === 'string' ? e.className : '').split(/\s+/);
-      const expliciet = tokens.some(c => /^w-(\d|\[|full|screen)/.test(c) || /^size-\d/.test(c));
+      // Een layout-rol (w-control-md) is net zo expliciet als w-10; zonder die tak viel de
+      // breedte van de icoonknop stil uit de basislijn toen button.tsx op de rol overging.
+      const expliciet = tokens.some(c => /^w-(\d|\[|full|screen)/.test(c) || /^size-\d/.test(c)
+        || rolSleutels.some(k => c === `w-${k}` || c === `size-${k}`));
       return {
         tag: e.tagName.toLowerCase(),
         klassen: (typeof e.className === 'string' ? e.className : '').split(/\s+/).filter(Boolean).sort().join(' '),
@@ -114,11 +118,25 @@ async function vastleggen() {
   const uit = {};
   for (const s of stories) {
     await page.goto(`http://127.0.0.1:${poort}/iframe.html?id=${s.id}&viewMode=story`, { waitUntil: 'networkidle' });
-    // Fonts eerst: een meting vóór het laden van Fira Sans meet de fallback-metrics.
-    await page.evaluate(() => document.fonts.ready);
     await page.waitForFunction(() => (document.querySelector('#storybook-root')?.children.length ?? 0) > 0,
       null, { timeout: 8000 }).catch(() => {});
-    uit[s.id] = await page.evaluate(meet);
+    // Fonts eerst: een meting vóór het laden van Fira Sans meet de fallback-metrics.
+    // `document.fonts.ready` alleen volstaat niet: die resolvet meteen zolang er nog geen
+    // font AANGEVRAAGD is, en op de eerste story van een koude browser is dat zo. Gemeten
+    // 2026-09-17: badge--playground koud 73 px met 0 geladen fonts, warm 72 px met 2.
+    await page.evaluate(async () => {
+      await Promise.all([...document.fonts].map(f => f.load().catch(() => null)));
+      await document.fonts.ready;
+    });
+    // Eindige animaties uitlopen (tooltip zoom-in): anders meet de run een tussenstand, en
+    // twee runs op dezelfde build gaven opacity 0 en 1. Oneindige (pulse, spin) en gepauzeerde niet.
+    await page.evaluate(() => Promise.race([
+      Promise.all(document.getAnimations()
+        .filter(a => a.playState !== 'paused' && a.effect?.getComputedTiming().iterations !== Infinity)
+        .map(a => a.finished.catch(() => null))),
+      new Promise(r => setTimeout(r, 3000)),
+    ]));
+    uit[s.id] = await page.evaluate(meet, Object.keys(layoutRoleUtilities));
   }
   await browser.close(); server.close();
   return uit;

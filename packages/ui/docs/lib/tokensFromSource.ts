@@ -4,19 +4,19 @@
  * Geen handgeschreven lijst per component — die drijft weg zodra iemand een
  * className wijzigt. Dit leest de class-strings zoals ze in het bestand staan,
  * haalt de variant-prefixen weg (hover:, data-[state=checked]:, [&_svg]:) en
- * herkent de utility als rol-, radius- of typografie-token. Een utility die geen
- * token is (flex, h-10, rounded-full) valt er stil uit: die is hier geen onderwerp.
+ * herkent de utility als rol-, radius-, layout- of typografie-token. Een utility die
+ * geen token is (flex, h-10, rounded-full) valt er stil uit: die is hier geen onderwerp.
  */
-import { colorRoleByName, typeScale, weights, trackings, families, type ColorRole } from './tokenCatalog';
+import { colorRoleByName, layoutRoles, typeScale, weights, trackings, families, type ColorRole } from './tokenCatalog';
 
 export type TokenUse = {
-  kind: 'color' | 'radius' | 'typography';
+  kind: 'color' | 'radius' | 'layout' | 'typography';
   /** Tokens Studio-pad (primary, radius, font.size.sm). */
   token: string;
   /** De utilities zoals ze in de bron staan, variant-prefix inbegrepen. */
   utilities: string[];
   role?: ColorRole;
-  /** Voor radius en typografie: de waarde die de utility oplevert. */
+  /** Voor radius, layout en typografie: de waarde die de utility oplevert. */
   value?: string;
 };
 
@@ -27,6 +27,11 @@ const COLOR_PREFIXES = [
 ];
 
 const RADIUS = /^rounded(?:-[trblse]{1,2})?-(sm|md|lg)$/;
+
+// Een layout-rol (p-surface, h-control-md) op elke utility die Tailwind uit de spacing-map
+// afleidt. h-10 is geen token en blijft eruit; h-control-md wel.
+const LAYOUT = /^-?(p|px|py|pt|pr|pb|pl|ps|pe|m|mx|my|mt|mr|mb|ml|ms|me|gap|gap-x|gap-y|space-x|space-y|h|w|size|min-h|min-w|max-h|max-w|inset|top|right|bottom|left)-(.+)$/;
+const layoutRoleByUtility = new Map(layoutRoles.map((r) => [r.utility, r]));
 const RADIUS_VALUE: Record<string, string> = {
   lg: 'var(--radius)',
   md: 'calc(var(--radius) - 2px)',
@@ -59,6 +64,9 @@ function classesIn(source: string): string[] {
 function classify(utility: string): Omit<TokenUse, 'utilities'> | null {
   const radius = utility.match(RADIUS);
   if (radius?.[1]) return { kind: 'radius', token: 'radius', value: RADIUS_VALUE[radius[1]] };
+
+  const layout = layoutRoleByUtility.get(utility.match(LAYOUT)?.[2] ?? '');
+  if (layout) return { kind: 'layout', token: layout.path, value: `${layout.ref} → ${layout.value}` };
 
   const size = utility.match(/^text-(.+)$/)?.[1];
   const step = size ? typeScale.find((s) => s.key === size) : undefined;
@@ -96,6 +104,6 @@ export function tokensFromSource(source: string): TokenUse[] {
       byToken.set(hit.token, { ...hit, utilities: [cls] });
     }
   }
-  const order = { color: 0, radius: 1, typography: 2 };
+  const order = { color: 0, radius: 1, layout: 2, typography: 3 };
   return [...byToken.values()].sort((a, b) => order[a.kind] - order[b.kind]);
 }

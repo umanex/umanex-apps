@@ -13,6 +13,10 @@
     "./typography": {
       "types": "./build/typography.d.ts",
       "default": "./build/typography.mjs"
+    },
+    "./layout": {
+      "types": "./build/layout.d.ts",
+      "default": "./build/layout.mjs"
     }
   },
   "scripts": {

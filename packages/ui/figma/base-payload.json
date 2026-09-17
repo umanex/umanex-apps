@@ -1,0 +1,248 @@
+{
+  "$comment": "Gegenereerd door scripts/figma/base-payload.mjs uit packages/tokens/tokens.json — niet met de hand bewerken.",
+  "schaal": [
+    {
+      "naam": "spacing-0",
+      "px": 0
+    },
+    {
+      "naam": "spacing-1",
+      "px": 4
+    },
+    {
+      "naam": "spacing-2",
+      "px": 8
+    },
+    {
+      "naam": "spacing-3",
+      "px": 12
+    },
+    {
+      "naam": "spacing-4",
+      "px": 16
+    },
+    {
+      "naam": "spacing-5",
+      "px": 20
+    },
+    {
+      "naam": "spacing-6",
+      "px": 24
+    },
+    {
+      "naam": "spacing-7",
+      "px": 28
+    },
+    {
+      "naam": "spacing-8",
+      "px": 32
+    },
+    {
+      "naam": "spacing-9",
+      "px": 36
+    },
+    {
+      "naam": "spacing-10",
+      "px": 40
+    },
+    {
+      "naam": "spacing-11",
+      "px": 44
+    },
+    {
+      "naam": "spacing-12",
+      "px": 48
+    },
+    {
+      "naam": "spacing-14",
+      "px": 56
+    },
+    {
+      "naam": "spacing-16",
+      "px": 64
+    },
+    {
+      "naam": "spacing-20",
+      "px": 80
+    },
+    {
+      "naam": "spacing-24",
+      "px": 96
+    },
+    {
+      "naam": "spacing-28",
+      "px": 112
+    },
+    {
+      "naam": "spacing-32",
+      "px": 128
+    },
+    {
+      "naam": "spacing-36",
+      "px": 144
+    },
+    {
+      "naam": "spacing-40",
+      "px": 160
+    },
+    {
+      "naam": "spacing-44",
+      "px": 176
+    },
+    {
+      "naam": "spacing-48",
+      "px": 192
+    },
+    {
+      "naam": "spacing-52",
+      "px": 208
+    },
+    {
+      "naam": "spacing-56",
+      "px": 224
+    },
+    {
+      "naam": "spacing-60",
+      "px": 240
+    },
+    {
+      "naam": "spacing-64",
+      "px": 256
+    },
+    {
+      "naam": "spacing-72",
+      "px": 288
+    },
+    {
+      "naam": "spacing-80",
+      "px": 320
+    },
+    {
+      "naam": "spacing-96",
+      "px": 384
+    },
+    {
+      "naam": "spacing-px",
+      "px": 1
+    },
+    {
+      "naam": "spacing-0_5",
+      "px": 2
+    },
+    {
+      "naam": "spacing-1_5",
+      "px": 6
+    },
+    {
+      "naam": "spacing-2_5",
+      "px": 10
+    },
+    {
+      "naam": "spacing-3_5",
+      "px": 14
+    },
+    {
+      "naam": "border-0",
+      "px": 0
+    },
+    {
+      "naam": "border-1",
+      "px": 1
+    },
+    {
+      "naam": "border-2",
+      "px": 2
+    },
+    {
+      "naam": "border-4",
+      "px": 4
+    },
+    {
+      "naam": "border-8",
+      "px": 8
+    },
+    {
+      "naam": "icon-stroke",
+      "px": 2
+    }
+  ],
+  "rollen": [
+    {
+      "naam": "spacing-surface",
+      "alias": "spacing-6",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "naam": "spacing-menu",
+      "alias": "spacing-1",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "naam": "spacing-control-x",
+      "alias": "spacing-3",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "naam": "spacing-control-y",
+      "alias": "spacing-2",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "naam": "spacing-item-y",
+      "alias": "spacing-1_5",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "naam": "spacing-inline",
+      "alias": "spacing-2",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "naam": "spacing-stack",
+      "alias": "spacing-4",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "naam": "spacing-heading",
+      "alias": "spacing-1_5",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "naam": "size-control-sm",
+      "alias": "spacing-9",
+      "scopes": [
+        "WIDTH_HEIGHT"
+      ]
+    },
+    {
+      "naam": "size-control-md",
+      "alias": "spacing-10",
+      "scopes": [
+        "WIDTH_HEIGHT"
+      ]
+    },
+    {
+      "naam": "size-control-lg",
+      "alias": "spacing-11",
+      "scopes": [
+        "WIDTH_HEIGHT"
+      ]
+    }
+  ]
+}

@@ -213,23 +213,67 @@ if (!fails.some(f => f.startsWith('[schaal]'))) ok('schaal', `radius-afgeleiden 
 
 // Elke Base-variabele moet in een categorie vallen die een regel draagt. Een naam die
 // nergens onder valt is drift: hij komt uit geen enkele bron en niets toetst zijn waarde.
+const IS_SCHAAL = /^(spacing-([\d_]+|px)|border-\d+|icon-stroke)$/;
+const IS_LAYOUTROL = /^(spacing|size)-[a-z][a-z0-9-]*$/;
 const BASE_CATEGORIE = [
   [/^radius(-lg|-md|-sm|-full)?$/, 'radius-schaal uit de preset'],
-  [/^spacing-[\d_]+$/,             'Tailwind-spacingschaal (n × 4px)'],
-  [/^border-[12]$/,                'Tailwind border-width'],
-  [/^icon-stroke$/,                'lucide-react stroke-width'],
+  [/^spacing-([\d_]+|px)$/,        'Layout/Scale spacing'],
+  [/^border-\d+$/,                 'Layout/Scale border'],
+  [/^icon-stroke$/,                'Layout/Scale icon.stroke'],
+  [IS_LAYOUTROL,                   'Theme/base layout-rol (alias) — spacing-px valt al onder de schaal'],
 ];
 const zonderCategorie = Object.keys(B).filter(n => !BASE_CATEGORIE.some(([re]) => re.test(n)));
 if (zonderCategorie.length) fail('schaal', `Base-variabele zonder bekende categorie (drift): ${zonderCategorie.join(', ')}`);
 else ok('schaal', `${Object.keys(B).length} Base-variabelen vallen in ${BASE_CATEGORIE.length} bekende categorieën`);
-if (B['icon-stroke'] !== 2) fail('schaal', `icon-stroke = ${B['icon-stroke']}, maar lucide-react tekent op stroke-width 2`);
-if (B['border-1'] !== 1 || B['border-2'] !== 2) fail('schaal', `border-1/border-2 = ${B['border-1']}/${B['border-2']}, verwacht 1/2`);
+// Spacing, border en icon-stroke toetsen tegen hun token in Layout/Scale (sinds 2026-09-17).
+// Daarvoor was de bron een rekenregel (n × 4px) en lucide's default; de rekenregel bleef
+// hier niet als tweede bron staan, want dan kunnen token en Figma samen verschuiven en
+// blijft deze as groen.
+const layoutPad = join(root, '../tokens/tokens.json');
+const layout = existsSync(layoutPad) ? JSON.parse(readFileSync(layoutPad, 'utf8'))['Layout/Scale'] : null;
+if (!layout?.spacing) {
+  fail('schaal', `Layout/Scale niet gevonden in ${layoutPad} — spacing/border/icon-stroke niet te toetsen`);
+} else {
+  const px = v => { const t = String(v.$value ?? v.value); return t.endsWith('rem') ? parseFloat(t) * 16 : parseFloat(t); };
+  const stappen = groep => Object.entries(groep ?? {}).filter(([k]) => !k.startsWith('$'));
+  const verwacht = {
+    ...Object.fromEntries(stappen(layout.spacing).map(([k, v]) => [`spacing-${k}`, px(v)])),
+    ...Object.fromEntries(stappen(layout.border).map(([k, v]) => [`border-${k}`, px(v)])),
+    'icon-stroke': px(layout.icon?.stroke ?? { $value: NaN }),
+  };
+  const schaalFout = [
+    ...Object.entries(B).filter(([n]) => IS_SCHAAL.test(n)).filter(([n, v]) => v !== verwacht[n]),
+    // Tweezijdig: een stap uit Layout/Scale die in Figma ontbreekt telt ook. [dekking] kijkt
+    // alleen van Figma naar tokens, dus zonder deze regel viel een verdwenen icon-stroke stil.
+    ...Object.keys(verwacht).filter(n => !(n in B)).map(n => [n, 'ontbreekt']),
+  ];
+  if (schaalFout.length) fail('schaal', `wijkt af van Layout/Scale in tokens.json: ${schaalFout.map(([n, v]) => `${n}=${v} (token ${verwacht[n]})`).join(', ')}`);
+  // Los van het token: de code tekent iconen met lucide's stroke-width 2 en leest icon.stroke
+  // nergens. Verschuiven token en Figma samen naar 1,5, dan klopt de vergelijking hierboven
+  // en tekent Figma toch iets anders dan de browser.
+  if (B['icon-stroke'] !== 2) fail('schaal', `icon-stroke = ${B['icon-stroke']}, maar lucide-react tekent op stroke-width 2 (de code leest het token niet)`);
+  else ok('schaal', `${Object.keys(B).filter(n => IS_SCHAAL.test(n)).length} spacing-, border- en icon-variabelen gelijk aan Layout/Scale`);
 
-const spacingFout = Object.entries(B)
-  .filter(([n]) => n.startsWith('spacing-'))
-  .filter(([n, v]) => v !== Number(n.slice('spacing-'.length).replace('_', '.')) * 4);
-if (spacingFout.length) fail('schaal', `spacing wijkt af van de Tailwind-schaal (n × 4px): ${spacingFout.map(([n, v]) => `${n}=${v}`).join(', ')}`);
-else ok('schaal', `${Object.keys(B).filter(n => n.startsWith('spacing-')).length} spacing-stappen volgen n × 4px`);
+  // Layout-rollen: in Figma een alias naar de schaalstap die Theme/base noemt. Een rol met een
+  // eigen getal zou kloppen tot de schaal verschuift, en daarna stil blijven staan.
+  const themeBase = JSON.parse(readFileSync(layoutPad, 'utf8'))['Theme/base'] ?? {};
+  const rolDoelen = {};
+  for (const groep of ['spacing', 'size']) {
+    for (const [k, v] of Object.entries(themeBase[groep] ?? {}).filter(([k]) => !k.startsWith('$'))) {
+      const ref = String(v.$value ?? v.value).match(/^\{spacing\.([\w]+)\}$/);
+      rolDoelen[`${groep}-${k}`] = ref ? `spacing-${ref[1]}` : `geen alias (${v.$value ?? v.value})`;
+    }
+  }
+  const aliassen = manifest.collections.Base.aliassen ?? {};
+  const rolFout = [
+    ...Object.entries(rolDoelen).filter(([n]) => !(n in B)).map(([n]) => `${n} ontbreekt in Figma`),
+    ...Object.entries(rolDoelen).filter(([n]) => n in B && aliassen[n] !== rolDoelen[n])
+      .map(([n]) => `${n} wijst naar ${aliassen[n] ?? `een eigen waarde (${B[n]})`}, token zegt ${rolDoelen[n]}`),
+    ...Object.keys(B).filter(n => IS_LAYOUTROL.test(n) && !IS_SCHAAL.test(n) && !(n in rolDoelen)).map(n => `${n} staat niet in Theme/base`),
+  ];
+  if (rolFout.length) fail('schaal', `layout-rollen: ${rolFout.join('; ')}`);
+  else ok('schaal', `${Object.keys(rolDoelen).length} layout-rollen zijn in Figma een alias naar hun stap uit Theme/base`);
+}
 
 // ---- 5b. Token-dekking: elke variabele hangt aan een pad in tokens.json ----
 // Een variabele aanmaken voor een waarde die nergens in de token-bron staat, verplaatst
@@ -237,16 +281,14 @@ else ok('schaal', `${Object.keys(B).filter(n => n.startsWith('spacing-')).length
 // de waarde nog altijd uit niets komt, en Figma wordt een tweede bron van waarheid
 // (LEARNINGS umanex-os, 2026-08-25 — collectie Base mat 1/21).
 //
-// De twintig namen hieronder zijn bekende schuld, geen uitzondering: de maat-schaal heeft
-// nog geen token-bron (BACKLOG 2026-08-25, "Spacing-, border- en shadow-schaal hebben geen
-// token-bron"). De lijst werkt twee kanten op — een níeuw gat faalt, en een naam die géén
-// gat meer is faalt óók. Zonder die tweede kant veroudert de lijst stil en dekt hij op den
-// duur precies datgene af wat de as moet vangen.
+// De namen hieronder zijn bekende schuld, geen uitzondering. Spacing, border en icon-stroke
+// kregen op 2026-09-17 hun token-bron (Layout/Scale); de radius-stappen niet — de preset
+// leidt ze met calc() af van één token, en ze uitschrijven wijzigt de CSS-uitvoer van elke
+// app (BACKLOG 2026-08-25). De lijst werkt twee kanten op — een níeuw gat faalt, en een naam
+// die géén gat meer is faalt óók. Zonder die tweede kant veroudert de lijst stil en dekt hij
+// op den duur precies datgene af wat de as moet vangen.
 const BEKENDE_GATEN = new Set([
   'radius-lg', 'radius-md', 'radius-sm', 'radius-full',
-  'spacing-0_5', 'spacing-1', 'spacing-1_5', 'spacing-2', 'spacing-2_5', 'spacing-3',
-  'spacing-4', 'spacing-5', 'spacing-6', 'spacing-8', 'spacing-9', 'spacing-10', 'spacing-11', 'spacing-20',
-  'border-1', 'border-2', 'icon-stroke',
 ]);
 const tokensPad = join(root, '../tokens/tokens.json');
 if (!existsSync(tokensPad)) {
@@ -274,7 +316,7 @@ if (!existsSync(tokensPad)) {
     if (nieuwGat.length) fail('dekking', `variabele zonder token in de bron: ${nieuwGat.join(', ')}`);
     if (verouderd.length) fail('dekking', `heeft nu wél een token — haal uit BEKENDE_GATEN: ${verouderd.join(', ')}`);
     if (!nieuwGat.length && !verouderd.length) {
-      ok('dekking', `${vars.length - gaten.length}/${vars.length} variabelen gedekt door tokens.json; ${gaten.length} bekende gaten (maat-schaal, zie BACKLOG)`);
+      ok('dekking', `${vars.length - gaten.length}/${vars.length} variabelen gedekt door tokens.json; ${gaten.length} bekende gaten (radius-stappen, zie BACKLOG)`);
     }
   }
 }

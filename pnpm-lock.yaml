@@ -662,6 +662,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.0
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.1.17))(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@umanex/tokens':
+        specifier: workspace:*
+        version: link:../tokens
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.1
@@ -699,9 +702,6 @@ importers:
       '@umanex/config':
         specifier: workspace:*
         version: link:../config
-      '@umanex/tokens':
-        specifier: workspace:*
-        version: link:../tokens
       autoprefixer:
         specifier: ^10
         version: 10.5.0(postcss@8.5.14)

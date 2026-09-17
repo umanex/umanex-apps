@@ -71,15 +71,36 @@ const RULES = [
     re: /\brounded(-[a-z]+)?-\[\d+px\]/,
     msg: 'arbitrary radius — gebruik rounded-sm / -md / -lg (afgeleid van --radius)',
   },
+  {
+    // Padding, marge en gap komen uit Layout/Scale (p-4) of een layout-rol (p-surface).
+    // Breedtes en hoogtes vallen er bewust buiten: h-[300px] voor een grafiek is een
+    // afmeting van de inhoud, geen ritme.
+    id: 'arbitrary-spacing',
+    // Elke arbitrary waarde telt (%, ch, calc(), var()), ook met de important-modifier
+    // (`!p-[…]`, de gebruikelijke manier om de padding van een component te overschrijven)
+    // en op scroll-marge/-padding.
+    re: /(^|[\s"'`:])!?-?(p|px|py|pt|pr|pb|pl|ps|pe|m|mx|my|mt|mr|mb|ml|ms|me|gap|gap-x|gap-y|space-x|space-y|scroll-[mp][xytrblse]?)-\[[^\]]+\]/,
+    msg: 'arbitrary spacing — gebruik een schaalstap of een layout-rol uit de preset van deze app',
+  },
 ];
 
-// Bekend en geaccepteerd. Formaat: "<pad>:<regel-id>".
+// Bekend en geaccepteerd: { pad, regel, fragment } — het fragment moet in de overtredende
+// regel staan. Per fragment en niet per bestand: een bestandsbrede uitzondering liet elke
+// nieuwe overtreding van dezelfde regel in dat bestand stil door (code-review
+// umanex-apps#524). Een uitzondering die niets meer raakt, faalt: anders blijft hij staan
+// nadat de plek is opgelost en dekt hij de volgende af.
 //
-// LEEG, en dat is de bedoeling. Een baseline is een lijst uitzonderingen die in de
+// Zo goed als leeg, en dat is de bedoeling. Een baseline is een lijst uitzonderingen die in de
 // praktijk aangroeit tenzij iemand hem bewaakt; zolang hij leeg is, is elke
 // overtreding een echte. Zet er alleen iets in als het echt niet anders kan, met de
 // reden erbij, en haal het er weer uit zodra dat kan.
-const BASELINE = new Set([]);
+const BASELINE = [
+  // pl-[22px] lijnt de betalingsregels uit onder de tekst van de pot-rij. Ouder dan de
+  // regel arbitrary-spacing (2026-09-17); de keuze tussen pl-5 en pl-6 is een visuele
+  // beslissing in cashflow. apps/cashflow/BACKLOG.md, entry 2026-09-17.
+  { pad: 'apps/cashflow/components/cashflow/ReservationSection.tsx', regel: 'arbitrary-spacing', fragment: 'pl-[22px]', aantal: 1 },
+];
+const baselineGeraakt = new Map(); // entry -> aantal voorkomens
 
 const files = [];
 for (const scope of SCOPES) {
@@ -94,12 +115,18 @@ for (const file of files) {
   const rel = relative(ROOT, file);
   const lines = (await readFile(file, 'utf-8')).split('\n');
   for (const rule of RULES) {
-    const hits = lines
-      .map((line, i) => (rule.re.test(line) ? { line: i + 1, text: line.trim().slice(0, 100) } : null))
-      .filter(Boolean);
-    if (!hits.length) continue;
-    if (BASELINE.has(`${rel}:${rule.id}`)) continue;
-    for (const hit of hits) violations.push({ rel, rule, ...hit });
+    // Per treffer, niet per regel: een tweede overtreding op de regel van een
+    // uitzondering moet net zo goed falen.
+    const alle = new RegExp(rule.re.source, rule.re.flags.includes('g') ? rule.re.flags : rule.re.flags + 'g');
+    lines.forEach((line, i) => {
+      for (const m of line.matchAll(alle)) {
+        const b = BASELINE.find((e) => e.pad === rel && e.regel === rule.id && m[0].includes(e.fragment));
+        // Een uitzondering dekt precies `aantal` voorkomens; een tweede kopie van de plek valt
+        // er niet stil onder.
+        if (b && (baselineGeraakt.get(b) ?? 0) < b.aantal) { baselineGeraakt.set(b, (baselineGeraakt.get(b) ?? 0) + 1); continue; }
+        violations.push({ rel, rule, line: i + 1, text: line.trim().slice(0, 100) });
+      }
+    });
   }
 }
 
@@ -123,6 +150,15 @@ for (const app of ['cashflow', 'jobradar', 'portfolio']) {
   }
 }
 
+for (const b of BASELINE.filter((e) => !baselineGeraakt.has(e))) {
+  violations.push({
+    rel: b.pad,
+    rule: { id: 'baseline-verouderd', msg: `uitzondering voor ${b.regel} raakt niets meer — haal hem uit BASELINE in packages/tokens/scripts/guard.mjs` },
+    line: '-',
+    text: b.fragment,
+  });
+}
+
 if (violations.length) {
   console.error(`\n✗ laag-discipline: ${violations.length} overtreding(en)\n`);
   for (const v of violations) {
@@ -133,4 +169,4 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log(`✓ laag-discipline: ${files.length} bestanden schoon (${BASELINE.size} baseline-uitzonderingen)`);
+console.log(`✓ laag-discipline: ${files.length} bestanden schoon (${BASELINE.length} baseline-uitzonderingen)`);

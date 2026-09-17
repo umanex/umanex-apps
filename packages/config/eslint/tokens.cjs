@@ -61,6 +61,12 @@ const VERBODEN = [
     re: /\brounded(-[a-z]+)?-\[\d+px\]/,
     msg: 'arbitrary radius — gebruik rounded-sm / -md / -lg, afgeleid van --radius.',
   },
+  {
+    // Zelfde regel als arbitrary-spacing in packages/tokens/scripts/guard.mjs.
+    re: /(^|[\s"'`:])!?-?(p|px|py|pt|pr|pb|pl|ps|pe|m|mx|my|mt|mr|mb|ml|ms|me|gap|gap-x|gap-y|space-x|space-y|scroll-[mp][xytrblse]?)-\[[^\]]+\]/,
+    msg:
+      'arbitrary spacing — gebruik een schaalstap of een layout-rol uit de preset van deze app.',
+  },
 ];
 
 // Elke regel geldt zowel voor een gewone string als voor een template-literal, want

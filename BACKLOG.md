@@ -70,8 +70,72 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** De Storybook→Figma-export moest de waarden ergens vandaan halen; ze rauw laten zou principe 2 van `code-naar-figma` schenden (nul hardcoded waarden). Een `Spacing`-set in `tokens.json` toevoegen is een gecoördineerde token-restructurering die via Tokens Studio en een Pull hoort te lopen — een eigen taak, niet een bijproduct van deze.
 - **Deels gedaan (2026-08-25):** de *meting* staat er, de token-bron nog niet. `figma-sync-check.mjs` heeft sinds vandaag een as `[dekking]` die elke Figma-variabele tegen `packages/tokens/tokens.json` toetst (vergelijker: `scripts/figma-token-coverage.mjs`, gesynct vanuit umanex-os). De twintig namen uit dit item staan daar als `BEKENDE_GATEN` — expliciet en greppable, in plaats van ongemeten. Die lijst werkt twee kanten op: een nieuw gat faalt, en een naam die géén gat meer is faalt óók, dus zodra de `Spacing`-set bestaat dwingt CI het opruimen van de lijst af. Draait in CI via `pnpm --filter @umanex/ui figma:check:selftest`; tegenproef in `figma-sync-selftest.mjs` (13 cases).
 - **Eerste zet:** Set `Spacing` (en later `Shadow`) in Tokens Studio aanmaken en pushen. `classifySet` in `packages/tokens/build.mjs` gooit sinds 2026-08-05 op een onbekende set, dus de build wijst zelf de weg (HANDOFF 2026-08-05, resolved). Daarna `packages/ui/scripts/figma-sync-check.mjs` de spacing-as tegen de tokens laten toetsen in plaats van tegen de `n × 4px`-rekenregel.
+- **Deels gebouwd (2026-09-17):** spacing, border en icon-stroke hebben nu een token-bron: set `Layout/Scale` plus layout-rollen in `Theme/base` (`briefings/2026-09-17-feature-layout-tokens.tcebc.md`). De preset leest de schaal eruit, Figma Base is eruit gezet (`figma/zet-base.js`) en `figma-sync-check` toetst `[schaal]` tegen de tokens in plaats van `n × 4px`. `BEKENDE_GATEN` telt nog 4 namen. **Wat openblijft:** de radius-stappen (`radius-sm|md|lg|full` — de preset leidt ze met `calc()` af van één token; uitschrijven wijzigt de CSS-uitvoer van elke app) en de schaduwen (`shadow/sm|md|lg`).
 - **Status:** open
 
+
+## 2026-09-17 — Sheet: gap in Figma 8, in de code 16 · [design-system]
+- **Wat:** De vier varianten van `SheetContent` in de Component library dragen `itemSpacing` 8, ongebonden. De code zet `gap-stack` (16, vóór 2026-09-17 `gap-4`) — maar `SheetContent` heeft geen `flex` of `grid`, dus die gap doet in de browser niets (overgenomen uit shadcn). De afstand tussen de kinderen komt van hun eigen marges; de 8 in Figma is daar vermoedelijk op nagebouwd. Het herbinden van 2026-09-17 heeft dit veld bewust niet geschreven (waarde ≠ rol). `parity` meldt het niet omdat hij SheetContent overslaat (`~~ SheetContent: geen playground met deze assen als props`, gemeten 2026-09-17 — net als TabsTrigger en ThemeToggle).
+- **Waarom niet nu:** Kiezen tussen `flex flex-col gap-stack` (de gap gaat werken, de marges van de kinderen moeten dan weg) en `gap-stack` weghalen (de code zegt dan wat ze doet) is een ontwerpbeslissing, geen token-migratie.
+- **Eerste zet:** In de Sheet-story de afstand tussen header en footer meten; daarna een van beide kiezen en Figma laten volgen.
+- **Check:** `figma_execute` op `83:21` (`SheetContent side=right`): `itemSpacing` 8 zonder `boundVariables.itemSpacing` = dit item leeft.
+- **Status:** open
+
+## 2026-09-17 — Bindingen op de handgebouwde Figma-pagina's hebben geen guard · [test]
+- **Wat:** Op 2026-09-17 zijn 213 velden op tien handgebouwde pagina's (Button, Card, Tabs, …) herbonden van `spacing-N` naar hun layout-rol. Voor keten-pagina's toetst `toets-batch` (7b) de bindingnaam tegen de spec; voor de handgebouwde doet niets dat. Verandert een component in de code van rol (`p-surface` → `p-menu`), dan blijft `figma:check` groen en `parity` ook, want de waarde kan gelijk blijven.
+- **Waarom niet nu:** Een naam-as vraagt een mapping klasse → Figma-veld per handgebouwde node, dus precies de herbouw die de keten voor die vijftien uitsluit.
+- **Eerste zet:** In `lees-geometrie.js` per legacy-variant de gebonden variabelenaam per veld meeschrijven, en in `geometry-parity.mjs` naast de maat vergelijken met de rol uit de klasse van het gemeten element.
+- **Check:** `grep -c "boundVariables\|gebonden" packages/ui/figma/lees-geometrie.js` = 0 → leeft nog.
+- **Status:** open
+
+## 2026-09-17 — Instance-overrides op kind-nodes overleven een ketenbouw vermoedelijk niet · [risico]
+- **Wat:** De builder houdt component-id en key vast maar vervangt de kinderen (HANDOFF 2026-08-25, resolved) — ook bij een bouw met dezelfde spec, gemeten 2026-09-17 op DialogContent (ids `141:39…` → `141:53…`). Een override op een kind in een instance (een andere knoptekst in een Dialog-instance) hangt aan dat kind; vermoedelijk valt hij weg bij de volgende bouw. Niet gemeten: er bestaat nog geen instance van een keten-component.
+- **Waarom niet nu:** Wordt pas echt bij batch 5 (Combobox, DatePicker als FRAME met instances).
+- **Eerste zet:** Vóór batch 5: een instance van DialogContent maken, een tekst overriden, Dialog herbouwen en kijken of de override staat. Staat hij niet, dan kinderen op naam hergebruiken in plaats van vervangen.
+- **Check:** de tegenproef hierboven; zolang hij niet gedraaid is, leeft dit item.
+- **Status:** open
+
+## 2026-09-17 — Layout/Scale-groep `border` botst in de build met de kleurrol `border` · [debt]
+- **Wat:** `packages/tokens/build.mjs` merget per mode de primitives en de rolsets met `deepMerge`. `Layout/Scale` heeft een groep `border` (breedtes), `Theme/light|dark` een leaf `border` (kleur); de leaf overschrijft de groep. Een alias `{border.1}` in een rolset is daardoor onoplosbaar in onze build, terwijl Tokens Studio hem wel oplost (code-review umanex-apps#524).
+- **Waarom niet nu:** Er verwijst vandaag niets naar `{border.N}`. De groep hernoemen (`borderWidth`) breekt de naamkoppeling met de Figma-variabelen `border-1/2`, die de dekkingscheck op de staart van het pad maakt.
+- **Eerste zet:** Bij de eerste rol die een borderbreedte aliast: de merge per set laten namespacen, of de Figma-namen mee hernoemen via `zet-base.js`.
+- **Check:** `node -e` met een rol `size.divider: {border.1}` in een kopie van tokens.json → build faalt op "could not be found" = leeft.
+- **Status:** open
+
+## 2026-09-17 — Rolgroepen en alias-regex van de layout-rollen staan op drie plekken · [refactor]
+- **Wat:** `['spacing', 'size']`, de regex `{spacing.X}` en rem→px staan in `packages/tokens/build.mjs`, `packages/ui/scripts/figma/base-payload.mjs` en `packages/ui/scripts/figma-sync-check.mjs`. Een derde rolgroep of een alias naar iets anders dan spacing vraagt vier wijzigingen die elkaar niet controleren (code-review umanex-apps#524).
+- **Waarom niet nu:** Werkend en getoetst; een gedeelde export (`roles.mjs` met rol → alias → groep) is een verbouwing voor een tweede lezer die er nog niet is.
+- **Eerste zet:** De build laat `roles.mjs` een map `layoutRoles` uitschrijven (`spacing-surface: { utility, alias, groep }`); payload en guard lezen die.
+- **Check:** `grep -rn "\['spacing', 'size'\]\|spacing: \['GAP'\]" packages/tokens/build.mjs packages/ui/scripts` > 1 treffer-bestand = leeft.
+- **Status:** open
+
+## 2026-09-17 — Spacing- en size-rollen zijn als utility onderling uitwisselbaar · [design-system]
+- **Wat:** De preset zet alle layout-rollen in één `spacing`-map, dus `p-control-md` (40 px padding) en `h-surface` zijn geldige utilities, terwijl Figma de groepen scheidt (spacing → scope GAP, size → WIDTH_HEIGHT). tailwind-merge kent ze ook als één groep (code-review umanex-apps#524).
+- **Waarom niet nu:** Niets gebruikt de kruising; de scheiding vraagt aparte theme-sleutels (`padding`, `gap`, `space`, `margin` voor spacing; `height`, `width`, `size` voor size) en een tailwind-merge-config per groep.
+- **Eerste zet:** Een guard-regel die `(p|m|gap|space)-(control-sm|control-md|control-lg)` en `(h|w|size)-(surface|menu|…)` weigert — goedkoper dan de preset splitsen, en hij zegt precies wat de afspraak is.
+- **Check:** `grep -rnE "\b(p|gap)-control-(sm|md|lg)\b|\b(h|w)-(surface|menu|inline|stack)\b" apps packages/ui --include='*.tsx'` — 0 = nog geen misbruik, het item leeft wel.
+- **Status:** open
+
+## 2026-09-17 — De rol-afleiding van de Figma-keten kent geen variants, `ps-/pe-` of margin-rollen · [debt]
+- **Wat:** `packages/ui/scripts/figma/layout-rollen.mjs` leest de klassen die de walker als geldend doorgeeft, maar zonder hun variant of `!important`. Bij `sm:p-surface px-4` op 1280 px wint in CSS de mediaregel, terwijl de voorrangsregel `px-4` laat winnen, dus bindt de keten `spacing-6` in plaats van `spacing-surface`. `ps-`/`pe-` (logische padding) en een margin-rol op een kind (`mt-stack`) vallen stil terug op binden op waarde (code-review umanex-apps#524, ronde 2).
+- **Waarom niet nu:** Geen component in `packages/ui` gebruikt die vormen; de voorrang goed nabootsen vraagt de variant-volgorde uit Tailwinds stylesheet.
+- **Eerste zet:** In de walker per padding-kant de klasse vastleggen waarvan de computed style wint (`getComputedStyle` per kandidaat-klasse toggelen), in plaats van de voorrang te reconstrueren.
+- **Check:** `grep -rnE "\b(sm|md|lg):p[xytrbl]?-(surface|menu|control|item)|\bp[se]-(control|item)|\bm[trblxy]?-(stack|inline|heading)" packages/ui/components` — 0 = nog niet geraakt, het item leeft wel.
+- **Status:** open
+
+## 2026-09-17 — Een niet-numerieke stap in Layout/Scale wordt in Figma als rol gelezen · [debt]
+- **Wat:** `build.mjs` staat eigen stappen toe, maar `figma-sync-check` herkent schaalvariabelen aan `spacing-<cijfers|px>`. Een stap `spacing.gutter` wordt daar een layout-rol die niet in `Theme/base` staat (rood), en `cn()` voegt alleen rolsleutels aan tailwind-merge toe, dus `cn("p-gutter","p-4")` houdt beide (code-review umanex-apps#524, ronde 2).
+- **Waarom niet nu:** Er is geen niet-numerieke stap, en de eerste zou de naamgeving van de schaal openbreken, wat een eigen besluit is.
+- **Eerste zet:** Schaal- en rolnamen in de guard uit tokens.json afleiden in plaats van uit een regex, en `cn()` alle niet-Tailwind-default sleutels van `layout.mjs` meegeven.
+- **Check:** `node -e "const t=require('./packages/tokens/tokens.json'); console.log(Object.keys(t['Layout/Scale'].spacing).filter(k=>!/^(\\d+(_\\d)?|px)$/.test(k)))"` — `[]` = nog niet geraakt.
+- **Status:** open
+
+## 2026-09-17 — De eslint-disable in ReservationSection zet alle token-regels uit voor die regel · [debt]
+- **Wat:** `no-restricted-syntax` draagt alle zeven token-regels; `eslint-disable-next-line` kan er niet één uitzetten. Een latere `bg-white` of `text-[13px]` op dezelfde regel meldt de editor niet meer; de token guard in CI wel (code-review umanex-apps#524, ronde 2).
+- **Waarom niet nu:** De echte oplossing is `pl-[22px]` wegwerken (entry hierboven in `apps/cashflow/BACKLOG.md`), niet de uitzondering verfijnen.
+- **Eerste zet:** Het cashflow-item oppakken; de disable en de guard-baseline verdwijnen dan samen.
+- **Check:** `grep -n "eslint-disable-next-line no-restricted-syntax" apps/cashflow/components/cashflow/ReservationSection.tsx` — treffer = leeft.
+- **Status:** open
 ## 2026-08-25 — Sync-guard ziet een Figma-wijziging pas na een verse manifest · [test]
 - **Wat:** `figma:check` toetst de code tegen `packages/ui/figma/manifest.json` — een neergeslagen meting van het Figma-bestand, geen live verbinding. Wijzigt iemand iets ín Figma zonder de manifest te verversen, dan blijft CI groen terwijl de twee kanten uit elkaar lopen. De omgekeerde richting (code wijzigt, Figma niet) wordt wél gevangen.
 - **Waarom niet nu:** CI heeft geen Figma-toegang. De live-kant vereist een `FIGMA_ACCESS_TOKEN` als repo-secret plus een REST-pad (`figma_get_file_data` of de Figma REST API) — dat is een eigen infra-beslissing met een secret erbij, en die hoort Jeroen te nemen.

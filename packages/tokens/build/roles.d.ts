@@ -2,3 +2,4 @@
 export declare const hslRoles: string[];
 export declare const rawRoles: string[];
 export declare const scalarRoles: string[];
+export declare const layoutRoleUtilities: Record<string, string>;

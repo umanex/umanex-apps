@@ -222,3 +222,9 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Eerste zet:** Een test in `revenue.test.ts` met een project van 10 geraamde resterende dagen zonder planning, en beslissen welke noemer het antwoord is.
 - **Check:** `grep -n "unallocatedClientDays" apps/cashflow/lib/bureau/capacity.ts` — nog altijd alleen budget − besteed − gepland = open.
 - **Status:** open
+
+## 2026-09-17 — `pl-[22px]` in ReservationSection naar de spacing-schaal · [refactor]
+- **Wat:** `apps/cashflow/components/cashflow/ReservationSection.tsx` (regel 261) lijnt de betalingsregels uit met `pl-[22px]`. Sinds de layout-tokens (`briefings/2026-09-17-feature-layout-tokens.tcebc.md`) verbiedt de token guard arbitrary spacing; deze plek staat als enige in de `BASELINE` van `packages/tokens/scripts/guard.mjs`.
+- **Waarom niet nu:** 22px ligt tussen `pl-5` (20) en `pl-6` (24). Welke van de twee de uitlijning onder de pot-rij bewaart, is een visuele keuze in cashflow, niet iets voor de token-PR.
+- **Eerste zet:** De rij erboven meten in de flow-harness (`pnpm --filter cashflow flow`): waar begint de tekst van de pot-rij? Kies de stap die daarop valt, en haal de regel uit `BASELINE`.
+- **Status:** open

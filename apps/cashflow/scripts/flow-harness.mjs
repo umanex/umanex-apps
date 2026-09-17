@@ -299,9 +299,9 @@ function volFixture(doelen, project) {
   };
 }
 
-function fixtureData({ leeg = false, buffer = false, bureau = null, tekort = false } = {}) {
+function fixtureData({ leeg = false, buffer = false, bureau = null, tekort = false, labels = false } = {}) {
   const b = bureauFixture(bureau);
-  const doc = prognoseFixture({ leeg, buffer });
+  const doc = prognoseFixture({ leeg, buffer, labels });
   // `tekort`: een negatief banksaldo, zodat de prognose al in de ankermaand onder nul eindigt.
   if (tekort) doc.referenceBalance = -250;
   if (bureau?.startsWith('cash') || bureau === 'vol') {
@@ -313,7 +313,7 @@ function fixtureData({ leeg = false, buffer = false, bureau = null, tekort = fal
   return b ? { ...doc, bureau: b } : doc;
 }
 
-function prognoseFixture({ leeg = false, buffer = false } = {}) {
+function prognoseFixture({ leeg = false, buffer = false, labels = false } = {}) {
   // De buffer-variant zet één bufferpot en één kost die de pot ver overstijgt, zodat de
   // maandfooter alle drie zijn standen laat zien: opbouw, stilstand, en een stand die
   // negatief staat. Zonder die derde stand kan geen enkele check onderscheiden of de
@@ -348,15 +348,35 @@ function prognoseFixture({ leeg = false, buffer = false } = {}) {
     referenceMonth: BRON,
     historyStartMonth: BRON,
     balanceOverrides: [],
-    expenseItems: leeg ? [] : [{ id: 'harness-1', monthKey: BRON, label: LABEL, amount: AMOUNT, paid: false }],
+    // `labels`: wat alleen met afgewerkte of gesplitste posten rendert en tot 2026-09-17 met
+    // opacity werd uitgedoofd — "Budget:" in de ankermaand, "Betaald · Provisie · Cash" onder de
+    // pot, de afgeleide uitgave "– resterend" in de maand erna, en achter de filter "Alle" een
+    // betaalde uitgave, een betaalde vaste kost en een gefinaliseerde pot. Zonder deze fixture
+    // kon de sweep ze nooit meten, hoe goed het instrument ook was.
+    expenseItems: leeg
+      ? []
+      : [
+          { id: 'harness-1', monthKey: BRON, label: LABEL, amount: AMOUNT, paid: false },
+          ...(labels ? [{ id: 'harness-betaald', monthKey: BRON, label: 'Harnas betaald', amount: 42, paid: true }] : []),
+        ],
     incomeItems: [],
-    recurringItems: [],
-    recurringSettlements: [],
-    reservationSettlements: [],
+    recurringItems: labels ? [{ id: 'harness-vast', label: 'Harnas vast', amount: 80, type: 'expense', frequency: 'monthly', startMonth: BRON }] : [],
+    recurringSettlements: labels ? [{ id: 'harness-vast-betaald', recurringId: 'harness-vast', monthKey: BRON, paid: true, actualAmount: 80 }] : [],
+    reservationSettlements: labels ? [{ id: 'harness-afgerond-final', reservationId: 'harness-afgerond', monthKey: BRON, effectiveAmount: 30, finalized: true }] : [],
     reservations: leeg
       ? []
-      : [{ id: 'harness-pot', label: POT, monthlyAmount: 60, startMonth: BRON, type: 'spaardoel' }],
-    reservationPayments: [],
+      : [
+          { id: 'harness-pot', label: POT, monthlyAmount: 60, startMonth: BRON, type: 'spaardoel' },
+          ...(labels
+            ? [
+                { id: 'harness-budget', label: 'Harnasbudget', monthlyAmount: 200, startMonth: BRON, type: 'maandelijks_budget' },
+                { id: 'harness-afgerond', label: 'Harnas afgerond', monthlyAmount: 30, startMonth: BRON, type: 'spaardoel' },
+              ]
+            : []),
+        ],
+    reservationPayments: labels
+      ? [{ id: 'harness-betaling', reservationId: 'harness-pot', monthKey: DOEL, label: 'Harnasbetaling', invoiceAmount: 150, fromReservation: 100, fromCash: 50 }]
+      : [],
     recurringDefers: [],
     reservationDefers: [],
     reopenedMonths: [],
@@ -471,7 +491,7 @@ function controleerBuildOrigin(origin) {
  * drie andere schermen (skeleton, lege staat, foutscherm) zag nooit een guard.
  */
 function maakRouteHandler(state, gedrag = {}) {
-  const { leeg = false, buffer = false, bureau = null, tekort = false, conflict = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
+  const { leeg = false, buffer = false, bureau = null, tekort = false, labels = false, conflict = false, vertragingMs = 0, documentStatus = 200 } = gedrag;
 
   return async (route) => {
     const req = route.request();
@@ -493,7 +513,7 @@ function maakRouteHandler(state, gedrag = {}) {
         if (documentStatus !== 200) {
           return json({ message: 'harness: opzettelijke serverfout' }, documentStatus);
         }
-        return json({ data: fixtureData({ leeg, buffer, bureau, tekort }), revision: state.revision }, 200);
+        return json({ data: fixtureData({ leeg, buffer, bureau, tekort, labels }), revision: state.revision }, 200);
       }
       // Elke schrijfpoging wordt geteld en beantwoord alsof ze lukte: de app moet
       // verder kunnen, en het bewijs dat er niets weglekte is juist dat we hier staan.
@@ -1054,6 +1074,28 @@ function scenarios() {
         }
         const per = metingen.map((m) => `${m.waar} ${m.gemeten}`).join(', ');
         return { ok: true, bewijs: `${gemeten} tekstelementen boven AA (${per})` };
+      },
+    },
+    {
+      // De kleine grijze regels onder potten en betalingen. Eerst tellen dat ze er staan: een
+      // sweep over een scherm zonder die regels is groen omdat er niets te meten valt.
+      naam: 'contrast — potlabels, betalingen en afgeleide uitgaven',
+      gedrag: { labels: true },
+      actie: async (page) => {
+        // "Alle" in elke sectie van de ankerkolom: betaalde en gefinaliseerde posten staan achter de filter.
+        const filters = page.locator('button[aria-label^="Filter: openstaand"]');
+        const aantalFilters = await filters.count();
+        if (aantalFilters === 0) throw new Error('geen filterknop "Open" gevonden — de afgewerkte posten blijven verborgen');
+        for (let i = 0; i < aantalFilters; i++) await page.locator('button[aria-label^="Filter: openstaand"]').first().click();
+        const gezocht = ['Budget:', 'Betaald:', 'Provisie:', 'Cash:', '– resterend', 'Harnas betaald', 'Harnas vast', 'Harnas afgerond'];
+        const tekst = await page.locator('body').innerText();
+        const ontbreekt = gezocht.filter((t) => !tekst.includes(t));
+        if (ontbreekt.length) throw new Error(`de fixture rendert ${ontbreekt.join(', ')} niet — dan meet de sweep ze ook niet`);
+        const m = await sweep(page, 'prognose met labels');
+        if (m.fouten.length) {
+          return { ok: false, bewijs: `${m.fouten.length} kleurcombinatie(s) onder AA (${m.gemeten} tekstelementen gemeten)`, details: m.fouten.map((f) => beschrijfFout(f)) };
+        }
+        return { ok: true, bewijs: `${gezocht.length} labelsoorten in beeld, ${m.gemeten} tekstelementen boven AA` };
       },
     },
     {
@@ -2868,6 +2910,28 @@ function tegenproeven() {
         const m = await sweep(page, 'prognose + injectie');
         if (m.fouten.length) return { ok: false, bewijs: `${m.fouten.length} fout(en) gevonden, zoals het hoort` };
         return { ok: true, bewijs: 'de geïnjecteerde te lichte tekst glipte door de sweep' };
+      },
+    },
+    {
+      // Een kleur die op zich AA haalt, gedoofd door opacity — precies het patroon
+      // `text-muted-foreground opacity-70` dat tot 2026-09-17 als volle muted-kleur mat.
+      naam: 'tegenproef — muted tekst met opacity',
+      moetFalen: true,
+      actie: async (page) => {
+        await page.evaluate(() => {
+          const p = document.createElement('p');
+          p.style.cssText = 'background:#ffffff;padding:4px';
+          const s = document.createElement('span');
+          s.textContent = 'tegenproef: muted met opacity';
+          s.className = 'text-2xs text-muted-foreground';
+          s.style.opacity = '0.7';
+          p.appendChild(s);
+          document.body.appendChild(p);
+        });
+        const m = await sweep(page, 'prognose + opacity-injectie');
+        const gevonden = m.fouten.filter((f) => f.voorbeeldTekst.includes('tegenproef: muted met opacity'));
+        if (gevonden.length) return { ok: false, bewijs: `gezien: ${gevonden[0].ratio.toFixed(2)}:1, zoals het hoort` };
+        return { ok: true, bewijs: 'muted tekst met opacity glipte door de sweep' };
       },
     },
     {

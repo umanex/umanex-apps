@@ -55,6 +55,15 @@ const SELFTEST_HTML = `<!doctype html><meta charset="utf-8"><body style="backgro
   <div style="background:#111111">
     <p id="donker" style="color:#3a3a3a;font-size:14px">te donker op donker</p>
   </div>
+  <div style="background:#ffffff">
+    <span id="opacity70" style="color:#667085;opacity:0.7;font-size:11px">muted met opacity-70</span>
+  </div>
+  <!-- Een andere opacity dan hierboven: gelijke kleurcombinaties voegt beoordeel() samen, en dan
+       draagt maar één van beide zijn tekst als voorbeeld. -->
+  <div style="background:#ffffff;opacity:0.6">
+    <span id="ouderopacity" style="color:#667085;font-size:11px">muted onder een ouder met opacity</span>
+  </div>
+  <p id="donkeropacity" style="color:#333333;background:#ffffff;opacity:0.9;font-size:14px">donker met lichte opacity</p>
   <p id="gradient" style="background:linear-gradient(#fff,#000);color:#888;font-size:14px">onmeetbaar</p>
   <button id="uit" disabled style="color:#cccccc;background:#ffffff;font-size:14px">inactieve knop</button>
   <fieldset disabled style="background:#ffffff">
@@ -72,6 +81,9 @@ const SELFTEST_VERWACHT = [
   { tekst: 'onzichtbaar, telt niet', faalt: false },
   { tekst: 'ook onzichtbaar', faalt: false },
   { tekst: 'te donker op donker', faalt: true }, // een donker paneel binnen een light pagina
+  { tekst: 'muted met opacity-70', faalt: true }, // 5,0:1 zonder de opacity, ≈2,8:1 ermee
+  { tekst: 'muted onder een ouder', faalt: true }, // de opacity van een voorouder dooft ook
+  { tekst: 'donker met lichte opacity', faalt: false }, // opacity alleen is geen fout
   { tekst: 'inactieve knop', faalt: false }, // WCAG 1.4.3 zondert inactieve componenten uit
   { tekst: 'in een uitgeschakelde fieldset', faalt: false }, // de uitzondering erft
 ];

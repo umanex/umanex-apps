@@ -37,7 +37,7 @@ CONSTRAINTS: Dark mode is eerst verwijderd (aparte briefing) · geen twee bronne
 
 ## Open vragen
 
-Alle vier blokkeren de bouw. De eerste is meetbaar en gaat vóór de rest.
+Vraag 1 is vervallen; 2 tot 4 blokkeren de bouw en vragen elk een besluit van Jeroen.
 
 1. **Vervallen (2026-09-17).** De vraag was of één collectie twee modes kan krijgen, nu Jeroen in het export-venster maar één theme tegelijk kan kiezen. Hij koos ervoor dark mode helemaal te verwijderen (`briefings/2026-09-17-feature-dark-mode-verwijderen.tcebc.md`), dus er valt geen tweede mode meer te maken. **Voorwaarde:** die briefing is klaar vóór deze bouwt, anders exporteert de plugin een rollaag zonder dark terwijl code en Figma er nog op staan.
 2. **Waar landt de spacing-schaal?** In beide themes staat `Layout/Scale` op *source*, dus die levert geen variabelen, terwijl 940 bindingen eraan hangen. Als aparte set exporteren (eigen collectie, één mode — dicht bij het huidige `Base`), of in beide themes op *enabled* (dan zit spacing in de rollen-collectie, met per mode dezelfde waarde)?
@@ -56,7 +56,7 @@ Alle vier blokkeren de bouw. De eerste is meetbaar en gaat vóór de rest.
 
 - [ ] Typologie — er is per soort waarde precies één bron: de plugin maakt de variabelen, de keten bindt eraan
 - [ ] States n.v.t. — tokens en variabelen hebben geen data-laag
-- [ ] Interactie n.v.t. — geen gedrag; de mode-vraag zit in open vraag 1
+- [ ] Interactie n.v.t. — variabelen hebben geen gedrag; het schakelen tussen modes vervalt met dark mode
 - [ ] Edge case — een tweede export voegt geen tweede collectie naast een bestaande toe (gemeten met twee opeenvolgende exports)
 - [ ] Edge case — een variabele zonder token verdwijnt niet ongemerkt (de opruim-instelling van de plugin staat uit zolang radius geen token heeft)
 

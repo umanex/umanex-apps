@@ -71,6 +71,14 @@ const RULES = [
     re: /\brounded(-[a-z]+)?-\[\d+px\]/,
     msg: 'arbitrary radius — gebruik rounded-sm / -md / -lg (afgeleid van --radius)',
   },
+  {
+    // Padding, marge en gap komen uit Layout/Scale (p-4) of een layout-rol (p-surface).
+    // Breedtes en hoogtes vallen er bewust buiten: h-[300px] voor een grafiek is een
+    // afmeting van de inhoud, geen ritme.
+    id: 'arbitrary-spacing',
+    re: /(^|[\s"'`:])-?(p|px|py|pt|pr|pb|pl|ps|pe|m|mx|my|mt|mr|mb|ml|ms|me|gap|gap-x|gap-y|space-x|space-y)-\[-?[\d.]+(px|rem|em)\]/,
+    msg: 'arbitrary spacing — gebruik een schaalstap (p-4) of een layout-rol (p-surface, gap-inline)',
+  },
 ];
 
 // Bekend en geaccepteerd. Formaat: "<pad>:<regel-id>".
@@ -79,7 +87,12 @@ const RULES = [
 // praktijk aangroeit tenzij iemand hem bewaakt; zolang hij leeg is, is elke
 // overtreding een echte. Zet er alleen iets in als het echt niet anders kan, met de
 // reden erbij, en haal het er weer uit zodra dat kan.
-const BASELINE = new Set([]);
+const BASELINE = new Set([
+  // pl-[22px] lijnt de betalingsregels uit onder de tekst van de pot-rij. Ouder dan de
+  // regel arbitrary-spacing (2026-09-17); de keuze tussen pl-5 en pl-6 is een visuele
+  // beslissing in cashflow. apps/cashflow/BACKLOG.md, entry 2026-09-17.
+  'apps/cashflow/components/cashflow/ReservationSection.tsx:arbitrary-spacing',
+]);
 
 const files = [];
 for (const scope of SCOPES) {

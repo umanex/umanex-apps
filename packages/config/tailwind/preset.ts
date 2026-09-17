@@ -2,8 +2,9 @@ import type { Config } from 'tailwindcss';
 import animate from 'tailwindcss-animate';
 // Gegenereerd door packages/tokens/build.mjs; TypeScript leidt de string[]-types
 // rechtstreeks uit de .mjs af, dus er is geen .d.ts nodig.
-import { hslRoles, rawRoles } from '@umanex/tokens/roles';
+import { hslRoles, rawRoles, scalarRoles } from '@umanex/tokens/roles';
 import { fontSize, fontWeight, letterSpacing } from '@umanex/tokens/typography';
+import { spacing, borderWidth } from '@umanex/tokens/layout';
 
 /**
  * De gedeelde umanex Tailwind-preset.
@@ -58,11 +59,38 @@ function colorsFromRoles(): ColorMap {
   return colors;
 }
 
+// Layout-rollen uit Theme/base: spacing-surface → p-surface, size-control-md →
+// h-control-md. De groep (spacing, size) valt weg in de utility, want Tailwind
+// leidt padding, gap, height en width allemaal af van één spacing-map.
+const LAYOUT_ROLE_GROUPS = ['spacing', 'size'];
+
+function spacingFromRoles(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const name of scalarRoles) {
+    const group = LAYOUT_ROLE_GROUPS.find((g) => name.startsWith(`${g}-`));
+    if (!group) continue;
+    const key = name.slice(group.length + 1);
+    // Een rol die een schaalstap overschaduwt (een rol "4") of twee rollen die op
+    // dezelfde utility landen (spacing-control-md én size-control-md) zouden elkaar
+    // stil overschrijven.
+    if (key in spacing || key in out) {
+      throw new Error(`[preset] layout-rol "${name}" botst op utility-sleutel "${key}"`);
+    }
+    out[key] = `var(--${name})`;
+  }
+  return out;
+}
+
 const preset: Config = {
   content: [],
   darkMode: ['class'],
   theme: {
+    // Vervangen, niet uitbreiden: de schaal komt uit Layout/Scale. De tokenbuild
+    // garandeert dat elke Tailwind-v3-stap erin staat met zijn default-waarde.
+    spacing,
+    borderWidth,
     extend: {
+      spacing: spacingFromRoles(),
       colors: colorsFromRoles(),
       borderRadius: {
         lg: 'var(--radius)',

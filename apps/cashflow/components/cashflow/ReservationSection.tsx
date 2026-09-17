@@ -258,6 +258,7 @@ function DraggablePotRow({
 
       {/* Betalingsdetails — enkel wanneer betalingen aanwezig */}
       {hasPayments && (
+        // eslint-disable-next-line no-restricted-syntax -- arbitrary spacing, zelfde uitzondering als de BASELINE in packages/tokens/scripts/guard.mjs; apps/cashflow/BACKLOG.md 2026-09-17
         <div className="pl-[22px] flex flex-col">
           {pot.paymentsThisMonth.map((payment, pi) => (
             <div

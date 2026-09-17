@@ -13,6 +13,7 @@ import {
   keurVolgendeActie,
   magGecontacteerdWorden,
   statusNaContact,
+  statusNaHeropenen,
 } from '../lib/contact'
 import { KANALEN, type ItemStatus } from '../lib/db/schema'
 
@@ -94,6 +95,11 @@ const geldig = { datum: '2026-09-08', kanaal: 'mail', notitie: '  gebeld  ' }
   for (const [van, naar] of overgangen) {
     check(`status ${van} → ${naar}`, statusNaContact(van) === naar, statusNaContact(van))
   }
+  // Heropenen: de geschiedenis beslist. Beide kanten, anders slaagt een functie die altijd
+  // hetzelfde antwoordt.
+  check('heropenen zonder contactmomenten → new', statusNaHeropenen(0) === 'new', statusNaHeropenen(0))
+  check('heropenen met één contactmoment → contacted', statusNaHeropenen(1) === 'contacted', statusNaHeropenen(1))
+  check('heropenen met drie contactmomenten → contacted', statusNaHeropenen(3) === 'contacted', statusNaHeropenen(3))
 }
 
 // ── 5. De opt-out-rem ────────────────────────────────────────────────────────

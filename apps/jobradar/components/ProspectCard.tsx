@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@umanex/ui/components/ui/card'
 import { Badge } from '@umanex/ui/components/ui/badge'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
-import { StatusDropdown } from './StatusDropdown'
+import { StatusActies } from './StatusActies'
 import { PlanBadge } from './plan/PlanBadge'
 import { NextActionBadge } from './NextActionBadge'
 import { NACE_LABEL, leeftijdInJaren } from '@/lib/kbo/universum'
@@ -173,9 +173,10 @@ export function ProspectCard({
           )}
         </div>
         <div className="mt-2 flex items-center justify-between gap-2 border-t pt-2">
-          <StatusDropdown
+          <StatusActies
             endpoint={`/api/prospects/${prospect.nummer}`}
             status={prospect.status}
+            naam={prospect.naam}
             onStatusChange={onStatusChange}
           />
           <span className="flex items-center gap-2">

@@ -84,6 +84,18 @@ export function statusNaContact(huidig: ItemStatus): ItemStatus {
 }
 
 /**
+ * Wat heropenen van een afgewezen bedrijf opslaat.
+ *
+ * Sinds de kaart geen status-select meer heeft (2026-09-17) zet je "gecontacteerd" alleen via de
+ * opvolging. Heropende de kaart altijd naar `new`, dan stond een bedrijf mét contactmomenten als
+ * onbehandeld — en was er vanaf de kaart geen weg meer terug. De geschiedenis beslist dus: wie al
+ * gesproken is, is gecontacteerd.
+ */
+export function statusNaHeropenen(aantalContactmomenten: number): ItemStatus {
+  return aantalContactmomenten > 0 ? 'contacted' : 'new'
+}
+
+/**
  * De opt-out-rem. Weigeren is meer waard dan achteraf kunnen aantonen dat je fout zat,
  * dus dit staat in de API en niet alleen in het formulier.
  */

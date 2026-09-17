@@ -138,6 +138,35 @@ async function kopstructuur(page) {
  * `positieve tabindex` wordt apart gemeld: die breekt de documentvolgorde en is de
  * klassieke oorzaak van een volgorde die niet met het beeld overeenkomt.
  */
+/**
+ * Selects op kaarten, lage-scorerijen of prospectrijen. Sinds 2026-09-17 hoort dat nul te zijn:
+ * de status is een knop, geen randloze select. Een functie, zodat `--selftest` er een defect in
+ * kan spuiten en zien dat hij omvalt.
+ */
+async function triageSelects(page) {
+  return page.locator('[role="tabpanel"]:visible .grid select, [data-lage-score] select').evaluateAll((els) => els.map((e) => e.outerHTML.slice(0, 60)));
+}
+
+/** Per StatusActies: dragen ze de knoppen van hun status, en klopt aria-pressed met "bewaard"? */
+async function triageKnoppen(page) {
+  const items = await page.locator('[role="tabpanel"]:visible [data-status]').evaluateAll((els) =>
+    els.map((el) => {
+      const s = el.getAttribute('data-status');
+      const n = (sel) => el.querySelectorAll(sel).length;
+      const bewaar = n('button[aria-label^="Bewaar "]');
+      const afwijzen = n('button[aria-label^="Afwijzen "]');
+      const heropen = n('button[aria-label^="Heropen "]');
+      const pressed = el.querySelector('button[aria-label^="Bewaar "]')?.getAttribute('aria-pressed') ?? null;
+      const goed =
+        s === 'dismissed' ? heropen === 1 && bewaar === 0 && afwijzen === 0
+        : s === 'contacted' ? bewaar === 0 && afwijzen === 1
+        : bewaar === 1 && afwijzen === 1 && heropen === 0 && pressed === String(s === 'saved');
+      return { s, goed };
+    })
+  );
+  return { totaal: items.length, fout: items.filter((i) => !i.goed).map((i) => i.s) };
+}
+
 async function toetsenbord(page, maxStops = 80) {
   await page.evaluate(() => {
     // `blur()` alleen is niet genoeg: het vertrekpunt voor sequentiële focus blijft dan op
@@ -398,6 +427,334 @@ async function main() {
     else notes.push(`klik op ${href} kwam uit op ${landed} (redirect of anchor)`);
   } else {
     notes.push('geen select en geen interne link op de eerste route — interactie niet uitgereden');
+  }
+
+  // ── Dashboard-triage (2026-09-17) ──────────────────────────────────────────
+  // Draait op de database van de tree — de echte. Daarom: geen enkele klik die kan muteren zonder
+  // dat ALLE schrijfverzoeken naar /api eerst onderschept worden, en een positieve controle dat die
+  // onderschepping werkt vóór er iets aangeklikt wordt. Lezen (filters, URL, herladen) mag vrij.
+  // Na elke onderschepte reeks telt de harness in de database elke status ongelijk aan `new`,
+  // vóór en na: een lek van Bewaar zou een telling van alleen `dismissed` niet zien.
+  console.log('→ Dashboard-triage');
+  {
+    const { execFileSync } = await import('node:child_process');
+    const DB = process.env.JOBRADAR_DB_PATH ?? join(APP, '.data/jobradar.db');
+    const dbStand = () => {
+      try {
+        return execFileSync('sqlite3', ['-readonly', DB,
+          "SELECT (SELECT count(*) FROM jobs WHERE job_status != 'new') || '/' || (SELECT count(*) FROM companies WHERE lead_status != 'new');",
+        ]).toString().trim();
+      } catch (e) {
+        return `onleesbaar: ${String(e).split('\n')[0]}`;
+      }
+    };
+    const exact = (tekst) => new RegExp(`^${tekst.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+    const kaartMetTitel = (titel) =>
+      page.locator('[role="tabpanel"]:visible .grid > div').filter({ has: page.locator('h3', { hasText: exact(titel) }) });
+    const onderschep = async (antwoord) => {
+      await page.route(`${BASE}/api/**`, async (route) => {
+        const m = route.request().method();
+        if (m === 'GET' || m === 'HEAD') return route.continue();
+        if (antwoord.vertraging) await new Promise((r) => setTimeout(r, antwoord.vertraging));
+        return route.fulfill({ status: antwoord.status, contentType: 'application/json', body: JSON.stringify(antwoord.body) });
+      });
+      const controle = await page.evaluate(async () => {
+        const r = await fetch('/api/jobs/0', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{}' });
+        return { status: r.status, body: await r.text() };
+      });
+      return controle.status === antwoord.status && controle.body.includes('harness');
+    };
+    const laad = async (pad) => {
+      await page.goto(BASE + pad, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    };
+
+    await laad('/');
+    const items = await page.locator('[role="tabpanel"]:visible [data-status]').count();
+    if (items === 0) {
+      // Een verse tree heeft een lege database. De assen hieronder hebben dan niets om op te meten;
+      // dat melden in plaats van rood te worden of te crashen (design-review 2026-09-17).
+      notes.push('triage: [NIET TE VERIFIËREN — lege database, nul vacatures in de weergave] alle triage-assen overgeslagen');
+    } else {
+      const dbVoor = dbStand();
+
+      // Vóór elke klik op een tabblad: de Prospects-telling mag geen "0" zijn die nog niet gemeten is.
+      const prospectsTrigger = (await page.locator('[role="tab"]', { hasText: 'Prospects' }).first().innerText()).trim();
+      if (/\b0\b/.test(prospectsTrigger) || !prospectsTrigger.includes('—')) fail(`triage: Prospects-tabblad toont "${prospectsTrigger}" vóór het laden, verwacht "—"`);
+      else ok(`triage: Prospects-tabblad vóór het laden: "${prospectsTrigger.replace(/\s+/g, ' ')}"`);
+
+      const status = page.locator('select[aria-label="Status"]');
+      if ((await status.count()) !== 1) fail(`triage: ${await status.count()} statusfilters met aria-label "Status", verwacht 1`);
+      else if ((await status.inputValue()) !== 'open') fail(`triage: statusfilter staat bij het openen op "${await status.inputValue()}", verwacht "open"`);
+      else ok('triage: statusfilter staat bij het openen op Open');
+
+      const selects = await triageSelects(page);
+      if (selects.length) fail(`triage: ${selects.length} select(s) op kaarten of rijen`);
+      else ok('triage: nul selects op kaarten en lage-scorerijen');
+
+      const knoppen = await triageKnoppen(page);
+      if (knoppen.totaal === 0) fail('triage: nul StatusActies in het vacaturepaneel — dit meet niets');
+      else if (knoppen.fout.length) fail(`triage: ${knoppen.fout.length} van ${knoppen.totaal} items dragen niet de knoppen van hun status (${knoppen.fout.slice(0, 3)})`);
+      else ok(`triage: ${knoppen.totaal} items, elk met de knoppen van zijn status (Bewaar ⇔ aria-pressed)`);
+
+      // Tabteller = kaarten; de rijen tellen in hun eigen sectiekop.
+      const kaarten = await page.locator('[role="tabpanel"]:visible .grid > div').count();
+      const teller = Number((await page.locator('[role="tab"]', { hasText: 'Vacatures' }).first().innerText()).replace(/\D+/g, ''));
+      if (teller !== kaarten) fail(`triage: tabblad Vacatures telt ${teller}, er staan ${kaarten} kaarten`);
+      else ok(`triage: tabblad Vacatures telt de kaarten (${teller})`);
+
+      // URL: filterwijziging zonder documentnavigatie, en terug na herladen, refresh en Back.
+      const navigaties = [];
+      const luister = (r) => { if (r.url().startsWith(BASE + '/') && (r.resourceType() === 'document' || r.headers()['rsc'] === '1' || r.url().includes('_rsc='))) navigaties.push(r.url()); };
+      page.on('request', luister);
+      await status.selectOption('dismissed');
+      const bru = page.getByRole('checkbox', { name: 'Brussel' });
+      if (await bru.count()) await bru.click();
+      await page.locator('[role="slider"]').first().focus();
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('ArrowRight');
+      await page.waitForTimeout(400);
+      page.off('request', luister);
+      const verwacht = JSON.stringify({ status: 'dismissed', regio: 'WVL,OVL', score: '10' });
+      const urlStand = () => {
+        const u = new URL(page.url());
+        return JSON.stringify({ status: u.searchParams.get('status'), regio: u.searchParams.get('regio'), score: u.searchParams.get('score') });
+      };
+      if (urlStand() !== verwacht) fail(`triage: URL na filteren ${urlStand()}, verwacht ${verwacht}`);
+      else ok(`triage: filters staan in de URL (${new URL(page.url()).search})`);
+      if (navigaties.length) fail(`triage: filteren veroorzaakte ${navigaties.length} navigatie(s): ${navigaties[0]}`);
+      else ok('triage: filteren zonder documentnavigatie of RSC-verzoek');
+
+      // router.refresh() is een GET; hij schrijft niets. Vroeger zette hij de URL van bij het laden terug.
+      await page.evaluate(() => window.next?.router?.refresh());
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      if (urlStand() !== verwacht) fail(`triage: na router.refresh() is de URL ${urlStand()}, verwacht ${verwacht}`);
+      else ok('triage: de URL overleeft router.refresh()');
+
+      const selectNa = () => page.locator('select[aria-label="Status"]').inputValue();
+      await page.getByRole('link', { name: 'Bedrijfsplan' }).first().click();
+      await page.waitForURL(/\/plan/, { timeout: 10_000 }).catch(() => {});
+      await page.goBack({ waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      const naBack = { select: await selectNa(), url: urlStand() };
+      if (naBack.select !== 'dismissed' || naBack.url !== verwacht) fail(`triage: na /plan en Back ${JSON.stringify(naBack)}`);
+      else ok('triage: na /plan en Back staan filter én URL nog op de gefilterde stand');
+
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+      const terug = {
+        status: await selectNa(),
+        bru: await page.getByRole('checkbox', { name: 'Brussel' }).getAttribute('data-state'),
+        score: await page.locator('[role="slider"]').first().getAttribute('aria-valuenow'),
+      };
+      if (terug.status !== 'dismissed' || terug.bru !== 'unchecked' || terug.score !== '10') fail(`triage: na herladen ${JSON.stringify(terug)}`);
+      else ok('triage: na herladen staan status, regio en score terug');
+
+      // Lage score: dicht, telling klopt, rijen compact, geen kaart onder de grens, geen badge in rijen.
+      await laad('/?status=alle');
+      const sectie = page.locator('[data-lage-score]');
+      if ((await sectie.count()) !== 1) {
+        notes.push('triage: geen sectie "Score onder 10" — geen vacatures onder de grens in deze database');
+      } else {
+        const knop = sectie.locator('h3 button[aria-expanded]');
+        const telling = parseInt((await sectie.locator('[data-telling]').innerText()).replace(/\D+/g, ''), 10);
+        const naam = (await knop.innerText()).replace(/\s+/g, ' ').trim();
+        const dicht = (await knop.getAttribute('aria-expanded')) === 'false' && (await sectie.locator('li:visible').count()) === 0;
+        await knop.click();
+        const open = (await knop.getAttribute('aria-expanded')) === 'true';
+        const zichtbaar = await sectie.locator('li:visible').count();
+        if (!dicht) fail('triage: "Score onder 10" is niet dicht bij het laden');
+        else if (!open || zichtbaar !== telling) fail(`triage: na openen ${zichtbaar} rijen zichtbaar, kop zegt ${telling}`);
+        else ok(`triage: "Score onder 10" dicht bij het laden, na openen ${zichtbaar} = ${telling} rijen`);
+        if (!/^Score onder 10 · \d+ vacatures?$/.test(naam)) fail(`triage: sectiekop leest "${naam}"`);
+        else ok(`triage: sectiekop "${naam}"`);
+        const hoogte = await sectie.locator('li:visible').evaluateAll((li) => Math.max(...li.map((l) => Math.round(l.getBoundingClientRect().height))));
+        if (hoogte > 36) fail(`triage: een lage-scorerij is ${hoogte} px hoog, verwacht ≤ 36`);
+        else ok(`triage: lage-scorerijen zijn compact (max ${hoogte} px)`);
+        const badges = await sectie.locator('[data-nieuw], :text-is("nieuw")').count();
+        if (badges) fail(`triage: ${badges} nieuw-badge(s) in de lage-scorerijen`);
+        else ok('triage: nul nieuw-badges onder de grens');
+      }
+      const kaartScores = await page.locator('[role="tabpanel"]:visible .grid > div').evaluateAll((k) => k.map((x) => Number(x.querySelector('.tabular-nums')?.textContent ?? 'NaN')));
+      const onderGrens = kaartScores.filter((s) => !(s >= 10));
+      if (kaartScores.length === 0) notes.push('triage: geen kaarten vanaf score 10 in deze database');
+      else if (onderGrens.length) fail(`triage: ${onderGrens.length} van ${kaartScores.length} kaarten scoren onder 10 (${onderGrens.slice(0, 3)})`);
+      else ok(`triage: ${kaartScores.length} kaarten, alle vanaf score 10`);
+      const nieuw = await page.locator('[data-nieuw]').evaluateAll((els) => ({ n: els.length, gevuld: els.filter((e) => getComputedStyle(e).backgroundColor !== 'rgba(0, 0, 0, 0)').length }));
+      if (nieuw.n === 0) notes.push('triage: geen nieuw-badges op kaarten — "outline" niet gemeten deze run');
+      else if (nieuw.gevuld) fail(`triage: ${nieuw.gevuld} van ${nieuw.n} nieuw-badges zijn gevuld`);
+      else ok(`triage: nieuw-badges zijn outline (${nieuw.n} gemeten)`);
+
+      // Meta-rij: geen overloop en geen overlap met "Bekijk", op 1280 én 1024 px.
+      for (const breedte of [1280, 1024]) {
+        await page.setViewportSize({ width: breedte, height: 900 });
+        await page.waitForTimeout(300);
+        const meta = await page.locator('[data-meta]').evaluateAll((els) => els.map((e) => {
+          const link = e.parentElement?.querySelector('a');
+          const r = e.getBoundingClientRect();
+          const l = link?.getBoundingClientRect();
+          return { overloop: e.scrollWidth > e.clientWidth + 1, overlap: Boolean(l && r.right > l.left + 1), hoogte: Math.round(r.height) };
+        }));
+        const slecht = meta.filter((m) => m.overloop || m.overlap);
+        if (meta.length === 0) notes.push(`triage: geen meta-rijen op ${breedte} px`);
+        else if (slecht.length) fail(`triage: op ${breedte} px ${slecht.length} van ${meta.length} meta-rijen met overloop of overlap met "Bekijk"`);
+        else ok(`triage: op ${breedte} px ${meta.length} meta-rijen zonder overloop of overlap (max ${Math.max(...meta.map((m) => m.hoogte))} px hoog)`);
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+
+      const bronnen = Number(execFileSync('sqlite3', ['-readonly', DB, 'SELECT count(DISTINCT source) FROM jobs;']).toString().trim());
+      const chips = await page.locator('[data-bron]').count();
+      if (bronnen <= 1 && chips > 0) fail(`triage: ${chips} bronchips terwijl er ${bronnen} bron is`);
+      else if (bronnen > 1 && chips === 0 && kaartScores.length) fail(`triage: geen bronchips terwijl er ${bronnen} bronnen zijn`);
+      else ok(`triage: ${chips} bronchips bij ${bronnen} bron(nen)`);
+
+      // Lege grid: een zoekterm die alleen een lage-scorevacature raakt.
+      const laagTitels = await page.locator('[data-lage-score] li .font-medium').allInnerTexts();
+      let leegGemeten = false;
+      for (const titel of laagTitels.slice(0, 8)) {
+        await laad(`/?status=alle&zoek=${encodeURIComponent(titel)}`);
+        if ((await page.locator('[role="tabpanel"]:visible .grid > div').count()) > 0) continue;
+        leegGemeten = true;
+        if ((await page.locator('[data-geen-kaarten]').count()) !== 1) fail(`triage: zoekterm "${titel}" geeft geen kaarten maar ook geen diagnose`);
+        else ok(`triage: zonder kaarten vanaf 10 staat de diagnose er ("${titel.slice(0, 30)}")`);
+        break;
+      }
+      if (!leegGemeten) notes.push('triage: geen zoekterm gevonden die alleen lage scores raakt — lege grid niet gemeten');
+
+      // Doorklik vanaf een lead en herladen: de lijst hoort op de bedrijfssleutel te blijven matchen.
+      // Alleen lezen — "toon deze vacatures" verandert niets in de database.
+      await laad('/?tab=leads');
+      const doorklik = page.locator('[role="tabpanel"]:visible button', { hasText: 'toon deze vacatures' }).first();
+      if (!(await doorklik.count())) {
+        notes.push('triage: geen lead met "toon deze vacatures" — doorklik niet gemeten');
+      } else {
+        await doorklik.click();
+        await page.waitForTimeout(400);
+        const u = new URL(page.url());
+        const melding = page.locator('p[aria-live="polite"].sr-only:not([data-status-melding])').first();
+        const voor = { via: u.searchParams.get('via'), items: await page.locator('[role="tabpanel"]:visible [data-status]').count(), melding: (await melding.innerText()).trim() };
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+        const na = { items: await page.locator('[role="tabpanel"]:visible [data-status]').count(), melding: (await melding.innerText()).trim() };
+        if (voor.via !== 'bedrijf') fail(`triage: na de doorklik staat via=${voor.via} in de URL, verwacht "bedrijf"`);
+        else if (!voor.melding) fail('triage: na de doorklik is er geen melding "N vacatures van …" — dit meet niets');
+        else if (na.items !== voor.items || na.melding !== voor.melding) fail(`triage: na herladen ${JSON.stringify(na)}, vóór ${JSON.stringify({ items: voor.items, melding: voor.melding })}`);
+        else ok(`triage: doorklik overleeft herladen ("${voor.melding}", ${voor.items} items)`);
+      }
+
+      // ── Onderschept met een GESLAAGD antwoord: de client-toestand zonder de database te raken ──
+      await laad('/');
+      if (!(await onderschep({ status: 200, body: { ok: true, harness: 'onderschept' } }))) {
+        fail('triage: onderschepping (geslaagd antwoord) niet bevestigd — kliks overgeslagen');
+      } else {
+        ok('triage: positieve controle — schrijfverzoeken worden onderschept (200)');
+
+        // Bewaar: beide standen.
+        const eerste = page.locator('[role="tabpanel"]:visible .grid > div').first();
+        const titelB = (await eerste.locator('h3').innerText()).trim();
+        const statusB = kaartMetTitel(titelB).locator('[data-status]');
+        const bewaar = statusB.locator('button[aria-label^="Bewaar "]');
+        await bewaar.click();
+        await page.waitForTimeout(300);
+        const aan = { pressed: await bewaar.getAttribute('aria-pressed'), status: await statusB.getAttribute('data-status'), fill: await bewaar.locator('svg').evaluate((s) => getComputedStyle(s).fill) };
+        await bewaar.click();
+        await page.waitForTimeout(300);
+        const uit = await bewaar.getAttribute('aria-pressed');
+        if (aan.pressed !== 'true' || aan.status !== 'saved' || aan.fill === 'none') fail(`triage: na Bewaar ${JSON.stringify(aan)}`);
+        else ok(`triage: Bewaar zet aria-pressed="true", data-status="saved" en vult het icoon (${aan.fill})`);
+        if (uit !== 'false') fail(`triage: tweede klik op Bewaar laat aria-pressed="${uit}"`);
+        else ok('triage: tweede klik op Bewaar zet aria-pressed="false"');
+
+        // Afwijzen met het TOETSENBORD: kaart weg uit Open, focus naar de volgende, en een melding.
+        const kaartenVoor = await page.locator('[role="tabpanel"]:visible .grid > div h3').allInnerTexts();
+        const titelA = kaartenVoor[0]?.trim();
+        const volgende = kaartenVoor[1]?.trim();
+        if (!titelA || !volgende) {
+          notes.push('triage: minder dan twee kaarten — focus na Afwijzen niet gemeten');
+        } else {
+          await kaartMetTitel(titelA).locator('button[aria-label^="Afwijzen "]').focus();
+          await page.keyboard.press('Enter');
+          await page.waitForTimeout(600);
+          const inOpen = await kaartMetTitel(titelA).count();
+          const focus = await page.evaluate(() => ({
+            body: document.activeElement === document.body,
+            titel: document.activeElement?.closest('[data-item]')?.querySelector('h3')?.textContent?.trim() ?? null,
+          }));
+          const melding = (await page.locator('[data-status-melding]').innerText()).trim();
+          if (inOpen !== 0) fail(`triage: "${titelA}" staat na Afwijzen nog in de open-weergave`);
+          else ok('triage: Afwijzen haalt de kaart uit de open-weergave');
+          if (focus.body) fail('triage: na Afwijzen met het toetsenbord staat de focus op body');
+          else ok('triage: na Afwijzen staat de focus niet op body');
+          if (focus.titel !== volgende) fail(`triage: focus na Afwijzen staat in "${focus.titel}", verwacht "${volgende}"`);
+          else ok('triage: de focus staat in de volgende kaart');
+          if (melding !== `${titelA} afgewezen`) fail(`triage: live-melding "${melding}", verwacht "${titelA} afgewezen"`);
+          else ok('triage: een live-regio meldt "<titel> afgewezen"');
+
+          await page.locator('select[aria-label="Status"]').selectOption('dismissed');
+          await page.waitForTimeout(300);
+          if ((await kaartMetTitel(titelA).locator('button[aria-label^="Heropen "]').count()) !== 1) fail(`triage: "${titelA}" staat niet met Heropen onder Afgewezen`);
+          else ok('triage: onder Afgewezen staat hij, met Heropen (positieve controle op Open)');
+        }
+
+        // Leads: hetzelfde pad op het tweede tabblad.
+        await laad('/?tab=leads');
+        const lead = page.locator('[role="tabpanel"]:visible .grid > div').first();
+        if (!(await lead.count())) {
+          notes.push('triage: geen leads in de weergave — leadpaneel niet gemeten');
+        } else if (!(await onderschep({ status: 200, body: { ok: true, harness: 'onderschept' } }))) {
+          fail('triage: onderschepping op het leadpaneel niet bevestigd — klik overgeslagen');
+        } else {
+          const naam = (await lead.locator('h3').first().innerText()).trim();
+          await lead.locator('button[aria-label^="Afwijzen "]').click();
+          await page.waitForTimeout(500);
+          const nogOpen = await page.locator('[role="tabpanel"]:visible .grid > div h3', { hasText: exact(naam) }).count();
+          await page.locator('select[aria-label="Status"]').selectOption('dismissed');
+          await page.waitForTimeout(300);
+          const onderAfgewezen = await page.locator('[role="tabpanel"]:visible .grid > div').filter({ has: page.locator('h3', { hasText: exact(naam) }) }).locator('button[aria-label^="Heropen "]').count();
+          if (nogOpen !== 0 || onderAfgewezen !== 1) fail(`triage: lead "${naam}" — nog open ${nogOpen}, onder Afgewezen met Heropen ${onderAfgewezen}`);
+          else ok('triage: Afwijzen op een lead haalt hem uit Open en zet hem onder Afgewezen met Heropen');
+        }
+        await page.unroute(`${BASE}/api/**`);
+      }
+
+      // ── Onderschept met een 500: fout en loading ───────────────────────────────
+      await laad('/');
+      const foutenVoor = consoleErrors.length;
+      if (!(await onderschep({ status: 500, vertraging: 600, body: { ok: false, error: 'harness-onderschept' } }))) {
+        fail('triage: onderschepping (500) niet bevestigd — klik overgeslagen');
+      } else {
+        ok('triage: positieve controle — schrijfverzoeken worden onderschept (500)');
+        const eerste = page.locator('[role="tabpanel"]:visible .grid > div').first();
+        const titel = (await eerste.locator('h3').innerText()).trim();
+        const item = kaartMetTitel(titel).locator('[data-status]');
+        const voor = await item.getAttribute('data-status');
+        const afwijzen = item.locator('button[aria-label^="Afwijzen "]');
+        await afwijzen.click();
+        await page.waitForTimeout(150);
+        const bezig = await afwijzen.getAttribute('aria-disabled');
+        await page.waitForTimeout(900);
+        const nogDaar = (await item.count()) === 1;
+        const alert = nogDaar ? await item.locator('[role="alert"]').innerText().catch(() => '') : '';
+        const na = nogDaar ? await item.getAttribute('data-status') : '(kaart verdwenen)';
+        if (bezig !== 'true') fail(`triage: Afwijzen draagt aria-disabled="${bezig}" tijdens de PATCH`);
+        else ok('triage: Afwijzen draagt aria-disabled tijdens de PATCH');
+        if (!alert.includes('harness-onderschept')) fail(`triage: geen alert bij het item na een 500 (kreeg "${alert}")`);
+        else ok('triage: een 500 toont een alert bij het item');
+        if (na !== voor) fail(`triage: status veranderde van ${voor} naar ${na} na een mislukte PATCH`);
+        else ok(`triage: status blijft "${voor}" na een mislukte PATCH`);
+      }
+      await page.unroute(`${BASE}/api/**`);
+      const inVenster = consoleErrors.splice(foutenVoor);
+      const geforceerd = inVenster.filter((m) => /status of 500/.test(m));
+      consoleErrors.push(...inVenster.filter((m) => !/status of 500/.test(m)));
+      notes.push(`triage: ${geforceerd.length} geforceerde 500-melding(en) uit de console gefilterd, ${inVenster.length - geforceerd.length} andere behouden`);
+
+      const dbNa = dbStand();
+      if (dbNa !== dbVoor) fail(`triage: de database veranderde (niet-new vacatures/leads ${dbVoor} → ${dbNa}) — een onderschepping lekte`);
+      else ok(`triage: de database is ongemoeid (niet-new vacatures/leads ${dbNa}, vóór én na)`);
+    }
   }
 
   // ── Prospects-tabblad ──────────────────────────────────────────────────────
@@ -783,6 +1140,56 @@ async function main() {
                     await terug;
                     await page.waitForTimeout(400);
                   }
+
+                  // ── Blijft een status in de lijst naast de kaart staan? (2026-09-17) ──
+                  // De status leefde alleen in de gekozen rij; een andere stip kiezen en terug
+                  // toonde de oude. Onderschept, met positieve controle, en met een telling in de
+                  // database vóór en na — dit draait op de echte data.
+                  const tel = async () => {
+                    const { execFileSync } = await import('node:child_process');
+                    const db = process.env.JOBRADAR_DB_PATH ?? join(APP, '.data/jobradar.db');
+                    return execFileSync('sqlite3', ['-readonly', db, "SELECT count(*) || '/' || coalesce(sum(status != 'new'), 0) FROM prospect_status;"]).toString().trim();
+                  };
+                  const markerLijst = svg.locator('[role="button"]');
+                  const aantalM = await markerLijst.count();
+                  let metStatus = -1;
+                  for (let i = 0; i < Math.min(aantalM, 40); i++) {
+                    await markerLijst.nth(i).click();
+                    await page.waitForTimeout(150);
+                    const k = page.locator('[role="tabpanel"]:visible [data-status="new"] button[aria-label^="Bewaar "]');
+                    if ((await k.count()) >= 1) { metStatus = i; break; }
+                  }
+                  if (metStatus < 0 || aantalM < 2) {
+                    notes.push('kaart: geen marker met een lijst-prospect op "nieuw" (of één marker) — status na herkiezen niet gemeten');
+                  } else {
+                    const dbVoor = await tel();
+                    await page.route(`${BASE}/api/**`, (route) => {
+                      const m = route.request().method();
+                      if (m === 'GET' || m === 'HEAD') return route.continue();
+                      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, harness: 'onderschept' }) });
+                    });
+                    const controle = await page.evaluate(async () => (await fetch('/api/prospects/0000000000', { method: 'PATCH', body: '{}' })).text());
+                    if (!controle.includes('onderschept')) {
+                      fail('kaart: onderschepping niet bevestigd — klik overgeslagen');
+                    } else {
+                      const knop = page.locator('[role="tabpanel"]:visible [data-status] button[aria-label^="Bewaar "]').first();
+                      const naam = (await knop.getAttribute('aria-label')) ?? '';
+                      await knop.click();
+                      await page.waitForTimeout(300);
+                      await markerLijst.nth(metStatus === 0 ? 1 : 0).click();
+                      await page.waitForTimeout(200);
+                      await markerLijst.nth(metStatus).click();
+                      await page.waitForTimeout(300);
+                      const terugKnop = page.locator(`[role="tabpanel"]:visible button[aria-label="${naam.replace(/"/g, '\\"')}"]`);
+                      const pressed = (await terugKnop.count()) ? await terugKnop.first().getAttribute('aria-pressed') : '(niet gevonden)';
+                      if (pressed !== 'true') fail(`kaart: na Bewaar, een andere stip en terug staat aria-pressed op "${pressed}"`);
+                      else ok('kaart: een bewaarde status blijft staan na een andere stip kiezen en terug');
+                    }
+                    await page.unroute(`${BASE}/api/**`);
+                    const dbNa = await tel();
+                    if (dbNa !== dbVoor) fail(`kaart: prospect_status veranderde (${dbVoor} → ${dbNa}) — de onderschepping lekte`);
+                    else ok(`kaart: prospect_status ongemoeid (${dbNa})`);
+                  }
                 }
               }
 
@@ -935,6 +1342,29 @@ async function main() {
     const tbZelftest = await toetsenbord(page);
     if (tbZelftest.problemen.length) fail(`ZELFTEST toetsenbord: ${tbZelftest.problemen[0]}`);
     else console.log('  ! toetsenbord-pass zag het ingespoten defect NIET');
+
+    // Triage (2026-09-17): een select in een kaart, en een Bewaar-knop die "ingedrukt" zegt op een
+    // item dat niet bewaard is. Alleen in de DOM van deze pagina — de database blijft onaangeroerd.
+    await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const geinjecteerd = await page.evaluate(() => {
+      const kaart = document.querySelector('[role="tabpanel"] .grid > div');
+      const bewaar = document.querySelector('[role="tabpanel"] [data-status="new"] button[aria-label^="Bewaar "]');
+      if (!kaart || !bewaar) return false;
+      kaart.appendChild(document.createElement('select'));
+      bewaar.setAttribute('aria-pressed', 'true');
+      return true;
+    });
+    if (!geinjecteerd) {
+      console.log('  ! triage-zelftest: geen kaart of Bewaar-knop om een defect in te spuiten (lege database?)');
+    } else {
+      const sel = await triageSelects(page);
+      if (sel.length) fail(`ZELFTEST triage-selects: ${sel.length} select(s) op kaarten`);
+      else console.log('  ! triage-selects zag het ingespoten defect NIET');
+      const kn = await triageKnoppen(page);
+      if (kn.fout.length) fail(`ZELFTEST triage-knoppen: ${kn.fout.length} item(s) met verkeerde knoppen`);
+      else console.log('  ! triage-knoppen zag het ingespoten defect NIET');
+    }
   }
 
   if (consoleErrors.length) {
@@ -960,10 +1390,10 @@ async function main() {
   for (const n of notes) console.log(`  • ${n}`);
   if (SELFTEST) {
     // Elke as apart: één gefaalde assertie bewees vroeger alleen dat de routecheck meet.
-    const assen = ['ZELFTEST:', 'ZELFTEST kopstructuur', 'ZELFTEST toetsenbord'];
+    const assen = ['ZELFTEST:', 'ZELFTEST kopstructuur', 'ZELFTEST toetsenbord', 'ZELFTEST triage-selects', 'ZELFTEST triage-knoppen'];
     const gemist = assen.filter((a) => !fails.some((f) => f.startsWith(a)));
     console.log(gemist.length === 0
-      ? '✓ zelftest: alle drie de assen falen wanneer ze horen te falen'
+      ? `✓ zelftest: alle ${assen.length} assen falen wanneer ze horen te falen`
       : `✗ zelftest: deze as/assen faalden NIET — ${gemist.join(', ')}`);
     process.exit(gemist.length === 0 ? 0 : 1);
   }

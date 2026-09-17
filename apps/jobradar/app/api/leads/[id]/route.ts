@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm'
 import { getDb } from '@/lib/db'
 import * as schema from '@/lib/db/schema'
 import type { ItemStatus } from '@/lib/db/schema'
+import { statusNaHeropenen } from '@/lib/contact'
+import { telContactmomenten } from '@/lib/opvolging'
 
 const VALID_STATUSES: ItemStatus[] = ['new', 'saved', 'dismissed', 'contacted']
 
@@ -22,7 +24,10 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: 'Invalid status' }, { status: 400 })
   }
 
+  // Heropenen (`new`) laat de geschiedenis beslissen: wie al gesproken is, is gecontacteerd. Het
+  // antwoord draagt de status die echt opgeslagen is, zodat de kaart die toont en niet wat ze vroeg.
+  const opgeslagen = status === 'new' ? statusNaHeropenen(await telContactmomenten('lead', String(id))) : status
   const db = getDb()
-  await db.update(schema.companies).set({ leadStatus: status }).where(eq(schema.companies.id, id))
-  return NextResponse.json({ ok: true })
+  await db.update(schema.companies).set({ leadStatus: opgeslagen }).where(eq(schema.companies.id, id))
+  return NextResponse.json({ ok: true, status: opgeslagen })
 }

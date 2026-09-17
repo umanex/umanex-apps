@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import * as schema from '@/lib/db/schema'
 import type { ItemStatus } from '@/lib/db/schema'
+import { statusNaHeropenen } from '@/lib/contact'
+import { telContactmomenten } from '@/lib/opvolging'
 
 const GELDIGE_STATUSSEN: ItemStatus[] = ['new', 'saved', 'dismissed', 'contacted']
 
@@ -21,14 +23,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ nr
     return NextResponse.json({ ok: false, error: 'Invalid status' }, { status: 400 })
   }
 
+  // Zelfde regel als bij leads: heropenen laat de contactgeschiedenis beslissen.
+  const opgeslagen = status === 'new' ? statusNaHeropenen(await telContactmomenten('prospect', nummer)) : status
   const db = getDb()
   await db
     .insert(schema.prospectStatus)
-    .values({ enterpriseNumber: nummer, status, updatedAt: new Date().toISOString() })
+    .values({ enterpriseNumber: nummer, status: opgeslagen, updatedAt: new Date().toISOString() })
     .onConflictDoUpdate({
       target: schema.prospectStatus.enterpriseNumber,
-      set: { status, updatedAt: new Date().toISOString() },
+      set: { status: opgeslagen, updatedAt: new Date().toISOString() },
     })
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, status: opgeslagen })
 }

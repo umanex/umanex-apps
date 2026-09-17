@@ -32,6 +32,8 @@ import type { Job, Company, ItemStatus, SubjectType } from '@/lib/db/schema'
 import { normaliseerBedrijf } from '@/lib/matching'
 import type { RegionCode } from '@/lib/regions'
 import type { Dekking } from '@/lib/coverage'
+import { LAGE_SCORE_GRENS, leesStand, pastBijStatus, schrijfStand, splitsOpScore, type StatusFilter, type Tab, type TriageStand } from '@/lib/triage'
+import { LageScoreLijst } from './LageScoreLijst'
 
 type DashboardClientProps = {
   jobs: Job[]
@@ -48,12 +50,12 @@ type DashboardClientProps = {
    * zou daarna de oude waarde tonen.
    */
   koppelingen: Record<string, string[]>
-  /** Beginwaarden uit de querystring, voor de sprong vanuit het bedrijfsplan. */
-  initialTab: string | null
-  initialZoek: string | null
+  /**
+   * De filterstand uit de querystring. Sinds 2026-09-17 alle filters, niet alleen tab en zoek:
+   * een stand die bij herladen verdween, stelde je elke ochtend opnieuw in.
+   */
+  initialStand: TriageStand
 }
-
-const ALL_REGIONS: RegionCode[] = ['WVL', 'OVL', 'BRU']
 
 export function DashboardClient({
   jobs: initialJobs,
@@ -62,29 +64,40 @@ export function DashboardClient({
   dekking,
   vermoedens,
   koppelingen,
-  initialTab,
-  initialZoek,
+  initialStand,
 }: DashboardClientProps) {
   const [jobs, setJobs] = useState(initialJobs)
   const [companies, setCompanies] = useState(initialCompanies)
-  const [regions, setRegions] = useState<RegionCode[]>(ALL_REGIONS)
-  const router = useRouter()
-  const [minScore, setMinScore] = useState(0)
-  const [statusFilter, setStatusFilter] = useState<ItemStatus | ''>('')
-  const [zoek, setZoek] = useState(initialZoek ?? '')
-  // Controlled, want de doorklik vanaf een lead moet het tabblad kunnen zetten.
-  const [tab, setTab] = useState(
-    initialTab === 'leads' || initialTab === 'prospects' ? initialTab : 'jobs'
+  /**
+   * De beginstand: in de browser uit de adresbalk, op de server uit de prop.
+   *
+   * Bij het laden zijn die twee dezelfde URL, dus de hydration klopt. Het verschil is Back: keer je
+   * van /plan terug, dan hergebruikt Next de gecachete render met de `initialStand` van bij het
+   * laden, terwijl de adresbalk de stand draagt die je daarna koos. De adresbalk is dan de waarheid
+   * (design-review 2026-09-17).
+   */
+  const [begin] = useState<TriageStand>(() =>
+    typeof window === 'undefined' ? initialStand : leesStand(new URLSearchParams(window.location.search))
   )
+  const [regions, setRegions] = useState<RegionCode[]>(begin.regios)
+  const router = useRouter()
+  const [minScore, setMinScore] = useState(begin.minScore)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(begin.status)
+  const [zoek, setZoek] = useState(begin.zoek)
+  // Controlled, want de doorklik vanaf een lead moet het tabblad kunnen zetten.
+  const [tab, setTab] = useState<Tab>(begin.tab)
   // Onthouden of de huidige zoekterm van een doorklik komt: dan verdient een lege lijst
-  // een andere uitleg dan een gewone mistreffer.
-  const [viaLead, setViaLead] = useState(false)
+  // een andere uitleg dan een gewone mistreffer. Staat in de URL als `via=bedrijf`.
+  const [viaLead, setViaLead] = useState(begin.via === 'bedrijf')
+  // Wat de laatste statuswissel met de lijst deed, voor wie niet ziet dat een kaart verdween.
+  const [statusMelding, setStatusMelding] = useState('')
 
   // ── Prospects ──────────────────────────────────────────────────────────────
   // Eigen staat, want deze lijst komt niet van de server-render mee: 14.613 rijen gaan niet
   // als prop naar de client. Het tabblad haalt zijn eigen pagina op zodra het actief wordt.
   const [prospects, setProspects] = useState<Prospect[]>([])
-  const [prospectTotaal, setProspectTotaal] = useState(0)
+  // Null tot de eerste respons: een "0" op het tabblad vóór het laden was een onware telling.
+  const [prospectTotaal, setProspectTotaal] = useState<number | null>(null)
   const [prospectPaginas, setProspectPaginas] = useState(1)
   const [prospectPagina, setProspectPagina] = useState(1)
   const [prospectBezig, setProspectBezig] = useState(false)
@@ -160,7 +173,7 @@ export function DashboardClient({
     .filter((j) =>
       regions.includes(j.region as RegionCode) &&
       j.score >= minScore &&
-      (statusFilter === '' || j.jobStatus === statusFilter) &&
+      pastBijStatus(j.jobStatus, statusFilter) &&
       raaktJob(j.title, j.company)
     )
     .sort((a, b) => b.score - a.score)
@@ -169,10 +182,45 @@ export function DashboardClient({
     .filter((c) =>
       regions.includes(c.region as RegionCode) &&
       c.leadScore >= minScore &&
-      (statusFilter === '' || c.leadStatus === statusFilter) &&
+      pastBijStatus(c.leadStatus, statusFilter) &&
       raakt(c.companyName)
     )
     .sort((a, b) => b.leadScore - a.leadScore)
+
+  // Kaarten vanaf de scoregrens, de rest compact eronder — zie `LAGE_SCORE_GRENS`.
+  const { kaarten: jobKaarten, laag: lageJobs } = splitsOpScore(filteredJobs)
+  // "adzuna" op elke kaart zei niets zolang er maar één bron is.
+  const toonBron = new Set(jobs.map((j) => j.source)).size > 1
+
+  /**
+   * De filterstand in de URL, zodat hij een herlaadbeurt overleeft.
+   *
+   * `history.replaceState` en niet `router.replace`: deze pagina is `force-dynamic`, en een
+   * router-navigatie zou bij elke letter in het zoekveld de hele server-render opnieuw doen
+   * (alle vacatures, leads en koppelingen). `replace` en niet `push`: filteren is geen stap terug
+   * waard in de browsergeschiedenis.
+   *
+   * Met `null` als state, niet `window.history.state`. Next 15 patcht `replaceState` en slaat zijn
+   * eigen router over zodra de state `__NA` draagt — en die van de huidige entry draagt dat. De
+   * router hield dan de URL van bij het laden, en de eerstvolgende `router.refresh()` (Sync nu, een
+   * plan-koppeling) zette die oude URL terug. Gelezen in `next/dist/client/components/app-router.js`
+   * (15.5.25, r.324–331): met `null` kopieert Next zijn interne state en werkt hij de URL bij via
+   * `ACTION_RESTORE`, zonder iets op te halen.
+   */
+  useEffect(() => {
+    const qs = schrijfStand({
+      status: statusFilter,
+      regios: regions,
+      minScore,
+      tab,
+      zoek,
+      via: viaLead ? 'bedrijf' : '',
+    }).toString()
+    const doel = qs ? `?${qs}` : ''
+    if (window.location.search !== doel) {
+      window.history.replaceState(null, '', `${window.location.pathname}${doel}`)
+    }
+  }, [statusFilter, regions, minScore, tab, zoek, viaLead])
 
   // Eén filterstand voor de lijst én de kaart. Ze uit elkaar laten lopen is precies wat
   // er op 2026-09-09 mis was: de kaart bleef op alle punten staan bij elke filterkeuze.
@@ -235,12 +283,41 @@ export function DashboardClient({
     setProspects((prev) => prev.map((p) => (p.nummer === nummer ? { ...p, status } : p)))
   }
 
+  /**
+   * Na een wissel die het item uit de huidige weergave haalt (Afwijzen onder Open): de kaart
+   * verdwijnt onder de focus. Zonder dit viel die op `body` en hoorde een schermlezer niets —
+   * de lijst werd gewoon één korter (design-review 2026-09-17). De focus gaat naar het volgende
+   * item in dezelfde groep (kaarten of lage-scorerijen, want die tweede kan ingeklapt zijn), anders
+   * naar het vorige, anders naar het statusfilter.
+   */
+  const naVerdwijnen = (soort: 'job' | 'lead', id: number, titel: string, status: ItemStatus, groep: number[]) => {
+    if (pastBijStatus(status, statusFilter)) return
+    const i = groep.indexOf(id)
+    const doel = groep[i + 1] ?? groep[i - 1]
+    const wat = status === 'dismissed' ? 'afgewezen' : status === 'saved' ? 'bewaard' : 'heropend'
+    setStatusMelding(`${titel} ${wat}`)
+    // Twee frames: de wissel komt uit een fetch-vervolg, en React commit de kortere lijst pas na
+    // het eerste.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const knop =
+          doel !== undefined
+            ? document.querySelector<HTMLElement>(`[data-item="${soort}-${doel}"] [data-status] button`)
+            : null
+        ;(knop ?? document.querySelector<HTMLElement>('select[aria-label="Status"]'))?.focus()
+      })
+    )
+  }
+
   const handleJobStatusChange = (id: number, status: ItemStatus) => {
     setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, jobStatus: status } : j)))
+    const groep = jobKaarten.some((j) => j.id === id) ? jobKaarten : lageJobs
+    naVerdwijnen('job', id, jobs.find((j) => j.id === id)?.title ?? '', status, groep.map((j) => j.id))
   }
 
   const handleLeadStatusChange = (id: number, status: ItemStatus) => {
     setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, leadStatus: status } : c)))
+    naVerdwijnen('lead', id, companies.find((c) => c.id === id)?.companyName ?? '', status, filteredCompanies.map((c) => c.id))
   }
 
   return (
@@ -292,13 +369,18 @@ export function DashboardClient({
             ? `${filteredJobs.length} ${filteredJobs.length === 1 ? 'vacature' : 'vacatures'} van ${zoek}`
             : ''}
         </p>
+        <p aria-live="polite" className="sr-only" data-status-melding>
+          {statusMelding}
+        </p>
 
-        <Tabs value={tab} onValueChange={setTab}>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
           <TabsList>
             <TabsTrigger value="jobs">
               Vacatures
+              {/* De kaarten, niet alles: "334" boven 25 kaarten las als een lijst die ontbrak. De rijen
+                  onder de grens tellen in de kop van hun eigen sectie. */}
               <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-                {filteredJobs.length}
+                {jobKaarten.length}
               </span>
             </TabsTrigger>
             <TabsTrigger value="leads">
@@ -310,7 +392,7 @@ export function DashboardClient({
             <TabsTrigger value="prospects">
               Prospects
               <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-                {prospectTotaal}
+                {prospectTotaal ?? '—'}
               </span>
             </TabsTrigger>
           </TabsList>
@@ -336,16 +418,31 @@ export function DashboardClient({
                 }
               />
             ) : (
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredJobs.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    isNew={job.firstSeenAt >= previousSyncAt}
-                    onStatusChange={(status) => handleJobStatusChange(job.id, status)}
-                  />
-                ))}
-              </div>
+              <>
+                {jobKaarten.length === 0 ? (
+                  // Er zijn wél vacatures, alleen geen enkele vanaf de grens: dat is een ander
+                  // antwoord dan een lege database, en het hoort er te staan in plaats van een
+                  // lege grid boven een ingeklapte sectie.
+                  <p className="mt-6 text-sm text-muted-foreground" data-geen-kaarten>
+                    Geen vacatures vanaf score {LAGE_SCORE_GRENS} binnen je filters. De{' '}
+                    <span className="tabular-nums">{lageJobs.length}</span> met een lagere score staan
+                    hieronder.
+                  </p>
+                ) : (
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {jobKaarten.map((job) => (
+                      <JobCard
+                        key={job.id}
+                        job={job}
+                        isNew={job.firstSeenAt >= previousSyncAt}
+                        toonBron={toonBron}
+                        onStatusChange={(status) => handleJobStatusChange(job.id, status)}
+                      />
+                    ))}
+                  </div>
+                )}
+                <LageScoreLijst vacatures={lageJobs} onStatusChange={handleJobStatusChange} />
+              </>
             )}
           </TabsContent>
 
@@ -447,7 +544,7 @@ export function DashboardClient({
                   <option value="actie">Volgende actie eerst</option>
                 </select>
                 <p className="text-sm tabular-nums text-muted-foreground">
-                  {prospectBezig ? 'Bezig…' : `${prospectTotaal} prospect${prospectTotaal === 1 ? '' : 's'}`}
+                  {prospectBezig || prospectTotaal === null ? 'Bezig…' : `${prospectTotaal} prospect${prospectTotaal === 1 ? '' : 's'}`}
                 </p>
                 <button
                   type="button"
@@ -472,7 +569,7 @@ export function DashboardClient({
                 niet dat de lijst van 2.939 naar 171 ging. Zelfde motivering als de
                 aria-live bij de doorklik vanaf een lead. */}
             <p aria-live="polite" className="sr-only">
-              {prospectBezig
+              {prospectBezig || prospectTotaal === null
                 ? 'Bezig met laden'
                 : `${prospectTotaal} prospect${prospectTotaal === 1 ? '' : 's'}` +
                   (alleenWinstgevend ? ', alleen winstgevende bedrijven uit de aangeleverde lijst' : '') +

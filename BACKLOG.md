@@ -41,6 +41,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Globaal
 
+## 2026-09-17 — `Button` begint bij 36px, maar apps gebruiken knoppen van 24px · [feature]
+- **Wat:** de kleinste `Button` is `size="sm"` (`h-control-sm`, 36px) en `size="icon"` is 40 × 40. jobradar heeft 21 rauwe `<button>`-elementen van 24 tot 28px: icoonknoppen (prullenbak 12px-icoon met `p-1`), inline tekstknoppen ("Wijzig", "toon deze vacatures", "+2 vacatures") en compacte kaartknoppen ("Opvolging", `px-2 py-1 text-2xs`). Gemeten 2026-09-17 bij fase 4b: geen enkele haalt 36px, dus omzetten zou elk van die knoppen 8 tot 16px groter maken — in kaarten en rijen die al gemeten zijn.
+- **Waarom niet nu:** fase 4b had als harde eis "geen maatwijziging"; de velden konden mee omdat `sm` (36px) daar een bewuste keuze van Jeroen was, de knoppen niet. Een maat verzinnen zonder rol zou de schaal omzeilen.
+- **Eerste zet:** meten wat de 21 knoppen aan hoogtes vragen (24 en 28px lijken de twee clusters), en beslissen of dat één `xs`-maat wordt op een bestaande stap (`spacing.6` = 24px) plus een `icon-sm`, of dat inline tekstknoppen helemaal geen Button horen te zijn. Daarna jobradar in één keer omzetten.
+- **Status:** open
+
+## 2026-09-17 — cashflow en het dashboard bouwen de compacte Badge nog zelf na · [refactor]
+- **Wat:** sinds fase 4a heeft `Badge` een `size="sm"`. jobradar is om (22 plekken), cashflow (14) en het dashboard (2) schrijven nog `className="text-2xs"`. Gemeten met `git grep -c text-2xs` op 2026-09-17.
+- **Waarom niet nu:** andere apps, andere commit-scope; cashflow draait bovendien als PM2-build, dus dat verdient zijn eigen verificatieronde.
+- **Eerste zet:** per app `className="text-2xs"` op een `<Badge` vervangen door `size="sm"`, en meten dat de gerenderde hoogte gelijk blijft (de klasse deed precies wat `sm` doet).
+- **Status:** open
+
 ## 2026-09-17 — `Slider` rendert één greep, ook met twee waarden · [fix]
 - **Wat:** `packages/ui/components/ui/slider.tsx` rendert precies één `SliderPrimitive.Thumb`, ongeacht hoeveel waarden er in `value`/`defaultValue` staan. De story `Componenten/Slider → Range` zet `defaultValue={[20, 60]}` en toont dus een bereik met één greep: de ondergrens is niet te verplaatsen. Gemeten 2026-09-17 op de verse `storybook-static`: 1 thumb in de DOM en 1 `role="slider"` in de toegankelijkheidsboom, voor alle drie de stories.
 - **Waarom niet nu:** fase 4a gaf de thumb een naam (`thumbLabel`); een greep per waarde verandert de API — `thumbLabel` wordt dan een naam per greep — en vraagt een Figma-variant voor de bereikvorm. Dat hoort in een bibliotheekbatch, niet in een naamgevingsfase.

@@ -47,10 +47,6 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       `bezig` is en waarvan een afhankelijkheid daarna op `vervallen` gaat, kan gewoon op `gereed`
       gezet worden — `blokkadeVan` wordt alleen geraadpleegd op het pad naar `bezig`. De rij toont
       het signaal wel. (finish-review 2026-09-16, P2)
-- [ ] `ui`: **Een actie op vervallen zetten blokkeert haar afhankelijken hard, zonder melding op dat
-      moment.** Het paneel vraagt een reden en zet de status; dat de vier acties die eraan hangen
-      daarmee hard geblokkeerd raken tot je elke kant verwijdert of vervangt, staat pas in hun eigen
-      rij. Toon de gevolgen bij de beslissing, niet erna. (finish-review 2026-09-16, P2)
 - [ ] `fix`: **De client herkent een versieconflict aan een regex op de Nederlandse foutzin.**
       `ActiePanel` en `BeslissingPanel` doen `/intussen elders gewijzigd/.test(fout)` om de
       Herlaad-knop te tonen, terwijl het antwoord al `conflict: 'versie'` draagt. Eén herformulering
@@ -200,6 +196,32 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       snelle wissels kunnen een ouder detail over een nieuwer zetten. Bestond al; sinds 2026-09-17 leunt
       het scroll-effect na afronden op `actie.status` uit dat detail. Kleinste fix: een `AbortController`
       per verzoek, zoals `ContactPanel` al doet. (design-review fase 1, 2026-09-17, P3)
+- [ ] `test`: **De flow-harness crasht op een lege `jobradar.db` in de Prospects-sectie.** Gemeten 2026-09-17 met
+      `JOBRADAR_DB_PATH` naar een nieuwe database: `TimeoutError` op `locator('[role="tabpanel"]:visible h3').first()`
+      in de sorteercheck (de regel staat ook op `origin/main`), waardoor de notities aan het eind niet
+      meer afgedrukt worden. Het Verify-pad belooft dat een verse tree de lege staat meet. Eerste zet: een
+      count-guard vóór `innerText()`, zoals de triage-sectie die heeft. (triage-fase 2026-09-17)
+- [ ] `test`: **`opvolging:probe` controleert gevallen 1–12 niet — hij drukt ze af.** Ze eindigen altijd
+      op PROBE KLAAR, ook wanneer een route 500 geeft of een 409 een 200 wordt: de faalklasse die
+      `plan:probe` op 2026-09-16 al had en waar hij van genezen werd. Gevallen 13–17 (heropenen,
+      2026-09-17) vergelijken wél. Eerste zet: de `p`-regels ombouwen naar de `v`-vorm van `plan-probe.sh`,
+      met per geval een verwachte waarde, en één keer rood laten worden. (triage-fase 2026-09-17)
+- [ ] `refactor`: **`StatusDropdown.tsx` heeft sinds de triage-fase geen enkele importeur meer.** Vervangen
+      door `StatusActies` op alle vier de plekken. Niet verwijderd omdat bestanden verwijderen eerst
+      akkoord vraagt. Eerste zet: `grep -rn StatusDropdown apps/jobradar` moet 0 geven buiten het bestand
+      zelf, dan weg. (design-review fase 2, 2026-09-17, P3)
+- [ ] `ux`: **Het statusfilter staat er ook op het tabblad Prospects, waar het niets doet.** `filterQuery`
+      kent geen status; dat bestond al, maar met "Open" als nieuwe standaard is het zichtbaarder. Kleinste
+      fix: het filter verbergen of uitschakelen met uitleg zolang Prospects actief is. (design-review
+      fase 2, 2026-09-17, P3)
+- [ ] `fix`: **De statusroutes antwoorden in het Engels** ("Invalid status", "Invalid id"), en
+      `StatusActies` toont dat letterlijk naast Nederlandse tekst: "Niet bewaard: Invalid status". Eerste
+      zet: de drie routes onder `app/api/jobs|leads|prospects` in het Nederlands, zoals de plan-routes.
+      (design-review fase 2, 2026-09-17, P3)
+- [ ] `fix`: **Een trage prospects-fetch kan een net bewaarde status overschrijven.** `StatusActies` neemt
+      een nieuwe `status`-prop over via een effect; komt een oudere pagina-respons binnen ná een geslaagde
+      wissel, dan zet die de oude status terug. Zeldzaam (250 ms debounce, AbortController per filter),
+      maar niet uitgesloten. (design-review fase 2, 2026-09-17, P3)
 
 ## Verworpen
 
@@ -225,6 +247,11 @@ afweging van nul.
   (ux-audit 2026-08-11, limiet)
 
 ## Gebouwd
+
+- `ui`: Een actie op vervallen zetten blokkeerde haar afhankelijken hard, zonder melding op dat
+  moment. **Gebouwd 2026-09-17** (umanex-apps#517): het redenblok in `ActiePanel` noemt vóór het
+  bevestigen elke afhankelijke actie met haar eigen gevolg. Gemeten in `plan-ui-probe.mjs` UI 14.
+  (finish-review 2026-09-16, P2)
 
 - `infra`: **Eigen build-map voor de flow-harness.** Hij bouwde in de gedeelde `.next`, en
   `next build` maakt die map eerst leeg — een dev-server op 3003 die eruit serveert gaf

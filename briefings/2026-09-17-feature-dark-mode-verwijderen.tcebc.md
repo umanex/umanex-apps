@@ -88,6 +88,7 @@ CONSTRAINTS: Geen rolnaam wijzigt (anders verschuift elke utility) · geometry 0
 - [ ] De root-`CLAUDE.md` beschrijft de lagen zonder mode-uit-de-setnaam
 - [ ] `packages/ui/CLAUDE.md` beschrijft de Theme-collectie zonder modes
 - [ ] De migratie-briefing van dezelfde dag verwijst hiernaar als voorwaarde
+- [ ] Het umanex-profiel belooft geen dark mode meer — die regel ("Light + dark mode altijd ondersteund") staat in de **umanex-os-repo** (`profiles/umanex.md`); `.umanex-os/` hier is een gesynchroniseerde kopie, dus de wijziging hoort daar en komt via de sync terug
 
 ## Beslissingsgeschiedenis
 

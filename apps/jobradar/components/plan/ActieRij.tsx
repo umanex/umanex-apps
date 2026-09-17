@@ -5,13 +5,8 @@ import { Badge } from '@umanex/ui/components/ui/badge'
 import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
-import {
-  ACTIE_STATUSSEN,
-  STATUS_KLEUR,
-  STATUS_LABEL,
-  type ActieStatus,
-  type ActieWeergave,
-} from '@/lib/plan/types'
+import { PlanStatusPill } from './PlanStatusPill'
+import { STATUS_LABEL_INLINE, type ActieStatus, type ActieWeergave } from '@/lib/plan/types'
 
 type ActieRijProps = {
   actie: ActieWeergave
@@ -31,8 +26,9 @@ type ActieRijProps = {
  * de kopstructuur van de pagina vullen met ruis waar een schermlezer doorheen moet. De rij is
  * een item in een lijst; de sectie eromheen draagt de kop.
  *
- * `gereed` staat niet in de status-select. Afronden vraagt bewijs, en dat vraag je niet in een
- * dropdown — het paneel opent op de afrond-sectie.
+ * De rij draagt hoogstens één handeling, afgeleid uit de uitvoerbaarheid: Start op een
+ * beschikbare actie, Afronden… op een lopende. Afronden vraagt bewijs, dus die knop opent het
+ * paneel op de afrond-sectie in plaats van iets te versturen.
  */
 export function ActieRij({
   actie,
@@ -46,7 +42,6 @@ export function ActieRij({
   const [stapBewerken, setStapBewerken] = useState(false)
   const [stap, setStap] = useState(actie.volgendeStap ?? '')
 
-  const keuzes = ACTIE_STATUSSEN.filter((s) => s !== 'gereed' || actie.status === 'gereed')
   const herbekijkVerlopen =
     actie.status === 'uitgesteld' && actie.herbekijkOp !== null && actie.herbekijkOp <= vandaag
 
@@ -118,7 +113,10 @@ export function ActieRij({
                 Annuleer
               </Button>
             </div>
-          ) : (
+          ) : actie.volgendeStap !== null || variant === 'bezig' ? (
+            // Alleen een lopende actie meldt dat er geen volgende stap is: daar is het een
+            // opdracht ("bepaal hem"). Op 22 niet-gestarte rijen was dezelfde zin ruis die las
+            // als achterstand — gemeten in de critique van 2026-09-17.
             <p className="mt-1 text-sm">
               {actie.volgendeStap ?? (
                 <span className="text-muted-foreground">Geen volgende stap</span>
@@ -136,14 +134,17 @@ export function ActieRij({
                 </button>
               )}
             </p>
-          )}
+          ) : null}
 
           {actie.blokkade.length > 0 && (
             <ul className="mt-1.5 flex flex-wrap gap-1" aria-label={`Waarop ${actie.key} wacht`}>
               {actie.blokkade.map((b) => (
                 <li key={b.key}>
+                  {/* Met de titel: "wacht op A05" vroeg je te onthouden wat A05 was. */}
                   <Badge variant={b.hard ? 'destructive' : 'outline'} className="text-2xs font-normal">
-                    {b.reden}
+                    {b.hard
+                      ? `${b.key} · ${b.titel} is vervallen — verwijder of vervang de afhankelijkheid`
+                      : `wacht op ${b.key} · ${b.titel} (${STATUS_LABEL_INLINE[b.status]})`}
                   </Badge>
                 </li>
               ))}
@@ -156,47 +157,35 @@ export function ActieRij({
         </div>
 
         <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-          <span className="tabular-nums">
-            {actie.inzet.uren === null ? 'inzet onbekend' : actie.inzet.tekst}
-          </span>
-          {/* De select ís de statusweergave, met de rol als kleur — zelfde vorm als
-              `StatusDropdown` op het dashboard. Een pil ernaast toonde hetzelfde woord twee
-              keer; dat stond er even en viel op in de eerste opname. */}
-          <select
-            aria-label={`Status van ${actie.key}`}
-            value={actie.status}
-            disabled={bezig}
-            onChange={(e) => onStatus(actie.key, e.target.value as ActieStatus)}
-            className={cn(
-              'cursor-pointer rounded-sm border-none bg-transparent text-xs font-medium disabled:opacity-50',
-              STATUS_KLEUR[actie.status as ActieStatus],
-              focusRing
-            )}
-          >
-            {keuzes.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
-          {/* Afronden is een aparte knop en geen optie in de select.
-              Twee redenen, allebei zichtbaar in de opname: een select-optie hoort een wáárde
-              te zijn en deze was een opdracht (hij opent een paneel, hij zet geen status), en
-              een native select is zo breed als zijn langste optie — "Gereed — met bewijs…"
-              maakte er honderd lege pixels van op alle 22 rijen, met een chevron hard tegen
-              de rand die leest als "klap deze rij open". */}
-          {actie.status !== 'gereed' && (
-            <button
-              type="button"
+          {actie.inzet.uren !== null && <span className="tabular-nums">{actie.inzet.tekst}</span>}
+          {/* In het overzicht zegt de groepskop de status al; in de Acties-tab, gegroepeerd
+              per prioriteit, niet. */}
+          {variant === 'lijst' && <PlanStatusPill status={actie.status as ActieStatus} />}
+          {/* Eén handeling, en alleen de handeling die hier kán. De status-select stond op elke
+              rij, ook op een geblokkeerde, en maakte van "start" een optie in een randloze
+              dropdown. Status kiezen gebeurt nu in het paneel. */}
+          {actie.uitvoerbaarheid === 'beschikbaar' && (
+            <Button
+              size="sm"
+              variant="outline"
               disabled={bezig}
+              aria-label={`Start ${actie.key}`}
+              onClick={() => onStatus(actie.key, 'bezig')}
+            >
+              Start
+            </Button>
+          )}
+          {actie.uitvoerbaarheid === 'actief' && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bezig}
+              aria-haspopup="dialog"
+              aria-label={`Afronden ${actie.key}`}
               onClick={() => onStatus(actie.key, 'gereed')}
-              className={cn(
-                'rounded-sm underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50',
-                focusRing
-              )}
             >
               Afronden…
-            </button>
+            </Button>
           )}
         </div>
       </div>

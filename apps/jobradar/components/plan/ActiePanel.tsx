@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ExternalLink, Trash2, X } from 'lucide-react'
 import {
@@ -26,6 +26,7 @@ import {
   type FocusConflict,
   type PlanLink,
   type Prioriteit,
+  type Uitvoerbaarheid,
 } from '@/lib/plan/types'
 
 export type PanelVerzoek = {
@@ -36,7 +37,7 @@ export type PanelVerzoek = {
 type ActiePanelProps = {
   actie: ActieDetail
   /** Alle acties, om een afhankelijkheid uit te kiezen. */
-  alleActies: { key: string; titel: string; status: string }[]
+  alleActies: { key: string; titel: string; status: string; uitvoerbaarheid: Uitvoerbaarheid }[]
   vandaag: string
   urenPerDag: number
   /** Opent het paneel direct op de afrond-sectie, met focus op het bewijsveld. */
@@ -51,11 +52,18 @@ type ActiePanelProps = {
    */
   voorstel: ActieStatus | null
   focusConflict: FocusConflict | null
+  /**
+   * De acties die de afronding van déze actie vrijgaf, uit het antwoord van de server.
+   * `null` zolang er in dit paneel niets is afgerond; een lege lijst betekent "afgerond, er kwam
+   * niets vrij".
+   */
+  vrijgekomen: string[] | null
   bezig: boolean
   fout: string | null
   onOpenChange: (open: boolean) => void
   onVerzoek: (verzoek: PanelVerzoek) => void
   onHerlaad: () => void
+  onStart: (key: string) => void
 }
 
 const INVOER = 'rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50'
@@ -93,11 +101,13 @@ export function ActiePanel({
   opAfronden,
   voorstel,
   focusConflict,
+  vrijgekomen,
   bezig,
   fout,
   onOpenChange,
   onVerzoek,
   onHerlaad,
+  onStart,
 }: ActiePanelProps) {
   const [titel, setTitel] = useState(actie.titel)
   const [beschrijving, setBeschrijving] = useState(actie.beschrijving ?? '')
@@ -125,6 +135,32 @@ export function ActiePanel({
   const [wachtreden, setWachtreden] = useState(actie.wachtreden ?? '')
   const [teVerwijderen, setTeVerwijderen] = useState(false)
   const [nieuweStatus, setNieuweStatus] = useState<ActieStatus | null>(voorstel)
+
+  /**
+   * Het resultaat van een afronding in beeld brengen.
+   *
+   * Markeer gereed staat onderaan het paneel; na de wissel staat het bewijs — en het blok met
+   * wat er vrijkwam — bovenaan. Het paneel bleef onderaan gescrold, dus het antwoord op "wat nu?"
+   * verscheen buiten beeld (gemeten met de UI-probe, 2026-09-17). Pas wanneer de status in dit
+   * paneel ook echt `gereed` is: het detail wordt apart opgehaald, en tot dan staat de kop
+   * "Afgerond" nog niet bovenaan. Eén keer per afronding, niet bij elke rerender.
+   *
+   * Scrollen, geen focus verplaatsen. De eerste versie deed beide, en dan las een schermlezer het
+   * blok twee keer voor: bij de focus, en via de live-regio hieronder. De focus bleef al binnen
+   * het paneel zonder hulp (gemeten), en een programmatische focus op een niet-bedienbaar blok
+   * is voor wie kijkt onzichtbaar.
+   */
+  const resultaatRef = useRef<HTMLDivElement>(null)
+  const afgerondKopRef = useRef<HTMLHeadingElement>(null)
+  const getoond = useRef<string[] | null>(null)
+  /** Alleen zolang deze actie gereed is: na Heropen hoort het resultaat van toen hier niet meer. */
+  const vrijNaAfronding = actie.status === 'gereed' ? vrijgekomen : null
+  useEffect(() => {
+    if (vrijNaAfronding === null || getoond.current === vrijNaAfronding) return
+    getoond.current = vrijNaAfronding
+    const doel = vrijNaAfronding.length > 0 ? resultaatRef.current : afgerondKopRef.current
+    doel?.scrollIntoView({ block: 'nearest' })
+  }, [vrijNaAfronding])
 
   // Zodra de wissel geland is, is het formulier klaar: de status ís nu wat je voorstelde.
   // Zonder dit blijft het invulblok open staan met de reden die je net bewaarde, alsof er
@@ -174,6 +210,18 @@ export function ActiePanel({
       !actie.afhankelijkheden.includes(a.key)
   )
 
+  const perKey = new Map(alleActies.map((a) => [a.key, a]))
+  /**
+   * Wie van deze actie afhangt en nog niet klaar is — het gevolg van vervallen, getoond vóór je
+   * bevestigt. Een vervallen afhankelijkheid blokkeert hard: een niet-gestarte afhankelijke kan
+   * niet meer starten, ook niet met een uitzondering, tot je de kant verwijdert of vervangt. Een
+   * lopende loopt door, met een signaal.
+   */
+  const geraakt = actie.afhankelijken.flatMap((k) => {
+    const a = perKey.get(k)
+    return a && a.status !== 'gereed' && a.status !== 'vervallen' ? [a] : []
+  })
+
   const versieConflict = fout !== null && /intussen elders gewijzigd/.test(fout)
   const dagen = (uren: string) => {
     const n = Number(uren.replace(',', '.'))
@@ -189,7 +237,7 @@ export function ActiePanel({
    */
   const afrondBlok = (
           <section className="space-y-2 border-t pt-4">
-            <h3 className="text-sm font-semibold">
+            <h3 ref={afgerondKopRef} className="scroll-mt-6 text-sm font-semibold">
               {actie.status === 'gereed' ? 'Afgerond' : 'Afronden'}
             </h3>
             {actie.status === 'gereed' ? (
@@ -377,6 +425,29 @@ export function ActiePanel({
                 onChange={(e) => setWachtreden(e.target.value)}
                 className={cn('w-full', INVOER, focusRing)}
               />
+              {nieuweStatus === 'vervallen' && geraakt.length > 0 && (
+                <div className="space-y-1 text-sm" data-vervallen-gevolg>
+                  {/* Het gevolg per actie, niet één zin voor allemaal: een lopende actie blokkeert
+                      niet, ze krijgt een signaal. De eerste versie zei "blokkeert ze hard" boven
+                      een regel "loopt door" (design-review 2026-09-17). */}
+                  <p className="text-muted-foreground">
+                    Deze acties hangen van {actie.key} af:
+                  </p>
+                  <ul className="space-y-0.5">
+                    {geraakt.map((a) => (
+                      <li key={a.key}>
+                        <span className="tabular-nums text-muted-foreground">{a.key}</span> {a.titel}
+                        <span className="text-muted-foreground">
+                          {' — '}
+                          {a.status === 'bezig'
+                            ? 'loopt door, met een signaal'
+                            : 'kan daarna niet starten tot je de afhankelijkheid verwijdert of vervangt'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {nieuweStatus === 'uitgesteld' && (
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="plan-herbekijk-nu" className="text-2xs">
@@ -482,6 +553,58 @@ export function ActiePanel({
             </div>
           )}
         </section>
+
+        {/* De aankondiging staat los van het zichtbare blok en is altijd gerenderd: een
+            live-regio die pas verschijnt samen met zijn inhoud — of op `display: none` staat
+            zolang hij leeg is — wordt door schermlezers niet betrouwbaar voorgelezen. `sr-only`
+            is absoluut gepositioneerd en telt dus niet mee in de `gap` van het paneel. */}
+        <p aria-live="polite" className="sr-only" data-vrijgekomen-melding>
+          {vrijNaAfronding === null
+            ? ''
+            : vrijNaAfronding.length === 0
+              ? `${actie.key} afgerond.`
+              : `${actie.key} afgerond. Nu beschikbaar: ${vrijNaAfronding.join(', ')}.`}
+        </p>
+        {vrijNaAfronding && vrijNaAfronding.length > 0 && (
+          <div
+            ref={resultaatRef}
+            className="scroll-mt-6 space-y-2 rounded-md border border-success p-3"
+            data-vrijgekomen
+          >
+            <p className="text-sm font-medium">
+              {actie.key} afgerond · nu beschikbaar:
+            </p>
+            <ul className="space-y-2">
+              {vrijNaAfronding.map((k) => {
+                const a = perKey.get(k)
+                return (
+                  <li key={k} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="min-w-0">
+                      <span className="tabular-nums text-muted-foreground">{k}</span> {a?.titel}
+                    </span>
+                    {/* Op de uitvoerbaarheid, niet op de status: dezelfde vraag als de rij stelt
+                        (`ActieRij`), anders bestaan er twee definities van "startbaar". */}
+                    {a?.uitvoerbaarheid === 'beschikbaar' ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={bezig}
+                        aria-label={`Start ${k}`}
+                        onClick={() => onStart(k)}
+                      >
+                        Start
+                      </Button>
+                    ) : (
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {a ? STATUS_LABEL[a.status as ActieStatus] : ''}
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
 
         {/* Bij een afgeronde actie staat het bewijs hier, meteen onder de status: dat is
             het enige wat op een afgeronde actie telt. Bij de rest staat het onderaan, waar

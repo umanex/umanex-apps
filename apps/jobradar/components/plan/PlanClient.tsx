@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
 import { Button } from '@umanex/ui/components/ui/button'
+import { Card, CardContent } from '@umanex/ui/components/ui/card'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
 import { Aannames } from './Aannames'
@@ -72,6 +73,14 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
   const [bezig, setBezig] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
   const [filters, setFilters] = useState<PlanFilterStand>(LEEG_FILTER)
+  /**
+   * Wat de laatste afronding vrijgaf, voor de actie waarvan het paneel open staat.
+   *
+   * Het antwoord van de server en geen eigen berekening: "vrij" is een afleiding over het hele
+   * plan (`vrijgekomenActies`), en een tweede versie hier zou uiteenlopen zodra er een
+   * blokkadevorm bijkomt.
+   */
+  const [vrijgekomen, setVrijgekomen] = useState<{ na: string; keys: string[] } | null>(null)
   /**
    * De actie die als laatste van status wisselde, om de focus terug te zetten.
    *
@@ -190,10 +199,35 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
       if (ok) setOpenActie(null)
       return
     }
-    await verstuur(`/api/plan/acties/${openActie}`, {
+    const { ok, data } = await verstuur(`/api/plan/acties/${openActie}`, {
       method: 'PATCH',
       body: JSON.stringify({ ...verzoek.body, versie: versieVan(openActie) }),
     })
+    if (ok && verzoek.soort === 'status') {
+      // Elke geslaagde statuswissel vervangt het vorige resultaat. Zonder de else-tak bleef
+      // "A01 afgerond · nu beschikbaar" staan na Heropen, op een actie die niet meer gereed was
+      // en met Start-knoppen voor acties die weer geblokkeerd waren (design-review 2026-09-17).
+      setVrijgekomen(
+        verzoek.body?.status === 'gereed'
+          ? {
+              na: openActie,
+              keys: Array.isArray(data?.vrijgekomen) ? (data.vrijgekomen as string[]) : [],
+            }
+          : null
+      )
+    }
+  }
+
+  /**
+   * Starten vanuit het paneel van een net afgeronde actie.
+   *
+   * `opAfronden` gaat eerst uit: loopt de start op een conflict, dan wisselt het paneel naar de
+   * gestarte actie, en met de vlag nog aan zou dat paneel de focus op zijn bewijsveld zetten —
+   * alsof je die actie wilde afronden.
+   */
+  const startVanuitPaneel = (key: string) => {
+    setOpAfronden(false)
+    void wijzigStatus(key, 'bezig')
   }
 
   useEffect(() => {
@@ -215,7 +249,12 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
   const eigenaars = [...new Set(plan.acties.map((a) => a.eigenaar))].sort()
   const volgende = plan.overzicht.volgendeActie
   const volgendeActie = volgende ? perKey.get(volgende.key) : null
-  const actiesVoorPanel = plan.acties.map((a) => ({ key: a.key, titel: a.titel, status: a.status }))
+  const actiesVoorPanel = plan.acties.map((a) => ({
+    key: a.key,
+    titel: a.titel,
+    status: a.status,
+    uitvoerbaarheid: a.uitvoerbaarheid,
+  }))
 
   return (
     <TooltipProvider>
@@ -312,38 +351,64 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
           <TabsContent value="overzicht" className="mt-4">
             <h2 className="sr-only">Overzicht</h2>
 
-            <p className="text-sm">
-              {volgendeActie ? (
-                <>
-                  <span className="text-muted-foreground">Eerstvolgende: </span>
-                  <button
-                    type="button"
-                    onClick={() => setOpenActie(volgendeActie.key)}
-                    className={cn(
-                      'rounded-sm font-semibold underline-offset-2 hover:underline',
-                      focusRing
+            {/* De kop van het overzicht, niet een regel erboven: dit is de vraag waarmee je het
+                scherm opent. Als `text-sm`-zin woog hij even zwaar als elke rij eronder. */}
+            <Card data-eerstvolgende>
+              <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+                {volgendeActie ? (
+                  <>
+                    <div className="min-w-0 space-y-1">
+                      {/* Eén kop, met "Eerstvolgende" erin — geen klein label erboven. Dat label
+                          was een kicker, en die sluit de briefing van 2026-09-16 uit (r.83). */}
+                      <h3 className="font-semibold">
+                        <span className="font-normal text-muted-foreground">Eerstvolgende: </span>
+                        <span className="tabular-nums text-muted-foreground">{volgendeActie.key}</span>{' '}
+                        {volgendeActie.titel}
+                      </h3>
+                      {/* De volgende stap ís de instructie en staat in de voorgrond; de twee
+                          uitlegzinnen zijn context en blijven muted. */}
+                      <p
+                        className={cn(
+                          'text-sm',
+                          volgende?.reden === 'actief' ? 'text-foreground' : 'text-muted-foreground'
+                        )}
+                        data-eerstvolgende-uitleg
+                      >
+                        {volgende?.reden === 'actief_zonder_stap'
+                          ? 'Loopt, maar er staat geen volgende stap bij.'
+                          : volgende?.reden === 'beschikbaar'
+                            ? 'Niets loopt — dit is de eerste actie die je kunt starten.'
+                            : volgendeActie.volgendeStap}
+                      </p>
+                    </div>
+                    {/* De primaire knop van het scherm. Afronden… op de rijen is outline: die
+                        opent alleen een paneel, en drie gevulde knoppen eronder wogen zwaarder
+                        dan de kaart die zegt wat je nú doet. */}
+                    {volgende?.reden === 'beschikbaar' ? (
+                      <Button
+                        disabled={bezig}
+                        aria-label={`Start ${volgendeActie.key}`}
+                        onClick={() => void wijzigStatus(volgendeActie.key, 'bezig')}
+                      >
+                        Start
+                      </Button>
+                    ) : (
+                      <Button
+                        aria-haspopup="dialog"
+                        aria-label={`Open ${volgendeActie.key}`}
+                        onClick={() => setOpenActie(volgendeActie.key)}
+                      >
+                        Open
+                      </Button>
                     )}
-                  >
-                    {volgendeActie.key} · {volgendeActie.titel}
-                  </button>
-                  {volgende?.reden === 'actief_zonder_stap' ? (
-                    <span className="text-muted-foreground">
-                      {' '}
-                      — loopt, maar er staat geen volgende stap bij.
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">
-                      {' '}
-                      — {volgendeActie.volgendeStap ?? 'nog geen volgende stap'}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className="text-muted-foreground">
-                  Geen eerstvolgende actie: alles is gereed, geblokkeerd of uitgesteld.
-                </span>
-              )}
-            </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Geen eerstvolgende actie: alles is gereed, geblokkeerd of uitgesteld.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
             <div className="mt-4 grid gap-6 lg:grid-cols-[2fr_1fr]">
               <div className="space-y-6">
@@ -403,6 +468,7 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
                   telling={String(plan.overzicht.geblokkeerd.length)}
                   acties={lijst(plan.overzicht.geblokkeerd)}
                   variant="geblokkeerd"
+                  inklapbaar
                   leeg="Niets geblokkeerd."
                   vandaag={vandaag}
                   bezig={bezig}
@@ -520,7 +586,10 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
 
         {/* De sheets staan buiten Tabs: ze horen over de hele pagina, niet in het paneel
             dat ze opende — zelfde reden als bij ContactPanel op het dashboard. */}
-        {openActie && detail && (
+        {/* `detail.key === openActie`: bij een conflict vanuit het paneel wisselt `openActie` meteen
+            naar de andere actie, maar het detail pas na zijn eigen fetch. Zonder deze voorwaarde
+            stond het conflict van Y kort in het paneel van X — "start X met een uitzondering". */}
+        {openActie && detail && detail.key === openActie && (
           <ActiePanel
             key={detail.key}
             actie={detail}
@@ -530,6 +599,7 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
             opAfronden={opAfronden}
             voorstel={voorstel}
             focusConflict={conflict}
+            vrijgekomen={vrijgekomen?.na === detail.key ? vrijgekomen.keys : null}
             bezig={bezig}
             fout={fout}
             onOpenChange={(o) => {
@@ -539,9 +609,11 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
                 setVoorstel(null)
                 setConflict(null)
                 setFout(null)
+                setVrijgekomen(null)
               }
             }}
             onVerzoek={panelVerzoek}
+            onStart={startVanuitPaneel}
             onHerlaad={herlaad}
           />
         )}

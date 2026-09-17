@@ -837,10 +837,12 @@ async function main() {
       await actiesTab.click();
       await page.waitForTimeout(400);
 
-      // Ankeren op wat een actierij ís — een `li` met een status-select — en niet op elke
-      // `li`: de blokkade-chips zitten óók in lijstitems, en die telling gaf 40 waar er 22
-      // acties zijn. Een getal dat toevallig boven de grens uitkomt, meet niets.
-      const rijen = await page.locator('[role="tabpanel"]:visible li:has(select)').count();
+      // Ankeren op wat een actierij ís — een `li` met `data-actie` — en niet op elke `li`: de
+      // blokkade-chips zitten óók in lijstitems, en die telling gaf 40 waar er 22 acties zijn.
+      // Tot 2026-09-17 was het anker `li:has(select)`; sinds de status-select uit de rij naar
+      // het paneel verhuisde, zou dat 0 geven. Een anker op een attribuut dat de rij zelf zet,
+      // beweegt niet mee met wat er toevallig in de rij staat.
+      const rijen = await page.locator('[role="tabpanel"]:visible li[data-actie]').count();
       if (rijen !== 22) fail(`plan: ${rijen} actierijen in de DOM, precies 22 verwacht`);
       else ok(`plan: ${rijen} actierijen in de DOM`);
 
@@ -854,7 +856,7 @@ async function main() {
 
       // Het paneel. Twee dingen die alleen hier te meten zijn: het is een dialog (en dus
       // geen inline uitklapping die de lijst uit elkaar duwt), en de lijst blijft staan.
-      const voor = await page.locator('[role="tabpanel"]:visible li:has(select)').count();
+      const voor = await page.locator('[role="tabpanel"]:visible li[data-actie]').count();
       const titel = page.locator('[role="tabpanel"]:visible li button').first();
       if (!(await titel.count())) {
         fail('plan: geen actietitel om aan te klikken');
@@ -866,7 +868,7 @@ async function main() {
         if (dialogen !== 1) fail(`plan: ${dialogen} dialog(s) na het openen van een actie, verwacht 1`);
         else ok('plan: het actiepaneel opent als dialog');
 
-        const na = await page.locator('[role="tabpanel"]:visible li:has(select)').count();
+        const na = await page.locator('[role="tabpanel"]:visible li[data-actie]').count();
         if (na !== voor) fail(`plan: de actielijst veranderde van ${voor} naar ${na} rijen bij het openen`);
         else ok(`plan: de actielijst blijft staan (${voor} → ${na})`);
 

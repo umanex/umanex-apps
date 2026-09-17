@@ -8,7 +8,7 @@ import { useCashflowStore } from '../../../store/cashflow';
 import { useMonths } from '../../../hooks/useCashflow';
 import { useBureau, useToday } from '../../../hooks/useBureau';
 import { monthOf, monthsCovering } from '../../../lib/bureau/periods';
-import { buildWeeklyCashPlan, HORIZON_WEEKS, verifyReconciliation } from '../../../lib/bureau/weekly-cash';
+import { buildWeeklyCashPlan, HORIZON_WEEKS, isEmptyPlan, verifyReconciliation } from '../../../lib/bureau/weekly-cash';
 import { formatAmount } from '../../../lib/cashflow/recurring';
 import { CashPositionLine } from '../../../components/bureau/CashPositionLine';
 import { WeekCashTable } from '../../../components/bureau/WeekCashTable';
@@ -25,7 +25,7 @@ export default function CashPage() {
   const plan = useMemo(() => buildWeeklyCashPlan({ asOf: today, months, incomeItems, bureau }), [today, months, incomeItems, bureau]);
   const kapot = verifyReconciliation(plan);
   const later = plan.beyondHorizon.reduce((s, l) => s + l.amount, 0);
-  const leeg = plan.position.bank === 0 && plan.weeks.every((w) => w.lines.length === 0) && plan.unplaced.length === 0;
+  const leeg = isEmptyPlan(plan);
 
   return (
     <section aria-labelledby="cash-titel" className="space-y-5">

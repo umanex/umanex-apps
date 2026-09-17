@@ -34,7 +34,7 @@ type BalanceFooterProps = {
 export function BalanceFooter({ movement, position, bufferPot, hasBuffer, isAnchor }: BalanceFooterProps) {
   if (!hasBuffer) {
     return (
-      <div className="shrink-0 border-t border-accent px-4 py-3 flex flex-col gap-1">
+      <div data-month-footer className="shrink-0 border-t border-accent px-4 py-3 flex flex-col gap-1">
         <span className="text-sm font-medium text-foreground">Geen buffer</span>
         <span className="text-2xs leading-tight text-muted-foreground">
           Markeer een provisie als buffer om te zien waar je aan het einde van elke maand staat.
@@ -44,7 +44,7 @@ export function BalanceFooter({ movement, position, bufferPot, hasBuffer, isAnch
   }
 
   return (
-    <div className="shrink-0 border-t border-accent px-4 py-3 flex flex-col gap-1">
+    <div data-month-footer className="shrink-0 border-t border-accent px-4 py-3 flex flex-col gap-1">
       <div className="flex items-center justify-between">
         <span
           className="text-sm text-muted-foreground"

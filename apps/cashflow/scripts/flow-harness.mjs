@@ -1104,6 +1104,21 @@ function scenarios() {
       },
     },
     {
+      // De standaardfixture heeft geen bufferpot: dan is Buffer gelijk aan Vrij en zou "+ bufferpot € 0"
+      // ruis zijn. Zelfde keuze als de footer op dit scherm.
+      naam: 'antwoord — zonder bufferpot geen brugregel',
+      actie: async (page) => {
+        const kaart = page.locator('[data-cash-answer]');
+        if ((await kaart.getAttribute('data-cash-answer')) !== 'ok') return { ok: false, bewijs: 'geen antwoord op de kaart' };
+        if (await page.locator('[data-answer-bridge]').count()) return { ok: false, bewijs: 'brugregel zonder bufferpot' };
+        if (!(await page.locator('[data-month-footer]').first().innerText()).includes('Geen buffer')) {
+          throw new Error('de fixture heeft wél een bufferpot — dit scenario meet dan niets');
+        }
+        const waarde = Number(await page.locator('[data-answer-value]').getAttribute('data-answer-value'));
+        return { ok: true, bewijs: `kaart toont ${waarde} zonder brugregel, footer meldt "Geen buffer"` };
+      },
+    },
+    {
       // Openen en sluiten is het pad dat de sweep hierboven nodig heeft; dit scenario
       // toetst het als gedrag, zodat een kapotte modal niet als contrast-fout leest.
       naam: 'modals — openen en sluiten',
@@ -1357,7 +1372,10 @@ function scenarios() {
         const tekst = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' '));
         const ontbreekt = verwacht.filter((v) => !tekst.includes(v));
         if (ontbreekt.length) throw new Error(`lege staat ontbreekt: ${ontbreekt.join(', ')}`);
-        return { ok: true, bewijs: `drie lege staten getoond in plaats van een blanco kolom` };
+        const kaart = await page.locator('[data-cash-answer]').getAttribute('data-cash-answer');
+        if (kaart !== 'leeg') return { ok: false, bewijs: `de antwoordkaart staat op "${kaart}" bij een leeg document` };
+        if (await page.locator('[data-answer-value]').count()) return { ok: false, bewijs: 'de antwoordkaart toont een bedrag bij een leeg document' };
+        return { ok: true, bewijs: `drie lege staten getoond in plaats van een blanco kolom; antwoordkaart "leeg" zonder bedrag` };
       },
     },
     {
@@ -2407,8 +2425,78 @@ async function geldtaalOpTegel(page) {
   return { ok: true, bewijs: `tegel "${titel}": groot ${groot} = laagste Buffer ${laagste}, vrij vandaag ${vandaag} in de noemer` };
 }
 
+/**
+ * De antwoordkaart bovenaan `/` (stap 1c). Drie dingen die alleen sámen iets zeggen: het grote getal
+ * is de laagste Buffer — hetzelfde getal als het kopgetal op `/bureau/cash` — de brug eronder telt op,
+ * en de drie maandfooters staan nog altijd op één horizontale lijn nu de kaart ruimte inneemt.
+ */
+async function antwoordKaart(page) {
+  const kaart = page.locator('[data-cash-answer]');
+  const soort = await kaart.getAttribute('data-cash-answer');
+  if (soort !== 'ok') return { ok: false, bewijs: `kaart staat op "${soort}" in plaats van een antwoord` };
+  const waarde = Number(await page.locator('[data-answer-value]').getAttribute('data-answer-value'));
+  const brug = page.locator('[data-answer-bridge]');
+  const stand = (await page.locator('[data-answer-stand]').innerText()).trim();
+  const oorzaak = (await page.locator('[data-answer-cause]').innerText()).replace(/\s+/g, ' ').trim();
+  if (!['gedekt', 'tekort'].includes(stand)) return { ok: false, bewijs: `stand leest "${stand}", geen woord` };
+  const kaartTekst = (await kaart.innerText()).replace(/\s+/g, ' ');
+  if (!/laagste punt, eind [a-z]+ \d{4}/.test(kaartTekst)) return { ok: false, bewijs: `geen maand in woorden: "${kaartTekst.slice(0, 120)}"` };
+  if (!oorzaak) return { ok: false, bewijs: 'geen oorzaakregel' };
+  if ((await brug.count()) !== 1) return { ok: false, bewijs: `${await brug.count()} brugregels op de kaart` };
+  const vrij = Number(await brug.getAttribute('data-free'));
+  const pot = Number(await brug.getAttribute('data-pot'));
+  if (Math.abs(vrij + pot - waarde) > 0.005) return { ok: false, bewijs: `brug telt niet op: ${vrij} + ${pot} ≠ ${waarde}` };
+
+  // De footers blijven op één lijn — de kaart mag hun uitlijning niet breken.
+  const meting = await page.locator('[data-month-footer]').evaluateAll((els) => ({
+    tops: els.map((e) => Math.round(e.getBoundingClientRect().top)),
+    onder: els.map((e) => Math.round(e.getBoundingClientRect().bottom)),
+    viewport: window.innerHeight,
+  }));
+  const yFooters = meting.tops;
+  if (yFooters.length !== 3 || new Set(yFooters).size !== 1) return { ok: false, bewijs: `footers staan op y ${yFooters.join(', ')}` };
+  // En ze moeten in beeld blijven: de kaart neemt hoogte af van de kolommen.
+  const buiten = meting.onder.filter((b) => b > meting.viewport);
+  if (buiten.length) return { ok: false, bewijs: `${buiten.length} footer(s) onder de vouw: onderkant ${buiten.join(', ')} bij ${meting.viewport} px hoog` };
+  const hoogte = Math.round((await kaart.boundingBox()).height);
+  if (hoogte > 160) return { ok: false, bewijs: `de kaart is ${hoogte} px hoog — meer dan drie regels` };
+
+  // Onafhankelijke bron: het kopgetal op /bureau/cash komt uit dezelfde rekenkern, via een ander pad.
+  await page.goto(`${BASE}${CASH}`);
+  await page.waitForSelector('[data-lowest-month-end]', { timeout: 20_000 });
+  const kop = Number(await page.locator('[data-lowest-month-end]').getAttribute('data-lowest-month-end'));
+  if (Math.abs(kop - waarde) > 0.005) return { ok: false, bewijs: `kaart ${waarde} ≠ kopgetal op /bureau/cash ${kop}` };
+  return { ok: true, bewijs: `kaart ${waarde} (${stand}) = kopgetal ${kop}; brug ${vrij} + ${pot}; "${oorzaak}"; footers op y=${yFooters[0]}, kaart ${hoogte} px` };
+}
+
+/** De kaart rekent vanaf vandaag: bladeren in de ledger verandert haar niet. */
+async function antwoordBlijftOpVandaag(page, { zonderNavigatie = false } = {}) {
+  const voor = Number(await page.locator('[data-answer-value]').getAttribute('data-answer-value'));
+  const kolomVoor = (await page.locator(KOLOM).first().innerText()).split('\n')[0].trim();
+  if (!zonderNavigatie) {
+    await page.locator('button[aria-label="Een maand vooruit"]').click();
+    await page.waitForTimeout(300);
+  }
+  const kolomNa = (await page.locator(KOLOM).first().innerText()).split('\n')[0].trim();
+  // Het object eerst: is er wel genavigeerd? Zonder die controle meet "waarde onveranderd" niets.
+  if (kolomVoor === kolomNa) return { ok: false, bewijs: `de ledger staat nog op ${kolomNa} — er is niet genavigeerd` };
+  const na = Number(await page.locator('[data-answer-value]').getAttribute('data-answer-value'));
+  if (Math.abs(na - voor) > 0.005) return { ok: false, bewijs: `kaart verschoof van ${voor} naar ${na} door te bladeren` };
+  return { ok: true, bewijs: `ledger ${kolomVoor} → ${kolomNa}, kaart blijft ${na}` };
+}
+
 function reviewScenarios() {
   return [
+    {
+      naam: 'antwoord — kaart toont de laagste Buffer, met brug en uitgelijnde footers',
+      gedrag: { buffer: true },
+      actie: async (page) => antwoordKaart(page),
+    },
+    {
+      naam: 'antwoord — kaart blijft op vandaag als je door de ledger bladert',
+      gedrag: { buffer: true },
+      actie: async (page, ctx) => antwoordBlijftOpVandaag(page, ctx),
+    },
     {
       naam: 'geldtaal — brug onder de footer telt op tot de Buffer',
       gedrag: { buffer: true },
@@ -2731,6 +2819,16 @@ function reviewTegenproeven() {
       tweede.setAttribute('data-value', nieuw);
     },
     'bureau — lege staat houdt een cashtekort in beeld': () => { document.querySelector('[data-signal-list]')?.remove(); },
+    // Het defect: het grote getal op de kaart wijkt af van de rekenkern (zoals vrij vandaag in plaats van het laagste punt).
+    // Het defect: het getal van de kaart wijkt af van de rekenkern. Brug én getal schuiven samen op,
+    // zodat de optel-check groen blijft en de vergelijking met /bureau/cash moet afgaan — anders zou
+    // die as geen bewijs hebben dat hij rood kan worden (review 2026-09-17).
+    'antwoord — kaart toont de laagste Buffer, met brug en uitgelijnde footers': () => {
+      const waarde = document.querySelector('[data-answer-value]');
+      const brug = document.querySelector('[data-answer-bridge]');
+      waarde.setAttribute('data-answer-value', String(Number(waarde.getAttribute('data-answer-value')) + 100));
+      brug.setAttribute('data-free', String(Number(brug.getAttribute('data-free')) + 100));
+    },
     // Het defect: de brug toont een pot die niet bij de Buffer hoort (zoals `buffer.delta` in plaats van `buffer.total`).
     'geldtaal — brug onder de footer telt op tot de Buffer': () => {
       const brug = document.querySelector('[data-buffer-bridge]');
@@ -2761,6 +2859,8 @@ function reviewTegenproeven() {
   };
   // Gedrag dat niet in de DOM terug te zetten is, krijgt het defect als optie van zijn scenario.
   const optie = {
+    // Niet navigeren: dan moet de eigen controle "is er wel gebladerd?" de scenario laten vallen.
+    'antwoord — kaart blijft op vandaag als je door de ledger bladert': { zonderNavigatie: true },
     'projecten — mijlpaal bewerken vertrekt van de opgeslagen waarden': { oudeDatum: true },
     'conflict — Enter in een rij schrijft niets': { zonderConflict: true },
     'bureau — focus blijft in de rij bij bewerken en verwijderen': { verstoor: true },

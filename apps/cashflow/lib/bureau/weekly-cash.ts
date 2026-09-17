@@ -267,6 +267,15 @@ export function buildWeeklyCashPlan({ asOf, months, incomeItems, bureau }: Weekl
   };
 }
 
+/**
+ * Geen banksaldo, geen regel in een week en geen open factuur: er valt niets te verdelen. Eén
+ * afleiding, want drie schermen (`/bureau`, `/bureau/cash` en de antwoordkaart op `/`) moeten
+ * dezelfde lege staat tonen in plaats van elk een rij nullen.
+ */
+export function isEmptyPlan(plan: WeeklyCashPlan): boolean {
+  return plan.position.bank === 0 && plan.weeks.every((w) => w.lines.length === 0) && plan.unplaced.length === 0;
+}
+
 /** De maanden waarvan de weken niet optellen tot de rekenkern. Leeg = de verdeling klopt. */
 export function verifyReconciliation(plan: WeeklyCashPlan): MonthReconciliation[] {
   return plan.reconciliation.filter((r) => Math.abs(r.delta) > EPSILON);

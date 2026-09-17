@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { useMonths, useEarliestDataMonth, useCashflowActions } from '../hooks/useCashflow';
+import { useCashOutlook } from '../hooks/useCashOutlook';
 import { useCashflowStore } from '../store/cashflow';
 import { getCurrentMonthKey } from '../lib/cashflow/recurring';
 import { buildSnapshot } from '../lib/cashflow/snapshot';
 import { bufferSummary } from '../lib/cashflow/buffer';
+import { CashAnswer } from '../components/cashflow/CashAnswer';
 import { MonthCard } from '../components/cashflow/MonthCard';
 import { CashflowDndContext } from '../components/cashflow/CashflowDndContext';
 import { RecurringSidepanel } from '../components/cashflow/RecurringSidepanel';
@@ -20,6 +22,8 @@ export default function Page() {
   // DataGate laat deze pagina pas monteren als de stand uit Supabase geladen is, dus
   // hier is er geen tussenstand meer waarin de cijfers nog nul zouden zijn.
   const months = useMonths(3);
+  // Los van de maandnavigatie: de kaart rekent altijd vanaf vandaag, dertien weken vooruit.
+  const outlook = useCashOutlook();
   const anchorMonth = useCashflowStore((s) => s.anchorMonth);
   const { setAnchorMonth, closeMonth, reopenMonth } = useCashflowActions();
   const monthSnapshots = useCashflowStore((s) => s.monthSnapshots);
@@ -61,9 +65,12 @@ export default function Page() {
         </button>
       </AppHeader>
 
-      {/* Vaste hoogte: elke kolom scrollt binnen zichzelf, zodat de drie saldo-footers
-          op één horizontale lijn blijven staan. */}
-      <section className="h-[calc(100vh-11rem)] min-h-[24rem]">
+      <CashAnswer outlook={outlook} />
+
+      {/* Vaste hoogte: elke kolom scrollt binnen zichzelf, zodat de drie saldo-footers op één
+          horizontale lijn blijven staan. De aftrek is 17rem sinds de antwoordkaart erboven staat:
+          met 11rem zakken ze onder de vouw (gemeten: onderkant 1079 px in een venster van 1000). */}
+      <section className="h-[calc(100vh-17rem)] min-h-[24rem]">
         <CashflowDndContext>
           <div className="grid grid-cols-3 gap-5 h-full">
             {months.map((month, index) => (

@@ -41,6 +41,19 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — cashflow
 
+## 2026-09-17 — Brug en kopgetal kunnen een cent uiteenlopen door drie losse afrondingen · [fix]
+- **Wat:** `weekly-cash.ts` rondt `closingFree`, `bufferPot` en `buffer` elk apart af, en `round2(a) + round2(b)` is niet `round2(a + b)`. De code-review rekende het geval uit: eindsaldo € 0,005 en pot € 0,005 renderen "vrij € 0,01 + bufferpot € 0,01" onder een getal van € 0,01, en de harness-check `|vrij + pot − waarde| > 0,005` gaat dan vals rood.
+- **Waarom niet nu:** derde decimalen ontstaan alleen uit een jaarlijkse vaste kost gedeeld door 12; zeldzaam, en de fix raakt de afronding van het hele weekmodel.
+- **Eerste zet:** `buffer` afleiden als `round2(closingFree + bufferPot)` in plaats van `round2(b.position)`, met een unit-test op precies dit trio.
+- **Status:** open
+
+## 2026-09-17 — De antwoordkaart rekent de maandketen een tweede keer door · [refactor]
+- **Wat:** `/` roept `useMonths(3)` aan én `useCashOutlook`, die zelf `useMonths(n, anker)` doet — twee keer `calculateMonths` plus `computeAnchorState` per render. De `useMemo` in `useCashOutlook` slaat bovendien nooit aan, want `useMonths` levert elke render een nieuwe array.
+- **Waarom niet nu:** alleen rekentijd, geen verkeerd getal, en hetzelfde patroon staat al op de bureaupagina's. Een echte fix is een gedeelde bron voor de maandketen.
+- **Eerste zet:** meten hoeveel het kost (React Profiler op `/` met het echte document), dan beslissen: memoiseren in `useMonths` zelf, of de kaart de maanden van de pagina laten meekrijgen.
+- **Status:** open
+
+
 ## 2026-09-17 — Het week-signaal "Vrij zakt binnen een maand" meet tegen een vloer die voor de Buffer geldt · [ux]
 - **Wat:** `cash-krap-binnen-maand` (`lib/bureau/signals.ts`) vergelijkt de laagste weekstand in Vrij met `negativeCash.floor`. Met een gevulde bufferpot vuurt het ook wanneer de pot de dip ruim dekt: gemeten door de code-review (pot € 5.000, kosten vroeg, inkomsten laat) "zakt Vrij in de weektabel tot €-3000" naast een tegel met Buffer € 6.000.
 - **Waarom niet nu:** Pre-existing (vóór de geldtaal-PR gaf een vloer > 0 zelfs een kritiek signaal) en info-niveau; de opname uit de pot dekt in het weekmodel alleen een tekort op maandniveau, dus "dekt de pot een dip binnen de maand?" is een modelvraag, geen tekstfix.

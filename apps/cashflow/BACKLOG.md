@@ -41,6 +41,30 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Project — cashflow
 
+## 2026-09-17 — Het week-signaal "Vrij zakt binnen een maand" meet tegen een vloer die voor de Buffer geldt · [ux]
+- **Wat:** `cash-krap-binnen-maand` (`lib/bureau/signals.ts`) vergelijkt de laagste weekstand in Vrij met `negativeCash.floor`. Met een gevulde bufferpot vuurt het ook wanneer de pot de dip ruim dekt: gemeten door de code-review (pot € 5.000, kosten vroeg, inkomsten laat) "zakt Vrij in de weektabel tot €-3000" naast een tegel met Buffer € 6.000.
+- **Waarom niet nu:** Pre-existing (vóór de geldtaal-PR gaf een vloer > 0 zelfs een kritiek signaal) en info-niveau; de opname uit de pot dekt in het weekmodel alleen een tekort op maandniveau, dus "dekt de pot een dip binnen de maand?" is een modelvraag, geen tekstfix.
+- **Eerste zet:** beslissen of een week-dip die kleiner is dan de bufferpotstand bij de start van die maand nog een signaal is; zo nee, de vergelijking in `signals.ts` op `closingFree + pot` zetten met een test die beide kanten toont.
+- **Status:** open
+
+## 2026-09-17 — Provisiebrug "al opzij + storting" telt niet op als een betaling de potstand overstijgt · [fix]
+- **Wat:** In de ankermaand toont de provisiekop "al opzij € X + storting € Y" met Y = kop − stand. Betaalt een pot meer uit dan zijn stand (`potStandAtStart` klemt op 0), dan is Y niet meer de som van de zichtbare invoervelden. Voorbeeld uit de review (op formules, niet gerenderd): pot A stand 1000 + 100, pot B stand 100 + 100 met 150 betaald → brug "storting 150", velden 100 + 100.
+- **Waarom niet nu:** Randgeval, niet gerenderd bevestigd; de kop zelf klopt, alleen de uitsplitsing leest scheef.
+- **Eerste zet:** een render-fixture met zo'n betaling in `render-screens.tsx`, dan kiezen: storting uit `Σ provisionThisMonth` en een derde term "betaald uit pot".
+- **Status:** open
+
+## 2026-09-17 — "+ bufferpot € 0" in een document zonder bufferpot op /bureau/cash en de tegel · [ux]
+- **Wat:** De brug "vrij € X + bufferpot € Y" staat ook in een document waar geen enkele pot als buffer gemarkeerd is (de footer op `/` toont dan wél de hint "Geen buffer" zonder brug). Eén vorm overal is bewust gekozen, maar zonder pot is het tweede deel ruis.
+- **Waarom niet nu:** Cosmetisch, en de keuze "altijd dezelfde vorm" heeft een reden (vergelijkbaarheid tussen schermen); verdient een beslissing, geen stille fix.
+- **Eerste zet:** `WeeklyCashPlan` laten weten of er een bufferpot bestaat (`monthEnds.some(m => bufferSummary.present)`), en zonder pot de brug weglaten op cash en tegel — met de harness-fixture `standaard` als meting.
+- **Status:** open
+
+## 2026-09-17 — De uitlegregel per week in de weektabel heeft geen test · [test]
+- **Wat:** `regel()` in `components/bureau/WeekCashTable.tsx` zegt per regel waarom een bedrag in die week staat ("opname — eerste week van …", "opbouw — maandeinde …"). De geldtaal-review vond dat die tekst "maandeinde" bleef zeggen nadat de opname naar de eerste week verhuisde — geen test zag het.
+- **Waarom niet nu:** `regel` is niet geëxporteerd en `.tsx` draait niet onder `node --experimental-strip-types`; een harness-scenario moet de week openklappen.
+- **Eerste zet:** harness-scenario op `gedrag: { buffer: true }` dat de week met de bufferregel openklapt en de uitleg tegen de positie van de week toetst, met een tegenproef die de tekst terugzet naar "maandeinde".
+- **Status:** open
+
 ## 2026-09-16 — `computeAnchorState` telt potstanden dubbel bij een brug vanaf een snapshot met een uitgestelde pot · [fix]
 - **Wat:** Bij het bruggen vanaf een afgesloten maand gebruikt `computeAnchorState` de potstanden van `historicalPotBalances()` — berekend tot **anker−1** — als openingsstand **op de afgesloten maand** (`lib/cashflow/calculator.ts` ±683–690 en ±774–809). Een pot die niet in de snapshot zit (uitgesteld uít de afgesloten maand) krijgt bij een gat van ≥ 2 maanden zijn tussenliggende bijdragen twee keer. Minimaal geval, afgeleid uit de code en niet gedraaid: spaardoel 900/maand vanaf 2025-10, uitgesteld 2026-01 → 2026-04, 2026-01 afgesloten, anker 2026-03 → verwacht potstand 3.600, getraceerd 4.500; `computedStartBalance` € 900 te hoog, eindsaldo onaangetast.
 - **Waarom niet nu:** Gevonden tijdens de verkenning voor het Bureau (2026-09-16); dat werk laat de rekenkern bewust byte-identiek (digest-guard), en een fix hier verschuift getallen op Jeroens echte document.

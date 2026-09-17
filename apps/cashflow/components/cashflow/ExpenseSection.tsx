@@ -57,7 +57,7 @@ function DraggableExpenseItem({
     <div
       ref={setNodeRef}
       className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full ${
-        isDragging ? 'opacity-30' : (item.paid ? 'opacity-70 ' : '') + (zebra ? 'bg-muted' : '')
+        isDragging ? 'opacity-30' : (zebra ? 'bg-muted' : '')
       }`}
     >
       <button
@@ -183,14 +183,14 @@ export function ExpenseSection({
 
         {/* Afgeleide overflow items van spaardoel-betalingen */}
         {visibleOverflowItems.map((item, idx) => (
-          <div key={`overflow-${idx}`} className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full opacity-70 ${
+          <div key={`overflow-${idx}`} className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full ${
             (visibleItems.length + idx) % 2 !== 0 ? 'bg-muted' : ''
           }`}>
             <span className="w-[18px] shrink-0" />
             <span className="w-3.5 shrink-0" />
             <span className="flex-1 text-sm truncate text-muted-foreground min-w-0">
               {item.label}
-              <span className="ml-1 text-2xs text-muted-foreground/60">
+              <span className="ml-1 text-2xs text-muted-foreground">
                 {item.paid ? '– al betaald' : '– resterend'}
               </span>
             </span>

@@ -81,7 +81,7 @@ function DraggableRecurringItem({
     <div
       ref={setNodeRef}
       className={`flex items-center gap-2 h-7 pl-2 rounded-sm w-full ${
-        isDragging ? 'opacity-30' : (isPaid ? 'opacity-70 ' : '') + (zebra ? 'bg-muted' : '')
+        isDragging ? 'opacity-30' : (zebra ? 'bg-muted' : '')
       }`}
     >
       <button
@@ -183,7 +183,7 @@ function DeferredRecurringItem({
         className={`h-3.5 w-3.5 rounded border-input flex-shrink-0 ${item.paid ? 'accent-finance-positive' : 'accent-primary'}`}
         aria-label={`${item.label} betaald`}
       />
-      <span className={`flex-1 text-sm truncate min-w-0 ${item.paid ? 'opacity-60' : ''}`}>
+      <span className="flex-1 text-sm truncate min-w-0">
         <span className={item.paid ? 'line-through text-muted-foreground' : 'text-finance-deferred'}>
           {item.label}
         </span>

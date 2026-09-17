@@ -44,8 +44,8 @@ export const STATUS_LABEL_INLINE: Record<ActieStatus, string> = {
 /**
  * De kleur van een status in een `select`.
  *
- * Zelfde vorm als `StatusDropdown` op het dashboard: de select ís de statusweergave, met de
- * rol als kleur. Een pil ernaast zou hetzelfde woord een tweede keer tonen — en dat stond er
+ * Sinds 2026-09-17 alleen nog in de select van het actiepaneel: daar ís de select de statusweergave,
+ * met de rol als kleur. Een pil ernaast zou hetzelfde woord een tweede keer tonen — en dat stond er
  * even, tot de eerste opname het liet zien.
  */
 export const STATUS_KLEUR: Record<ActieStatus, string> = {

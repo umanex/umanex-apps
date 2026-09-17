@@ -206,10 +206,6 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       `plan:probe` op 2026-09-16 al had en waar hij van genezen werd. Gevallen 13–17 (heropenen,
       2026-09-17) vergelijken wél. Eerste zet: de `p`-regels ombouwen naar de `v`-vorm van `plan-probe.sh`,
       met per geval een verwachte waarde, en één keer rood laten worden. (triage-fase 2026-09-17)
-- [ ] `refactor`: **`StatusDropdown.tsx` heeft sinds de triage-fase geen enkele importeur meer.** Vervangen
-      door `StatusActies` op alle vier de plekken. Niet verwijderd omdat bestanden verwijderen eerst
-      akkoord vraagt. Eerste zet: `grep -rn StatusDropdown apps/jobradar` moet 0 geven buiten het bestand
-      zelf, dan weg. (design-review fase 2, 2026-09-17, P3)
 - [ ] `ux`: **Het statusfilter staat er ook op het tabblad Prospects, waar het niets doet.** `filterQuery`
       kent geen status; dat bestond al, maar met "Open" als nieuwe standaard is het zichtbaarder. Kleinste
       fix: het filter verbergen of uitschakelen met uitleg zolang Prospects actief is. (design-review
@@ -247,6 +243,9 @@ afweging van nul.
   (ux-audit 2026-08-11, limiet)
 
 ## Gebouwd
+
+- `refactor`: `StatusDropdown.tsx` had sinds de triage-fase geen importeur meer. **Verwijderd 2026-09-17**
+  met akkoord van Jeroen; de twee verwijzingen in commentaar zijn mee aangepast. (design-review fase 2, P3)
 
 - `ui`: Een actie op vervallen zetten blokkeerde haar afhankelijken hard, zonder melding op dat
   moment. **Gebouwd 2026-09-17** (umanex-apps#517): het redenblok in `ActiePanel` noemt vóór het

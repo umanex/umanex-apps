@@ -97,6 +97,29 @@ Voorwaarden: de wijziging gebeurt in één keer, gaat via een PR, en Jeroen doet
 na de merge een **Pull in Tokens Studio** op zodat de plugin de nieuwe structuur overneemt.
 Push je vanuit de plugin vóór die pull, dan draai je de restructurering terug.
 
+**Gebruik "Export to Figma" van de plugin niet voor variabelen.** Een *pull* raakt Figma niet —
+die haalt alleen `tokens.json` binnen. De export is een aparte handeling, met twee niveaus:
+
+1. **Welke sets exporteren** ("Enabled sets will export to Figma"): per set **X** (niet
+   exporteren), **`{}`** (Reference Only — alleen verwijzingen oplossen) of **✓** (exporteren).
+   Alle acht sets horen hier op **X** te staan; dit is de bovenliggende rem, ongeacht niveau 2.
+2. **Wat er van een geëxporteerde set gemaakt wordt** ("Create styles or variables based on your
+   themes or token sets"): de vier vinkjes onder **Variables** uit, en ook **Styles → Typography
+   en Effects**, want de keten maakt die styles zelf (`figma/builder.js`).
+
+Gemeten 2026-09-17, rond de pull en publicatie van de layout-tokens: naast `Theme` (43, modes
+Light/Dark) en `Base` (57) stonden er acht nieuwe collecties in de Component library — één per
+token-set, samen 213 variabelen, elk met één mode genoemd naar de set en met nul bindingen. Dat is
+een tweede bron naast de collecties waar de keten en alle 1310 bindingen op staan, en in de
+gepubliceerde library ziet een ontwerper `background` dan twee keer: één keer omschakelbaar, één
+keer niet. Verwijderd na een versie-checkpoint. Welke handeling ze precies aanmaakte is niet
+gemeten — alleen dat ze er tussen twee metingen bij kwamen.
+
+Zet ook **"Remove styles and variables without connection to a token"** uit: vier variabelen in
+`Base` (`radius-sm|md|lg|full`) hebben bewust geen token, want de preset leidt ze met `calc()` af
+van één `radius`-token. Figma-variabelen komen hier uit `packages/ui/figma/zet-base.js` en de
+Theme-keten, niet uit de plugin.
+
 **Lagen.** Drie assen, elk hun eigen set(s):
 
 ```

@@ -203,14 +203,14 @@ function DraggablePotRow({
             // en dan moet je in één keer leren dat er twee bedragen zijn én dat ze verschillen.
             // De prijs is een korte dubbeling bij een onaangeroerd budget; dat weegt lichter.
             <div className="flex items-center gap-1">
-              <span className="text-2xs text-muted-foreground opacity-70">Budget:</span>
+              <span className="text-2xs text-muted-foreground">Budget:</span>
               <span className="text-2xs font-semibold tabular-nums text-finance-positive">
                 {formatAmount(pot.provisionThisMonth)}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-1">
-              <span className="text-2xs text-muted-foreground opacity-70">Provisie:</span>
+              <span className="text-2xs text-muted-foreground">Provisie:</span>
               <span className={`text-2xs font-semibold tabular-nums ${displayAmount < 0 ? 'text-finance-negative' : 'text-finance-positive'}`}>
                 {formatAmount(displayAmount)}
                 {displayAmount < 0 && ' ⚠'}
@@ -294,17 +294,17 @@ function DraggablePotRow({
                   </span>
                 ) : (
                   <>
-                    <span className="text-muted-foreground opacity-70">Betaald:</span>
+                    <span className="text-muted-foreground">Betaald:</span>
                     <span className="font-semibold text-foreground tabular-nums">{formatAmount(payment.invoiceAmount)}</span>
                     {payment.fromReservation > 0 && (
                       <>
-                        <span className="text-muted-foreground/40">·</span>
-                        <span className="text-muted-foreground opacity-70">Provisie:</span>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="text-muted-foreground">Provisie:</span>
                         <span className="font-semibold text-finance-positive tabular-nums">{formatAmount(payment.fromReservation)}</span>
                       </>
                     )}
-                    <span className="text-muted-foreground/40">·</span>
-                    <span className="text-muted-foreground opacity-70">Cash:</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-muted-foreground">Cash:</span>
                     <span className="font-semibold text-finance-negative tabular-nums">{formatAmount(payment.fromCash)}</span>
                   </>
                 )}
@@ -396,11 +396,11 @@ function PotSubgroup({
           finalizedPots.map((pot, index) => (
             <div
               key={pot.reservationId}
-              className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full opacity-50 ${
+              className={`flex items-center gap-2 h-7 pl-1 rounded-sm w-full ${
                 (activePots.length + index) % 2 !== 0 ? 'bg-muted' : ''
               }`}
             >
-              <span className="flex-1 text-sm truncate min-w-0">{pot.label}</span>
+              <span className="flex-1 text-sm truncate min-w-0 text-muted-foreground">{pot.label}</span>
               <span className="text-xs text-muted-foreground tabular-nums shrink-0">
                 {formatAmount(pot.effectiveAmount)} / {formatAmount(pot.monthlyAmount)}
               </span>

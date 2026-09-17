@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ReservationPotBalance, ReservationPayment, MonthKey, ReservationPotType } from '../../lib/cashflow/types';
 import { formatAmount, getMonthLabel, limitDecimals, roundTo2 } from '../../lib/cashflow/recurring';
-import { pendingOverrideDelta, potStandAtStart } from '../../lib/cashflow/subtotals';
+import { pendingOverrideDelta } from '../../lib/cashflow/subtotals';
 import { SectionBar } from './SectionBar';
 
 interface DeferredReservationDisplayItem {
@@ -22,6 +22,8 @@ interface ReservationSectionProps {
   /** Stapbedragen van de twee ledger-regels, uit de calculator. */
   budgetAmount: number;
   provisionAmount: number;
+  /** Stand van de provisiepotten bij de start, alleen wanneer de provisiekop hem draagt (bankbasis). */
+  provisionStandAtStart?: number;
   deferredReservationItems: DeferredReservationDisplayItem[];
   onRegisterPayment: (filterType: ReservationPotType) => void;
   onRemovePayment: (id: string) => void;
@@ -441,6 +443,7 @@ export function ReservationSection({
   pots,
   budgetAmount,
   provisionAmount,
+  provisionStandAtStart,
   deferredReservationItems,
   onRegisterPayment,
   onRemovePayment,
@@ -514,7 +517,7 @@ export function ReservationSection({
         activePots={spaardoelActive}
         finalizedPots={spaardoelFinalized}
         amount={provisionAmount}
-        standAtStart={isCurrentMonth ? potStandAtStart(pots).provisions : undefined}
+        standAtStart={provisionStandAtStart}
         {...sharedProps}
       />
 

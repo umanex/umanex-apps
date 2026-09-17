@@ -12,6 +12,9 @@ import { monthLabel, weekLabel } from '../../lib/bureau/format';
 export function CashPositionLine({ plan }: { plan: WeeklyCashPlan }) {
   const maand = lowestMonthEnd(plan);
   const week = lowestFree(plan);
+  // De weektabel is in Vrij: vergelijk hem met het laagste vrije maandeinde, niet met het Vrij van de
+  // maand met de laagste Buffer — met een pot die later start wijzen die naar verschillende maanden.
+  const laagsteVrij = plan.monthEnds.reduce<number | null>((min, m) => (min === null || m.closingFree < min ? m.closingFree : min), null);
   return (
     <dl className="grid gap-4 rounded-xl border border-accent bg-card p-5 text-sm sm:grid-cols-2 lg:grid-cols-4" data-cash-position>
       <div>
@@ -57,7 +60,7 @@ export function CashPositionLine({ plan }: { plan: WeeklyCashPlan }) {
         ) : (
           <dd className="mt-1 text-muted-foreground">Geen maand die binnen de 13 weken eindigt</dd>
         )}
-        {week && maand && week.closingFree < maand.closingFree - 0.005 && (
+        {week && laagsteVrij !== null && week.closingFree < laagsteVrij - 0.005 && (
           <dd className="mt-1 text-xs text-muted-foreground" data-lowest-week={week.closingFree}>
             weektabel, kosten vroeg en inkomsten laat: Vrij {formatAmount(week.closingFree)} einde {weekLabel(week.weekKey)}
           </dd>

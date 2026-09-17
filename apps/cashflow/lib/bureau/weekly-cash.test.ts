@@ -32,7 +32,7 @@ function scenario(over: { invoices?: Invoice[]; extraIncome?: IncomeItem[]; bure
     incomeItems: maartPosten,
     reservationPots: [
       pot({ reservationId: 'provisie', deferredFromPrevious: 3_000, provisionThisMonth: 500 }),
-      pot({ reservationId: 'buffer', deferredFromPrevious: 1_000, provisionThisMonth: 200, isDeficitBuffer: true }),
+      pot({ reservationId: 'buffer', deferredFromPrevious: 1_000, provisionThisMonth: 200, potBalance: 1_200, isDeficitBuffer: true }),
     ],
     subtotals: subtotals({ basis: 'bank', incoming: 10_000 + maartIn, recurring: 2_500, oneOff: 300, budgets: 400, provisions: 3_500, buffer: 1_200 }),
   });
@@ -185,7 +185,7 @@ test('maandeinden: de eindsaldi van de rekenkern, alleen voor maanden die binnen
   const { plan, months } = scenario();
   // Horizon W10–W22 eindigt op zondag 6 juni 2027: juni valt erbuiten, ook al begint hij erin.
   assert.deepEqual(plan.monthEnds, [
-    { monthKey: '2027-03', closingFree: 8_940, bufferPot: 0, buffer: 8_940 },
+    { monthKey: '2027-03', closingFree: 8_940, bufferPot: 1_200, buffer: 10_140 },
     { monthKey: '2027-04', closingFree: 6_340, bufferPot: 0, buffer: 6_340 },
     { monthKey: '2027-05', closingFree: 3_840, bufferPot: 0, buffer: 3_840 },
   ]);

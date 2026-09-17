@@ -17,7 +17,7 @@ const BRON: Record<CashLineSource, string> = {
   eenmalig: 'Eenmalige uitgaven',
   budgetten: 'Budgetten',
   provisies: 'Naar provisies',
-  buffer: 'Buffer',
+  buffer: 'Bufferpot',
 };
 
 function regel(l: CashLine, week: WeekRow): string {
@@ -25,7 +25,10 @@ function regel(l: CashLine, week: WeekRow): string {
   const maand = getMonthLabel(l.monthKey).toLowerCase();
   if (l.source === 'factuur') return `factuurdatum in een andere maand — laatste week van ${maand}`;
   if (l.source === 'post') return `losse post — laatste week van ${maand}`;
-  if (l.source === 'buffer') return `maandeinde ${maand}`;
+  // Positief = opname: die valt sinds 2026-09-17 in de eerste week, bij de kosten die het tekort maken.
+  // Negatief = opbouw: die veegt op maandeinde.
+  if (l.source === 'buffer' && l.amount < 0) return `opbouw — maandeinde ${maand}`;
+  if (l.source === 'buffer') return firstWeekOfMonth(l.monthKey) === week.weekKey ? `opname — eerste week van ${maand}, bij de kosten` : `opname — ${maand}, de eerste week is voorbij, dus deze week`;
   return firstWeekOfMonth(l.monthKey) === week.weekKey ? `eerste week van ${maand}` : `${maand} — de eerste week is voorbij, dus deze week`;
 }
 

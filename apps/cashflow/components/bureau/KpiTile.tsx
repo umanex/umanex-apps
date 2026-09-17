@@ -43,7 +43,7 @@ export function KpiTile({ kpi, title, value, insufficient, secondary, bar, denom
         </div>
       ) : (
         <>
-          <p className="mt-3 text-3xl font-bold tabular-nums">{value}</p>
+          <p className="mt-3 text-3xl font-bold tabular-nums" data-kpi-value>{value}</p>
           {secondary && <p className="mt-1 text-sm text-muted-foreground">{secondary}</p>}
           {bar && (
             <div role="img" aria-label={bar.label} className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">

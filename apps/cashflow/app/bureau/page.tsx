@@ -63,6 +63,7 @@ export default function OverzichtPage() {
       verwacht: nietGeannuleerd.reduce((s, p) => s + approvedTotal(p), 0),
       laagsteWeek: lowestFree(cash),
       laagsteMaand: lowestMonthEnd(cash),
+      laagsteVrij: cash.monthEnds.reduce<number | null>((min, m) => (min === null || m.closingFree < min ? m.closingFree : min), null),
     };
   }, [bureau, year, today, huidigJaar, months, incomeItems]);
 
@@ -183,7 +184,7 @@ export default function OverzichtPage() {
           }
           secondary={
             d.laagsteMaand
-              ? `laagste punt eind ${monthLabel(d.laagsteMaand.monthKey)}: vrij ${formatCurrency(d.laagsteMaand.closingFree)} + bufferpot ${formatCurrency(d.laagsteMaand.bufferPot)}${d.laagsteWeek && d.laagsteWeek.closingFree < d.laagsteMaand.closingFree ? ` · weektabel (kosten vroeg, inkomsten laat): Vrij tot ${formatCurrency(d.laagsteWeek.closingFree)}` : ''}`
+              ? `laagste punt eind ${monthLabel(d.laagsteMaand.monthKey)}: vrij ${formatCurrency(d.laagsteMaand.closingFree)} + bufferpot ${formatCurrency(d.laagsteMaand.bufferPot)}${d.laagsteWeek && d.laagsteVrij !== null && d.laagsteWeek.closingFree < d.laagsteVrij - 0.005 ? ` · weektabel (kosten vroeg, inkomsten laat): Vrij tot ${formatCurrency(d.laagsteWeek.closingFree)}` : ''}`
               : undefined
           }
           denominator={leegCash ? 'geen banksaldo of posten in de prognose' : `vrij vandaag ${formatCurrency(cash.position.free)} = bank ${formatCurrency(cash.position.bank)} − potten ${formatCurrency(cash.position.reserved)}`}

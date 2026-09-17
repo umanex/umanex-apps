@@ -2329,6 +2329,8 @@ async function kopgetalIsMaandeinde(page) {
  * maandeinde is de footer-Buffer van zijn kolom, het kopgetal is het laagste en zijn brug telt op.
  * Op `/bureau`: de tegel toont datzelfde getal groot.
  */
+const BRUG = /^vrij ([+−-]?€ [\d.,]+) \+ bufferpot ([+−-]?€ [\d.,]+)$/;
+
 async function geldtaalOpPrognose(page) {
   const kolommen = page.locator(KOLOM);
   const aantal = await kolommen.count();
@@ -2337,16 +2339,28 @@ async function geldtaalOpPrognose(page) {
   for (let i = 0; i < aantal; i++) {
     const brug = kolommen.nth(i).locator('[data-buffer-bridge]');
     if ((await brug.count()) !== 1) throw new Error(`kolom ${i}: ${await brug.count()} brugregels, verwacht 1`);
-    const vrij = Number(await brug.getAttribute('data-free'));
-    const pot = Number(await brug.getAttribute('data-pot'));
+    // De zichtbare bedragen, niet de attributen: die zijn per constructie `position − pot` en `pot`,
+    // en tellen dus altijd op — ook als de component de verkeerde pot krijgt (review 2026-09-17).
+    const tekst = (await brug.innerText()).replace(/\s+/g, ' ').trim();
+    const t = tekst.match(BRUG);
+    if (!t) return { ok: false, bewijs: `kolom ${i}: brugregel leest "${tekst}"` };
     const f = footers[i];
     if (!f?.aanwezig) throw new Error(`kolom ${i}: geen leesbare footer`);
-    rijen.push({ kolom: i, vrij, pot, buffer: f.stand, tekst: (await brug.innerText()).replace(/\s+/g, ' ') });
+    rijen.push({ kolom: i, maand: [BRON, DOEL, monthKey(2)][i], vrij: bedragUit(t[1]), pot: bedragUit(t[2]), buffer: f.stand });
   }
   if (!rijen.some((r) => Math.abs(r.pot) >= 0.005)) throw new Error(`de fixture heeft nergens een gevulde pot — Vrij en Buffer vallen overal samen: ${JSON.stringify(rijen)}`);
-  const fout = rijen.filter((r) => Math.abs(r.vrij + r.pot - r.buffer) > 0.005 || !r.tekst.startsWith('vrij ') || !r.tekst.includes(' + bufferpot '));
-  if (fout.length) return { ok: false, bewijs: `brug telt niet op of leest anders: ${JSON.stringify(fout)}` };
-  return { ok: true, bewijs: rijen.map((r) => `kolom ${r.kolom}: vrij ${r.vrij} + pot ${r.pot} = Buffer ${r.buffer}`).join(' · ') };
+  const optel = rijen.filter((r) => Math.abs(r.vrij + r.pot - r.buffer) > 0.005);
+  if (optel.length) return { ok: false, bewijs: `brug telt niet op tot de Buffer: ${JSON.stringify(optel)}` };
+
+  // Een onafhankelijke bron voor de pot: de maandeinden op /bureau/cash komen uit het weekmodel, niet uit de footer.
+  await page.goto(`${BASE}${CASH}`);
+  await page.waitForSelector('[data-month-end]', { timeout: 20_000 });
+  const potten = Object.fromEntries(await page.locator('[data-month-end]').evaluateAll((els) => els.map((e) => [e.getAttribute('data-month-end'), Number(e.getAttribute('data-pot'))])));
+  const vergeleken = rijen.filter((r) => potten[r.maand] !== undefined);
+  if (!vergeleken.length) throw new Error(`geen kolom te vergelijken met /bureau/cash: ${JSON.stringify(potten)}`);
+  const pot = vergeleken.filter((r) => Math.abs(r.pot - potten[r.maand]) > 0.005);
+  if (pot.length) return { ok: false, bewijs: `pot in de brug wijkt af van het maandeinde op /bureau/cash: ${pot.map((r) => `${r.maand} ${r.pot} / ${potten[r.maand]}`).join(' · ')}` };
+  return { ok: true, bewijs: `${rijen.map((r) => `kolom ${r.kolom}: vrij ${r.vrij} + pot ${r.pot} = Buffer ${r.buffer}`).join(' · ')}; pot gelijk aan /bureau/cash voor ${vergeleken.length} maanden` };
 }
 
 async function geldtaalOpCash(page) {
@@ -2369,14 +2383,28 @@ async function geldtaalOpCash(page) {
   if (!vergeleken.length) throw new Error(`geen maandeinde te vergelijken met de footers op /: ${JSON.stringify({ eindes, perMaand })}`);
   const afwijkend = vergeleken.filter((e) => Math.abs(e.buffer - perMaand[e.maand]) > 0.005);
   if (afwijkend.length) return { ok: false, bewijs: `maandeinde wijkt af van de footer-Buffer op /: ${afwijkend.map((e) => `${e.maand} cash ${e.buffer} / footer ${perMaand[e.maand]}`).join(' · ')}` };
+  return { ok: true, bewijs: `maandeinden ${eindes.map((e) => `${e.maand} Buffer ${e.buffer} (vrij ${e.vrij})`).join(' · ')}; kopgetal ${kop.maand} ${kop.waarde} = laagste, brug ${brug.vrij} + ${brug.pot}; gelijk aan de footer op / voor ${vergeleken.length} maanden` };
+}
 
-  await page.goto(`${BASE}/bureau`);
-  await page.waitForSelector('[data-kpi="cash"]', { timeout: 20_000 });
-  const tegel = (await page.locator('[data-kpi="cash"]').innerText()).replace(/\s+/g, ' ');
-  const groot = new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(kop.waarde);
-  const bedragen = [...tegel.matchAll(/[−-]?€\s?[\d.]+(?:,\d+)?/g)].map((m) => bedragUit(m[0]));
-  if (!tegel.startsWith('Buffer, 13 weken') || !bedragen.some((b) => Math.abs(b - Math.round(kop.waarde)) < 1)) return { ok: false, bewijs: `tegel toont de laagste Buffer (${groot}) niet: "${tegel.slice(0, 180)}"` };
-  return { ok: true, bewijs: `maandeinden ${eindes.map((e) => `${e.maand} Buffer ${e.buffer} (vrij ${e.vrij})`).join(' · ')}; kopgetal ${kop.maand} ${kop.waarde} = laagste, brug ${brug.vrij} + ${brug.pot}; gelijk aan de footer op / voor ${vergeleken.length} maanden; tegel noemt het` };
+/**
+ * De overzichtstegel: groot staat de laagste Buffer, niet wat er vandaag vrij is. Alleen het grote getal
+ * gelezen — dezelfde waarde staat ook in de tweede regel, en een check over de hele tegel bleef groen als
+ * het grote getal terugviel op vrij vandaag (review 2026-09-17). Start op `/bureau`, zodat een defect in
+ * de tegel vóór de meting staat; het kopgetal komt daarna van `/bureau/cash`.
+ */
+async function geldtaalOpTegel(page) {
+  await page.waitForSelector('[data-kpi="cash"] [data-kpi-value]', { timeout: 20_000 });
+  const titel = (await page.locator('[data-kpi="cash"] h3').innerText()).trim();
+  const groot = bedragUit(await page.locator('[data-kpi="cash"] [data-kpi-value]').innerText());
+  const vandaag = bedragUit((await page.locator('[data-kpi="cash"] [data-kpi-noemer]').innerText()).match(/vrij vandaag ([+−-]?€\s?[\d.,]+)/)?.[1] ?? ''); // Intl schrijft een U+00A0 na het €-teken
+
+  await page.goto(`${BASE}${CASH}`);
+  await page.waitForSelector('[data-lowest-month-end]', { timeout: 20_000 });
+  const laagste = Number(await page.locator('[data-lowest-month-end]').getAttribute('data-lowest-month-end'));
+  // Het object eerst: kan deze fixture "laagste Buffer" van "vrij vandaag" onderscheiden?
+  if (vandaag === null || Math.abs(vandaag - laagste) <= 0.5) throw new Error(`de fixture onderscheidt vrij vandaag (${vandaag}) niet van de laagste Buffer (${laagste})`);
+  if (titel !== 'Buffer, 13 weken' || groot === null || Math.abs(groot - laagste) > 0.5) return { ok: false, bewijs: `tegel "${titel}" toont ${groot} groot, verwacht de laagste Buffer ${laagste} (vrij vandaag ${vandaag})` };
+  return { ok: true, bewijs: `tegel "${titel}": groot ${groot} = laagste Buffer ${laagste}, vrij vandaag ${vandaag} in de noemer` };
 }
 
 function reviewScenarios() {
@@ -2387,11 +2415,18 @@ function reviewScenarios() {
       actie: async (page) => geldtaalOpPrognose(page),
     },
     {
-      naam: 'geldtaal — cash en tegel tonen de laagste Buffer, gelijk aan de footer op /',
+      naam: 'geldtaal — cash toont de laagste Buffer, gelijk aan de footer op /',
       pad: CASH,
       wachtOp: 'bureau',
       gedrag: { buffer: true },
       actie: async (page) => geldtaalOpCash(page),
+    },
+    {
+      naam: 'geldtaal — tegel toont de laagste Buffer groot, vrij vandaag in de noemer',
+      pad: OVERZICHT,
+      wachtOp: 'bureau',
+      gedrag: { buffer: true },
+      actie: async (page) => geldtaalOpTegel(page),
     },
     {
       naam: 'cash — kopgetal is het laagste maandeinde, gelijk aan het saldo op /',
@@ -2696,14 +2731,19 @@ function reviewTegenproeven() {
       tweede.setAttribute('data-value', nieuw);
     },
     'bureau — lege staat houdt een cashtekort in beeld': () => { document.querySelector('[data-signal-list]')?.remove(); },
-    // Het defect: een brug die een cent naast de Buffer zit.
+    // Het defect: de brug toont een pot die niet bij de Buffer hoort (zoals `buffer.delta` in plaats van `buffer.total`).
     'geldtaal — brug onder de footer telt op tot de Buffer': () => {
       const brug = document.querySelector('[data-buffer-bridge]');
-      brug.setAttribute('data-pot', String(Number(brug.getAttribute('data-pot')) + 0.01));
+      brug.textContent = brug.textContent.replace(/bufferpot .*$/, 'bufferpot € 9.999,99');
     },
     // Het defect van vóór 2026-09-17: de maandeinden dragen Vrij in plaats van de Buffer.
-    'geldtaal — cash en tegel tonen de laagste Buffer, gelijk aan de footer op /': () => {
+    'geldtaal — cash toont de laagste Buffer, gelijk aan de footer op /': () => {
       document.querySelectorAll('[data-month-end]').forEach((el) => el.setAttribute('data-value', el.getAttribute('data-free')));
+    },
+    // Het defect van vóór 2026-09-17: groot staat wat er vandaag vrij is.
+    'geldtaal — tegel toont de laagste Buffer groot, vrij vandaag in de noemer': () => {
+      const noemer = document.querySelector('[data-kpi="cash"] [data-kpi-noemer]').textContent;
+      document.querySelector('[data-kpi="cash"] [data-kpi-value]').textContent = noemer.match(/vrij vandaag ([^=]+)=/)[1].trim();
     },
     'facturen — nieuwe factuur gekoppeld aan een bestaande post: geen tweede post': () => {
       // Het defect: de keuze voor een bestaande post gaat verloren en er komt een nieuwe.

@@ -152,7 +152,7 @@ const gevallen = [
     },
   },
   {
-    naam: 'spacing wijkt af van n × 4px',
+    naam: 'spacing in Figma wijkt af van Layout/Scale',
     as: '[schaal]',
     muteer: uiRoot => {
       const p = join(uiRoot, 'figma/manifest.json');
@@ -172,7 +172,7 @@ const gevallen = [
     },
   },
   {
-    naam: 'icon-stroke wijkt af van lucide',
+    naam: 'icon-stroke in Figma wijkt af van Layout/Scale',
     as: '[schaal]',
     muteer: uiRoot => {
       const p = join(uiRoot, 'figma/manifest.json');
@@ -189,7 +189,7 @@ const gevallen = [
     muteer: uiRoot => {
       const p = join(uiRoot, 'figma/manifest.json');
       const m = JSON.parse(lees(p));
-      m.collections.Base.variables['spacing-7'] = 28;
+      m.collections.Base.variables['spacing-13'] = 52; // geen stap in Layout/Scale
       schrijf(p, JSON.stringify(m, null, 2));
     },
   },
@@ -202,7 +202,7 @@ const gevallen = [
     muteer: uiRoot => {
       const p = join(uiRoot, '../tokens/tokens.json');
       const t = JSON.parse(lees(p));
-      t.Base = { 'icon-stroke': { $value: '2', $type: 'number' } };
+      t.Base = { 'radius-md': { $value: '6', $type: 'borderRadius' } };
       schrijf(p, JSON.stringify(t, null, 2));
     },
   },

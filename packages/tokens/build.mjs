@@ -304,6 +304,31 @@ await writeFile(R('build/theme.css'), [...header, ...blocks, ''].join('\n'));
 // en een rol die niet bestaat heeft er geen.
 const asList = (kind) =>
   [...roleKinds].filter(([, k]) => k === kind).map(([n]) => n);
+
+// Layout-rollen als utility-sleutel: spacing-surface → p-surface, size-control-md →
+// h-control-md. De groep valt weg, want Tailwind leidt padding, gap, height en width
+// allemaal af van één spacing-map. Twee lezers hebben deze afleiding nodig — de preset
+// (om de utility te maken) en cn() in packages/ui (zodat tailwind-merge p-surface als
+// padding herkent en een className="p-4" van de consument laat winnen) — dus hij
+// wordt hier één keer gemaakt in plaats van twee keer nagebouwd.
+const LAYOUT_ROLE_GROUPS = ['spacing', 'size'];
+const scaleKeys = new Set(
+  Object.keys(tokenSets['Layout/Scale']?.spacing ?? {}).map((k) => k.replace('_', '.'))
+);
+const layoutRoleUtilities = {};
+for (const name of asList('scalar')) {
+  const group = LAYOUT_ROLE_GROUPS.find((g) => name.startsWith(`${g}-`));
+  if (!group) continue;
+  const key = name.slice(group.length + 1);
+  // Een rol die een schaalstap overschaduwt (een rol "4") of twee rollen die op
+  // dezelfde utility landen (spacing-control-md én size-control-md) overschrijven
+  // elkaar anders stil.
+  if (scaleKeys.has(key) || key in layoutRoleUtilities) {
+    throw new Error(`[tokens] layout-rol "${name}" botst op utility-sleutel "${key}" (schaalstap of andere rol)`);
+  }
+  layoutRoleUtilities[key] = name;
+}
+
 await writeFile(
   R('build/roles.mjs'),
   [
@@ -314,11 +339,13 @@ await writeFile(
     ' * hslRoles    -> hsl(var(--x)); kleuren als HSL-triplet, dus /alpha werkt',
     ' * rawRoles    -> var(--x); kleuren met alpha, die geen triplet kunnen zijn',
     ' * scalarRoles -> var(--x); niet-kleuren (radius, layout-rollen spacing-* en size-*)',
+    ' * layoutRoleUtilities -> utility-sleutel → rolnaam (surface → spacing-surface)',
     ' */',
     '',
     ...['hsl', 'raw', 'scalar'].map(
       (kind) => `export const ${kind}Roles = ${JSON.stringify(asList(kind), null, 2)};\n`
     ),
+    `export const layoutRoleUtilities = ${JSON.stringify(layoutRoleUtilities, null, 2)};\n`,
   ].join('\n')
 );
 
@@ -489,6 +516,7 @@ await writeFile(
     'export declare const hslRoles: string[];',
     'export declare const rawRoles: string[];',
     'export declare const scalarRoles: string[];',
+    'export declare const layoutRoleUtilities: Record<string, string>;',
     '',
   ].join('\n')
 );

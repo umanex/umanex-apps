@@ -48,7 +48,7 @@ SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
  * hoort hij ook in Figma als variant-as te bestaan.
  */
 const sheetVariants = cva(
-  `fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500`,
+  `fixed z-50 gap-stack bg-background p-surface shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500`,
   {
     variants: {
       side: {
@@ -99,7 +99,7 @@ SheetHeader.displayName = 'SheetHeader'
 const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     data-slot="sheet-footer"
-    className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)}
+    className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-inline', className)}
     {...props}
   />
 )

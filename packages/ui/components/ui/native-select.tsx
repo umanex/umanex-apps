@@ -21,7 +21,7 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
       <select
         data-slot="native-select"
         className={cn(
-          'peer flex h-10 w-full appearance-none rounded-md border border-input bg-background py-2 pl-3 pr-9 text-sm disabled:cursor-not-allowed disabled:opacity-50',
+          'peer flex h-control-md w-full appearance-none rounded-md border border-input bg-background py-control-y pl-control-x pr-9 text-sm disabled:cursor-not-allowed disabled:opacity-50',
           focusRing,
           className,
         )}

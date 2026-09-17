@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack
-_Gegenereerd op 2026-09-16_
+_Afgeleid uit de inhoud van de tree, zonder datum. Wanneer hij het laatst veranderde: `git log -1 -- apps/rowtrack/context-snapshot.md`._
 
 ## Project
 - **App:** rowtrack
@@ -49,6 +49,10 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | Subtitle | `apps/rowtrack/components/Subtitle.tsx` | components | — | — | — |
 | TabLabel | `apps/rowtrack/components/TabLabel.tsx` | components | — | — | — |
 | WheelPicker | `apps/rowtrack/components/WheelPicker.tsx` | components | — | — | — |
+| WorkoutCard | `apps/rowtrack/components/WorkoutCard.tsx` | components | — | — | — |
+| ActivePhase | `apps/rowtrack/components/workout/ActivePhase.tsx` | workout | — | — | — |
+| DeviceSelectionModal | `apps/rowtrack/components/workout/DeviceSelectionModal.tsx` | workout | — | — | — |
+| IdlePhase | `apps/rowtrack/components/workout/IdlePhase.tsx` | workout | — | — | — |
 | ActiveHeader | `apps/rowtrack/components/workout/active/ActiveHeader.tsx` | active | — | — | — |
 | ConnectionOverlay | `apps/rowtrack/components/workout/active/ConnectionOverlay.tsx` | active | — | — | — |
 | GoalPill | `apps/rowtrack/components/workout/active/GoalPill.tsx` | active | — | — | — |
@@ -60,26 +64,16 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | SubtitleProgress | `apps/rowtrack/components/workout/active/SubtitleProgress.tsx` | active | — | — | — |
 | SummaryKpiBand | `apps/rowtrack/components/workout/active/SummaryKpiBand.tsx` | active | — | — | — |
 | SummaryTitle | `apps/rowtrack/components/workout/active/SummaryTitle.tsx` | active | — | — | — |
-| ActivePhase | `apps/rowtrack/components/workout/ActivePhase.tsx` | workout | — | — | — |
-| DeviceSelectionModal | `apps/rowtrack/components/workout/DeviceSelectionModal.tsx` | workout | — | — | — |
 | DeviceSection | `apps/rowtrack/components/workout/idle/DeviceSection.tsx` | idle | — | — | — |
 | GoalHeader | `apps/rowtrack/components/workout/idle/GoalHeader.tsx` | idle | — | — | — |
 | StartCta | `apps/rowtrack/components/workout/idle/StartCta.tsx` | idle | — | — | — |
-| IdlePhase | `apps/rowtrack/components/workout/IdlePhase.tsx` | workout | — | — | — |
-| WorkoutCard | `apps/rowtrack/components/WorkoutCard.tsx` | components | — | — | — |
 
-## Recente commits (app + packages)
+## Recente commits en lopend werk
+_Staat bewust niet in dit bestand: het verschilt per moment en per tree, en een gecommitte kopie is al verouderd op het moment dat hij landt. Vraag het live op:_
 ```
-360eb23 feat(ui): Textarea and NativeSelect, with their Figma pages and a manifest recipe that matches the guard
-0b5c062 ci(rowtrack): baseline the new frame on linux, where the guard actually runs
-2fa4e27 feat(rowtrack): build the blocked-consent frame in Figma, and put every frame back on its slot
-8e313f7 chore(rowtrack): refresh the Figma manifest so the publication axis can measure again
-68b09e6 feat(rowtrack): add the blocked-consent state as a screen frame
+git log --oneline -5 -- apps/rowtrack packages
+git status --short -- apps/rowtrack packages
 ```
-
-## Uncommitted wijzigingen
-  M  apps/rowtrack/BACKLOG.md
-  M  apps/rowtrack/HANDOFF.md
 
 ## Bestanden met TODO/FIXME
   (geen)

@@ -222,3 +222,13 @@ export function potStandAtStart(pots: ReservationPotBalance[]): PotStand {
   }
   return { provisions: Math.round(split.provisions * 100) / 100, buffer: Math.round(split.buffer * 100) / 100 };
 }
+
+/**
+ * De stand voor de brug onder de provisiekop — alleen waar die kop hem draagt: subtotalen op
+ * bankbasis. Een afgesloten eerste kolom toont een snapshot die als latere maand (vrije basis)
+ * berekend kan zijn; daar draagt de kop enkel de storting, en zou "al opzij" een negatieve
+ * storting ernaast zetten (code-review 2026-09-17: "storting −€ 100"). `undefined` = geen brug.
+ */
+export function provisionStandForHeader(basis: MonthSubtotals['basis'] | undefined, pots: ReservationPotBalance[]): number | undefined {
+  return basis === 'bank' ? potStandAtStart(pots).provisions : undefined;
+}

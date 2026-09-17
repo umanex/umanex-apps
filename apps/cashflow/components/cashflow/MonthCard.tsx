@@ -4,7 +4,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { MonthData, ReservationPotType } from '../../lib/cashflow/types';
 import { addMonth, getMonthLabel } from '../../lib/cashflow/recurring';
 import { bufferSummary } from '../../lib/cashflow/buffer';
-import { potStandAtStart } from '../../lib/cashflow/subtotals';
+import { provisionStandForHeader } from '../../lib/cashflow/subtotals';
 import { BalanceFooter } from './BalanceFooter';
 import { MonthVariance } from './MonthVariance';
 import { IncomeSection } from './IncomeSection';
@@ -217,10 +217,7 @@ export function MonthCard({
           monthKey={monthKey}
           isCurrentMonth={isFirst}
           pots={reservationPots}
-          // Alleen waar de kop de stand draagt: subtotalen op bankbasis. Een afgesloten eerste kolom
-          // toont een snapshot die als latere maand (vrije basis) berekend kan zijn — daar draagt de
-          // kop enkel de storting, en zou "al opzij" een negatieve storting ernaast zetten.
-          provisionStandAtStart={subtotals.basis === 'bank' ? potStandAtStart(reservationPots).provisions : undefined}
+          provisionStandAtStart={provisionStandForHeader(subtotals.basis, reservationPots)}
           budgetAmount={subtotals.budgets}
           provisionAmount={subtotals.provisions}
           deferredReservationItems={deferredReservationItems}

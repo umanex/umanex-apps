@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, buttonVariants } from '@umanex/ui/components/ui/button'
+import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
 
@@ -54,12 +54,13 @@ export default function Foutpagina({
             Een gewone <a> en geen next/link: die leegt de boundary alleen bij een ándere pathname
             (`getDerivedStateFromProps` in `error-boundary.js`, 15.5.25), en deed op `/` dus niets —
             ook niet op `/?tab=…&zoek=…`, waar een fout uit de URL-stand zonder volledige herlading
-            geen uitweg had. Geen Button asChild: die prop staat in het type van @umanex/ui maar
-            wordt niet uitgevoerd, en zou een <a> in een <button> renderen. */}
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- bewust een volledige herlading, zie hierboven */}
-        <a href="/" className={buttonVariants({ variant: 'outline' })} data-fout-naar-huis>
-          Terug naar het dashboard
-        </a>
+            geen uitweg had. `asChild` rendert de <a> zelf met de knopklassen (Slot, sinds 2026-09-16). */}
+        <Button asChild variant="outline">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- bewust een volledige herlading, zie hierboven */}
+          <a href="/" data-fout-naar-huis>
+            Terug naar het dashboard
+          </a>
+        </Button>
       </div>
       <details className="max-w-xl text-left text-xs text-muted-foreground" data-fout-details>
         <summary className={cn('cursor-pointer rounded-sm text-center', focusRing)}>Technische melding</summary>

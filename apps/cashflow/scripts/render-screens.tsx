@@ -32,6 +32,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@umanex/ui/components/
 import { SectionBar } from '../components/cashflow/SectionBar';
 import { RunwayCard } from '../components/cashflow/RunwayCard';
 import { BalanceFooter } from '../components/cashflow/BalanceFooter';
+import { CashAnswer } from '../components/cashflow/CashAnswer';
 import { StartBalanceRow } from '../components/cashflow/StartBalanceRow';
 import { KpiTile } from '../components/bureau/KpiTile';
 import { SignalList } from '../components/bureau/SignalList';
@@ -175,6 +176,15 @@ const Inhoud = () => h('div', null,
         h(SectionBar, { label: 'Inkomsten', amount: -1250.5, direction: 'in', onAdd: () => {} }),
         h('div', { className: 'flex flex-col gap-1' },
           h(StartBalanceRow, { balance: -1250.5 })))) }),
+
+  h(Sectie, { titel: 'CashAnswer — tekort met oorzaak, gedekt zonder pot, leeg document, geen maandeinde', kind:
+    h('div', { className: 'flex flex-col gap-3 max-w-3xl' },
+      h(CashAnswer, { outlook: { kind: 'ok', maandKey: '2026-11', buffer: -6219.25, vrij: -6219.25, bufferPot: 0, gedekt: false, heeftBufferpot: true,
+        oorzaak: { soort: 'verschil', kop: 'inkomsten', delta: -6648.26, vorigeMaand: '2026-10' } } }),
+      h(CashAnswer, { outlook: { kind: 'ok', maandKey: '2026-10', buffer: 196.88, vrij: 0, bufferPot: 196.88, gedekt: true, heeftBufferpot: true,
+        oorzaak: { soort: 'grootste-kost', kop: 'provisies', bedrag: 18521 } } }),
+      h(CashAnswer, { outlook: { kind: 'leeg' } }),
+      h(CashAnswer, { outlook: { kind: 'geen-maand' } })) }),
 
   h(Sectie, { titel: 'BalanceFooter — opbouw, ankermaand zonder bedrag, negatieve stand, geen buffer', kind:
     h('div', { className: 'grid grid-cols-2 gap-3 max-w-3xl' },

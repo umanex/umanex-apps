@@ -14,7 +14,7 @@ import { weekCapacity, yearCapacity } from '../../lib/bureau/capacity';
 import { projectProfitability, yieldSummary } from '../../lib/bureau/profitability';
 import { clientConcentration } from '../../lib/bureau/concentration';
 import { openPipeline, overdueActions, withoutNextAction } from '../../lib/bureau/pipeline';
-import { buildWeeklyCashPlan, HORIZON_WEEKS, lowestFree, lowestMonthEnd } from '../../lib/bureau/weekly-cash';
+import { buildWeeklyCashPlan, HORIZON_WEEKS, isEmptyPlan, lowestFree, lowestMonthEnd } from '../../lib/bureau/weekly-cash';
 import { computeSignals, type Signal } from '../../lib/bureau/signals';
 import { approvedTotal } from '../../lib/bureau/money';
 import { monthOf, monthsCovering, weeksFrom } from '../../lib/bureau/periods';
@@ -69,7 +69,7 @@ export default function OverzichtPage() {
 
   const { goals, revenue: r, capacity: c, cash, signals } = d;
   const leegBureau = !goals && bureau.projects.length === 0 && bureau.opportunities.length === 0 && bureau.timeEntries.length === 0;
-  const leegCash = cash.position.bank === 0 && cash.weeks.every((w) => w.lines.length === 0) && cash.unplaced.length === 0;
+  const leegCash = isEmptyPlan(cash);
   const nodig = c ? neededPerRemainingDay(r.stillToSell, c.unallocatedClientDays) : null;
   const zonderDatum = cash.unplaced.filter((u) => u.inForecast).length;
   const doelA = goals ? revenuePerDayTarget(goals) : null;

@@ -29,6 +29,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | FilterBar | `apps/jobradar/components/FilterBar.tsx` | components | — | — | — |
 | HerkomstFilter | `apps/jobradar/components/HerkomstFilter.tsx` | components | — | — | — |
 | JobCard | `apps/jobradar/components/JobCard.tsx` | components | — | — | — |
+| LageScoreLijst | `apps/jobradar/components/LageScoreLijst.tsx` | components | — | — | — |
 | LeadCard | `apps/jobradar/components/LeadCard.tsx` | components | — | — | — |
 | NextActionBadge | `apps/jobradar/components/NextActionBadge.tsx` | components | — | — | — |
 | ProspectCard | `apps/jobradar/components/ProspectCard.tsx` | components | — | — | — |
@@ -36,6 +37,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | RegionFilter | `apps/jobradar/components/RegionFilter.tsx` | components | — | — | — |
 | ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
 | SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
+| StatusActies | `apps/jobradar/components/StatusActies.tsx` | components | — | — | — |
 | StatusDropdown | `apps/jobradar/components/StatusDropdown.tsx` | components | — | — | — |
 | SyncButton | `apps/jobradar/components/SyncButton.tsx` | components | — | — | — |
 | TermChips | `apps/jobradar/components/TermChips.tsx` | components | — | — | — |

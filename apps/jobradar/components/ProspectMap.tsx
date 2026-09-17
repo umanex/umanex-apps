@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Badge } from '@umanex/ui/components/ui/badge'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
-import { StatusDropdown } from './StatusDropdown'
+import { StatusActies } from './StatusActies'
 import { clusterPunten, projecteer, ringNaarPad, verhouding } from '@/lib/kaart'
 import { filterQuery, type UiFilter } from '@/lib/kbo/universum'
 import type { ItemStatus } from '@/lib/db/schema'
@@ -292,10 +292,16 @@ export function ProspectMap({ filter }: ProspectMapProps) {
                       )}
                       {p.herkomst === 'lijst' && (
                         <div className="mt-2">
-                          <StatusDropdown
+                          <StatusActies
                             endpoint={`/api/prospects/${p.nummer}`}
                             status={p.status}
-                            onStatusChange={() => undefined}
+                            naam={p.naam}
+                            // De stip en de rij lezen uit `punten`; zonder deze update toonde een
+                            // andere stip kiezen en terug de oude status, en veranderde de kleur
+                            // van de marker nooit mee (design-review 2026-09-17).
+                            onStatusChange={(s) =>
+                              setPunten((prev) => prev?.map((q) => (q.nummer === p.nummer ? { ...q, status: s } : q)) ?? prev)
+                            }
                           />
                         </div>
                       )}

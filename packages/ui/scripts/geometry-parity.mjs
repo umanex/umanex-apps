@@ -135,13 +135,14 @@ const meet = (sel) => {
  * als BEKENDE_GATEN in de dekkings-as: een nieuw verschil faalt, én een verschil dat is
  * opgelost faalt óók, zodat de lijst niet stil veroudert.
  */
-const BEKENDE_AFWIJKINGEN = {
-  'Badge/variant=default hoogte': 'code geeft élke Badge `border` (1px, transparant op de gevulde varianten) → 22px; Figma tekent alleen op `outline` een stroke → 20px. Code is de bron, dus Figma hoort een transparante 1px-stroke te krijgen.',
-  'Badge/variant=secondary hoogte': 'idem — transparante border in de code, geen stroke in Figma',
-  'Badge/variant=destructive hoogte': 'idem — transparante border in de code, geen stroke in Figma',
-  'Badge/variant=success hoogte': 'idem — transparante border in de code, geen stroke in Figma',
-  'Badge/variant=warning hoogte': 'idem — transparante border in de code, geen stroke in Figma',
-};
+const BADGE_RAND = 'code geeft élke Badge `border` (1px, transparant op de gevulde varianten); Figma tekent alleen op `outline` een stroke. Code is de bron, dus Figma hoort een transparante 1px-stroke te krijgen.';
+const BEKENDE_AFWIJKINGEN = Object.fromEntries(
+  // Sinds de maat-as (2026-09-17) draagt elke variantnaam ook `size=`, dus staan er twee regels per
+  // gevulde variant. `outline` hoort er niet bij: die heeft in Figma wél een stroke en klopt.
+  ['default', 'secondary', 'destructive', 'success', 'warning'].flatMap((v) =>
+    ['default', 'sm'].map((m) => [`Badge/variant=${v}, size=${m} hoogte`, `${BADGE_RAND} (${m === 'sm' ? 'code 20px tegen Figma 18px' : 'code 22px tegen Figma 20px'})`])
+  )
+);
 
 // `--figma=<pad>` leest een andere Figma-meting — voor de tegenproef in Figma zelf, zodat de echte
 // lezing niet overschreven hoeft te worden om een gemuteerde te toetsen.
@@ -233,6 +234,11 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 
 const verschillen = [], overgeslagen = [], onmeetbaar = new Set(), bekend = new Set();
+// Derde kant van de ratel: een uitzondering die niet meer gemeten WORDT. De twee bestaande kanten
+// vangen "nieuw verschil" en "opgelost verschil", maar een variantnaam die verandert (de maat-as
+// maakte van `variant=default` `variant=default, size=default`) laat zijn oude sleutel stil in de
+// lijst staan — niemand meet hem nog, dus niets wordt rood. Gemeten 2026-09-17: vijf zulke sleutels.
+const gemetenSleutels = new Set();
 let getoetst = 0;
 for (const [set, varianten] of Object.entries(fig.gemeten)) {
   const cfg = STORY[set];
@@ -260,6 +266,7 @@ for (const [set, varianten] of Object.entries(fig.gemeten)) {
       // Dezelfde val als in `vergelijkPaginas`: opacity is een fractie, dus 0,51 liet elk verschil
       // tot een halve dekking door. Tot 2026-09-16 kon deze as een opacity-afwijking niet zien.
       const afwijkt = Math.abs(Number(a) - Number(b)) > (wat === 'opacity' ? 0.01 : 0.51);
+      gemetenSleutels.add(sleutel);
       if (afwijkt && BEKENDE_AFWIJKINGEN[sleutel]) { bekend.add(sleutel); continue; }
       if (!afwijkt && BEKENDE_AFWIJKINGEN[sleutel]) {
         verschillen.push(`${sleutel}: staat als bekende afwijking maar is nu gelijk — haal hem uit BEKENDE_AFWIJKINGEN`);
@@ -273,6 +280,11 @@ for (const [set, varianten] of Object.entries(fig.gemeten)) {
 await browser.close(); server.close();
 
 if (!getoetst) { console.error('✗ nul varianten getoetst — de as meet niets.'); process.exit(1); }
+for (const sleutel of Object.keys(BEKENDE_AFWIJKINGEN)) {
+  if (!gemetenSleutels.has(sleutel)) {
+    verschillen.push(`${sleutel}: staat in BEKENDE_AFWIJKINGEN maar wordt niet gemeten — bestaat die variant of as nog?`);
+  }
+}
 const boom = fig.paginas ? vergelijkPaginas(fig.paginas, SPEC_MIN) : { verschillen: [], nodes: 0, varianten: 0 };
 verschillen.push(...boom.verschillen);
 if (SPEC_MIN) for (const comp of Object.keys(SPEC_MIN.componenten)) if (!fig.paginas?.[comp]) console.log(`  ~~ ${comp}: in de spec, nog niet in Figma gebouwd`);

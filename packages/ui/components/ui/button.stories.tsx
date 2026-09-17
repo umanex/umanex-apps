@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect } from 'storybook/test';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from './button';
 import source from './button.tsx?raw';
@@ -64,4 +65,18 @@ export const WithIcon: Story = {
 
 export const Disabled: Story = {
   args: { disabled: true, children: 'Niet beschikbaar' },
+};
+
+/** `asChild`: het kind (hier een link) krijgt de knopklassen; er komt geen `<button>` omheen. */
+export const AsChild: Story = {
+  render: () => (
+    <Button asChild variant="outline">
+      <a href="#documentatie">Naar de documentatie</a>
+    </Button>
+  ),
+  play: async ({ canvas }) => {
+    const link = canvas.getByRole('link', { name: 'Naar de documentatie' });
+    await expect(link.tagName).toBe('A');
+    await expect(canvas.queryByRole('button')).toBeNull();
+  },
 };

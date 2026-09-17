@@ -230,6 +230,58 @@ const gevallen = [
       schrijf(p, lees(p).replace(/\n\s*figma: \{ url: '[^']+' \},/, ''));
     },
   },
+  {
+    naam: 'keten-component mist zijn primaire data-slot',
+    as: '[slots]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'components/ui/switch.tsx');
+      schrijf(p, lees(p).replace('data-slot="switch"', 'data-slot="schakelaar"'));
+    },
+  },
+  {
+    naam: 'dark:-klasse in een component',
+    as: '[slots]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'components/ui/switch.tsx');
+      schrijf(p, lees(p).replace('data-[state=unchecked]:bg-input', 'data-[state=unchecked]:bg-input dark:bg-muted'));
+    },
+  },
+  {
+    naam: 'nieuwe ongebonden waarde',
+    as: '[binding]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/ongebonden.json');
+      const o = JSON.parse(lees(p)); o.uniek.push('padding = 7'); o.aantalUniek++;
+      schrijf(p, JSON.stringify(o, null, 1));
+    },
+  },
+  {
+    naam: 'bekend ongebonden gat niet meer gemeten',
+    as: '[binding]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/ongebonden.json');
+      const o = JSON.parse(lees(p)); o.uniek = o.uniek.filter(u => u !== 'opacity = 0.7'); o.aantalUniek--;
+      schrijf(p, JSON.stringify(o, null, 1));
+    },
+  },
+  {
+    naam: 'laagnaam geraden uit de tag',
+    as: '[laagnaam]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/laagnamen.json');
+      const l = JSON.parse(lees(p)); l.perBron.heuristiek = 1; l.heuristiek = ['Dialog>0: <div>'];
+      schrijf(p, JSON.stringify(l, null, 1));
+    },
+  },
+  {
+    naam: 'keten-component ontbreekt in de gecommitte spec',
+    as: '[laagnaam]',
+    muteer: uiRoot => {
+      const p = join(uiRoot, 'figma/build-spec.min.json');
+      const m = JSON.parse(lees(p)); delete m.componenten.Switch;
+      schrijf(p, JSON.stringify(m, null, 1));
+    },
+  },
 ];
 
 let stuk = 0;

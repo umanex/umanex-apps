@@ -269,9 +269,16 @@ jobs:
       # Vergelijkt hoogte, horizontale padding, gap, radius, randbreedte, opacity en de
       # aanwezigheid van vulling/rand/effect. Breedte en verticale padding blijven er
       # bewust buiten — beide zijn niet vergelijkbaar tussen Figma en een browser.
+      #
+      # Sinds 2026-09-16 ook recursief, node per node, voor de componenten die scripts/figma/
+      # bouwt — tegen figma/build-spec.min.json. De tegenproef draait eerst: zonder browser,
+      # op de gecommitte meting, met een padding +4 diep in de boom, een opacity 0,7 -> 0,8 en
+      # een verdwenen kind die elk rood moeten worden.
       - name: Guard — Figma ↔ browser per variant (geometrie-parity)
         id: guard-figma-browser-per-variant-geometrie-parity
-        run: pnpm --filter @umanex/ui parity
+        run: |
+          node packages/ui/scripts/geometry-parity.mjs --selftest
+          pnpm --filter @umanex/ui parity
 
       - name: Guard — contrast van de gerenderde DOM (WCAG AA)
         id: guard-contrast-van-de-gerenderde-dom-wcag-aa
@@ -320,9 +327,16 @@ jobs:
       # De selftest draait ervóór: hij bouwt per as het defect dat de guard moet vangen
       # en eist dat hij erop afgaat, plus een ongewijzigde kopie die groen moet blijven.
       # Zonder die twee kanten weet je niet of de guard meet of alleen draait.
+      #
+      # `figma:check:selftest` draait sinds 2026-09-16 ook de tegenproef van de twee leesscripts
+      # (figma/lees-manifest.js, lees-geometrie.js) en van de builder-poort. `links --check`
+      # erachter: een keten-story die een andere deep-link zou krijgen dan het manifest zegt,
+      # is rood — de volgorde "eerst manifest, dan links" is anders alleen een afspraak.
       - name: Guard — Storybook ↔ Figma in sync (met tegenproef)
         id: guard-storybook-figma-in-sync-met-tegenproef
-        run: pnpm --filter @umanex/ui figma:check:selftest
+        run: |
+          pnpm --filter @umanex/ui figma:check:selftest
+          node packages/ui/scripts/figma/links.mjs --check
 
       # --- rowtrack --------------------------------------------------------------------
       #

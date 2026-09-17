@@ -17,8 +17,9 @@ export type NativeSelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & 
  */
 export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProps>(
   ({ className, wrapperClassName, children, ...props }, ref) => (
-    <div className={cn('relative w-full', wrapperClassName)}>
+    <div data-slot="native-select-wrapper" className={cn('relative w-full', wrapperClassName)}>
       <select
+        data-slot="native-select"
         className={cn(
           'peer flex h-10 w-full appearance-none rounded-md border border-input bg-background py-2 pl-3 pr-9 text-sm disabled:cursor-not-allowed disabled:opacity-50',
           focusRing,
@@ -30,6 +31,7 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
         {children}
       </select>
       <ChevronDown
+        data-slot="native-select-icon"
         aria-hidden="true"
         className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground peer-disabled:opacity-50"
       />

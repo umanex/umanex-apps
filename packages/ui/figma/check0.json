@@ -1,0 +1,39 @@
+{
+ "$comment": "GEGENEREERD door scripts/figma/check0.mjs, buiten de walker om. Referentie voor Check 0 in figma/toets-batch.js.",
+ "componenten": {
+  "Dialog": {
+   "default": {
+    "teksten": [
+     "Annuleren",
+     "Archiveren",
+     "Het project verdwijnt uit het overzicht. Je kunt het later terugzetten.",
+     "Project archiveren"
+    ],
+    "iconen": 1,
+    "verfdozen": 3
+   }
+  },
+  "Switch": {
+   "checked=false, disabled=false": {
+    "teksten": [],
+    "iconen": 0,
+    "verfdozen": 2
+   },
+   "checked=false, disabled=true": {
+    "teksten": [],
+    "iconen": 0,
+    "verfdozen": 2
+   },
+   "checked=true, disabled=false": {
+    "teksten": [],
+    "iconen": 0,
+    "verfdozen": 2
+   },
+   "checked=true, disabled=true": {
+    "teksten": [],
+    "iconen": 0,
+    "verfdozen": 2
+   }
+  }
+ }
+}

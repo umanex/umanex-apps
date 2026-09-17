@@ -9,7 +9,10 @@ import {
   SheetTitle,
 } from '@umanex/ui/components/ui/sheet'
 import { Button } from '@umanex/ui/components/ui/button'
+import { Input } from '@umanex/ui/components/ui/input'
 import { Label } from '@umanex/ui/components/ui/label'
+import { NativeSelect } from '@umanex/ui/components/ui/native-select'
+import { Textarea } from '@umanex/ui/components/ui/textarea'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
 import { ContactTimeline } from './ContactTimeline'
@@ -54,6 +57,13 @@ const KANAAL_LABEL: Record<string, string> = {
  * `aria-disabled` en niet `disabled` tijdens een verzoek: een knop die de focus heeft en disabled
  * wordt, geeft die focus af aan `body` — zelfde reden als in `StatusActies`.
  */
+/**
+ * Een native date-input krijgt zijn focus op een segment (dag/maand/jaar), en Chromium matcht
+ * `:focus-visible` dan niet op de host. De ring van de primitive blijft; deze regel vult hem aan.
+ */
+const DATUM_FOCUS =
+  'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2'
+
 const WACHTEND = 'aria-disabled:pointer-events-none aria-disabled:opacity-50'
 
 const FOUT = 'scroll-my-6 rounded-md border border-destructive p-2 text-sm text-destructive'
@@ -521,24 +531,20 @@ export function ContactPanel({
               <Label htmlFor="contact-datum" className="text-2xs">
                 Datum
               </Label>
-              <input
+              {/* `focus-within` bovenop de ring van de primitive: een native date-input bestaat uit
+                  dag/maand/jaar-segmenten, en Chromium matcht `:focus-visible` niet op de host wanneer
+                  je een segment binnentabt. Gemeten 2026-09-09 door de flow-harness: drie stops zonder
+                  zichtbare focus, alle drie date-velden. */}
+              <Input
                 id="contact-datum"
                 type="date"
+                size="sm"
                 value={datum}
                 max={vandaag}
                 disabled={optOut}
                 readOnly={bezig}
                 onChange={(e) => setDatum(e.target.value)}
-                // `focus-within` bovenop de gedeelde ring: een native date-input bestaat uit
-                // dag/maand/jaar-segmenten, en Chromium matcht `:focus-visible` niet op de
-                // host wanneer je een segment binnentabt. Gemeten 2026-09-09 door de
-                // flow-harness: drie stops zonder zichtbare focus, alle drie date-velden,
-                // terwijl de select en textarea ernaast hun ring wél toonden.
-                className={cn(
-                  'rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50 read-only:opacity-50',
-                  'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background',
-                  focusRing
-                )}
+                className={cn('read-only:opacity-50', DATUM_FOCUS)}
               />
             </div>
             <div className="space-y-1">
@@ -546,33 +552,32 @@ export function ContactPanel({
                 Kanaal
               </Label>
               {/* Een select kent geen readOnly; tijdens een verzoek negeert hij de wissel. */}
-              <select
+              <NativeSelect
                 id="contact-kanaal"
                 value={kanaal}
+                size="sm"
                 disabled={optOut}
                 aria-disabled={bezig}
                 onChange={(e) => {
                   if (!bezig) setKanaal(e.target.value)
                 }}
-                className={cn(
-                  'cursor-pointer rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50 aria-disabled:opacity-50',
-                  focusRing
-                )}
+                className="cursor-pointer aria-disabled:opacity-50"
               >
                 {KANALEN.map((k) => (
                   <option key={k} value={k}>
                     {KANAAL_LABEL[k] ?? k}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
           </div>
           <div className="space-y-1">
             <Label htmlFor="contact-notitie" className="text-2xs">
               Notitie
             </Label>
-            <textarea
+            <Textarea
               id="contact-notitie"
+              size="sm"
               value={notitie}
               rows={3}
               maxLength={MAX_NOTITIE}
@@ -580,10 +585,7 @@ export function ContactPanel({
               readOnly={bezig}
               onChange={(e) => setNotitie(e.target.value)}
               placeholder="Wat kwam eruit?"
-              className={cn(
-                'w-full rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50 read-only:opacity-50',
-                focusRing
-              )}
+              className="read-only:opacity-50"
             />
           </div>
           <Button
@@ -604,30 +606,25 @@ export function ContactPanel({
             Eén per bedrijf. Leeg laten en bewaren haalt hem weg.
           </p>
           <div className="flex flex-wrap gap-2">
-            <input
+            <Input
               type="date"
+              size="sm"
               aria-label="Datum van de volgende actie"
               value={actieDatum}
               readOnly={bezig || historiekOnbekend}
               onChange={(e) => setActieDatum(e.target.value)}
-              className={cn(
-                'rounded-md border bg-background px-2 py-1 text-sm text-foreground read-only:opacity-50',
-                'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background',
-                focusRing
-              )}
+              className={cn('w-auto read-only:opacity-50', DATUM_FOCUS)}
             />
-            <input
+            <Input
               type="text"
+              size="sm"
               aria-label="Omschrijving van de volgende actie"
               value={actieOms}
               maxLength={200}
               readOnly={bezig || historiekOnbekend}
               onChange={(e) => setActieOms(e.target.value)}
               placeholder="Bellen, mail sturen…"
-              className={cn(
-                'min-w-0 flex-1 rounded-md border bg-background px-2 py-1 text-sm text-foreground read-only:opacity-50',
-                focusRing
-              )}
+              className="min-w-0 flex-1 read-only:opacity-50"
             />
           </div>
           <Button

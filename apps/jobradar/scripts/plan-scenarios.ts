@@ -24,6 +24,7 @@ import {
   SEED_BESLISSINGEN,
   SEED_VERSIE,
 } from '../lib/plan/seed-inhoud'
+import { jarenVoorStart } from '../lib/plan/types'
 import { keurAfhankelijkheden, vindCirkel } from '../lib/plan/afhankelijkheden'
 import { belangrijksteVolgendeActie, leidAf, vrijgekomenActies } from '../lib/plan/afleiding'
 import {
@@ -1214,6 +1215,19 @@ function versie2(db: JobradarDb, key: string): number {
   const gedekt = [...multi].sort().join(',')
   check('23b: de volgordes dekken A03, A05 en A10 (meerdere afhankelijkheden)', ['A03', 'A05', 'A10'].every((k) => multi.has(k)), gedekt)
   console.log(`  23b: ${stappen} afrondingen over twee volgordes, meervoudig gedekt: ${gedekt}`)
+}
+
+// ── Jaren voor de startkeuze ─────────────────────────────────────────────────
+// De select van de planinstellingen bood tot 2026-09-17 een hardcoded lijst. Twee gaten, allebei
+// onzichtbaar in de browser van vandaag: ná het venster kon je niets meer kiezen, en een bewaard
+// jaar buiten de lijst verdween stil (de select toont dan zijn eerste optie, niet de waarde).
+{
+  check('jaren: vier vanaf nu', JSON.stringify(jarenVoorStart(2026)) === '[2026,2027,2028,2029]', JSON.stringify(jarenVoorStart(2026)))
+  check('jaren: schuift mee met de klok', JSON.stringify(jarenVoorStart(2031)) === '[2031,2032,2033,2034]', JSON.stringify(jarenVoorStart(2031)))
+  check('jaren: een bewaard jaar vóór het venster staat erin', JSON.stringify(jarenVoorStart(2030, 2026)) === '[2026,2030,2031,2032,2033]', JSON.stringify(jarenVoorStart(2030, 2026)))
+  check('jaren: een bewaard jaar ná het venster staat erin', JSON.stringify(jarenVoorStart(2026, 2040)) === '[2026,2027,2028,2029,2040]', JSON.stringify(jarenVoorStart(2026, 2040)))
+  check('jaren: een bewaard jaar binnen het venster verdubbelt niet', JSON.stringify(jarenVoorStart(2026, 2027)) === '[2026,2027,2028,2029]', JSON.stringify(jarenVoorStart(2026, 2027)))
+  check('jaren: zonder bewaarde waarde blijft het venster', JSON.stringify(jarenVoorStart(2026, undefined)) === '[2026,2027,2028,2029]')
 }
 
 // ── Tegenproef ───────────────────────────────────────────────────────────────

@@ -15,6 +15,9 @@ import { Button } from '@umanex/ui/components/ui/button'
 import { Label } from '@umanex/ui/components/ui/label'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
+import { Input } from '@umanex/ui/components/ui/input'
+import { Textarea } from '@umanex/ui/components/ui/textarea'
+import { NativeSelect } from '@umanex/ui/components/ui/native-select'
 import { formatteerInzet } from '@/lib/plan/inzet'
 import { PRIORITEIT_LABEL } from '@/lib/plan/seed-inhoud'
 import {
@@ -68,7 +71,6 @@ type ActiePanelProps = {
   onStart: (key: string) => void
 }
 
-const INVOER = 'rounded-md border bg-background px-2 py-1 text-sm text-foreground disabled:opacity-50'
 
 /** Statussen die niet gezet worden zonder dat Jeroen erbij schrijft waarom. */
 const VRAAGT_REDEN: ActieStatus[] = ['uitgesteld', 'wacht_op_input', 'vervallen']
@@ -384,14 +386,15 @@ export function ActiePanel({
                     <Label htmlFor="plan-heropen" className="text-2xs">
                       Reden om te heropenen
                     </Label>
-                    <input
+                    <Input
+                      size="sm"
                       id="plan-heropen"
                       type="text"
                       value={heropenReden}
                       maxLength={300}
                       disabled={bezig}
                       onChange={(e) => setHeropenReden(e.target.value)}
-                      className={cn('w-full', INVOER, focusRing)}
+                      className="w-full"
                     />
                   </div>
                   {/* `aria-disabled` en een guard, geen `disabled`: een knop die onder de focus
@@ -429,24 +432,26 @@ export function ActiePanel({
                   <Label htmlFor="plan-bewijs" className="text-2xs">
                     Bewijs — wat toont dat het klaar is?
                   </Label>
-                  <textarea
+                  <Textarea
+                    size="sm"
                     id="plan-bewijs"
                     rows={3}
                     value={bewijs}
                     maxLength={4000}
                     disabled={bezig}
                     onChange={(e) => setBewijs(e.target.value)}
-                    className={cn('w-full', INVOER, focusRing)}
+                    className="w-full"
                   />
                 </div>
-                <input
+                <Input
+                  size="sm"
                   type="url"
                   aria-label="Link naar het bewijs (optioneel)"
                   value={bewijsLink}
                   disabled={bezig}
                   placeholder="https://… (optioneel)"
                   onChange={(e) => setBewijsLink(e.target.value)}
-                  className={cn('w-full', INVOER, focusRing)}
+                  className="w-full"
                 />
                 <p className="text-2xs tabular-nums text-muted-foreground">
                   Wordt vastgelegd met datum {vandaag}.
@@ -573,7 +578,8 @@ export function ActiePanel({
         <section className="space-y-2">
           <h3 className="text-sm font-semibold">Status</h3>
           <div className="flex flex-wrap items-center gap-2">
-            <select
+            <NativeSelect
+              size="sm"
               aria-label="Status wijzigen"
               value={nieuweStatus ?? actie.status}
               disabled={bezig}
@@ -585,19 +591,14 @@ export function ActiePanel({
                 const s = e.target.value as ActieStatus
                 setNieuweStatus(s === actie.status ? null : s)
               }}
-              className={cn(
-                'cursor-pointer font-medium',
-                INVOER,
-                STATUS_KLEUR[(nieuweStatus ?? actie.status) as ActieStatus],
-                focusRing
-              )}
+              className={cn('cursor-pointer font-medium', STATUS_KLEUR[(nieuweStatus ?? actie.status) as ActieStatus])}
             >
               {ACTIE_STATUSSEN.filter((s) => s !== 'gereed' || actie.status === 'gereed').map((s) => (
                 <option key={s} value={s}>
                   {STATUS_LABEL[s]}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
 
           {/* Uitstellen, wachten en vervallen vragen elk een reden, en die vraagt de app —
@@ -620,14 +621,15 @@ export function ActiePanel({
                   </Label>
                   {/* Geen autoFocus: die trok de focus uit de select zodra je er met de pijltjes
                       langs een status met reden liep, en de volgende pijl ging naar dit veld. */}
-                  <input
+                  <Input
+                    size="sm"
                     id="plan-wachtreden"
                     type="text"
                     value={wachtreden}
                     maxLength={300}
                     disabled={bezig}
                     onChange={(e) => setWachtreden(e.target.value)}
-                    className={cn('w-full', INVOER, focusRing)}
+                    className="w-full"
                   />
                 </>
               )}
@@ -659,13 +661,14 @@ export function ActiePanel({
                   <Label htmlFor="plan-herbekijk-nu" className="text-2xs">
                     Herbekijken op (optioneel)
                   </Label>
-                  <input
+                  <Input
+                    size="sm"
                     id="plan-herbekijk-nu"
                     type="date"
                     value={herbekijkOp}
                     disabled={bezig}
                     onChange={(e) => setHerbekijkOp(e.target.value)}
-                    className={cn(INVOER, DATUM_RING, focusRing)}
+                    className={cn(DATUM_RING)}
                   />
                 </div>
               )}
@@ -752,14 +755,15 @@ export function ActiePanel({
                   <Label htmlFor="plan-focus-reden" className="text-2xs">
                     Reden voor de uitzondering
                   </Label>
-                  <input
+                  <Input
+                    size="sm"
                     id="plan-focus-reden"
                     type="text"
                     value={uitzonderingReden}
                     maxLength={300}
                     disabled={bezig}
                     onChange={(e) => setUitzonderingReden(e.target.value)}
-                    className={cn('w-full', INVOER, focusRing)}
+                    className="w-full"
                   />
                 </div>
                 <Button
@@ -850,7 +854,8 @@ export function ActiePanel({
               <Label htmlFor="plan-stap" className="text-2xs">
                 Eerstvolgende concrete handeling
               </Label>
-              <input
+              <Input
+                size="sm"
                 id="plan-stap"
                 type="text"
                 value={volgendeStap}
@@ -858,7 +863,7 @@ export function ActiePanel({
                 disabled={bezig}
                 onChange={(e) => setVolgendeStap(e.target.value)}
                 placeholder="Wat is de eerste zet?"
-                className={cn('w-full', INVOER, focusRing)}
+                className="w-full"
               />
             </div>
           )}
@@ -866,56 +871,60 @@ export function ActiePanel({
             <Label htmlFor="plan-titel" className="text-2xs">
               Titel
             </Label>
-            <input
+            <Input
+              size="sm"
               id="plan-titel"
               type="text"
               value={titel}
               maxLength={120}
               disabled={bezig}
               onChange={(e) => setTitel(e.target.value)}
-              className={cn('w-full', INVOER, focusRing)}
+              className="w-full"
             />
           </div>
           <div className="space-y-1">
             <Label htmlFor="plan-resultaat" className="text-2xs">
               Beoogd resultaat
             </Label>
-            <textarea
+            <Textarea
+              size="sm"
               id="plan-resultaat"
               rows={2}
               value={resultaat}
               maxLength={4000}
               disabled={bezig}
               onChange={(e) => setResultaat(e.target.value)}
-              className={cn('w-full', INVOER, focusRing)}
+              className="w-full"
             />
           </div>
           <div className="space-y-1">
             <Label htmlFor="plan-beschrijving" className="text-2xs">
               Beschrijving
             </Label>
-            <textarea
+            <Textarea
+              size="sm"
               id="plan-beschrijving"
               rows={3}
               value={beschrijving}
               maxLength={4000}
               disabled={bezig}
               onChange={(e) => setBeschrijving(e.target.value)}
-              className={cn('w-full', INVOER, focusRing)}
+              className="w-full"
             />
           </div>
           <div className="space-y-1">
             <Label htmlFor="plan-criterium" className="text-2xs">
               Gereedcriterium — waaraan zie je dat dit af is?
             </Label>
-            <textarea
+            <Textarea
+              size="sm"
               id="plan-criterium"
               rows={2}
               value={gereedcriterium}
               maxLength={4000}
               disabled={bezig}
               onChange={(e) => setGereedcriterium(e.target.value)}
-              className={cn('w-full', INVOER, focusRing)}
+              className="w-full"
             />
           </div>
         </section>
@@ -928,7 +937,8 @@ export function ActiePanel({
               <Label htmlFor="plan-inschatting" className="text-2xs">
                 Inschatting (uren)
               </Label>
-              <input
+              <Input
+                size="sm"
                 id="plan-inschatting"
                 type="number"
                 min="0.5"
@@ -936,7 +946,7 @@ export function ActiePanel({
                 value={inschatting}
                 disabled={bezig}
                 onChange={(e) => setInschatting(e.target.value)}
-                className={cn('w-24', INVOER, focusRing)}
+                className="w-24"
               />
             </div>
             <span className="pb-1 text-sm tabular-nums text-muted-foreground">
@@ -946,7 +956,8 @@ export function ActiePanel({
               <Label htmlFor="plan-resterend" className="text-2xs">
                 Nog te gaan (uren)
               </Label>
-              <input
+              <Input
+                size="sm"
                 id="plan-resterend"
                 type="number"
                 min="0.5"
@@ -954,7 +965,7 @@ export function ActiePanel({
                 value={resterend}
                 disabled={bezig}
                 onChange={(e) => setResterend(e.target.value)}
-                className={cn('w-24', INVOER, focusRing)}
+                className="w-24"
               />
             </div>
             <span className="pb-1 text-sm tabular-nums text-muted-foreground">
@@ -969,40 +980,43 @@ export function ActiePanel({
               <Label htmlFor="plan-eigenaar" className="text-2xs">
                 Eigenaar
               </Label>
-              <input
+              <Input
+                size="sm"
                 id="plan-eigenaar"
                 type="text"
                 value={eigenaar}
                 maxLength={300}
                 disabled={bezig}
                 onChange={(e) => setEigenaar(e.target.value)}
-                className={cn('w-40', INVOER, focusRing)}
+                className="w-40"
               />
             </div>
             <div className="flex flex-col gap-1">
               <Label htmlFor="plan-streefdatum" className="text-2xs">
                 Streefdatum (optioneel)
               </Label>
-              <input
+              <Input
+                size="sm"
                 id="plan-streefdatum"
                 type="date"
                 value={streefdatum}
                 disabled={bezig}
                 onChange={(e) => setStreefdatum(e.target.value)}
-                className={cn(INVOER, DATUM_RING, focusRing)}
+                className={cn(DATUM_RING)}
               />
             </div>
             <div className="flex flex-col gap-1">
               <Label htmlFor="plan-herbekijk" className="text-2xs">
                 Herbekijken op (optioneel)
               </Label>
-              <input
+              <Input
+                size="sm"
                 id="plan-herbekijk"
                 type="date"
                 value={herbekijkOp}
                 disabled={bezig}
                 onChange={(e) => setHerbekijkOp(e.target.value)}
-                className={cn(INVOER, DATUM_RING, focusRing)}
+                className={cn(DATUM_RING)}
               />
             </div>
           </div>
@@ -1042,7 +1056,8 @@ export function ActiePanel({
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
-            <input
+            <Input
+              size="sm"
               type="text"
               aria-label="Label van de link"
               value={linkLabel}
@@ -1050,16 +1065,17 @@ export function ActiePanel({
               disabled={bezig}
               placeholder="Label"
               onChange={(e) => setLinkLabel(e.target.value)}
-              className={cn('w-32', INVOER, focusRing)}
+              className="w-32"
             />
-            <input
+            <Input
+              size="sm"
               type="url"
               aria-label="Adres van de link"
               value={linkUrl}
               disabled={bezig}
               placeholder="https://…"
               onChange={(e) => setLinkUrl(e.target.value)}
-              className={cn('min-w-0 flex-1', INVOER, focusRing)}
+              className="min-w-0 flex-1"
             />
             <Button
               size="sm"
@@ -1141,12 +1157,13 @@ export function ActiePanel({
             </ul>
           )}
           <div className="flex flex-wrap gap-2">
-            <select
+            <NativeSelect
+              size="sm"
               aria-label="Afhankelijkheid toevoegen"
               value={nieuweAfhankelijkheid}
               disabled={bezig || kandidaten.length === 0}
               onChange={(e) => setNieuweAfhankelijkheid(e.target.value)}
-              className={cn('min-w-0 flex-1 cursor-pointer', INVOER, focusRing)}
+              className="min-w-0 flex-1 cursor-pointer"
             >
               <option value="">Kies een actie…</option>
               {kandidaten.map((a) => (
@@ -1154,7 +1171,7 @@ export function ActiePanel({
                   {a.key} — {a.titel}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <Button
               size="sm"
               variant="outline"
@@ -1178,14 +1195,15 @@ export function ActiePanel({
                 <Label htmlFor="plan-start-reden" className="text-2xs">
                   Toch starten — waarom?
                 </Label>
-                <input
+                <Input
+                  size="sm"
                   id="plan-start-reden"
                   type="text"
                   value={uitzonderingReden}
                   maxLength={300}
                   disabled={bezig}
                   onChange={(e) => setUitzonderingReden(e.target.value)}
-                  className={cn('w-full', INVOER, focusRing)}
+                  className="w-full"
                 />
               </div>
               <Button
@@ -1222,7 +1240,7 @@ export function ActiePanel({
                 >
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="min-w-0 truncate">{k.naam ?? k.subjectKey}</span>
-                    <Badge variant="secondary" className="shrink-0 text-2xs">
+                    <Badge size="sm" variant="secondary" className="shrink-0">
                       {k.subjectType === 'lead' ? 'lead' : 'prospect'}
                     </Badge>
                   </span>

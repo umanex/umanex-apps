@@ -38,7 +38,7 @@ export function Beslismomenten({ beslissingen, compact = false, onOpen }: Beslis
               >
                 {b.titel}
               </button>
-              <Badge
+              <Badge size="sm"
                 variant={
                   b.afgeleid === 'beslist'
                     ? 'success'
@@ -46,7 +46,7 @@ export function Beslismomenten({ beslissingen, compact = false, onOpen }: Beslis
                       ? 'warning'
                       : 'outline'
                 }
-                className="text-2xs"
+                
               >
                 {BESLISMOMENT_LABEL[b.afgeleid]}
                 {b.afgeleid === 'klaar_voor_beoordeling' && ' — geen goedkeuring'}

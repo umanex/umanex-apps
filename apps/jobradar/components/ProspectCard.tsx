@@ -95,12 +95,12 @@ export function ProspectCard({
               <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
               <h3 className="truncate text-sm font-semibold">{prospect.naam}</h3>
               {heeftVacatures && (
-                <Badge variant="default" className="shrink-0 text-2xs">
+                <Badge size="sm" variant="default" className="shrink-0">
                   heeft vacatures
                 </Badge>
               )}
               {prospect.uitCsv === 1 && (
-                <Badge variant="secondary" className="shrink-0 text-2xs">
+                <Badge size="sm" variant="secondary" className="shrink-0">
                   uit lijst
                 </Badge>
               )}
@@ -110,7 +110,7 @@ export function ProspectCard({
             )}
             <div className="mt-1.5 flex flex-wrap gap-1">
               {codes.map((code) => (
-                <Badge key={code} variant="outline" className="text-2xs">
+                <Badge size="sm" key={code} variant="outline" >
                   {NACE_LABEL[code] ?? code}
                 </Badge>
               ))}

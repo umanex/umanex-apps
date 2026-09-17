@@ -5,6 +5,7 @@ import { Badge } from '@umanex/ui/components/ui/badge'
 import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
+import { Textarea } from '@umanex/ui/components/ui/textarea'
 
 type AannamesProps = {
   tekst: string
@@ -52,11 +53,12 @@ export function Aannames({ tekst, isStandaard, bezig, onBewaar, onHerstel }: Aan
     <details className="rounded-md border p-3">
       <summary className={cn('cursor-pointer rounded-sm', focusRing)}>
         <h3 className="inline text-sm font-semibold">Planningsaannames</h3>
-        <Badge variant="warning" className="ml-2 text-2xs">
+        <Badge size="sm" variant="warning" className="ml-2">
           voorlopig, nog te toetsen
         </Badge>
       </summary>
-      <textarea
+      <Textarea
+        size="sm"
         aria-label="Planningsaannames"
         rows={12}
         value={waarde}
@@ -66,10 +68,7 @@ export function Aannames({ tekst, isStandaard, bezig, onBewaar, onHerstel }: Aan
           setWaarde(e.target.value)
           setMelding('')
         }}
-        className={cn(
-          'mt-2 w-full rounded-md border bg-background px-2 py-1 font-mono text-xs text-foreground disabled:opacity-50',
-          focusRing
-        )}
+        className="mt-2 w-full rounded-md border bg-background px-2 py-1 font-mono text-xs text-foreground disabled:opacity-50"
       />
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {/* `aria-disabled` en geen `disabled`: na Herstel is dit de standaard en na Opslaan is er

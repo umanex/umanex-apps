@@ -25,9 +25,9 @@ const VARIANT: Record<ActieStatus, 'default' | 'secondary' | 'destructive' | 'ou
 
 export function PlanStatusPill({ status, className }: PlanStatusPillProps) {
   return (
-    <Badge
+    <Badge size="sm"
       variant={VARIANT[status]}
-      className={cn('text-2xs', status === 'vervallen' && 'text-muted-foreground', className)}
+      className={cn('', status === 'vervallen' && 'text-muted-foreground', className)}
     >
       {STATUS_LABEL[status]}
     </Badge>

@@ -24,7 +24,7 @@ export function PlanBadge({ keys }: PlanBadgeProps) {
       aria-label={`Bedrijfsplan: gekoppeld aan ${keys.join(', ')}`}
       className={cn('rounded-full', focusRing)}
     >
-      <Badge variant="outline" className="shrink-0 tabular-nums text-2xs">
+      <Badge size="sm" variant="outline" className="shrink-0 tabular-nums">
         {label}
       </Badge>
     </Link>

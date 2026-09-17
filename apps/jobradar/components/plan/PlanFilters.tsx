@@ -3,6 +3,7 @@
 import { Label } from '@umanex/ui/components/ui/label'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
+import { NativeSelect } from '@umanex/ui/components/ui/native-select'
 import { PRIORITEIT_LABEL } from '@/lib/plan/seed-inhoud'
 import { ACTIE_STATUSSEN, PRIORITEITEN, STATUS_LABEL } from '@/lib/plan/types'
 
@@ -21,10 +22,6 @@ type PlanFiltersProps = {
   onChange: (stand: PlanFilterStand) => void
 }
 
-const SELECT = cn(
-  'cursor-pointer rounded-md border bg-background px-2 py-1 text-sm text-foreground'
-)
-
 /** Filteren op prioriteit, status, uitvoerbaarheid en eigenaar. Dezelfde schil als FilterBar. */
 export function PlanFilters({ waarde, eigenaars, getoond, totaal, onChange }: PlanFiltersProps) {
   return (
@@ -33,11 +30,11 @@ export function PlanFilters({ waarde, eigenaars, getoond, totaal, onChange }: Pl
         <Label htmlFor="filter-prioriteit" className="text-2xs">
           Prioriteit
         </Label>
-        <select
+        <NativeSelect
+          size="sm"
           id="filter-prioriteit"
           value={waarde.prioriteit}
           onChange={(e) => onChange({ ...waarde, prioriteit: e.target.value })}
-          className={cn(SELECT, focusRing)}
         >
           <option value="">Alle prioriteiten</option>
           {PRIORITEITEN.map((p) => (
@@ -45,18 +42,18 @@ export function PlanFilters({ waarde, eigenaars, getoond, totaal, onChange }: Pl
               {p}. {PRIORITEIT_LABEL[p]}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="filter-status" className="text-2xs">
           Status
         </Label>
-        <select
+        <NativeSelect
+          size="sm"
           id="filter-status"
           value={waarde.status}
           onChange={(e) => onChange({ ...waarde, status: e.target.value })}
-          className={cn(SELECT, focusRing)}
         >
           <option value="">Alle statussen</option>
           {ACTIE_STATUSSEN.map((s) => (
@@ -64,18 +61,18 @@ export function PlanFilters({ waarde, eigenaars, getoond, totaal, onChange }: Pl
               {STATUS_LABEL[s]}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="filter-uitvoerbaarheid" className="text-2xs">
           Uitvoerbaarheid
         </Label>
-        <select
+        <NativeSelect
+          size="sm"
           id="filter-uitvoerbaarheid"
           value={waarde.uitvoerbaarheid}
           onChange={(e) => onChange({ ...waarde, uitvoerbaarheid: e.target.value })}
-          className={cn(SELECT, focusRing)}
         >
           <option value="">Alles</option>
           <option value="actief">Bezig</option>
@@ -84,18 +81,18 @@ export function PlanFilters({ waarde, eigenaars, getoond, totaal, onChange }: Pl
           <option value="wacht">Wacht op input</option>
           <option value="uitgesteld">Uitgesteld</option>
           <option value="gereed">Gereed</option>
-        </select>
+        </NativeSelect>
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="filter-eigenaar" className="text-2xs">
           Eigenaar
         </Label>
-        <select
+        <NativeSelect
+          size="sm"
           id="filter-eigenaar"
           value={waarde.eigenaar}
           onChange={(e) => onChange({ ...waarde, eigenaar: e.target.value })}
-          className={cn(SELECT, focusRing)}
         >
           <option value="">Iedereen</option>
           {eigenaars.map((e) => (
@@ -103,7 +100,7 @@ export function PlanFilters({ waarde, eigenaars, getoond, totaal, onChange }: Pl
               {e}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
 
       <p className="text-sm tabular-nums text-muted-foreground sm:ml-auto">

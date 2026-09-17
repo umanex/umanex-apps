@@ -24,7 +24,7 @@ type NextActionBadgeProps = {
 export function NextActionBadge({ datum, omschrijving, vandaag }: NextActionBadgeProps) {
   if (!datum) {
     return (
-      <Badge variant="outline" className="text-2xs">
+      <Badge size="sm" variant="outline">
         geen actie
       </Badge>
     )
@@ -35,9 +35,9 @@ export function NextActionBadge({ datum, omschrijving, vandaag }: NextActionBadg
   const label = verlopen ? 'verlopen' : isVandaag ? 'vandaag' : datum
 
   return (
-    <Badge
+    <Badge size="sm"
       variant={verlopen ? 'destructive' : isVandaag ? 'warning' : 'secondary'}
-      className="text-2xs"
+      
       title={omschrijving ?? undefined}
     >
       {label}

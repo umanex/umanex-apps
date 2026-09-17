@@ -1,14 +1,21 @@
+import type { Metadata } from 'next'
 import { desc, eq } from 'drizzle-orm'
 import { getDb } from '@/lib/db'
 import * as schema from '@/lib/db/schema'
 import { DashboardClient } from '@/components/DashboardClient'
 import { berekenDekking } from '@/lib/coverage'
-import { koppelBedrijven } from '@/lib/kbo/spiegel'
+import { koppelBedrijven, type KboVermoeden } from '@/lib/kbo/spiegel'
 import { leesKoppelingenPerBedrijf } from '@/lib/plan/lees'
 import type { RegionCode } from '@/lib/regions'
 import { leesStand } from '@/lib/triage'
 
 export const dynamic = 'force-dynamic'
+
+// Een eigen titel per route: Next kondigt een client-navigatie alleen aan wanneer `document.title`
+// verandert (app-router-announcer.js in 15.5.25), en met één titel voor alle routes gebeurde dat nooit.
+export const metadata: Metadata = {
+  title: 'Dashboard — JobRadar',
+}
 
 export default async function HomePage({
   searchParams,
@@ -50,9 +57,20 @@ export default async function HomePage({
   // Bij het renderen koppelen, niet bij de sync: 0,1 ms per opzoeking, en wat niet opgeslagen
   // wordt kan niet verouderen ten opzichte van de spiegel. Zonder spiegel is dit een lege map
   // en verandert er niets aan de kaarten.
-  const vermoedens = Object.fromEntries(
-    koppelBedrijven(companies.map((c) => ({ naam: c.companyName, regio: c.region as RegionCode })))
-  )
+  //
+  // Een spiegel die wél bestaat maar niet opent (een mislukte ATTACH, een onleesbaar bestand) gooit
+  // in `open()`. Zonder deze vangst viel het hele dashboard op de foutpagina, terwijl de koppeling
+  // een verrijking is: dan een lege map, en de leadkaarten zeggen waarom.
+  let vermoedens: Record<string, KboVermoeden> = {}
+  let spiegelFout = false
+  try {
+    vermoedens = Object.fromEntries(
+      koppelBedrijven(companies.map((c) => ({ naam: c.companyName, regio: c.region as RegionCode })))
+    )
+  } catch (e) {
+    console.error('[jobradar] KBO-spiegel niet te openen; dashboard zonder koppelingen', e)
+    spiegelFout = true
+  }
 
   // Welke bedrijven aan een voorbereidingsactie hangen. Eén kleine query; de kaart toont er
   // een merkteken mee en hoeft er niets voor op te halen.
@@ -68,6 +86,7 @@ export default async function HomePage({
         vermoedens={vermoedens}
         koppelingen={koppelingen}
         initialStand={stand}
+        spiegelFout={spiegelFout}
       />
     </main>
   )

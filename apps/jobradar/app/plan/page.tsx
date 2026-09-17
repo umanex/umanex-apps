@@ -1,8 +1,14 @@
+import type { Metadata } from 'next'
 import { PlanClient } from '@/components/plan/PlanClient'
 import { leesPlan } from '@/lib/plan/lees'
 import { planDb, vandaag } from '@/lib/plan/server'
 
 export const dynamic = 'force-dynamic'
+
+// Eigen titel: zonder titelwissel kondigt Next een navigatie naar deze route niet aan.
+export const metadata: Metadata = {
+  title: 'Bedrijfsplan — JobRadar',
+}
 
 export default async function PlanPage({
   searchParams,

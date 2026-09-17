@@ -44,8 +44,8 @@ export const STATUS_LABEL_INLINE: Record<ActieStatus, string> = {
 /**
  * De kleur van een status in een `select`.
  *
- * Zelfde vorm als `StatusDropdown` op het dashboard: de select ís de statusweergave, met de
- * rol als kleur. Een pil ernaast zou hetzelfde woord een tweede keer tonen — en dat stond er
+ * Sinds 2026-09-17 alleen nog in de select van het actiepaneel: daar ís de select de statusweergave,
+ * met de rol als kleur. Een pil ernaast zou hetzelfde woord een tweede keer tonen — en dat stond er
  * even, tot de eerste opname het liet zien.
  */
 export const STATUS_KLEUR: Record<ActieStatus, string> = {
@@ -54,7 +54,9 @@ export const STATUS_KLEUR: Record<ActieStatus, string> = {
   wacht_op_input: 'text-warning',
   gereed: 'text-success',
   uitgesteld: 'text-muted-foreground',
-  vervallen: 'text-muted-foreground opacity-60',
+  // Geen `opacity-60` meer: dat haalde 2,36:1 op wit en dimde rand en pijl alsof de select
+  // uitgeschakeld was. Het woord "Vervallen" maakt het onderscheid al, net als in `PlanStatusPill`.
+  vervallen: 'text-muted-foreground',
 }
 
 export const PRIORITEITEN: readonly Prioriteit[] = [1, 2, 3, 4] as const
@@ -254,6 +256,14 @@ export type VersieConflict = {
 }
 
 export type PlanConflict = FocusConflict | AfhankelijkheidConflict | VersieConflict
+
+/**
+ * Wat een bediening terugkrijgt van een verzoek dat hij zelf verstuurde.
+ *
+ * Met de melding erbij, zodat hij de fout naast zichzelf kan tonen in plaats van in de banner
+ * bovenaan de pagina — en een veld pas leegmaakt of sluit wanneer het antwoord er is.
+ */
+export type Verzoekuitkomst = { ok: boolean; fout: string | null }
 
 /**
  * De uitkomst van een schrijfactie.

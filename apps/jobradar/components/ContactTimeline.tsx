@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Badge } from '@umanex/ui/components/ui/badge'
 import { cn } from '@umanex/ui/lib/utils'
@@ -36,6 +37,18 @@ export function ContactTimeline({
   onVerwijderBevestig,
   bezig,
 }: ContactTimelineProps) {
+  /**
+   * Waar de focus heen moet na een wissel in de bevestiging. De knop die geactiveerd werd, verdwijnt
+   * bij elke stap (prullenbak → Verwijderen/Annuleren → prullenbak), en zonder doel viel de focus op de
+   * dialoogcontainer (flow-harness, 2026-09-17). Een callback-ref zet hem pas als het doel gemount is.
+   */
+  const focusNa = useRef<{ op: 'annuleren' | 'prullenbak'; id: number } | null>(null)
+  const pakFocus = (op: 'annuleren' | 'prullenbak', id: number) => (el: HTMLButtonElement | null) => {
+    if (!el || focusNa.current?.op !== op || focusNa.current.id !== id) return
+    focusNa.current = null
+    el.focus()
+  }
+
   if (!momenten.length) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -58,20 +71,31 @@ export function ContactTimeline({
             </div>
             {teVerwijderen === m.id ? (
               <span className="flex items-center gap-2">
+                {/* `aria-disabled` en niet `disabled`: deze knop heeft de focus op het moment dat hij
+                    wacht, en een disabled knop geeft die af — na een mislukte verwijdering stond de
+                    focus dan op de dialoogcontainer (flow-harness, 2026-09-17). */}
                 <button
                   type="button"
-                  onClick={() => onVerwijderBevestig(m.id)}
-                  disabled={bezig}
+                  onClick={() => {
+                    if (!bezig) onVerwijderBevestig(m.id)
+                  }}
+                  aria-disabled={bezig}
                   className={cn(
-                    'rounded-md border border-destructive px-2 py-1 text-2xs text-destructive',
+                    'rounded-md border border-destructive px-2 py-1 text-2xs text-destructive aria-disabled:pointer-events-none aria-disabled:opacity-50',
                     focusRing
                   )}
                 >
                   Verwijderen
                 </button>
+                {/* De vraag krijgt de focus op Annuleren: de minst ingrijpende keuze, zodat twee keer
+                    Enter niet meteen verwijdert. */}
                 <button
+                  ref={pakFocus('annuleren', m.id)}
                   type="button"
-                  onClick={() => onVerwijderVraag(null)}
+                  onClick={() => {
+                    focusNa.current = { op: 'prullenbak', id: m.id }
+                    onVerwijderVraag(null)
+                  }}
                   className={cn('rounded-md border px-2 py-1 text-2xs', focusRing)}
                 >
                   Annuleren
@@ -79,8 +103,12 @@ export function ContactTimeline({
               </span>
             ) : (
               <button
+                ref={pakFocus('prullenbak', m.id)}
                 type="button"
-                onClick={() => onVerwijderVraag(m.id)}
+                onClick={() => {
+                  focusNa.current = { op: 'annuleren', id: m.id }
+                  onVerwijderVraag(m.id)
+                }}
                 aria-label={`Contactmoment van ${m.datum} verwijderen`}
                 className={cn(
                   'rounded-sm p-1 text-muted-foreground hover:text-destructive',

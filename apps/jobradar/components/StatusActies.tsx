@@ -7,7 +7,7 @@ import { cn } from '@umanex/ui/lib/utils'
 import type { ItemStatus } from '@/lib/db/schema'
 
 type StatusActiesProps = {
-  /** Het PATCH-pad van dít item. De aanroeper kent zijn eigen pad (zie de oude StatusDropdown). */
+  /** Het PATCH-pad van dít item. De aanroeper kent zijn eigen pad; dit component raadt het niet. */
   endpoint: string
   status: ItemStatus
   /** Voor de toegankelijke naam: "Afwijzen Acme" in plaats van tien keer "Afwijzen". */

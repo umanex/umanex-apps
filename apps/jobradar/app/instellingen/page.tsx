@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { cn } from '@umanex/ui/lib/utils'
@@ -11,6 +12,11 @@ import { leesInstellingen } from '@/lib/plan/instellingen'
 import { planDb } from '@/lib/plan/server'
 
 export const dynamic = 'force-dynamic'
+
+// Eigen titel: zonder titelwissel kondigt Next een navigatie naar deze route niet aan.
+export const metadata: Metadata = {
+  title: 'Instellingen — JobRadar',
+}
 
 export default async function InstellingenPage() {
   const zoek = await leesZoekopdracht(getDb())

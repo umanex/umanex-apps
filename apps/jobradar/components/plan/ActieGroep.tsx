@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useId, useState, type ComponentProps } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { Button } from '@umanex/ui/components/ui/button'
 import { cn } from '@umanex/ui/lib/utils'
@@ -24,7 +24,12 @@ type ActieGroepProps = {
   bezig: boolean
   onOpen: (key: string) => void
   onStatus: (key: string, status: ActieStatus) => void
-  onVolgendeStap?: (key: string, tekst: string) => void
+  /**
+   * Doorgegeven aan de rij, met het type dat de rij verwacht. Stond hier eerst `=> void`: de rij
+   * moest dan ook een handler zonder uitkomst aanvaarden, en die sloot het veld vóór het antwoord.
+   */
+  onVolgendeStap?: ComponentProps<typeof ActieRij>['onVolgendeStap']
+  onHerlaad?: ComponentProps<typeof ActieRij>['onHerlaad']
 }
 
 /** Een getitelde lijst acties. De sectie draagt de kop; de rijen zijn lijstitems. */
@@ -40,6 +45,7 @@ export function ActieGroep({
   onOpen,
   onStatus,
   onVolgendeStap,
+  onHerlaad,
 }: ActieGroepProps) {
   const [open, setOpen] = useState(!inklapbaar)
   const lijstId = useId()
@@ -47,7 +53,9 @@ export function ActieGroep({
   const metKnop = inklapbaar && acties.length > 0
 
   return (
-    <section className="space-y-2">
+    // `data-actiegroep`: het actiepaneel zoekt hierin de knop van een dichtgeklapte groep, om de
+    // focus na het sluiten naartoe te sturen wanneer de rij zelf verborgen is.
+    <section className="space-y-2" data-actiegroep={titel}>
       <h3 className="text-sm font-semibold">
         {metKnop ? (
           // De knop ín de kop, zoals het disclosure-patroon het wil: de kop blijft een kop in de
@@ -93,6 +101,7 @@ export function ActieGroep({
               onOpen={onOpen}
               onStatus={onStatus}
               onVolgendeStap={onVolgendeStap}
+              onHerlaad={onHerlaad}
             />
           ))}
         </ol>

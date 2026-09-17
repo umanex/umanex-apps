@@ -5,11 +5,6 @@ import { Card, CardContent, CardHeader } from '@umanex/ui/components/ui/card'
 import { Badge } from '@umanex/ui/components/ui/badge'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@umanex/ui/components/ui/tooltip'
 import { ScoreBadge } from './ScoreBadge'
 import { StatusActies } from './StatusActies'
 import { PlanBadge } from './plan/PlanBadge'
@@ -47,7 +42,6 @@ export function LeadCard({
 }: LeadCardProps) {
   const signals = JSON.parse(company.signals) as string[]
   const breakdown = JSON.parse(company.scoreBreakdown) as Record<string, number>
-  const hasBreakdown = Object.keys(breakdown).length > 0
 
   return (
     <Card className="transition-shadow hover:shadow-md" data-item={`lead-${company.id}`}>
@@ -71,25 +65,7 @@ export function LeadCard({
               ))}
             </div>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <ScoreBadge score={company.leadScore} />
-              </span>
-            </TooltipTrigger>
-            {hasBreakdown && (
-              <TooltipContent className="max-w-[220px]">
-                <ul className="space-y-1 text-xs">
-                  {Object.entries(breakdown).map(([key, val]) => (
-                    <li key={key} className="flex justify-between gap-4">
-                      <span>{key}</span>
-                      <span className="tabular-nums font-medium">+{val}</span>
-                    </li>
-                  ))}
-                </ul>
-              </TooltipContent>
-            )}
-          </Tooltip>
+          <ScoreBadge score={company.leadScore} opbouw={breakdown} soort="Leadscore" />
         </div>
       </CardHeader>
       <CardContent>
@@ -107,10 +83,14 @@ export function LeadCard({
               {company.designVacatures ?? 0} design · {company.devVacatures ?? 0} dev
             </span>
           )}
+          {/* "deze" wees in een knoppenlijst naar niets, en na "Afwijzen" van de vorige kaart naar
+              het verkeerde bedrijf. De naam begint met de zichtbare tekst en noemt het bedrijf. */}
           <button
             type="button"
             onClick={() => onToonVacatures(company.companyName)}
+            aria-label={`toon deze vacatures van ${company.companyName}`}
             className={cn('rounded-sm text-foreground underline-offset-2 hover:underline', focusRing)}
+            data-toon-vacatures
           >
             toon deze vacatures
           </button>

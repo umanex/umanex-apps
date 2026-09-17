@@ -5,11 +5,6 @@ import { Card, CardContent, CardHeader } from '@umanex/ui/components/ui/card'
 import { Badge } from '@umanex/ui/components/ui/badge'
 import { cn } from '@umanex/ui/lib/utils'
 import { focusRing } from '@umanex/ui/lib/focus'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@umanex/ui/components/ui/tooltip'
 import { ScoreBadge } from './ScoreBadge'
 import { StatusActies } from './StatusActies'
 import { LAGE_SCORE_GRENS } from '@/lib/triage'
@@ -25,7 +20,6 @@ type JobCardProps = {
 
 export function JobCard({ job, isNew, toonBron, onStatusChange }: JobCardProps) {
   const breakdown = JSON.parse(job.scoreBreakdown) as Record<string, number>
-  const hasBreakdown = Object.keys(breakdown).length > 0
 
   return (
     <Card className="transition-shadow hover:shadow-md" data-item={`job-${job.id}`}>
@@ -44,25 +38,7 @@ export function JobCard({ job, isNew, toonBron, onStatusChange }: JobCardProps) 
             </div>
             <p className="mt-0.5 text-sm text-muted-foreground">{job.company}</p>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <ScoreBadge score={job.score} />
-              </span>
-            </TooltipTrigger>
-            {hasBreakdown && (
-              <TooltipContent className="max-w-[200px]">
-                <ul className="space-y-1 text-xs">
-                  {Object.entries(breakdown).map(([key, val]) => (
-                    <li key={key} className="flex justify-between gap-4">
-                      <span>{key}</span>
-                      <span className="tabular-nums font-medium">+{val}</span>
-                    </li>
-                  ))}
-                </ul>
-              </TooltipContent>
-            )}
-          </Tooltip>
+          <ScoreBadge score={job.score} opbouw={breakdown} soort="Score" />
         </div>
       </CardHeader>
       <CardContent>
@@ -74,16 +50,21 @@ export function JobCard({ job, isNew, toonBron, onStatusChange }: JobCardProps) 
             {(job.city || job.postcode > 0) && <span className="min-w-0 truncate">{job.city ?? job.postcode}</span>}
             {toonBron && <span className="rounded bg-muted px-1.5 py-0.5" data-bron>{job.source}</span>}
           </span>
+          {/* "Bekijk" stond op elke kaart met dezelfde naam, en was de eerste tab-stop na "Afwijzen" van
+              de vórige kaart — dus las hij alsof hij bij die titel hoorde. De naam begint met het
+              zichtbare woord en meldt het nieuwe tabblad, dat anders alleen het icoon zegt. */}
           <a
             href={job.url}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`Bekijk ${job.title} (opent in een nieuw tabblad)`}
             className={cn(
               'flex items-center gap-1 rounded-sm transition-colors hover:text-foreground',
               focusRing
             )}
+            data-bekijk
           >
-            Bekijk <ExternalLink className="h-3 w-3" />
+            Bekijk <ExternalLink aria-hidden className="h-3 w-3" />
           </a>
         </div>
         <div className="mt-2 border-t pt-2">

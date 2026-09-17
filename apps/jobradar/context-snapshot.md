@@ -38,7 +38,6 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | ScoreBadge | `apps/jobradar/components/ScoreBadge.tsx` | components | — | — | — |
 | SearchSettingsForm | `apps/jobradar/components/SearchSettingsForm.tsx` | components | — | — | — |
 | StatusActies | `apps/jobradar/components/StatusActies.tsx` | components | — | — | — |
-| StatusDropdown | `apps/jobradar/components/StatusDropdown.tsx` | components | — | — | — |
 | SyncButton | `apps/jobradar/components/SyncButton.tsx` | components | — | — | — |
 | TermChips | `apps/jobradar/components/TermChips.tsx` | components | — | — | — |
 | Aannames | `apps/jobradar/components/plan/Aannames.tsx` | plan | — | — | — |

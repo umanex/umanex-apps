@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { RefreshCw, AlertTriangle, Check } from 'lucide-react'
 import { Button } from '@umanex/ui/components/ui/button'
@@ -9,6 +9,24 @@ import { TermChips } from './TermChips'
 import { valideerZoekopdracht, minimaleVerzoeken, MAX_ZINSNEDES, type Zoekopdracht } from '@/lib/settings'
 
 type Telling = { regio: string; treffers: number; afgekapt: boolean; bovengrens: boolean; fout?: string }
+
+/**
+ * `aria-disabled` en niet `disabled`: een knop die de focus heeft en disabled wordt, geeft die
+ * focus af aan `body`. Dat gebeurt hier bij elke druk (bezig) én na een geslaagd Opslaan, want dan
+ * is er niets meer gewijzigd. De handlers dragen daarom zelf de guard. Een ongeldige zoekopdracht
+ * volgt dezelfde vorm, zodat een knop niet de ene keer wel en de andere keer niet in de tabvolgorde staat.
+ */
+const INERT = 'aria-disabled:pointer-events-none aria-disabled:opacity-50'
+
+/** De tabel in één zin, voor wie hem niet ziet verschijnen. */
+function samenvattingVan(tellingen: Telling[]): string {
+  const delen = tellingen.map((t) =>
+    t.fout
+      ? `${t.regio}: ${t.fout.replace(/\.$/, '')}`
+      : `${t.regio}: ${t.bovengrens ? 'hoogstens ' : ''}${t.treffers} treffers${t.afgekapt ? ', wordt afgekapt door het plafond' : ''}`
+  )
+  return `Test klaar. ${delen.join('. ')}.`
+}
 
 type SearchSettingsFormProps = {
   begin: Zoekopdracht
@@ -24,24 +42,45 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
   const [fout, setFout] = useState<string | null>(null)
   const [melding, setMelding] = useState<string | null>(null)
   const [tellingen, setTellingen] = useState<Telling[] | null>(null)
+  /**
+   * Los van `melding` en `tellingen`: die blijven bij een mislukte hertest gewoon staan, en een
+   * regio die daarvan afleidt zou het oude resultaat na de fout opnieuw voorlezen als nieuw.
+   */
+  const [aankondiging, setAankondiging] = useState('')
   const router = useRouter()
+  const testRef = useRef<HTMLButtonElement>(null)
+  const herstelRef = useRef<HTMLButtonElement>(null)
+  /** Herstel verdwijnt na succes (dan ís het de standaard); de focus moet ergens landen. */
+  const focusNaHerstel = useRef(false)
 
   const gewijzigd = JSON.stringify(zoek) !== JSON.stringify(opgeslagen)
   const validatie = valideerZoekopdracht(zoek)
+
+  useEffect(() => {
+    if (!focusNaHerstel.current) return
+    focusNaHerstel.current = false
+    // Alleen als hij met de knop verdween — wie intussen elders verder werkte, houdt zijn plek.
+    // Test staat in dezelfde rij, blijft altijd bestaan, en zijn naam herhaalt de melding niet.
+    if (document.activeElement === null || document.activeElement === document.body) testRef.current?.focus()
+  }, [isStandaard])
 
   function wijzig(volgende: Zoekopdracht) {
     setZoek(volgende)
     setFout(null)
     setMelding(null)
+    setAankondiging('')
     // De telling hoort bij de vorige termen; laten staan zou een verouderd getal
     // presenteren als de uitkomst van wat er nu staat.
     setTellingen(null)
   }
 
   async function verzoek(pad: string, init: RequestInit, bezigheid: typeof bezig) {
+    if (bezig !== null) return null
     setBezig(bezigheid)
     setFout(null)
     setMelding(null)
+    // Leeg tijdens het verzoek, zodat een hertest met dezelfde uitkomst opnieuw als wijziging telt.
+    setAankondiging('')
     try {
       const res = await fetch(pad, init)
       const data = await res.json().catch(() => null)
@@ -59,6 +98,7 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
   }
 
   async function opslaan() {
+    if (!gewijzigd || validatie !== null) return
     const data = await verzoek(
       '/api/settings',
       { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(zoek) },
@@ -68,22 +108,29 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
     setOpgeslagen(data.zoek)
     setZoek(data.zoek)
     setIsStandaard(data.isStandaard)
-    setMelding('Opgeslagen. Dit werkt door bij de volgende sync.')
+    const tekst = 'Opgeslagen. Dit werkt door bij de volgende sync.'
+    setMelding(tekst)
+    setAankondiging(tekst)
     router.refresh()
   }
 
   async function herstellen() {
+    const hadFocus = herstelRef.current !== null && herstelRef.current === document.activeElement
     const data = await verzoek('/api/settings', { method: 'DELETE' }, 'herstellen')
     if (!data) return
+    focusNaHerstel.current = hadFocus && Boolean(data.isStandaard)
     setOpgeslagen(data.zoek)
     setZoek(data.zoek)
     setIsStandaard(data.isStandaard)
     setTellingen(null)
-    setMelding('Teruggezet op de gemeten standaard.')
+    const tekst = 'Teruggezet op de gemeten standaard.'
+    setMelding(tekst)
+    setAankondiging(tekst)
     router.refresh()
   }
 
   async function testen() {
+    if (validatie !== null) return
     const data = await verzoek(
       '/api/settings/test',
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(zoek) },
@@ -91,6 +138,7 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
     )
     if (!data) return
     setTellingen(data.tellingen)
+    setAankondiging(samenvattingVan(data.tellingen))
   }
 
   return (
@@ -129,15 +177,34 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={testen} variant="secondary" disabled={bezig !== null || validatie !== null}>
+        <Button
+          ref={testRef}
+          onClick={testen}
+          variant="secondary"
+          aria-disabled={bezig !== null || validatie !== null}
+          className={INERT}
+          data-zoekopdracht-actie="testen"
+        >
           <RefreshCw className={cn('mr-2 h-4 w-4', bezig === 'testen' && 'animate-spin')} />
           {bezig === 'testen' ? 'Bezig…' : 'Test deze zoekopdracht'}
         </Button>
-        <Button onClick={opslaan} disabled={bezig !== null || !gewijzigd || validatie !== null}>
+        <Button
+          onClick={opslaan}
+          aria-disabled={bezig !== null || !gewijzigd || validatie !== null}
+          className={INERT}
+          data-zoekopdracht-actie="opslaan"
+        >
           {bezig === 'opslaan' ? 'Bezig…' : 'Opslaan'}
         </Button>
         {!isStandaard && (
-          <Button onClick={herstellen} variant="ghost" disabled={bezig !== null}>
+          <Button
+            ref={herstelRef}
+            onClick={herstellen}
+            variant="ghost"
+            aria-disabled={bezig !== null}
+            className={INERT}
+            data-zoekopdracht-actie="herstellen"
+          >
             Herstel de standaard
           </Button>
         )}
@@ -162,9 +229,15 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
           {melding}
         </p>
       )}
+      {/* Altijd gerenderd, ook leeg: een live-regio die pas verschijnt samen met zijn inhoud wordt
+          niet betrouwbaar voorgelezen. De zichtbare melding en tabel hierboven en hieronder dragen
+          zelf geen regio, anders klinkt alles twee keer. */}
+      <p aria-live="polite" className="sr-only" data-zoekopdracht-melding>
+        {aankondiging}
+      </p>
 
       {tellingen && (
-        <div className="space-y-1 rounded-md border border-border p-3">
+        <div className="space-y-1 rounded-md border border-border p-3" data-zoekopdracht-telling>
           <p className="text-sm font-medium">Wat deze zoekopdracht zou opleveren</p>
           <ul className="text-sm text-muted-foreground">
             {tellingen.map((t) => (

@@ -25,8 +25,10 @@ import type {
   ActieStatus,
   ActieWeergave,
   FocusConflict,
+  PlanIdee,
   PlanWeergave,
   Prioriteit,
+  Verzoekuitkomst,
 } from '@/lib/plan/types'
 
 type PlanClientProps = {
@@ -91,6 +93,22 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
    * stilstaande pagina.
    */
   const laatstGewijzigd = useRef<string | null>(null)
+  /** Wat de live-regio van de pagina voorleest. Binnen een open paneel heeft dat paneel zijn eigen. */
+  const [melding, setMelding] = useState('')
+  const bannerRef = useRef<HTMLParagraphElement>(null)
+  const tabsLijstRef = useRef<HTMLDivElement>(null)
+  /** Eén keer de banner in beeld brengen: na een actie die niet openging. */
+  const bannerInBeeld = useRef(false)
+  /** De melding van een actie die niet openging — die hoort niet in het paneel dat je daarna opent. */
+  const openFout = useRef<string | null>(null)
+  /**
+   * Welke actie open staat en welk detail er getoond wordt, voor een antwoord dat pas binnenkomt
+   * nadat je gesloten of gewisseld hebt. Een ref: `haalDetail` is stabiel en leest geen state.
+   */
+  const stand = useRef<{ open: string | null; getoond: string | null }>({
+    open: initieleActie,
+    getoond: null,
+  })
 
   const perKey = new Map(plan.acties.map((a) => [a.key, a]))
   const lijst = (keys: string[]): ActieWeergave[] =>
@@ -99,23 +117,87 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
       return a ? [a] : []
     })
 
-  const haalDetail = useCallback(async (key: string) => {
-    const res = await fetch(`/api/plan/acties/${key}`)
-    const data = (await res.json().catch(() => null)) as { actie?: ActieDetail } | null
-    if (res.ok && data?.actie) setDetail(data.actie)
+  /** Alles wat bij een open actiepaneel hoort, behalve de fout — die beslist de aanroeper. */
+  const sluitActiePaneel = useCallback(() => {
+    setOpenActie(null)
+    setOpAfronden(false)
+    setVoorstel(null)
+    setConflict(null)
+    setVrijgekomen(null)
   }, [])
+
+  /**
+   * Het detail van één actie ophalen.
+   *
+   * Een mislukking is niet meer stil. Eerst werd `detail` gewoon niet gezet: het paneel opende niet,
+   * `openActie` bleef gevuld, en omdat de banner alleen rendert zonder open actie verscheen daarna
+   * geen enkele fout van de pagina meer — na `/plan?actie=A99` of één netwerkfout.
+   */
+  const haalDetail = useCallback(async (key: string) => {
+    let reden: string
+    try {
+      const res = await fetch(`/api/plan/acties/${key}`)
+      const data = (await res.json().catch(() => null)) as
+        | { actie?: ActieDetail; error?: string }
+        | null
+      if (res.ok && data?.actie) {
+        setDetail(data.actie)
+        return
+      }
+      reden = data?.error ?? `HTTP ${res.status}`
+    } catch {
+      reden = 'geen antwoord van de server'
+    }
+    const { open, getoond } = stand.current
+    // Intussen gesloten of naar een andere actie gewisseld: deze fout hoort nergens meer bij.
+    if (open !== key) return
+    if (getoond === key) {
+      // Het paneel staat al open en toont zijn melding zelf. Niet sluiten: onbewaarde invoer erin
+      // zou verdwijnen omdat een verversing mislukte.
+      setFout(`${key} niet ververst (${reden}) — wat je ziet kan verouderd zijn.`)
+      return
+    }
+    const tekst = `${key} kon niet geopend worden: ${reden}.`
+    sluitActiePaneel()
+    bannerInBeeld.current = true
+    openFout.current = tekst
+    setFout(tekst)
+  }, [sluitActiePaneel])
+
+  useEffect(() => {
+    stand.current = { open: openActie, getoond: detail?.key ?? null }
+  }, [openActie, detail])
 
   useEffect(() => {
     if (openActie) void haalDetail(openActie)
     else setDetail(null)
   }, [openActie, haalDetail, plan])
 
-  /** Eén weg naar de server: stuur, lees, vervang het plan of toon de fout. */
+  useEffect(() => {
+    if ((openActie || openBeslissing) && fout !== null && fout === openFout.current) setFout(null)
+  }, [openActie, openBeslissing, fout])
+
+  // Wie een actie aanklikt die niet opengaat, krijgt het antwoord in beeld: de banner staat
+  // bovenaan, de rij kan een scherm lager staan. Scrollen, geen focus verplaatsen — de banner
+  // is een `alert` en wordt al voorgelezen.
+  useEffect(() => {
+    if (!fout || !bannerInBeeld.current) return
+    bannerInBeeld.current = false
+    bannerRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [fout])
+
+  /**
+   * Eén weg naar de server: stuur, lees, vervang het plan of toon de fout.
+   *
+   * `bijDeBron`: de bediening toont de fout zelf, naast zichzelf, en de banner bovenaan zwijgt.
+   * Voor een actierij of het ideeënveld stond die banner een scherm hoger dan de knop.
+   */
   const verstuur = useCallback(
     async (
       url: string,
-      init: RequestInit
-    ): Promise<{ ok: boolean; data: Record<string, unknown> | null }> => {
+      init: RequestInit,
+      { bijDeBron = false }: { bijDeBron?: boolean } = {}
+    ): Promise<Verzoekuitkomst & { data: Record<string, unknown> | null }> => {
       setBezig(true)
       setFout(null)
       try {
@@ -125,16 +207,18 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
         })
         const data = (await res.json().catch(() => null)) as Record<string, unknown> | null
         if (!res.ok || !data?.ok) {
-          setFout((data?.error as string) ?? `Mislukt (HTTP ${res.status})`)
+          const tekst = (data?.error as string) ?? `Mislukt (HTTP ${res.status})`
+          if (!bijDeBron) setFout(tekst)
           if (data?.conflict === 'focus') setConflict(data as unknown as FocusConflict)
-          return { ok: false, data }
+          return { ok: false, fout: tekst, data }
         }
         setConflict(null)
         if (data.plan) setPlan(data.plan as PlanWeergave)
-        return { ok: true, data }
+        return { ok: true, fout: null, data }
       } catch {
-        setFout('Geen antwoord van de server.')
-        return { ok: false, data: null }
+        const tekst = 'Geen antwoord van de server.'
+        if (!bijDeBron) setFout(tekst)
+        return { ok: false, fout: tekst, data: null }
       } finally {
         setBezig(false)
       }
@@ -142,12 +226,52 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
     []
   )
 
-  const herlaad = useCallback(async () => {
-    setFout(null)
-    const res = await fetch('/api/plan')
-    const data = (await res.json().catch(() => null)) as { plan?: PlanWeergave } | null
-    if (data?.plan) setPlan(data.plan)
+  /**
+   * Het plan opnieuw ophalen, zonder zelf een fout te tonen: de aanroeper beslist waar die staat.
+   * Een actierij toont hem bij haar veld (`bijDeBron`), de panelen en de banner via `herlaad`.
+   */
+  const haalPlan = useCallback(async (): Promise<Verzoekuitkomst> => {
+    try {
+      const res = await fetch('/api/plan')
+      const data = (await res.json().catch(() => null)) as
+        | { plan?: PlanWeergave; error?: string }
+        | null
+      if (!res.ok || !data?.plan) {
+        return { ok: false, fout: `Plan niet herladen: ${data?.error ?? `HTTP ${res.status}`}.` }
+      }
+      setPlan(data.plan)
+      return { ok: true, fout: null }
+    } catch {
+      return { ok: false, fout: 'Plan niet herladen — geen antwoord van de server.' }
+    }
   }, [])
+
+  /**
+   * Het plan opnieuw ophalen, na een versieconflict.
+   *
+   * De fout blijft staan tot het gelukt is. Eerst ging hij vóór het verzoek weg, zonder controle
+   * op het antwoord en zonder `catch`: een mislukte herlading liet dan niets achter, en de knop
+   * verdween onder de focus op het moment dat je hem indrukte.
+   */
+  const herlaad = useCallback(async () => {
+    const { ok, fout: tekst } = await haalPlan()
+    setFout(tekst)
+    return ok
+  }, [haalPlan])
+
+  /**
+   * Herladen vanuit de banner. De knop staat ín de melding en verdwijnt met hem; wie hem met het
+   * toetsenbord indrukte, belandt op het actieve tabblad eronder in plaats van op `body`.
+   */
+  const herlaadVanuitBanner = async () => {
+    const hadFocus = Boolean(bannerRef.current?.contains(document.activeElement))
+    setMelding('')
+    if (!(await herlaad())) return
+    if (hadFocus) {
+      tabsLijstRef.current?.querySelector<HTMLElement>('[role="tab"][data-state="active"]')?.focus()
+    }
+    setMelding('Plan herladen.')
+  }
 
   const versieVan = (key: string) => perKey.get(key)?.versie ?? 1
 
@@ -183,21 +307,35 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
     }
   }
 
-  const zetVolgendeStap = (key: string, tekst: string) =>
-    void verstuur(`/api/plan/acties/${key}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        volgendeStap: tekst.trim() === '' ? null : tekst,
-        versie: versieVan(key),
-      }),
-    })
+  /**
+   * De volgende stap vanaf een rij. De fout staat bij het veld, niet in de banner — maar een
+   * versieconflict los je niet op door opnieuw te bewaren: `versieVan` leest de versie uit dit
+   * plan, en dat is het verouderde. Daarom zegt de uitkomst het erbij, en biedt de rij Herlaad plan.
+   */
+  const zetVolgendeStap = async (
+    key: string,
+    tekst: string
+  ): Promise<Verzoekuitkomst & { versieConflict: boolean }> => {
+    const { ok, fout: tekstFout, data } = await verstuur(
+      `/api/plan/acties/${key}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          volgendeStap: tekst.trim() === '' ? null : tekst,
+          versie: versieVan(key),
+        }),
+      },
+      { bijDeBron: true }
+    )
+    return { ok, fout: tekstFout, versieConflict: data?.conflict === 'versie' }
+  }
 
   const panelVerzoek = async (verzoek: PanelVerzoek) => {
-    if (!openActie) return
+    if (!openActie) return false
     if (verzoek.soort === 'verwijder') {
       const { ok } = await verstuur(`/api/plan/acties/${openActie}`, { method: 'DELETE' })
       if (ok) setOpenActie(null)
-      return
+      return ok
     }
     const { ok, data } = await verstuur(`/api/plan/acties/${openActie}`, {
       method: 'PATCH',
@@ -216,6 +354,7 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
           : null
       )
     }
+    return ok
   }
 
   /**
@@ -249,6 +388,20 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
   const eigenaars = [...new Set(plan.acties.map((a) => a.eigenaar))].sort()
   const volgende = plan.overzicht.volgendeActie
   const volgendeActie = volgende ? perKey.get(volgende.key) : null
+  /**
+   * Het detail zoals het paneel het toont: aangevuld met de actie uit het plan wanneer dat plan
+   * nieuwer is. Een mutatie geeft meteen het hele plan terug, het detail volgt pas met een eigen
+   * GET; tussen die twee toonde het paneel de oude status en velden. Wie dan Escape drukte na een
+   * geslaagde afronding, kreeg "Onbewaarde wijzigingen weggooien?" over een bewijs dat al bewaard
+   * was (gemeten met de UI-probe, detail 2,5 s vertraagd). `ActieDetail` is `ActieWeergave` plus
+   * de geschiedenis, dus alleen die loopt nog even achter. Op `versie`: een detail dat nieuwer is
+   * dan het plan (een wijziging elders, tussendoor) wint.
+   */
+  const actueleWeergave = detail ? perKey.get(detail.key) : undefined
+  const paneelActie =
+    detail && actueleWeergave && actueleWeergave.versie > detail.versie
+      ? { ...detail, ...actueleWeergave }
+      : detail
   const actiesVoorPanel = plan.acties.map((a) => ({
     key: a.key,
     titel: a.titel,
@@ -313,20 +466,32 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
         </div>
 
         {fout && !openActie && !openBeslissing && (
-          <p role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive">
+          <p
+            ref={bannerRef}
+            role="alert"
+            className="flex scroll-mt-6 flex-wrap items-center gap-2 text-sm text-destructive"
+            data-plan-fout
+          >
             {fout}
-            <Button size="sm" variant="outline" onClick={herlaad}>
+            <Button size="sm" variant="outline" onClick={() => void herlaadVanuitBanner()}>
               Herlaad plan
             </Button>
           </p>
         )}
+        {/* Altijd gerenderd, ook leeg: een live-regio die pas met zijn inhoud verschijnt, wordt
+            niet betrouwbaar voorgelezen. */}
+        <p aria-live="polite" className="sr-only" data-plan-melding>
+          {melding}
+        </p>
 
         <Tabs value={tab} onValueChange={setTab}>
           {/* `h-auto flex-wrap`: vier tabs mét telpil meten samen 412 px min-content, en dat
               duwde op 400 px de hele pagina uit — gemeten met de flow-harness (`--smal=400`).
               De dashboard-TabsList heeft er drie en past wel; deze breekt af in plaats van de
               pagina te laten scrollen. */}
-          <TabsList className="h-auto flex-wrap">
+          {/* `data-plan-tabs`: het actieve tabblad is het laatste anker voor de focus na het sluiten
+              van het actiepaneel — het enige dat er in elke stand staat. */}
+          <TabsList ref={tabsLijstRef} className="h-auto flex-wrap" data-plan-tabs>
             <TabsTrigger value="overzicht">Overzicht</TabsTrigger>
             <TabsTrigger value="acties">
               Acties
@@ -386,9 +551,12 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
                         dan de kaart die zegt wat je nú doet. */}
                     {volgende?.reden === 'beschikbaar' ? (
                       <Button
-                        disabled={bezig}
+                        aria-disabled={bezig}
                         aria-label={`Start ${volgendeActie.key}`}
-                        onClick={() => void wijzigStatus(volgendeActie.key, 'bezig')}
+                        onClick={() => {
+                          if (!bezig) void wijzigStatus(volgendeActie.key, 'bezig')
+                        }}
+                        className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
                       >
                         Start
                       </Button>
@@ -423,6 +591,7 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
                   onOpen={setOpenActie}
                   onStatus={wijzigStatus}
                   onVolgendeStap={zetVolgendeStap}
+                  onHerlaad={haalPlan}
                 />
                 {plan.overzicht.nuBezig.length >= plan.instellingen.focusLimiet && (
                   <p className="text-2xs text-muted-foreground">
@@ -510,17 +679,21 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
                   tekst={plan.aannames.tekst}
                   isStandaard={plan.aannames.isStandaard}
                   bezig={bezig}
-                  onBewaar={(t) =>
-                    void verstuur('/api/plan', {
-                      method: 'PUT',
-                      body: JSON.stringify({ aannames: t }),
-                    })
+                  onBewaar={async (t) =>
+                    (
+                      await verstuur('/api/plan', {
+                        method: 'PUT',
+                        body: JSON.stringify({ aannames: t }),
+                      })
+                    ).ok
                   }
-                  onHerstel={() =>
-                    void verstuur('/api/plan', {
-                      method: 'PUT',
-                      body: JSON.stringify({ aannames: null }),
-                    })
+                  onHerstel={async () =>
+                    (
+                      await verstuur('/api/plan', {
+                        method: 'PUT',
+                        body: JSON.stringify({ aannames: null }),
+                      })
+                    ).ok
                   }
                 />
               </div>
@@ -555,18 +728,26 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
             <Ideeen
               ideeen={plan.ideeen}
               bezig={bezig}
-              onToevoegen={(titel) =>
-                void verstuur('/api/plan/ideeen', {
-                  method: 'POST',
-                  body: JSON.stringify({ titel }),
-                })
-              }
-              onOpnemen={(id, prioriteit: Prioriteit) =>
-                void verstuur(`/api/plan/ideeen/${id}`, {
-                  method: 'PATCH',
-                  body: JSON.stringify({ status: 'opgenomen', prioriteit }),
-                })
-              }
+              onToevoegen={async (titel) => {
+                const { ok, fout: tekstFout } = await verstuur(
+                  '/api/plan/ideeen',
+                  { method: 'POST', body: JSON.stringify({ titel }) },
+                  { bijDeBron: true }
+                )
+                return { ok, fout: tekstFout }
+              }}
+              onOpnemen={async (id, prioriteit: Prioriteit) => {
+                const { ok, fout: tekstFout, data } = await verstuur(
+                  `/api/plan/ideeen/${id}`,
+                  {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: 'opgenomen', prioriteit }),
+                  },
+                  { bijDeBron: true }
+                )
+                const idee = data?.idee as PlanIdee | undefined
+                return { ok, fout: tekstFout, opgenomenAls: idee?.opgenomenAls ?? null }
+              }}
               onVerwerpen={(id) =>
                 void verstuur(`/api/plan/ideeen/${id}`, {
                   method: 'PATCH',
@@ -586,30 +767,26 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
 
         {/* De sheets staan buiten Tabs: ze horen over de hele pagina, niet in het paneel
             dat ze opende — zelfde reden als bij ContactPanel op het dashboard. */}
-        {/* `detail.key === openActie`: bij een conflict vanuit het paneel wisselt `openActie` meteen
+        {/* `paneelActie.key === openActie`: bij een conflict vanuit het paneel wisselt `openActie` meteen
             naar de andere actie, maar het detail pas na zijn eigen fetch. Zonder deze voorwaarde
             stond het conflict van Y kort in het paneel van X — "start X met een uitzondering". */}
-        {openActie && detail && detail.key === openActie && (
+        {openActie && paneelActie && paneelActie.key === openActie && (
           <ActiePanel
-            key={detail.key}
-            actie={detail}
+            key={paneelActie.key}
+            actie={paneelActie}
             alleActies={actiesVoorPanel}
             vandaag={vandaag}
             urenPerDag={plan.instellingen.urenPerDag}
             opAfronden={opAfronden}
             voorstel={voorstel}
             focusConflict={conflict}
-            vrijgekomen={vrijgekomen?.na === detail.key ? vrijgekomen.keys : null}
+            vrijgekomen={vrijgekomen?.na === paneelActie.key ? vrijgekomen.keys : null}
             bezig={bezig}
             fout={fout}
             onOpenChange={(o) => {
               if (!o) {
-                setOpenActie(null)
-                setOpAfronden(false)
-                setVoorstel(null)
-                setConflict(null)
+                sluitActiePaneel()
                 setFout(null)
-                setVrijgekomen(null)
               }
             }}
             onVerzoek={panelVerzoek}
@@ -636,15 +813,17 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
                 setFout(null)
               }
             }}
-            onBewaar={(body) =>
-              void verstuur(`/api/plan/beslissingen/${openBeslissing}`, {
-                method: 'PATCH',
-                body: JSON.stringify({
-                  ...body,
-                  versie:
-                    plan.beslissingen.find((b) => b.key === openBeslissing)?.versie ?? 1,
-                }),
-              })
+            onBewaar={async (body) =>
+              (
+                await verstuur(`/api/plan/beslissingen/${openBeslissing}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({
+                    ...body,
+                    versie:
+                      plan.beslissingen.find((b) => b.key === openBeslissing)?.versie ?? 1,
+                  }),
+                })
+              ).ok
             }
             onHerlaad={herlaad}
           />

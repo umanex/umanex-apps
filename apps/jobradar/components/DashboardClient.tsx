@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
 import { cn } from '@umanex/ui/lib/utils'
@@ -32,7 +32,7 @@ import type { Job, Company, ItemStatus, SubjectType } from '@/lib/db/schema'
 import { normaliseerBedrijf } from '@/lib/matching'
 import type { RegionCode } from '@/lib/regions'
 import type { Dekking } from '@/lib/coverage'
-import { LAGE_SCORE_GRENS, leesStand, pastBijStatus, schrijfStand, splitsOpScore, type StatusFilter, type Tab, type TriageStand } from '@/lib/triage'
+import { isNieuw, LAGE_SCORE_GRENS, leesStand, pastBijFilters, pastBijStatus, schrijfStand, splitsOpScore, type StatusFilter, type Tab, type TriageStand } from '@/lib/triage'
 import { LageScoreLijst } from './LageScoreLijst'
 
 type DashboardClientProps = {
@@ -55,6 +55,8 @@ type DashboardClientProps = {
    * een stand die bij herladen verdween, stelde je elke ochtend opnieuw in.
    */
   initialStand: TriageStand
+  /** De KBO-spiegel bestaat maar ging niet open: dan zijn `vermoedens` leeg om die reden. */
+  spiegelFout: boolean
 }
 
 export function DashboardClient({
@@ -65,20 +67,49 @@ export function DashboardClient({
   vermoedens,
   koppelingen,
   initialStand,
+  spiegelFout,
 }: DashboardClientProps) {
-  const [jobs, setJobs] = useState(initialJobs)
-  const [companies, setCompanies] = useState(initialCompanies)
   /**
-   * De beginstand: in de browser uit de adresbalk, op de server uit de prop.
+   * De lijsten komen uit de props, niet uit een kopie in state.
    *
-   * Bij het laden zijn die twee dezelfde URL, dus de hydration klopt. Het verschil is Back: keer je
-   * van /plan terug, dan hergebruikt Next de gecachete render met de `initialStand` van bij het
-   * laden, terwijl de adresbalk de stand draagt die je daarna koos. De adresbalk is dan de waarheid
-   * (design-review 2026-09-17).
+   * Na Sync nu doet SyncButton `router.refresh()`, en Next hergebruikt deze instantie (de sleutel
+   * van het page-segment draagt geen query, `layout-router.js` in 15.5.25). Een kopie in `useState`
+   * hield dan de oude lijst vast terwijl de dekkingsbalk erboven al ververste — nieuwe vacatures
+   * verschenen pas na herladen (fase 3, 2026-09-17). Lokaal staat alleen wat deze sessie aan
+   * statussen wijzigde; dat is ook wat de server na een refresh teruggeeft.
    */
-  const [begin] = useState<TriageStand>(() =>
-    typeof window === 'undefined' ? initialStand : leesStand(new URLSearchParams(window.location.search))
+  const [jobStatus, setJobStatus] = useState<Record<number, ItemStatus>>({})
+  const [leadStatus, setLeadStatus] = useState<Record<number, ItemStatus>>({})
+  const jobs = useMemo(
+    () =>
+      initialJobs.map((j) => {
+        const gewijzigd = jobStatus[j.id]
+        return gewijzigd ? { ...j, jobStatus: gewijzigd } : j
+      }),
+    [initialJobs, jobStatus]
   )
+  const companies = useMemo(
+    () =>
+      initialCompanies.map((c) => {
+        const gewijzigd = leadStatus[c.id]
+        return gewijzigd ? { ...c, leadStatus: gewijzigd } : c
+      }),
+    [initialCompanies, leadStatus]
+  )
+  /**
+   * De beginstand, uit de router — niet uit de adresbalk en niet alleen uit de prop.
+   *
+   * De prop draagt de URL van de server-render; na Back hergebruikt Next die gecachete render met een
+   * oude stand. De adresbalk (`window.location`) was de eerste fix, maar loopt bij een voorwaartse
+   * navigatie achter: Next zet de URL pas in de commit, dus "Open in dashboard" vanuit /plan las nog
+   * `/plan` en landde op Vacatures zonder zoekterm (gemeten in de browser, 2026-09-17 — een regressie
+   * uit #518). `useSearchParams` leest de router zelf: juist bij laden, bij een voorwaartse navigatie
+   * en bij Back, en dankzij `replaceState(null, …)` hieronder ook na filteren. Deze pagina is
+   * `force-dynamic`, dus de hook eist geen Suspense-grens: hij valt alleen terug bij prerenderen
+   * (gelezen in `next/dist/client/components/bailout-to-client-rendering.js`).
+   */
+  const zoekParams = useSearchParams()
+  const [begin] = useState<TriageStand>(() => (zoekParams ? leesStand(zoekParams) : initialStand))
   const [regions, setRegions] = useState<RegionCode[]>(begin.regios)
   const router = useRouter()
   const [minScore, setMinScore] = useState(begin.minScore)
@@ -89,6 +120,8 @@ export function DashboardClient({
   // Onthouden of de huidige zoekterm van een doorklik komt: dan verdient een lege lijst
   // een andere uitleg dan een gewone mistreffer. Staat in de URL als `via=bedrijf`.
   const [viaLead, setViaLead] = useState(begin.via === 'bedrijf')
+  // Alleen wat bij de laatste sync binnenkwam — de badge "nieuw", niet de status "niet beoordeeld".
+  const [alleenNieuw, setAlleenNieuw] = useState(begin.nieuw)
   // Wat de laatste statuswissel met de lijst deed, voor wie niet ziet dat een kaart verdween.
   const [statusMelding, setStatusMelding] = useState('')
 
@@ -102,6 +135,22 @@ export function DashboardClient({
   const [prospectPagina, setProspectPagina] = useState(1)
   const [prospectBezig, setProspectBezig] = useState(false)
   const [prospectFout, setProspectFout] = useState<string | null>(null)
+  /**
+   * De laatste lading mislukte — los van de fouttekst, die bij elke nieuwe poging leeg gaat.
+   *
+   * Zo blijft de alert gemount en wordt hij na een tweede mislukking opnieuw gevuld, dus opnieuw
+   * voorgelezen: dezelfde tekst in een regio die niet leeg ging, zegt niets. En zolang dit waar
+   * is, toont de teller geen "Bezig…" meer: prospectTotaal bleef na een mislukte eerste lading
+   * null, en de teller zei dan voor altijd "Bezig…" naast de fout.
+   */
+  const [prospectMislukt, setProspectMislukt] = useState(false)
+  // Opnieuw proberen: een teller in de deps van het laad-effect, zodat dezelfde filterstand opnieuw
+  // opgehaald wordt.
+  const [prospectPoging, setProspectPoging] = useState(0)
+  // De knop Opnieuw proberen verdwijnt na een geslaagde lading. Stond de focus erop, dan gaat hij
+  // naar de kop van het paneel in plaats van naar body.
+  const focusNaPoging = useRef(false)
+  const prospectsKopRef = useRef<HTMLHeadingElement>(null)
   const [spiegel, setSpiegel] = useState<SpiegelStaat | null>(null)
   // Standaard aan: zonder deze zeef heeft vier vijfde van de lijst geen personeel.
   const [alleenWerkgevers, setAlleenWerkgevers] = useState(true)
@@ -124,6 +173,15 @@ export function DashboardClient({
     key: string
     naam: string
   } | null>(null)
+  /**
+   * Waar het opvolgingspaneel vandaan kwam: het bedrijf en de volgorde van de lijst op dat moment.
+   *
+   * Een ref en geen state: alleen `naSluitenOpvolging` leest hem, bij het sluiten, en dan moet het de
+   * waarde van dán zijn en niet die van de laatste render van het paneel.
+   */
+  const opvolgingHerkomst = useRef<{ type: SubjectType; key: string; volgorde: string[]; melding: string } | null>(null)
+  const leadsPaneelRef = useRef<HTMLDivElement>(null)
+  const prospectsPaneelRef = useRef<HTMLDivElement>(null)
   // CSV-rijen zonder KBO-tegenhanger. Ze kunnen niet in de lijst staan; ze worden gemeld.
   const [zonderKbo, setZonderKbo] = useState(0)
   // Ongefilterd rijaantal in csv_prospects: onderscheidt "nog niets geïmporteerd" van
@@ -169,28 +227,67 @@ export function DashboardClient({
     setViaLead(false)
   }
 
-  const filteredJobs = jobs
-    .filter((j) =>
-      regions.includes(j.region as RegionCode) &&
-      j.score >= minScore &&
-      pastBijStatus(j.jobStatus, statusFilter) &&
-      raaktJob(j.title, j.company)
-    )
-    .sort((a, b) => b.score - a.score)
+  // `metNieuw` apart, zodat de lege toestand kan zeggen of het vinkje de oorzaak is.
+  const pastJob = (j: Job, metNieuw = true) =>
+    pastBijFilters(
+      { regio: j.region, score: j.score, status: j.jobStatus, eerstGezienAt: j.firstSeenAt },
+      { regios: regions, minScore, status: statusFilter, nieuw: metNieuw && alleenNieuw },
+      previousSyncAt
+    ) && raaktJob(j.title, j.company)
+  const pastLead = (c: Company, metNieuw = true) =>
+    pastBijFilters(
+      { regio: c.region, score: c.leadScore, status: c.leadStatus, eerstGezienAt: c.firstSeenAt },
+      { regios: regions, minScore, status: statusFilter, nieuw: metNieuw && alleenNieuw },
+      previousSyncAt
+    ) && raakt(c.companyName)
 
-  const filteredCompanies = companies
-    .filter((c) =>
-      regions.includes(c.region as RegionCode) &&
-      c.leadScore >= minScore &&
-      pastBijStatus(c.leadStatus, statusFilter) &&
-      raakt(c.companyName)
-    )
-    .sort((a, b) => b.leadScore - a.leadScore)
+  const filteredJobs = jobs.filter((j) => pastJob(j)).sort((a, b) => b.score - a.score)
+
+  const filteredCompanies = companies.filter((c) => pastLead(c)).sort((a, b) => b.leadScore - a.leadScore)
 
   // Kaarten vanaf de scoregrens, de rest compact eronder — zie `LAGE_SCORE_GRENS`.
   const { kaarten: jobKaarten, laag: lageJobs } = splitsOpScore(filteredJobs)
   // "adzuna" op elke kaart zei niets zolang er maar één bron is.
   const toonBron = new Set(jobs.map((j) => j.source)).size > 1
+
+  /**
+   * Het aantal na een filterwissel op Vacatures of Leads (`data-filter-telling`), voor wie niet ziet
+   * dat de lijst veranderde. Prospects heeft zijn eigen telling.
+   *
+   * De regio schrijft op één moment: 400 ms na de laatste filterwissel — status, regio, score,
+   * zoekterm, ook de doorklik vanaf een lead — met de telling van het tabblad dat dán open staat. De
+   * stilte houdt typen in het zoekveld uit de voorleesstem. Niet bij het laden, niet bij een tabwissel,
+   * een sync of een statuswissel: die hebben elk hun eigen aankondiging.
+   *
+   * De regio wordt leeg zodra zijn tekst niet meer klopt, en blijft dan leeg: bij een nieuwe
+   * filterwissel (zodat een gelijk getal toch opnieuw binnenkomt), bij een tabwissel (terugkeren las
+   * de oude telling opnieuw voor) en wanneer de lijst zelf verandert (na een sync bleef een verouderd
+   * getal staan, want de lijsten komen uit de props).
+   */
+  const telTekst =
+    tab === 'jobs'
+      ? viaLead
+        ? `${filteredJobs.length} ${filteredJobs.length === 1 ? 'vacature' : 'vacatures'} van ${zoek}`
+        : `${jobKaarten.length} ${jobKaarten.length === 1 ? 'vacature' : 'vacatures'} vanaf score ${LAGE_SCORE_GRENS}, ${lageJobs.length} lager`
+      : tab === 'leads'
+        ? `${filteredCompanies.length} ${filteredCompanies.length === 1 ? 'lead' : 'leads'}`
+        : ''
+  const filterSleutel = JSON.stringify([statusFilter, regions, minScore, zoek, viaLead, alleenNieuw])
+  const gemeldeFilter = useRef(filterSleutel)
+  const [telMelding, setTelMelding] = useState<{ sleutel: string; tab: Tab; tekst: string } | null>(null)
+  // Tijdens het renderen en niet in een effect: zo staat een verouderde tekst geen enkele commit lang
+  // in de regio. Terugzetten naar null in plaats van alleen verbergen, anders kwam hij terug.
+  if (telMelding && (telMelding.sleutel !== filterSleutel || telMelding.tab !== tab || telMelding.tekst !== telTekst)) {
+    setTelMelding(null)
+  }
+  useEffect(() => {
+    if (filterSleutel === gemeldeFilter.current) return
+    const t = setTimeout(() => {
+      gemeldeFilter.current = filterSleutel
+      setTelMelding({ sleutel: filterSleutel, tab, tekst: telTekst })
+    }, 400)
+    return () => clearTimeout(t)
+  }, [filterSleutel, tab, telTekst])
 
   /**
    * De filterstand in de URL, zodat hij een herlaadbeurt overleeft.
@@ -215,12 +312,13 @@ export function DashboardClient({
       tab,
       zoek,
       via: viaLead ? 'bedrijf' : '',
+      nieuw: alleenNieuw,
     }).toString()
     const doel = qs ? `?${qs}` : ''
     if (window.location.search !== doel) {
       window.history.replaceState(null, '', `${window.location.pathname}${doel}`)
     }
-  }, [statusFilter, regions, minScore, tab, zoek, viaLead])
+  }, [statusFilter, regions, minScore, tab, zoek, viaLead, alleenNieuw])
 
   // Eén filterstand voor de lijst én de kaart. Ze uit elkaar laten lopen is precies wat
   // er op 2026-09-09 mis was: de kaart bleef op alle punten staan bij elke filterkeuze.
@@ -242,8 +340,10 @@ export function DashboardClient({
         const data = await res.json().catch(() => null)
         if (!res.ok || !data?.ok) {
           setProspectFout(data?.error ?? `Mislukt (HTTP ${res.status})`)
+          setProspectMislukt(true)
           return
         }
+        setProspectMislukt(false)
         setProspects(data.prospects)
         setProspectTotaal(data.totaal)
         setProspectPaginas(data.paginas)
@@ -253,13 +353,23 @@ export function DashboardClient({
       } catch (e) {
         // Een afgebroken verzoek is geen fout: dat is een filter die sneller wisselde dan
         // de server antwoordde. Zonder deze tak flikkert er een foutmelding bij elk woord.
-        if ((e as Error).name !== 'AbortError') setProspectFout('Geen antwoord van de server.')
+        if ((e as Error).name !== 'AbortError') {
+          setProspectFout('Geen antwoord van de server.')
+          setProspectMislukt(true)
+        }
       } finally {
         setProspectBezig(false)
       }
     },
     [kaartFilter, sortering, prospectPagina]
   )
+
+  useEffect(() => {
+    if (prospectMislukt || !focusNaPoging.current) return
+    focusNaPoging.current = false
+    // Alleen als de focus met de knop verdween; wie intussen elders klikte, houdt zijn plek.
+    if (document.activeElement === document.body) prospectsKopRef.current?.focus()
+  }, [prospectMislukt])
 
   useEffect(() => {
     if (tab !== 'prospects') return
@@ -271,7 +381,8 @@ export function DashboardClient({
       clearTimeout(t)
       ctrl.abort()
     }
-  }, [tab, haalProspects])
+    // prospectPoging staat hier alleen als aanleiding: Opnieuw proberen start dezelfde lading opnieuw.
+  }, [tab, haalProspects, prospectPoging])
 
   // Een filterwijziging hoort je op pagina 1 te zetten; anders sta je op pagina 7 van een
   // lijst die er nog maar drie heeft en lijkt het resultaat leeg.
@@ -290,11 +401,26 @@ export function DashboardClient({
    * item in dezelfde groep (kaarten of lage-scorerijen, want die tweede kan ingeklapt zijn), anders
    * naar het vorige, anders naar het statusfilter.
    */
-  const naVerdwijnen = (soort: 'job' | 'lead', id: number, titel: string, status: ItemStatus, groep: number[]) => {
+  const naVerdwijnen = (
+    soort: 'job' | 'lead',
+    id: number,
+    titel: string,
+    status: ItemStatus,
+    groep: number[],
+    vanuitPaneel = false
+  ) => {
     if (pastBijStatus(status, statusFilter)) return
     const i = groep.indexOf(id)
     const doel = groep[i + 1] ?? groep[i - 1]
-    const wat = status === 'dismissed' ? 'afgewezen' : status === 'saved' ? 'bewaard' : 'heropend'
+    // `contacted` komt alleen uit het opvolgingspaneel, en las hier als "heropend".
+    const wat =
+      status === 'dismissed' ? 'afgewezen' : status === 'saved' ? 'bewaard' : status === 'contacted' ? 'gecontacteerd' : 'heropend'
+    if (vanuitPaneel) {
+      // Het paneel trekt de focus terug (focus-trap) en verbergt de pagina voor een schermlezer, dus
+      // een focuswissel of melding nu gaat verloren. Beide komen bij het sluiten: `naSluitenOpvolging`.
+      if (opvolgingHerkomst.current) opvolgingHerkomst.current.melding = `${titel} ${wat}`
+      return
+    }
     setStatusMelding(`${titel} ${wat}`)
     // Twee frames: de wissel komt uit een fetch-vervolg, en React commit de kortere lijst pas na
     // het eerste.
@@ -310,14 +436,75 @@ export function DashboardClient({
   }
 
   const handleJobStatusChange = (id: number, status: ItemStatus) => {
-    setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, jobStatus: status } : j)))
+    setJobStatus((prev) => ({ ...prev, [id]: status }))
+    // De filtertelling ruimt zichzelf op zodra de lijst kort wordt: zie `telTekst`.
     const groep = jobKaarten.some((j) => j.id === id) ? jobKaarten : lageJobs
     naVerdwijnen('job', id, jobs.find((j) => j.id === id)?.title ?? '', status, groep.map((j) => j.id))
   }
 
-  const handleLeadStatusChange = (id: number, status: ItemStatus) => {
-    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, leadStatus: status } : c)))
-    naVerdwijnen('lead', id, companies.find((c) => c.id === id)?.companyName ?? '', status, filteredCompanies.map((c) => c.id))
+  const handleLeadStatusChange = (id: number, status: ItemStatus, vanuitPaneel = false) => {
+    setLeadStatus((prev) => ({ ...prev, [id]: status }))
+    naVerdwijnen(
+      'lead',
+      id,
+      companies.find((c) => c.id === id)?.companyName ?? '',
+      status,
+      filteredCompanies.map((c) => c.id),
+      vanuitPaneel
+    )
+  }
+
+  const openOpvolging = (onderwerp: { type: SubjectType; key: string; naam: string }, volgorde: string[]) => {
+    opvolgingHerkomst.current = { type: onderwerp.type, key: onderwerp.key, volgorde, melding: '' }
+    setOpvolging(onderwerp)
+  }
+
+  /**
+   * Het focusdoel na het sluiten van het opvolgingspaneel, als de knop die het opende weg is — nooit
+   * `body`.
+   *
+   * Onder het filter Niet beoordeeld of Opgeslagen zet Vastleggen de lead op gecontacteerd en verlaat de kaart de
+   * lijst; de Opvolging-knop die opende bestaat dan niet meer. Volgorde: de eigen kaart (Safari focust
+   * een knop niet bij een klik, dus de opener kan ontbreken terwijl de kaart er nog staat), dan de
+   * kaart die nu op die plek staat, dan de vorige, en anders het paneel van het tabblad. Een
+   * prospectkaart draagt geen `data-item`, dus daar is het paneel het doel.
+   */
+  const naSluitenOpvolging = (): HTMLElement | null => {
+    const herkomst = opvolgingHerkomst.current
+    if (!herkomst) return null
+    // Pas nu: achter het paneel was deze regio voor een schermlezer verborgen.
+    if (herkomst.melding) {
+      setStatusMelding(herkomst.melding)
+      herkomst.melding = ''
+    }
+    const i = herkomst.volgorde.indexOf(herkomst.key)
+    const kandidaten =
+      herkomst.type === 'lead' && i >= 0
+        ? [herkomst.key, ...herkomst.volgorde.slice(i + 1), ...herkomst.volgorde.slice(0, i).reverse()]
+        : []
+    for (const id of kandidaten) {
+      const kaart = document.querySelector(`[data-item="lead-${id}"]`)
+      const knop = kaart
+        ? Array.from(kaart.querySelectorAll<HTMLButtonElement>('button')).find(
+            (b) => b.textContent?.trim() === 'Opvolging'
+          )
+        : undefined
+      if (knop) return knop
+    }
+    return herkomst.type === 'lead' ? leadsPaneelRef.current : prospectsPaneelRef.current
+  }
+
+  /**
+   * "+N vacatures" na een sync: het tabblad van die soort, met "Alleen nieuw bij de laatste sync" aan.
+   * Status terug op Open en de zoekterm leeg — allebei kunnen ze de nieuwe items precies verbergen.
+   * Regio's en minimumscore blijven staan: die kies je bewust, en de lege toestand noemt ze.
+   */
+  const toonNieuwe = (soort: 'jobs' | 'leads') => {
+    setAlleenNieuw(true)
+    setStatusFilter('open')
+    setZoek('')
+    setViaLead(false)
+    setTab(soort)
   }
 
   return (
@@ -344,7 +531,7 @@ export function DashboardClient({
             >
               Instellingen
             </Link>
-            <SyncButton />
+            <SyncButton onToonNieuwe={toonNieuwe} />
           </div>
         </div>
 
@@ -360,14 +547,14 @@ export function DashboardClient({
           onRegionsChange={setRegions}
           onMinScoreChange={setMinScore}
           onStatusFilterChange={setStatusFilter}
+          alleenNieuw={tab === 'prospects' ? null : alleenNieuw}
+          onAlleenNieuwChange={setAlleenNieuw}
         />
 
-        {/* Na een doorklik verandert de lijst zonder dat er iets verplaatst; zonder dit hoort
-            een schermlezergebruiker niet wat er gebeurde. */}
-        <p aria-live="polite" className="sr-only">
-          {viaLead
-            ? `${filteredJobs.length} ${filteredJobs.length === 1 ? 'vacature' : 'vacatures'} van ${zoek}`
-            : ''}
+        {/* Na een doorklik of een filterwissel verandert de lijst zonder dat er iets verplaatst;
+            zonder dit hoort een schermlezergebruiker niet wat er gebeurde. */}
+        <p aria-live="polite" className="sr-only" data-filter-telling>
+          {telMelding?.tekst ?? ''}
         </p>
         <p aria-live="polite" className="sr-only" data-status-melding>
           {statusMelding}
@@ -392,7 +579,7 @@ export function DashboardClient({
             <TabsTrigger value="prospects">
               Prospects
               <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-                {prospectTotaal ?? '—'}
+                {prospectMislukt ? '—' : (prospectTotaal ?? '—')}
               </span>
             </TabsTrigger>
           </TabsList>
@@ -408,13 +595,21 @@ export function DashboardClient({
                   // Geen diagnose die niet gecontroleerd is. Er zijn twee toestanden en het
                   // verschil is meetbaar: staat het bedrijf wél in de database, dan filteren
                   // regio, score of status het weg. Staat het er niet, dan is dat het antwoord.
-                  bedrijfsSleutel !== null
+                  alleenNieuw && jobs.some((j) => pastJob(j, false))
+                    ? 'Geen vacatures die bij de laatste sync binnenkwamen binnen je filters — zet "Alleen nieuw bij de laatste sync" uit om de rest te zien.'
+                    : bedrijfsSleutel !== null
                     ? jobs.some((j) => normaliseerBedrijf(j.company) === bedrijfsSleutel)
                       ? `Geen vacatures van "${zoek}" binnen je huidige filters — pas regio, status of minimumscore aan.`
                       : `Er staan geen vacatures van "${zoek}" in de database.`
-                    : term
-                      ? `Geen vacatures gevonden voor "${zoek}".`
-                      : "Geen vacatures gevonden. Druk op 'Sync nu' om data op te halen."
+                    : jobs.some((j) => raaktJob(j.title, j.company))
+                      ? // De zoekterm (of geen) vindt wél vacatures: dan nemen regio, status of
+                        // score ze weg, en is Sync nu het verkeerde advies.
+                        term
+                        ? `Geen vacatures voor "${zoek}" binnen je huidige filters — pas regio, status of minimumscore aan.`
+                        : 'Geen vacatures binnen je huidige filters — pas regio, status of minimumscore aan.'
+                      : term
+                        ? `Geen vacatures gevonden voor "${zoek}".`
+                        : "Geen vacatures gevonden. Druk op 'Sync nu' om data op te halen."
                 }
               />
             ) : (
@@ -434,7 +629,7 @@ export function DashboardClient({
                       <JobCard
                         key={job.id}
                         job={job}
-                        isNew={job.firstSeenAt >= previousSyncAt}
+                        isNew={isNieuw(job.firstSeenAt, previousSyncAt)}
                         toonBron={toonBron}
                         onStatusChange={(status) => handleJobStatusChange(job.id, status)}
                       />
@@ -446,14 +641,29 @@ export function DashboardClient({
             )}
           </TabsContent>
 
-          <TabsContent value="leads">
+          {/* De ref is het laatste focusdoel na het opvolgingspaneel; Radix geeft een tabpaneel tabIndex 0. */}
+          <TabsContent ref={leadsPaneelRef} value="leads">
             <h2 className="sr-only">Leads</h2>
+            {spiegelFout && (
+              <p className="mt-3 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground" data-spiegel-fout>
+                De KBO-spiegel staat op deze machine maar ging niet open. De leadkaarten tonen daarom geen
+                KBO-vermoeden; de rest van het dashboard werkt gewoon.
+              </p>
+            )}
             {filteredCompanies.length === 0 ? (
               <EmptyState
                 message={
-                  term
-                    ? `Geen leads gevonden voor "${zoek}".`
-                    : "Geen leads gevonden. Druk op 'Sync nu' om data op te halen."
+                  // Zelfde onderscheid als bij Vacatures: vindt de zoekterm (of geen) wél leads, dan
+                  // zijn de filters de oorzaak en niet een ontbrekende sync.
+                  alleenNieuw && companies.some((c) => pastLead(c, false))
+                    ? 'Geen leads die bij de laatste sync binnenkwamen binnen je filters — zet "Alleen nieuw bij de laatste sync" uit om de rest te zien.'
+                    : companies.some((c) => raakt(c.companyName))
+                    ? term
+                      ? `Geen leads voor "${zoek}" binnen je huidige filters — pas regio, status of minimumscore aan.`
+                      : 'Geen leads binnen je huidige filters — pas regio, status of minimumscore aan.'
+                    : term
+                      ? `Geen leads gevonden voor "${zoek}".`
+                      : "Geen leads gevonden. Druk op 'Sync nu' om data op te halen."
                 }
               />
             ) : (
@@ -463,15 +673,14 @@ export function DashboardClient({
                     key={company.id}
                     company={company}
                     vermoeden={vermoedens[company.companyName] ?? null}
-                    isNew={company.firstSeenAt >= previousSyncAt}
+                    isNew={isNieuw(company.firstSeenAt, previousSyncAt)}
                     onStatusChange={(status) => handleLeadStatusChange(company.id, status)}
                     onToonVacatures={toonVacaturesVan}
                     onOpvolging={() =>
-                      setOpvolging({
-                        type: 'lead',
-                        key: String(company.id),
-                        naam: company.companyName,
-                      })
+                      openOpvolging(
+                        { type: 'lead', key: String(company.id), naam: company.companyName },
+                        filteredCompanies.map((c) => String(c.id))
+                      )
                     }
                     planKeys={koppelingen[`lead:${company.id}`] ?? []}
                   />
@@ -479,8 +688,11 @@ export function DashboardClient({
               </div>
             )}
           </TabsContent>
-          <TabsContent value="prospects">
-            <h2 className="sr-only">Prospects</h2>
+          <TabsContent ref={prospectsPaneelRef} value="prospects">
+            {/* tabIndex -1: het doel van de focus na een geslaagde Opnieuw proberen. */}
+            <h2 ref={prospectsKopRef} tabIndex={-1} className="sr-only">
+              Prospects
+            </h2>
 
             {/* Twee meldingen die BOVEN de lijst horen, niet in plaats ervan: een ontbrekende
                 of verouderde spiegel zegt iets over de data, niet over het resultaat. */}
@@ -544,22 +756,35 @@ export function DashboardClient({
                   <option value="actie">Volgende actie eerst</option>
                 </select>
                 <p className="text-sm tabular-nums text-muted-foreground">
-                  {prospectBezig || prospectTotaal === null ? 'Bezig…' : `${prospectTotaal} prospect${prospectTotaal === 1 ? '' : 's'}`}
+                  {prospectBezig || (prospectTotaal === null && !prospectMislukt)
+                    ? 'Bezig…'
+                    : prospectMislukt || prospectTotaal === null
+                      ? '—'
+                      : `${prospectTotaal} prospect${prospectTotaal === 1 ? '' : 's'}`}
                 </p>
                 <button
                   type="button"
                   onClick={() => setWeergave((w) => (w === 'lijst' ? 'kaart' : 'lijst'))}
                   aria-pressed={weergave === 'kaart'}
+                  // Ingedrukt = primary. `accent` haalde tegenover de niet-ingedrukte stand (background)
+                  // 1,10:1 in light en 1,30:1 in dark, dus de stand was niet te zien; primary haalt
+                  // 5,20:1 en 4,72:1 (WCAG 1.4.11 vraagt 3:1), en de tekst erop dezelfde waarden.
+                  // Gerekend op theme.css met de overrides uit app/globals.css.
                   className={cn(
-                    'rounded-md border bg-background px-2 py-1 text-sm text-foreground',
+                    'rounded-md border bg-background px-2 py-1 text-sm text-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground',
                     focusRing
                   )}
+                  data-weergave={weergave}
                 >
                   {/* Niet kaal "Kaart"/"Lijst": het herkomst-filter ernaast heeft al een
                       segment "Lijst" (= de aangeleverde bron). Twee controls met hetzelfde
                       woord en een andere betekenis in één paneel is voor een schermlezer
-                      niet te onderscheiden — Playwright weigerde er ook tussen te kiezen. */}
-                  {weergave === 'lijst' ? 'Kaartweergave' : 'Lijstweergave'}
+                      niet te onderscheiden — Playwright weigerde er ook tussen te kiezen.
+
+                      Een vaste naam: een toggle wisselt van stand, niet van naam (zie Bewaar in
+                      StatusActies). "Lijstweergave, ingedrukt" las als "de lijst staat aan"
+                      terwijl de kaart getoond werd. */}
+                  Kaartweergave
                 </button>
               </div>
             </div>
@@ -568,12 +793,17 @@ export function DashboardClient({
                 zonder live region hoort een schermlezergebruiker alleen "aangevinkt" en
                 niet dat de lijst van 2.939 naar 171 ging. Zelfde motivering als de
                 aria-live bij de doorklik vanaf een lead. */}
-            <p aria-live="polite" className="sr-only">
-              {prospectBezig || prospectTotaal === null
-                ? 'Bezig met laden'
-                : `${prospectTotaal} prospect${prospectTotaal === 1 ? '' : 's'}` +
-                  (alleenWinstgevend ? ', alleen winstgevende bedrijven uit de aangeleverde lijst' : '') +
-                  (zonderKbo > 0 ? `, ${zonderKbo} buiten de KBO-spiegel` : '')}
+            {/* Leeg na een mislukte lading: de alert hieronder kondigt die al aan. De pagina hoort erbij,
+                anders zegt Volgende niets — het totaal blijft over pagina's heen gelijk. */}
+            <p aria-live="polite" className="sr-only" data-prospects-telling>
+              {prospectMislukt && !prospectBezig
+                ? ''
+                : prospectBezig || prospectTotaal === null
+                  ? 'Bezig met laden'
+                  : `${prospectTotaal} prospect${prospectTotaal === 1 ? '' : 's'}` +
+                    (alleenWinstgevend ? ', alleen winstgevende bedrijven uit de aangeleverde lijst' : '') +
+                    (zonderKbo > 0 ? `, ${zonderKbo} buiten de KBO-spiegel` : '') +
+                    (weergave === 'lijst' && prospectPaginas > 1 ? `, pagina ${prospectPagina} van ${prospectPaginas}` : '')}
             </p>
 
             {/* Twee meldingen die een gevolg van de filters uitleggen in plaats van het stil
@@ -585,7 +815,8 @@ export function DashboardClient({
                 niet omdat ze verlies maken, maar omdat er geen cijfer over bekend is.
               </p>
             )}
-            {zonderKbo > 0 && (
+            {/* Niet na een mislukte lading: het getal hoort bij de vorige filterstand. */}
+            {zonderKbo > 0 && !prospectMislukt && (
               <p className="mt-3 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
                 {zonderKbo} {zonderKbo === 1 ? 'bedrijf uit de lijst staat' : 'bedrijven uit de lijst staan'} niet
                 in de KBO-spiegel. {zonderKbo === 1 ? 'Het valt' : 'Ze vallen'} daardoor buiten deze selectie:
@@ -596,10 +827,26 @@ export function DashboardClient({
 
             {weergave === 'kaart' ? (
               <ProspectMap filter={kaartFilter} />
-            ) : prospectFout ? (
-              <p role="alert" className="mt-8 text-center text-sm text-destructive">
-                {prospectFout}
-              </p>
+            ) : prospectMislukt ? (
+              <div className="mt-8 flex flex-col items-center gap-3">
+                <p role="alert" className="text-center text-sm text-destructive" data-prospects-fout>
+                  {prospectFout}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-disabled={prospectBezig}
+                  onClick={(e) => {
+                    if (prospectBezig) return
+                    focusNaPoging.current = document.activeElement === e.currentTarget
+                    setProspectPoging((n) => n + 1)
+                  }}
+                  className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                  data-prospects-opnieuw
+                >
+                  {prospectBezig ? 'Bezig…' : 'Opnieuw proberen'}
+                </Button>
+              </div>
             ) : prospects.length === 0 && !prospectBezig ? (
               <EmptyState
                 message={
@@ -623,22 +870,28 @@ export function DashboardClient({
                     heeftVacatures={leadNummers.has(p.nummer)}
                     vandaag={vandaag}
                     onStatusChange={(status) => handleProspectStatusChange(p.nummer, status)}
-                    onOpvolging={() =>
-                      setOpvolging({ type: 'prospect', key: p.nummer, naam: p.naam })
-                    }
+                    onOpvolging={() => openOpvolging({ type: 'prospect', key: p.nummer, naam: p.naam }, [])}
                     planKeys={koppelingen[`prospect:${p.nummer}`] ?? []}
                   />
                 ))}
               </div>
             )}
 
-            {weergave === 'lijst' && prospectPaginas > 1 && (
+            {weergave === 'lijst' && !prospectMislukt && prospectPaginas > 1 && (
               <div className="mt-4 flex items-center justify-center gap-3">
+                {/* `aria-disabled` en niet `disabled`, ook aan de randen: de knop die je net indrukte
+                    wordt tijdens het laden (en op de laatste pagina blijvend) onbruikbaar, en een
+                    disabled knop geeft zijn focus af aan `body` (zie StatusActies). */}
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={prospectPagina <= 1 || prospectBezig}
-                  onClick={() => setProspectPagina((p) => Math.max(1, p - 1))}
+                  aria-disabled={prospectPagina <= 1 || prospectBezig}
+                  onClick={() => {
+                    if (prospectPagina <= 1 || prospectBezig) return
+                    setProspectPagina((p) => Math.max(1, p - 1))
+                  }}
+                  className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                  data-pagina="vorige"
                 >
                   Vorige
                 </Button>
@@ -648,8 +901,13 @@ export function DashboardClient({
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={prospectPagina >= prospectPaginas || prospectBezig}
-                  onClick={() => setProspectPagina((p) => Math.min(prospectPaginas, p + 1))}
+                  aria-disabled={prospectPagina >= prospectPaginas || prospectBezig}
+                  onClick={() => {
+                    if (prospectPagina >= prospectPaginas || prospectBezig) return
+                    setProspectPagina((p) => Math.min(prospectPaginas, p + 1))
+                  }}
+                  className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                  data-pagina="volgende"
                 >
                   Volgende
                 </Button>
@@ -672,9 +930,10 @@ export function DashboardClient({
               if (opvolging.type === 'prospect') {
                 handleProspectStatusChange(opvolging.key, status as ItemStatus)
               } else {
-                handleLeadStatusChange(Number(opvolging.key), status as ItemStatus)
+                handleLeadStatusChange(Number(opvolging.key), status as ItemStatus, true)
               }
             }}
+            terugval={naSluitenOpvolging}
             planSectie={
               <PlanKoppeling
                 type={opvolging.type}

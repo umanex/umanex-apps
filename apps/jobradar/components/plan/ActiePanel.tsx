@@ -21,6 +21,7 @@ import {
   ACTIE_STATUSSEN,
   STATUS_KLEUR,
   STATUS_LABEL,
+  STATUS_LABEL_INLINE,
   type ActieDetail,
   type ActieStatus,
   type FocusConflict,
@@ -61,8 +62,9 @@ type ActiePanelProps = {
   bezig: boolean
   fout: string | null
   onOpenChange: (open: boolean) => void
-  onVerzoek: (verzoek: PanelVerzoek) => void
-  onHerlaad: () => void
+  /** Geeft terug of het verzoek slaagde: velden leegmaken en aankondigen gebeurt pas daarna. */
+  onVerzoek: (verzoek: PanelVerzoek) => Promise<boolean>
+  onHerlaad: () => Promise<boolean>
   onStart: (key: string) => void
 }
 
@@ -135,6 +137,11 @@ export function ActiePanel({
   const [wachtreden, setWachtreden] = useState(actie.wachtreden ?? '')
   const [teVerwijderen, setTeVerwijderen] = useState(false)
   const [nieuweStatus, setNieuweStatus] = useState<ActieStatus | null>(voorstel)
+  /** Wat de live-regio van het paneel voorleest na Bewaar, een statuswissel of Herlaad. */
+  const [melding, setMelding] = useState('')
+  const [vraagSluiten, setVraagSluiten] = useState(false)
+  /** Na een mislukte herlading blijft de knop staan, ook al is de melding dan geen versieconflict meer. */
+  const [herlaadGevraagd, setHerlaadGevraagd] = useState(false)
 
   /**
    * Het resultaat van een afronding in beeld brengen.
@@ -169,21 +176,119 @@ export function ActiePanel({
     if (nieuweStatus && actie.status === nieuweStatus) setNieuweStatus(null)
   }, [actie.status, nieuweStatus])
 
+  // Hetzelfde voor de velden die bij één handeling horen: is de handeling geland, dan is wat erin
+  // stond verwerkt. Bleven ze gevuld, dan vroeg het paneel na elke afronding of heropening bij het
+  // sluiten "Onbewaarde wijzigingen weggooien?" — over tekst die al in de geschiedenis staat. Op
+  // de status en niet direct na het antwoord: het detail met de nieuwe status komt apart binnen.
+  useEffect(() => {
+    if (actie.status === 'gereed') {
+      setBewijs('')
+      setBewijsLink('')
+    } else {
+      setHeropenReden('')
+    }
+    if (actie.status === 'bezig') setUitzonderingReden('')
+  }, [actie.status])
+
+  /**
+   * De velden onder Bewaar. Voor "is er iets onbewaard?" telt meer mee — zie `onbewaard`.
+   *
+   * Vergeleken zoals de server bewaart: tekst getrimd, uren afgerond op twee decimalen. Letterlijk
+   * vergeleken bleef een tekst met een regeleinde achteraan na een geslaagde Bewaar "Niet
+   * opgeslagen." — en vroeg het paneel bij het sluiten om bevestiging over iets dat al bewaard was.
+   */
+  const tekstAnders = (lokaal: string, bewaard: string | null) =>
+    lokaal.trim() !== (bewaard ?? '').trim()
+  const urenAnders = (lokaal: string, bewaard: number | null) =>
+    lokaal.trim() === '' ? bewaard !== null : Math.round(Number(lokaal) * 100) / 100 !== bewaard
   const gewijzigd =
-    titel !== actie.titel ||
-    beschrijving !== (actie.beschrijving ?? '') ||
-    resultaat !== (actie.resultaat ?? '') ||
-    volgendeStap !== (actie.volgendeStap ?? '') ||
-    gereedcriterium !== (actie.gereedcriterium ?? '') ||
-    inschatting !== (actie.inschattingUren === null ? '' : String(actie.inschattingUren)) ||
-    resterend !== (actie.resterendUren === null ? '' : String(actie.resterendUren)) ||
-    eigenaar !== actie.eigenaar ||
+    tekstAnders(titel, actie.titel) ||
+    tekstAnders(beschrijving, actie.beschrijving) ||
+    tekstAnders(resultaat, actie.resultaat) ||
+    tekstAnders(volgendeStap, actie.volgendeStap) ||
+    tekstAnders(gereedcriterium, actie.gereedcriterium) ||
+    urenAnders(inschatting, actie.inschattingUren) ||
+    urenAnders(resterend, actie.resterendUren) ||
+    tekstAnders(eigenaar, actie.eigenaar) ||
     streefdatum !== (actie.streefdatum ?? '') ||
     herbekijkOp !== (actie.herbekijkOp ?? '') ||
     JSON.stringify(links) !== JSON.stringify(actie.links)
 
-  const bewaarVelden = () =>
-    onVerzoek({
+  const kanUitzondering =
+    focusConflict !== null ||
+    (actie.uitvoerbaarheid === 'geblokkeerd' && !actie.blokkade.some((b) => b.hard))
+
+  /**
+   * Invoer die verloren gaat als het paneel sluit.
+   *
+   * Een eigen afleiding en niet `gewijzigd` uitgebreid: die stuurt Bewaar, en bewijs of een reden
+   * horen niet in dat verzoek. Een handelingsveld telt alleen zolang zijn blok in beeld staat; na
+   * een geslaagde handeling maakt het effect hierboven het leeg.
+   */
+  const onbewaard =
+    gewijzigd ||
+    linkLabel.trim() !== '' ||
+    linkUrl.trim() !== '' ||
+    (actie.status !== 'gereed' && (bewijs.trim() !== '' || bewijsLink.trim() !== '')) ||
+    (actie.status === 'gereed' && heropenReden.trim() !== '') ||
+    (kanUitzondering && uitzonderingReden.trim() !== '') ||
+    (nieuweStatus !== null && tekstAnders(wachtreden, actie.wachtreden))
+
+  /**
+   * Waar de focus na het sluiten naartoe gaat.
+   *
+   * Radix geeft hem alleen terug aan een `SheetTrigger` (`context.triggerRef`), en dit paneel opent
+   * via state. Zonder trigger roept de dialog `preventDefault()` op zijn eigen terugkeer en focust
+   * hij niets: na Escape of het kruis stond de focus op `body`. `onOpenAutoFocus` loopt vóór de
+   * focus het paneel in verhuist, dus `activeElement` is dan nog de knop die het opende.
+   */
+  const opener = useRef<HTMLElement | null>(null)
+  const terugRef = useRef<HTMLButtonElement>(null)
+  /** Waar de focus stond toen de vraag verscheen, om er na Terug naar terug te keren. */
+  const voorVraag = useRef<HTMLElement | null>(null)
+  const foutRef = useRef<HTMLParagraphElement>(null)
+
+  // Een fout verschijnt bovenaan; Markeer gereed, Bewaar en Voeg toe staan tientallen velden lager
+  // in een scrollend paneel. Zelfde vorm als het resultaat hierboven: scrollen, geen focus
+  // verplaatsen — de melding is al een `alert`, een focus erop liet hem twee keer voorlezen.
+  useEffect(() => {
+    if (fout) foutRef.current?.scrollIntoView({ block: 'nearest' })
+    else setHerlaadGevraagd(false)
+  }, [fout])
+
+  useEffect(() => {
+    if (vraagSluiten) terugRef.current?.focus()
+  }, [vraagSluiten])
+
+  // Wie de invoer intussen bewaarde of terugzette, hoeft niets meer te bevestigen.
+  useEffect(() => {
+    if (!onbewaard) setVraagSluiten(false)
+  }, [onbewaard])
+
+  /**
+   * Eén plek voor Escape, een klik op de overlay én het sluitkruis. Het kruis roept
+   * `onOpenChange(false)` rechtstreeks aan (`DialogClose`), dus `onEscapeKeyDown` of
+   * `onInteractOutside` zouden het missen.
+   */
+  const vraagOfSluit = (open: boolean) => {
+    if (open || !onbewaard) {
+      onOpenChange(open)
+      return
+    }
+    if (vraagSluiten) {
+      terugRef.current?.focus()
+      return
+    }
+    const actief = document.activeElement
+    voorVraag.current = actief instanceof HTMLElement ? actief : null
+    setVraagSluiten(true)
+  }
+
+  const bewaarVelden = async () => {
+    // De knop is `aria-disabled`, niet `disabled`: Enter en Spatie komen er dus nog door.
+    if (bezig || !gewijzigd) return
+    setMelding('')
+    const ok = await onVerzoek({
       soort: 'velden',
       body: {
         titel,
@@ -199,9 +304,35 @@ export function ActiePanel({
         links,
       },
     })
+    if (ok) setMelding(`${actie.key}: wijzigingen bewaard.`)
+  }
 
-  const zetStatus = (status: ActieStatus, extra: Record<string, unknown> = {}) =>
-    onVerzoek({ soort: 'status', body: { status, ...extra } })
+  /**
+   * Een statuswissel, met een aankondiging na een geslaagd antwoord. Behalve bij gereed: die
+   * meldt de live-regio van de afronding al, met wat er vrijkwam.
+   *
+   * Heropenen noemt de nieuwe status ook. Vanaf gereed kan de select elke status kiezen — ook
+   * vervallen of uitgesteld — en "heropend" alleen liet dan niet horen waar de actie nu staat.
+   */
+  const zetStatus = async (status: ActieStatus, extra: Record<string, unknown> = {}) => {
+    const van = actie.status
+    setMelding('')
+    const ok = await onVerzoek({ soort: 'status', body: { status, ...extra } })
+    if (ok && status !== 'gereed') {
+      setMelding(
+        van === 'gereed'
+          ? `${actie.key} heropend, staat nu op ${STATUS_LABEL_INLINE[status]}.`
+          : `${actie.key} staat nu op ${STATUS_LABEL_INLINE[status]}.`
+      )
+    }
+    return ok
+  }
+
+  const herlaad = async () => {
+    setHerlaadGevraagd(true)
+    setMelding('')
+    if (await onHerlaad()) setMelding('Plan herladen.')
+  }
 
   const kandidaten = alleActies.filter(
     (a) =>
@@ -263,11 +394,17 @@ export function ActiePanel({
                       className={cn('w-full', INVOER, focusRing)}
                     />
                   </div>
+                  {/* `aria-disabled` en een guard, geen `disabled`: een knop die onder de focus
+                      uitgeschakeld wordt, geeft die focus af aan `body`. */}
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={bezig}
-                    onClick={() => zetStatus('niet_gestart', { reden: heropenReden || null })}
+                    aria-disabled={bezig}
+                    onClick={() => {
+                      if (bezig) return
+                      void zetStatus('niet_gestart', { reden: heropenReden || null })
+                    }}
+                    className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
                   >
                     Heropen
                   </Button>
@@ -339,14 +476,37 @@ export function ActiePanel({
   )
 
   return (
-    <Sheet open onOpenChange={onOpenChange}>
+    <Sheet open onOpenChange={vraagOfSluit}>
       <SheetContent
         side="right"
         className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-lg"
         onOpenAutoFocus={(e) => {
+          const actief = document.activeElement
+          opener.current = actief instanceof HTMLElement && actief !== document.body ? actief : null
           if (!opAfronden) return
           e.preventDefault()
           document.getElementById('plan-bewijs')?.focus()
+        }}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault()
+          // Het paneel wordt ontkoppeld, niet alleen gesloten, en kan zijn opener meenemen: Afronden…
+          // verdwijnt zodra de actie gereed is, "Open A07" in Ideeën met de tabwissel. Dan de rij van
+          // deze actie, als die er staat. Maar een gereed-actie staat in geen enkele overzichtsgroep,
+          // een verwijderde nergens, en een rij in de dichtgeklapte groep Geblokkeerd is niet
+          // focusbaar — in alle drie viel de focus op `body`. Daarom een reeks, afgesloten door een
+          // anker dat er altijd staat: het actieve tabblad. Pas als de focus er echt landt, stopt hij.
+          const rij = document.querySelector<HTMLElement>(`[data-actie="${actie.key}"]`)
+          const kandidaten = [
+            opener.current,
+            rij?.querySelector<HTMLElement>('button'),
+            rij?.closest('[data-actiegroep]')?.querySelector<HTMLElement>('[aria-controls]'),
+            document.querySelector<HTMLElement>('[data-plan-tabs] [role="tab"][data-state="active"]'),
+          ]
+          for (const doel of kandidaten) {
+            if (!doel?.isConnected) continue
+            doel.focus()
+            if (document.activeElement === doel) return
+          }
         }}
       >
         <SheetHeader>
@@ -358,11 +518,45 @@ export function ActiePanel({
           </SheetDescription>
         </SheetHeader>
 
+        {vraagSluiten && onbewaard && (
+          <div
+            role="group"
+            aria-labelledby="plan-sluit-vraag"
+            className="space-y-2 rounded-md border border-warning p-3"
+            data-sluit-vraag
+          >
+            <p id="plan-sluit-vraag" className="text-sm font-medium">
+              Onbewaarde wijzigingen weggooien?
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="destructive" onClick={() => onOpenChange(false)}>
+                Weggooien
+              </Button>
+              <Button
+                ref={terugRef}
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (voorVraag.current?.isConnected) voorVraag.current.focus()
+                  setVraagSluiten(false)
+                }}
+              >
+                Terug
+              </Button>
+            </div>
+          </div>
+        )}
+
         {fout && (
-          <p role="alert" className="rounded-md border border-destructive p-2 text-sm text-destructive">
+          <p
+            ref={foutRef}
+            role="alert"
+            className="scroll-mt-6 rounded-md border border-destructive p-2 text-sm text-destructive"
+            data-paneel-fout
+          >
             {fout}
-            {versieConflict && (
-              <Button size="sm" variant="outline" className="ml-2" onClick={onHerlaad}>
+            {(versieConflict || herlaadGevraagd) && (
+              <Button size="sm" variant="outline" className="ml-2" onClick={() => void herlaad()}>
                 Herlaad plan
               </Button>
             )}
@@ -383,13 +577,13 @@ export function ActiePanel({
               aria-label="Status wijzigen"
               value={nieuweStatus ?? actie.status}
               disabled={bezig}
+              // Kiezen is nog niet versturen, voor geen enkele status. Met het toetsenbord verandert
+              // de waarde van een dichte select zonder dat hij opengaat — pijltjes op Windows en
+              // Linux, een letter op macOS — en elke stap onderweg was een PATCH die een actie kon
+              // starten en geschiedenis schreef. Het bevestigblok eronder verstuurt.
               onChange={(e) => {
                 const s = e.target.value as ActieStatus
-                if (VRAAGT_REDEN.includes(s)) setNieuweStatus(s)
-                else {
-                  setNieuweStatus(null)
-                  zetStatus(s)
-                }
+                setNieuweStatus(s === actie.status ? null : s)
               }}
               className={cn(
                 'cursor-pointer font-medium',
@@ -409,22 +603,34 @@ export function ActiePanel({
           {/* Uitstellen, wachten en vervallen vragen elk een reden, en die vraagt de app —
               hij vult hem nooit zelf in. De laag eronder weigert een lege reden met opzet;
               dit is dezelfde regel, één scherm eerder, zodat je hem ziet in plaats van
-              tegenkomt als foutmelding. */}
+              tegenkomt als foutmelding. De andere statussen krijgen hetzelfde blok zonder
+              redenveld: alleen de knop verstuurt. */}
           {nieuweStatus && (
-            <div className="space-y-2 rounded-md border border-warning p-3">
-              <Label htmlFor="plan-wachtreden" className="text-2xs">
-                {REDEN_VRAAG[nieuweStatus]}
-              </Label>
-              <input
-                id="plan-wachtreden"
-                type="text"
-                value={wachtreden}
-                maxLength={300}
-                autoFocus
-                disabled={bezig}
-                onChange={(e) => setWachtreden(e.target.value)}
-                className={cn('w-full', INVOER, focusRing)}
-              />
+            <div
+              className={cn(
+                'space-y-2 rounded-md border p-3',
+                VRAAGT_REDEN.includes(nieuweStatus) ? 'border-warning' : 'border-border'
+              )}
+              data-status-bevestig
+            >
+              {VRAAGT_REDEN.includes(nieuweStatus) && (
+                <>
+                  <Label htmlFor="plan-wachtreden" className="text-2xs">
+                    {REDEN_VRAAG[nieuweStatus]}
+                  </Label>
+                  {/* Geen autoFocus: die trok de focus uit de select zodra je er met de pijltjes
+                      langs een status met reden liep, en de volgende pijl ging naar dit veld. */}
+                  <input
+                    id="plan-wachtreden"
+                    type="text"
+                    value={wachtreden}
+                    maxLength={300}
+                    disabled={bezig}
+                    onChange={(e) => setWachtreden(e.target.value)}
+                    className={cn('w-full', INVOER, focusRing)}
+                  />
+                </>
+              )}
               {nieuweStatus === 'vervallen' && geraakt.length > 0 && (
                 <div className="space-y-1 text-sm" data-vervallen-gevolg>
                   {/* Het gevolg per actie, niet één zin voor allemaal: een lopende actie blokkeert
@@ -464,16 +670,30 @@ export function ActiePanel({
                 </div>
               )}
               <div className="flex flex-wrap items-center gap-2">
+                {/* `aria-disabled` en een guard, geen `disabled`: dit is de knop die je net
+                    activeerde, en een uitgeschakelde knop geeft zijn focus af aan `body`. */}
                 <Button
                   size="sm"
-                  disabled={bezig || wachtreden.trim() === ''}
-                  onClick={() =>
-                    zetStatus(nieuweStatus, {
-                      wachtreden,
-                      reden: wachtreden,
-                      ...(nieuweStatus === 'uitgesteld' && herbekijkOp ? { herbekijkOp } : {}),
-                    })
+                  aria-disabled={
+                    bezig || (VRAAGT_REDEN.includes(nieuweStatus) && wachtreden.trim() === '')
                   }
+                  className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                  onClick={async () => {
+                    if (bezig || (VRAAGT_REDEN.includes(nieuweStatus) && wachtreden.trim() === '')) {
+                      return
+                    }
+                    if (VRAAGT_REDEN.includes(nieuweStatus)) {
+                      await zetStatus(nieuweStatus, {
+                        wachtreden,
+                        reden: wachtreden,
+                        ...(nieuweStatus === 'uitgesteld' && herbekijkOp ? { herbekijkOp } : {}),
+                      })
+                      return
+                    }
+                    // Zonder reden is er niets om te bewaren: bij een weigering (een 409 op de
+                    // focusregel) toont de select weer de echte status, naast het conflictblok.
+                    if (!(await zetStatus(nieuweStatus))) setNieuweStatus(null)
+                  }}
                 >
                   Zet op {STATUS_LABEL[nieuweStatus].toLowerCase()}
                 </Button>
@@ -564,6 +784,12 @@ export function ActiePanel({
             : vrijNaAfronding.length === 0
               ? `${actie.key} afgerond.`
               : `${actie.key} afgerond. Nu beschikbaar: ${vrijNaAfronding.join(', ')}.`}
+        </p>
+        {/* De andere handelingen — Bewaar, een statuswissel, Heropen, Herlaad — in een eigen regio.
+            Niet in die hierboven: die zegt wat een afronding vrijgaf, en hoort na Heropen leeg te
+            zijn (de UI-probe toetst dat). Zelfde regel: altijd gerenderd, ook leeg. */}
+        <p aria-live="polite" className="sr-only" data-paneel-melding>
+          {melding}
         </p>
         {vrijNaAfronding && vrijNaAfronding.length > 0 && (
           <div
@@ -851,7 +1077,14 @@ export function ActiePanel({
         </section>
 
         <div className="flex items-center gap-3 border-t pt-4">
-          <Button size="sm" onClick={bewaarVelden} disabled={bezig || !gewijzigd}>
+          {/* `aria-disabled`: na een geslaagde Bewaar is `gewijzigd` onwaar, en een `disabled`
+              knop gaf op dat moment zijn focus af aan `body`. */}
+          <Button
+            size="sm"
+            aria-disabled={bezig || !gewijzigd}
+            onClick={() => void bewaarVelden()}
+            className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
+          >
             {bezig ? 'Bezig…' : 'Bewaar'}
           </Button>
           {gewijzigd && <span className="text-2xs text-muted-foreground">Niet opgeslagen.</span>}

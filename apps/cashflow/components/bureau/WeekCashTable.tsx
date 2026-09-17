@@ -17,7 +17,7 @@ const BRON: Record<CashLineSource, string> = {
   eenmalig: 'Eenmalige uitgaven',
   budgetten: 'Budgetten',
   provisies: 'Naar provisies',
-  buffer: 'Buffer',
+  buffer: 'Bufferpot',
 };
 
 function regel(l: CashLine, week: WeekRow): string {
@@ -25,12 +25,15 @@ function regel(l: CashLine, week: WeekRow): string {
   const maand = getMonthLabel(l.monthKey).toLowerCase();
   if (l.source === 'factuur') return `factuurdatum in een andere maand — laatste week van ${maand}`;
   if (l.source === 'post') return `losse post — laatste week van ${maand}`;
-  if (l.source === 'buffer') return `maandeinde ${maand}`;
+  // Positief = opname: die valt sinds 2026-09-17 in de eerste week, bij de kosten die het tekort maken.
+  // Negatief = opbouw: die veegt op maandeinde.
+  if (l.source === 'buffer' && l.amount < 0) return `opbouw — maandeinde ${maand}`;
+  if (l.source === 'buffer') return firstWeekOfMonth(l.monthKey) === week.weekKey ? `opname — eerste week van ${maand}, bij de kosten` : `opname — ${maand}, de eerste week is voorbij, dus deze week`;
   return firstWeekOfMonth(l.monthKey) === week.weekKey ? `eerste week van ${maand}` : `${maand} — de eerste week is voorbij, dus deze week`;
 }
 
 /**
- * Dertien weken vrije cash. Per week de opening, wat binnenkomt, wat vertrekt, wat naar de potten
+ * Dertien weken Vrij (geld buiten elke pot). Per week de opening, wat binnenkomt, wat vertrekt, wat naar de potten
  * gaat, en het einde; de regels eronder tonen waar elk bedrag vandaan komt en waarom het in die
  * week staat.
  */
@@ -42,11 +45,11 @@ export function WeekCashTable({ weeks }: { weeks: WeekRow[] }) {
     <div className="space-y-2 rounded-xl border border-accent bg-card pt-3">
       {/* De uitleg staat buiten de scroller: in een caption rekt ze mee met de tabelbreedte en valt ze op 390 px buiten beeld. */}
       <p id="weken-uitleg" className="max-w-prose px-3 text-sm text-muted-foreground">
-        13 weken vanaf deze week, vrije cash incl. btw. De timing binnen een maand is een aanname: kosten en provisies in de eerste week (nooit vóór deze week), losse inkomsten in de laatste, buffer op maandeinde; alleen facturen staan op hun verwachte betaaldatum. Een week kan daardoor dieper staan dan het maandeinde, soms ook hoger — het maandeinde uit de prognose is het kopgetal hierboven. De cashbehoefte uit de doelen telt niet mee.
+        13 weken vanaf deze week, in Vrij (geld buiten elke pot) incl. btw. De timing binnen een maand is een aanname: kosten, provisies en een opname uit de bufferpot in de eerste week (nooit vóór deze week), losse inkomsten in de laatste, opbouw van de bufferpot op maandeinde; alleen facturen staan op hun verwachte betaaldatum. Een week kan daardoor dieper staan dan het maandeinde, soms ook hoger — de laagste Buffer uit de prognose is het kopgetal hierboven. De cashbehoefte uit de doelen telt niet mee.
       </p>
       <div data-scroll-x className="overflow-x-auto">
         <table className="w-full min-w-[44rem] text-dense" aria-describedby="weken-uitleg">
-          <caption className="sr-only">Vrije cash per week, 13 weken</caption>
+          <caption className="sr-only">Vrij per week, 13 weken</caption>
           <thead className="border-b border-border">
             <tr>
               {['Week', 'Opening vrij', 'Ontvangsten', 'Uitgaven', 'Naar potten', 'Einde vrij', 'Regels'].map((h, i) => (

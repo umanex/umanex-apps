@@ -50,11 +50,11 @@ function buildSteps(month: MonthData, isAnchor: boolean): Step[] {
     // er € 5.500,00 bíj kwam, en op de bevroren augustus van het echte document −€ 3.284,00
     // bij een pot die € 695,72 opnam. Teken én grootte fout — het getal klopt, het woord niet.
     {
-      label: isAnchor ? 'In de buffer' : 'Naar de buffer',
+      label: isAnchor ? 'In de bufferpot' : 'Naar de bufferpot',
       delta: -subtotals.buffer,
       value: subtotals.endBalance,
     },
-    { label: 'Eindsaldo', delta: null, value: subtotals.endBalance },
+    { label: 'Vrij', delta: null, value: subtotals.endBalance },
   ];
 }
 
@@ -88,7 +88,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
       <div className="flex items-baseline justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold text-foreground">
-            Van beginsaldo naar eindsaldo
+            Van beginsaldo naar Vrij
           </h2>
           <p className="text-sm text-muted-foreground">
             {getMonthLabel(month.monthKey)} — elke stap van de kernformule
@@ -109,7 +109,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
         className="mt-4 w-full h-auto max-h-[280px]"
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label={`Opbouw van het eindsaldo van ${getMonthLabel(month.monthKey)}.${showTable ? ' De tabel eronder bevat dezelfde waarden.' : ' Gebruik "Toon tabel" voor dezelfde waarden als tekst.'}`}
+        aria-label={`Opbouw van Vrij eind ${getMonthLabel(month.monthKey)}.${showTable ? ' De tabel eronder bevat dezelfde waarden.' : ' Gebruik "Toon tabel" voor dezelfde waarden als tekst.'}`}
       >
         {/* Ontdubbeld: `values` bevat altijd een literale 0, dus min <= 0 <= max. Zodra
             een van beide exact 0 is — het normale geval, en met een actieve bufferpot per
@@ -195,7 +195,7 @@ export function WaterfallChart({ month }: WaterfallChartProps) {
 
       {showTable && (
         <table id="waterfall-tabel" className="mt-4 w-full text-sm">
-          <caption className="sr-only">Opbouw van het eindsaldo</caption>
+          <caption className="sr-only">Opbouw van Vrij</caption>
           <thead>
             <tr className="text-left text-muted-foreground">
               <th scope="col" className="font-medium py-1">Stap</th>

@@ -1,5 +1,5 @@
 import type { MonthData } from './types';
-import { netBurn } from './burn';
+import { netBurn } from './burn.ts';
 
 /**
  * Wat de bufferpot in één maand doet. Eén afleiding voor de footer, de analyse en de

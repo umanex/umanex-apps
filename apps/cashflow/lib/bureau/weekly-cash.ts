@@ -1,5 +1,5 @@
 /**
- * Dertien weken vrije cash, als verdeling van de maandrekenkern — geen tweede rekenkern.
+ * Dertien weken Vrij (geld buiten elke pot), als verdeling van de maandrekenkern — geen tweede rekenkern.
  *
  * De maandtotalen komen uit `calculateMonths` (ankermaand = de maand van vandaag). Deze module
  * beslist alleen in wélke week een maandbedrag valt:
@@ -10,7 +10,10 @@
  * - een losse inkomstenpost valt in de laatste week van haar maand;
  * - vaste kosten, eenmalige uitgaven, budgetten en provisies vallen in de eerste week van hun
  *   maand, en in de ankermaand nooit vóór deze week;
- * - de bufferpot veegt op maandeinde, dus in de laatste week.
+ * - een opname uit de bufferpot valt in diezelfde eerste week: de pot dekt het tekort op het
+ *   moment dat de kosten het maken, zoals de rekenkern hem in dezelfde maand gebruikt. Opbouw
+ *   van de pot veegt op maandeinde, dus in de laatste week. (Tot 2026-09-17 viel ook een opname
+ *   in de laatste week; dan stond de weektabel een hele maand lager dan de rekenkern rekent.)
  *
  * Vrij = bank − gereserveerd. In de ankermaand zit de potstand bij de start al in het banksaldo
  * én in de provisiekop van de rekenkern; hij gaat er één keer af, in de openingsstand
@@ -22,6 +25,8 @@
  * gemeld. De cashbehoefte uit de doelen is een aanname en komt hier nergens in.
  */
 import type { IncomeItem, MonthData, MonthKey } from '../cashflow/types.ts';
+import { bufferSummary } from '../cashflow/buffer.ts';
+import { potStandAtStart, type PotStand } from '../cashflow/subtotals.ts';
 import type { BureauData, IsoDate, WeekKey } from './types.ts';
 import { EPSILON, invoiceGross, round2 } from './money.ts';
 import { endOfMonth, parseISO } from 'date-fns';
@@ -94,12 +99,20 @@ export type MonthReconciliation = {
   delta: number;
 };
 
-/** Het vrije saldo aan het einde van een maand, zoals de rekenkern het uitrekent — zonder aanname over timing binnen de maand. */
-export type MonthEnd = { monthKey: MonthKey; closingFree: number };
+/**
+ * Een maandeinde zoals de rekenkern het uitrekent — zonder aanname over timing binnen de maand.
+ *
+ * Twee woorden, overal in de app dezelfde: **Vrij** is geld buiten elke pot (`closingFree`,
+ * het eindsaldo), **Buffer** is vrij plus de bufferpot (`buffer`, gelijk aan de footer op `/`).
+ * Zolang een tekort de pot leegt vallen ze samen; in een maand waarin het overschot in de pot
+ * landt staat Vrij op € 0 en draagt de Buffer het echte kussen.
+ */
+export type MonthEnd = { monthKey: MonthKey; closingFree: number; bufferPot: number; buffer: number };
 
 export type WeeklyCashPlan = {
   asOf: IsoDate;
-  position: { bank: number; reserved: number; free: number };
+  /** `reserved` = `provisions` + `buffer`: wat bij de start in de potten zit, uitgesplitst voor de brug. */
+  position: { bank: number; reserved: number; provisions: number; buffer: number; free: number };
   /** De maandeinden die binnen de horizon vallen; een maand die na de laatste week eindigt, telt niet mee. */
   monthEnds: MonthEnd[];
   weeks: WeekRow[];
@@ -118,23 +131,9 @@ export type WeeklyCashInput = {
   bureau: BureauData;
 };
 
-type PotSplit = { provisions: number; buffer: number };
-
-/**
- * Wat er bij de start van de ankermaand al in de potten zit, na wat er deze maand al uit
- * betaald is. Dezelfde potten als de provisiekop van `computeMonthSubtotals`: spaardoelen, niet
- * gefinaliseerd.
- */
-export function reservedAtStart(anchor: MonthData): PotSplit {
-  const split: PotSplit = { provisions: 0, buffer: 0 };
-  for (const p of anchor.reservationPots) {
-    if (p.potType !== 'spaardoel' || p.finalized) continue;
-    const paid = p.paymentsThisMonth.reduce((s, x) => s + x.fromReservation, 0);
-    const stand = Math.max(0, p.deferredFromPrevious - paid);
-    if (p.isDeficitBuffer) split.buffer += stand;
-    else split.provisions += stand;
-  }
-  return { provisions: round2(split.provisions), buffer: round2(split.buffer) };
+/** Wat er bij de start van de ankermaand al in de potten zit; de afleiding staat bij de provisiekop. */
+export function reservedAtStart(anchor: MonthData): PotStand {
+  return potStandAtStart(anchor.reservationPots);
 }
 
 const lastDayOfMonth = (m: MonthKey): IsoDate => toIsoDate(endOfMonth(parseISO(`${m}-01`)));
@@ -216,7 +215,9 @@ export function buildWeeklyCashPlan({ asOf, months, incomeItems, bureau }: Weekl
     kop('eenmalig', 'Eenmalige uitgaven', s.oneOff, first);
     kop('budgetten', 'Budgetten', s.budgets, first);
     kop('provisies', 'Naar provisies', isAnchor ? s.provisions - reserved.provisions : s.provisions, first);
-    kop('buffer', 'Naar buffer', isAnchor ? s.buffer - reserved.buffer : s.buffer, last);
+    const bufferBeweging = isAnchor ? s.buffer - reserved.buffer : s.buffer;
+    if (bufferBeweging < 0) kop('buffer', 'Uit bufferpot', bufferBeweging, first);
+    else kop('buffer', 'Naar bufferpot', bufferBeweging, last);
   }
 
   const bank = anchor ? round2(anchor.startBalance) : 0;
@@ -249,11 +250,14 @@ export function buildWeeklyCashPlan({ asOf, months, incomeItems, bureau }: Weekl
   const horizonEnd = weekRange(lastWeek).to;
   const monthEnds: MonthEnd[] = horizonMonths
     .filter((m) => lastDayOfMonth(m.monthKey) <= horizonEnd)
-    .map((m) => ({ monthKey: m.monthKey, closingFree: round2(m.endBalance) }));
+    .map((m) => {
+      const b = bufferSummary(m);
+      return { monthKey: m.monthKey, closingFree: round2(m.endBalance), bufferPot: round2(b.total), buffer: round2(b.position) };
+    });
 
   return {
     asOf,
-    position: { bank, reserved: reservedTotal, free: round2(bank - reservedTotal) },
+    position: { bank, reserved: reservedTotal, provisions: reserved.provisions, buffer: reserved.buffer, free: round2(bank - reservedTotal) },
     monthEnds,
     weeks,
     beyondHorizon,
@@ -269,20 +273,23 @@ export function verifyReconciliation(plan: WeeklyCashPlan): MonthReconciliation[
 }
 
 /**
- * Het kopgetal: het laagste vrije saldo aan een maandeinde binnen de horizon. Rekent zonder
+ * Het kopgetal: de laagste **Buffer** aan een maandeinde binnen de horizon. Rekent zonder
  * aanname over wanneer een kost of inkomst binnen de maand valt — dat is de rekenkern zelf.
+ * Op de Buffer en niet op Vrij: in een maand waarin het overschot in de pot landt staat Vrij
+ * op € 0, en dan zou "laagste punt" een gezonde maand aanwijzen (beslissing 2026-09-17).
  * `null` zonder volledig gedekte maand.
  */
 export function lowestMonthEnd(plan: WeeklyCashPlan): MonthEnd | null {
-  return plan.monthEnds.reduce<MonthEnd | null>((min, m) => (min === null || m.closingFree < min.closingFree ? m : min), null);
+  return plan.monthEnds.reduce<MonthEnd | null>((min, m) => (min === null || m.buffer < min.buffer ? m : min), null);
 }
 
 /**
- * De laagste stand in de weektabel. Die leunt op de verdeelregel — kosten en provisies vroeg,
- * losse inkomsten laat, facturen op hun datum, buffer op maandeinde — en is dus een aanname over
- * timing, geen voorspelling. Meestal staat hij lager dan het laagste maandeinde, maar niet altijd:
- * valt de buffer-storting van een maand in dezelfde week als een factuur van de volgende, dan sluit
- * geen enkele week op dat maandeinde. Zie `lowestMonthEnd` voor het kopgetal. `null` zonder weken.
+ * De laagste stand in de weektabel, in Vrij — een week kent geen pot. Die leunt op de
+ * verdeelregel — kosten, provisies en een opname uit de bufferpot vroeg, losse inkomsten laat,
+ * facturen op hun datum, opbouw van de pot op maandeinde — en is dus een aanname over timing, geen
+ * voorspelling. Vergelijk hem met het vrije maandeinde (`closingFree`), niet met de Buffer. Meestal
+ * staat hij lager, maar niet altijd: valt de opbouw van een maand in dezelfde week als een factuur
+ * van de volgende, dan sluit geen enkele week op dat maandeinde. `null` zonder weken.
  */
 export function lowestFree(plan: WeeklyCashPlan): { weekKey: WeekKey; closingFree: number } | null {
   return plan.weeks.reduce<{ weekKey: WeekKey; closingFree: number } | null>(

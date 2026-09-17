@@ -4,6 +4,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { MonthData, ReservationPotType } from '../../lib/cashflow/types';
 import { addMonth, getMonthLabel } from '../../lib/cashflow/recurring';
 import { bufferSummary } from '../../lib/cashflow/buffer';
+import { provisionStandForHeader } from '../../lib/cashflow/subtotals';
 import { BalanceFooter } from './BalanceFooter';
 import { MonthVariance } from './MonthVariance';
 import { IncomeSection } from './IncomeSection';
@@ -216,6 +217,7 @@ export function MonthCard({
           monthKey={monthKey}
           isCurrentMonth={isFirst}
           pots={reservationPots}
+          provisionStandAtStart={provisionStandForHeader(subtotals.basis, reservationPots)}
           budgetAmount={subtotals.budgets}
           provisionAmount={subtotals.provisions}
           deferredReservationItems={deferredReservationItems}
@@ -249,6 +251,7 @@ export function MonthCard({
       <BalanceFooter
         movement={buffer.movement}
         position={buffer.position}
+        bufferPot={buffer.total}
         hasBuffer={hasBuffer}
         isAnchor={isFirst || locked}
       />

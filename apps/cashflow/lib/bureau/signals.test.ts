@@ -11,13 +11,13 @@ import { overdueActions, withoutNextAction } from './pipeline.ts';
 import { buildWeeklyCashPlan } from './weekly-cash.ts';
 import { weeksFrom } from './periods.ts';
 import type { MonthData } from '../cashflow/types.ts';
-import { month, opportunity, project, subtotals, timeEntry } from './testing.ts';
+import { month, opportunity, pot, project, subtotals, timeEntry } from './testing.ts';
 import type { BureauData, BusinessGoals, Milestone } from './types.ts';
 
 const ASOF = '2027-03-10';
 const m = (id: string, amount: number, over: Partial<Milestone> = {}): Milestone => ({ id, label: id, plannedMonth: '2027-06', amount, realizedOn: null, realizedAmount: null, extensionId: null, ...over });
 
-function build(bureau: BureauData, opts: { goals?: BusinessGoals | null; endBalance?: number; incomeAtMonthEnd?: number } = {}): SignalInputs {
+function build(bureau: BureauData, opts: { goals?: BusinessGoals | null; endBalance?: number; incomeAtMonthEnd?: number; bufferPot?: number } = {}): SignalInputs {
   const goals = opts.goals === undefined ? (bureau.goals['2027'] ?? null) : opts.goals;
   const start = 1_000;
   const eind = opts.endBalance ?? 500;
@@ -28,6 +28,7 @@ function build(bureau: BureauData, opts: { goals?: BusinessGoals | null; endBala
     startBalance: start,
     totalIncome: inkomen,
     incomeItems: posten,
+    reservationPots: opts.bufferPot === undefined ? [] : [pot({ reservationId: 'buffer', isDeficitBuffer: true, potBalance: opts.bufferPot })],
     subtotals: subtotals({ basis: 'bank', incoming: start + inkomen, recurring: start + inkomen - eind }),
   });
   const cash = buildWeeklyCashPlan({ asOf: ASOF, months: [maart], incomeItems: [], bureau });
@@ -177,4 +178,13 @@ test('negatieve cash uitgeschakeld: ook geen info over een dip in de weektabel',
   b.goals['2027']!.signals.negativeCash.enabled = false;
   const r = computeSignals(build(b, { endBalance: 500, incomeAtMonthEnd: 1_000 }));
   assert.equal(r.signals.some((x) => x.id === 'cash-krap-binnen-maand' || x.id === 'cash-negatief'), false);
+});
+
+test('negatieve cash oordeelt op de Buffer (vrij + bufferpot), niet op Vrij alleen', () => {
+  const b = gezond();
+  b.goals['2027']!.signals.negativeCash = { enabled: true, floor: 100 };
+  // Vrij € 0 aan maandeinde, € 500 in de bufferpot: Buffer € 500, boven de vloer van € 100.
+  assert.equal(ids(build(b, { endBalance: 0, bufferPot: 500 })).includes('cash-negatief'), false);
+  // Tegenproef: dezelfde maand zonder pot zakt wél onder de vloer — op Vrij gerekend zou de eerste ook vuren.
+  assert.ok(ids(build(b, { endBalance: 0, bufferPot: 0 })).includes('cash-negatief'));
 });

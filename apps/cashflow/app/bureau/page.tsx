@@ -63,6 +63,7 @@ export default function OverzichtPage() {
       verwacht: nietGeannuleerd.reduce((s, p) => s + approvedTotal(p), 0),
       laagsteWeek: lowestFree(cash),
       laagsteMaand: lowestMonthEnd(cash),
+      laagsteVrij: cash.monthEnds.reduce<number | null>((min, m) => (min === null || m.closingFree < min ? m.closingFree : min), null),
     };
   }, [bureau, year, today, huidigJaar, months, incomeItems]);
 
@@ -171,15 +172,22 @@ export default function OverzichtPage() {
         />
         <KpiTile
           kpi="cash"
-          title="Vrije cash, 13 weken"
-          value={leegCash ? null : formatCurrency(cash.position.free)}
-          insufficient={{ reason: 'De maandprognose is leeg.', fix: { href: '/', label: 'Naar de prognose' } }}
+          title="Buffer, 13 weken"
+          // Het grote getal is het laagste punt — de vraag "kom ik rond" — en niet wat er vandaag vrij is.
+          // Tot 2026-09-17 stond hier `position.free` (€ 4.731 op het echte document) pal onder een
+          // kritiek signaal dat de Buffer negatief zag worden. Zonder maand binnen de horizon: onvoldoende.
+          value={leegCash || !d.laagsteMaand ? null : formatCurrency(d.laagsteMaand.buffer)}
+          insufficient={
+            leegCash
+              ? { reason: 'De maandprognose is leeg.', fix: { href: '/', label: 'Naar de prognose' } }
+              : { reason: 'Geen maand die binnen de 13 weken eindigt.', fix: { href: '/bureau/cash', label: 'Naar cash' } }
+          }
           secondary={
             d.laagsteMaand
-              ? `laagste maandeinde ${formatCurrency(d.laagsteMaand.closingFree)} (eind ${monthLabel(d.laagsteMaand.monthKey)})${d.laagsteWeek && d.laagsteWeek.closingFree < d.laagsteMaand.closingFree ? ` · weektabel (kosten vroeg, inkomsten laat) tot ${formatCurrency(d.laagsteWeek.closingFree)}` : ''}`
+              ? `laagste punt eind ${monthLabel(d.laagsteMaand.monthKey)}: vrij ${formatCurrency(d.laagsteMaand.closingFree)} + bufferpot ${formatCurrency(d.laagsteMaand.bufferPot)}${d.laagsteWeek && d.laagsteVrij !== null && d.laagsteWeek.closingFree < d.laagsteVrij - 0.005 ? ` · weektabel (kosten vroeg, inkomsten laat): Vrij tot ${formatCurrency(d.laagsteWeek.closingFree)}` : ''}`
               : undefined
           }
-          denominator={leegCash ? 'geen banksaldo of posten in de prognose' : `bank ${formatCurrency(cash.position.bank)} − potten ${formatCurrency(cash.position.reserved)}`}
+          denominator={leegCash ? 'geen banksaldo of posten in de prognose' : `vrij vandaag ${formatCurrency(cash.position.free)} = bank ${formatCurrency(cash.position.bank)} − potten ${formatCurrency(cash.position.reserved)}`}
           source="Maandprognose verdeeld over 13 weken, vanaf vandaag"
           link={{ href: '/bureau/cash', label: 'Naar cash' }}
           chips={zonderDatum ? [`${zonderDatum} ${zonderDatum === 1 ? 'factuur' : 'facturen'} zonder datum niet ingepland`] : []}

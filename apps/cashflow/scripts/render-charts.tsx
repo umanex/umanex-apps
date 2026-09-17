@@ -71,8 +71,8 @@ const goedeMaand = calculateMonths(
 
 // Dezelfde opzet, maar de tweede kolom: een maand die van een geprojecteerd vrij saldo
 // vertrekt in plaats van van het banksaldo. Staat er als tegenproef bij de ankerlabels —
-// dezelfde grafiek hoort hier "Naar de buffer" en "Mutatie" te tonen waar de ankerversie
-// "In de buffer" en "Nog af" toont. Tekenen beide hetzelfde, dan doet de tak niets.
+// dezelfde grafiek hoort hier "Naar de bufferpot" en "Mutatie" te tonen waar de ankerversie
+// "In de bufferpot" en "Nog af" toont. Tekenen beide hetzelfde, dan doet de tak niets.
 const latereMaand = calculateMonths(
   '2026-06', 9000, [], inkomen(['2026-06', '2026-07'], () => 6000),
   [HUUR], [BUFFER, BTW, BOODSCHAPPEN], [], [], [], [], [], 2,
@@ -131,9 +131,9 @@ const blokken: Array<[string, string]> = [
   ['Runway — negatieve bufferstand (randgeval)', renderToStaticMarkup(h(RunwayCard, {
     runway: { months: -0.67, buffer: -400, netBurn: 600, closedMonths: 5, hasEnoughData: true },
   }))],
-  ['Waterfall — ankermaand met buffer (stand: "In de buffer" / "Nog af")',
+  ['Waterfall — ankermaand met buffer (stand: "In de bufferpot" / "Nog af")',
     renderToStaticMarkup(h(WaterfallChart, { month: goedeMaand }))],
-  ['Waterfall — latere maand (mutatie: "Naar de buffer" / "Mutatie")',
+  ['Waterfall — latere maand (mutatie: "Naar de bufferpot" / "Mutatie")',
     renderToStaticMarkup(h(WaterfallChart, { month: latereMaand }))],
   ['Waterfall — negatief eindsaldo (randgeval)',
     renderToStaticMarkup(h(WaterfallChart, { month: magereMaand }))],

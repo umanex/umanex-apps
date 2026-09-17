@@ -22,6 +22,8 @@ interface ReservationSectionProps {
   /** Stapbedragen van de twee ledger-regels, uit de calculator. */
   budgetAmount: number;
   provisionAmount: number;
+  /** Stand van de provisiepotten bij de start, alleen wanneer de provisiekop hem draagt (bankbasis). */
+  provisionStandAtStart?: number;
   deferredReservationItems: DeferredReservationDisplayItem[];
   onRegisterPayment: (filterType: ReservationPotType) => void;
   onRemovePayment: (id: string) => void;
@@ -336,6 +338,7 @@ function PotSubgroup({
   onUnfinalize,
   onAmountChange,
   locked,
+  standAtStart,
 }: {
   label: string;
   potType: ReservationPotType;
@@ -354,6 +357,12 @@ function PotSubgroup({
   onUnfinalize: (reservationId: string) => void;
   onAmountChange: (reservationId: string, amount: number | null) => void;
   locked?: boolean;
+  /**
+   * Alleen de provisies in de ankermaand: wat er bij de start al in de potten zat. Daar telt de kop
+   * de stand plus de storting van deze maand, terwijl de velden eronder alleen de storting tonen —
+   * zonder deze regel telt "−€ 18.521" niet op uit wat je ziet.
+   */
+  standAtStart?: number;
 }) {
   const [showFinalized, setShowFinalized] = useState(false);
   // Zie RecurringSection: in een afgesloten maand is de filterknop uitgeschakeld, dus mag
@@ -375,6 +384,16 @@ function PotSubgroup({
         onAdd={() => onRegisterPayment(potType)}
         addAriaLabel="Betaling registreren"
       />
+      {standAtStart !== undefined && standAtStart >= 0.005 && (
+        <span
+          className="-mt-1 pl-2 text-2xs leading-tight tabular-nums text-muted-foreground"
+          data-provision-bridge
+          data-stand={standAtStart}
+          data-deposit={subtotaal - standAtStart}
+        >
+          al opzij {formatAmount(standAtStart)} + storting {formatAmount(subtotaal - standAtStart)}
+        </span>
+      )}
 
       <div className="flex flex-col gap-1 w-full">
         {activePots.map((pot, index) => (
@@ -425,6 +444,7 @@ export function ReservationSection({
   pots,
   budgetAmount,
   provisionAmount,
+  provisionStandAtStart,
   deferredReservationItems,
   onRegisterPayment,
   onRemovePayment,
@@ -498,6 +518,7 @@ export function ReservationSection({
         activePots={spaardoelActive}
         finalizedPots={spaardoelFinalized}
         amount={provisionAmount}
+        standAtStart={provisionStandAtStart}
         {...sharedProps}
       />
 

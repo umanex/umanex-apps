@@ -5,8 +5,14 @@ import { formatAmount, formatSigned } from '../../lib/cashflow/recurring';
 type BalanceFooterProps = {
   /** Beweging van de bufferstand deze maand: inkomsten min alle kosten vóór buffer. */
   movement: number;
-  /** Waar je aan het einde van deze maand staat: potstand plus vrij saldo. */
+  /** Waar je aan het einde van deze maand staat: potstand plus vrij saldo — de Buffer. */
   position: number;
+  /**
+   * Stand van de bufferpot aan het einde van de maand. Vrij is `position − bufferPot`. Samen de brug
+   * onder de Buffer, zodat hetzelfde woord op `/bureau` en `/` hetzelfde getal draagt en je ziet
+   * waarom een maand met € 0 vrij tóch een kussen heeft.
+   */
+  bufferPot: number;
   /**
    * Is er een bufferpot ingesteld? Gelijk voor alle drie de maanden — de footers moeten
    * op één lijn blijven staan, dus mag deze staat niet per kolom verschillen.
@@ -25,7 +31,7 @@ type BalanceFooterProps = {
   isAnchor: boolean;
 };
 
-export function BalanceFooter({ movement, position, hasBuffer, isAnchor }: BalanceFooterProps) {
+export function BalanceFooter({ movement, position, bufferPot, hasBuffer, isAnchor }: BalanceFooterProps) {
   if (!hasBuffer) {
     return (
       <div className="shrink-0 border-t border-accent px-4 py-3 flex flex-col gap-1">
@@ -81,6 +87,16 @@ export function BalanceFooter({ movement, position, hasBuffer, isAnchor }: Balan
           {formatAmount(position)}
         </span>
       </div>
+      {/* Altijd, ook met een lege pot: de footers staan in alle drie de kolommen op één lijn, dus
+          mag een regel niet per kolom verschijnen of verdwijnen. */}
+      <span
+        className="text-right text-2xs leading-tight tabular-nums text-muted-foreground"
+        data-buffer-bridge
+        data-free={position - bufferPot}
+        data-pot={bufferPot}
+      >
+        vrij {formatAmount(position - bufferPot)} + bufferpot {formatAmount(bufferPot)}
+      </span>
     </div>
   );
 }

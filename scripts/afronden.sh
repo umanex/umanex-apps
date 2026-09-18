@@ -90,8 +90,29 @@ if [ -n "$TREE" ]; then
   fi
   echo "  ✓ tree '$TREE' verwijderd"
 fi
-git -C "$REPO" branch -d "$BRANCH" && git -C "$REPO" push origin --delete "$BRANCH"
-echo "  ✓ branch '$BRANCH' opgeruimd"
+# De melding hoort ACHTER de uitkomst, niet ernaast. GEMETEN 2026-09-18 op PR
+# umanex-apps#535: `git branch -d` weigerde met *not fully merged* (de branch droeg een
+# merge-commit van main die niet in HEAD zat), de `push --delete` draaide daardoor nooit,
+# en deze regel printte tóch "✓ opgeruimd" — beide branches stonden er nog. Een echo buiten
+# de `&&`-keten is geen melding maar een aanname; dezelfde klasse als *een muterende stap
+# is zelf een meting*.
+#
+# `-D` is hier verantwoord en `-d` niet streng genoeg: de PR-state hierboven heeft al
+# bevestigd dat het werk op main staat, en `-d` toetst tegen de upstream — niet tegen main —
+# dus hij weigert juist in het normale geval dat je main in je branch gemergd hebt.
+if git -C "$REPO" branch -d "$BRANCH" 2>/dev/null; then
+  lokaal=weg
+else
+  git -C "$REPO" branch -D "$BRANCH" >/dev/null 2>&1 && lokaal=weg || lokaal=gebleven
+fi
+git -C "$REPO" push -q origin --delete "$BRANCH" 2>/dev/null && remote=weg || remote=gebleven
+if [ "$lokaal" = weg ] && [ "$remote" = weg ]; then
+  echo "  ✓ branch '$BRANCH' opgeruimd (lokaal + remote)"
+else
+  echo "  ⚠ branch '$BRANCH': lokaal $lokaal, remote $remote — de PR is wél MERGED"
+  echo "    controleer: git branch --list $BRANCH ; git ls-remote --heads origin $BRANCH"
+  rest=2
+fi
 
 # 3. Elke tree bijtrekken. `git worktree list` is de vinder — een lege `lsof` betekent
 #    "geen listener", niet "geen gat".

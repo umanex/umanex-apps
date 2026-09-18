@@ -64,7 +64,18 @@ Het pad staat in `.gitignore` en `pre-commit` weigert een gestaged pad eronder, 
 
 ### Mergen en opruimen vanuit een tijdelijke tree
 
-Het merge-blok in `CLAUDE.md` begint met `git checkout main`, en dat faalt in een linked tree (zie *Een worktree kan `main` niet uitchecken*). Sluit daarom af vanuit de hoofdtree:
+Het merge-blok in `CLAUDE.md` begint met `git checkout main`, en dat faalt in een linked tree (zie *Een worktree kan `main` niet uitchecken*). Draai daarom:
+
+```bash
+bash scripts/afronden.sh <pr-nummer> --tree .claude/worktrees/<taak>
+```
+
+Dat is geen afkorting van het blok hieronder maar de getoetste vorm ervan: `scripts/test-procedures.sh` draait hem tegen vier repotoestanden, waaronder een echte linked tree, en eist per toestand een uitkomst — inclusief **exit 3** wanneer er ongetrackt werk in de tree staat en de tree daarom blijft staan, mét de tegenproef dat een schone tree wél verdwijnt. Tot 2026-09-18 stond hier alleen tekst om over te tikken, en negen LEARNINGS-entries dragen de vorm van een git-procedure die klopte in de toestand van zijn auteur en faalde in een andere.
+
+Exit-codes: `0` alles rond · `1` de merge ging niet door, er is niets opgeruimd · `2` opgeruimd, maar een tree kon niet bijgetrokken worden (die staat niet op `main` — overleggen) · `3` gemerged, maar de tijdelijke tree bleef staan wegens werk dat nergens anders staat.
+
+<details>
+<summary>Wat het script doet, en waarom in deze volgorde — GEMETEN op 2026-09-17 in een wegwerp-repo</summary>
 
 ```bash
 T=.claude/worktrees/<taak>
@@ -78,7 +89,9 @@ head=$(git rev-parse --abbrev-ref HEAD)                      # de hoofdtree bijt
 git fetch -q origin && git pull --ff-only origin main
 ```
 
-Waarom die volgorde, GEMETEN op 2026-09-17 in een wegwerp-repo:
+</details>
+
+Waarom die volgorde:
 
 - `git branch -d` weigert zolang de tree bestaat (*cannot delete branch … used by worktree*) — eerst de tree weg.
 - `git worktree remove` weigert met een ongetrackt bestand erin (*contains modified or untracked files*). Dat is de laatste controle op werk dat nergens anders staat: meld wat erin zit, nooit `--force` op eigen gezag.

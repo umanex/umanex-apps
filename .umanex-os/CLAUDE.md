@@ -337,6 +337,11 @@ git ls-tree -r --name-only HEAD -- "$CWD" | head -1     # leeg = wees
 
 **Bij het mergen.** Gebruik `gh pr merge --delete-branch` niet zolang er een andere branch in dezelfde tree leeft: die vlag verplaatst HEAD naar een willekeurige andere lokale branch. Check eerst expliciet `main` uit, merge daarna, ruim de branch apart op — en *apart* betekent **pas nadat de server bevestigt dat de PR `MERGED` is**, nooit in dezelfde keten achter de merge aan. Gemeten op 2026-08-25: `gh pr merge 312` werd geweigerd (de checks van de laatste commit liepen nog), de opruimstappen stonden achter een `;` en draaiden gewoon door — lokale én remote branch weg, en het verwijderen van de remote branch sloot PR umanex-apps#312 automatisch; het werk stond alleen nog in de lokale objectstore. Twee dingen beschermen je daar níet tegen, allebei nagemeten in een wegwerp-repo: `| tail -1` achter `gh` geeft de exit-status van `tail` (`$?` = 0 terwijl `gh` 1 gaf), en `git branch -d` weigert niet, want die toetst tegen de **upstream** van de branch en niet tegen `main` — een gepushte, ongemergde branch verdwijnt met enkel `warning: … but not yet merged to HEAD`. De PR-state is de enige gate:
 
+Draai daarvoor **`bash scripts/afronden.sh <pr-nummer>`** (in een tijdelijke tree: `--tree <pad>`). Dat script ís deze procedure, en `scripts/test-procedures.sh` draait hem tegen vier repotoestanden — overtik het blok hieronder niet, dat is precies de vorm die negen keer misging.
+
+<details>
+<summary>Wat het doet</summary>
+
 ```bash
 git checkout main
 out=$(gh pr merge <nr> --merge); rc=$?; echo "$out"        # status lezen vóór welke pipe ook
@@ -345,9 +350,14 @@ state=$(gh pr view <nr> --json state -q .state)
 git branch -d <branch> && git push origin --delete <branch>
 ```
 
+</details>
+
 Getoetst op béide kanten met een stub-`gh` (2026-08-25): geweigerde merge → beide branches blijven staan; geslaagde merge → beide opgeruimd. Ging het tóch mis: de branch is te herstellen zolang de commit in de objectstore staat (`git branch <naam> <sha>` + push), de PR heropen je met `gh pr reopen <nr>`.
 
-**Een merge is pas af als de tree die de gebruiker bekijkt erop staat.** Merge je vanuit een andere tree dan de hoofdtree — een agent-worktree, een tijdelijke worktree — naar `origin/main`, dan blijft de hoofdtree staan waar hij stond — inclusief de dev-server die daaruit serveert. "Gemerged" rapporteren terwijl zijn scherm de code van vóór je eerste ronde toont is een onwaar statusbericht, en het wordt erger per ronde. Gemeten: zes PR's gemerged vanuit `Luminus-fleet-manager` terwijl de hoofdtree 18 commits achterliep; de gebruiker moest twee screenshots naast elkaar leggen om het te zien. Sluit een merge daarom zo af:
+**Een merge is pas af als de tree die de gebruiker bekijkt erop staat.** Merge je vanuit een andere tree dan de hoofdtree — een agent-worktree, een tijdelijke worktree — naar `origin/main`, dan blijft de hoofdtree staan waar hij stond — inclusief de dev-server die daaruit serveert. "Gemerged" rapporteren terwijl zijn scherm de code van vóór je eerste ronde toont is een onwaar statusbericht, en het wordt erger per ronde. Gemeten: zes PR's gemerged vanuit `Luminus-fleet-manager` terwijl de hoofdtree 18 commits achterliep; de gebruiker moest twee screenshots naast elkaar leggen om het te zien. `scripts/afronden.sh` doet dit als stap 3 en meldt elke tree die achterloopt; het blok hieronder is wat het daar uitvoert.
+<details>
+<summary>Wat het doet</summary>
+
 ```bash
 git -C <repo> worktree list                       # álle trees — werkt zonder poort of draaiend proces
 git -C <map> fetch --quiet origin main            # zonder dit meet de volgende regel een lokale cache
@@ -355,6 +365,8 @@ git -C <map> rev-list --count HEAD..origin/main   # de echte achterstand
 git -C <map> rev-parse --abbrev-ref HEAD          # op main? zo niet: niet pullen, maar overleggen
 git -C <map> pull --ff-only origin main
 ```
+
+</details>
 
 `git worktree list` is de vinder, niet `lsof`: een lege `lsof` betekent "geen listener", niet "geen gat" — en een tree op een losse HEAD kan geen `pull --ff-only` aannemen. De `fetch` is niet optioneel: `origin/main` is een lokale ref die alleen door een fetch beweegt, en `gh pr merge` merget server-side, dus zonder fetch meet je 0 terwijl de tree 16 commits achterloopt (gemeten). Wil je weten wélke tree serveert: `PID=$(lsof -t -nP -iTCP:<poort> -sTCP:LISTEN | head -1)`, dan `lsof -a -p "$PID" -d cwd -Fn | sed -n 's/^n//p'` — het `n`-prefix moet eraf vóór je het pad doorgeeft. En een bijgetrokken bron is nog geen bijgetrokken scherm: serveert die map een build (PM2, `next start`), dan hoort de rebuild+restart bij het sluiten (zie *De Beoordeel-stap schrijft*). Eén keer terloops noemen telt niet: een gat dat je meldt maar niet dicht, blijft een gat.
 

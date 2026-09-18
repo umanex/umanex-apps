@@ -1009,6 +1009,40 @@ else
   fi
 fi
 
+# ---------------------------------------------------------------------------
+# Meet- en procedure-instrumenten
+# ---------------------------------------------------------------------------
+# Vijf bestanden die niets over de klant aannemen en daarom overal hetzelfde zijn. Ze staan
+# BUITEN het apps/-blok hierboven, want een repo zonder apps/ heeft ze net zo goed nodig:
+# de tak-poort en het merge-protocol gelden voor élke repo.
+#
+# WAAROM ZE ER ZIJN. Twee gemeten kosten uit 2026-09-18.
+#   · 74,3% van de tokenkost over 103 sessies is cache-read — de conversatie die bij elke
+#     beurt meereist. Twaalf losse probes kosten ~530k eenheden, dezelfde twaalf in één run
+#     ~44k. checklijst.sh is die ene run; sessiekost.mjs zegt wanneer knippen goedkoper is.
+#   · Vier van zeven open LEARNINGS-entries waren dezelfde faalklasse: een check die per
+#     constructie niet rood kon worden. checklijst.sh weigert een groep zonder tegenproef.
+# En negen git-procedure-entries deelden één vorm: een procedure die klopt in de toestand
+# waarin hij geschreven werd. afronden.sh + tak-poort.sh zijn die procedures als commando,
+# getoetst tegen vier repotoestanden door scripts/test-procedures.sh.
+if [ "$SELF_MODE" -eq 0 ]; then
+  mkdir -p scripts
+  for _n in checklijst.sh afronden.sh tak-poort.sh sessiekost.mjs ci-kosten.mjs; do
+    _bron="$UMANEX_OS_PATH/templates/$_n"
+    if [ -f "$_bron" ]; then
+      # mv-over-cp: dit script kan zichzelf niet raken, maar een lopende `source` van
+      # checklijst.sh wel — een nieuwe inode houdt die ongestoord.
+      cp "$_bron" "scripts/.$_n.nieuw" && mv -f "scripts/.$_n.nieuw" "scripts/$_n"
+      chmod +x "scripts/$_n"
+      echo "  ✓ scripts/$_n"
+    else
+      echo "  ⚠ templates/$_n niet gevonden — overgeslagen"
+    fi
+  done
+else
+  echo "  • meet-instrumenten overgeslagen (zelf-modus: templates/ is hier de bron)"
+fi
+
 echo ""
 echo "✓ Sync compleet."
 echo ""

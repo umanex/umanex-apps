@@ -93,9 +93,14 @@ jobs:
           # is precies de faalvorm die de receiver-drift ooit onzichtbaar hield. Een
           # v1-payload (bundle_b64) betekent: de dispatcher is ouder dan deze receiver —
           # ook dan luid stoppen, niet stil half installeren.
+          # v3 én v4 worden geaccepteerd, en dat is met opzet: de receiver reist NIET met de
+          # bundel mee (GitHub weigert workflow-wijzigingen met de default GITHUB_TOKEN), dus
+          # hij wordt apart uitgerold met scripts/roll-receiver.sh. Zou hij alleen de nieuwste
+          # versie kennen, dan faalt élke sync in het venster tussen de dispatcher-bump en die
+          # uitrol. Twee versies kennen maakt de volgorde vrij: eerst receivers, dan de bump.
           case "${BUNDLE_VERSION:-}" in
-            3) : ;;
-            "" | 1 | 2) echo "✗ Deze receiver verwacht bundle v3 (met agents/); de dispatcher stuurde v${BUNDLE_VERSION:-1}. Merge de bijbehorende umanex-os-kant of draai de dispatcher opnieuw."; exit 1 ;;
+            3 | 4) : ;;
+            "" | 1 | 2) echo "✗ Deze receiver verwacht bundle v3 of v4; de dispatcher stuurde v${BUNDLE_VERSION:-1}. Merge de bijbehorende umanex-os-kant of draai de dispatcher opnieuw."; exit 1 ;;
             *) echo "✗ Bundelversie '${BUNDLE_VERSION}' is nieuwer dan deze receiver kent. Werk de receiver bij via een handmatige PR."; exit 1 ;;
           esac
 
@@ -189,6 +194,19 @@ jobs:
           install_file settings.json      ".claude/settings.json"
           install_file githooks-pre-commit ".githooks/pre-commit"        x
           install_file githooks-commit-msg ".githooks/commit-msg"        x
+
+          # v4: de meet- en procedure-instrumenten. Alleen bij v4, want bij een v3-bundel
+          # bestaan ze niet en de installatie zou dan luid falen — precies wat we hier NIET
+          # willen, omdat v3 een geldige oudere dispatcher is en geen kapotte payload.
+          # (Noem de functienaam hier niet gevolgd door een woord: scripts/test-canon.sh
+          # leest deze lijst met een ongeankerde grep en telt zo'n vermelding mee.)
+          if [ "${BUNDLE_VERSION}" = 4 ]; then
+            install_file checklijst.sh   "scripts/checklijst.sh"   x
+            install_file afronden.sh     "scripts/afronden.sh"     x
+            install_file tak-poort.sh    "scripts/tak-poort.sh"    x
+            install_file sessiekost.mjs  "scripts/sessiekost.mjs"  x
+            install_file ci-kosten.mjs   "scripts/ci-kosten.mjs"   x
+          fi
 
           # Marker voor het lokale scripts/sync-os.sh
           printf '%s\n' "$PROFILE_NAME" > .umanex-os/profile

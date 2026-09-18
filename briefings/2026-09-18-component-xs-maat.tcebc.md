@@ -79,8 +79,28 @@ _(geen — naam `xs` en de rolvorm `size.control-xs` zijn op 2026-09-18 beslist;
   root `pnpm type-check` rc=0 (9/9 tasks), `@umanex/ui type-check` rc=0, tokens-guard "407
   bestanden schoon (1 baseline-uitzondering)", `ds:guard` "9/9 apps", `ds:guard:selftest` "11/11 — de
   guard gaat rood op elk defect en zwijgt op een schone fixture"
-- [x] U8: geen arbitrary values in de twee gewijzigde componenten — bewijs: `git diff` op `button.tsx`
-  en `input.tsx`, toegevoegde regels met een `[<cijfer>`-patroon: 0
+- [x] U8: geen arbitrary values in de gewijzigde bestanden — bewijs: `git diff` tegen `origin/main` op
+  `button.tsx`, `input.tsx` én hun twee stories, toegevoegde regels met een `[<cijfer>`-patroon: 0. De
+  eerste versie had `w-[92px]` in `input.stories.tsx` (review-bevinding); dat is `w-24`. De tokens-guard
+  ziet die klasse per constructie niet — breedtes vallen bewust buiten zijn `arbitrary-spacing`-regel —
+  en elke app scant `packages/ui/components/**`, dus hij belandde in vijf app-stylesheets
+
+**Kleur (review-ronde 2026-09-18)**
+- [x] U20: xs draagt per variant dezelfde voorgrondkleur en hetzelfde contrast als `sm` — bewijs:
+  `kleur-xs.mjs` meet beide maten over vijf varianten op de verse
+  storybook-static: default 5,32:1 · secondary 16,11:1 · destructive 6,47:1 · link 5,32:1 · outline
+  17,75:1 — op de cent gelijk aan `sm`, en de klassenreeks draagt nu `text-primary-foreground
+  text-dense` in plaats van alleen `text-dense`
+- [x] U21: de guard die dit defect ving wordt rood zonder de fix — bewijs: tegenproef met de
+  `classGroups`-regel uit `lib/utils.ts` weggehaald (`cmp` bewees dat de patch iets raakte):
+  `verify:visual` rc=1, "✗ .screens-preview.html: 1 kleurcombinatie(s) onder AA … 3.34:1, nodig 4.5:1"
+  — precies de CI-melding op PR #537. Mét de fix rc=0, "dom-sweep: 464 tekstelementen boven AA".
+  Hersteld byte-gelijk
+- [x] U22: `cn()` lost een tekstmaat uit de tokenschaal op als maat, niet als kleur — bewijs:
+  `twmerge.mjs` op de geïnstalleerde `tailwind-merge@2.6.1`, vier gevallen in beide richtingen:
+  `text-primary-foreground text-dense` → kleur blijft staan (was: weg) · `text-sm text-dense` →
+  `text-dense` wint (was: beide) · `text-dense text-xs` → de consument wint (was: beide) · positieve
+  controle `text-2xs` gedroeg zich vóór én na correct, want dát is wél een t-shirtmaat
 
 **Figma**
 - [x] U9: `figma:check` was rood op de maat-as vóór de Figma-stap en is groen erna — bewijs: vóór
@@ -144,10 +164,18 @@ _(geen — naam `xs` en de rolvorm `size.control-xs` zijn op 2026-09-18 beslist;
 - 2026-09-18: scope bijgesteld tegenover het plan. Dat schreef "compacte maat op Button en Input"; PR #531
   gaf `Input` intussen al een maat-as met `sm` = 36 px, dus deze stap zet er een derde stap ónder in plaats
   van de as aan te leggen.
-- 2026-09-18: de tekstmaat verhuist van de basis naar de size-as in `button.tsx` en `input.tsx`. Niet
-  cosmetisch: `text-dense` is geen t-shirtmaat die tailwind-merge herkent, dus naast een `text-sm` in de
-  basis zouden beide klassen blijven staan en besliste de volgorde in de stylesheet. `badge.tsx` draagt
-  dezelfde vorm sinds fase 4a.
+- 2026-09-18: de tekstmaat verhuisde eerst van de basis naar de size-as in `button.tsx` en `input.tsx`,
+  omdat `text-dense` geen t-shirtmaat is die tailwind-merge herkent. **Teruggedraaid dezelfde dag**: dat
+  was de patch, niet de oorzaak — en hij maakte het erger. `text-dense` belandde in de *kleurgroep*, dus
+  `cn()` gooide de `text-primary-foreground` van de variant weg en de xs-knop werd donkerblauw op
+  merkrood (3,34:1). De contrast-sweep van cashflow ving het in CI op PR #537. De oorzaak zit in
+  `lib/utils.ts`: `extendTailwindMerge` kende de spacing-rollen wel en de typeschaal niet. Die lijst komt
+  nu uit de tokenbuild, zodat een volgende stap met een gewone naam (`compact`, `tight`) hier niet
+  opnieuw stil de kleur opeet.
+- 2026-09-18: `icon-xs` krijgt dezelfde `gap-1.5` als `xs` (review-bevinding). Hij hield eerst de rol
+  `gap-inline` (8px) uit de basis, wat de eigen aanname van deze briefing tegensprak: 8px is breder dan
+  het icoon dat er in een doos van 28px naast staat. Onzichtbaar bij één kind, zichtbaar bij twee — en
+  niets verbiedt dat.
 - 2026-09-18: de nieuwe Figma-varianten zijn gekloond uit hun naaste buur (`size=sm` voor `xs`, `size=icon`
   voor `icon-xs`) en daarna aan de rollen gebonden — niet opnieuw getekend. Button en Input staan als
   `LEGACY` in `scripts/figma/doel.mjs`, dus de builder weigert ze (geen bouwhash); klonen houdt de node-ids

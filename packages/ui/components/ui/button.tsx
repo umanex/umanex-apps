@@ -14,15 +14,15 @@ import { focusRing } from '../../lib/focus';
  * leesbaar bleef, en de kleinste maat die de bibliotheek kende was 36px. `icon-xs` is de
  * vierkante variant ervan — de `+`-knop van `SectionBar` staat er vandaag als `size-7`.
  *
- * De tekstmaat staat per maat en niet in de basis (zelfde vorm als `badge.tsx`): `text-dense`
- * is geen t-shirtmaat die tailwind-merge kent, dus naast een `text-sm` in de basis zouden
- * beide klassen blijven staan en besliste de volgorde in de stylesheet welke won.
+ * De tekstmaat blijft in de basis staan en `xs` overschrijft hem. Dat werkt sinds `cn()` de
+ * stappen van de typeschaal kent — vóór die fix mergede `text-dense` als kléur en at het de
+ * `text-primary-foreground` van de variant op. Zie `lib/utils.ts`.
  */
 export const buttonVariants = cva(
   // De focus-klassen komen uit de gedeelde constante, zodat een link in app-code
   // dezelfde ring krijgt als deze knop. Zelfde klassenset als voorheen; alleen de
   // volgorde in het attribuut verschuift, en die heeft geen CSS-effect.
-  `inline-flex items-center justify-center gap-inline whitespace-nowrap rounded-md font-medium transition-colors ${focusRing} disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0`,
+  `inline-flex items-center justify-center gap-inline whitespace-nowrap rounded-md text-sm font-medium transition-colors ${focusRing} disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0`,
   {
     variants: {
       variant: {
@@ -34,12 +34,12 @@ export const buttonVariants = cva(
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-control-md px-4 py-control-y text-sm',
+        default: 'h-control-md px-4 py-control-y',
         xs: 'h-control-xs gap-1.5 rounded-sm px-2 text-dense',
-        sm: 'h-control-sm rounded-md px-control-x text-sm',
-        lg: 'h-control-lg rounded-md px-8 text-sm',
-        icon: 'h-control-md w-control-md text-sm',
-        'icon-xs': 'h-control-xs w-control-xs rounded-sm text-dense',
+        sm: 'h-control-sm rounded-md px-control-x',
+        lg: 'h-control-lg rounded-md px-8',
+        icon: 'h-control-md w-control-md',
+        'icon-xs': 'h-control-xs w-control-xs gap-1.5 rounded-sm text-dense',
       },
     },
     defaultVariants: {

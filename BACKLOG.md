@@ -41,6 +41,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Globaal
 
+## 2026-09-18 — De horizontale padding van `xs` is een schaalstap waar zijn buren een rol dragen · [design-system]
+- **Wat:** `Button size="xs"` en `Input size="xs"` zetten allebei `px-2` (8px), terwijl `default`, `sm` en `lg` de rol `spacing.control-x` gebruiken. CLAUDE.md → Design tokens: *"een rol bestaat pas als twee componenten dezelfde maat op een vergelijkbare plek dragen"* — twee doen dat nu. Gevolg: wie `spacing.control-x` bijstelt, verschuift drie maten en laat xs op 8px staan; en de xs-padding heeft geen Figma-variabele om aan te binden, anders dan zijn buren. Gemeld door `code-review` op PR #537.
+- **Waarom niet nu:** een rol toevoegen is een tokenwijziging, en die hoort vooraf bevestigd (CLAUDE.md → *Acties die altijd eerst moeten worden bevestigd*). Jeroen bevestigde op 2026-09-18 de hoogte-rol `size.control-xs`; een pádding-rol is een tweede, aparte beslissing die niet in die vraag zat. Bovendien komt er dan nóg een handmatige regel in `tokens.json` bovenop de Pull-afspraak die al openstaat.
+- **Eerste zet:** aan Jeroen voorleggen als één vraag — `spacing.control-x-xs` = `{spacing.2}` erbij, of `px-2` als schaalstap accepteren omdat de dichte maat bewust vastligt. Bij "erbij": één regel in `Theme/base`, `figma:base` + `zet-base.js`, en de padding van 14 Figma-varianten herbinden (12 × Button xs, 2 × Input xs).
+- **Check:** `grep -c "px-2" packages/ui/components/ui/button.tsx packages/ui/components/ui/input.tsx` — 1 per bestand = nog niet geraakt.
+- **Status:** open
+
 ## 2026-09-17 — `Button` begint bij 36px, maar apps gebruiken knoppen van 24px · [feature]
 - **Wat:** de kleinste `Button` is `size="sm"` (`h-control-sm`, 36px) en `size="icon"` is 40 × 40. jobradar heeft 21 rauwe `<button>`-elementen van 24 tot 28px: icoonknoppen (prullenbak 12px-icoon met `p-1`), inline tekstknoppen ("Wijzig", "toon deze vacatures", "+2 vacatures") en compacte kaartknoppen ("Opvolging", `px-2 py-1 text-2xs`). Gemeten 2026-09-17 bij fase 4b: geen enkele haalt 36px, dus omzetten zou elk van die knoppen 8 tot 16px groter maken — in kaarten en rijen die al gemeten zijn.
 - **Waarom niet nu:** fase 4b had als harde eis "geen maatwijziging"; de velden konden mee omdat `sm` (36px) daar een bewuste keuze van Jeroen was, de knoppen niet. Een maat verzinnen zonder rol zou de schaal omzeilen.
@@ -147,6 +154,7 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** Er is geen niet-numerieke stap, en de eerste zou de naamgeving van de schaal openbreken, wat een eigen besluit is.
 - **Eerste zet:** Schaal- en rolnamen in de guard uit tokens.json afleiden in plaats van uit een regex, en `cn()` alle niet-Tailwind-default sleutels van `layout.mjs` meegeven.
 - **Check:** `node -e "const t=require('./packages/tokens/tokens.json'); console.log(Object.keys(t['Layout/Scale'].spacing).filter(k=>!/^(\\d+(_\\d)?|px)$/.test(k)))"` — `[]` = nog niet geraakt.
+- **Update 2026-09-18:** de tegenhanger op de **typeschaal** is intussen wél geraakt en opgelost. `text-dense` is geen t-shirtmaat, dus tailwind-merge las hem als kleur en `cn()` gooide de voorgrondkleur van de knopvariant weg — 3,34:1 op de xs-knop, gevangen door de contrast-sweep van cashflow in CI (PR #537). `lib/utils.ts` geeft `cn()` nu de fontSize-sleutels uit de tokenbuild mee. De spacing-helft van dit item staat nog open: een niet-numerieke spacing-stap zou dezelfde vorm hebben.
 - **Status:** open
 
 ## 2026-09-17 — De eslint-disable in ReservationSection zet alle token-regels uit voor die regel · [debt]

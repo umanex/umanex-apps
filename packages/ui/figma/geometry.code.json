@@ -275,7 +275,7 @@
         },
         {
           "tag": "button",
-          "klassen": "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4 bg-primary disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-medium gap-1.5 h-control-xs hover:bg-primary/90 inline-flex items-center justify-center px-2 ring-offset-background rounded-sm text-dense transition-colors whitespace-nowrap",
+          "klassen": "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4 bg-primary disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-medium gap-1.5 h-control-xs hover:bg-primary/90 inline-flex items-center justify-center px-2 ring-offset-background rounded-sm text-dense text-primary-foreground transition-colors whitespace-nowrap",
           "h": 28,
           "padding": "0/8/0/8",
           "radius": "4px/4px/4px/4px",
@@ -340,7 +340,7 @@
         },
         {
           "tag": "button",
-          "klassen": "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4 bg-primary disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-medium gap-1.5 h-control-xs hover:bg-primary/90 inline-flex items-center justify-center px-2 ring-offset-background rounded-sm text-dense transition-colors whitespace-nowrap",
+          "klassen": "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4 bg-primary disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-medium gap-1.5 h-control-xs hover:bg-primary/90 inline-flex items-center justify-center px-2 ring-offset-background rounded-sm text-dense text-primary-foreground transition-colors whitespace-nowrap",
           "h": 28,
           "padding": "0/8/0/8",
           "radius": "4px/4px/4px/4px",
@@ -384,13 +384,13 @@
         },
         {
           "tag": "button",
-          "klassen": "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4 bg-primary disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-medium gap-inline h-control-xs hover:bg-primary/90 inline-flex items-center justify-center ring-offset-background rounded-sm text-dense transition-colors w-control-xs whitespace-nowrap",
+          "klassen": "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4 bg-primary disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-medium gap-1.5 h-control-xs hover:bg-primary/90 inline-flex items-center justify-center ring-offset-background rounded-sm text-dense text-primary-foreground transition-colors w-control-xs whitespace-nowrap",
           "h": 28,
           "w": 28,
           "padding": "0/0/0/0",
           "radius": "4px/4px/4px/4px",
           "border": 0,
-          "gap": "8px",
+          "gap": "6px",
           "font": "13/18 500",
           "opacity": "1"
         },
@@ -1212,9 +1212,9 @@
         },
         {
           "tag": "input",
-          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-sm flex flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-xs placeholder:text-muted-foreground px-2 py-0 ring-offset-background rounded-sm text-dense w-full",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-dense flex flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-xs placeholder:text-muted-foreground px-2 py-0 ring-offset-background rounded-sm text-dense w-full",
           "h": 28,
-          "w": 1100,
+          "w": 1096,
           "padding": "0/8/0/8",
           "radius": "4px/4px/4px/4px",
           "border": 1,
@@ -1224,9 +1224,9 @@
         },
         {
           "tag": "input",
-          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-sm flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-xs placeholder:text-muted-foreground px-2 py-0 ring-offset-background rounded-sm tabular-nums text-dense text-right w-[92px]",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-dense flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-xs placeholder:text-muted-foreground px-2 py-0 ring-offset-background rounded-sm tabular-nums text-dense text-right w-24",
           "h": 28,
-          "w": 92,
+          "w": 96,
           "padding": "0/8/0/8",
           "radius": "4px/4px/4px/4px",
           "border": 1,
@@ -1288,7 +1288,7 @@
         },
         {
           "tag": "input",
-          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-sm flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-xs placeholder:text-muted-foreground px-2 py-0 ring-offset-background rounded-sm text-dense w-full",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-dense flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-xs placeholder:text-muted-foreground px-2 py-0 ring-offset-background rounded-sm text-dense w-full",
           "h": 28,
           "w": 288,
           "padding": "0/8/0/8",

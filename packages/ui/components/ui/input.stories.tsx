@@ -44,7 +44,7 @@ export const ExtraSmall: Story = {
   render: () => (
     <div className="flex items-center gap-2">
       <Input size="xs" className="flex-1" defaultValue="Verzekering" />
-      <Input size="xs" className="w-[92px] text-right tabular-nums" defaultValue="1.250,00" />
+      <Input size="xs" className="w-24 text-right tabular-nums" defaultValue="1.250,00" />
     </div>
   ),
 };

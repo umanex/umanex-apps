@@ -4,7 +4,8 @@
 - **Type:** component
 - **Project:** packages/ui (consument: cashflow)
 - **Klant:** umanex
-- **Status:** gebouwd (2026-09-18 — 19 items met bewijs; de review-ronde loopt nog)
+- **Status:** gevalideerd (2026-09-18 — 22 items met bewijs, twee iteraties, review-P0 opgelost bij de
+  oorzaak, Open vragen leeg)
 
 ---
 
@@ -152,6 +153,18 @@ _(geen — naam `xs` en de rolvorm `size.control-xs` zijn op 2026-09-18 beslist;
 - [x] U19: een xs-invoerveld met een lang bedrag houdt zijn 28 px — bewijs: beide velden van de story
   `ExtraSmall` op `1.234.567.890,99` gezet: hoogte 28 → 28, en `scrollHeight > clientHeight` is voor
   geen van beide waar (geen verticale overloop)
+
+**Review-ronde (code-review op `origin/main...HEAD`, 2026-09-18)**
+- [x] U23: elke bevinding is behandeld bij de oorzaak of expliciet geparkeerd — bewijs: 11 bevindingen.
+  Opgelost: de kleur-P0 en zijn root cause in `lib/utils.ts` (U20–U22), de `gap` van `icon-xs`, de
+  arbitrary `w-[92px]`, de maatnaam in het `aria-label`, en `file:text-sm` binnen een xs-veld
+  (`file:text-dense`). Geparkeerd mét plek: de padding-rol voor `px-2` → root-`BACKLOG.md` 2026-09-18
+  (tokenwijziging, dus een eigen vraag aan Jeroen). Weerlegd: "geen enkele guard meet kleur" — de
+  contrast-sweep van cashflow doet dat over de gerenderde `@umanex/ui`-componenten en ís degene die het
+  defect ving; en de handmatige tokenregel is een beslissing van Jeroen van vandaag, geen omissie
+- [x] U24: CI groen op de volledige pijplijn — bewijs: run 35364975721 en 35364971127 beide `pass`
+  (19m39s / 20m22s), inclusief "Guard — contrast van de gerenderde DOM (WCAG AA)", "Guard — Storybook ↔
+  Figma in sync", "geometrie-parity" en "gerenderde maten tegen de basislijn"
 
 ## Beslissingsgeschiedenis
 

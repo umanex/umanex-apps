@@ -1,7 +1,7 @@
 {
   "$comment": "Gemeten code-kant. Herschrijf met `pnpm --filter @umanex/ui geometry --write` na een BEDOELDE wijziging.",
-  "stories": 47,
-  "gegenereerd": "2026-09-17",
+  "stories": 49,
+  "gegenereerd": "2026-09-18",
   "gemeten": {
     "componenten-badge--maten": {
       "aantal": 7,
@@ -259,6 +259,33 @@
         }
       ]
     },
+    "componenten-button--extra-small": {
+      "aantal": 2,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 76,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "button",
+          "klassen": "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4 bg-primary disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-medium gap-1.5 h-control-xs hover:bg-primary/90 inline-flex items-center justify-center px-2 ring-offset-background rounded-sm text-dense transition-colors whitespace-nowrap",
+          "h": 28,
+          "padding": "0/8/0/8",
+          "radius": "4px/4px/4px/4px",
+          "border": 0,
+          "gap": "6px",
+          "font": "13/18 500",
+          "opacity": "1"
+        }
+      ]
+    },
     "componenten-button--playground": {
       "aantal": 2,
       "elementen": [
@@ -287,7 +314,7 @@
       ]
     },
     "componenten-button--sizes": {
-      "aantal": 7,
+      "aantal": 10,
       "elementen": [
         {
           "tag": "div",
@@ -309,6 +336,17 @@
           "border": 0,
           "gap": "12px",
           "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "button",
+          "klassen": "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4 bg-primary disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-medium gap-1.5 h-control-xs hover:bg-primary/90 inline-flex items-center justify-center px-2 ring-offset-background rounded-sm text-dense transition-colors whitespace-nowrap",
+          "h": 28,
+          "padding": "0/8/0/8",
+          "radius": "4px/4px/4px/4px",
+          "border": 0,
+          "gap": "6px",
+          "font": "13/18 500",
           "opacity": "1"
         },
         {
@@ -342,6 +380,29 @@
           "border": 0,
           "gap": "8px",
           "font": "14/20 500",
+          "opacity": "1"
+        },
+        {
+          "tag": "button",
+          "klassen": "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4 bg-primary disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring font-medium gap-inline h-control-xs hover:bg-primary/90 inline-flex items-center justify-center ring-offset-background rounded-sm text-dense transition-colors w-control-xs whitespace-nowrap",
+          "h": 28,
+          "w": 28,
+          "padding": "0/0/0/0",
+          "radius": "4px/4px/4px/4px",
+          "border": 0,
+          "gap": "8px",
+          "font": "13/18 500",
+          "opacity": "1"
+        },
+        {
+          "tag": "svg",
+          "klassen": "",
+          "h": 16,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "13/18 500",
           "opacity": "1"
         },
         {
@@ -1124,13 +1185,64 @@
         }
       ]
     },
-    "componenten-input--maten": {
+    "componenten-input--extra-small": {
       "aantal": 4,
       "elementen": [
         {
           "tag": "div",
           "klassen": "bg-background font-sans p-6 text-foreground",
-          "h": 136,
+          "h": 76,
+          "padding": "24/24/24/24",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "div",
+          "klassen": "flex gap-2 items-center",
+          "h": 28,
+          "padding": "0/0/0/0",
+          "radius": "0px/0px/0px/0px",
+          "border": 0,
+          "gap": "8px",
+          "font": "16/24 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "input",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-sm flex flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-xs placeholder:text-muted-foreground px-2 py-0 ring-offset-background rounded-sm text-dense w-full",
+          "h": 28,
+          "w": 1100,
+          "padding": "0/8/0/8",
+          "radius": "4px/4px/4px/4px",
+          "border": 1,
+          "gap": "",
+          "font": "13/18 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "input",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-sm flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-xs placeholder:text-muted-foreground px-2 py-0 ring-offset-background rounded-sm tabular-nums text-dense text-right w-[92px]",
+          "h": 28,
+          "w": 92,
+          "padding": "0/8/0/8",
+          "radius": "4px/4px/4px/4px",
+          "border": 1,
+          "gap": "",
+          "font": "13/18 400",
+          "opacity": "1"
+        }
+      ]
+    },
+    "componenten-input--maten": {
+      "aantal": 5,
+      "elementen": [
+        {
+          "tag": "div",
+          "klassen": "bg-background font-sans p-6 text-foreground",
+          "h": 176,
           "padding": "24/24/24/24",
           "radius": "0px/0px/0px/0px",
           "border": 0,
@@ -1141,7 +1253,7 @@
         {
           "tag": "div",
           "klassen": "flex flex-col gap-3 w-72",
-          "h": 88,
+          "h": 128,
           "w": 288,
           "padding": "0/0/0/0",
           "radius": "0px/0px/0px/0px",
@@ -1172,6 +1284,18 @@
           "border": 1,
           "gap": "",
           "font": "14/20 400",
+          "opacity": "1"
+        },
+        {
+          "tag": "input",
+          "klassen": "bg-background border border-input disabled:cursor-not-allowed disabled:opacity-50 file:bg-transparent file:border-0 file:font-medium file:text-sm flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring h-control-xs placeholder:text-muted-foreground px-2 py-0 ring-offset-background rounded-sm text-dense w-full",
+          "h": 28,
+          "w": 288,
+          "padding": "0/8/0/8",
+          "radius": "4px/4px/4px/4px",
+          "border": 1,
+          "gap": "",
+          "font": "13/18 400",
           "opacity": "1"
         }
       ]

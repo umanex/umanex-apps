@@ -119,7 +119,7 @@ const Inhoud = () => h('div', null,
   h(Sectie, { titel: 'Button', kind: h('div', null,
     h(Rij, { kind: (['default','secondary','outline','ghost','destructive','link'] as const)
       .map((v) => h(Button, { variant: v, key: v }, v)) }),
-    h(Rij, { kind: (['sm','default','lg'] as const)
+    h(Rij, { kind: (['xs','sm','default','lg'] as const)
       .map((s) => h(Button, { size: s, key: s }, `size ${s}`))
       .concat(h(Button, { key: 'dis', disabled: true }, 'disabled')) })) }),
 
@@ -127,6 +127,7 @@ const Inhoud = () => h('div', null,
     h('div', { className: 'flex flex-wrap items-end gap-3' },
       h('div', null, h(Label, { htmlFor: 'x' }, 'Label'), h(Input, { id: 'x', defaultValue: 'waarde' })),
       h(Input, { placeholder: 'placeholder' }),
+      h(Input, { size: 'xs', defaultValue: 'size xs' }),
       h(Input, { disabled: true, defaultValue: 'disabled' })) }),
 
   h(Sectie, { titel: 'Card', kind:

@@ -13,7 +13,7 @@ const meta = {
   },
   argTypes: {
     variant: { control: 'select', options: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link'] },
-    size: { control: 'select', options: ['default', 'sm', 'lg', 'icon'] },
+    size: { control: 'select', options: ['default', 'xs', 'sm', 'lg', 'icon', 'icon-xs'] },
     disabled: { control: 'boolean' },
   },
   args: { children: 'Opslaan', variant: 'default', size: 'default', disabled: false },
@@ -40,14 +40,26 @@ export const Variants: Story = {
 export const Sizes: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-3">
+      <Button size="xs">Extra small</Button>
       <Button size="sm">Small</Button>
       <Button size="default">Default</Button>
       <Button size="lg">Large</Button>
+      <Button size="icon-xs" aria-label="Toevoegen, compact">
+        <Plus />
+      </Button>
       <Button size="icon" aria-label="Toevoegen">
         <Plus />
       </Button>
     </div>
   ),
+};
+
+/**
+ * De dichtste maat: 28px hoog, dertien-pixeltekst. Bedoeld voor een rij die zich herhaalt — de
+ * ledger van cashflow — niet voor een losse actie op een pagina.
+ */
+export const ExtraSmall: Story = {
+  args: { size: 'xs', children: 'Afsluiten' },
 };
 
 export const WithIcon: Story = {

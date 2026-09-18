@@ -1,0 +1,135 @@
+# TC-EBC — xs-maat op Button en Input in @umanex/ui
+
+- **Datum:** 2026-09-18
+- **Type:** component
+- **Project:** packages/ui (consument: cashflow)
+- **Klant:** umanex
+- **Status:** gebouwd (code-kant 2026-09-18; de Figma-kant U9–U14 wacht op de Desktop Bridge)
+
+---
+
+```
+TASK:        Geef Button en Input een maat van 28 px als echte variant, zodat de ledger van cashflow
+             de gedeelde primitives kan gebruiken zonder ze per call-site te overschrijven.
+CONTEXT:     Stap 4 van het cashflow-plan (fizzy-strolling-origami), voorwaarde voor stap 6 (ledger en
+             login op @umanex/ui) en stap 7 (kleur ontlasten, die de +-knop van SectionBar een Button
+             maakt). De ledger meet vandaag 22 plekken op h-7 (28 px) plus één size-7 icoonknop, met de
+             maat in app-code. De bibliotheek kent sinds #529/#531 sm = 36 px; niets daaronder.
+             Root-BACKLOG "Compacte maat in @umanex/ui" (2026-09-07) sluit hiermee.
+ELEMENTS:    tokens.json Theme/base — rol size.control-xs = {spacing.7} · button.tsx — size xs en
+             icon-xs · input.tsx — size xs · button.stories.tsx en input.stories.tsx tonen de maat ·
+             Figma: xs als variant op de sets Button (27:374) en Input (27:413), Base-variabele
+             size-control-xs · apps/cashflow/scripts/render-screens.tsx — rijen voor de nieuwe maat.
+BEHAVIOUR:   size="xs" rendert 28 px hoog met text-dense en rounded-sm, zonder className-override ·
+             de bestaande maten default, sm, lg en icon blijven pixel-gelijk · de focus-ring blijft
+             zichtbaar en wordt niet afgesneden in een dichte rij · een icoonknop op xs is 28 × 28.
+CONSTRAINTS: Alleen rol- en schaal-utilities uit de preset, geen arbitrary values · consumenten
+             migreren is stap 6, niet hier · Figma volgt de keten in packages/ui/CLAUDE.md, via Desktop
+             Bridge, nooit native · alleen in een venster tussen twee bibliotheekbatches (anders botst
+             figma/manifest.json) · tokens.json wordt met de hand bewerkt: Jeroen doet na de merge een
+             Pull in Tokens Studio, anders draait de eerstvolgende plugin-push de rol terug.
+```
+
+---
+
+## Open vragen
+
+_(geen — naam `xs` en de rolvorm `size.control-xs` zijn op 2026-09-18 beslist; wat nog onbekend is, wordt hieronder gemeten)_
+
+## Aannames
+
+- [ASSUMPTION: de maat wordt gemeten op de ledger van cashflow, niet gekozen: 28 px hoogte, `text-dense`
+  (13/18), `rounded-sm`, horizontale padding 8 px — de klassenreeks die daar 22 keer staat.]
+- [ASSUMPTION: `NativeSelect` en `Textarea` krijgen géén xs; geen enkele consument vraagt er vandaag om
+  (gemeten: nul selects en nul textareas onder 32 px in cashflow). De as loopt daarmee uiteen met `Input` —
+  dat is de rule-of-three-rem, niet een vergetelheid.]
+- [ASSUMPTION: de `gap` van een xs-knop is `gap-1.5` (6 px) in plaats van de rol `gap-inline` (8 px): op
+  28 px is 8 px gap breder dan het icoon dat ernaast staat. Een eigen rol daarvoor bestaat pas als een
+  tweede component dezelfde maat draagt.]
+
+## Acceptatie
+
+**De maat zelf**
+- [x] U1: `Button size="xs"` en `Input size="xs"` meten 28 px hoog — bewijs:
+  geometrie-basislijn op de verse storybook-static
+  (`geometry:write`, 49 stories / 264 elementen): knop `h=28 padding=0/8/0/8 radius=4px font=13/18 500
+  gap=6px`, veld `h=28 padding=0/8/0/8 radius=4px font=13/18 400`
+- [x] U2: die gerenderde maten zijn gelijk aan wat de ledger van cashflow vandaag zelf tekent — bewijs:
+  de vier klassenreeksen uit `IncomeSection`, `MonthCard` en `SectionBar` gerenderd in dezelfde
+  chromium met dezelfde preset (scratchpad `maat/meet.mjs`): veld 28 / 0-8-0-8 / 4px / 13-18, knop
+  idem, icoonknop 28 × 28 / 4px — gelijk aan U1 op alle vier de assen. Positieve controle: het
+  `h-9`-element in dezelfde meting geeft 36 px, niet 28
+- [x] U3: `Button size="icon-xs"` is 28 × 28 px — bewijs: `gedrag-xs.mjs` op de storybook-static meet
+  de zes knoppen in `Sizes`: `Toevoegen, compact` 28 × 28 naast `Toevoegen` 40 × 40
+- [x] U4: de rol `size.control-xs` wijst naar stap `spacing.7` en levert `h-control-xs` — bewijs:
+  `tokens.json` schrijft `"control-xs": { "$type": "sizing", "$value": "{spacing.7}" }`; na
+  `pnpm --filter @umanex/tokens build` staat er `--size-control-xs: 1.75rem` in `build/theme.css` en
+  `"control-xs": "size-control-xs"` in `build/roles.mjs` — beide auto-gegenereerd, geen handmatige regel
+
+**Bestaande werking**
+- [x] U5: de bestaande maten zijn pixel-gelijk — bewijs: de twee basislijnen vergeleken op identiteit
+  (story + tag + gesorteerde klassenreeks) in plaats van op index, want een ingevoegd element schuift de
+  index op: 254 elementen met dezelfde klassen in beide, **0** verdwenen, **0** met een andere `h`, `w`,
+  `padding`, `radius`, `border`, `gap`, `font` of `opacity`. Per maat uitgeschreven: sm 36 / 0-12-0-12,
+  default 40 / 8-16-8-16, lg 44 / 0-32-0-32, icon 40 × 40 — vóór en ná gelijk, alle vier op radius 6px
+  en font 14/20. Tegenproef: `--mutant` verhoogt één knophoogte met 1 px en het script meldt hem (rc=1)
+- [x] U6: geen consument is in deze stap gemigreerd — bewijs: `git grep -c h-7` over
+  `apps/cashflow/components` en `app`: 22 voorkomens, ongewijzigd
+- [x] U7: type-check, `ds:guard`, `ds:guard:selftest` en de tokens-guard groen — bewijs:
+  root `pnpm type-check` rc=0 (9/9 tasks), `@umanex/ui type-check` rc=0, tokens-guard "407
+  bestanden schoon (1 baseline-uitzondering)", `ds:guard` "9/9 apps", `ds:guard:selftest` "11/11 — de
+  guard gaat rood op elk defect en zwijgt op een schone fixture"
+- [x] U8: geen arbitrary values in de twee gewijzigde componenten — bewijs: `git diff` op `button.tsx`
+  en `input.tsx`, toegevoegde regels met een `[<cijfer>`-patroon: 0
+
+**Figma**
+- [ ] U9: `figma:check` is rood op de maat-as vóór de Figma-stap en groen erna (beide uitkomsten
+  vastgelegd, met de letterlijke regel). Rode helft gemeten (rc=1): `FAIL [variant] Button.size: code
+  [default,icon,icon-xs,lg,sm,xs] vs Figma [default,icon,lg,sm]` · `FAIL [variant] Input.size: code
+  [default,sm,xs] vs Figma [default,sm]` · `FAIL [schaal] layout-rollen: size-control-xs ontbreekt in
+  Figma`. Groene helft volgt na de Figma-stap
+- [ ] U10: `parity` groen met de nieuwe varianten erbij; elke bekende afwijking draagt zijn reden
+- [ ] U11: de Base-variabele `size-control-xs` is een alias naar `spacing-7`, niet een losse waarde —
+  en `figma:check` zegt dat met zoveel woorden
+- [ ] U12: het ververste manifest draagt alleen de pagina's Button en Input; Figma-drift van buiten deze
+  stap staat er niet in
+- [ ] U13: de node-ids van de bestaande varianten zijn ongewijzigd, dus de deep-links in de stories
+  blijven kloppen (`links --check` groen)
+- [ ] U14: de keten-zelftests groen: `figma:check:selftest`, `figma:recept:selftest`,
+  `figma:poort:selftest`, `parity --selftest`
+
+**States**
+- [x] U15: `disabled` werkt op xs — bewijs: `disabled-xs.mjs` op de storybook-static, beide kanten per
+  component (loading/empty/error zijn n.v.t.: presentationele primitives zonder data- of async-laag,
+  dus voor die drie is er niets te meten): knop xs disabled `opacity=0.5 pointer-events=none
+  disabled=true` tegen actief `opacity=1 pointer-events=auto`; veld xs disabled `opacity=0.5
+  disabled=true` tegen actief `opacity=1` — hoogte in alle vier de gevallen 28 px
+
+**Interactie**
+- [x] U16: de toetsenbordfocus tekent op xs een ring en een muisklik niet — bewijs: `gedrag-xs.mjs`,
+  drie metingen op dezelfde knop: rust `box-shadow: none`, ná Tab `rgb(255,255,255) 0 0 0 2px,
+  rgb(196,55,55) 0 0 0 4px` (de 2 px offset plus de 2 px ring van `focusRing`), ná muisklik weer `none`
+- [x] U17: een xs-icoonknop haalt de WCAG 2.2 AA-drempel voor doelgrootte — bewijs: gemeten 28 × 28 px
+  (`gedrag-xs.mjs`) tegen de drempel van 24 × 24 px
+
+**Edge cases**
+- [x] U18: een lang label in een xs-knop blijft op één regel binnen de doos — bewijs: knop met
+  `max-width: 60px` en een lang label: doos blijft 28 px, inhoudshoogte 28 in 28. Tegenproef zonder
+  `whitespace-nowrap`: 41 in 28 — de tekst loopt dan wél over de vaste hoogte heen. (Eerste opstelling
+  knelde alleen de ouder; de knop paste daar gewoon in, dus de tegenproef kon niet vuren — met een
+  `max-width` op de knop zelf doet hij dat wel.)
+- [x] U19: een xs-invoerveld met een lang bedrag houdt zijn 28 px — bewijs: beide velden van de story
+  `ExtraSmall` op `1.234.567.890,99` gezet: hoogte 28 → 28, en `scrollHeight > clientHeight` is voor
+  geen van beide waar (geen verticale overloop)
+
+## Beslissingsgeschiedenis
+
+- 2026-09-18: aangemaakt vanuit stap 4 van het cashflow-plan.
+- 2026-09-18: de maat heet `xs`, niet `compact` — beslissing Jeroen. Het plan en het BACKLOG-item van
+  2026-09-07 schreven `compact`; `xs` sluit aan bij de bestaande reeks `sm`/`lg` en laat het openstaande
+  jobradar-item over knoppen van 24–28 px op dezelfde naam landen.
+- 2026-09-18: 28 px wordt een benoemde rol (`size.control-xs`), geen kale schaalstap `h-7` — beslissing
+  Jeroen. Gevolg: een handmatige regel in `tokens.json` plus een Pull in Tokens Studio na de merge.
+- 2026-09-18: scope bijgesteld tegenover het plan. Dat schreef "compacte maat op Button en Input"; PR #531
+  gaf `Input` intussen al een maat-as met `sm` = 36 px, dus deze stap zet er een derde stap ónder in plaats
+  van de as aan te leggen.

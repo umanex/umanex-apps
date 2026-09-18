@@ -67,6 +67,7 @@ export const scalarRoles = [
   "spacing-inline",
   "spacing-stack",
   "spacing-heading",
+  "size-control-xs",
   "size-control-sm",
   "size-control-md",
   "size-control-lg"
@@ -81,6 +82,7 @@ export const layoutRoleUtilities = {
   "inline": "spacing-inline",
   "stack": "spacing-stack",
   "heading": "spacing-heading",
+  "control-xs": "size-control-xs",
   "control-sm": "size-control-sm",
   "control-md": "size-control-md",
   "control-lg": "size-control-lg"

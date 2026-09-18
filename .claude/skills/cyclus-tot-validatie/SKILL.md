@@ -58,6 +58,10 @@ De main-agent is **scheidsrechter**: hij consolideert alle bevindingen tot één
 
 **Review-assen draaien bij voorkeur als read-only agent in een verse context.** Voor de assen die niet hoeven uit te voeren (design-review, diff-review) bestaat het agent-type **`design-reviewer`** (`.claude/agents/design-reviewer.md`): geen Write/Edit-tools — een reviewer die fysiek niet kán fixen — en geen zicht op de bouw-conversatie, dus geen self-review-bias. Dat maakt twee bestaande instructies machinaal: "de reviewer schrijft niet" en de blinde-replay-rail hierboven. `verify` blijft buiten dit patroon: die as moet flows aandrijven en houdt zijn volledige gereedschap.
 
+**De Beoordeel-stap draait als één run, niet als N losse probes.** Gebruik `scripts/checklijst.sh`: elk acceptatie-item is één `check`-regel, elke groep draagt minstens één `tegen`-regel, en de run print aan het eind de afvinkregels mét bewijs die je letterlijk in de `*.tcebc.md` plakt. Dat is geen stijlvoorkeur maar de goedkoopste vorm én de veiligste: de runner weigert een groep zonder tegenproef (exit 2), dus "groen" kan niet ontstaan doordat niemand een tegenproef schreef — de faalklasse van vier open LEARNINGS-entries op 2026-09-18.
+
+GEMETEN over 103 sessies (2026-09-01 → 09-18, 40 838 turns): **74,3% van alle tokenkost is cache-read** — de conversatie die bij élke beurt opnieuw meereist. Eén extra tool-call kost daardoor gemiddeld 44,3k eenheden en levert mediaan 0,4k tekens op; twaalf losse probes kosten ~530k, dezelfde twaalf in één run ~44k. En de kost per beurt groeit mét de sessie (30,6k onder de 50 turns → 65,8k boven de 1500), dus elke losse probe maakt elke vólgende duurder. Dat is ook de echte reden om te delegeren: dertig probe-turns in een sub-agent belasten jouw context niet, alleen het eindrapport komt terug. Draait de cyclus lang, meet dan met `node scripts/sessiekost.mjs` — staat de staart op 2x de kop, dan is de Beoordeel-stap in een verse sessie met de TC-EBC als input goedkoper dan doorgaan.
+
 ---
 
 ## De cyclus

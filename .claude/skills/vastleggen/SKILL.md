@@ -118,6 +118,38 @@ Regels:
 
 Toon de zojuist toegevoegde entry inline als codeblock, en vermeld het volledige pad van het bestand waarin hij geschreven is. Stilzwijgend opslaan mag niet — de gebruiker moet zien wat vastgelegd is.
 
+### Stap 7b — Leg de entry vast in git (melden is niet vastleggen)
+
+Een entry die alleen op schijf staat, bestaat voor niemand behalve deze sessie. Erger: hij zet de
+tak-poort op rood voor élke volgende taak in die repo, want `git status` ziet een gewijzigd bestand
+en kan niet weten dat het jouw entry is. GEMETEN 2026-09-17: vier entries van 2026-09-16 bleven
+15,5 uur onvastgelegd op `main` staan; in die tijd stond de poort twee keer op rood — één taak moest
+uitwijken naar een tijdelijke tree, en voor de andere moest Jeroen beslissen over entries die niet
+van hem waren (umanex/umanex-os#287). Stap 5 zegt terecht *"je schrijft nog steeds"*, maar liet het
+daarbij: melden was het eindstation. Dat is dit gat.
+
+Kies op de staat die stap 5 al gemeten heeft, in het doelpad (`$R`):
+
+| Staat van de tree | Wat je doet |
+|---|---|
+| Op `main`, verder schoon | `git -C "$R" checkout -q -b docs/learnings-$(date +%F) origin/main`, dan committen. Nooit op `main` committen (globale veiligheidsklep). |
+| Op een feature branch die van **jou** is | Commit de entry als **aparte** commit in die branch — niet meesmokkelen in een inhoudelijke commit. |
+| Op een branch of met werk van **iemand anders** | Niet committen. Meld het, én zet een `HANDOFF.md`-item met een `Check` (zie hieronder), zodat het niet stil blijft liggen. |
+
+```bash
+git -C "$R" add LEARNINGS.md          # stage per pad — nooit `git add -A`
+git -C "$R" commit -q -m "docs(learnings): capture <kort onderwerp>"
+# een muterende stap is zelf een meting: eis een uitkomst op het effect
+git -C "$R" status --porcelain -- LEARNINGS.md | grep -q . \
+  && { echo "STOP — entry staat nog onvastgelegd"; exit 1; } \
+  || echo "vastgelegd op $(git -C "$R" rev-parse --abbrev-ref HEAD)"
+```
+
+Kon je niet committen, dan is de HANDOFF-regel geen formaliteit maar de enige reden dat iemand het
+terugvindt: `- Check: \`git -C <repo> status --porcelain -- LEARNINGS.md\` — een treffer betekent dat
+de entry van <datum> nog onvastgelegd staat.` Een entry zonder commit én zonder HANDOFF-item is
+precies de toestand die deze stap moet uitsluiten.
+
 ---
 
 ## Niet-interactieve aanroep — het contract voor skills die deze skill aanroepen

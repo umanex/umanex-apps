@@ -1,9 +1,9 @@
 {
   "$comment": "Gemeten Figma-kant per variant-node. NIET met de hand bewerken — ververs via packages/ui/CLAUDE.md. Breedte staat er bewust NIET in: die is tekstgedreven en niet vergelijkbaar met een browser.",
   "fileKey": "ko2OuasYxyY2YRD69MYhWX",
-  "gegenereerd": "2026-09-17",
+  "gegenereerd": "2026-09-18",
   "sets": 11,
-  "varianten": 88,
+  "varianten": 114,
   "gemeten": {
     "Badge": {
       "variant=default, size=default": {
@@ -263,6 +263,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=default, size=xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=default, size=sm, disabled=true": {
         "h": 36,
         "lay": "HORIZONTAL",
@@ -274,6 +291,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=default, size=xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
         "bw": 1,
         "fills": 1,
         "strokes": 0,
@@ -331,6 +365,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=default, size=icon-xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=default, size=icon, disabled=true": {
         "h": 40,
         "lay": "HORIZONTAL",
@@ -342,6 +393,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=default, size=icon-xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
         "bw": 1,
         "fills": 1,
         "strokes": 0,
@@ -399,6 +467,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=secondary, size=xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=secondary, size=sm, disabled=true": {
         "h": 36,
         "lay": "HORIZONTAL",
@@ -410,6 +495,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=secondary, size=xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
         "bw": 1,
         "fills": 1,
         "strokes": 0,
@@ -467,6 +569,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=secondary, size=icon-xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=secondary, size=icon, disabled=true": {
         "h": 40,
         "lay": "HORIZONTAL",
@@ -478,6 +597,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=secondary, size=icon-xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
         "bw": 1,
         "fills": 1,
         "strokes": 0,
@@ -535,6 +671,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=outline, size=xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
       "variant=outline, size=sm, disabled=true": {
         "h": 36,
         "lay": "HORIZONTAL",
@@ -546,6 +699,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=outline, size=xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
         "bw": 1,
         "fills": 1,
         "strokes": 1,
@@ -603,6 +773,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=outline, size=icon-xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
       "variant=outline, size=icon, disabled=true": {
         "h": 40,
         "lay": "HORIZONTAL",
@@ -614,6 +801,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=outline, size=icon-xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
         "bw": 1,
         "fills": 1,
         "strokes": 1,
@@ -671,6 +875,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=ghost, size=xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
+        "bw": 1,
+        "fills": 0,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=ghost, size=sm, disabled=true": {
         "h": 36,
         "lay": "HORIZONTAL",
@@ -682,6 +903,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 0,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=ghost, size=xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
         "bw": 1,
         "fills": 0,
         "strokes": 0,
@@ -739,6 +977,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=ghost, size=icon-xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
+        "bw": 1,
+        "fills": 0,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=ghost, size=icon, disabled=true": {
         "h": 40,
         "lay": "HORIZONTAL",
@@ -750,6 +1005,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 0,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=ghost, size=icon-xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
         "bw": 1,
         "fills": 0,
         "strokes": 0,
@@ -807,6 +1079,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=destructive, size=xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=destructive, size=sm, disabled=true": {
         "h": 36,
         "lay": "HORIZONTAL",
@@ -818,6 +1107,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=destructive, size=xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
         "bw": 1,
         "fills": 1,
         "strokes": 0,
@@ -875,6 +1181,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=destructive, size=icon-xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=destructive, size=icon, disabled=true": {
         "h": 40,
         "lay": "HORIZONTAL",
@@ -886,6 +1209,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=destructive, size=icon-xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
         "bw": 1,
         "fills": 1,
         "strokes": 0,
@@ -943,6 +1283,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=link, size=xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
+        "bw": 1,
+        "fills": 0,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=link, size=sm, disabled=true": {
         "h": 36,
         "lay": "HORIZONTAL",
@@ -954,6 +1311,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 0,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=link, size=xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 6,
+        "r": 4,
         "bw": 1,
         "fills": 0,
         "strokes": 0,
@@ -1011,6 +1385,23 @@
         "eff": 0,
         "op": 1
       },
+      "variant=link, size=icon-xs, disabled=false": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
+        "bw": 1,
+        "fills": 0,
+        "strokes": 0,
+        "eff": 0,
+        "op": 1
+      },
       "variant=link, size=icon, disabled=true": {
         "h": 40,
         "lay": "HORIZONTAL",
@@ -1022,6 +1413,23 @@
         ],
         "gap": 8,
         "r": 6,
+        "bw": 1,
+        "fills": 0,
+        "strokes": 0,
+        "eff": 0,
+        "op": 0.5
+      },
+      "variant=link, size=icon-xs, disabled=true": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": 8,
+        "r": 4,
         "bw": 1,
         "fills": 0,
         "strokes": 0,
@@ -1117,6 +1525,23 @@
         "eff": 0,
         "op": 1
       },
+      "disabled=false, size=xs": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 0,
+        "r": 4,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 1
+      },
       "disabled=true, size=default": {
         "h": 40,
         "lay": "HORIZONTAL",
@@ -1128,6 +1553,23 @@
         ],
         "gap": 0,
         "r": 6,
+        "bw": 1,
+        "fills": 1,
+        "strokes": 1,
+        "eff": 0,
+        "op": 0.5
+      },
+      "disabled=true, size=xs": {
+        "h": 28,
+        "lay": "HORIZONTAL",
+        "pad": [
+          0,
+          8,
+          0,
+          8
+        ],
+        "gap": 0,
+        "r": 4,
         "bw": 1,
         "fills": 1,
         "strokes": 1,

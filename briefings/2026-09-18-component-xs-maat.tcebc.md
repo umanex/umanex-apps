@@ -4,7 +4,7 @@
 - **Type:** component
 - **Project:** packages/ui (consument: cashflow)
 - **Klant:** umanex
-- **Status:** gebouwd (code-kant 2026-09-18; de Figma-kant U9–U14 wacht op de Desktop Bridge)
+- **Status:** gebouwd (2026-09-18 — 19 items met bewijs; de review-ronde loopt nog)
 
 ---
 
@@ -83,20 +83,31 @@ _(geen — naam `xs` en de rolvorm `size.control-xs` zijn op 2026-09-18 beslist;
   en `input.tsx`, toegevoegde regels met een `[<cijfer>`-patroon: 0
 
 **Figma**
-- [ ] U9: `figma:check` is rood op de maat-as vóór de Figma-stap en groen erna (beide uitkomsten
-  vastgelegd, met de letterlijke regel). Rode helft gemeten (rc=1): `FAIL [variant] Button.size: code
-  [default,icon,icon-xs,lg,sm,xs] vs Figma [default,icon,lg,sm]` · `FAIL [variant] Input.size: code
-  [default,sm,xs] vs Figma [default,sm]` · `FAIL [schaal] layout-rollen: size-control-xs ontbreekt in
-  Figma`. Groene helft volgt na de Figma-stap
-- [ ] U10: `parity` groen met de nieuwe varianten erbij; elke bekende afwijking draagt zijn reden
-- [ ] U11: de Base-variabele `size-control-xs` is een alias naar `spacing-7`, niet een losse waarde —
-  en `figma:check` zegt dat met zoveel woorden
-- [ ] U12: het ververste manifest draagt alleen de pagina's Button en Input; Figma-drift van buiten deze
-  stap staat er niet in
-- [ ] U13: de node-ids van de bestaande varianten zijn ongewijzigd, dus de deep-links in de stories
-  blijven kloppen (`links --check` groen)
-- [ ] U14: de keten-zelftests groen: `figma:check:selftest`, `figma:recept:selftest`,
-  `figma:poort:selftest`, `parity --selftest`
+- [x] U9: `figma:check` was rood op de maat-as vóór de Figma-stap en is groen erna — bewijs: vóór
+  (rc=1): `FAIL [variant] Button.size: code [default,icon,icon-xs,lg,sm,xs] vs Figma
+  [default,icon,lg,sm]` · `FAIL [variant] Input.size: code [default,sm,xs] vs Figma [default,sm]` ·
+  `FAIL [schaal] layout-rollen: size-control-xs ontbreekt in Figma`. Erna (rc=0): `ok [variant] Button:
+  disabled=2 × size=6 × variant=6 — gelijk` · `ok [variant] Input: disabled=2 × size=3 — gelijk` ·
+  `32 checks groen`
+- [x] U10: `parity` groen met de nieuwe varianten erbij — bewijs: rc=0, "106 varianten, Figma en
+  browser gelijk op hoogte, padding, gap, radius, rand, opacity" (was 80); de 10 bekende afwijkingen
+  zijn alle tien de Badge-rand uit fase 4a, elk met die reden in de regel
+- [x] U11: de Base-variabele `size-control-xs` is een alias naar `spacing-7` — bewijs: droge run van
+  `zet-base.js` (SCHRIJF=false) meldde één wijziging, `size-control-xs → alias:spacing-7`, scope
+  WIDTH_HEIGHT; ná het schrijven telt Base 58 variabelen en zegt `figma:check`: "12 layout-rollen zijn
+  in Figma een alias naar hun stap uit Theme/base" (was 11)
+- [x] U12: het ververste manifest draagt geen drift van buiten deze stap — bewijs: sleutel-voor-sleutel
+  diff tegen `HEAD`, 8 gewijzigde paden en geen andere: `gegenereerd` ·
+  `collections.Base.variables.size-control-xs` · `collections.Base.aliassen.size-control-xs` ·
+  `textStyles` (7 → 9) · `pages.Button.primary.variantProperties.size` + `.varianten` ·
+  `pages.Input.primary.variantProperties.size` + `.varianten`
+- [x] U13: de node-ids van de bestaande varianten zijn ongewijzigd — bewijs: oud en nieuw manifest per
+  variantnaam vergeleken: Button 48 → 72 met **0** gewijzigde ids en 0 verdwenen, Input 4 → 6 idem;
+  set-ids `27:374` en `27:413` gelijk. `links --check`: "2 al juist, 0 te wijzigen, 0 probleem"
+- [x] U14: de keten-zelftests groen — bewijs: `figma:check:selftest` rc=0 (32 checks),
+  `figma:recept:selftest` rc=0 (8/8, incl. "een hernoemde variant in Figma geeft een verschil"),
+  `figma:poort:selftest` rc=0 (25/25), `parity --selftest` rc=0 (o.a. "padding +4 op een knop drie
+  niveaus diep: precies één verschil")
 
 **States**
 - [x] U15: `disabled` werkt op xs — bewijs: `disabled-xs.mjs` op de storybook-static, beide kanten per
@@ -133,3 +144,11 @@ _(geen — naam `xs` en de rolvorm `size.control-xs` zijn op 2026-09-18 beslist;
 - 2026-09-18: scope bijgesteld tegenover het plan. Dat schreef "compacte maat op Button en Input"; PR #531
   gaf `Input` intussen al een maat-as met `sm` = 36 px, dus deze stap zet er een derde stap ónder in plaats
   van de as aan te leggen.
+- 2026-09-18: de tekstmaat verhuist van de basis naar de size-as in `button.tsx` en `input.tsx`. Niet
+  cosmetisch: `text-dense` is geen t-shirtmaat die tailwind-merge herkent, dus naast een `text-sm` in de
+  basis zouden beide klassen blijven staan en besliste de volgorde in de stylesheet. `badge.tsx` draagt
+  dezelfde vorm sinds fase 4a.
+- 2026-09-18: de nieuwe Figma-varianten zijn gekloond uit hun naaste buur (`size=sm` voor `xs`, `size=icon`
+  voor `icon-xs`) en daarna aan de rollen gebonden — niet opnieuw getekend. Button en Input staan als
+  `LEGACY` in `scripts/figma/doel.mjs`, dus de builder weigert ze (geen bouwhash); klonen houdt de node-ids
+  van de bestaande varianten intact, wat de deep-links in de stories nodig hebben.

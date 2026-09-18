@@ -224,6 +224,13 @@
       ]
     },
     {
+      "naam": "size-control-xs",
+      "alias": "spacing-7",
+      "scopes": [
+        "WIDTH_HEIGHT"
+      ]
+    },
+    {
       "naam": "size-control-sm",
       "alias": "spacing-9",
       "scopes": [

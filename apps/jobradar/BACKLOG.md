@@ -24,6 +24,13 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
       `grid-cols-1`, dus één impliciete `auto`-kolom die meegroeit met de langste titel. **Toets:**
       `min-w-0` alléén op de `h3` → `--smal=400` meet nog altijd > 400; `grid-cols-1` (of `min-w-0` op
       de `Card`) → 400. Eén variabele per run.
+      **Hermeten 2026-09-19 (fase 4c): 480 tegen 400, niet meer 756.** Zelfde commando, zelfde
+      database. Het getal is dus tussen 09-16 en 09-19 met 276 px gedaald zonder dat iemand dit item
+      aanraakte — vermoedelijk fase 4b (velden naar `@umanex/ui`) of de compacte lage-scorerijen uit
+      fase 2, maar dat is niet gemeten. Neem 480 als vertrekpunt, niet 756; en meet opnieuw vóór je
+      de toets hierboven draait, anders vergelijk je met een getal dat al verlopen is. De balk van
+      fase 4c is níet de oorzaak: die past op 400 px op alle drie de routes (eigen as in de harness,
+      `--alleen=navigatie`).
 
 - [ ] `fix`: **Een verwijderde actie blijft als dode key in een beslismoment staan.**
       `verwijderActie` ruimt kanten en koppelingen op, maar niet de JSON-lijst in

@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react'
 /**
  * De laadtoestand van het dashboard.
  *
- * Zonder dit bleef bij een client-navigatie naar `/` (Terug naar het dashboard) de vorige pagina
+ * Zonder dit bleef bij een client-navigatie naar `/` (sinds 2026-09-19: "Radar" in de balk, en
+ * vanaf de foutpagina de eigen uitweg van `error.tsx`) de vorige pagina
  * zonder enig teken staan tot de force-dynamic render er was: alle vacatures, leads en koppelingen.
  *
  * Tekst en geen skeleton, zoals `plan/loading.tsx`: er is nog geen skeleton-primitive. Anders dan

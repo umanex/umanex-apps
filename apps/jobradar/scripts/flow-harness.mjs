@@ -618,6 +618,27 @@ async function main() {
         toetsNavigatie(nav, `navigatie (${geval.waarom})`, geval.pad, { ok, fail });
       }
     }
+
+    // De balk op 400 px. Bewust de balk en niet de route: `/` loopt daar met zijn kaartengrid
+    // sowieso over (gemeten 480 > 400) en is geen smal doelwit — mobiel staat als verworpen in
+    // BACKLOG. Wat deze balk wél moet kunnen, is zelf niet overlopen, op élke route.
+    await page.setViewportSize({ width: 400, height: 900 });
+    for (const route of ROUTES) {
+      await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+      const b = await page.evaluate(() => {
+        const balk = document.querySelector('header');
+        if (!balk) return null;
+        // De inhoud van de balk tegen de breedte van het venster: een `header` die zelf meegroeit
+        // met een te breed kind meldt gelijke waarden en zou dit stil laten passeren.
+        const kinderen = [...balk.querySelectorAll('*')].map((e) => Math.ceil(e.getBoundingClientRect().right));
+        return { rechts: Math.max(0, ...kinderen), venster: document.documentElement.clientWidth };
+      });
+      if (!b) fail(`navigatie (400px): geen <header> op ${route}`);
+      else if (b.rechts > b.venster) fail(`navigatie (400px): de balk op ${route} loopt tot ${b.rechts}px in een venster van ${b.venster}px`);
+      else ok(`navigatie (400px): de balk op ${route} past (${b.rechts} ≤ ${b.venster})`);
+    }
+    await page.setViewportSize({ width: 1280, height: 720 });
   }
 
   // Eén echte interactie. Volgorde is bewust: een `select` wijzigen is overal veilig,

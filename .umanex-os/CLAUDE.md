@@ -212,6 +212,16 @@ Uitzondering: als een component evident in het design system thuishoort (Button,
 
 Bij twijfel of iets in de design system thuishoort: vraag het.
 
+**Een dev-poort wijst één app aan, over de repo's heen.** Elke klant heeft een band — umanex-apps
+3000–3019, Columba 3020–3039, Luminus 3040–3059 — en de toewijzing per app staat in
+`templates/poorten.tsv`; `bash scripts/poort-check.sh` toetst schijf tegen manifest, band en
+botsing. Meet- en harness-poorten liggen boven 3100 en vallen er bewust buiten. **Waarom dit een
+regel is en geen netheid:** het venijn is niet dat twee apps niet tegelijk draaien — `next dev
+--port` weigert dan luid. Het is een instrument dat een vaste poort aanneemt en de vreemde app
+meet zonder iets te merken. Gemeten 2026-09-19: impeccable adviseerde uit zichzelf
+`localhost:3000` te scannen tijdens werk in een Luminus-app; daar draaide `umanex-apps/cashflow`.
+Dat advies opvolgen levert een rapport op dat er volstrekt geloofwaardig uitziet.
+
 **Elke app declareert zijn design-systeem-bron**
 
 In `apps/<app>/CLAUDE.md`, onder `## Design-systeem-bron`, drie regels: welke Tailwind-preset,

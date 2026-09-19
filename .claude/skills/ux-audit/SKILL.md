@@ -113,6 +113,12 @@ De drie frameworks kijken naar één scherm tegelijk; een tweede vocabulaire voo
 
 **Design-system-haak:** beoordeel "Desirable", "Visual representations" en "Words" tegen het bestaande design system en de tokens van de klant — niet tegen losse smaak. Wijk je af van een token of patroon, benoem dat als bevinding. Praat over tokens via hun path (`color.primary.500`), conform CLAUDE.md.
 
+### 5 — Design-system-dekking (alleen wanneer het systeem zelf in scope is)
+
+De vier lenzen hierboven meten wat er **staat**; geen ervan ziet wat er **ontbreekt**. Een scherm kan vol scoren op een systeem zonder dark-mode-palet, zonder motion-waarden en zonder één regel documentatie — het scherm gebruikt die dingen niet, dus niets kan rood worden. De bron (de open-source [Design System Checklist](https://www.designsystemchecklist.com), 230 items in vier categorieën), de telwijze en de drie grenzen — geen score-input · contrast blijft bij de detector · gewone `F<n>`-bevindingen — staan in [`reference/ds-dekking.md`](reference/ds-dekking.md); lees die vóór je stap 4b draait. Grens met `token-audit`: die meet of wat er **ís** correct gebonden is, deze lens of het er **is**.
+
+**Conditie.** Draai hem wanneer het auditobject het design system zélf is, of bij `diepte: volledig` over ≥ 2 schermen die hetzelfde systeem delen. Valt de conditie weg, schrijf dan in de Kop letterlijk `DS-dekking n.v.t. — <reden>`. De lens stilzwijgend weglaten is geen geldige uitkomst: een regel die "geen" zegt is telbaar, een ontbrekende niet.
+
 ---
 
 ## Diepte — scan of volledig
@@ -120,7 +126,7 @@ De drie frameworks kijken naar één scherm tegelijk; een tweede vocabulaire voo
 Eén veld in de frontmatter (`diepte:`), **geen aparte bestandsnaam** — een `-ux-scan-`-bestand zou buiten elke guard-glob vallen.
 
 - **`scan`** — default bij één scherm of één component(-set), of wanneer de vraag "scan", "snel" of "quick" bevat: stappen 1, 1b, 5, 5b, 6 en de secties 0–3, 7, 8, 9, 11, 12. Géén drie scoretabellen en géén research-sectie; de scoreregel in de frontmatter en de samenvatting blijft — de scan is de commerciële vorm (`profiles/umanex.md`, de ladder scan → traject) en dat getal is het meetpunt. Bevindingen en bestemmingen blijven volledig: dat is de deliverable.
-- **`volledig`** — bij een flow of product, of op expliciete vraag. Alles.
+- **`volledig`** — bij een flow of product, of op expliciete vraag. Alles — stap 4b alleen onder zijn eigen conditie (framework 5), anders met `n.v.t.` in de Kop.
 
 Gemeten 2026-08-07: één component-set kreeg 284 regels met 56 tabelrijen waarvan 26 scoretabel.
 
@@ -133,6 +139,7 @@ Gemeten 2026-08-07: één component-set kreeg 284 regels met 56 tabelrijen waarv
 2. **Scoor de 7 factoren** — tabel met rating + sterktes/gaps/bewijs per factor.
 3. **Scoor de 5 usability-karakteristieken** — tabel + utility-check.
 4. **Scoor de 5 interactie-dimensies** — tabel + kernissues per dimensie.
+4b. **Design-system-dekking** — alleen onder de conditie van framework 5. Loop de vier checklist-categorieën door, noteer per subcategorie `n/N gedekt` met bewijs, en schrijf de som als `DS-dekking n/230` apart van de UX-score. Valt de conditie weg: `DS-dekking n.v.t. — <reden>` in de Kop en door naar 5.
 5. **Consolideer & prioriteer** — bundel alle bevindingen tot één geprioriteerde lijst (zie matrix).
 5b. **Zoek het patroon** — welke bevindingen delen één oorzaak? Tel ze (`n van N schermen`) en leg naast de Delta uit 1b: hetzelfde patroon in een eerdere audit maakt er een faalklasse van, en dan is `vastleggen` de bestemming en niet de backlog. Nul patronen is een geldige uitkomst — schrijf dat op, want een sectie die altijd "geen" zegt is telbaar en een ontbrekende sectie niet.
 6. **Redesign-voorstellen** — concrete oplossingen voor de top-issues, met verwacht effect en grove inschatting.
@@ -240,3 +247,4 @@ Een totaalscore is een communicatiemiddel, geen waarheid. De geprioriteerde bevi
 - ISO 9241-11 — usability-definitie en metrics
 - Gillian Crampton Smith & Kevin Silver — 5 dimensies van interactie-design
 - Jakob Nielsen — usability engineering principles
+- Design System Checklist — [designsystemchecklist.com](https://www.designsystemchecklist.com) (open source, 230 items in vier categorieën; de dekkingslens in framework 5)

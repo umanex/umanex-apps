@@ -41,6 +41,27 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 # Globaal
 
+## 2026-09-19 — De merge-procedure heeft geen tegenproef, terwijl CLAUDE.md er één noemt · [test]
+- **Wat:** `.umanex-os/CLAUDE.md` schrijft bij het merge-protocol: *"`scripts/test-procedures.sh`
+  draait hem tegen vier repotoestanden — overtik het blok hieronder niet, dat is precies de vorm
+  die negen keer misging."* Dat bestand bestaat niet in deze repo; de enige selftest in `scripts/`
+  is `design-system-selftest.mjs`. De procedure met de hoogste gemeten faalhistorie draagt dus
+  als enige geen suite, en de zin die dat zou moeten dekken leest als bewijs terwijl er niets
+  achter zit — dezelfde vorm als een guard die exit 0 geeft zonder te meten.
+- **Waarom niet nu:** bovengekomen doordat `afronden.sh` op 2026-09-19 de verkeerde branch
+  opruimde (PR umanex-apps#545 fixt de oorzaak: de branch kwam uit HEAD in plaats van uit de PR).
+  Die fix is met een tweezijdige droogloop getoetst, maar één handmatige tegenproef is geen suite
+  — en een suite bouwen vraagt stub-`gh` plus vier opgezette repotoestanden, wat een eigen ronde is.
+- **Eerste zet:** `scripts/test-procedures.sh` schrijven met een stub-`gh` op `PATH`, naar het
+  model van de tweezijdige toets die op 2026-08-25 met de hand gedraaid is (geweigerde merge →
+  beide branches blijven staan; geslaagde merge → beide opgeruimd). Voeg als vijfde toestand het
+  geval van vandaag toe: **HEAD op een andere branch dan de PR** — dan hoort hij de branch van de
+  PR op te ruimen en luid te waarschuwen, en nooit die van HEAD. Zonder dat geval was de bug van
+  vandaag ook door een suite heen gekomen.
+- **Check:** `ls scripts/test-procedures.sh` — bestaat niet = het item leeft. Tegencontrole dat
+  de verwijzing er écht staat: `grep -c test-procedures .umanex-os/CLAUDE.md` hoort ≥ 1 te geven.
+- **Status:** open
+
 ## 2026-09-18 — De horizontale padding van `xs` is een schaalstap waar zijn buren een rol dragen · [design-system]
 - **Wat:** `Button size="xs"` en `Input size="xs"` zetten allebei `px-2` (8px), terwijl `default`, `sm` en `lg` de rol `spacing.control-x` gebruiken. CLAUDE.md → Design tokens: *"een rol bestaat pas als twee componenten dezelfde maat op een vergelijkbare plek dragen"* — twee doen dat nu. Gevolg: wie `spacing.control-x` bijstelt, verschuift drie maten en laat xs op 8px staan; en de xs-padding heeft geen Figma-variabele om aan te binden, anders dan zijn buren. Gemeld door `code-review` op PR #537.
 - **Waarom niet nu:** een rol toevoegen is een tokenwijziging, en die hoort vooraf bevestigd (CLAUDE.md → *Acties die altijd eerst moeten worden bevestigd*). Jeroen bevestigde op 2026-09-18 de hoogte-rol `size.control-xs`; een pádding-rol is een tweede, aparte beslissing die niet in die vraag zat. Bovendien komt er dan nóg een handmatige regel in `tokens.json` bovenop de Pull-afspraak die al openstaat.

@@ -14,7 +14,7 @@ export default function InstellingenLaden() {
   useEffect(() => setMelding('Instellingen laden…'), [])
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="w-full mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="space-y-2">
         <h1 className="text-xl font-semibold tracking-tight">Instellingen</h1>
         <p aria-hidden className="text-sm text-muted-foreground" data-laden>

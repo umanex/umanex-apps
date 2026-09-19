@@ -36,6 +36,15 @@ const ROUTES = [
 const isActief = (pathname: string, href: string) =>
   href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`)
 
+/**
+ * Los van `isActief`, en dat is het punt. "Markeer deze link als de huidige" en "dit is letterlijk
+ * hetzelfde pad" vallen vandaag samen, maar niet zodra er een subroute bestaat: op `/plan/xyz` is
+ * "Plan" wél de huidige sectie én wijst hij naar een ánder pad — precies het geval waarin
+ * `next/link` werkt en de boundary leegt. Eén predicaat voor beide zou die link onnodig de hele
+ * pagina laten herladen.
+ */
+const isZelfdePad = (pathname: string, href: string) => pathname === href
+
 export const AppHeader = () => {
   const pathname = usePathname()
 
@@ -47,12 +56,15 @@ export const AppHeader = () => {
           <ul className="flex items-center gap-4">
             {ROUTES.map(({ href, label }) => {
               const actief = isActief(pathname, href)
+              const zelfdePad = isZelfdePad(pathname, href)
               const klasse = cn(
                 'rounded-sm text-sm transition-colors hover:text-foreground',
                 actief ? 'font-medium text-foreground' : 'text-muted-foreground',
                 focusRing
               )
-              // De actieve link is een gewone <a> en geen next/link. Reden, gelezen in
+              // Een gewone <a> en geen next/link, maar alléén bij hetzelfde pad. Op `actief`
+              // zou fout zijn: dat is ook waar op een subroute (`/plan/xyz`), en daar wijst de
+              // link naar een ánder pad — net het geval waarin next/link wérkt. Reden, gelezen in
               // `next/dist/client/components/error-boundary.js:64` (15.5.25): de error-boundary
               // reset alléén wanneer `pathname` verandert. Een client-navigatie naar de route
               // waar je al staat verandert hem niet, dus op de foutpagina zou deze link een
@@ -61,13 +73,13 @@ export const AppHeader = () => {
               // al bent". `error.tsx` lost hetzelfde op dezelfde manier op.
               return (
                 <li key={href}>
-                  {actief ? (
+                  {zelfdePad ? (
                     // eslint-disable-next-line @next/next/no-html-link-for-pages -- bewust een volledige herlading, zie hierboven
                     <a href={href} aria-current="page" className={klasse}>
                       {label}
                     </a>
                   ) : (
-                    <Link href={href} className={klasse}>
+                    <Link href={href} aria-current={actief ? 'page' : undefined} className={klasse}>
                       {label}
                     </Link>
                   )}

@@ -376,7 +376,7 @@ async function spiegelFout({ page, BASE, APP, ok, fail, notes, laad, extraServer
 }
 
 // ── c02 — de foutpagina ──────────────────────────────────────────────────────
-async function foutpagina({ page, APP, ok, fail, notes, laad, extraServer, consoleErrors, navigatie, toetsNavigatie }, werk) {
+async function foutpagina({ page, APP, ok, fail, notes, laad, extraServer, consoleErrors, navigatie, toetsNavigatie, verticaleOverloop }, werk) {
   const DB = process.env.JOBRADAR_DB_PATH ?? join(APP, '.data/jobradar.db');
   const kapot = join(werk, 'jobradar-kapot.db');
   writeFileSync(kapot, 'dit is geen sqlite-database\n');
@@ -418,6 +418,9 @@ async function foutpagina({ page, APP, ok, fail, notes, laad, extraServer, conso
     // grens ónder de layout, dus dit hóórt te gelden; maar "hoort" is geen meting, en juist hier
     // wil je weten waar je heen kunt. De route is `/`, dus de markering hoort op `/` te staan.
     toetsNavigatie(await navigatie(page), 'c02e: foutpagina', '/', { ok, fail });
+    const hoog = await verticaleOverloop(page);
+    if (hoog.scroll > hoog.client + 1) fail(`c02e: de foutpagina is ${hoog.scroll}px hoog in een venster van ${hoog.client}px — gecentreerde inhoud onder het midden, met een schuifbalk`);
+    else ok(`c02e: de foutpagina past verticaal in het venster (${hoog.scroll} ≤ ${hoog.client})`);
 
     // c02b — op elke route een eigen uitweg naar /, en een klik is een documentnavigatie.
     //

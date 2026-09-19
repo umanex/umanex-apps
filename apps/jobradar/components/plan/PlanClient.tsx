@@ -424,8 +424,10 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
           </div>
           {/* Alleen nog de exports: "Instellingen" staat sinds 2026-09-19 in de balk. De sectie
               van het plan is daar via de pagina bereikbaar, niet meer via een eigen link met een
-              hash. */}
-          <div className="flex items-center gap-4 pt-6">
+              hash. De `pt-6` is mee weggevallen: die duwde deze rij omlaag tot de hoogte van
+              de h1, omdat er toen nog een terug-link bóven die h1 stond. Zonder die link zette
+              hij de exports 24 px onder een kop die op y=0 begint. */}
+          <div className="flex items-center gap-4">
             <a
               href="/api/plan/export?formaat=md"
               className={cn(

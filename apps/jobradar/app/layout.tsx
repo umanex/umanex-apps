@@ -25,7 +25,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="nl" className={firaSans.variable}>
       {/* De balk staat in de layout en niet per pagina, dus hij draagt ook de foutpagina, de 404
           en de drie laadtoestanden — precies de schermen waar "waar ben ik" het meest telt. */}
-      <body className="font-sans bg-background text-foreground antialiased">
+      {/* Kolom over de volle hoogte, en `w-full` op elke main. Een pagina die het hele scherm
+          wil vullen (`error.tsx`, `not-found.tsx`) vraagt `flex-1` en niet `min-h-screen`: dat
+          laatste telde bij de balk op en gaf élke foutpagina een schuifbalk plus inhoud onder het
+          midden. De `w-full` hoort erbij — `mx-auto` op de kruis-as van een kolom-flexbox zet
+          `align-self: stretch` uit, en dan valt een main terug op fit-content. */}
+      <body className="flex min-h-screen flex-col font-sans bg-background text-foreground antialiased">
         <AppHeader />
         {children}
       </body>

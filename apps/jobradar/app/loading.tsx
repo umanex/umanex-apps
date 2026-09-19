@@ -18,7 +18,7 @@ export default function DashboardLaden() {
   useEffect(() => setMelding('Dashboard laden…'), [])
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="w-full mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="space-y-2">
         {/* Onzichtbaar, net als op het geladen dashboard: de balk erboven staat er al tijdens het
             laden, dus het wordmerk hoeft hier niet nog eens. De kop blijft bestaan zodat de

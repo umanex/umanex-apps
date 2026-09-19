@@ -276,6 +276,21 @@ async function navigatie(page) {
   });
 }
 
+/**
+ * Verticale overloop op een pagina die in één scherm hóórt te passen (de foutpagina, de 404).
+ *
+ * Eigen as naast de 400 px-meting, want die kijkt alleen naar de breedte. Het defect dat hier valt:
+ * een `main` met `min-h-screen` ónder een balk in de layout telt de balkhoogte erbij op — 100vh +
+ * 49px, dus een permanente schuifbalk en inhoud onder het midden, op precies de schermen die
+ * gecentreerd bedoeld zijn.
+ */
+async function verticaleOverloop(page) {
+  return page.evaluate(() => ({
+    scroll: document.documentElement.scrollHeight,
+    client: document.documentElement.clientHeight,
+  }));
+}
+
 /** Eén aanroep die de hele balk beoordeelt en per afwijking één regel schrijft. */
 function toetsNavigatie(nav, waar, verwachtPad, { ok, fail }) {
   if (!nav.balk) return fail(`${waar} navigatie: geen <header> in de pagina — de balk van de layout ontbreekt`);
@@ -614,8 +629,54 @@ async function main() {
         else if (nav.links !== 3) fail(`navigatie (${geval.waarom}): ${nav.links} links in de balk op ${geval.url}, verwacht 3`);
         else if (nav.huidig !== 0) fail(`navigatie (${geval.waarom}): ${nav.huidig} van ${nav.links} links met aria-current op ${geval.url}, verwacht 0 — deze route is geen van de drie`);
         else ok(`navigatie (${geval.waarom}): 3 links, 0 van 3 met aria-current op ${geval.url}`);
+        const v = await verticaleOverloop(page);
+        if (v.scroll > v.client + 1) fail(`navigatie (404): de pagina is ${v.scroll}px hoog in een venster van ${v.client}px — een 404 hoort in één scherm te passen`);
+        else ok(`navigatie (404): past verticaal in het venster (${v.scroll} ≤ ${v.client})`);
       } else {
         toetsNavigatie(nav, `navigatie (${geval.waarom})`, geval.pad, { ok, fail });
+      }
+    }
+
+    // De breedte van `main` op elke route. `app/layout.tsx` is sinds 2026-09-19 een kolom-flexbox,
+    // en `mx-auto` op de kruis-as daarvan zet `align-self: stretch` uit (Flexbox §9.6): zonder
+    // `w-full` valt een main terug op fit-content in plaats van op zijn `max-w-*`. Dat is
+    // waarschijnlijk onzichtbaar zolang de inhoud breed genoeg is — en precies daarom een as die
+    // je meet in plaats van aanneemt.
+    for (const [route, verwacht] of [['/', 1280], ['/plan', 1280], ['/instellingen', 768]]) {
+      await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+      const breed = await page.locator('main').first().evaluate((el) => Math.round(el.getBoundingClientRect().width));
+      if (breed !== verwacht) fail(`navigatie (main-breedte): <main> op ${route} is ${breed}px, verwacht ${verwacht}px — een kolom-flexbox met mx-auto krimpt naar fit-content zonder w-full`);
+      else ok(`navigatie (main-breedte): <main> op ${route} is ${breed}px`);
+    }
+
+    // Een klik op de link van de route waar je al staat, vanaf een gefilterd dashboard. Die link
+    // wijst naar `/` zonder querystring, dus de filterstand hóórt terug te vallen op de standaard
+    // — en dan moet het scherm dát ook tonen. De invariant is niet "de stand blijft" en ook niet
+    // "de stand reset", maar dat URL en scherm ná de klik hetzelfde zeggen: een adresbalk op `/`
+    // naast een lijst die nog op Leads staat, is de ergste van de drie uitkomsten.
+    {
+      await page.goto(BASE + '/?tab=leads&status=alle', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+      const voor = await page.evaluate(() => ({
+        status: document.querySelector('select[aria-label="Status"]')?.value ?? null,
+        tab: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim().slice(0, 20) ?? null,
+      }));
+      if (voor.status !== 'alle' || !/^Leads/.test(voor.tab ?? '')) {
+        fail(`navigatie (klik op de huidige route): de beginstand is niet gefilterd (${JSON.stringify(voor)}) — dit meet niets`);
+      } else {
+        await page.locator('header a').getByText('Radar', { exact: true }).click();
+        await page.waitForLoadState('load', { timeout: 10_000 }).catch(() => {});
+        await page.waitForTimeout(600);
+        const na = await page.evaluate(() => ({
+          zoek: location.search,
+          status: document.querySelector('select[aria-label="Status"]')?.value ?? null,
+          tab: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim().slice(0, 20) ?? null,
+        }));
+        const schoon = na.zoek === '';
+        const standaard = na.status === 'open' && /^Vacatures/.test(na.tab ?? '');
+        if (schoon !== standaard) fail(`navigatie (klik op de huidige route): URL en scherm spreken elkaar tegen — search "${na.zoek}", status "${na.status}", tabblad "${na.tab}"`);
+        else ok(`navigatie (klik op de huidige route): URL "${na.zoek || '(leeg)'}" en scherm (status ${na.status}, tabblad ${na.tab}) zeggen hetzelfde`);
       }
     }
 
@@ -793,15 +854,22 @@ async function main() {
       // er meer dan één was, en dan meet dit geval niets.
       const planLink = page.getByRole('link', { name: 'Plan', exact: true });
       const planLinks = await planLink.count();
-      if (planLinks !== 1) fail(`triage: ${planLinks} links "Plan" op /, verwacht 1 — de Back-check meet niets`);
-      await planLink.click();
-      await page.waitForURL(/\/plan/, { timeout: 10_000 }).catch(() => {});
-      await page.goBack({ waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
-      await page.waitForTimeout(500);
-      const naBack = { select: await selectNa(), url: urlStand() };
-      if (naBack.select !== 'dismissed' || naBack.url !== verwacht) fail(`triage: na /plan en Back ${JSON.stringify(naBack)}`);
-      else ok('triage: na /plan en Back staan filter én URL nog op de gefilterde stand');
+      // De telling stopt óók de klik. Zonder die tak volgt op "dit meet niets" een `click()` die
+      // bij 0 treffers 30 s later gooit en bij 2+ meteen (strict mode) — en die uitzondering
+      // ontsnapt: élke sectie hierná draait dan niet, wat als "niet rood" leest. Zelfde valkuil
+      // als T1 in de plan-probe.
+      if (planLinks !== 1) {
+        fail(`triage: ${planLinks} links "Plan" op /, verwacht 1 — de Back-check meet niets en wordt overgeslagen`);
+      } else {
+        await planLink.click();
+        await page.waitForURL(/\/plan/, { timeout: 10_000 }).catch(() => {});
+        await page.goBack({ waitUntil: 'domcontentloaded' });
+        await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+        await page.waitForTimeout(500);
+        const naBack = { select: await selectNa(), url: urlStand() };
+        if (naBack.select !== 'dismissed' || naBack.url !== verwacht) fail(`triage: na /plan en Back ${JSON.stringify(naBack)}`);
+        else ok('triage: na /plan en Back staan filter én URL nog op de gefilterde stand');
+      }
 
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
@@ -1668,7 +1736,7 @@ async function main() {
     const meetCtx = {
       page, browserContext: ctx, browser, BASE, APP, HERE, DIST, env, ok, fail, notes, consoleErrors,
       laad, onderschepSchrijven, stopOnderschepping, extraServer, dbVingerafdruk, kopstructuur, toetsenbord, naamloos,
-      navigatie, toetsNavigatie,
+      navigatie, toetsNavigatie, verticaleOverloop,
     };
     for (const [naam, pad] of FASE3_MODULES) {
       if (!doe(naam)) continue;
@@ -1736,7 +1804,11 @@ async function main() {
       return true;
     });
     if (!weggehaald) {
-      fail(`ZELFTEST navigatie: geen link met aria-current om weg te halen (balk=${voorNav.balk}, links=${voorNav.links}) — dit meet niets`);
+      // Een eigen voorvoegsel, búiten de `assen`-lijst onderaan. Met "ZELFTEST navigatie" ervoor
+      // telt de samenvatting deze regel als "de as faalde", terwijl het defect nooit ingespoten
+      // is — dan leest "alle 7 assen falen" precies wanneer er niets gemeten is. Gemeten
+      // 2026-09-19: zonder aria-current in AppHeader printte de zelftest exact dat.
+      fail(`ZELFTEST-OPSTELLING navigatie: geen link met aria-current om weg te halen (balk=${voorNav.balk}, links=${voorNav.links}) — het defect is niet ingespoten`);
     } else {
       const navZelftest = await navigatie(page);
       if (navZelftest.huidig !== 1 && navZelftest.links === 3) fail(`ZELFTEST navigatie: ${navZelftest.huidig} van ${navZelftest.links} links met aria-current`);

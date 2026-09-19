@@ -7,6 +7,73 @@ Format: `- [ ] {type}: {wat} — {waarom} ({bron})`
 
 ## Open
 
+- [ ] `ui`: **Toevoegen in de chip-editors is het zwaarste vlak van de sectie Zoekopdracht.**
+      Gemeten 2026-09-19 op `.flow-shots/instellingen.png`: de drie `Toevoegen`-knoppen
+      (`components/TermChips.tsx:117`, `variant="secondary"`) vullen rgb(160,163,168), ≈ 2,6:1 tegen
+      de paginakleur, 94×36 px, drie keer. Het gevulde `Opslaan` staat in ruststand op
+      rgb(144,176,244), ≈ 2,2:1, één keer, 82×40 px. De luidste rechthoeken in de sectie zijn dus de
+      veld-knoppen en niet de primaire actie. Dat is precies het argument waarmee *Test deze
+      zoekopdracht* in fase 4c van `secondary` naar `outline` ging — één niveau lager niet
+      doorgetrokken. Toevoegen is bovendien een dubbele route: Enter en `onBlur` voegen al toe
+      (`TermChips.tsx:100-110`). **Eerste zet:** `variant="ghost"` of `outline` op regel 117; de
+      harness-as `c51` hangt aan `[data-zoekopdracht-actie]` en verschuift niet mee. **Waarom niet
+      nu:** buiten de scope van fase 4c, die over de actierij ging.
+
+- [ ] `ui`: **De primaire actie staat per sectie op een andere plek in de rij.**
+      `/instellingen` leest in Zoekopdracht omrand-breed (216 px) → gevuld (82 px) → tekst, terwijl
+      Bedrijfsplan het gevulde `Opslaan` als enige knop op de linkerkantlijn heeft (x=288). Het oog
+      landt in de eerste sectie dus op de omrande knop. **Eerste zet:** `Opslaan` eerst in de rij van
+      `components/SearchSettingsForm.tsx:179-215`. `c51` hangt aan data-attributen, dus de meting
+      verschuift niet mee. (design-review fase 4c, 2026-09-19)
+
+- [ ] `ui`: **`/` opent met een dode band links en de sync-knop als zwaarste element.**
+      Gemeten op `.flow-shots/index.png` (2026-09-19): balkrand y=48 · eerste inhoud y=81, en alléén
+      op x=1147–1243 (Sync nu) · eerste links uitgelijnde tekst pas op y=135. Het besluit "geen
+      zichtbare titel op `/`" houdt structureel stand — de actieve "Radar" staat exact boven de
+      kantlijn van de inhoud en leest als het label van de pagina — maar het zwaarste element van het
+      scherm is nu een onderhoudsactie, en dat is niet wat "gewicht verdelen" wil. **Eerste zet die
+      het besluit intact laat:** `<CoverageBar />` naar dezelfde rij als de SyncButton
+      (`components/DashboardClient.tsx:518-523`, `justify-between items-center`). **Let op:** de
+      triage-sectie meet de meta-rij op overloop bij 1280 en 1024 px — die as opnieuw draaien na de
+      wissel. (design-review fase 4c)
+
+- [ ] `ui`: **De balk ligt op `/instellingen` 256 px naast de inhoud.**
+      De balktekst begint op x=32 op alle drie de routes; op `/` en `/plan` begint de pagina-inhoud
+      op x=33, daar valt het patroon samen. Op `/instellingen` (`max-w-3xl`) begint álles op x=288, en
+      geen enkel element raakt de kantlijn van de balk (`max-w-7xl`). Bewuste asymmetrie, vastgelegd
+      in de aannames van `briefings/2026-09-19-feature-navigatie.tcebc.md` — hier genoteerd zodat ze
+      niet stilzwijgend is. **Twee uitwegen:** `/instellingen` naar `max-w-5xl`, of de balk-container
+      per route laten meebewegen (duurder, en dan springt het wordmerk bij elke routewissel).
+      (design-review fase 4c, 2026-09-19)
+
+- [ ] `ui`: **Een klik op de huidige route in de balk is een volledige herlading.**
+      `AppHeader.tsx` geeft de link naar het pad waar je al staat een gewone `<a>`, omdat Next de
+      error-boundary alléén bij een padwissel leegt — zonder dat is het op de foutpagina een
+      zichtbare link die niets doet (harness-as `c02f`). De prijs: vanaf `/?tab=leads&status=alle`
+      kost één klik op "Radar" een volledige force-dynamic render van alle vacatures, leads en
+      koppelingen, en de filterstand valt terug op de standaard. Gemeten 2026-09-19 dat URL en scherm
+      daarna hetzelfde zeggen (harness-as *klik op de huidige route*), dus er is geen halve
+      toestand — alleen kost. **Waarom niet nu:** elke goedkopere vorm (`onClick` + `reload`) bewaart
+      juist de querystring en verandert daarmee wat het menu-item betekent; dat is een eigen
+      beslissing, geen fix.
+
+- [ ] `a11y`: **Het klikdoel van de navigatielinks is 20 px hoog.**
+      `components/layout/AppHeader.tsx` — de link heeft geen eigen padding; de balkhoogte komt van de
+      container. WCAG 2.5.8 haalt het via de spacing-uitzondering (hart-op-hart ≥ 48 px), dus geen
+      faalgeval, maar klein. **Eerste zet:** `py-2 -my-2` in `klasse`, dat maakt er 36 px van zonder
+      de balkhoogte te raken en geeft de focus-ring meteen een fatsoenlijke doos. (design-review
+      fase 4c)
+
+- [ ] `ui`: **De balk is niet sticky, en hij is nu de enige navigatie.**
+      `/` is 2032 px hoog; na één schermhoogte is er geen navigatie meer. Geen regressie — de oude
+      koppen stonden ook bovenaan — maar vóór fase 4c droeg elke pagina haar eigen links, en nu is
+      dit het enige exemplaar. **Let op bij het bouwen:** een sticky balk verschuift de focus-scroll,
+      en `PlanClient` gebruikt `scroll-mt-6` op zijn foutbanner. (design-review fase 4c)
+
+- [ ] `a11y`: **Geen skip-link naar de inhoud.**
+      Elke route begint sinds fase 4c met drie navigatie-stops vóór `main`. Verwaarloosbaar op `/`
+      (80+ stops), maar de layout is voortaan de plek waar zo'n link hoort. (design-review fase 4c)
+
 - [ ] `ui`: **Het dashboard loopt over op 400 px, en de oorzaak is één ontbrekende klasse.**
       Gemeten 2026-09-16 met `flow --shot --smal=400` op de echte database: `scrollWidth` 756 tegen
       400 beschikbaar. De bron is de vacaturetitel in `JobCard.tsx` — `h3.truncate` als flex-item

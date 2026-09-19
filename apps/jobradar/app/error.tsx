@@ -30,7 +30,7 @@ export default function Foutpagina({
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+    <main className="flex w-full flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
       <h1 className="text-2xl font-bold">Er ging iets mis</h1>
       {/* Een zin voor mensen. `error.message` is in productie bij een server-renderfout Next's
           Engelse vervangtekst, en in dev een SQLite-melding — bruikbaar om te melden, niet om te

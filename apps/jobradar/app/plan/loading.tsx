@@ -7,7 +7,7 @@
  */
 export default function PlanLaden() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="w-full mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="space-y-2">
         <h1 className="text-xl font-semibold tracking-tight">Bedrijfsplan 2027</h1>
         <p aria-live="polite" className="text-sm text-muted-foreground">

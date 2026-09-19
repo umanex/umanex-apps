@@ -180,7 +180,10 @@ export function SearchSettingsForm({ begin, standaard, beginIsStandaard }: Searc
         <Button
           ref={testRef}
           onClick={testen}
-          variant="secondary"
+          // Omrand en niet gevuld: per sectie draagt één knop de primaire vulling, en dat is
+          // Opslaan. `secondary` was óók een vlak, en twee vlakken naast elkaar zeggen niet welke
+          // van de twee de handeling is die je komt doen.
+          variant="outline"
           aria-disabled={bezig !== null || validatie !== null}
           className={INERT}
           data-zoekopdracht-actie="testen"

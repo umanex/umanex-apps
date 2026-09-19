@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
@@ -511,29 +510,14 @@ export function DashboardClient({
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">JobRadar</h1>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/plan"
-              className={cn(
-                'rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground',
-                focusRing
-              )}
-            >
-              Bedrijfsplan
-            </Link>
-            <Link
-              href="/instellingen"
-              className={cn(
-                'rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground',
-                focusRing
-              )}
-            >
-              Instellingen
-            </Link>
-            <SyncButton onToonNieuwe={toonNieuwe} />
-          </div>
+        {/* Onzichtbaar, want de balk erboven zegt "JobRadar" al en een tweede keer hetzelfde
+            woord kost de ruimte die de dekkingsbalk beter gebruikt. De kop blijft wél bestaan:
+            zonder h1 begint de kopstructuur van deze route bij een h2. */}
+        {/* `justify-end`, niet `justify-between`: de h1 is `sr-only` en dus uit de flow, dus er
+            is maar één in-flow kind om te verdelen. */}
+        <div className="flex items-start justify-end gap-4">
+          <h1 className="sr-only">Radar</h1>
+          <SyncButton onToonNieuwe={toonNieuwe} />
         </div>
 
         <CoverageBar dekking={dekking} />

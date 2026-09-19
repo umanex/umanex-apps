@@ -1,8 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
-import { cn } from '@umanex/ui/lib/utils'
-import { focusRing } from '@umanex/ui/lib/focus'
 import { getDb } from '@/lib/db'
 import { leesZoekopdracht } from '@/lib/sync/settings-store'
 import { standaardZoekopdracht, isStandaard } from '@/lib/settings'
@@ -25,19 +21,7 @@ export default async function InstellingenPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="space-y-6">
-        <div className="space-y-2">
-          <Link
-            href="/"
-            className={cn(
-              'inline-flex items-center gap-1 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground',
-              focusRing
-            )}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Terug naar het dashboard
-          </Link>
-          <h1 className="text-xl font-semibold tracking-tight">Instellingen</h1>
-        </div>
+        <h1 className="text-xl font-semibold tracking-tight">Instellingen</h1>
 
         <section className="space-y-3">
           <h2 className="text-base font-semibold">Zoekopdracht</h2>

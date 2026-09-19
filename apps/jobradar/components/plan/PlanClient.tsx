@@ -1,8 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@umanex/ui/components/ui/tabs'
 import { TooltipProvider } from '@umanex/ui/components/ui/tooltip'
 import { Button } from '@umanex/ui/components/ui/button'
@@ -414,16 +412,6 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
       <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
-            <Link
-              href="/"
-              className={cn(
-                'inline-flex items-center gap-1 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground',
-                focusRing
-              )}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Terug naar het dashboard
-            </Link>
             <h1 className="text-xl font-semibold tracking-tight">Bedrijfsplan 2027</h1>
             <p className="text-sm text-muted-foreground">
               Voorbereiding op de start in {maandLabel(plan.instellingen.lancering)} —{' '}
@@ -434,16 +422,10 @@ export function PlanClient({ plan: initieelPlan, vandaag, initieleActie }: PlanC
               beslismomenten en het startbesluit. Een werklijst, geen planning met deadlines.
             </p>
           </div>
+          {/* Alleen nog de exports: "Instellingen" staat sinds 2026-09-19 in de balk. De sectie
+              van het plan is daar via de pagina bereikbaar, niet meer via een eigen link met een
+              hash. */}
           <div className="flex items-center gap-4 pt-6">
-            <Link
-              href="/instellingen#bedrijfsplan"
-              className={cn(
-                'rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground',
-                focusRing
-              )}
-            >
-              Instellingen
-            </Link>
             <a
               href="/api/plan/export?formaat=md"
               className={cn(

@@ -106,12 +106,72 @@ async function drukMetToetsenbord(m, { actie, pad, methode, antwoord, sleutel })
   return { tijdens, na, res: antwoordRes, verzoeken: verzoeken.length, knopNa: await knop.count() };
 }
 
+/**
+ * c51 (2026-09-19) — één primaire actie per sectie op /instellingen.
+ *
+ * Gemeten op de actierij van elke sectie, niet op elke knop in de sectie: de chip-editors dragen
+ * hun eigen "Toevoegen" en hun eigen wis-knopjes, en die horen bij het veld, niet bij de handeling
+ * waarvoor je de pagina opent.
+ *
+ * "Gevuld" is een berekende kleur en geen klassenaam: een knop is gevuld wanneer zijn
+ * achtergrond ondoorzichtig is én afwijkt van die van de pagina. Een check op `bg-primary` zou
+ * groen blijven als de token achter die klasse ooit transparant wordt.
+ */
+async function actierijen(m) {
+  const { page, ok, fail } = m;
+  const meting = await page.evaluate(() => {
+    const paginaKleur = getComputedStyle(document.body).backgroundColor;
+    const lees = (sel) =>
+      [...document.querySelectorAll(sel)]
+        .filter((b) => b.checkVisibility())
+        .map((b) => {
+          const s = getComputedStyle(b);
+          const m = s.backgroundColor.match(/[\d.]+/g) ?? [];
+          return {
+            naam: b.textContent.trim(),
+            bg: s.backgroundColor,
+            alpha: m.length === 4 ? Number(m[3]) : 1,
+            rand: Math.round(parseFloat(s.borderTopWidth) || 0),
+            hoogte: Math.round(b.getBoundingClientRect().height),
+          };
+        });
+    return {
+      paginaKleur,
+      zoekopdracht: lees('[data-zoekopdracht-actie]'),
+      bedrijfsplan: lees('[data-planinstellingen-actie]'),
+      testen: lees('[data-zoekopdracht-actie="testen"]')[0] ?? null,
+    };
+  });
+
+  const gevuld = (k) => k.alpha > 0.01 && k.bg !== meting.paginaKleur;
+  for (const [sectie, knoppen] of [['Zoekopdracht', meting.zoekopdracht], ['Bedrijfsplan', meting.bedrijfsplan]]) {
+    if (knoppen.length === 0) { fail(`c51: 0 actieknoppen in de sectie ${sectie} — dit meet niets`); continue; }
+    const vol = knoppen.filter(gevuld);
+    if (vol.length !== 1) fail(`c51: ${vol.length} van ${knoppen.length} actieknoppen in ${sectie} zijn gevuld (${vol.map((k) => k.naam).join(', ') || 'geen'}), verwacht precies 1`);
+    else ok(`c51: 1 van ${knoppen.length} actieknoppen in ${sectie} is gevuld ("${vol[0].naam}")`);
+  }
+
+  if (!meting.testen) fail('c51: geen knop [data-zoekopdracht-actie="testen"] — dit meet niets');
+  else if (gevuld(meting.testen)) fail(`c51: "Test deze zoekopdracht" is gevuld (${meting.testen.bg} tegen pagina ${meting.paginaKleur}) — hij hoort omrand te zijn`);
+  else if (meting.testen.rand < 1) fail(`c51: "Test deze zoekopdracht" heeft randbreedte ${meting.testen.rand}px — omrand betekent een zichtbare rand`);
+  else ok(`c51: "Test deze zoekopdracht" is omrand (${meting.testen.rand}px) en niet gevuld`);
+
+  // De maat over de twee secties heen: vóór 2026-09-19 stond Opslaan van het bedrijfsplan op
+  // `size="sm"` en de rest op de standaardmaat, dus twee identieke handelingen hadden twee hoogtes.
+  const alle = [...meting.zoekopdracht, ...meting.bedrijfsplan];
+  const hoogtes = [...new Set(alle.map((k) => k.hoogte))];
+  if (alle.length < 2) fail(`c51: ${alle.length} actieknop(pen) gevonden — te weinig om hoogtes te vergelijken`);
+  else if (hoogtes.length !== 1) fail(`c51: ${alle.length} actieknoppen met ${hoogtes.length} verschillende hoogtes (${alle.map((k) => `${k.naam}=${k.hoogte}`).join(', ')})`);
+  else ok(`c51: alle ${alle.length} actieknoppen op /instellingen zijn ${hoogtes[0]}px hoog`);
+}
+
 export default async function (m) {
   const { page, ok, fail, notes } = m;
   const dbVoor = await m.dbVingerafdruk();
   if (dbVoor.startsWith('onleesbaar')) fail(`instellingen: database-vingerafdruk ${dbVoor} — het lek-vangnet werkt niet`);
 
   await m.laad('/instellingen');
+  await actierijen(m);
   const regiosBijLaden = await merkLiveRegios(page);
   notes.push(`instellingen: ${regiosBijLaden.length} live-regio('s) bij het laden (${regiosBijLaden.map((r) => `"${r.tekst}"`).join(', ')})`);
 

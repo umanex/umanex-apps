@@ -129,7 +129,9 @@ async function titels({ page, BASE, APP, ok, fail, notes, consoleErrors }) {
  */
 async function laadtoestanden(m) {
   await laadtoestand(m, {
-    sleutel: 'c14a', van: '/instellingen', naar: '/', linkNaam: 'Terug naar het dashboard',
+    // "Radar", niet meer "Terug naar het dashboard": die link verdween op 2026-09-19 met de
+    // eigen kop van /instellingen; de balk van de layout draagt hem nu.
+    sleutel: 'c14a', van: '/instellingen', naar: '/', linkNaam: 'Radar',
     // Laden van het dashboard: de instellingenpagina is weg, de tabbladen zijn er nog niet.
     isLaden: (s) => s.laden && !s.h1.includes('Instellingen') && s.tablists === 0,
     isKlaar: (s) => s.tablists > 0 && !s.laden,
@@ -138,7 +140,12 @@ async function laadtoestanden(m) {
     sleutel: 'c14b', van: '/', naar: '/instellingen', linkNaam: 'Instellingen',
     // Laden van de instellingen, niet de laadtoestand van het dashboard erboven (root loading.tsx):
     // de kop noemt de route, het dashboard is weg, het formulier is er nog niet.
-    isLaden: (s) => s.laden && s.h1.includes('Instellingen') && !s.h1.includes('JobRadar') && s.tablists === 0 && s.velden === 0,
+    //
+    // `!h1.includes('Radar')` en niet meer `!h1.includes('JobRadar')`: sinds 2026-09-19 draagt
+    // geen enkele h1 nog het woord "JobRadar" (dat staat in de balk, en die is geen kop), dus die
+    // clausule was per constructie waar en scheidde de twee laadtoestanden niet meer. De kop van
+    // app/loading.tsx heet nu "Radar" — onzichtbaar, maar wél in de boom.
+    isLaden: (s) => s.laden && s.h1.includes('Instellingen') && !s.h1.includes('Radar') && s.tablists === 0 && s.velden === 0,
     isKlaar: (s) => s.velden > 0 && !s.laden,
   });
 }
@@ -369,7 +376,7 @@ async function spiegelFout({ page, BASE, APP, ok, fail, notes, laad, extraServer
 }
 
 // ── c02 — de foutpagina ──────────────────────────────────────────────────────
-async function foutpagina({ page, APP, ok, fail, notes, laad, extraServer, consoleErrors }, werk) {
+async function foutpagina({ page, APP, ok, fail, notes, laad, extraServer, consoleErrors, navigatie, toetsNavigatie }, werk) {
   const DB = process.env.JOBRADAR_DB_PATH ?? join(APP, '.data/jobradar.db');
   const kapot = join(werk, 'jobradar-kapot.db');
   writeFileSync(kapot, 'dit is geen sqlite-database\n');
@@ -407,16 +414,26 @@ async function foutpagina({ page, APP, ok, fail, notes, laad, extraServer, conso
     else if (mens.length === 0) fail(`c02a: geen zichtbare zin naast de ruwe melding; zichtbaar: ${JSON.stringify(tekst.zinnen)}`);
     else ok(`c02a: de foutpagina toont "${mens[0]}"; de ruwe melding ("${tekst.ruw.slice(0, 40)}…") staat ingeklapt`);
 
-    // c02b — op elke route een link naar /, en een klik is een documentnavigatie.
+    // c02e (2026-09-19) — de balk van de layout staat óók op de foutpagina. `error.tsx` is een
+    // grens ónder de layout, dus dit hóórt te gelden; maar "hoort" is geen meting, en juist hier
+    // wil je weten waar je heen kunt. De route is `/`, dus de markering hoort op `/` te staan.
+    toetsNavigatie(await navigatie(page), 'c02e: foutpagina', '/', { ok, fail });
+
+    // c02b — op elke route een eigen uitweg naar /, en een klik is een documentnavigatie.
+    //
+    // Sinds 2026-09-19 staat de balk van de layout óók op de foutpagina, en die draagt zelf een
+    // link naar `/`. De telling hieronder gaat daarom over de eigen uitweg van de pagina
+    // (`[data-fout-naar-huis]`) en niet meer over "elke zichtbare link naar /": die twee hebben
+    // een ander doel én een ander mechanisme, en op één hoop leest de ene als de andere.
     for (const route of ['/', '/?tab=leads&zoek=x', '/plan']) {
       await laad(route, A);
       if ((await opFoutpagina()) !== 1) { fail(`c02b: ${route} gaf geen foutpagina — dit meet niets`); continue; }
       const links = page.locator('a');
       const naarHuis = await links.evaluateAll((as) => as
-        .map((a, i) => ({ i, url: new URL(a.href, location.href), naam: (a.textContent ?? '').trim(), zichtbaar: a.checkVisibility() }))
-        .filter((x) => x.url.origin === location.origin && x.url.pathname === '/' && x.zichtbaar)
+        .map((a, i) => ({ i, url: new URL(a.href, location.href), naam: (a.textContent ?? '').trim(), zichtbaar: a.checkVisibility(), eigen: a.hasAttribute('data-fout-naar-huis') }))
+        .filter((x) => x.eigen && x.url.origin === location.origin && x.url.pathname === '/' && x.zichtbaar)
         .map((x) => ({ i: x.i, naam: x.naam, href: x.url.pathname + x.url.search })));
-      if (naarHuis.length !== 1) { fail(`c02b: ${route} heeft ${naarHuis.length} zichtbare links naar /, verwacht 1`); continue; }
+      if (naarHuis.length !== 1) { fail(`c02b: ${route} heeft ${naarHuis.length} zichtbare eigen uitwegen naar /, verwacht 1`); continue; }
       await page.evaluate(() => { window.__harnessMerk = 'voor-de-klik'; });
       const docVerzoek = page.waitForRequest((r) => r.isNavigationRequest() && r.frame() === page.mainFrame() && r.url().startsWith(A) && new URL(r.url()).pathname === '/', { timeout: 5_000 }).catch(() => null);
       await links.nth(naarHuis[0].i).click();
@@ -427,6 +444,41 @@ async function foutpagina({ page, APP, ok, fail, notes, laad, extraServer, conso
       const pad = new URL(page.url()).pathname + new URL(page.url()).search;
       if (!verzoek || merk !== null) fail(`c02b: op ${route} gaf "${naarHuis[0].naam}" geen documentnavigatie (documentverzoek ${verzoek ? 'ja' : 'nee'}, pagina ${merk === null ? 'nieuw' : 'dezelfde'}, nu op ${pad})`);
       else ok(`c02b: op ${route} leidt "${naarHuis[0].naam}" (${naarHuis[0].href}) met een documentnavigatie naar ${pad}`);
+    }
+
+    // c02f (2026-09-19) — geen enkele link in de balk is op de foutpagina een dode link.
+    //
+    // Next reset de error-boundary alléén wanneer `pathname` verandert
+    // (`next/dist/client/components/error-boundary.js:64`, 15.5.25). Daaruit volgen twee
+    // verschillende eisen, en ze hebben elk hun eigen meting:
+    //
+    //  • de link naar een ándere route verandert het pad, en dát is wat de boundary leegt;
+    //  • de link naar de route waar je al staat verandert het pad níet, dus die moet een
+    //    volledige herlading doen — anders is het een zichtbare knop die niets doet.
+    //
+    // Bewust niet gemeten: of de foutpagina daarna wég is. Deze server draait op één kapotte
+    // database, dus élke route toont er terecht de foutpagina; een check op "fout weg" zou hier
+    // rood zijn om een reden die niets met de balk te maken heeft. Daarvoor is een opstelling
+    // nodig met één kapotte route naast gezonde routes, en die bestaat hier niet.
+    for (const { naam, pad, actief } of [
+      { naam: 'Radar', pad: '/', actief: true },
+      { naam: 'Plan', pad: '/plan', actief: false },
+      { naam: 'Instellingen', pad: '/instellingen', actief: false },
+    ]) {
+      await laad('/', A);
+      if ((await opFoutpagina()) !== 1) { fail(`c02f: / gaf geen foutpagina vóór "${naam}" — dit meet niets`); continue; }
+      const link = page.locator('header a').getByText(naam, { exact: true });
+      if ((await link.count()) !== 1) { fail(`c02f: ${await link.count()} links "${naam}" in de balk, verwacht 1`); continue; }
+      await page.evaluate(() => { window.__harnessMerk = 'voor-de-klik'; });
+      await link.click();
+      await page.waitForLoadState('load', { timeout: 10_000 }).catch(() => {});
+      await page.waitForTimeout(600);
+      const merk = await page.evaluate(() => window.__harnessMerk ?? null).catch(() => 'onleesbaar');
+      const nu = new URL(page.url()).pathname;
+      if (nu !== pad) fail(`c02f: een klik op "${naam}" in de balk bracht de pagina naar ${nu}, verwacht ${pad}`);
+      else if (actief && merk !== null) fail(`c02f: "${naam}" is de huidige route en deed geen volledige herlading (dezelfde pagina) — op de foutpagina is dat een dode link`);
+      else if (!actief && merk === null) fail(`c02f: "${naam}" deed een volledige herlading; een andere route hoort via de router te gaan, want de padwissel is wat de boundary leegt`);
+      else ok(`c02f: "${naam}" in de balk gaat naar ${nu} via ${actief ? 'een volledige herlading' : 'de router (padwissel leegt de boundary)'}`);
     }
 
     // c02c — Opnieuw proberen haalt de server-render opnieuw op, en herstelt als de oorzaak weg is.

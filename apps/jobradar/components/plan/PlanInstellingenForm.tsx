@@ -189,11 +189,13 @@ export function PlanInstellingenForm({ begin }: PlanInstellingenFormProps) {
       </p>
 
       <div className="flex flex-wrap items-center gap-3">
+        {/* Geen `size="sm"`: dit is de primaire actie van een sectie op /instellingen, en die
+            staat daar op dezelfde hoogte als de primaire actie van de sectie erboven. */}
         <Button
-          size="sm"
           onClick={opslaan}
           aria-disabled={bezig || !gewijzigd}
           className="aria-disabled:pointer-events-none aria-disabled:opacity-50"
+          data-planinstellingen-actie="opslaan"
         >
           {bezig ? 'Bezig…' : 'Opslaan'}
         </Button>

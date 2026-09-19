@@ -4,6 +4,7 @@ import { Fira_Sans } from 'next/font/google'
 // globals.css zet daarna de jobradar-merkkleuren erover.
 import '@umanex/tokens/theme.css'
 import './globals.css'
+import { AppHeader } from '@/components/layout/AppHeader'
 
 // Fira Sans, niet Inter: font.family.sans in de tokens zegt Fira Sans, en een app
 // die iets anders laadt maakt dat token een leugen. next/font hasht de familienaam,
@@ -22,7 +23,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl" className={firaSans.variable}>
+      {/* De balk staat in de layout en niet per pagina, dus hij draagt ook de foutpagina, de 404
+          en de drie laadtoestanden — precies de schermen waar "waar ben ik" het meest telt. */}
       <body className="font-sans bg-background text-foreground antialiased">
+        <AppHeader />
         {children}
       </body>
     </html>

@@ -19,7 +19,10 @@ export default function DashboardLaden() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold tracking-tight">JobRadar</h1>
+        {/* Onzichtbaar, net als op het geladen dashboard: de balk erboven staat er al tijdens het
+            laden, dus het wordmerk hoeft hier niet nog eens. De kop blijft bestaan zodat de
+            laadtoestand dezelfde kopstructuur heeft als de pagina die hij vervangt. */}
+        <h1 className="sr-only">Radar</h1>
         <p aria-hidden className="text-sm text-muted-foreground" data-laden>
           Dashboard laden…
         </p>

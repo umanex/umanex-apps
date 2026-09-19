@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 // Een eigen titel per route: Next kondigt een client-navigatie alleen aan wanneer `document.title`
 // verandert (app-router-announcer.js in 15.5.25), en met één titel voor alle routes gebeurde dat nooit.
 export const metadata: Metadata = {
-  title: 'Dashboard — JobRadar',
+  title: 'Radar — JobRadar',
 }
 
 export default async function HomePage({

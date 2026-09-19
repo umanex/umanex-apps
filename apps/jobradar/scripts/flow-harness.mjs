@@ -7,6 +7,7 @@
  *   pnpm --filter jobradar flow --headed    # meekijken terwijl het gebeurt
  *   pnpm --filter jobradar flow --shot=.flow-shots  # render per route vastleggen
  *   pnpm --filter jobradar flow --alleen=fase3-kaart,routes  # alleen deze secties
+ *   pnpm --filter jobradar flow --alleen=navigatie           # de balk en zijn randgevallen
  *   pnpm --filter jobradar flow --hergebruik-build   # geen build als .next-harness nieuwer is dan elke bron
  *
  * Waarom dit bestaat: zonder uitvoerbaar pad valt de flow-as van `verify` terug op
@@ -248,6 +249,44 @@ function naamUitzonderingen(route, zonder) {
 }
 
 /**
+ * De balk uit `app/layout.tsx` (sinds 2026-09-19): drie links, precies één met
+ * `aria-current="page"`, en het wordmerk is géén kop.
+ *
+ * Alle drie de tellingen dragen hun noemer, want dat is precies waar deze as stil kan worden:
+ * "één link met aria-current" is ook waar wanneer er nog maar één link over is.
+ *
+ * Een functie, zodat `--selftest` het kenmerk kan weghalen en zien dat hij omvalt.
+ */
+async function navigatie(page) {
+  return page.evaluate(() => {
+    const balk = document.querySelector('header');
+    if (!balk) return { balk: false };
+    const links = [...balk.querySelectorAll('a')];
+    const huidig = links.filter((a) => a.getAttribute('aria-current') === 'page');
+    return {
+      balk: true,
+      links: links.length,
+      namen: links.map((a) => a.textContent.trim()),
+      huidig: huidig.length,
+      // Het `href` en niet de linktekst: een label kan hernoemd worden zonder dat de markering
+      // van doel verandert, en dan zou de check een naam toetsen in plaats van een bestemming.
+      huidigPad: huidig[0] ? new URL(huidig[0].href).pathname : null,
+      koppen: balk.querySelectorAll('h1,h2,h3,h4,h5,h6').length,
+    };
+  });
+}
+
+/** Eén aanroep die de hele balk beoordeelt en per afwijking één regel schrijft. */
+function toetsNavigatie(nav, waar, verwachtPad, { ok, fail }) {
+  if (!nav.balk) return fail(`${waar} navigatie: geen <header> in de pagina — de balk van de layout ontbreekt`);
+  if (nav.links !== 3) return fail(`${waar} navigatie: ${nav.links} links in de balk, verwacht 3 (${nav.namen.join(', ') || 'geen'})`);
+  if (nav.koppen !== 0) return fail(`${waar} navigatie: ${nav.koppen} kop(pen) in de balk — het wordmerk mag geen kop zijn, anders begint elke route bij dezelfde h1`);
+  if (nav.huidig !== 1) return fail(`${waar} navigatie: ${nav.huidig} van ${nav.links} links met aria-current="page", verwacht precies 1`);
+  if (verwachtPad !== null && nav.huidigPad !== verwachtPad) return fail(`${waar} navigatie: aria-current staat op ${nav.huidigPad}, verwacht ${verwachtPad}`);
+  return ok(`${waar} navigatie: ${nav.huidig} van ${nav.links} links met aria-current (${nav.huidigPad ?? 'geen'}), 0 koppen in de balk`);
+}
+
+/**
  * Selects op kaarten, lage-scorerijen of prospectrijen. Sinds 2026-09-17 hoort dat nul te zijn:
  * de status is een knop, geen randloze select. Een functie, zodat `--selftest` er een defect in
  * kan spuiten en zien dat hij omvalt.
@@ -468,14 +507,44 @@ async function main() {
     if (text.length < 20) fail(`${where} rendert vrijwel niets (${text.length} tekens)`);
     else ok(`${where} → ${status}, ${text.length} tekens tekst`);
 
+    toetsNavigatie(await navigatie(page), route, route, { ok, fail });
+
+    // "Sync nu" is een actie van één pagina, geen navigatie: hij hoort in `main` te staan en niet
+    // in de balk. Beide kanten tellen — alleen "0 in de balk" is ook waar als de knop nergens meer
+    // staat.
+    if (route === '/') {
+      const sync = await page.evaluate(() => ({
+        balk: document.querySelectorAll('header [data-sync-knop]').length,
+        pagina: document.querySelectorAll('main [data-sync-knop]').length,
+      }));
+      if (sync.balk !== 0 || sync.pagina !== 1) fail(`/ sync-knop: ${sync.balk} in de balk, ${sync.pagina} in de pagina — verwacht 0 en 1`);
+      else ok('/ sync-knop: 0 in de balk, 1 in de pagina');
+    }
+
     const koppen = await kopstructuur(page);
     if (koppen.problemen.length) for (const p of koppen.problemen) fail(`${route} kopstructuur: ${p}`);
     else ok(`${route} kopstructuur: ${koppen.aantal} koppen, niveaus ${koppen.niveaus.map((n) => 'h' + n).join(' → ')}`);
+
+    // De h1 van `/` is `sr-only` (de balk zegt "JobRadar" al), die van de andere twee staat in
+    // beeld. Op de breedte meten en niet op de klasse: `sr-only` is een afspraak, 1 px is een feit.
+    const h1Breed = await page.locator('h1').first().evaluate((el) => Math.round(el.getBoundingClientRect().width));
+    const hoortZichtbaar = route !== '/';
+    if (hoortZichtbaar && h1Breed <= 1) fail(`${route}: de h1 is ${h1Breed}px breed — hij hoort in beeld te staan`);
+    else if (!hoortZichtbaar && h1Breed > 1) fail(`${route}: de h1 is ${h1Breed}px breed — op het dashboard hoort hij onzichtbaar te zijn, de balk draagt het wordmerk`);
+    else ok(`${route}: h1 ${hoortZichtbaar ? 'zichtbaar' : 'onzichtbaar'} (${h1Breed}px breed)`);
 
     const tb = await toetsenbord(page);
     if (tb.problemen.length) for (const p of tb.problemen) fail(`${route} toetsenbord: ${p}`);
     else ok(`${route} toetsenbord: ${tb.stops} stops, elk met zichtbare focus`);
     notes.push(`${route} tab-volgorde: ${tb.volgorde.map((s) => `${s.tag}${s.naam ? `(${s.naam.slice(0, 18)})` : ''}`).join(' → ') || '(geen)'}`);
+
+    // De balk staat in de layout, dus vóór de inhoud van elke route — op élke route dezelfde
+    // drie eerste stops. Op de naam en niet alleen op de tag: drie willekeurige links vooraan
+    // zouden anders ook slagen.
+    const eerste = tb.volgorde.slice(0, 3).map((s) => `${s.tag}:${s.naam}`).join(' → ');
+    const verwachteStops = 'a:Radar → a:Plan → a:Instellingen';
+    if (eerste !== verwachteStops) fail(`${route} tab-volgorde: eerste drie stops "${eerste}", verwacht "${verwachteStops}"`);
+    else ok(`${route} tab-volgorde: de balk is de eerste drie stops`);
 
     const namen = await naamloos(page);
     const { rest, uitzondering } = naamUitzonderingen(route, namen.zonder);
@@ -510,6 +579,43 @@ async function main() {
         }
         await page.setViewportSize({ width: 1280, height: 720 });
         await page.waitForTimeout(300);
+      }
+    }
+  }
+
+  // De randgevallen van de balk: een querystring en een hash horen de markering niet uit te
+  // zetten (`usePathname` geeft het pad zonder allebei, maar dat is een eigenschap van een
+  // bibliotheek en geen meting), en op een onbekende route hoort de balk er gewoon te staan —
+  // juist daar wil je weten waar je heen kunt.
+  if (doe('navigatie')) {
+    console.log('→ Navigatie (randgevallen)');
+    const gevallen = [
+      { url: '/?tab=leads&status=alle', pad: '/', waarom: 'querystring' },
+      { url: '/instellingen#bedrijfsplan', pad: '/instellingen', waarom: 'hash' },
+      // Geen aria-current: een onbekende route ís geen van de drie. De balk hoort er wél te staan,
+      // dus `verwachtPad` is hier niet van toepassing en de telling moet 0 zijn, niet 1.
+      { url: '/bestaat-niet-' + Date.now(), pad: null, waarom: '404', huidig: 0 },
+    ];
+    for (const geval of gevallen) {
+      const foutenVoor = consoleErrors.length;
+      await page.goto(BASE + geval.url, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+      if (geval.waarom === '404') {
+        // Deze 404 vragen we zelf aan; alleen díe melding eruit, de rest blijft staan — anders
+        // dekt dit geval elke consolefout af die toevallig in hetzelfde venster valt.
+        const venster = consoleErrors.splice(foutenVoor);
+        const geforceerd = venster.filter((t) => /status of 404/.test(t));
+        consoleErrors.push(...venster.filter((t) => !/status of 404/.test(t)));
+        notes.push(`navigatie (404): ${geforceerd.length} geforceerde 404-melding(en) gefilterd, ${venster.length - geforceerd.length} andere behouden`);
+      }
+      const nav = await navigatie(page);
+      if (geval.huidig === 0) {
+        if (!nav.balk) fail(`navigatie (${geval.waarom}): geen <header> op ${geval.url}`);
+        else if (nav.links !== 3) fail(`navigatie (${geval.waarom}): ${nav.links} links in de balk op ${geval.url}, verwacht 3`);
+        else if (nav.huidig !== 0) fail(`navigatie (${geval.waarom}): ${nav.huidig} van ${nav.links} links met aria-current op ${geval.url}, verwacht 0 — deze route is geen van de drie`);
+        else ok(`navigatie (${geval.waarom}): 3 links, 0 van 3 met aria-current op ${geval.url}`);
+      } else {
+        toetsNavigatie(nav, `navigatie (${geval.waarom})`, geval.pad, { ok, fail });
       }
     }
   }
@@ -661,7 +767,13 @@ async function main() {
       else ok('triage: de URL overleeft router.refresh()');
 
       const selectNa = () => page.locator('select[aria-label="Status"]').inputValue();
-      await page.getByRole('link', { name: 'Bedrijfsplan' }).first().click();
+      // De link heet sinds 2026-09-19 "Plan" en staat in de balk van de layout, niet meer in de
+      // kop van het dashboard. Mét telling: `.first()` klikte stil door op de verkeerde link als
+      // er meer dan één was, en dan meet dit geval niets.
+      const planLink = page.getByRole('link', { name: 'Plan', exact: true });
+      const planLinks = await planLink.count();
+      if (planLinks !== 1) fail(`triage: ${planLinks} links "Plan" op /, verwacht 1 — de Back-check meet niets`);
+      await planLink.click();
       await page.waitForURL(/\/plan/, { timeout: 10_000 }).catch(() => {});
       await page.goBack({ waitUntil: 'domcontentloaded' });
       await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
@@ -1535,6 +1647,7 @@ async function main() {
     const meetCtx = {
       page, browserContext: ctx, browser, BASE, APP, HERE, DIST, env, ok, fail, notes, consoleErrors,
       laad, onderschepSchrijven, stopOnderschepping, extraServer, dbVingerafdruk, kopstructuur, toetsenbord, naamloos,
+      navigatie, toetsNavigatie,
     };
     for (const [naam, pad] of FASE3_MODULES) {
       if (!doe(naam)) continue;
@@ -1589,6 +1702,26 @@ async function main() {
     if (naamZelftest.rest.length) fail(`ZELFTEST namen: ${naamZelftest.rest.length} naamloos (${naamZelftest.rest[0].rol} ${naamZelftest.rest[0].wat})`);
     else console.log('  ! naam-as zag het ingespoten defect NIET');
 
+    // Navigatie-as (2026-09-19): het kenmerk weghalen bij de link van de huidige route. Dat is
+    // precies het defect waarvoor de as bestaat — de balk staat er nog, met drie links, en toont
+    // alleen niet meer waar je bent. Een check die alleen de balk telt, blijft hierop groen.
+    await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const voorNav = await navigatie(page);
+    const weggehaald = await page.evaluate(() => {
+      const el = document.querySelector('header a[aria-current="page"]');
+      if (!el) return false;
+      el.removeAttribute('aria-current');
+      return true;
+    });
+    if (!weggehaald) {
+      fail(`ZELFTEST navigatie: geen link met aria-current om weg te halen (balk=${voorNav.balk}, links=${voorNav.links}) — dit meet niets`);
+    } else {
+      const navZelftest = await navigatie(page);
+      if (navZelftest.huidig !== 1 && navZelftest.links === 3) fail(`ZELFTEST navigatie: ${navZelftest.huidig} van ${navZelftest.links} links met aria-current`);
+      else console.log('  ! navigatie-as zag het ingespoten defect NIET');
+    }
+
     // Triage (2026-09-17): een select in een kaart, en een Bewaar-knop die "ingedrukt" zegt op een
     // item dat niet bewaard is. Alleen in de DOM van deze pagina — de database blijft onaangeroerd.
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
@@ -1636,7 +1769,7 @@ async function main() {
   for (const n of notes) console.log(`  • ${n}`);
   if (SELFTEST) {
     // Elke as apart: één gefaalde assertie bewees vroeger alleen dat de routecheck meet.
-    const assen = ['ZELFTEST:', 'ZELFTEST kopstructuur', 'ZELFTEST toetsenbord', 'ZELFTEST triage-selects', 'ZELFTEST triage-knoppen', 'ZELFTEST namen'];
+    const assen = ['ZELFTEST:', 'ZELFTEST kopstructuur', 'ZELFTEST toetsenbord', 'ZELFTEST triage-selects', 'ZELFTEST triage-knoppen', 'ZELFTEST namen', 'ZELFTEST navigatie'];
     const gemist = assen.filter((a) => !fails.some((f) => f.startsWith(a)));
     console.log(gemist.length === 0
       ? `✓ zelftest: alle ${assen.length} assen falen wanneer ze horen te falen`

@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react'
 /**
  * De laadtoestand van het dashboard.
  *
- * Zonder dit bleef bij een client-navigatie naar `/` (Terug naar het dashboard) de vorige pagina
+ * Zonder dit bleef bij een client-navigatie naar `/` (sinds 2026-09-19: "Radar" in de balk, en
+ * vanaf de foutpagina de eigen uitweg van `error.tsx`) de vorige pagina
  * zonder enig teken staan tot de force-dynamic render er was: alle vacatures, leads en koppelingen.
  *
  * Tekst en geen skeleton, zoals `plan/loading.tsx`: er is nog geen skeleton-primitive. Anders dan
@@ -17,9 +18,12 @@ export default function DashboardLaden() {
   useEffect(() => setMelding('Dashboard laden…'), [])
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="w-full mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold tracking-tight">JobRadar</h1>
+        {/* Onzichtbaar, net als op het geladen dashboard: de balk erboven staat er al tijdens het
+            laden, dus het wordmerk hoeft hier niet nog eens. De kop blijft bestaan zodat de
+            laadtoestand dezelfde kopstructuur heeft als de pagina die hij vervangt. */}
+        <h1 className="sr-only">Radar</h1>
         <p aria-hidden className="text-sm text-muted-foreground" data-laden>
           Dashboard laden…
         </p>

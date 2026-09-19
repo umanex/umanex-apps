@@ -40,6 +40,7 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | StatusActies | `apps/jobradar/components/StatusActies.tsx` | components | — | — | — |
 | SyncButton | `apps/jobradar/components/SyncButton.tsx` | components | — | — | — |
 | TermChips | `apps/jobradar/components/TermChips.tsx` | components | — | — | — |
+| AppHeader | `apps/jobradar/components/layout/AppHeader.tsx` | layout | — | — | — |
 | Aannames | `apps/jobradar/components/plan/Aannames.tsx` | plan | — | — | — |
 | ActieGroep | `apps/jobradar/components/plan/ActieGroep.tsx` | plan | — | — | — |
 | ActieLijst | `apps/jobradar/components/plan/ActieLijst.tsx` | plan | — | — | — |

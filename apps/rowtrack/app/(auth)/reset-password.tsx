@@ -105,7 +105,7 @@ export default function ResetPasswordScreen() {
             <Text style={styles.title}>{t.auth.reset.invalidTitle}</Text>
             <Text style={styles.subtitle}>{t.auth.reset.invalidBody}</Text>
             <Link href="/(auth)/forgot-password" asChild>
-              <TouchableOpacity style={styles.linkContainer}>
+              <TouchableOpacity style={styles.linkContainer} accessibilityRole="link">
                 <Text style={styles.linkText}>
                   <Text style={styles.linkAccent}>{t.auth.reset.requestNewLink}</Text>
                 </Text>

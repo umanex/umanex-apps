@@ -582,7 +582,7 @@ export default function ProfileScreen() {
         {/* GEZONDHEIDSGEGEVENS — de toestemming zelf, altijd zichtbaar en in beide
             richtingen te bedienen. Intrekken moet even makkelijk zijn als geven. */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t.consent.settingLabel}</Text>
+          <Text style={styles.sectionLabel}>{t.consent.settingSection}</Text>
           <View style={styles.listCard}>
             <View style={styles.listRow}>
               <View style={styles.spmToggleLabel}>

@@ -17,6 +17,12 @@ export function Chip({ value, unit, active, onPress }: ChipProps) {
       style={[styles.chip, active ? styles.chipActive : styles.chipDefault]}
       onPress={onPress}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      // `active` is hier de hele betekenis van het component — zonder deze staat leest
+      // VoiceOver een gekozen en een niet-gekozen chip identiek voor. Zelfde vorm als
+      // Segmented.tsx en GoalSegments.tsx, die hem wél al droegen.
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={unit ? `${value} ${unit}` : value}
     >
       <View style={styles.row}>
         <Text style={[styles.value, active ? styles.textActive : styles.textDefault]}>

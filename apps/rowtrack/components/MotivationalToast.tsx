@@ -156,10 +156,18 @@ export const MotivationalToast = memo(function MotivationalToast({
       <View testID="MotivationalToast" style={styles.overlay}>
         <Confetti visible={visible} particles={confettiParticles} width={width} height={height} />
 
+        {/*
+          Schermvullend, onzichtbaar wegtik-vlak. Zonder deze twee vlaggen landt de
+          VoiceOver-focus op een element dat niets aankondigt — en hier is dat extra scherp,
+          want het ligt over het vieringsmoment heen. De kaart eronder draagt de tekst en de
+          knop; wegtikken via de scrim is een muisgebaar, geen schermlezer-actie.
+        */}
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
           activeOpacity={1}
           onPress={() => onDismissRef.current()}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
         />
 
         <Animated.View style={[styles.card, { opacity, transform: [{ scale }] }]}>

@@ -128,7 +128,18 @@ export const BottomSheet = memo(function BottomSheet({
       onRequestClose={handleClose}
     >
       <View testID={testID} dataSet={{ bron: 'BottomSheet' }} style={styles.root}>
-        <Animated.View style={[styles.scrim, { opacity: fade }]}>
+        {/*
+          De scrim is een schermvullend, onzichtbaar vlak. Zonder deze twee vlaggen kan de
+          VoiceOver-focus erop landen: de gebruiker hoort niets en weet niet waar hij staat.
+          `importantForAccessibility` is de Android-kant van hetzelfde, `accessibilityElementsHidden`
+          de iOS-kant — ze dekken elk één platform, dus geen van beide is optioneel.
+          Sluiten blijft mogelijk: de sheet zelf draagt een gelabelde sluitknop.
+        */}
+        <Animated.View
+          style={[styles.scrim, { opacity: fade }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
           <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         </Animated.View>
 

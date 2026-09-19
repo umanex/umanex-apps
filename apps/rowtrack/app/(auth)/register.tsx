@@ -126,7 +126,7 @@ export default function RegisterScreen() {
         />
 
         <Link href="/(auth)/login" asChild>
-          <TouchableOpacity style={styles.linkContainer}>
+          <TouchableOpacity style={styles.linkContainer} accessibilityRole="link">
             <Text style={styles.linkText}>
               {t.auth.register.haveAccount}{' '}
               <Text style={styles.linkAccent}>{t.auth.register.loginLink}</Text>

@@ -34,6 +34,25 @@ export function correctSpm(spm: number, halved: boolean): number {
 }
 
 /**
+ * Corrigeert + rondt een TOTAAL AANTAL SLAGEN af voor weergave.
+ *
+ * De rekensom is vandaag exact dezelfde als die van `correctSpm`, en tóch is dit een eigen
+ * functie: `correctSpm` corrigeert een **frequentie** (slagen per minuut), dit een **teller**
+ * (slagen). Dat zijn verschillende grootheden, en een correctie die voor de ene geldt hoeft
+ * voor de andere niet te gelden — een erg die zijn frequentie dubbel rapporteert hoeft zijn
+ * slagenteller niet dubbel te tellen, en omgekeerd. Zolang ze één functie deelden, was die
+ * vraag niet eens stelbaar: elke wijziging aan de frequentiecorrectie verschoof stil ook het
+ * aantal.
+ *
+ * Kantelt die aanname ooit — zie het BACKLOG-item van 2026-08-17 over de `spm_halved`-toggle,
+ * waar de aanleiding een andere oorzaak bleek te hebben — dan is dit de plek waar de teller
+ * zijn eigen antwoord krijgt, zonder de frequentie te raken.
+ */
+export function correctStrokeCount(count: number, halved: boolean): number {
+  return Math.round(halved ? count / 2 : count);
+}
+
+/**
  * Duizendtal-groepering, zonder eenheid: 7515 -> '7.515', 850 -> '850'.
  * Samen met `formatDecimal` de enige plek waar een cijferscheider in code staat:
  * punt = duizendtal, komma = decimaal. Rondt af — groeperen op een float zou

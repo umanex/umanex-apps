@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { reportError } from '@/lib/monitoring';
 import { BottomFade, Button, EmptyState, ErrorState, KpiSingle, Segmented } from '@/components';
-import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, formatInt, correctSpm } from '@/lib/formatters';
+import { formatTimerFull, formatDistanceDynamic, formatSplit, formatDateTitle, formatInt, correctSpm, correctStrokeCount } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import { useAuth } from '@/lib/auth-context';
 import { usePrHistory } from '@/lib/hooks/usePrHistory';
@@ -193,7 +193,17 @@ export default function WorkoutDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
+          {/*
+            De datum is de TITEL van dit scherm en tegelijk een tweede terug-affordance. Voor
+            VoiceOver droeg hij tot 2026-09-19 rol noch label, vijf regels boven een terug-link
+            die er wél een heeft — dus van de twee gelijke acties werd er één voorgelezen en de
+            andere niet. Hij krijgt daarom de rol die hij inhoudelijk ís (`header`) en niet
+            `button`: de terug-actie is hieronder al bereikbaar mét label, dus hem een tweede
+            keer als knop aankondigen voegt een duplicaat toe in plaats van duidelijkheid. De
+            tik blijft bestaan voor wie hem ziet.
+            Dat er twee terug-affordances op één scherm staan, is een ontwerpvraag — geen a11y-fix.
+          */}
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} accessibilityRole="header">
             <Text style={styles.headerDate}>{formatDateTitle(workout.started_at)}</Text>
           </TouchableOpacity>
           {prEntries != null && <PrBadge />}
@@ -267,7 +277,7 @@ export default function WorkoutDetailScreen() {
                   style={styles.kpiCell}
                 />
                 <KpiSingle
-                  value={workout.total_strokes != null ? formatInt(correctSpm(workout.total_strokes, spmHalved)) : '—'}
+                  value={workout.total_strokes != null ? formatInt(correctStrokeCount(workout.total_strokes, spmHalved)) : '—'}
                   unit=""
                   label={t.kpi.totalStrokes}
                   style={styles.kpiCell}
@@ -290,7 +300,7 @@ export default function WorkoutDetailScreen() {
                 ].map((row, i, arr) => (
                   <View key={row.label}>
                     <View style={styles.statsRow}>
-                      <Text style={styles.statsRowLabel}>{row.label}</Text>
+                      <Text style={styles.statsRowLabel} numberOfLines={1}>{row.label}</Text>
                       <Text style={styles.statsRowValue}>{row.gem}</Text>
                       <Text style={styles.statsRowValue}>{row.piek}</Text>
                     </View>
@@ -311,7 +321,7 @@ export default function WorkoutDetailScreen() {
                 {distSplits.map((row, i, arr) => (
                   <View key={row.meters}>
                     <View style={styles.statsRow}>
-                      <Text style={styles.statsRowLabel}>{`${row.meters}M`}</Text>
+                      <Text style={styles.statsRowLabel} numberOfLines={1}>{`${row.meters}M`}</Text>
                       <Text style={styles.statsRowValue}>{row.gem != null ? formatSplit(row.gem, false, true) : '—'}</Text>
                       <Text style={styles.statsRowValue}>{row.best != null ? formatSplit(row.best, false, true) : '—'}</Text>
                     </View>
@@ -367,7 +377,7 @@ export default function WorkoutDetailScreen() {
                     return (
                       <View key={i}>
                         <View style={styles.splitsDataRow}>
-                          <Text style={styles.splitsDistLabel}>{`${s.distance}M`}</Text>
+                          <Text style={styles.splitsDistLabel} numberOfLines={1}>{`${s.distance}M`}</Text>
                           <Text style={styles.splitsValue}>
                             {tenths != null ? formatSplit(tenths, false, true) : formatSplit(s.split)}
                           </Text>
@@ -414,7 +424,7 @@ export default function WorkoutDetailScreen() {
                   {hrSegments.map((row, i, arr) => (
                     <View key={row.distance}>
                       <View style={styles.statsRow}>
-                        <Text style={styles.statsRowLabel}>{`${row.distance}M`}</Text>
+                        <Text style={styles.statsRowLabel} numberOfLines={1}>{`${row.distance}M`}</Text>
                         <Text style={styles.statsRowValue}>{row.gem != null ? `${row.gem}` : '—'}</Text>
                         <Text style={styles.statsRowValue}>{row.piek != null ? `${row.piek}` : '—'}</Text>
                       </View>

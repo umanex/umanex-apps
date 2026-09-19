@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-native-web-vite';
+import { useArgs } from 'storybook/preview-api';
 import { TOESTEL } from '../../.storybook/toestel';
 import { IdlePhase } from './IdlePhase';
 import type { FoundDevice } from '@/lib/ble/types';
+import type { GoalType } from '@/lib/workout-goals';
 
 /**
  * De argTypes met `options` zijn de variant-assen: `bleStatus` en `hrStatus` (de twee
@@ -98,6 +100,34 @@ const meta = {
     onStart: () => {},
     insets: geenInsets,
   },
+  /**
+   * De picker is sinds F2 (PR umanex-apps#493) GECONTROLEERD: de wielindex wordt afgeleid uit
+   * de waarde die de ouder vasthoudt. Met `() => {}` als setters komt die waarde in Storybook
+   * nooit terug, dus een chip-tik of een wielbeweging veranderde niets — de catalogus toonde
+   * een dode picker terwijl de app werkt.
+   *
+   * Deze decorator sluit de lus door de setters naar de args te laten schrijven. Hij voegt
+   * GEEN DOM-node toe (hij rendert `<Story>` met andere args, niet in een wrapper), dus de
+   * geometrie die `parity` en de bouwspec meten blijft ongewijzigd. En de setters blijven in
+   * `argTypes` op `control: false` staan: `story-axes.mjs` zou er anders een variant-as uit
+   * afleiden.
+   */
+  decorators: [
+    (Story, ctx) => {
+      const [, updateArgs] = useArgs();
+      return (
+        <Story
+          args={{
+            ...ctx.args,
+            setIdleGoalType: (type: GoalType | null) => updateArgs({ idleGoalType: type }),
+            setIdleGoalInput: (v: string) => updateArgs({ idleGoalInput: v }),
+            setIdleDurMin: (v: string) => updateArgs({ idleDurMin: v }),
+            setIdleDurSec: (v: string) => updateArgs({ idleDurSec: v }),
+          }}
+        />
+      );
+    },
+  ],
   parameters: {
     figma: { url: 'https://www.figma.com/design/QkRgMc7Quqtbow71DiYa1n/RowTrack%20-%20%20Design%20System?node-id=2020-13918' },
     // Zie ActivePhase: een scherm rendert full-bleed op toestelmaat. Hier telt het extra —

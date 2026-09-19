@@ -93,25 +93,57 @@ for (const [soort, uit] of [['componenten', (d) => d.varianten], ['schermen', (d
   }
 
 /**
- * SLUITEN PER KLASSE. De rauwe meting krimpt door meetgeluk: twee runs gaven 140 paden, de
- * derde 132 — een spinner die op twee momenten toevallig dezelfde hoek had, valt uit de lijst
- * en zou daarna als "echt verschil" terugkomen. Een uitsluitingslijst die per run wisselt is
- * geen uitsluitingslijst.
- *
- * De klasse is wél scherp, en scherper dan "de spinner": de rotatie zit in RNW op de BINNENSTE
- * View (`styles.animation` in exports/ActivityIndicator/index.js:56-62), niet op de container
- * met `role=progressbar`. De wortel `spinner` is dus wél meetbaar — en de meting bevestigt dat:
- * `spinner` stond in geen enkele run in de instabiele set, `spinnerBox` en alles eronder wel.
- * We sluiten daarom de subboom vanaf `spinnerBox`, niet vanaf `spinner`. Dat scheelt 32 nodes
- * die anders ongemeten zouden blijven.
+ * SLUITEN, EN WAAROM DAT NODIG BLIJFT. De rauwe meting krimpt en groeit door meetgeluk: drie
+ * runs op ongewijzigde code gaven 4, 4 en 7 paden. Een node die op twee meetmomenten toevallig
+ * dezelfde maat had, valt uit de lijst en komt daarna terug als "echt verschil". Een
+ * uitsluitingslijst die per run wisselt is geen uitsluitingslijst.
  *
  * De sluiting wordt getoetst: ze moet een SUPERSET van de meting zijn. Is ze dat niet, dan
- * beschrijft de klasse niet wat er gemeten is en stopt het script.
+ * beschrijft ze niet wat er gemeten is en stopt het script. Hoe ze werkt, staat hieronder.
  */
 const gemeten = paden.size;
 const gemetenPaden = new Set(paden);
+
+/**
+ * OMHOOG, EN ÉÉN NIVEAU OMLAAG — en niet meer.
+ *
+ * Tot 2026-09-19 sloot dit `spinnerBox` en alles eronder. Dat was juist zolang de walker de
+ * geroteerde doos van de `ActivityIndicator` mat, maar sinds de spinner-normalisatie
+ * (2026-09-14) geeft hij elke node bínnen een spinner de doos van de ongeroteerde ouder. Drie
+ * runs op ongewijzigde code: **nul** spinner-nodes gemeten instabiel, terwijl de sluiting er
+ * 292 uitsloot — 73 `spinnerBox`, 73 `spinnerSvg`, 146 `spinnerArc`. `parity` vergeleek die
+ * dus niet, niet omdat ze bewegen maar omdat de rolnaam in de sluiting stond.
+ *
+ * Wat er WEL beweegt is de confetti, en die beweegt anders dan de spinner: `size = 6 +
+ * random * 8` verandert de maat van de node zélf én daarmee van elke VOOROUDER die om hem
+ * heen sluit. Gemeten over drie runs: 4, 4 en **7** — en die drie extra waren `MotivationalToast`,
+ * zijn `overlay` en zijn `card`, geen nieuwe confetti. Een padlijst van alleen de gemeten
+ * nodes is daarom per run anders, en dat is precies de flakiness waartegen de oude sluiting
+ * bedoeld was.
+ *
+ * De sluiting volgt nu de MECHANIEK in plaats van een rolnaam:
+ *  - **omhoog**, elke voorouder tot de variantwortel: de maat van een ouder hangt af van zijn
+ *    kinderen, dus een instabiel kind maakt zijn hele keten instabiel;
+ *  - **omlaag vanaf de OUDER** van een gemeten node: broertjes met dezelfde herkomst (de vier
+ *    confetti-items) zijn hetzelfde soort ding, en welke van de vier een run betrapt is een
+ *    dobbelsteen.
+ *
+ * Dat is stabiel over runs — run 1 (4 items) sluit dezelfde set als run 3 (7) — en het is
+ * afgeleid van wat er gemeten is, niet van wat iemand ooit opschreef. Sluit een toekomstige
+ * regressie de spinner weer in, dan komt hij er vanzelf weer bij.
+ */
+const ouderPaden = new Set(
+  [...gemetenPaden].map((p) => p.slice(0, p.lastIndexOf('>'))).filter((p) => p.includes('>') || p.includes('[')),
+);
+for (const p of gemetenPaden) {
+  let q = p;
+  while (q.includes('>')) {
+    q = q.slice(0, q.lastIndexOf('>'));
+    paden.add(q);
+  }
+}
 function sluitAf(node, pad, binnen) {
-  const in2 = binnen || node.naam === 'spinnerBox';
+  const in2 = binnen || ouderPaden.has(pad);
   if (in2) paden.add(pad);
   echteKinderen(node).forEach((k, i) => sluitAf(k, kindPad(pad, i, k), in2));
 }
@@ -128,6 +160,35 @@ for (const p of gemetenPaden)
     console.error('de klasse beschrijft niet wat er gemeten is — pas hem aan, sluit niets uit.');
     process.exit(2);
   }
+
+/**
+ * EEN TWEEDE LIJST, MET EEN ANDERE REDEN — en die reden is het hele punt.
+ *
+ * Toen de spinner uit de uitsluiting verdween, werd `parity` rood op **208 nodes, alle 208 een
+ * spinner en alle 208 een hoogteverschil**: de browser meet 20 (de genormaliseerde, ongeroteerde
+ * maat) en Figma 17,5 tot 22,6 — elk een andere rotatiehoek. Dat is geen instabiliteit. Dat is
+ * een Figma-document dat zijn spinners gebouwd heeft uit de gerótéerde metingen van vóór de
+ * normalisatie van 2026-09-14, en sindsdien niet herbouwd is.
+ *
+ * Die nodes horen dus wél overgeslagen te worden, maar niet onder de vlag "niet te meten".
+ * Onder die vlag is het een eigenschap van de werkelijkheid en sluit niemand het ooit; onder
+ * deze vlag is het schuld met een datum en een uitweg. Herbouw de spinners in Figma, lees de
+ * geometrie opnieuw, en deze lijst hoort leeg te worden — dát is de tegenproef.
+ *
+ * `parity` telt ze apart en noemt ze bij naam, zodat het aantal niet stil kan groeien.
+ */
+const verouderdInFigma = [];
+function sluitVerouderd(node, pad, binnen) {
+  const in2 = binnen || node.naam === 'spinnerBox';
+  if (in2 && !paden.has(pad)) verouderdInFigma.push(pad);
+  echteKinderen(node).forEach((k, i) => sluitVerouderd(k, kindPad(pad, i, k), in2));
+}
+for (const [soort, uit] of [['componenten', (d) => d.varianten], ['schermen', (d) => d.frames]])
+  for (const [comp, d] of Object.entries(a[soort] ?? {}))
+    uit(d).forEach((v) => {
+      sluitVerouderd(v.boom, `${comp}[${v.naam}]`, null);
+      (v.overlays ?? []).forEach((o, j) => sluitVerouderd(o, `${comp}[${v.naam}]#overlay${j}`, null));
+    });
 
 const perNaam = {};
 for (const p of paden) {
@@ -152,14 +213,30 @@ writeFileSync(join(APP, 'figma/niet-reproduceerbaar.json'), JSON.stringify({
   * per constructie uniek. `item` (confetti) en `dateText` (klok) blijven padgebonden: dat zijn
   * gewone laagnamen die elders iets anders kunnen betekenen.
   */
- klassen: ['spinnerBox'],
+ klassen: [],
  redenen: {
-  spinner: 'react-native-web ActivityIndicator roteert (animationKeyframes 0->360deg, 0,75 s, oneindig); '
-    + 'getBoundingClientRect geeft de as-gelijnde doos, dus de maat hangt af van het meetmoment. '
-    + 'De hele subboom is gesloten, want de rotatie geldt voor elk kind.',
-  item: 'confetti in MotivationalToast — size = 6 + random * 8, dus per render een andere maat.',
+  item: 'confetti in MotivationalToast — size = 6 + random * 8, dus per render een andere maat. '
+    + 'De sluiting gaat OMHOOG (elke voorouder erft de instabiliteit van zijn kind) en één niveau '
+    + 'omlaag vanaf de ouder (welk van de vier items een run betrapt, is een dobbelsteen). '
+    + 'Gemeten over drie runs: 4, 4 en 7 gemeten nodes, dezelfde gesloten set.',
+  spinner: 'NIET MEER UITGESLOTEN sinds 2026-09-19. De react-native-web ActivityIndicator roteert, '
+    + 'maar sinds de spinner-normalisatie van 2026-09-14 geeft de walker elke node binnen een spinner '
+    + 'de doos van de ongeroteerde ouder. Drie runs op ongewijzigde code gaven nul instabiele '
+    + 'spinner-nodes, terwijl de oude rolnaam-sluiting er 292 uitsloot (73 spinnerBox, 73 spinnerSvg, '
+    + '146 spinnerArc). Die vergelijkt parity nu weer.',
  },
   paden: [...paden].sort(),
+ /**
+  * Nodes die parity overslaat omdat de FIGMA-kant verouderd is, niet omdat ze bewegen.
+  * Zie `sluitVerouderd` hierboven. Leeg = de Figma-spinners zijn herbouwd na de
+  * normalisatie van 2026-09-14 en dit gat is dicht.
+  */
+ verouderdInFigma: verouderdInFigma.sort(),
+ verouderdReden: 'spinner-nodes in Figma zijn gebouwd uit de GEROTEERDE metingen van vóór de '
+   + 'normalisatie van 2026-09-14. Gemeten 2026-09-19: 208 hoogteverschillen, browser 20 tegen '
+   + 'Figma 17,5-22,6. Herbouw de spinners in Figma en lees de geometrie opnieuw; dan hoort deze '
+   + 'lijst leeg te zijn. Dit is schuld met een datum, geen eigenschap.',
 }, null, 1));
 console.log(`${gemeten} van ${bezocht} nodes gemeten instabiel, gesloten tot ${paden.size} -> figma/niet-reproduceerbaar.json`);
+console.log(`${verouderdInFigma.length} nodes apart gezet als VEROUDERD IN FIGMA (spinner, gebouwd vóór de normalisatie van 2026-09-14) — dat is schuld, geen instabiliteit.`);
 for (const [k, v] of Object.entries(perNaam).sort((x, y) => y[1] - x[1])) console.log(`  ${String(v).padStart(4)} ${k}`);

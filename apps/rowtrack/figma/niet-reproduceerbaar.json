@@ -1,25 +1,67 @@
 {
  "$comment": "GEGENEREERD door scripts/instabiele-nodes.mjs — twee walker-runs, node voor node op boompad. Deze nodes hebben per meetmoment een andere maat (roterende spinner, gerandomiseerde confetti) en kunnen dus door geen enkele statische vergelijking gemeten worden. NIET met de hand aanvullen: een echte afwijking hoort hier niet in te kunnen verdwijnen.",
- "gegenereerd": "2026-09-14",
- "bezocht": 4210,
+ "gegenereerd": "2026-09-19",
+ "bezocht": 4253,
  "gemeten": 4,
- "instabiel": 296,
+ "instabiel": 32,
  "perNaam": {
   "item": 4,
-  "spinnerBox": 73,
-  "spinnerSvg": 73,
-  "spinnerArc": 146
+  "overlay": 3,
+  "modalContainer": 2,
+  "modalContent": 2,
+  "modalTrap": 2,
+  "modalAnimation": 2,
+  "MotivationalToast[default]": 1,
+  "MotivationalToast": 1,
+  "ActivePhase[Doel Bereikt]#overlay0": 1,
+  "card": 2,
+  "trophy": 2,
+  "title": 2,
+  "body": 2,
+  "Button": 2,
+  "text": 2,
+  "icon": 2
  },
- "klassen": [
-  "spinnerBox"
- ],
+ "klassen": [],
  "redenen": {
-  "spinner": "react-native-web ActivityIndicator roteert (animationKeyframes 0->360deg, 0,75 s, oneindig); getBoundingClientRect geeft de as-gelijnde doos, dus de maat hangt af van het meetmoment. De hele subboom is gesloten, want de rotatie geldt voor elk kind.",
-  "item": "confetti in MotivationalToast — size = 6 + random * 8, dus per render een andere maat."
+  "item": "confetti in MotivationalToast — size = 6 + random * 8, dus per render een andere maat. De sluiting gaat OMHOOG (elke voorouder erft de instabiliteit van zijn kind) en één niveau omlaag vanaf de ouder (welk van de vier items een run betrapt, is een dobbelsteen). Gemeten over drie runs: 4, 4 en 7 gemeten nodes, dezelfde gesloten set.",
+  "spinner": "NIET MEER UITGESLOTEN sinds 2026-09-19. De react-native-web ActivityIndicator roteert, maar sinds de spinner-normalisatie van 2026-09-14 geeft de walker elke node binnen een spinner de doos van de ongeroteerde ouder. Drie runs op ongewijzigde code gaven nul instabiele spinner-nodes, terwijl de oude rolnaam-sluiting er 292 uitsloot (73 spinnerBox, 73 spinnerSvg, 146 spinnerArc). Die vergelijkt parity nu weer."
  },
  "paden": [
+  "ActivePhase[Doel Bereikt]#overlay0",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>0:overlay",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>1:card",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>1:card>0:trophy",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>1:card>1:title",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>1:card>2:body",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>1:card>3:Button",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>1:card>3:Button>0:text",
+  "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>1:card>3:Button>1:icon",
   "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>2:item",
   "ActivePhase[Doel Bereikt]#overlay0>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:MotivationalToast>3:item",
+  "MotivationalToast[default]",
+  "MotivationalToast[default]>0:modalAnimation",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>0:overlay",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>1:card",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>1:card>0:trophy",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>1:card>1:title",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>1:card>2:body",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>1:card>3:Button",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>1:card>3:Button>0:text",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>1:card>3:Button>1:icon",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>2:item",
+  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>3:item"
+ ],
+ "verouderdInFigma": [
   "BleStatusBar[bleStatus=connecting]>0:left>0:iconContainer>0:spinner>0:spinnerBox",
   "BleStatusBar[bleStatus=connecting]>0:left>0:iconContainer>0:spinner>0:spinnerBox>0:spinnerSvg",
   "BleStatusBar[bleStatus=connecting]>0:left>0:iconContainer>0:spinner>0:spinnerBox>0:spinnerSvg>0:spinnerArc",
@@ -304,8 +346,6 @@
   "KpiRow[fill=true, divider=true, disabled=true, loading=true]>0:kpiRow>1:spinner>0:spinnerBox>0:spinnerSvg",
   "KpiRow[fill=true, divider=true, disabled=true, loading=true]>0:kpiRow>1:spinner>0:spinnerBox>0:spinnerSvg>0:spinnerArc",
   "KpiRow[fill=true, divider=true, disabled=true, loading=true]>0:kpiRow>1:spinner>0:spinnerBox>0:spinnerSvg>1:spinnerArc",
-  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>2:item",
-  "MotivationalToast[default]>0:modalAnimation>1:modalTrap>0:modalContent>0:modalContainer>0:overlay>3:item",
   "ResetPasswordScreen[Met Link]>0:inner>0:spinner>0:spinnerBox",
   "ResetPasswordScreen[Met Link]>0:inner>0:spinner>0:spinnerBox>0:spinnerSvg",
   "ResetPasswordScreen[Met Link]>0:inner>0:spinner>0:spinnerBox>0:spinnerSvg>0:spinnerArc",
@@ -314,5 +354,6 @@
   "ResetPasswordScreen[Playground]>0:inner>0:spinner>0:spinnerBox>0:spinnerSvg",
   "ResetPasswordScreen[Playground]>0:inner>0:spinner>0:spinnerBox>0:spinnerSvg>0:spinnerArc",
   "ResetPasswordScreen[Playground]>0:inner>0:spinner>0:spinnerBox>0:spinnerSvg>1:spinnerArc"
- ]
+ ],
+ "verouderdReden": "spinner-nodes in Figma zijn gebouwd uit de GEROTEERDE metingen van vóór de normalisatie van 2026-09-14. Gemeten 2026-09-19: 208 hoogteverschillen, browser 20 tegen Figma 17,5-22,6. Herbouw de spinners in Figma en lees de geometrie opnieuw; dan hoort deze lijst leeg te zijn. Dit is schuld met een datum, geen eigenschap."
 }

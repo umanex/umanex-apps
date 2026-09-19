@@ -22,6 +22,7 @@ import { GoalProgressCard } from '@/components/GoalProgressCard';
 import { BottomSheet } from '@/components/BottomSheet';
 import { usePeriodGoal } from '@/lib/hooks/usePeriodGoal';
 import { useHealthConsent } from '@/lib/health-consent-context';
+import { drainPendingWorkouts, countQueued } from '@/lib/pendingWorkout';
 import { t } from '@/i18n';
 import {
   bg,
@@ -438,7 +439,29 @@ export default function ProfileScreen() {
     ]);
   }
 
-  function handleLogout() {
+  /**
+   * Uitloggen wist de wachtrij — `signOut` roept `clearLocalUserData()` aan en die leegt hem.
+   * Wie offline uitlogt vlak na een rit, verloor die rit zonder dat iets het zei.
+   *
+   * Dus eerst afdruinen, en pas daarna vragen. Blijft er iets staan (offline, of de server
+   * weigert), dan noemt de bevestiging het aantal. Bewust géén blokkade: het is zijn sessie,
+   * en een uitgang die je niet uit kunt is erger dan een rit die je bewust weggooit — maar
+   * "bewust" vraagt dat hij het wéét.
+   */
+  async function handleLogout() {
+    if (user) {
+      // De drain is een backstop en mag nooit de knop ophangen: hij vangt zijn eigen fouten
+      // af (zie `drainPendingWorkouts`), dus hier is er niets te catchen dat hij niet al doet.
+      await drainPendingWorkouts(user.id, { healthGranted });
+      const rest = await countQueued(user.id);
+      if (rest > 0) {
+        Alert.alert(t.profile.logout, t.profile.logoutPendingBody(rest), [
+          { text: t.common.cancel, style: 'cancel' },
+          { text: t.profile.logout, style: 'destructive', onPress: signOut },
+        ]);
+        return;
+      }
+    }
     Alert.alert(t.profile.logout, t.profile.logoutConfirmBody, [
       { text: t.common.cancel, style: 'cancel' },
       { text: t.profile.logout, style: 'destructive', onPress: signOut },

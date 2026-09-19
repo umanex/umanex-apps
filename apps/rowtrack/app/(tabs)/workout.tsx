@@ -41,7 +41,7 @@ export default function WorkoutScreen() {
   const {
     status, deviceName, metrics: bleMetrics, error: bleError, startScan, disconnect,
     hrStatus, hrDeviceName, hrBpm, hrError, startHRScan, stopHR,
-    devices, picking, selectDevice, cancelSelection, autoConnect,
+    devices, picking, selectDevice, cancelSelection, autoConnect, cancelScans,
   } = useBle();
   const { granted: healthGranted } = useHealthConsent();
   const router = useRouter();
@@ -336,11 +336,24 @@ export default function WorkoutScreen() {
       // even weg. `autoConnect` slaat alles over wat al hangt, bezig is of door de
       // gebruiker zelf verbroken werd, dus in het normale geval kost dit niets.
       const sub = AppState.addEventListener('change', (next) => {
-        if (next !== 'active') return;
-        autoConnect({ hr: healthGranted });
+        if (next === 'active') {
+          autoConnect({ hr: healthGranted });
+          return;
+        }
+        // Naar de achtergrond: breek af wat er zoekt of staat te wachten. Zonder dit startte
+        // een gewachte scan tot 25 s later alsnog, draaide zijn volle venster van 15 s, en
+        // zette een foutmelding klaar die de gebruiker pas zág bij terugkomst — over een scan
+        // die hij niet gevraagd had. Geen van de bestaande listeners raakte het scan-slot aan.
+        cancelScans();
       });
-      return () => sub.remove();
-    }, [phase, autoConnect, healthGranted]),
+      return () => {
+        sub.remove();
+        // En bij wegnavigeren geldt hetzelfde: dit scherm startte de scan, dus dit scherm
+        // ruimt hem op. `cancelScan()` geeft het slot terug óók wanneer de dienst het niet
+        // bezit, dus dit is veilig als er niets loopt.
+        cancelScans();
+      };
+    }, [phase, autoConnect, healthGranted, cancelScans]),
   );
 
   // Handmatig stoppen → rit opslaan (achtergrond) + BLE stoppen + naar de samenvatting.

@@ -98,6 +98,12 @@ export interface BleContextValue {
   cancelSelection: () => void;
   /** Verbindt met de toestellen van vorige keer; stil wanneer dat niet lukt. */
   autoConnect: (opts?: { hr?: boolean }) => Promise<void>;
+  /**
+   * Breekt lopende én wachtende scans van beide diensten af. Hoort aangeroepen te worden
+   * zodra het scherm dat de scan startte niet meer kijkt — wegnavigeren of naar de
+   * achtergrond. Zonder die aanroep start een gewachte scan tot 25 s later alsnog.
+   */
+  cancelScans: () => void;
 }
 
 export type DataSource = 'ble';

@@ -14,6 +14,7 @@ import { rowerErrorMessage, hrErrorMessage } from '@/i18n/bleErrors';
 import { useHealthConsent } from '@/lib/health-consent-context';
 import { t } from '@/i18n';
 import type { BleContextValue, ConnectionStatus, FoundDevice, HRStatus, RowerMetrics } from './types';
+import { vernietigGedeeldeManager } from './sharedManager';
 
 const BleContext = createContext<BleContextValue>({
   status: 'idle',
@@ -33,6 +34,7 @@ const BleContext = createContext<BleContextValue>({
   selectDevice: () => {},
   cancelSelection: () => {},
   autoConnect: async () => {},
+  cancelScans: () => {},
 });
 
 const log: (...args: unknown[]) => void = __DEV__
@@ -163,10 +165,16 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     hrServiceRef.current = hrService;
 
     return () => {
+      // Volgorde telt: eerst laten beide diensten hun eigen abonnementen los, pas daarna gaat
+      // de manager die ze DELEN eraan — precies één keer, hier, want deze provider is zijn
+      // eigenaar. Tot 2026-09-19 vernietigde elke dienst hem zelf, dus de eerste teardown
+      // sloopte de manager onder de tweede vandaan en de tweede sprak een al vernietigde
+      // client aan. Zie lib/ble/sharedManager.ts voor de gemeten grond.
       service.destroy();
       serviceRef.current = null;
       hrService.destroy();
       hrServiceRef.current = null;
+      vernietigGedeeldeManager();
     };
   }, []);
 
@@ -308,12 +316,23 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     // Eén mislukte handmatige scan werd zo meteen overschreven door een autoconnect.
   }, []);
 
+  /**
+   * Breekt de scans van BEIDE diensten af — ook een aanvraag die nog in de wachtrij staat.
+   *
+   * Lege deps en refs in plaats van de diensten uit de closure: dit hangt aan een
+   * `useFocusEffect`-cleanup, en een wisselende identiteit zou dat effect laten hervuren.
+   */
+  const cancelScans = useCallback(() => {
+    serviceRef.current?.cancelScan();
+    hrServiceRef.current?.cancelScan();
+  }, []);
+
   return (
     <BleContext.Provider
       value={{
         status, deviceName, metrics, error, startScan, disconnect,
         hrStatus, hrDeviceName, hrBpm, hrError, startHRScan, stopHR,
-        devices, picking, selectDevice, cancelSelection, autoConnect,
+        devices, picking, selectDevice, cancelSelection, autoConnect, cancelScans,
       }}
     >
       {children}

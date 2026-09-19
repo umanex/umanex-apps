@@ -18,6 +18,7 @@ import { isRowerCandidate } from './rowerCandidate';
 import { requestScan, ownsScan, releaseScan } from './scan-lock';
 import { recordAutoConnect } from './autoConnectLog';
 import { waitForAdapter } from './adapterReady';
+import { gedeeldeManager } from './sharedManager';
 import { countPowerSample } from './ergProbe';
 import type { RowerMetrics, ConnectionStatus, RowerBleError, FoundDevice } from './types';
 
@@ -189,7 +190,9 @@ export class RowerBleService {
   private async getManager(): Promise<BleManager> {
     const { BleManager: BM, State } = await loadBlePlx();
     if (!this.manager) {
-      this.manager = new BM();
+      // Niet `new BM()`: ble-plx geeft tóch de gedeelde instance terug, en dan zou deze
+      // dienst denken dat hij hem bezit. Zie lib/ble/sharedManager.ts.
+      this.manager = gedeeldeManager(() => new BM());
     }
     await waitForAdapter(this.manager, State);
     return this.manager;
@@ -394,6 +397,23 @@ export class RowerBleService {
     this.onStatusChange('idle');
   }
 
+  /**
+   * Breekt een lopende OF wachtende scan af. De enige ingang van buiten naar `stopScan()`.
+   *
+   * Bestaat omdat een aanvraag die in de wachtrij staat niemand had die hem afbrak: de twee
+   * AppState-listeners en de `useFocusEffect` van het trainingsscherm raakten het scan-slot
+   * geen van drieën aan. Navigeerde de gebruiker weg of ging de app naar de achtergrond, dan
+   * startte de scan tot 25 s later alsnog, draaide zijn volle venster, en zette een
+   * foutmelding klaar die de gebruiker te zien kreeg zodra hij terugkwam — over een scan die
+   * hij niet gevraagd had en niet meer wilde.
+   *
+   * `stopScan()` kende dat geval al (hij geeft het slot terug wanneer hij het niet bezit);
+   * er was alleen geen aanroeper. Vandaar een publieke methode en geen nieuwe logica.
+   */
+  cancelScan(): void {
+    this.stopScan();
+  }
+
   destroy(): void {
     // Zonder deze regel verdwijnt een teardown uit de log zodra `cleanup()` het
     // disconnect-abonnement netjes opruimt: de oude, gelekte handlers logden hem
@@ -405,7 +425,10 @@ export class RowerBleService {
     this.intentionalDisconnect = true;
     this.cleanup();
     this.device = null;
-    this.manager?.destroy();
+    // De manager wordt hier NIET vernietigd. Hij is gedeeld met de hartslagdienst — ble-plx
+    // geeft één `sharedInstance` terug — dus `destroy()` hierop sloopte hem onder die andere
+    // dienst vandaan én liet de tweede teardown een al vernietigde client aanspreken. De
+    // provider vernietigt hem, één keer, ná beide diensten. Zie lib/ble/sharedManager.ts.
     this.manager = null;
   }
 

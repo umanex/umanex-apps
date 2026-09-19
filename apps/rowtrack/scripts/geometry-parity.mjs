@@ -103,6 +103,19 @@ const nietReproduceerbaar = nrData
 const TOL = 0.5;
 const dichtbij = (a, b) => a === null || b === null || Math.abs(a - b) <= TOL;
 
+// Opacity is een FRACTIE tussen 0 en 1, geen pixel. Met `dichtbij` viel elk verschil tot en met
+// een halve dekking per constructie binnen de marge: 0,5 in Figma tegen 1 in de browser is
+// volledig doorzichtig tegen volledig dekkend, en dat las groen. Gevonden in de kopie van dit
+// script in `packages/ui`, waar een eigen drempel meteen een echt verborgen verschil bovenbracht
+// (Slider/disabled=true: 0,5 in Figma, 1 in de browser — umanex-apps#512). 0,01 is ruim genoeg
+// voor de afrondingsruis van twee renderers en eng genoeg dat elke ontworpen stap (de kleinste
+// in gebruik is 0,2) er ruim doorheen komt.
+const TOL_FRACTIE = 0.01;
+const dichtbijFractie = (a, b) => a === null || b === null || Math.abs(a - b) <= TOL_FRACTIE;
+// Welk veld met welke tolerantie. Een veld dat hier niet staat, is een pixelmaat.
+const FRACTIEVELDEN = new Set(['opacity']);
+const tolerantieVoor = (naam) => (FRACTIEVELDEN.has(naam) ? dichtbijFractie : dichtbij);
+
 // De Figma-kant is compact gecodeerd: een node is een array. Het recept schrijft `velden`
 // mee in het bestand, zodat de codering zichzelf beschrijft; deze namen zijn de lezerskant.
 const F = { h: 0, paddingLeft: 1, paddingRight: 2, itemSpacing: 3, radius: 4, strokeWeights: 5, opacity: 6, vlaggen: 7, k: 8 };
@@ -188,7 +201,7 @@ function loop(specNode, figNode, pad, ctx) {
     if (tekst && FRAME_ALLEEN.has(naam)) continue;
     if (naam === 'hoogte' && !hoogteGezet) continue;
     ctx.velden++;
-    if (!dichtbij(browser, figma)) ctx.verschillen.push(`${pad} ${naam}: browser ${browser} tegen Figma ${figma}`);
+    if (!tolerantieVoor(naam)(browser, figma)) ctx.verschillen.push(`${pad} ${naam}: browser ${browser} tegen Figma ${figma}`);
   }
   if (!tekst) {
     ctx.velden += 4;
@@ -355,6 +368,12 @@ if (SELFTEST) {
     // Eén zijde, niet alle vier: een volle doos tegen een scheidingslijn is precies het
     // verschil dat schema 2 als `null` doorliet.
     { label: 'randbreedte op één zijde', doel: randPad, structuur: 'randzijde' },
+    // De mutatie DRAAGT HET DEFECT ZELF. 0,1 dekking ligt bewust BINNEN de pixeltolerantie
+    // (0,5) en BUITEN de fractietolerantie (0,01): met de oude, gedeelde `dichtbij` bleef dit
+    // geval per constructie stil, en het is dus het enige dat bewijst dat `TOL_FRACTIE` het
+    // werk doet in plaats van er alleen te staan. Een grotere sprong (0,5 → 1) zou óók met de
+    // oude code rood worden en dan bewijst de case niets.
+    { label: 'opacity onder de pixeltolerantie', doel: diepPad, structuur: 'opacity' },
   ];
   let stuk = 0;
   for (const { label, doel, veld, structuur } of gevallen) {
@@ -373,6 +392,9 @@ if (SELFTEST) {
       const n = zoek(f, doel);
       n[F.strokeWeights] = [...figZijden(n, n[F.vlaggen] ?? 0)];
       n[F.strokeWeights][2] += 3;                     // alleen ONDER
+    } else if (doel && structuur === 'opacity') {
+      const n = zoek(f, doel);
+      n[F.opacity] = Number(((n[F.opacity] ?? 1) - 0.1).toFixed(2));
     } else if (doel) {
       zoek(f, doel)[veld] += 5;
     }

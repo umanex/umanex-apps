@@ -22,7 +22,7 @@ import { ProgressBar, type FillKind } from './active/ProgressBar';
 import { HeroPanel, type HeroSubtitle } from './active/HeroPanel';
 import { MotivationalToast } from '@/components/workout';
 import type { SplitEntry } from '@/types/workout';
-import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatInt, formatDecimal, correctSpm } from '@/lib/formatters';
+import { formatTimer, formatTimerFull, formatSplit, formatDistanceDynamic, formatInt, formatDecimal, correctSpm, correctStrokeCount } from '@/lib/formatters';
 import { useSpmHalved } from '@/lib/hooks/useSpmHalved';
 import type { PrEntry } from '@/lib/personalRecords';
 import { prMetricLabel, formatPrValue, formatPrPrevious, prEntrySpoken } from '@/lib/prDisplay';
@@ -470,7 +470,7 @@ export function ActivePhase({
               { value: formattedDistance.value, unit: formattedDistance.unit, label: t.workout.summary.kpiDistance },
               { value: formatTimerFull(seconds), label: t.workout.summary.kpiDuration },
               { value: `${formatInt(calories)}${hasProfileWeight ? '' : '*'}`, unit: t.units.kcal, label: t.workout.summary.kpiEnergy },
-              { value: summaryTotalStrokes != null ? formatInt(correctSpm(summaryTotalStrokes, spmHalved)) : '—', label: t.workout.summary.kpiStrokes },
+              { value: summaryTotalStrokes != null ? formatInt(correctStrokeCount(summaryTotalStrokes, spmHalved)) : '—', label: t.workout.summary.kpiStrokes },
             ]}
           />
 

@@ -58,9 +58,42 @@ export function formatPrPrevious(entry: PrEntry): string {
   return t.pr.previous(value, shortDate(entry.previous_at));
 }
 
+/**
+ * De GESPROKEN vorm van een recordwaarde — de tegenhanger van `formatPrValue`.
+ *
+ * `formatPrValue('split', 134)` levert `2:14 /500m`, en VoiceOver leest dat als
+ * "2:14 slash 500 m". Compact zijn is precies wat een badge nodig heeft en precies wat een
+ * schermlezer niet aankan, dus de twee vormen krijgen elk hun eigen functie in plaats van dat
+ * de visuele vorm de uitspraak gijzelt: de badge kan korter worden zonder dat er iets
+ * onverstaanbaar wordt, en de uitspraak kan uitgebreider zonder dat er iets afbreekt.
+ */
+export function prValueSpoken(metric: PrMetric, value: number): string {
+  switch (metric) {
+    case 'distance': {
+      const { value: v, unit } = formatDistanceDynamic(value);
+      // De visuele tabel levert 'm' of 'km'; die op de gesproken tabel afbeelden in plaats van
+      // op de string te matchen, zodat een wijziging aan de afkorting hier niet stil doorvalt.
+      return `${v} ${unit === t.units.kilometer ? t.units.spoken.kilometer : t.units.spoken.meter}`;
+    }
+    case 'best2k':
+      return tijdSpoken(value);
+    case 'watts':
+      return `${Math.round(value)} ${t.units.spoken.watt}`;
+    case 'split':
+      return `${tijdSpoken(value)} ${t.units.spoken.per500m}`;
+  }
+}
+
+/** Secondewaarde als uitgesproken tijd. Spiegelt de afronding van `formatSplit` (hele seconden). */
+function tijdSpoken(seconds: number): string {
+  if (!Number.isFinite(seconds)) return t.pr.previousUnknown;
+  const totaal = Math.round(seconds);
+  return t.units.spoken.tijd(Math.floor(totaal / 60), totaal % 60);
+}
+
 /** Eén stop voor een screenreader: metric, nieuwe waarde en wat hij verving. */
 export function prEntrySpoken(entry: PrEntry): string {
-  return `${prMetricLabel(entry.metric)}: ${formatPrValue(entry.metric, entry.value)}. ${formatPrPrevious(entry)}`;
+  return `${prMetricLabel(entry.metric)}: ${prValueSpoken(entry.metric, entry.value)}. ${formatPrPrevious(entry)}`;
 }
 
 /**
@@ -77,6 +110,6 @@ export function prRowLabel(entries: readonly PrEntry[]): string | null {
 /** Screenreader-tekst: alle gebroken records uitgeschreven. */
 export function prAccessibilityLabel(entries: readonly PrEntry[]): string {
   if (entries.length === 0) return t.pr.a11yPlain;
-  const parts = entries.map((e) => `${prMetricLabel(e.metric)} ${formatPrValue(e.metric, e.value)}`);
+  const parts = entries.map((e) => `${prMetricLabel(e.metric)} ${prValueSpoken(e.metric, e.value)}`);
   return t.pr.a11yRow(parts.join(', '));
 }

@@ -32,7 +32,7 @@ export function StatsTable({ rows, colAvg, colPeak }: StatsTableProps) {
         {rows.map((row, i) => (
           <View key={row.label}>
             <View style={styles.statsRow}>
-              <Text style={styles.statsRowLabel}>{row.label}</Text>
+              <Text style={styles.statsRowLabel} numberOfLines={1}>{row.label}</Text>
               <Text style={styles.statsRowValue}>{row.gem}</Text>
               <Text style={styles.statsRowValue}>{row.piek}</Text>
             </View>

@@ -48,6 +48,23 @@ export const nl = {
     /** Split-eenheid. Altijd deze vorm: "500/m" leest als "500 per meter". */
     per500m: '/500m',
 
+    /**
+     * GESPROKEN eenheden, voor een screenreader. Bewust een eigen tabel naast de visuele
+     * hierboven: die is compact omdat hij naast een getal op een badge moet passen, en die
+     * compactheid leest hardop verkeerd — '/500m' wordt "slash 500 m" en 'W' wordt de letter.
+     * Twee tabellen betekent dat de visuele vorm korter kan worden zonder de uitspraak te
+     * breken, en omgekeerd.
+     */
+    spoken: {
+      meter: 'meter',
+      kilometer: 'kilometer',
+      watt: 'watt',
+      per500m: 'per 500 meter',
+      /** "2 minuten 14" — de seconden krijgen geen eenheid, zoals een mens een tijd uitspreekt. */
+      tijd: (min: number, sec: number) =>
+        min === 0 ? `${sec} seconden` : `${min} ${min === 1 ? 'minuut' : 'minuten'} ${sec}`,
+    },
+
     /** Kale meervoudsvorm, voor waar de eenheid los van het getal staat. */
     workouts: 'trainingen',
     /** Telbaar, dus met meervoudsregel: "1 training" / "5 trainingen". */
@@ -467,7 +484,12 @@ export const nl = {
     accept: 'Ja, ik geef toestemming',
     decline: 'Nee, zonder deze gegevens',
     saveFailed: 'Je keuze kon niet opgeslagen worden. Controleer je verbinding en probeer opnieuw.',
-    // Profiel-schakelaar
+    // Profiel-schakelaar.
+    // `settingSection` is de KOP van de sectie, `settingLabel` het label van de rij erin.
+    // Tot 2026-09-19 droegen die twee dezelfde sleutel, dus stond 'Gezondheidsgegevens'
+    // letterlijk boven 'Gezondheidsgegevens' — de kop zei wat er direct onder stond en de
+    // sectiestructuur was daardoor niet leesbaar. De kop noemt nu de groep, de rij de instelling.
+    settingSection: 'Privacy',
     settingLabel: 'Gezondheidsgegevens',
     settingHint: 'Hartslag, gewicht, lengte, geboortedatum en geslacht',
     revokeTitle: 'Toestemming intrekken',

@@ -48,7 +48,20 @@ export function KpiRow({ label, value, fill = false, divider = false, onPress, d
   const variant = variantData({ fill, divider, disabled, loading });
   if (!onPress) return <View testID="KpiRow" dataSet={variant} style={stijl}>{inhoud}</View>;
   return (
-    <TouchableOpacity testID="KpiRow" dataSet={variant} style={stijl} onPress={onPress} disabled={disabled} activeOpacity={0.8}>
+    <TouchableOpacity
+      testID="KpiRow"
+      dataSet={variant}
+      style={stijl}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      // Label en waarde staan als twee losse tekstnodes naast elkaar; zonder één label leest
+      // VoiceOver ze als twee items zonder verband. Tijdens `loading` is er geen waarde — dan
+      // die staat benoemen in plaats van de vorige waarde te laten staan of niets te zeggen.
+      accessibilityLabel={loading ? `${label}, laden` : `${label}, ${value}`}
+      accessibilityState={{ disabled }}
+    >
       {inhoud}
     </TouchableOpacity>
   );

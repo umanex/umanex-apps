@@ -58,7 +58,7 @@ export default function ForgotPasswordScreen() {
             <Text style={styles.title}>{t.auth.forgot.sentTitle}</Text>
             <Text style={styles.subtitle}>{t.auth.forgot.sentBody(email.trim())}</Text>
             <Link href="/(auth)/login" asChild>
-              <TouchableOpacity style={styles.linkContainer}>
+              <TouchableOpacity style={styles.linkContainer} accessibilityRole="link">
                 <Text style={styles.linkText}>
                   <Text style={styles.linkAccent}>{t.auth.forgot.backToLogin}</Text>
                 </Text>
@@ -94,7 +94,7 @@ export default function ForgotPasswordScreen() {
             />
 
             <Link href="/(auth)/login" asChild>
-              <TouchableOpacity style={styles.linkContainer}>
+              <TouchableOpacity style={styles.linkContainer} accessibilityRole="link">
                 <Text style={styles.linkText}>
                   {t.auth.forgot.rememberAgain} <Text style={styles.linkAccent}>{t.auth.forgot.loginLink}</Text>
                 </Text>

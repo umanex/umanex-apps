@@ -9,6 +9,7 @@ import { RECONNECT_DELAY_MS, MAX_RECONNECT_ATTEMPTS } from './constants';
 import { requestScan, ownsScan, releaseScan } from './scan-lock';
 import { recordAutoConnect } from './autoConnectLog';
 import { waitForAdapter } from './adapterReady';
+import { gedeeldeManager } from './sharedManager';
 import { initialHrLink, stepHrLink, type HrLinkEvent, type HrLinkState } from './hrLink';
 import type { HrBleError, HRStatus } from './types';
 
@@ -153,7 +154,9 @@ export class HRBleService {
   private async getManager(): Promise<BleManager> {
     const { BleManager: BM, State } = await loadBlePlx();
     if (!this.manager) {
-      this.manager = new BM();
+      // Niet `new BM()`: ble-plx geeft tóch de gedeelde instance terug, en dan zou deze
+      // dienst denken dat hij hem bezit. Zie lib/ble/sharedManager.ts.
+      this.manager = gedeeldeManager(() => new BM());
     }
     await waitForAdapter(this.manager, State);
     return this.manager;
@@ -547,13 +550,30 @@ export class HRBleService {
     this.link = stepHrLink(this.link, { type: 'released' }).state;
   }
 
+  /**
+   * Breekt een lopende OF wachtende scan af. De enige ingang van buiten naar `stopScan()`.
+   *
+   * Bestaat omdat een aanvraag die in de wachtrij staat niemand had die hem afbrak: de twee
+   * AppState-listeners en de `useFocusEffect` van het trainingsscherm raakten het scan-slot
+   * geen van drieën aan. Navigeerde de gebruiker weg of ging de app naar de achtergrond, dan
+   * startte de scan tot 25 s later alsnog, draaide zijn volle venster, en zette een
+   * foutmelding klaar die de gebruiker te zien kreeg zodra hij terugkwam — over een scan die
+   * hij niet gevraagd had en niet meer wilde.
+   *
+   * `stopScan()` kende dat geval al (hij geeft het slot terug wanneer hij het niet bezit);
+   * er was alleen geen aanroeper. Vandaar een publieke methode en geen nieuwe logica.
+   */
+  cancelScan(): void {
+    this.stopScan();
+  }
+
   destroy(): void {
     // Zie `ble-service.ts`: dezelfde reden, dezelfde plek.
     log('destroy() — dienst afgebroken (provider-teardown of unmount)');
     this.stop();
     this.appStateSub?.remove();
     this.appStateSub = null;
-    this.manager?.destroy();
+    // Zie `ble-service.ts`: de manager is gedeeld en heeft één eigenaar, de provider.
     this.manager = null;
   }
 

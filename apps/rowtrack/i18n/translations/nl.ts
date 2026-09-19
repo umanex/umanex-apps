@@ -366,6 +366,16 @@ export const nl = {
     spmHalvedHint: 'Voor trainers die de slagfrequentie dubbel tellen',
     logout: 'Uitloggen',
     logoutConfirmBody: 'Ben je zeker dat je wil uitloggen?',
+    /**
+     * Uitloggen wist de lokale wachtrij, dus een rit die nog niet verstuurd is, gaat eraan.
+     * De app probeert eerst af te druinen; lukt dat niet (offline), dan hoort de gebruiker
+     * te wéten wat hij weggooit in plaats van het achteraf te ontdekken. Blokkeren doen we
+     * niet — het is zijn toestel en zijn sessie.
+     */
+    logoutPendingBody: (n: number) =>
+      n === 1
+        ? 'Er wacht nog 1 training op synchronisatie. Die gaat verloren als je nu uitlogt.'
+        : `Er wachten nog ${n} trainingen op synchronisatie. Die gaan verloren als je nu uitlogt.`,
     emailSheet: {
       title: 'E-mail wijzigen',
       currentEmail: 'HUIDIG E-MAILADRES',

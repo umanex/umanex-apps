@@ -82,10 +82,26 @@ EOF
     exit 1
   fi
 fi
-BRANCH="$(git -C "${TREE:-$REPO}" rev-parse --abbrev-ref HEAD)"
 command -v gh >/dev/null 2>&1 || { echo "STOP — gh niet beschikbaar"; exit 1; }
 
+# De branch komt uit de PR, NIET uit HEAD.
+#
+# Tot 2026-09-19 stond hier `rev-parse --abbrev-ref HEAD`, en dat is een aanname die er geen
+# is: het script neemt aan dat de branch die je uitgecheckt hebt de branch van de PR ís. Draai
+# je hem voor PR X terwijl je op de branch van PR Y staat, dan merget hij X en RUIMT HIJ Y OP
+# — lokaal én remote. Dat laatste sluit PR Y automatisch. Gemeten die dag: `afronden.sh 542`
+# vanaf `fix/rowtrack-opruimronde` (PR #544) merge't #542 correct en sloopte #544; het werk
+# stond daarna alleen nog in de lokale objectstore.
+#
+# De PR weet zelf op welke branch hij zit. Vraag het hem, en toets de aanname in plaats van
+# erop te leunen: staat HEAD ergens anders, dan is dat geen fout maar het moet wél luid, want
+# stap 1 checkt `main` uit en dan is niet meer te zien waar je vandaan kwam.
+BRANCH="$(gh pr view "$PR" --json headRefName -q .headRefName 2>/dev/null)"
+[ -n "$BRANCH" ] || { echo "STOP — kon de branch van PR #$PR niet lezen (bestaat de PR? is gh ingelogd?)"; exit 1; }
+HEAD_NU="$(git -C "${TREE:-$REPO}" rev-parse --abbrev-ref HEAD)"
+
 echo "→ PR #$PR vanaf branch '$BRANCH' in $REPO"
+[ "$BRANCH" = "$HEAD_NU" ] || echo "  ⚠ HEAD staat op '$HEAD_NU', niet op de branch van deze PR — er wordt '$BRANCH' opgeruimd, niet '$HEAD_NU'"
 
 if [ "$DROOG" -eq 1 ]; then
   state="$(gh pr view "$PR" --json state -q .state 2>/dev/null || echo ONBEKEND)"

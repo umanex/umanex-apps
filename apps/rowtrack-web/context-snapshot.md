@@ -1,5 +1,5 @@
 # Context Snapshot — rowtrack-web
-_Gegenereerd op 2026-09-14_
+_Afgeleid uit de inhoud van de tree, zonder datum. Wanneer hij het laatst veranderde: `git log -1 -- apps/rowtrack-web/context-snapshot.md`._
 
 ## Project
 - **App:** rowtrack-web
@@ -44,20 +44,12 @@ _Afgeleid uit de codebase — niet manueel aanpassen. Bron: `// @figma`-headers 
 | ScreenshotFrame | `apps/rowtrack-web/components/ui/ScreenshotFrame.tsx` | ui | — | — | — |
 | SectionHeading | `apps/rowtrack-web/components/ui/SectionHeading.tsx` | ui | — | — | — |
 
-## Recente commits (app + packages)
+## Recente commits en lopend werk
+_Staat bewust niet in dit bestand: het verschilt per moment en per tree, en een gecommitte kopie is al verouderd op het moment dat hij landt. Vraag het live op:_
 ```
-154fa6b chore: clean up after the Next 15 upgrade — stale ranges, an obsolete override and the React 18 island
-86d8287 chore(rowtrack-web): upgrade to Next 15.5.25 and React 19
-0e89c73 feat(rowtrack-web): deterministic detector run as a Verify-pad capability
-2ca664b merge: main into feature/rowtrack-web-premium-redesign
-2c970c9 test(ui): add Sheet to the rendered-size baseline
+git log --oneline -5 -- apps/rowtrack-web packages
+git status --short -- apps/rowtrack-web packages
 ```
-
-## Uncommitted wijzigingen
-  A  apps/rowtrack-web/.detect.config.json
-  M  apps/rowtrack-web/.impeccable/config.json
-  M  apps/rowtrack-web/CLAUDE.md
-  M  apps/rowtrack-web/scripts/detect.mjs
 
 ## Bestanden met TODO/FIXME
   (geen)

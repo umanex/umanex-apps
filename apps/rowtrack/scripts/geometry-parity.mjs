@@ -92,7 +92,22 @@ const nrData = (!process.argv.includes('--zonder-uitsluiting') && existsSync(nrP
   ? JSON.parse(readFileSync(nrPad, 'utf8')) : null;
 const nrKlassen = new Set(nrData?.klassen ?? []);
 const nrPaden = new Set(nrData?.paden ?? []);
-/** Uitgesloten als het PAD gemeten is, óf als een segment tot een gemeten KLASSE hoort. */
+/**
+ * TWEE LIJSTEN, TWEE REDENEN — en het verschil is niet cosmetisch.
+ *
+ * `paden` zijn nodes die NIET TE METEN zijn: ze verschillen tussen twee runs van ongewijzigde
+ * code (gerandomiseerde confetti, en elke voorouder die daaromheen sluit). Daar valt niets aan
+ * te doen; dat is een eigenschap.
+ *
+ * `verouderdInFigma` is iets anders: die nodes zijn prima meetbaar, maar de FIGMA-kant is oud.
+ * De spinners daar zijn gebouwd uit de geroteerde metingen van vóór de normalisatie van
+ * 2026-09-14 — gemeten 2026-09-19: 208 hoogteverschillen, browser 20 tegen Figma 17,5 tot 22,6.
+ * Dat is SCHULD, met een uitweg: herbouw ze in Figma en de lijst hoort leeg te zijn.
+ *
+ * Ze stonden tot 2026-09-19 op één hoop, onder de eerste vlag. Daardoor las een achterstallig
+ * Figma-document als een natuurwet, en sloot niemand het ooit — 264 nodes lang.
+ */
+const nrVerouderd = new Set(nrData?.verouderdInFigma ?? []);
 const nietReproduceerbaar = nrData
   ? { has: (pad) => nrPaden.has(pad) || pad.split('>').some((seg) => nrKlassen.has(seg.replace(/^\d+:/, ''))) }
   : null;
@@ -164,6 +179,9 @@ function kinderparen(specNode, figNode) {
 function loop(specNode, figNode, pad, ctx) {
   if (isIcoon(specNode)) { ctx.overgeslagen.push(`${pad}: icoon-placeholder (regel 3)`); return; }
   if (nietReproduceerbaar?.has(pad)) { ctx.instabiel.push(pad); return; }
+  // Meetbaar, maar de Figma-kant is oud. Apart geteld: een som met de vorige tak zou een
+  // eigenschap en een schuld hetzelfde laten lijken.
+  if (nrVerouderd.has(pad)) { ctx.verouderd.push(pad); return; }
   ctx.nodes++;
 
   const tekst = isTekstNode(specNode);
@@ -232,7 +250,7 @@ function loop(specNode, figNode, pad, ctx) {
 
 /** De hele meting. Geeft een verse ctx terug, zodat de zelftest hem los kan draaien. */
 function meet(fig, spec) {
-  const ctx = { verschillen: [], overgeslagen: [], nieuw: [], gemeten: [], instabiel: [], velden: 0, nodes: 0, tekstHoogte: 0 };
+  const ctx = { verschillen: [], overgeslagen: [], nieuw: [], gemeten: [], instabiel: [], verouderd: [], velden: 0, nodes: 0, tekstHoogte: 0 };
   const groepen = [
     ['componenten', spec.componenten, (d) => d.varianten],
     ['schermen', spec.schermen ?? {}, (d) => d.frames],
@@ -519,6 +537,31 @@ console.log(`Figma-kant gelezen op ${fig.gegenereerd}`
 console.log(nietReproduceerbaar
   ? `${r.instabiel.length} node(s) niet reproduceerbaar en dus overgeslagen (gemeten door scripts/instabiele-nodes.mjs: roterende spinner, gerandomiseerde confetti)`
   : 'GEEN figma/niet-reproduceerbaar.json — er wordt niets uitgesloten; draai `npm run instabiele-nodes`');
+/**
+ * TWEEZIJDIGE RATEL OP DE SCHULD. Een lijst die alleen geprint wordt, is stilte met een teller:
+ * hij mag groeien zonder dat iemand het merkt, en hij mag krimpen zonder dat iemand het viert.
+ * Deze regel faalt dus in BEIDE richtingen. Naar boven, want een nieuwe verouderde node is een
+ * regressie. Naar beneden, want een geslonken lijst betekent dat de Figma-herbouw gedraaid is
+ * en dan hoort de basislijn mee te bewegen — anders staat hier over een maand een getal dat
+ * niets meer beschrijft.
+ */
+let proces_afwijking = false;
+// 73, GEMETEN — niet de lengte van de lijst in het artefact (die is 264). Parity stopt bij de
+// hoogste uitgesloten node en daalt niet verder af, dus wat híj raakt is altijd minder dan wat
+// de lijst bevat. Ik zette hier eerst 264 uit een aftreksom, en de ratel vuurde meteen op zijn
+// eigen aanname. Twee verschillende noemers, en alleen de gemeten telt.
+const VEROUDERD_BASISLIJN = 73;
+if (r.verouderd.length) {
+  console.log(`${r.verouderd.length} node(s) overgeslagen omdat de FIGMA-kant verouderd is — niet omdat ze bewegen.`);
+  console.log(`  ${nrData?.verouderdReden ?? ''}`);
+  if (r.verouderd.length !== VEROUDERD_BASISLIJN) {
+    console.log(`  RATEL: dit waren er ${VEROUDERD_BASISLIJN} op 2026-09-19. ${r.verouderd.length > VEROUDERD_BASISLIJN
+      ? 'Er zijn er BIJ gekomen — dat is een regressie.'
+      : 'Er zijn er AF — herbouwd in Figma? Zet de basislijn bij, mét reden.'}`);
+    proces_afwijking = true;
+  }
+  console.log('');
+}
 console.log(`${r.tekstHoogte} tekstnode(s) waar Figma de hoogte bepaalt (textAutoResize WIDTH_AND_HEIGHT) — hoogte daar niet vergeleken\n`);
 if (r.overgeslagen.length) { console.log(`${r.overgeslagen.length} node(s) overgeslagen:`); for (const o of r.overgeslagen.slice(0, 10)) console.log('  -- ' + o); if (r.overgeslagen.length > 10) console.log(`  -- ... en ${r.overgeslagen.length - 10} andere`); console.log(''); }
 if (r.nieuw.length) { console.log(`${r.nieuw.length} nog niet in Figma (geen verschil, wel werk):`); for (const o of r.nieuw.slice(0, 15)) console.log('  ~~ ' + o); if (r.nieuw.length > 15) console.log(`  ~~ ... en ${r.nieuw.length - 15} andere`); console.log(''); }
@@ -538,3 +581,6 @@ console.log(`hoogte op elke node behalve de ${r.tekstHoogte} tekstnodes waar Fig
 console.log('NIET gemeten: breedte (tekstgedreven — Figma en Chromium meten dezelfde tekst anders),');
 console.log('kleurwaarde per node, schaduwvorm, icoonvorm, frame-eigenschappen op tekstnodes, de');
 console.log(`${r.instabiel.length} niet-reproduceerbare nodes hierboven, en alles wat de bouwspec afkapte.`);
+// De ratel bijt ná de groene uitspraak: "geen verschil" is waar, maar niet het hele verhaal
+// zolang de verouderde lijst van maat verandert.
+if (proces_afwijking) process.exit(1);

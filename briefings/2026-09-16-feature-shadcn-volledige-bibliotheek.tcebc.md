@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Project:** packages/ui + packages/config (monorepo-niveau)
 - **Klant:** umanex
-- **Status:** gepland — batch 0 gevalideerd 2026-09-16 en gemerged (umanex-apps#512), layout-tokens volgt, batches 1–6 open
+- **Status:** gepland — batch 0 gevalideerd 2026-09-16 en gemerged (umanex-apps#512), layout-tokens gemerged (umanex-apps#524); batch 1 was geblokkeerd door twee open vragen en is dat sinds de besluiten van 2026-09-19 niet meer; batches 1–6 open
 
 ---
 
@@ -52,9 +52,9 @@ CONSTRAINTS: Tokens-first (bg-black/80 → overlay-scrim, rounded-[2px] → roun
 
 ## Open vragen
 
-- De `state`-as (default, hover, focus-visible) op een set die ook `disabled` draagt: volledig product, of de combinaties `disabled × hover` en `disabled × focus-visible` weglaten? `disabled:pointer-events-none` maakt ze in de browser onbereikbaar, maar de `[varianten]`-as eist vandaag het volledige product. Blokkeert batch 1 (Toggle).
-- De 17 sets die al in Figma staan (15 handgebouwd + Switch en Dialog): de `state`-as nu achteraf toevoegen, of alleen voor nieuwe componenten vanaf batch 1? De set-ids blijven in beide gevallen, maar de 15 handgebouwde weigert de builder (geen `bouwhash`). Blokkeert batch 1.
-- De scope en dependencies, de oplevering, de recept-pagina's en de Field-port zijn beslist door Jeroen (zie Beslissingsgeschiedenis).
+Geen. De twee vragen die batch 1 blokkeerden zijn op 2026-09-19 beslist door Jeroen — zie
+Beslissingsgeschiedenis. De scope en dependencies, de oplevering, de recept-pagina's en de
+Field-port waren dat al.
 
 ## Aannames
 
@@ -71,8 +71,10 @@ CONSTRAINTS: Tokens-first (bg-black/80 → overlay-scrim, rounded-[2px] → roun
 - [ ] States — elke boolean-prop die de vorm verandert (`checked`, `disabled`, `pressed`, `open`, `isActive`) is een variant-as
 - [ ] States — elke set waarvan de primary een `hover:`- of `focus-visible:`-klasse draagt, heeft een `state`-as (default, hover, focus-visible)
 - [ ] States — een set zónder `hover:`- en `focus-visible:`-klassen heeft geen `state`-as (tegenproef: Separator, Label)
+- [ ] States — een set met zowel een `state`- als een `disabled`-as draagt 0 varianten met `disabled=true` naast `state≠default` (besluit 2026-09-19)
+- [ ] States — de 17 sets die vóór batch 1 in Figma stonden dragen elk een `state`-as (besluit 2026-09-19), geteld per set
 - [ ] Interactie n.v.t. — presentational primitives; state via Storybook-args, geen prototype-reactions in Figma
-- [ ] Edge cases — aantal variant-nodes per set = product van de asgroottes (`[varianten]`-as)
+- [ ] Edge cases — aantal variant-nodes per set = product van de asgroottes minus de uitgesloten `disabled × state`-combinaties (`[varianten]`-as)
 
 ### Batch 0 — tooling + Switch + Dialog
 
@@ -144,3 +146,5 @@ Worden per batch aan deze lijst toegevoegd vóór de bouw van die batch, met dez
 - 2026-09-16: batch 0 in de worktree `.claude/worktrees/ui-batch-0` op verzoek van Jeroen, nadat een parallelle sessie de hoofdtree naar `main` zette.
 - 2026-09-17: hover en focus-visible worden wél Figma-varianten, als `state`-as — besluit Jeroen, herroept het besluit van 2026-08-25. Gevolg voor de keten: de walker forceert `:hover`/`:focus-visible` per variant en de binding leest in die variant de `hover:`/`focus-visible:`-klassen in plaats van ze te negeren; varianten per interactieve set tot ×3. Werk in batch 1, vóór de eerste set.
 - 2026-09-17: layout-tokens (spacing-schaal + rollen in `tokens.json`, Figma Base eruit gezet) als eigen PR tussen batch 0 en batch 1 — besluit Jeroen. Briefing: `briefings/2026-09-17-feature-layout-tokens.tcebc.md`.
+- 2026-09-19: `disabled × hover` en `disabled × focus-visible` worden **niet** gebouwd — besluit Jeroen. Reden: `disabled:pointer-events-none` maakt ze in de browser onbereikbaar, dus ze tonen een ontwerper een toestand die het component nooit aanneemt. Gevolg voor de keten: de `[varianten]`-as mag niet langer het volle product eisen — hij krijgt een uitsluitingsregel (`disabled=true` ⇒ `state=default`) die per set telt, plus een tegenproef die rood wordt als zo'n combinatie tóch gebouwd wordt. Zonder die tegenproef leest "minder varianten dan het product" als een gemiste variant en als een bewuste uitsluiting hetzelfde.
+- 2026-09-19: de 17 bestaande sets worden **wél** gelijkgetrokken met de `state`-as — besluit Jeroen, herroept de aanname dat alleen nieuwe componenten hem krijgen. Switch en Dialog kan de builder zelf bijwerken (die dragen een `bouwhash`); de 15 handgebouwde weigert hij, dus die gaan met de hand, vóór batch 1 vertrekt. Let op: dat handwerk heeft per constructie geen builder die het naméét — de telling per set (acceptatie-item hierboven) is de enige as die er rood op kan worden, en hij hoort dus over alle 17 te lopen, niet over de nieuwe.

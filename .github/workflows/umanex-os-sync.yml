@@ -206,6 +206,7 @@ jobs:
             install_file tak-poort.sh    "scripts/tak-poort.sh"    x
             install_file sessiekost.mjs  "scripts/sessiekost.mjs"  x
             install_file ci-kosten.mjs   "scripts/ci-kosten.mjs"   x
+            install_file refs-check.mjs  "scripts/refs-check.mjs"  x
           fi
 
           # Marker voor het lokale scripts/sync-os.sh

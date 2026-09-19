@@ -52,6 +52,36 @@ done
 [ -z "$TREE" ] || [ -d "$TREE" ] || { echo "STOP — tree '$TREE' bestaat niet"; exit 1; }
 
 REPO="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "STOP — geen git-repo"; exit 1; }
+
+# --tree is de LINKED-WORKTREE-modus van DEZE repo, geen "draai tegen een andere repo". Dat
+# onderscheid is niet cosmetisch: `gh pr merge` hieronder krijgt geen `--repo`, dus gh leidt de
+# repo af uit de cwd — altijd deze. Wijst --tree naar een ándere repo, dan wordt PR-nummer N
+# in DEZE repo gemerged, en een PR-nummer is niet uniek over repo's heen.
+#
+# GEMETEN 2026-09-19, en zo is dit gevonden: `afronden.sh 218 --tree ~/Documents/Columba`
+# meldde "✓ PR #218 is MERGED" terwijl columba#218 gewoon OPEN stond. Het had umanex-os#218
+# gelezen — een PR van 2026-09-11 die toevallig al gemerged was. De oude controle keek alleen
+# of het pad bestáát; de `worktree remove` verderop ving het pas ná die succesmelding, dus de
+# gebruiker had "gemerged" gelezen over een PR die openstond.
+# Dat is de rail 'een naam is een bewering over het ding, niet het ding': identificeer aan
+# inhoud (staat deze tree in `git worktree list` van deze repo?), niet aan een geldig pad.
+if [ -n "$TREE" ]; then
+  TREE_ABS="$(cd "$TREE" 2>/dev/null && pwd -P)" || { echo "STOP — tree '$TREE' niet leesbaar"; exit 1; }
+  raak=0
+  while IFS= read -r w; do
+    [ -n "$w" ] || continue
+    [ "$(cd "$w" 2>/dev/null && pwd -P)" = "$TREE_ABS" ] && raak=1
+  done <<EOF
+$(git -C "$REPO" worktree list --porcelain | sed -n 's/^worktree //p')
+EOF
+  if [ "$raak" -eq 0 ]; then
+    echo "STOP — '$TREE' is geen worktree van $REPO."
+    echo "  --tree is voor een linked worktree van DEZE repo. Voor een PR in een andere repo:"
+    echo "  draai dit script dáár, of gebruik 'gh pr merge <nr> -R <owner>/<repo>' met een eigen"
+    echo "  state-controle — dit script leest de PR uit de huidige repo, niet uit --tree."
+    exit 1
+  fi
+fi
 BRANCH="$(git -C "${TREE:-$REPO}" rev-parse --abbrev-ref HEAD)"
 command -v gh >/dev/null 2>&1 || { echo "STOP — gh niet beschikbaar"; exit 1; }
 

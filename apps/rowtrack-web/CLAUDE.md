@@ -87,7 +87,7 @@ De dertig die wegvallen zijn precies de smaakregels: `dark-glow` 8, `nested-card
 `codex-grid-background` 2 — de premium-laag die bewust zo ontworpen is. `low-contrast` en
 `kicker-above-heading` stonden er al. Alle acht ids zijn door `impeccable doctor --json`
 bevestigd als bestaand (`ruleRegistryAvailable: true`, nul `detector-ignore-rules-unknown`);
-`scripts/test-impeccable.sh` in umanex-os bewaakt dat een update ze niet stil hernoemt.
+`scripts/test-impeccable.sh` in umanex-os bewaakt dat een update ze niet stil hernoemt — sinds 2026-09-19 door de lijst uit deze config af te leiden in plaats van uit een eigen kopie, dus een nieuwe ignore telt daar automatisch mee. De redenen hierboven staan sindsdien óók machine-leesbaar in `.impeccable/config.json` als `ignoreReasons`, naast `ignoreRules`: dezelfde guard eist dat die twee sleutels dezelfde verzameling dekken, beide kanten op. Bij verschil is de config leidend.
 
 **Twee metingen die er vóór 2026-09-14 niet waren.** Touch targets: **31 van de 70** gemeten
 zichtbare interactieve elementen zitten onder 24 px — geen van beide detectors zag die ooit.

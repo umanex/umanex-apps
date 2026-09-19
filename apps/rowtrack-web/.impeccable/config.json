@@ -9,6 +9,16 @@
       "gpt-thin-border-wide-shadow",
       "codex-grid-background",
       "em-dash-overuse"
-    ]
+    ],
+    "ignoreReasons": {
+      "low-contrast": "Impeccable leest een alpha-stop in een verloop als effen kleur: gemeten 2026-09-11 meldde het 1,8:1 waar de pixels 7,70:1 gaven. Contrast is hier gedekt door axe én door de eigen meting in scripts/detect.mjs, die expliciet 'onmeetbaar' zegt bij alpha of een verloop.",
+      "kicker-above-heading": "Smaakregel tegen de bewust ontworpen premium-laag; stond er al vóór de ronde van 2026-09-14 waarin de andere zes erbij kwamen.",
+      "dark-glow": "Smaakregel tegen de bewust ontworpen premium-laag. Gemeten 2026-09-14, beide kanten, twee runs: zonder ignores 40 + 10 advisory, met de acht 20 + 0 — de dertig die wegvallen zijn precies deze regels. Aandeel van deze regel: 8 van de 30.",
+      "nested-cards": "Smaakregel tegen de bewust ontworpen premium-laag. Gemeten 2026-09-14, beide kanten, twee runs: zonder ignores 40 + 10 advisory, met de acht 20 + 0 — de dertig die wegvallen zijn precies deze regels. Aandeel van deze regel: 8 van de 30.",
+      "radial-spotlight-glow": "Smaakregel tegen de bewust ontworpen premium-laag. Gemeten 2026-09-14, beide kanten, twee runs: zonder ignores 40 + 10 advisory, met de acht 20 + 0 — de dertig die wegvallen zijn precies deze regels. Aandeel van deze regel: 4 van de 30.",
+      "gpt-thin-border-wide-shadow": "Smaakregel tegen de bewust ontworpen premium-laag. Gemeten 2026-09-14, beide kanten, twee runs: zonder ignores 40 + 10 advisory, met de acht 20 + 0 — de dertig die wegvallen zijn precies deze regels. Aandeel van deze regel: 4 van de 30.",
+      "em-dash-overuse": "Smaakregel tegen de bewust ontworpen premium-laag. Gemeten 2026-09-14, beide kanten, twee runs: zonder ignores 40 + 10 advisory, met de acht 20 + 0 — de dertig die wegvallen zijn precies deze regels. Aandeel van deze regel: 4 van de 30.",
+      "codex-grid-background": "Smaakregel tegen de bewust ontworpen premium-laag. Gemeten 2026-09-14, beide kanten, twee runs: zonder ignores 40 + 10 advisory, met de acht 20 + 0 — de dertig die wegvallen zijn precies deze regels. Aandeel van deze regel: 2 van de 30."
+    }
   }
 }

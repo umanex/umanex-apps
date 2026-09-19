@@ -44,8 +44,13 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-09-17 — Parity vergelijkt opacity met de pixel-tolerantie · [test]
 - **Wat:** `scripts/geometry-parity.mjs` vergelijkt hoogte, padding, gap, radius, randbreedte én opacity met één `TOL = 0.5` (regel 103; opacity in de lijst op regel 176). Een opacity-verschil tot een halve dekking valt daardoor per constructie binnen de marge, en de zelftest muteert alleen een pixelveld. In de kopie in `packages/ui` bracht een eigen drempel voor fracties meteen een echt verborgen verschil boven (`Slider/disabled=true`: 0,5 in Figma, 1 in de browser); die fix zit in umanex/umanex-apps#512.
 - **Waarom niet nu:** gevonden in een learnings-ronde in umanex-os, niet tijdens rowtrack-werk. De bevestiging na de fix vraagt een verse Figma-meting via de Desktop Bridge.
-- **Eerste zet:** de fractie-drempel (`dichtbijFractie`) en de zelftest-case *"opacity 0,7 -> 0,8: rood"* overnemen uit `packages/ui/scripts/geometry-parity.mjs` op de branch van umanex/umanex-apps#512, dan de parity-as opnieuw draaien — reken op echte opacity-verschillen.
-- **Check:** `git show origin/main:apps/rowtrack/scripts/geometry-parity.mjs | grep -c dichtbijFractie` — 0 = het item leeft. Positieve controle: `git show origin/feature/ui-batch-0-figma-keten:packages/ui/scripts/geometry-parity.mjs | grep -c dichtbijFractie` hoort ≥ 1 te geven.
+- **Eerste zet:** de fractie-drempel (`dichtbijFractie`) en de zelftest-case *"opacity 0,7 -> 0,8: rood"* overnemen uit `packages/ui/scripts/geometry-parity.mjs` op **`origin/main`** (regel 173, tolerantie 0,01), dan de parity-as opnieuw draaien — reken op echte opacity-verschillen.
+- **Check:** `git show origin/main:apps/rowtrack/scripts/geometry-parity.mjs | grep -c dichtbijFractie` — 0 = het item leeft. Positieve controle: `git show origin/main:packages/ui/scripts/geometry-parity.mjs | grep -c dichtbijFractie` hoort ≥ 1 te geven (gemeten 2026-09-19: **2**).
+- **Bron gecorrigeerd 2026-09-19.** De positieve controle wees naar `origin/feature/ui-batch-0-figma-keten`, en die branch bestaat niet meer — PR #512 is gemerged en de branch opgeruimd, dus de controle gaf 0 en bewees niets. Een tegenproef die naar een branch wijst, veroudert zodra die branch weg is; de gemergede kant is de duurzame bron. Op `main` staat de fix gewoon in `packages/ui`.
+- **Samengevoegd 2026-09-19:** dit item en *2026-09-16 — De parity-as ziet een opacity-verschil onder een halve dekking niet* beschreven hetzelfde defect — allebei `TOL = 0.5` op regel 103 en `opacity` op 176, in hetzelfde bestand. Twee entries voor één fix betekent twee keer triëren en één keer dubbel bouwen. Het item van 16-09 is hierin opgegaan; wat het extra droeg staat hieronder.
+  - De faalklasse is vastgelegd in `umanex-os/LEARNINGS.md` (Globaal, 2026-09-16).
+  - Het lag buiten de scope van `briefings/2026-09-16-feature-shadcn-volledige-bibliotheek.tcebc.md`, die rowtrack bewust onaangeroerd laat.
+  - Een strakkere tolerantie kan in rowtrack echte verschillen blootleggen die eerst een eigen oordeel vragen — lees de eerste rode run vóór er iets aan de basislijn verandert.
 - **Status:** open
 
 ## 2026-09-16 — Twee calorieformules die elkaar kruisen: vier productvragen, analyse af · [feature]
@@ -109,6 +114,10 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Waarom niet nu:** geen van deze zeven is zonder hardware te meten. Ze staan hier bij elkaar omdat je ze in één ronde afhandelt — los waren het zeven redenen om de dev-client te booten, en dan wordt hij niet geboot.
 - **Eerste zet:** `pnpm dev:rowtrack`, bundeldatum controleren (zie het Verify-pad), dan 2 en 7 — die hebben geen erg-trucje nodig. Registreer de ronde met een `Toestel-ronde:`-trailer in de commit, óók als je niets vond: dat is het verschil tussen "nog nooit gekeken" en "gekeken, niets gezien".
 - **Check:** `cd apps/rowtrack && node scripts/toestel-schuld.mjs --kort` — staat de teller nog op "nog nooit een ronde", dan leeft dit item.
+- **Stand 2026-09-19: 80 commits, nog steeds nooit een ronde** (was 70 op 2026-09-09). De schuld
+  groeit met ongeveer een commit per dag terwijl dit item open staat, en ze deelt één opstelling
+  met het verwante item hieronder — die twee samen zijn vandaag de grootste ontgrendeling op de
+  hele lijst: één ronde op de iPhone sluit twaalf metingen.
 - **Verwant:** `apps/rowtrack/BACKLOG.md` 2026-09-09 *Eén toestel-ronde beantwoordt vijf vragen* — dezelfde opstelling, doe ze samen.
 - **Status:** open
 
@@ -150,7 +159,18 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 ## 2026-09-12 — Redactie- en code review: 214 bevindingen, 1 P0 en 25 P1 · [fix]
 - **Wat:** Volledige review van `apps/rowtrack` op twee assen — alle user-facing NL-copy en de code — met 222 onderzochte en 214 overeind gebleven bevindingen. Het rapport staat in `apps/rowtrack/audits/2026-09-12-redactie-en-code-review.md`, mét bewijs per bevinding, de negen weerlegde beweringen en de zes gaten die niemand bekeek. Bewust één backlog-item en niet 214: dat zou het sessiestart-signaal slopen dat deze lijst juist moet dragen. Vier oorzaken dragen de meeste symptomen — de toestemmingsgate op de schrijfactie in plaats van op de bron, de doeltoets op een andere grootheid dan het scherm, "laden" als eindtoestand doordat geen enkele Supabase-aanroep een deadline heeft, en `??` waar `||` hoort.
 - **Waarom niet nu:** De opdracht was reviewen, niet fixen. De P0 en de eerste drie punten uit §10 zijn samen minder dan twintig regels diff en verdienen een eigen ronde met een tegenproef per fix; de rest vraagt keuzes (terminologie, eenheden, a11y-strategie) die van Jeroen zijn.
-- **Eerste zet:** §10 van het rapport, punt 1 tot en met 3: de `Alert` vóór `revoke` op de consent-gate (`app/(tabs)/_layout.tsx:116`), `||` in plaats van `??` op de drie auth-schermen, en `"type-check": "tsc --noEmit"` in `package.json`.
+- **Eerste zet (vervallen 2026-09-19 — alle drie gebouwd):** de oude eerste zet was §10 punt 1 tot en
+  met 3. Gemeten vandaag staan ze er alle drie: de `Alert` staat vóór `revoke` op de consent-gate
+  (`app/(tabs)/_layout.tsx:124` roept `Alert.alert`, `:130` pas `void revoke()`), de drie
+  auth-schermen dragen de `??`-redenering expliciet in commentaar (`login.tsx:37`,
+  `forgot-password.tsx:38`, `reset-password.tsx:72`), en `"type-check": "tsc --noEmit"` staat op
+  `package.json:11`. Ze zijn onderweg in andere ronden meegegaan zonder dat dit item bijgewerkt is.
+- **Eerste zet (nieuw):** **her-triëren vóór er iets gefixt wordt.** De overige ~210 bevindingen zijn
+  sinds 2026-09-12 nooit tegen de code gelegd, en de drie die we wél kunnen controleren waren alle
+  drie al opgelost — dat is een sterke aanwijzing dat het rapport breder verouderd is. Lever per
+  bevinding een gemeten uitspraak (leeft / gebouwd / vervallen) tegen de code van vandaag; pas
+  daarna een fix-ronde plannen. Een fix bouwen op een vier maanden oude bevinding is een fix voor
+  een toestand die mogelijk niet meer bestaat.
 - **Status:** open
 
 ## 2026-08-28 — Dubbele `destroy()` op één gedeelde BleManager · [fix]
@@ -608,6 +628,11 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
   · `AlbertSans_700Bold 34px ls=0` en `AlbertSans_400Regular 18px ls=0` — samen 4 nodes in MotivationalToast, waar de code de tracking op nul zet terwijl elke kandidaat-style hem negatief heeft.
   Per waarde is de vraag dezelfde: hoort hier een token bij (dan in Tokens Studio), of hoort de code de bestaande schaal te volgen (dan een code-fix)? De eerste is de goedkoopste kandidaat: 20 % op 16 px is dezelfde stap als `labelSection` op 13.
 - **Eerste zet:** `node -e 'require("./figma/ongebonden.json").uniek.forEach(x=>console.log(x))'` in `apps/rowtrack` geeft de volledige lijst; sorteer hem op soort (radius, text style, achtergrond, gradientstop, tekstkleur) en beslis per groep. De radii zijn de kleinste groep en de duidelijkste kandidaat voor de schaal.
+- **Stand 2026-09-19: 50 uniek** (`node -e 'console.log(require("./figma/ongebonden.json").uniek.length)'`).
+  Het getal is dus twee keer bewogen sinds dit item geschreven is — 52 hier, 56 na de tracking-fix
+  van 2026-09-09, 50 vandaag — zonder dat één van die verschuivingen aan een beslissing hangt.
+  Lees het getal dus vers vóór je de ratel in `figma-sync-check.mjs` bijstelt; een ratel bumpen op
+  een onthouden getal zet hem op de verkeerde waarde.
 - **Status:** open
 
 ## 2026-09-09 — De rnw-laagnamen zijn eerlijk maar lelijk in Figma · [refactor]
@@ -776,9 +801,25 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 
 ## 2026-09-14 — Drie kleuren buiten het merksysteem op betekenisdragende plekken · [tokens]
 - **Wat:** Gemeten pixelwaarden op de gebouwde app: de voortgangstrack is `#c9b894` (warm zand), de "op tempo"-balk is `#4caf50` (Material Design green 500) en de records-badge is `#e8dcc4`. `#c9b894` betekent *wat je niet gehaald hebt*, het bijna identieke `#e8dcc4` betekent *wat je wél presteerde* — en de track is lichter dan de vulling, dus het onafgemaakte deel domineert de voortgangsbalk visueel.
-- **Waarom niet nu:** Het is niet vastgesteld of deze drie al in de 50 ongebonden waarden van `figma/ongebonden.json` zitten (BACKLOG 2026-09-09). Dat moet eerst gemeten, anders staat dezelfde waarde in twee items. Bovendien raakt het de tokenlaag, en die wacht al op een push uit Tokens Studio voor het accent-item van 2026-09-07.
-- **Eerste zet:** `grep -i 'c9b894\|4caf50\|e8dcc4' apps/rowtrack/figma/ongebonden.json apps/rowtrack/constants/*.ts` — treffers bepalen of dit een nieuw item is of een deelverzameling van 2026-09-09. Pas daarna een rol kiezen.
-- **Check:** `grep -ril 'c9b894' apps/rowtrack/constants apps/rowtrack/tokens` → geen treffer = de waarde komt nog nergens uit een token.
+- **Waarom niet nu:** Het raakt de tokenlaag, en die wacht al op een push uit Tokens Studio voor het accent-item van 2026-09-07.
+- **Gemeten 2026-09-19 — de vraag "zitten ze in de tokens?" is beantwoord, met ja.** Alle drie komen
+  uit een token: `tokens/tokens.json:108` (`#E8DCC4`), `:113` (`#C9B894`) en `:1174` (`#4CAF50`),
+  doorgebouwd naar `constants/colors.ts:48,49` (`default`/`muted`) en `:105,106`
+  (`trackColor`/`successFill`). Ze staan dus **niet** in de ongebonden-lijst en dit is geen
+  deelverzameling van het item van 2026-09-09.
+- **Eerste zet:** de kleurkeuze zelf voorleggen, niet de binding. Drie vragen: (1) mag de
+  voortgangstrack donkerder dan zijn vulling, zodat het afgelegde deel domineert in plaats van het
+  onafgemaakte? (2) mogen `#E8DCC4` (wat je presteerde) en `#C9B894` (wat je niet haalde) zo dicht
+  bij elkaar liggen als ze tegengestelde dingen betekenen? (3) hoort `#4CAF50` — Material Design
+  green 500 — in een merksysteem dat verder op `accent.default` `#F05454` draait?
+- **Check (herschreven 2026-09-19):** de oude Check was
+  `grep -ril 'c9b894' apps/rowtrack/constants apps/rowtrack/tokens` → *"geen treffer = de waarde
+  komt nog nergens uit een token"*. Die gaf 2 treffers en las dus dood, terwijl het item leeft —
+  hij toetste **tokenisatie** en het item gaat over **kleurkeuze**. Een Check die de verkeerde as
+  meet, sluit zijn eigen item stil. Nieuw:
+  `grep -n 'C9B894\|E8DCC4\|4CAF50' apps/rowtrack/tokens/tokens.json` — zolang die drie waarden
+  ongewijzigd in de bron staan, is er geen kleurbeslissing genomen en leeft dit item. Verandert er
+  één, dan is de keuze gemaakt en hoort hier de reden bij.
 - **Status:** open
 
 ## 2026-09-14 — Uitloggen is de prominentste knop van het profielscherm · [ux]
@@ -831,8 +872,10 @@ Elke entry staat onder een laag-header (`# Globaal`, `# Klant — {naam}`, `# Pr
 - **Status:** open
 
 ## 2026-09-16 — De parity-as ziet een opacity-verschil onder een halve dekking niet · [fix]
-- **Wat:** `apps/rowtrack/scripts/geometry-parity.mjs:103-104` vergelijkt elk veld met `TOL = 0.5`, ook `opacity` (`:176`) — een fractie tussen 0 en 1. Een variant die in Figma op 0,6 staat terwijl de browser 1 rendert, blijft groen. Gevonden in `packages/ui/scripts/geometry-parity.mjs`, dat dezelfde vorm had: een tegenproef in Figma (0,7 -> 0,8) bleef groen, en na de fix kwam daar een echt verborgen verschil boven (Slider disabled, 0,5 tegen 1). Faalklasse vastgelegd in `umanex-os/LEARNINGS.md` (Globaal, 2026-09-16).
-- **Waarom niet nu:** Buiten de scope van de shadcn-bibliotheek (`briefings/2026-09-16-feature-shadcn-volledige-bibliotheek.tcebc.md`), die rowtrack bewust onaangeroerd laat; en een strakkere tolerantie kan in rowtrack echte verschillen blootleggen die eerst een eigen oordeel vragen.
-- **Eerste zet:** Een tolerantie per veld (0,5 voor pixels, 0,01 voor opacity), de `--selftest` een opacity-mutatie laten eisen, en de eerste rode run lezen vóór er iets aan de basislijn verandert — zoals in packages/ui gebeurde.
-- **Check:** `grep -n "TOL = 0.5" apps/rowtrack/scripts/geometry-parity.mjs && grep -c "opacity" apps/rowtrack/scripts/geometry-parity.mjs` — een treffer op de eerste en geen aparte opacity-tolerantie = dit item leeft.
-- **Status:** open
+- **Status:** samengevoegd — 2026-09-19, opgegaan in *2026-09-17 — Parity vergelijkt opacity met de
+  pixel-tolerantie*. Hetzelfde defect, hetzelfde bestand, dezelfde twee regels: `TOL = 0.5` op 103
+  en `opacity` op 176 in `apps/rowtrack/scripts/geometry-parity.mjs`. Twee entries voor één fix
+  overleefden twee triage-rondes zonder dat iemand ze naast elkaar legde — de lijst is inmiddels
+  lang genoeg dat dat niet meer vanzelf opvalt. Wat dit item extra droeg (de LEARNINGS-verwijzing,
+  de scope-reden, de volgorde-discipline) staat in het overgebleven item; hier blijft alleen het
+  spoor, zodat de verwijzing vanuit `umanex-os/LEARNINGS.md` niet doodloopt.
